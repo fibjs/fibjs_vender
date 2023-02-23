@@ -730,6 +730,10 @@ Type JSWasmCallNode::TypeForWasmReturnType(const wasm::ValueType& type) {
     case wasm::kF32:
     case wasm::kF64:
       return Type::Number();
+    case wasm::kRef:
+    case wasm::kRefNull:
+      CHECK_EQ(type.heap_type(), wasm::HeapType::kExtern);
+      return Type::Any();
     default:
       UNREACHABLE();
   }
@@ -741,6 +745,8 @@ Type JSWasmCallNode::TypeForWasmReturnType(const wasm::ValueType& type) {
   V(ToName, Operator::kNoProperties, 1, 1)                               \
   V(ToNumber, Operator::kNoProperties, 1, 1)                             \
   V(ToNumberConvertBigInt, Operator::kNoProperties, 1, 1)                \
+  V(ToBigInt, Operator::kNoProperties, 1, 1)                             \
+  V(ToBigIntConvertNumber, Operator::kNoProperties, 1, 1)                \
   V(ToNumeric, Operator::kNoProperties, 1, 1)                            \
   V(ToObject, Operator::kFoldable, 1, 1)                                 \
   V(ToString, Operator::kNoProperties, 1, 1)                             \
@@ -1131,7 +1137,7 @@ const Operator* JSOperatorBuilder::DefineKeyedOwnProperty(
   return zone()->New<Operator1<PropertyAccess>>(                     // --
       IrOpcode::kJSDefineKeyedOwnProperty, Operator::kNoProperties,  // opcode
       "JSDefineKeyedOwnProperty",                                    // name
-      4, 1, 1, 0, 1, 2,                                              // counts
+      5, 1, 1, 0, 1, 2,                                              // counts
       access);  // parameter
 }
 
@@ -1308,7 +1314,7 @@ const Operator* JSOperatorBuilder::CreateBoundFunction(size_t arity,
 }
 
 const Operator* JSOperatorBuilder::CreateClosure(
-    const SharedFunctionInfoRef& shared_info, const CodeTRef& code,
+    const SharedFunctionInfoRef& shared_info, const CodeRef& code,
     AllocationType allocation) {
   static constexpr int kFeedbackCell = 1;
   static constexpr int kArity = kFeedbackCell;

@@ -188,7 +188,7 @@ void TorqueGeneratedSortState<SortState, HeapObject>::SortStateVerify(Isolate* i
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=219&c=1
 bool IsWasmStringViewIter_NonInline(HeapObject o) {
   return o.IsWasmStringViewIter();
 }

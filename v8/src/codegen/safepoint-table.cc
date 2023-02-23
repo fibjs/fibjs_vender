@@ -20,16 +20,18 @@
 namespace v8 {
 namespace internal {
 
+SafepointTable::SafepointTable(Isolate* isolate, Address pc,
+                               InstructionStream code)
+    : SafepointTable(code.instruction_start(), code.safepoint_table_address()) {
+}
+
 SafepointTable::SafepointTable(Isolate* isolate, Address pc, Code code)
     : SafepointTable(code.InstructionStart(isolate, pc),
                      code.SafepointTableAddress()) {}
 
-#ifdef V8_EXTERNAL_CODE_SPACE
-SafepointTable::SafepointTable(Isolate* isolate, Address pc,
-                               CodeDataContainer code)
+SafepointTable::SafepointTable(Isolate* isolate, Address pc, GcSafeCode code)
     : SafepointTable(code.InstructionStart(isolate, pc),
                      code.SafepointTableAddress()) {}
-#endif  // V8_EXTERNAL_CODE_SPACE
 
 #if V8_ENABLE_WEBASSEMBLY
 SafepointTable::SafepointTable(const wasm::WasmCode* code)
@@ -78,6 +80,13 @@ SafepointEntry SafepointTable::FindEntry(Address pc) const {
     }
   }
   UNREACHABLE();
+}
+
+// static
+SafepointEntry SafepointTable::FindEntry(Isolate* isolate, GcSafeCode code,
+                                         Address pc) {
+  SafepointTable table(isolate, pc, code);
+  return table.FindEntry(pc);
 }
 
 void SafepointTable::Print(std::ostream& os) const {
@@ -171,7 +180,7 @@ void SafepointTableBuilder::Emit(Assembler* assembler, int tagged_slots_size) {
 #endif
 
   // Make sure the safepoint table is properly aligned. Pad with nops.
-  assembler->Align(Code::kMetadataAlignment);
+  assembler->Align(InstructionStream::kMetadataAlignment);
   assembler->RecordComment(";;; Safepoint table.");
   set_safepoint_table_offset(assembler->pc_offset());
 

@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-values-tq-csa.h"
@@ -137,7 +139,7 @@ TF_BUILTIN(TypedArrayPrototypeValues, CodeStubAssembler) {
   TNode<JSArrayIterator> tmp4;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp4 = CreateArrayIterator_0(state_, TNode<NativeContext>{parameter0}, TNode<JSReceiver>{tmp0}, IterationKind::kValues);
+    tmp4 = CreateArrayIterator_1(state_, TNode<NativeContext>{parameter0}, TNode<JSReceiver>{tmp0}, IterationKind::kValues);
     arguments.PopAndReturn(tmp4);
   }
 }

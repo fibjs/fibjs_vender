@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/function-tq-csa.h"
@@ -431,15 +433,16 @@ USE(parameter3);
   TNode<FixedArray> tmp45;
   TNode<FixedArray> tmp46;
   TNode<BoolT> tmp47;
-  TNode<IntPtrT> tmp48;
-  TNode<HeapObject> tmp49;
-  TNode<IntPtrT> tmp50;
+  TNode<BoolT> tmp48;
+  TNode<IntPtrT> tmp49;
+  TNode<HeapObject> tmp50;
   TNode<IntPtrT> tmp51;
   TNode<IntPtrT> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
   TNode<IntPtrT> tmp55;
-  TNode<JSBoundFunction> tmp56;
+  TNode<IntPtrT> tmp56;
+  TNode<JSBoundFunction> tmp57;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_13);
     tmp43 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -447,31 +450,32 @@ USE(parameter3);
     tmp45 = kEmptyFixedArray_0(state_);
     tmp46 = kEmptyFixedArray_0(state_);
     tmp47 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp48 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp49 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp48}, TNode<Map>{phi_bb17_12}, TNode<BoolT>{tmp47});
-    tmp50 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp49, tmp50}, phi_bb17_12);
-    tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp49, tmp51}, tmp45);
-    tmp52 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp49, tmp52}, tmp46);
-    tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp49, tmp53}, tmp0);
-    tmp54 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp49, tmp54}, tmp44);
-    tmp55 = FromConstexpr_intptr_constexpr_int31_0(state_, 20);
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp49, tmp55}, phi_bb23_13);
-    tmp56 = TORQUE_CAST(TNode<HeapObject>{tmp49});
-    arguments.PopAndReturn(tmp56);
+    tmp48 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp49 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp50 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp49}, TNode<Map>{phi_bb17_12}, TNode<BoolT>{tmp47}, TNode<BoolT>{tmp48});
+    tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp50, tmp51}, phi_bb17_12);
+    tmp52 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp50, tmp52}, tmp45);
+    tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp50, tmp53}, tmp46);
+    tmp54 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp50, tmp54}, tmp0);
+    tmp55 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp50, tmp55}, tmp44);
+    tmp56 = FromConstexpr_intptr_constexpr_int31_0(state_, 20);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp50, tmp56}, phi_bb23_13);
+    tmp57 = TORQUE_CAST(TNode<HeapObject>{tmp50});
+    arguments.PopAndReturn(tmp57);
   }
 
-  TNode<JSFunction> tmp57;
-  TNode<Int32T> tmp58;
+  TNode<JSFunction> tmp58;
+  TNode<Int32T> tmp59;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp57 = LoadTargetFromFrame_0(state_);
-    tmp58 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
-   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kFunctionPrototypeBind, parameter0, tmp57, parameter2, tmp58);
+    tmp58 = LoadTargetFromFrame_0(state_);
+    tmp59 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
+   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kFunctionPrototypeBind, parameter0, tmp58, parameter2, tmp59);
   }
 }
 
@@ -548,7 +552,7 @@ TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::Code
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
+    std::tie(tmp0, tmp1) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
     ca_.Goto(&block2);
   }
 
@@ -608,11 +612,12 @@ TNode<FixedArray> NewFixedArray_ArgumentsIterator_0(compiler::CodeAssemblerState
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<BoolT> tmp11;
-  TNode<HeapObject> tmp12;
-  TNode<IntPtrT> tmp13;
+  TNode<BoolT> tmp12;
+  TNode<HeapObject> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<FixedArray> tmp16;
+  TNode<IntPtrT> tmp16;
+  TNode<FixedArray> tmp17;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp6 = kFixedArrayMap_0(state_);
@@ -621,15 +626,16 @@ TNode<FixedArray> NewFixedArray_ArgumentsIterator_0(compiler::CodeAssemblerState
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp9}, TNode<IntPtrT>{tmp8}, kTaggedSize);
     tmp11 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp12 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp10}, TNode<Map>{tmp6}, TNode<BoolT>{tmp11});
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp12, tmp13}, tmp6);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp12, tmp14}, tmp7);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    InitializeFieldsFromIterator_Object_ArgumentsIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructArgumentsIterator_0{TorqueStructArguments{TNode<RawPtrT>{p_it.arguments.frame}, TNode<RawPtrT>{p_it.arguments.base}, TNode<IntPtrT>{p_it.arguments.length}, TNode<IntPtrT>{p_it.arguments.actual_count}}, TNode<IntPtrT>{p_it.current}});
-    tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp12});
-    ca_.Goto(&block1, tmp16);
+    tmp12 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp13 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp10}, TNode<Map>{tmp6}, TNode<BoolT>{tmp11}, TNode<BoolT>{tmp12});
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp6);
+    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp13, tmp15}, tmp7);
+    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    InitializeFieldsFromIterator_Object_ArgumentsIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructArgumentsIterator_0{TorqueStructArguments{TNode<RawPtrT>{p_it.arguments.frame}, TNode<RawPtrT>{p_it.arguments.base}, TNode<IntPtrT>{p_it.arguments.length}, TNode<IntPtrT>{p_it.arguments.actual_count}}, TNode<IntPtrT>{p_it.current}});
+    tmp17 = TORQUE_CAST(TNode<HeapObject>{tmp13});
+    ca_.Goto(&block1, tmp17);
   }
 
   TNode<FixedArray> phi_bb1_6;

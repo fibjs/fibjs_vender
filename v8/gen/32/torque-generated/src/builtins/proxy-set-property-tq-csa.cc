@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-set-property-tq-csa.h"
@@ -126,6 +128,7 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
   TNode<Symbol> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
+    CodeStubAssembler(state_).PerformStackCheck(TNode<Context>{parameter0});
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_PrivateSymbol_1(state_, TNode<HeapObject>{parameter2}, &label1);
     ca_.Goto(&block11);
@@ -214,7 +217,7 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=26&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=28&c=10
 TNode<BoolT> Is_Name_AnyName_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Name> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

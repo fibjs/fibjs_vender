@@ -16,7 +16,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(Integer
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=753&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=759&c=26
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
@@ -155,7 +155,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_o
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char16_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char16_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=753&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=759&c=26
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);

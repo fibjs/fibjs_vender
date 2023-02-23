@@ -61,12 +61,19 @@ class TorqueGeneratedFeedbackVector : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
   inline void set_closure_feedback_cell_array(ClosureFeedbackCellArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
+  inline FeedbackCell parent_feedback_cell() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
+  inline FeedbackCell parent_feedback_cell(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
+  inline void set_parent_feedback_cell(FeedbackCell value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
   // Torque type: Weak<class Code>
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
   inline MaybeObject maybe_optimized_code() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
   inline MaybeObject maybe_optimized_code(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
   inline void set_maybe_optimized_code(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
@@ -116,10 +123,13 @@ class TorqueGeneratedFeedbackVector : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
   static constexpr int kClosureFeedbackCellArrayOffset = kSharedFunctionInfoOffsetEnd + 1;
   static constexpr int kClosureFeedbackCellArrayOffsetEnd = kClosureFeedbackCellArrayOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kClosureFeedbackCellArrayOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kClosureFeedbackCellArrayOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
-  static constexpr int kMaybeOptimizedCodeOffset = kClosureFeedbackCellArrayOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
+  static constexpr int kParentFeedbackCellOffset = kClosureFeedbackCellArrayOffsetEnd + 1;
+  static constexpr int kParentFeedbackCellOffsetEnd = kParentFeedbackCellOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kParentFeedbackCellOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kParentFeedbackCellOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
+  static constexpr int kMaybeOptimizedCodeOffset = kParentFeedbackCellOffsetEnd + 1;
   static constexpr int kMaybeOptimizedCodeOffsetEnd = kMaybeOptimizedCodeOffset + kTaggedSize - 1;
   static constexpr int kHeaderSize = kMaybeOptimizedCodeOffsetEnd + 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=49&c=19

@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/data-view-tq-csa.h"
@@ -529,13 +531,16 @@ TNode<BoolT> WasDetached_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=70&c=1
-TNode<JSDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method) {
+TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSDataViewOrRabGsabDataView> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSDataView> tmp0;
@@ -550,18 +555,45 @@ TNode<JSDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode
     }
   }
 
+  TNode<JSRabGsabDataView> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
+    compiler::CodeAssemblerLabel label3(&ca_);
+    tmp2 = Cast_JSRabGsabDataView_1(state_, TNode<Context>{p_context}, TNode<Object>{ca_.UncheckedCast<Object>(p_o)}, &label3);
+    ca_.Goto(&block8);
+    if (label3.is_used()) {
+      ca_.Bind(&label3);
+      ca_.Goto(&block9);
+    }
+  }
+
+  TNode<JSDataView> tmp4;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp4 = UnsafeCast_JSDataView_0(state_, TNode<Context>{p_context}, TNode<Object>{p_o});
+    ca_.Goto(&block1, tmp4);
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{p_method});
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(&block6);
+  TNode<JSRabGsabDataView> tmp5;
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    tmp5 = UnsafeCast_JSRabGsabDataView_0(state_, TNode<Context>{p_context}, TNode<Object>{p_o});
+    ca_.Goto(&block1, tmp5);
   }
 
-    ca_.Bind(&block6);
-  return TNode<JSDataView>{tmp0};
+  TNode<JSDataViewOrRabGsabDataView> phi_bb1_3;
+  if (block1.is_used()) {
+    ca_.Bind(&block1, &phi_bb1_3);
+    ca_.Goto(&block10);
+  }
+
+    ca_.Bind(&block10);
+  return TNode<JSDataViewOrRabGsabDataView>{phi_bb1_3};
 }
 
 TF_BUILTIN(DataViewPrototypeGetBuffer, CodeStubAssembler) {
@@ -579,7 +611,7 @@ TF_BUILTIN(DataViewPrototypeGetBuffer, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<JSDataView> tmp1;
+  TNode<JSDataViewOrRabGsabDataView> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<JSArrayBuffer> tmp3;
   if (block0.is_used()) {
@@ -613,7 +645,7 @@ TF_BUILTIN(DataViewPrototypeGetByteLength, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<JSDataView> tmp1;
+  TNode<JSDataViewOrRabGsabDataView> tmp1;
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -690,7 +722,7 @@ TF_BUILTIN(DataViewPrototypeGetByteOffset, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<JSDataView> tmp1;
+  TNode<JSDataViewOrRabGsabDataView> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byte_offset");
@@ -723,7 +755,7 @@ TF_BUILTIN(DataViewPrototypeGetByteOffset, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=135&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=142&c=1
 TNode<Smi> LoadDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -775,7 +807,7 @@ TNode<Smi> LoadDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
   return TNode<Smi>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=144&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=151&c=1
 TNode<Number> LoadDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -878,7 +910,7 @@ TNode<Number> LoadDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   return TNode<Number>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=171&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=178&c=1
 TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1040,7 +1072,7 @@ TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   return TNode<Number>{phi_bb14_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=200&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=207&c=1
 TNode<Number> LoadDataViewFloat64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1203,7 +1235,7 @@ TNode<Number> LoadDataViewFloat64_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Number>{tmp62};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=231&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=238&c=1
 int31_t kZeroDigitBigInt_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1212,7 +1244,7 @@ int31_t kZeroDigitBigInt_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=232&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=239&c=1
 int31_t kOneDigitBigInt_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1221,7 +1253,7 @@ int31_t kOneDigitBigInt_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=233&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=240&c=1
 int31_t kTwoDigitBigInt_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1230,7 +1262,7 @@ int31_t kTwoDigitBigInt_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=236&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=243&c=1
 TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1377,7 +1409,7 @@ TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BigInt>{phi_bb12_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=264&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=271&c=1
 TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1658,7 +1690,7 @@ TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BigInt>{phi_bb24_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=331&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=338&c=1
 TNode<BigInt> MakeBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1702,7 +1734,7 @@ TNode<BigInt> MakeBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   return TNode<BigInt>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=342&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=349&c=1
 TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1859,7 +1891,7 @@ TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BigInt>{tmp59};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=374&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=381&c=1
 TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1901,7 +1933,7 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<JSDataView> tmp1;
+  TNode<JSDataViewOrRabGsabDataView> tmp1;
   TNode<UintPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2493,7 +2525,7 @@ TF_BUILTIN(DataViewPrototypeGetBigInt64, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=544&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=551&c=1
 void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2516,7 +2548,7 @@ void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=549&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=556&c=1
 void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2576,7 +2608,7 @@ void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=566&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=573&c=1
 void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2668,7 +2700,7 @@ void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=589&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=596&c=1
 void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2824,7 +2856,7 @@ void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=633&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=640&c=1
 void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BigInt> p_bigIntValue, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2995,7 +3027,7 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block13);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=672&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=679&c=1
 TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_value, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3039,7 +3071,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<JSDataView> tmp1;
+  TNode<JSDataViewOrRabGsabDataView> tmp1;
   TNode<UintPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -3684,7 +3716,7 @@ TF_BUILTIN(DataViewPrototypeSetBigInt64, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=72&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=73&c=5
 TNode<JSDataView> Cast_JSDataView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3743,6 +3775,105 @@ TNode<JSDataView> Cast_JSDataView_1(compiler::CodeAssemblerState* state_, TNode<
 
     ca_.Bind(&block7);
   return TNode<JSDataView>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=74&c=14
+TNode<JSDataView> UnsafeCast_JSDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSDataView> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<JSDataView>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=76&c=5
+TNode<JSRabGsabDataView> Cast_JSRabGsabDataView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<HeapObject> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{p_o}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(&block1);
+  }
+
+  TNode<JSRabGsabDataView> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    compiler::CodeAssemblerLabel label3(&ca_);
+    tmp2 = Cast_JSRabGsabDataView_0(state_, TNode<HeapObject>{tmp0}, &label3);
+    ca_.Goto(&block5);
+    if (label3.is_used()) {
+      ca_.Bind(&label3);
+      ca_.Goto(&block6);
+    }
+  }
+
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block1);
+  }
+
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<JSRabGsabDataView>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=77&c=14
+TNode<JSRabGsabDataView> UnsafeCast_JSRabGsabDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSRabGsabDataView> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<JSRabGsabDataView>{tmp0};
 }
 
 } // namespace internal

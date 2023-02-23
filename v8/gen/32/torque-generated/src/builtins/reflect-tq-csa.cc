@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
@@ -407,6 +409,48 @@ TF_BUILTIN(ReflectHas, CodeStubAssembler) {
     ca_.Bind(&block3);
     tmp2 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, parameter2);
     CodeStubAssembler(state_).Return(tmp2);
+  }
+}
+
+TF_BUILTIN(ReflectGetOwnPropertyDescriptor, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kTarget);
+  USE(parameter1);
+  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kPropertyKey);
+  USE(parameter2);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSReceiver> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Reflect.getOwnPropertyDescriptor");
+  }
+
+  TNode<Name> tmp2;
+  TNode<Object> tmp3;
+  TNode<Object> tmp4;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp2 = ca_.CallStub<Name>(Builtins::CallableFor(ca_.isolate(), Builtin::kToName), parameter0, parameter2);
+    tmp3 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kGetOwnPropertyDescriptor), parameter0, tmp0, tmp2);
+    tmp4 = FromPropertyDescriptor_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    CodeStubAssembler(state_).Return(tmp4);
   }
 }
 

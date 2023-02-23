@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/convert-tq-csa.h"
@@ -1602,6 +1604,29 @@ TNode<Int32T> Convert_int32_int64_0(compiler::CodeAssemblerState* state_, TNode<
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=266&c=1
+TNode<Uint32T> Convert_uint32_uint64_0(compiler::CodeAssemblerState* state_, TNode<Uint64T> p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Int64T> tmp0;
+  TNode<Int32T> tmp1;
+  TNode<Uint32T> tmp2;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = CodeStubAssembler(state_).Signed(TNode<Uint64T>{p_i});
+    tmp1 = CodeStubAssembler(state_).TruncateInt64ToInt32(TNode<Int64T>{tmp0});
+    tmp2 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp1});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Uint32T>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=269&c=1
 TNode<Int32T> Convert_int32_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1648,7 +1673,7 @@ TNode<Int32T> Convert_int32_Number_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<Int32T>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=277&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=280&c=1
 TNode<Smi> Convert_Smi_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1667,7 +1692,7 @@ TNode<Smi> Convert_Smi_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntP
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=280&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 TNode<Uint32T> Convert_uint32_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1690,7 +1715,7 @@ TNode<Uint32T> Convert_uint32_uintptr_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Uint32T>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
 TNode<IntPtrT> Convert_intptr_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1709,7 +1734,7 @@ TNode<IntPtrT> Convert_intptr_Smi_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=289&c=1
 TNode<UintPtrT> Convert_uintptr_PositiveSmi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_ps) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1730,7 +1755,7 @@ TNode<UintPtrT> Convert_uintptr_PositiveSmi_0(compiler::CodeAssemblerState* stat
   return TNode<UintPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=289&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=292&c=1
 TNode<IntPtrT> Convert_intptr_TaggedIndex_0(compiler::CodeAssemblerState* state_, TNode<TaggedIndex> p_ti) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1749,7 +1774,7 @@ TNode<IntPtrT> Convert_intptr_TaggedIndex_0(compiler::CodeAssemblerState* state_
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=292&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=295&c=1
 TNode<TaggedIndex> Convert_TaggedIndex_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1768,7 +1793,7 @@ TNode<TaggedIndex> Convert_TaggedIndex_intptr_0(compiler::CodeAssemblerState* st
   return TNode<TaggedIndex>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=295&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=298&c=1
 TNode<IntPtrT> Convert_intptr_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1787,7 +1812,7 @@ TNode<IntPtrT> Convert_intptr_uintptr_0(compiler::CodeAssemblerState* state_, TN
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=300&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=303&c=1
 TNode<Smi> Convert_PositiveSmi_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1808,7 +1833,7 @@ TNode<Smi> Convert_PositiveSmi_intptr_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=304&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=307&c=1
 TNode<Smi> Convert_PositiveSmi_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui, compiler::CodeAssemblerLabel* label_IfOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1847,7 +1872,7 @@ TNode<Smi> Convert_PositiveSmi_uintptr_0(compiler::CodeAssemblerState* state_, T
   return TNode<Smi>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=310&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=313&c=1
 TNode<Smi> Convert_PositiveSmi_intptr_1(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i, compiler::CodeAssemblerLabel* label_IfOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1882,7 +1907,7 @@ TNode<Smi> Convert_PositiveSmi_intptr_1(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=318&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=321&c=1
 TNode<Smi> Convert_PositiveSmi_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui, compiler::CodeAssemblerLabel* label_IfOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1920,7 +1945,7 @@ TNode<Smi> Convert_PositiveSmi_uint32_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=321&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=324&c=1
 TNode<Int32T> Convert_int32_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1939,7 +1964,7 @@ TNode<Int32T> Convert_int32_Smi_0(compiler::CodeAssemblerState* state_, TNode<Sm
   return TNode<Int32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=324&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=327&c=1
 TNode<Float64T> Convert_float64_HeapNumber_0(compiler::CodeAssemblerState* state_, TNode<HeapNumber> p_h) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1958,7 +1983,7 @@ TNode<Float64T> Convert_float64_HeapNumber_0(compiler::CodeAssemblerState* state
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=327&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=330&c=1
 TNode<Float64T> Convert_float64_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1977,7 +2002,7 @@ TNode<Float64T> Convert_float64_Number_0(compiler::CodeAssemblerState* state_, T
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=330&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=333&c=1
 TNode<UintPtrT> Convert_uintptr_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1996,7 +2021,7 @@ TNode<UintPtrT> Convert_uintptr_Number_0(compiler::CodeAssemblerState* state_, T
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=333&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=336&c=1
 TNode<Float64T> Convert_float64_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2015,7 +2040,7 @@ TNode<Float64T> Convert_float64_int32_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=336&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=339&c=1
 TNode<Float64T> Convert_float64_float32_0(compiler::CodeAssemblerState* state_, TNode<Float32T> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2034,7 +2059,7 @@ TNode<Float64T> Convert_float64_float32_0(compiler::CodeAssemblerState* state_, 
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=339&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=342&c=1
 TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2053,7 +2078,7 @@ TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_float64_0(compiler::CodeAs
   return TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp0}, TNode<Float64T>{p_f}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=342&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=345&c=1
 TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2075,7 +2100,7 @@ TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_Number_0(compiler::CodeAss
   return TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp1}, TNode<Float64T>{tmp2}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=345&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=348&c=1
 TNode<Float32T> Convert_float32_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2094,7 +2119,7 @@ TNode<Float32T> Convert_float32_float64_0(compiler::CodeAssemblerState* state_, 
   return TNode<Float32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=348&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=351&c=1
 TNode<Float32T> Convert_float32_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2115,7 +2140,7 @@ TNode<Float32T> Convert_float32_Number_0(compiler::CodeAssemblerState* state_, T
   return TNode<Float32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=351&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=354&c=1
 TNode<Number> Convert_Number_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_d) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2134,7 +2159,7 @@ TNode<Number> Convert_Number_float64_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=354&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=357&c=1
 TNode<Float64T> Convert_float64_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2153,7 +2178,7 @@ TNode<Float64T> Convert_float64_uintptr_0(compiler::CodeAssemblerState* state_, 
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=357&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=360&c=1
 TNode<Number> Convert_Number_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2172,7 +2197,7 @@ TNode<Number> Convert_Number_uintptr_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=360&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=363&c=1
 TNode<Number> Convert_Number_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2193,7 +2218,7 @@ TNode<Number> Convert_Number_intptr_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=363&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=366&c=1
 TNode<UintPtrT> Convert_uintptr_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_d) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2212,7 +2237,7 @@ TNode<UintPtrT> Convert_uintptr_float64_0(compiler::CodeAssemblerState* state_, 
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=366&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=369&c=1
 TNode<UintPtrT> Convert_uintptr_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2231,7 +2256,7 @@ TNode<UintPtrT> Convert_uintptr_intptr_0(compiler::CodeAssemblerState* state_, T
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=369&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=372&c=1
 TNode<UintPtrT> Convert_uintptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_r) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2250,7 +2275,7 @@ TNode<UintPtrT> Convert_uintptr_RawPtr_0(compiler::CodeAssemblerState* state_, T
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=372&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=375&c=1
 TNode<IntPtrT> Convert_intptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_r) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2269,7 +2294,7 @@ TNode<IntPtrT> Convert_intptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=375&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=378&c=1
 TNode<IntPtrT> Convert_intptr_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2290,7 +2315,7 @@ TNode<IntPtrT> Convert_intptr_Number_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=378&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=381&c=1
 TNode<BInt> Convert_bint_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2311,7 +2336,7 @@ TNode<BInt> Convert_bint_int32_0(compiler::CodeAssemblerState* state_, TNode<Int
   return TNode<BInt>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=381&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=384&c=1
 TNode<Float64T> FromConstexpr_float64_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2330,7 +2355,7 @@ TNode<Float64T> FromConstexpr_float64_constexpr_IntegerLiteral_0(compiler::CodeA
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=386&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=389&c=1
 TNode<BInt> Convert_bint_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2349,7 +2374,7 @@ TNode<BInt> Convert_bint_intptr_0(compiler::CodeAssemblerState* state_, TNode<In
   return TNode<BInt>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=390&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=393&c=1
 TNode<IntPtrT> Convert_intptr_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2368,7 +2393,7 @@ TNode<IntPtrT> Convert_intptr_bint_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=394&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=397&c=1
 TNode<BInt> Convert_bint_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2387,7 +2412,7 @@ TNode<BInt> Convert_bint_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> 
   return TNode<BInt>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=398&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=401&c=1
 TNode<Smi> Convert_Smi_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2406,7 +2431,7 @@ TNode<Smi> Convert_Smi_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> 
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=401&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=404&c=1
 TNode<Int32T> Convert_PromiseState_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2425,7 +2450,7 @@ TNode<Int32T> Convert_PromiseState_int32_0(compiler::CodeAssemblerState* state_,
   return TNode<Int32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=404&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=407&c=1
 TNode<Uint32T> Convert_ScopeFlags_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2448,7 +2473,7 @@ TNode<Uint32T> Convert_ScopeFlags_Smi_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Uint32T>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=407&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=410&c=1
 TNode<I8x16T> Convert_I8X16_Simd128_0(compiler::CodeAssemblerState* state_, TNode<Simd128T> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

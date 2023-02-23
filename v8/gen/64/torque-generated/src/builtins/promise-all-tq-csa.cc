@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-all-tq-csa.h"
@@ -1122,7 +1124,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
     tmp12 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
-    std::tie(tmp13, tmp14) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
+    std::tie(tmp13, tmp14) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
     }
     if (catch15__label.is_used()) {
       compiler::CodeAssemblerLabel catch15_skip(&ca_);
@@ -2149,7 +2151,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
     std::tie(tmp185, tmp186) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp184}).Flatten();
     tmp187 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp185, tmp186});
     tmp188 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp189, tmp190) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp188}).Flatten();
+    std::tie(tmp189, tmp190) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp188}).Flatten();
     tmp191 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp189, tmp190});
     tmp192 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp192, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});
@@ -2321,7 +2323,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
     tmp12 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
-    std::tie(tmp13, tmp14) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
+    std::tie(tmp13, tmp14) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
     }
     if (catch15__label.is_used()) {
       compiler::CodeAssemblerLabel catch15_skip(&ca_);
@@ -3346,7 +3348,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
     std::tie(tmp184, tmp185) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp183}).Flatten();
     tmp186 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp184, tmp185});
     tmp187 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp188, tmp189) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp187}).Flatten();
+    std::tie(tmp188, tmp189) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp187}).Flatten();
     tmp190 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp188, tmp189});
     tmp191 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp191, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});

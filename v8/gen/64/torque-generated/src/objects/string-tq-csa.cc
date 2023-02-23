@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,12 +62,14 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/string-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
+#include "torque-generated/src/builtins/number-tq-csa.h"
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/name-tq-csa.h"
@@ -1826,12 +1829,13 @@ TNode<SeqOneByteString> AllocateNonEmptySeqOneByteString_UninitializedIterator_0
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<BoolT> tmp7;
-  TNode<HeapObject> tmp8;
-  TNode<IntPtrT> tmp9;
+  TNode<BoolT> tmp8;
+  TNode<HeapObject> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
-  TNode<SeqOneByteString> tmp13;
+  TNode<IntPtrT> tmp13;
+  TNode<SeqOneByteString> tmp14;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kOneByteStringMap_0(state_);
@@ -1842,21 +1846,22 @@ TNode<SeqOneByteString> AllocateNonEmptySeqOneByteString_UninitializedIterator_0
     tmp5 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{tmp3}, kUInt8Size);
     tmp6 = AlignTagged_0(state_, TNode<IntPtrT>{tmp5});
     tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp8 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp6}, TNode<Map>{tmp0}, TNode<BoolT>{tmp7});
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp0);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp10}, tmp1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp8, tmp11}, tmp2);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_char8_UninitializedIterator_0(state_, TorqueStructSlice_char8_MutableReference_char8_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
-    tmp13 = TORQUE_CAST(TNode<HeapObject>{tmp8});
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp9 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp6}, TNode<Map>{tmp0}, TNode<BoolT>{tmp7}, TNode<BoolT>{tmp8});
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp0);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp1);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp2);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    InitializeFieldsFromIterator_char8_UninitializedIterator_0(state_, TorqueStructSlice_char8_MutableReference_char8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
+    tmp14 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block9);
   }
 
     ca_.Bind(&block9);
-  return TNode<SeqOneByteString>{tmp13};
+  return TNode<SeqOneByteString>{tmp14};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=160&c=10
@@ -1875,12 +1880,13 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_UninitializedIterator_0
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<BoolT> tmp7;
-  TNode<HeapObject> tmp8;
-  TNode<IntPtrT> tmp9;
+  TNode<BoolT> tmp8;
+  TNode<HeapObject> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
-  TNode<SeqTwoByteString> tmp13;
+  TNode<IntPtrT> tmp13;
+  TNode<SeqTwoByteString> tmp14;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kStringMap_0(state_);
@@ -1891,21 +1897,22 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_UninitializedIterator_0
     tmp5 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{tmp3}, kUInt16Size);
     tmp6 = AlignTagged_0(state_, TNode<IntPtrT>{tmp5});
     tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp8 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp6}, TNode<Map>{tmp0}, TNode<BoolT>{tmp7});
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp0);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp10}, tmp1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp8, tmp11}, tmp2);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_char16_UninitializedIterator_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
-    tmp13 = TORQUE_CAST(TNode<HeapObject>{tmp8});
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp9 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp6}, TNode<Map>{tmp0}, TNode<BoolT>{tmp7}, TNode<BoolT>{tmp8});
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp0);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp1);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp2);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    InitializeFieldsFromIterator_char16_UninitializedIterator_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
+    tmp14 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block9);
   }
 
     ca_.Bind(&block9);
-  return TNode<SeqTwoByteString>{tmp13};
+  return TNode<SeqTwoByteString>{tmp14};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=177&c=10
@@ -3761,12 +3768,13 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_SliceIterator_char16_Co
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<BoolT> tmp7;
-  TNode<HeapObject> tmp8;
-  TNode<IntPtrT> tmp9;
+  TNode<BoolT> tmp8;
+  TNode<HeapObject> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
-  TNode<SeqTwoByteString> tmp13;
+  TNode<IntPtrT> tmp13;
+  TNode<SeqTwoByteString> tmp14;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kStringMap_0(state_);
@@ -3777,21 +3785,125 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_SliceIterator_char16_Co
     tmp5 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{tmp3}, kUInt16Size);
     tmp6 = AlignTagged_0(state_, TNode<IntPtrT>{tmp5});
     tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp8 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp6}, TNode<Map>{tmp0}, TNode<BoolT>{tmp7});
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp0);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp10}, tmp1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp8, tmp11}, tmp2);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_char16_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_content.object}, TNode<IntPtrT>{p_content.start}, TNode<IntPtrT>{p_content.end}, TorqueStructUnsafe_0{}});
-    tmp13 = TORQUE_CAST(TNode<HeapObject>{tmp8});
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp9 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp6}, TNode<Map>{tmp0}, TNode<BoolT>{tmp7}, TNode<BoolT>{tmp8});
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp0);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp1);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp2);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_char16_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_content.object}, TNode<IntPtrT>{p_content.start}, TNode<IntPtrT>{p_content.end}, TorqueStructUnsafe_0{}});
+    tmp14 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block9);
   }
 
     ca_.Bind(&block9);
-  return TNode<SeqTwoByteString>{tmp13};
+  return TNode<SeqTwoByteString>{tmp14};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=10
+void InitializeFieldsFromIterator_char8_TwoByteToOneByteIterator_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_char8_MutableReference_char8_0 p_target, TorqueStructTwoByteToOneByteIterator_0 p_originIterator) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, IntPtrT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, IntPtrT> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{p_target.length});
+    tmp1 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_target.offset}, TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block5, p_target.offset, p_originIterator.offset);
+  }
+
+  TNode<IntPtrT> phi_bb5_7;
+  TNode<IntPtrT> phi_bb5_10;
+  TNode<BoolT> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5, &phi_bb5_7, &phi_bb5_10);
+    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{phi_bb5_7, phi_bb5_10}, &block4, std::vector<compiler::Node*>{phi_bb5_7, phi_bb5_10});
+  }
+
+  TNode<IntPtrT> phi_bb3_7;
+  TNode<IntPtrT> phi_bb3_10;
+  TNode<BoolT> tmp3;
+  if (block3.is_used()) {
+    ca_.Bind(&block3, &phi_bb3_7, &phi_bb3_10);
+    tmp3 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_7}, TNode<IntPtrT>{tmp1});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{phi_bb3_7, phi_bb3_10}, &block10, std::vector<compiler::Node*>{phi_bb3_7, phi_bb3_10});
+  }
+
+  TNode<IntPtrT> phi_bb9_7;
+  TNode<IntPtrT> phi_bb9_10;
+  if (block9.is_used()) {
+    ca_.Bind(&block9, &phi_bb9_7, &phi_bb9_10);
+    ca_.Goto(&block4, phi_bb9_7, phi_bb9_10);
+  }
+
+  TNode<IntPtrT> phi_bb10_7;
+  TNode<IntPtrT> phi_bb10_10;
+  TNode<Object> tmp4;
+  TNode<IntPtrT> tmp5;
+  TNode<IntPtrT> tmp6;
+  TNode<IntPtrT> tmp7;
+  TNode<BoolT> tmp8;
+  if (block10.is_used()) {
+    ca_.Bind(&block10, &phi_bb10_7, &phi_bb10_10);
+    std::tie(tmp4, tmp5) = NewReference_char8_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
+    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
+    tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_7}, TNode<IntPtrT>{tmp6});
+    tmp8 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb10_10}, TNode<IntPtrT>{p_originIterator.end_offset});
+    ca_.Branch(tmp8, &block16, std::vector<compiler::Node*>{phi_bb10_10}, &block17, std::vector<compiler::Node*>{phi_bb10_10});
+  }
+
+  TNode<IntPtrT> phi_bb16_10;
+  if (block16.is_used()) {
+    ca_.Bind(&block16, &phi_bb16_10);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<IntPtrT> phi_bb17_10;
+  TNode<Object> tmp9;
+  TNode<IntPtrT> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Uint32T> tmp12;
+  TNode<Uint32T> tmp13;
+  TNode<Uint8T> tmp14;
+  TNode<IntPtrT> tmp15;
+  TNode<IntPtrT> tmp16;
+  if (block17.is_used()) {
+    ca_.Bind(&block17, &phi_bb17_10);
+    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Object>{p_originIterator.array}, TNode<IntPtrT>{phi_bb17_10}).Flatten();
+    tmp11 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp9, tmp10});
+    tmp12 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp13 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp11}, TNode<Uint32T>{tmp12});
+    tmp14 = ca_.UncheckedCast<Uint8T>(TNode<Uint32T>{tmp13});
+    tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
+    tmp16 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb17_10}, TNode<IntPtrT>{tmp15});
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp4, tmp5}, tmp14);
+    ca_.Goto(&block5, tmp7, tmp16);
+  }
+
+  TNode<IntPtrT> phi_bb4_7;
+  TNode<IntPtrT> phi_bb4_10;
+  if (block4.is_used()) {
+    ca_.Bind(&block4, &phi_bb4_7, &phi_bb4_10);
+    ca_.Goto(&block18);
+  }
+
+    ca_.Bind(&block18);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=148&c=10

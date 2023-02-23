@@ -248,6 +248,7 @@ Type::bitset BitsetType::Lub(const MapRefLike& map) {
     case JS_REG_EXP_STRING_ITERATOR_TYPE:
     case JS_TYPED_ARRAY_TYPE:
     case JS_DATA_VIEW_TYPE:
+    case JS_RAB_GSAB_DATA_VIEW_TYPE:
     case JS_SET_TYPE:
     case JS_MAP_TYPE:
     case JS_SET_KEY_VALUE_ITERATOR_TYPE:
@@ -368,8 +369,8 @@ Type::bitset BitsetType::Lub(const MapRefLike& map) {
     case SCRIPT_CONTEXT_TYPE:
     case WITH_CONTEXT_TYPE:
     case SCRIPT_TYPE:
+    case INSTRUCTION_STREAM_TYPE:
     case CODE_TYPE:
-    case CODE_DATA_CONTAINER_TYPE:
     case PROPERTY_CELL_TYPE:
     case SOURCE_TEXT_MODULE_TYPE:
     case SOURCE_TEXT_MODULE_INFO_ENTRY_TYPE:

@@ -76,14 +76,14 @@ inline TorqueGeneratedJSArrayIterator<D, P>::TorqueGeneratedJSArrayIterator(Addr
     : P(ptr, allow_smi) {
   SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArrayIterator_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
 template<class D, class P>
 Object TorqueGeneratedJSArray<D, P>::length() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSArray::length(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
 template<class D, class P>
 Object TorqueGeneratedJSArray<D, P>::length(PtrComprCageBase cage_base) const {
   Object value;
@@ -92,7 +92,7 @@ Object TorqueGeneratedJSArray<D, P>::length(PtrComprCageBase cage_base) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
 template<class D, class P>
 void TorqueGeneratedJSArray<D, P>::set_length(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsSmi() || value.IsHeapNumber());
@@ -100,7 +100,7 @@ void TorqueGeneratedJSArray<D, P>::set_length(Object value, WriteBarrierMode mod
   CONDITIONAL_WRITE_BARRIER(*this, kLengthOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
 template<class D, class P>
 D TorqueGeneratedJSArray<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -116,14 +116,14 @@ inline TorqueGeneratedJSArray<D, P>::TorqueGeneratedJSArray(Address ptr, HeapObj
     : P(ptr, allow_smi) {
   SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArray_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
 template<class D, class P>
 JSArray TorqueGeneratedTemplateLiteralObject<D, P>::raw() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedTemplateLiteralObject::raw(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
 template<class D, class P>
 JSArray TorqueGeneratedTemplateLiteralObject<D, P>::raw(PtrComprCageBase cage_base) const {
   JSArray value;
@@ -132,7 +132,7 @@ JSArray TorqueGeneratedTemplateLiteralObject<D, P>::raw(PtrComprCageBase cage_ba
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateLiteralObject<D, P>::set_raw(JSArray value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSArray());
@@ -140,7 +140,7 @@ void TorqueGeneratedTemplateLiteralObject<D, P>::set_raw(JSArray value, WriteBar
   CONDITIONAL_WRITE_BARRIER(*this, kRawOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 template<class D, class P>
 int TorqueGeneratedTemplateLiteralObject<D, P>::function_literal_id() const {
   int value;
@@ -148,13 +148,13 @@ int TorqueGeneratedTemplateLiteralObject<D, P>::function_literal_id() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateLiteralObject<D, P>::set_function_literal_id(int value) {
   WRITE_FIELD(*this, kFunctionLiteralIdOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
 template<class D, class P>
 int TorqueGeneratedTemplateLiteralObject<D, P>::slot_id() const {
   int value;
@@ -162,13 +162,13 @@ int TorqueGeneratedTemplateLiteralObject<D, P>::slot_id() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateLiteralObject<D, P>::set_slot_id(int value) {
   WRITE_FIELD(*this, kSlotIdOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
 template<class D, class P>
 D TorqueGeneratedTemplateLiteralObject<D, P>::cast(Object object) {
     return D(object.ptr());

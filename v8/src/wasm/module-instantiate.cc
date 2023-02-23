@@ -680,7 +680,9 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
       Handle<WasmTableObject> table_obj = WasmTableObject::New(
           isolate_, instance, table.type, table.initial_size,
           table.has_maximum_size, table.maximum_size, nullptr,
-          isolate_->factory()->null_value());
+          IsSubtypeOf(table.type, kWasmExternRef, module_)
+              ? Handle<Object>::cast(isolate_->factory()->null_value())
+              : Handle<Object>::cast(isolate_->factory()->wasm_null()));
       tables->set(i, *table_obj);
     }
     instance->set_tables(*tables);
@@ -814,7 +816,7 @@ MaybeHandle<WasmInstanceObject> InstanceBuilder::Build() {
     uint32_t canonical_sig_index =
         module_->isorecursive_canonical_type_ids[module_->functions[start_index]
                                                      .sig_index];
-    Handle<CodeT> wrapper_code =
+    Handle<Code> wrapper_code =
         JSToWasmWrapperCompilationUnit::CompileJSToWasmWrapper(
             isolate_, function.sig, canonical_sig_index, module_,
             function.imported);
@@ -1125,8 +1127,11 @@ bool InstanceBuilder::ProcessImportedFunction(
   }
   auto js_receiver = Handle<JSReceiver>::cast(value);
   const FunctionSig* expected_sig = module_->functions[func_index].sig;
+  uint32_t sig_index = module_->functions[func_index].sig_index;
+  uint32_t canonical_type_index =
+      module_->isorecursive_canonical_type_ids[sig_index];
   auto resolved = compiler::ResolveWasmImportCall(js_receiver, expected_sig,
-                                                  module_, enabled_);
+                                                  canonical_type_index);
   compiler::WasmImportCallKind kind = resolved.kind;
   js_receiver = resolved.callable;
   switch (kind) {
@@ -1451,14 +1456,16 @@ bool InstanceBuilder::ProcessImportedWasmGlobalObject(
     case kF64:
       value = WasmValue(global_object->GetF64());
       break;
-    case kRtt:
+    case kS128:
+      value = WasmValue(global_object->GetS128RawBytes(), kWasmS128);
+      break;
     case kRef:
     case kRefNull:
       value = WasmValue(global_object->GetRef(), global_object->type());
       break;
     case kVoid:
-    case kS128:
     case kBottom:
+    case kRtt:
     case kI8:
     case kI16:
       UNREACHABLE();
@@ -1589,8 +1596,11 @@ void InstanceBuilder::CompileImportWrappers(
     auto js_receiver = Handle<JSReceiver>::cast(value);
     uint32_t func_index = module_->import_table[index].index;
     const FunctionSig* sig = module_->functions[func_index].sig;
+    uint32_t sig_index = module_->functions[func_index].sig_index;
+    uint32_t canonical_type_index =
+        module_->isorecursive_canonical_type_ids[sig_index];
     auto resolved =
-        compiler::ResolveWasmImportCall(js_receiver, sig, module_, enabled_);
+        compiler::ResolveWasmImportCall(js_receiver, sig, canonical_type_index);
     compiler::WasmImportCallKind kind = resolved.kind;
     if (kind == compiler::WasmImportCallKind::kWasmToWasm ||
         kind == compiler::WasmImportCallKind::kLinkError ||
@@ -1607,9 +1617,6 @@ void InstanceBuilder::CompileImportWrappers(
       expected_arity =
           shared.internal_formal_parameter_count_without_receiver();
     }
-    uint32_t canonical_type_index =
-        module_->isorecursive_canonical_type_ids[module_->functions[func_index]
-                                                     .sig_index];
     WasmImportWrapperCache::CacheKey key(kind, canonical_type_index,
                                          expected_arity, resolved.suspend);
     if (cache_scope[key] != nullptr) {
@@ -1689,7 +1696,9 @@ int InstanceBuilder::ProcessImports(Handle<WasmInstanceObject> instance) {
           return -1;
         }
         Handle<WasmTagObject> imported_tag = Handle<WasmTagObject>::cast(value);
-        if (!imported_tag->MatchesSignature(module_->tags[import.index].sig)) {
+        if (!imported_tag->MatchesSignature(
+                module_->isorecursive_canonical_type_ids
+                    [module_->tags[import.index].sig_index])) {
           ReportLinkError("imported tag does not match the expected type",
                           index, module_name, import_name);
           return -1;
@@ -1903,7 +1912,10 @@ void InstanceBuilder::ProcessExports(Handle<WasmInstanceObject> instance) {
           Handle<HeapObject> tag_object(
               HeapObject::cast(instance->tags_table().get(exp.index)),
               isolate_);
-          wrapper = WasmTagObject::New(isolate_, tag.sig, tag_object);
+          uint32_t canonical_sig_index =
+              module_->isorecursive_canonical_type_ids[tag.sig_index];
+          wrapper = WasmTagObject::New(isolate_, tag.sig, canonical_sig_index,
+                                       tag_object);
           tags_wrappers_[exp.index] = wrapper;
         }
         desc.set_value(wrapper);
@@ -1925,8 +1937,8 @@ void InstanceBuilder::ProcessExports(Handle<WasmInstanceObject> instance) {
   }
 
   if (module_->origin == kWasmOrigin) {
-    v8::Maybe<bool> success =
-        JSReceiver::SetIntegrityLevel(exports_object, FROZEN, kDontThrow);
+    v8::Maybe<bool> success = JSReceiver::SetIntegrityLevel(
+        isolate_, exports_object, FROZEN, kDontThrow);
     DCHECK(success.FromMaybe(false));
     USE(success);
   }
@@ -1959,7 +1971,7 @@ V8_INLINE void SetFunctionTablePlaceholder(Isolate* isolate,
 V8_INLINE void SetFunctionTableNullEntry(Isolate* isolate,
                                          Handle<WasmTableObject> table_object,
                                          uint32_t entry_index) {
-  table_object->entries().set(entry_index, *isolate->factory()->null_value());
+  table_object->entries().set(entry_index, *isolate->factory()->wasm_null());
   WasmTableObject::ClearDispatchTables(isolate, table_object, entry_index);
 }
 }  // namespace

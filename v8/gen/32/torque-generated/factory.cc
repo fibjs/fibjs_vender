@@ -230,6 +230,174 @@ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurbofanOtherNumberCon
 
 
 template <typename Impl>
+Handle<TurboshaftWord32Type> TorqueGeneratedFactory<Impl>::NewTurboshaftWord32Type(AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftWord32Type<TurboshaftWord32Type, TurboshaftType>::SizeFor();
+  Map map = factory()->read_only_roots().turboshaft_word32type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftWord32Type result = TurboshaftWord32Type::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord32Type>TorqueGeneratedFactory<Factory>::NewTurboshaftWord32Type(AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord32Type>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftWord32Type(AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftWord32RangeType> TorqueGeneratedFactory<Impl>::NewTurboshaftWord32RangeType(uint32_t from, uint32_t to, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftWord32RangeType<TurboshaftWord32RangeType, TurboshaftWord32Type>::SizeFor();
+  Map map = factory()->read_only_roots().turboshaft_word32range_type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftWord32RangeType result = TurboshaftWord32RangeType::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_from(from);
+  result.TorqueGeneratedClass::set_to(to);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord32RangeType>TorqueGeneratedFactory<Factory>::NewTurboshaftWord32RangeType(uint32_t from, uint32_t to, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord32RangeType>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftWord32RangeType(uint32_t from, uint32_t to, AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftWord32SetType> TorqueGeneratedFactory<Impl>::NewTurboshaftWord32SetType(uint32_t set_size, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftWord32SetType<TurboshaftWord32SetType, TurboshaftWord32Type>::SizeFor(set_size);
+  Map map = factory()->read_only_roots().turboshaft_word32set_type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftWord32SetType result = TurboshaftWord32SetType::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_set_size(set_size);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord32SetType>TorqueGeneratedFactory<Factory>::NewTurboshaftWord32SetType(uint32_t set_size, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord32SetType>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftWord32SetType(uint32_t set_size, AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftWord64Type> TorqueGeneratedFactory<Impl>::NewTurboshaftWord64Type(AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftWord64Type<TurboshaftWord64Type, TurboshaftType>::SizeFor();
+  Map map = factory()->read_only_roots().turboshaft_word64type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftWord64Type result = TurboshaftWord64Type::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord64Type>TorqueGeneratedFactory<Factory>::NewTurboshaftWord64Type(AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord64Type>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftWord64Type(AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftWord64RangeType> TorqueGeneratedFactory<Impl>::NewTurboshaftWord64RangeType(uint32_t from_high, uint32_t from_low, uint32_t to_high, uint32_t to_low, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftWord64RangeType<TurboshaftWord64RangeType, TurboshaftWord64Type>::SizeFor();
+  Map map = factory()->read_only_roots().turboshaft_word64range_type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftWord64RangeType result = TurboshaftWord64RangeType::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_from_high(from_high);
+  result.TorqueGeneratedClass::set_from_low(from_low);
+  result.TorqueGeneratedClass::set_to_high(to_high);
+  result.TorqueGeneratedClass::set_to_low(to_low);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord64RangeType>TorqueGeneratedFactory<Factory>::NewTurboshaftWord64RangeType(uint32_t from_high, uint32_t from_low, uint32_t to_high, uint32_t to_low, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord64RangeType>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftWord64RangeType(uint32_t from_high, uint32_t from_low, uint32_t to_high, uint32_t to_low, AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftWord64SetType> TorqueGeneratedFactory<Impl>::NewTurboshaftWord64SetType(uint32_t set_size, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftWord64SetType<TurboshaftWord64SetType, TurboshaftWord64Type>::SizeFor(set_size);
+  Map map = factory()->read_only_roots().turboshaft_word64set_type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftWord64SetType result = TurboshaftWord64SetType::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_set_size(set_size);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord64SetType>TorqueGeneratedFactory<Factory>::NewTurboshaftWord64SetType(uint32_t set_size, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftWord64SetType>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftWord64SetType(uint32_t set_size, AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftFloat64Type> TorqueGeneratedFactory<Impl>::NewTurboshaftFloat64Type(uint32_t special_values, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftFloat64Type<TurboshaftFloat64Type, TurboshaftType>::SizeFor();
+  Map map = factory()->read_only_roots().turboshaft_float64type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftFloat64Type result = TurboshaftFloat64Type::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_special_values(special_values);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftFloat64Type>TorqueGeneratedFactory<Factory>::NewTurboshaftFloat64Type(uint32_t special_values, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftFloat64Type>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftFloat64Type(uint32_t special_values, AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftFloat64RangeType> TorqueGeneratedFactory<Impl>::NewTurboshaftFloat64RangeType(uint32_t special_values, uint32_t _padding, double min, double max, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftFloat64RangeType<TurboshaftFloat64RangeType, TurboshaftFloat64Type>::SizeFor();
+  Map map = factory()->read_only_roots().turboshaft_float64range_type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftFloat64RangeType result = TurboshaftFloat64RangeType::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_special_values(special_values);
+  result.TorqueGeneratedClass::set__padding(_padding);
+  result.TorqueGeneratedClass::set_min(min);
+  result.TorqueGeneratedClass::set_max(max);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftFloat64RangeType>TorqueGeneratedFactory<Factory>::NewTurboshaftFloat64RangeType(uint32_t special_values, uint32_t _padding, double min, double max, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftFloat64RangeType>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftFloat64RangeType(uint32_t special_values, uint32_t _padding, double min, double max, AllocationType allocation_type);
+
+
+template <typename Impl>
+Handle<TurboshaftFloat64SetType> TorqueGeneratedFactory<Impl>::NewTurboshaftFloat64SetType(uint32_t special_values, uint32_t set_size, AllocationType allocation_type) {
+ int size = TorqueGeneratedTurboshaftFloat64SetType<TurboshaftFloat64SetType, TurboshaftFloat64Type>::SizeFor(set_size);
+  Map map = factory()->read_only_roots().turboshaft_float64set_type_map();  HeapObject raw_object =
+    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
+  TurboshaftFloat64SetType result = TurboshaftFloat64SetType::cast(raw_object);
+  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
+     allocation_type == AllocationType::kYoung
+     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
+  USE(write_barrier_mode);
+  result.TorqueGeneratedClass::set_special_values(special_values);
+  result.TorqueGeneratedClass::set_set_size(set_size);
+  return handle(result, factory()->isolate());
+}
+
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftFloat64SetType>TorqueGeneratedFactory<Factory>::NewTurboshaftFloat64SetType(uint32_t special_values, uint32_t set_size, AllocationType allocation_type);
+template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<TurboshaftFloat64SetType>TorqueGeneratedFactory<LocalFactory>::NewTurboshaftFloat64SetType(uint32_t special_values, uint32_t set_size, AllocationType allocation_type);
+
+
+template <typename Impl>
 Handle<ExportedSubClassBase> TorqueGeneratedFactory<Impl>::NewExportedSubClassBase(Handle<HeapObject> a, Handle<HeapObject> b, AllocationType allocation_type) {
  int size = TorqueGeneratedExportedSubClassBase<ExportedSubClassBase, HeapObject>::SizeFor();
   Map map = factory()->read_only_roots().exported_sub_class_base_map();  HeapObject raw_object =

@@ -210,7 +210,6 @@ class ConcurrentMarkingVisitorUtility {
     }
 
     void VisitCodePointer(HeapObject host, CodeObjectSlot slot) override {
-      CHECK(V8_EXTERNAL_CODE_SPACE_BOOL);
       Object code = slot.Relaxed_Load(code_cage_base());
       slot_snapshot_->add(ObjectSlot(slot.address()), code);
     }
@@ -227,13 +226,13 @@ class ConcurrentMarkingVisitorUtility {
       slot_snapshot_->add(slot, tag);
     }
 
-    void VisitCodeTarget(Code host, RelocInfo* rinfo) final {
+    void VisitCodeTarget(InstructionStream host, RelocInfo* rinfo) final {
       // This should never happen, because snapshotting is performed only on
       // some String subclasses.
       UNREACHABLE();
     }
 
-    void VisitEmbeddedPointer(Code host, RelocInfo* rinfo) final {
+    void VisitEmbeddedPointer(InstructionStream host, RelocInfo* rinfo) final {
       // This should never happen, because snapshotting is performed only on
       // some String subclasses.
       UNREACHABLE();
@@ -264,7 +263,7 @@ class YoungGenerationConcurrentMarkingVisitor final
         marking_state_(heap->isolate(), memory_chunk_data) {}
 
   bool ShouldMarkObject(HeapObject object) const {
-    return !object.InSharedHeap();
+    return !object.InSharedHeap() && !object.InReadOnlySpace();
   }
 
   void SynchronizePageAccess(HeapObject heap_object) {
@@ -328,7 +327,8 @@ class YoungGenerationConcurrentMarkingVisitor final
                                                                   object);
   }
 
-  int VisitJSDataView(Map map, JSDataView object) {
+  int VisitJSDataViewOrRabGsabDataView(Map map,
+                                       JSDataViewOrRabGsabDataView object) {
     return ConcurrentMarkingVisitorUtility::VisitJSObjectSubclass(this, map,
                                                                   object);
   }
@@ -564,7 +564,8 @@ class ConcurrentMarkingVisitor final
     return size;
   }
 
-  void RecordRelocSlot(Code host, RelocInfo* rinfo, HeapObject target) {
+  void RecordRelocSlot(InstructionStream host, RelocInfo* rinfo,
+                       HeapObject target) {
     if (!MarkCompactCollector::ShouldRecordRelocSlot(host, rinfo, target))
       return;
 
@@ -623,6 +624,12 @@ SeqTwoByteString ConcurrentMarkingVisitor::Cast(HeapObject object) {
 template <>
 FixedArray ConcurrentMarkingVisitor::Cast(HeapObject object) {
   return FixedArray::unchecked_cast(object);
+}
+
+// FixedDoubleArray can become a free space during left trimming.
+template <>
+FixedDoubleArray ConcurrentMarkingVisitor::Cast(HeapObject object) {
+  return FixedDoubleArray::unchecked_cast(object);
 }
 
 // The Deserializer changes the map from StrongDescriptorArray to
@@ -741,9 +748,8 @@ void ConcurrentMarking::RunMajor(JobDelegate* delegate,
   WeakObjects::Local local_weak_objects(weak_objects_);
   ConcurrentMarkingVisitor visitor(
       task_id, &local_marking_worklists, &local_weak_objects, heap_,
-      mark_compact_epoch, code_flush_mode,
-      heap_->local_embedder_heap_tracer()->InUse(), should_keep_ages_unchanged,
-      &task_state->memory_chunk_data);
+      mark_compact_epoch, code_flush_mode, heap_->cpp_heap(),
+      should_keep_ages_unchanged, &task_state->memory_chunk_data);
   NativeContextInferrer& native_context_inferrer =
       task_state->native_context_inferrer;
   NativeContextStats& native_context_stats = task_state->native_context_stats;
@@ -770,7 +776,8 @@ void ConcurrentMarking::RunMajor(JobDelegate* delegate,
     bool is_per_context_mode = local_marking_worklists.IsPerContextMode();
     bool done = false;
     CodePageHeaderModificationScope rwx_write_scope(
-        "Marking a Code object requires write access to the Code page header");
+        "Marking a InstructionStream object requires write access to the "
+        "Code page header");
     while (!done) {
       size_t current_marked_bytes = 0;
       int objects_processed = 0;
@@ -781,6 +788,7 @@ void ConcurrentMarking::RunMajor(JobDelegate* delegate,
           done = true;
           break;
         }
+        DCHECK(!object.InReadOnlySpace());
         objects_processed++;
 
         Address new_space_top = kNullAddress;
@@ -876,7 +884,8 @@ void ConcurrentMarking::RunMinor(JobDelegate* delegate) {
     TimedScope scope(&time_ms);
     bool done = false;
     CodePageHeaderModificationScope rwx_write_scope(
-        "Marking a Code object requires write access to the Code page header");
+        "Marking a InstructionStream object requires write access to the "
+        "Code page header");
     while (!done) {
       size_t current_marked_bytes = 0;
       int objects_processed = 0;

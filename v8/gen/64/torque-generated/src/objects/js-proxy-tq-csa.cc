@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/js-proxy-tq-csa.h"
@@ -121,38 +123,40 @@ TNode<JSObject> NewJSProxyRevocableResult_0(compiler::CodeAssemblerState* state_
   TNode<FixedArray> tmp1;
   TNode<FixedArray> tmp2;
   TNode<BoolT> tmp3;
-  TNode<IntPtrT> tmp4;
-  TNode<HeapObject> tmp5;
-  TNode<IntPtrT> tmp6;
+  TNode<BoolT> tmp4;
+  TNode<IntPtrT> tmp5;
+  TNode<HeapObject> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<JSObject> tmp11;
+  TNode<IntPtrT> tmp11;
+  TNode<JSObject> tmp12;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetProxyRevocableResultMap_0(state_, TNode<Context>{p_context});
     tmp1 = kEmptyFixedArray_0(state_);
     tmp2 = kEmptyFixedArray_0(state_);
     tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    tmp5 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp4}, TNode<Map>{tmp0}, TNode<BoolT>{tmp3});
-    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp5, tmp6}, tmp0);
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp7}, tmp1);
-    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp5, tmp8}, tmp2);
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp9}, p_proxy);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp10}, p_revoke);
-    tmp11 = TORQUE_CAST(TNode<HeapObject>{tmp5});
+    tmp4 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp6 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp5}, TNode<Map>{tmp0}, TNode<BoolT>{tmp3}, TNode<BoolT>{tmp4});
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp6, tmp7}, tmp0);
+    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp6, tmp8}, tmp1);
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp6, tmp9}, tmp2);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp6, tmp10}, p_proxy);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp6, tmp11}, p_revoke);
+    tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp6});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<JSObject>{tmp11};
+  return TNode<JSObject>{tmp12};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
@@ -342,7 +346,7 @@ TNode<JSProxy> DownCastForTorqueClass_JSProxy_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(268), static_cast<InstanceType>(268))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(278), static_cast<InstanceType>(278))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -385,7 +389,7 @@ TNode<JSProxy> DownCastForTorqueClass_JSProxy_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(268));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(278));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -419,12 +423,12 @@ TNode<JSProxy> DownCastForTorqueClass_JSProxy_0(compiler::CodeAssemblerState* st
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(268), static_cast<InstanceType>(268))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(278), static_cast<InstanceType>(278))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(268));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(278));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});

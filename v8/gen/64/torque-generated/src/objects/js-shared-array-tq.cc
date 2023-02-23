@@ -14,7 +14,7 @@ bool IsJSSharedArray_NonInline(HeapObject o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedJSSharedArray<JSSharedArray, JSObject>::JSSharedArrayVerify(Isolate* isolate) {
+void TorqueGeneratedJSSharedArray<JSSharedArray, AlwaysSharedSpaceJSObject>::JSSharedArrayVerify(Isolate* isolate) {
   TorqueGeneratedClassVerifiers::JSSharedArrayVerify(JSSharedArray::cast(*this), isolate);
 }
 

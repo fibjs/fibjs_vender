@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
@@ -945,33 +947,35 @@ TNode<PromiseCapability> CreatePromiseCapability_0(compiler::CodeAssemblerState*
 
   TNode<Map> tmp0;
   TNode<BoolT> tmp1;
-  TNode<IntPtrT> tmp2;
-  TNode<HeapObject> tmp3;
-  TNode<IntPtrT> tmp4;
+  TNode<BoolT> tmp2;
+  TNode<IntPtrT> tmp3;
+  TNode<HeapObject> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<PromiseCapability> tmp8;
+  TNode<IntPtrT> tmp8;
+  TNode<PromiseCapability> tmp9;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kPromiseCapabilityMap_0(state_);
     tmp1 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp3 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp2}, TNode<Map>{tmp0}, TNode<BoolT>{tmp1});
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp3, tmp4}, tmp0);
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp3, tmp5}, p_promise);
-    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp3, tmp6}, p_resolve);
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp3, tmp7}, p_reject);
-    tmp8 = TORQUE_CAST(TNode<HeapObject>{tmp3});
+    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp4 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp3}, TNode<Map>{tmp0}, TNode<BoolT>{tmp1}, TNode<BoolT>{tmp2});
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp4, tmp5}, tmp0);
+    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp4, tmp6}, p_promise);
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp7}, p_resolve);
+    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp8}, p_reject);
+    tmp9 = TORQUE_CAST(TNode<HeapObject>{tmp4});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<PromiseCapability>{tmp8};
+  return TNode<PromiseCapability>{tmp9};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=314&c=1
@@ -995,7 +999,7 @@ TorqueStructPromiseResolvingFunctions CreatePromiseResolvingFunctions_0(compiler
     ca_.Bind(&block0);
     tmp0 = CreatePromiseResolvingFunctionsContext_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{p_promise}, TNode<Oddball>{p_debugEvent}, TNode<NativeContext>{p_nativeContext});
     tmp1 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp2, tmp3) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp1}).Flatten();
+    std::tie(tmp2, tmp3) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp1}).Flatten();
     tmp4 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp2, tmp3});
     tmp5 = CodeStubAssembler(state_).PromiseCapabilityDefaultResolveSharedFunConstant();
     tmp6 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp4}, TNode<SharedFunctionInfo>{tmp5}, TNode<Context>{tmp0});
@@ -1079,7 +1083,7 @@ TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerStat
     tmp14 = CreatePromiseCapabilitiesExecutorContext_0(state_, TNode<NativeContext>{tmp0}, TNode<PromiseCapability>{tmp13});
     tmp15 = CodeStubAssembler(state_).PromiseGetCapabilitiesExecutorSharedFunConstant();
     tmp16 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp17, tmp18) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp16}).Flatten();
+    std::tie(tmp17, tmp18) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp16}).Flatten();
     tmp19 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp17, tmp18});
     tmp20 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp19}, TNode<SharedFunctionInfo>{tmp15}, TNode<Context>{tmp14});
     tmp21 = UnsafeCast_Constructor_0(state_, TNode<Context>{p_context}, TNode<Object>{p_constructor});
@@ -1978,7 +1982,7 @@ void InitContextSlot_PromiseCapabilitiesExecutorContext_PromiseCapabilitiesExecu
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=320&c=16
-TorqueStructReference_Map_0 NativeContextSlot_Map_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
+TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

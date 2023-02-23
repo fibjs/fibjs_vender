@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -61,6 +62,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-all-element-closure-tq-csa.h"
@@ -534,7 +536,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     tmp66 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp64, tmp65});
     tmp67 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp66});
     tmp68 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp69, tmp70) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp2}, TNode<IntPtrT>{tmp68}).Flatten();
+    std::tie(tmp69, tmp70) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp2}, TNode<IntPtrT>{tmp68}).Flatten();
     tmp71 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp69, tmp70});
     tmp72 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp72, &block49, std::vector<compiler::Node*>{}, &block50, std::vector<compiler::Node*>{});
@@ -862,7 +864,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
     tmp79 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp77, tmp78});
     tmp80 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp79});
     tmp81 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp82, tmp83) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp2}, TNode<IntPtrT>{tmp81}).Flatten();
+    std::tie(tmp82, tmp83) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp2}, TNode<IntPtrT>{tmp81}).Flatten();
     tmp84 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp82, tmp83});
     tmp85 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp85, &block49, std::vector<compiler::Node*>{}, &block50, std::vector<compiler::Node*>{});
@@ -1190,7 +1192,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
     tmp79 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp77, tmp78});
     tmp80 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp79});
     tmp81 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp82, tmp83) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp2}, TNode<IntPtrT>{tmp81}).Flatten();
+    std::tie(tmp82, tmp83) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp2}, TNode<IntPtrT>{tmp81}).Flatten();
     tmp84 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp82, tmp83});
     tmp85 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp85, &block49, std::vector<compiler::Node*>{}, &block50, std::vector<compiler::Node*>{});

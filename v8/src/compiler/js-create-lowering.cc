@@ -1381,10 +1381,13 @@ Reduction JSCreateLowering::ReduceJSCreateObject(Node* node) {
             jsgraph()->SmiConstant(PropertyDetails::kInitialIndex));
     a.Store(AccessBuilder::ForDictionaryObjectHashIndex(),
             jsgraph()->SmiConstant(PropertyArray::kNoHashSentinel));
+    // Initialize NameDictionary fields.
+    a.Store(AccessBuilder::ForNameDictionaryFlagsIndex(),
+            jsgraph()->SmiConstant(NameDictionary::kFlagsDefault));
     // Initialize the Properties fields.
     Node* undefined = jsgraph()->UndefinedConstant();
     static_assert(NameDictionary::kElementsStartIndex ==
-                  NameDictionary::kObjectHashIndex + 1);
+                  NameDictionary::kFlagsIndex + 1);
     for (int index = NameDictionary::kElementsStartIndex; index < length;
          index++) {
       a.Store(AccessBuilder::ForFixedArraySlot(index, kNoWriteBarrier),
@@ -1720,7 +1723,8 @@ base::Optional<Node*> JSCreateLowering::TryAllocateFastLiteral(
     if ((*max_properties)-- == 0) return {};
 
     NameRef property_name = boilerplate_map.GetPropertyKey(i);
-    FieldIndex index = boilerplate_map.GetFieldIndexFor(i);
+    FieldIndex index =
+        FieldIndex::ForDetails(*boilerplate_map.object(), property_details);
     ConstFieldInfo const_field_info(boilerplate_map.object());
     FieldAccess access = {kTaggedBase,
                           index.offset(),

@@ -199,6 +199,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-includes-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-indexof-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-indexof-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iswellformed-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iswellformed-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iterator-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iterator-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-match-search-tq-csa.cc
@@ -217,6 +219,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substr-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substring-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substring-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-towellformed-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-towellformed-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-trim-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-trim-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/symbol-tq-csa.cc
@@ -439,6 +443,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/torque-defined-classes-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turbofan-types-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turbofan-types-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turboshaft-types-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turboshaft-types-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/wasm/wasm-objects-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/wasm/wasm-objects-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/test/torque/test-torque-tq-csa.cc
@@ -581,7 +587,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-typed-array.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-wasm-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-weak-refs.cc
-	${PROJECT_SOURCE_DIR}/src/builtins/builtins-web-snapshots.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/constants-table-builder.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/growable-fixed-array-gen.cc
@@ -606,6 +611,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/codegen/handler-table.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/interface-descriptors.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/machine-type.cc
+	${PROJECT_SOURCE_DIR}/src/codegen/macro-assembler-base.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/maglev-safepoint-table.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/optimized-compilation-info.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/pending-optimization-table.cc
@@ -618,13 +624,13 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/codegen/string-constants.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/tick-counter.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/tnode.cc
-	${PROJECT_SOURCE_DIR}/src/codegen/turbo-assembler.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/unoptimized-compilation-info.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/x64/assembler-x64.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/x64/cpu-x64.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/x64/macro-assembler-x64.cc
 	${PROJECT_SOURCE_DIR}/src/common/assert-scope.cc
 	${PROJECT_SOURCE_DIR}/src/common/code-memory-access.cc
+	${PROJECT_SOURCE_DIR}/src/common/ptr-compr.cc
 	${PROJECT_SOURCE_DIR}/src/compiler-dispatcher/lazy-compile-dispatcher.cc
 	${PROJECT_SOURCE_DIR}/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/access-builder.cc
@@ -737,15 +743,22 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/simplified-operator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/state-values-utils.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/store-store-elimination.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turbofan-disabled.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turbofan-enabled.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/assembler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/decompression-optimization.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/graph-builder.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/graph-visualizer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/graph.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/late-escape-analysis-reducer.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/memory-optimization.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/operations.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/optimization-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/recreate-schedule.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/representations.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/simplify-tf-loops.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/type-parser.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/types.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/utils.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/type-cache.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/type-narrowing-reducer.cc
@@ -754,12 +767,14 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/types.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/value-numbering-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/verifier.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/wasm-call-descriptors.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-compiler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-escape-analysis.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-gc-lowering.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-gc-operator-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-graph-assembler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-inlining.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/wasm-load-elimination.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-loop-peeling.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/wasm-typer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/zone-stats.cc
@@ -834,7 +849,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/array-buffer-sweeper.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base-space.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/active-system-pages.cc
-	${PROJECT_SOURCE_DIR}/src/heap/base/asm/x64/save_registers_asm.cc
+	${PROJECT_SOURCE_DIR}/src/heap/base/asm/x64/push_registers_asm.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/stack.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/worklist.cc
 	${PROJECT_SOURCE_DIR}/src/heap/basic-memory-chunk.cc
@@ -847,6 +862,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/concurrent-marking.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/cpp-heap.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/cpp-snapshot.cc
+	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/cross-heap-remembered-set.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/unified-heap-marking-state.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/unified-heap-marking-verifier.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/unified-heap-marking-visitor.cc
@@ -899,7 +915,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc/virtual-memory.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc/visitor.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc/write-barrier.cc
-	${PROJECT_SOURCE_DIR}/src/heap/embedder-tracing.cc
 	${PROJECT_SOURCE_DIR}/src/heap/evacuation-verifier.cc
 	${PROJECT_SOURCE_DIR}/src/heap/factory-base.cc
 	${PROJECT_SOURCE_DIR}/src/heap/factory.cc
@@ -907,7 +922,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/free-list.cc
 	${PROJECT_SOURCE_DIR}/src/heap/gc-idle-time-handler.cc
 	${PROJECT_SOURCE_DIR}/src/heap/gc-tracer.cc
-	${PROJECT_SOURCE_DIR}/src/heap/global-handle-marking-visitor.cc
 	${PROJECT_SOURCE_DIR}/src/heap/heap-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/heap/heap-controller.cc
 	${PROJECT_SOURCE_DIR}/src/heap/heap-layout-tracer.cc
@@ -948,6 +962,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/stress-scavenge-observer.cc
 	${PROJECT_SOURCE_DIR}/src/heap/sweeper.cc
 	${PROJECT_SOURCE_DIR}/src/heap/third-party/heap-api-stub.cc
+	${PROJECT_SOURCE_DIR}/src/heap/traced-handles-marking-visitor.cc
 	${PROJECT_SOURCE_DIR}/src/heap/weak-object-worklists.cc
 	${PROJECT_SOURCE_DIR}/src/ic/accessor-assembler.cc
 	${PROJECT_SOURCE_DIR}/src/ic/binary-op-assembler.cc
@@ -1043,6 +1058,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/objects/js-segment-iterator.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-segmenter.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-segments.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-struct.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-temporal-objects.cc
 	${PROJECT_SOURCE_DIR}/src/objects/keys.cc
 	${PROJECT_SOURCE_DIR}/src/objects/literal-objects.cc
@@ -1185,6 +1201,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/snapshot/snapshot.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/startup-deserializer.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/startup-serializer.cc
+	${PROJECT_SOURCE_DIR}/src/snapshot/static-roots-gen.cc
 	${PROJECT_SOURCE_DIR}/src/strings/char-predicates.cc
 	${PROJECT_SOURCE_DIR}/src/strings/string-builder.cc
 	${PROJECT_SOURCE_DIR}/src/strings/string-case.cc
@@ -1286,7 +1303,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-result.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-serialization.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-subtyping.cc
-	${PROJECT_SOURCE_DIR}/src/web-snapshot/web-snapshot.cc
 	${PROJECT_SOURCE_DIR}/src/zone/accounting-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/zone/type-stats.cc
 	${PROJECT_SOURCE_DIR}/src/zone/zone-segment.cc

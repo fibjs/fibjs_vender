@@ -1,11 +1,11 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScript<D, P>::source() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::source(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScript<D, P>::source(PtrComprCageBase cage_base) const {
   PrimitiveHeapObject value;
@@ -14,7 +14,7 @@ PrimitiveHeapObject TorqueGeneratedScript<D, P>::source(PtrComprCageBase cage_ba
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source(PrimitiveHeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString() || value.IsUndefined());
@@ -22,14 +22,14 @@ void TorqueGeneratedScript<D, P>::set_source(PrimitiveHeapObject value, WriteBar
   CONDITIONAL_WRITE_BARRIER(*this, kSourceOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
 template<class D, class P>
 Object TorqueGeneratedScript<D, P>::name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::name(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
 template<class D, class P>
 Object TorqueGeneratedScript<D, P>::name(PtrComprCageBase cage_base) const {
   Object value;
@@ -38,7 +38,7 @@ Object TorqueGeneratedScript<D, P>::name(PtrComprCageBase cage_base) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_name(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
@@ -46,7 +46,7 @@ void TorqueGeneratedScript<D, P>::set_name(Object value, WriteBarrierMode mode) 
   CONDITIONAL_WRITE_BARRIER(*this, kNameOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
 template<class D, class P>
 int TorqueGeneratedScript<D, P>::line_offset() const {
   int value;
@@ -54,13 +54,13 @@ int TorqueGeneratedScript<D, P>::line_offset() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_line_offset(int value) {
   WRITE_FIELD(*this, kLineOffsetOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=29&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
 template<class D, class P>
 int TorqueGeneratedScript<D, P>::column_offset() const {
   int value;
@@ -68,20 +68,20 @@ int TorqueGeneratedScript<D, P>::column_offset() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=29&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_column_offset(int value) {
   WRITE_FIELD(*this, kColumnOffsetOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
 template<class D, class P>
 Object TorqueGeneratedScript<D, P>::context_data() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::context_data(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
 template<class D, class P>
 Object TorqueGeneratedScript<D, P>::context_data(PtrComprCageBase cage_base) const {
   Object value;
@@ -90,7 +90,7 @@ Object TorqueGeneratedScript<D, P>::context_data(PtrComprCageBase cage_base) con
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_context_data(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsSmi() || value.IsSymbol() || value.IsUndefined());
@@ -98,7 +98,7 @@ void TorqueGeneratedScript<D, P>::set_context_data(Object value, WriteBarrierMod
   CONDITIONAL_WRITE_BARRIER(*this, kContextDataOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
 template<class D, class P>
 int TorqueGeneratedScript<D, P>::script_type() const {
   int value;
@@ -106,20 +106,20 @@ int TorqueGeneratedScript<D, P>::script_type() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_script_type(int value) {
   WRITE_FIELD(*this, kScriptTypeOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedScript<D, P>::line_ends() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::line_ends(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedScript<D, P>::line_ends(PtrComprCageBase cage_base) const {
   HeapObject value;
@@ -128,7 +128,7 @@ HeapObject TorqueGeneratedScript<D, P>::line_ends(PtrComprCageBase cage_base) co
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_line_ends(HeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsUndefined() || value.IsFixedArray());
@@ -136,7 +136,7 @@ void TorqueGeneratedScript<D, P>::set_line_ends(HeapObject value, WriteBarrierMo
   CONDITIONAL_WRITE_BARRIER(*this, kLineEndsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
 template<class D, class P>
 int TorqueGeneratedScript<D, P>::id() const {
   int value;
@@ -144,7 +144,7 @@ int TorqueGeneratedScript<D, P>::id() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_id(int value) {
   WRITE_FIELD(*this, kIdOffset, Smi::FromInt(value));
@@ -152,26 +152,26 @@ void TorqueGeneratedScript<D, P>::set_id(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedScript<D, P>::eval_from_shared_or_wrapped_arguments_or_sfi_table() const {
+HeapObject TorqueGeneratedScript<D, P>::eval_from_shared_or_wrapped_arguments() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedScript::eval_from_shared_or_wrapped_arguments_or_sfi_table(cage_base);
+  return TorqueGeneratedScript::eval_from_shared_or_wrapped_arguments(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedScript<D, P>::eval_from_shared_or_wrapped_arguments_or_sfi_table(PtrComprCageBase cage_base) const {
+HeapObject TorqueGeneratedScript<D, P>::eval_from_shared_or_wrapped_arguments(PtrComprCageBase cage_base) const {
   HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kEvalFromSharedOrWrappedArgumentsOrSfiTableOffset);
+  value = TaggedField<HeapObject>::load(cage_base, *this, kEvalFromSharedOrWrappedArgumentsOffset);
   DCHECK(value.IsUndefined() || value.IsFixedArray() || value.IsSharedFunctionInfo());
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
 template<class D, class P>
-void TorqueGeneratedScript<D, P>::set_eval_from_shared_or_wrapped_arguments_or_sfi_table(HeapObject value, WriteBarrierMode mode) {
+void TorqueGeneratedScript<D, P>::set_eval_from_shared_or_wrapped_arguments(HeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsUndefined() || value.IsFixedArray() || value.IsSharedFunctionInfo());
-  WRITE_FIELD(*this, kEvalFromSharedOrWrappedArgumentsOrSfiTableOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kEvalFromSharedOrWrappedArgumentsOrSfiTableOffset, value, mode);
+  WRITE_FIELD(*this, kEvalFromSharedOrWrappedArgumentsOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kEvalFromSharedOrWrappedArgumentsOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
@@ -222,7 +222,31 @@ void TorqueGeneratedScript<D, P>::set_shared_function_infos(HeapObject value, Wr
   CONDITIONAL_WRITE_BARRIER(*this, kSharedFunctionInfosOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=52&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+template<class D, class P>
+HeapObject TorqueGeneratedScript<D, P>::compiled_lazy_function_positions() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedScript::compiled_lazy_function_positions(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+template<class D, class P>
+HeapObject TorqueGeneratedScript<D, P>::compiled_lazy_function_positions(PtrComprCageBase cage_base) const {
+  HeapObject value;
+  value = TaggedField<HeapObject>::load(cage_base, *this, kCompiledLazyFunctionPositionsOffset);
+  DCHECK(value.IsUndefined() || value.IsArrayList());
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+template<class D, class P>
+void TorqueGeneratedScript<D, P>::set_compiled_lazy_function_positions(HeapObject value, WriteBarrierMode mode) {
+  SLOW_DCHECK(value.IsUndefined() || value.IsArrayList());
+  WRITE_FIELD(*this, kCompiledLazyFunctionPositionsOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kCompiledLazyFunctionPositionsOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
 template<class D, class P>
 int TorqueGeneratedScript<D, P>::flags() const {
   int value;
@@ -230,20 +254,20 @@ int TorqueGeneratedScript<D, P>::flags() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=52&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScript<D, P>::source_url() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::source_url(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScript<D, P>::source_url(PtrComprCageBase cage_base) const {
   PrimitiveHeapObject value;
@@ -252,7 +276,7 @@ PrimitiveHeapObject TorqueGeneratedScript<D, P>::source_url(PtrComprCageBase cag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source_url(PrimitiveHeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString() || value.IsUndefined());
@@ -260,14 +284,14 @@ void TorqueGeneratedScript<D, P>::set_source_url(PrimitiveHeapObject value, Writ
   CONDITIONAL_WRITE_BARRIER(*this, kSourceUrlOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
 template<class D, class P>
 Object TorqueGeneratedScript<D, P>::source_mapping_url() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::source_mapping_url(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
 template<class D, class P>
 Object TorqueGeneratedScript<D, P>::source_mapping_url(PtrComprCageBase cage_base) const {
   Object value;
@@ -276,7 +300,7 @@ Object TorqueGeneratedScript<D, P>::source_mapping_url(PtrComprCageBase cage_bas
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source_mapping_url(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
@@ -284,14 +308,14 @@ void TorqueGeneratedScript<D, P>::set_source_mapping_url(Object value, WriteBarr
   CONDITIONAL_WRITE_BARRIER(*this, kSourceMappingUrlOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedScript<D, P>::host_defined_options() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::host_defined_options(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedScript<D, P>::host_defined_options(PtrComprCageBase cage_base) const {
   FixedArray value;
@@ -300,7 +324,7 @@ FixedArray TorqueGeneratedScript<D, P>::host_defined_options(PtrComprCageBase ca
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_host_defined_options(FixedArray value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsFixedArray());
@@ -308,14 +332,14 @@ void TorqueGeneratedScript<D, P>::set_host_defined_options(FixedArray value, Wri
   CONDITIONAL_WRITE_BARRIER(*this, kHostDefinedOptionsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScript<D, P>::source_hash() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::source_hash(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScript<D, P>::source_hash(PtrComprCageBase cage_base) const {
   PrimitiveHeapObject value;
@@ -324,7 +348,7 @@ PrimitiveHeapObject TorqueGeneratedScript<D, P>::source_hash(PtrComprCageBase ca
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source_hash(PrimitiveHeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString() || value.IsUndefined());
@@ -332,7 +356,7 @@ void TorqueGeneratedScript<D, P>::set_source_hash(PrimitiveHeapObject value, Wri
   CONDITIONAL_WRITE_BARRIER(*this, kSourceHashOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
 template<class D, class P>
 D TorqueGeneratedScript<D, P>::cast(Object object) {
     return D(object.ptr());

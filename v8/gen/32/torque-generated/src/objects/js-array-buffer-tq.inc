@@ -1,7 +1,9 @@
 class JSArrayBufferView;
 class JSTypedArray;
 class JSArrayBuffer;
+class JSDataViewOrRabGsabDataView;
 class JSDataView;
+class JSRabGsabDataView;
 // Alias for HeapObject::IsJSArrayBufferView() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
 V8_EXPORT_PRIVATE bool IsJSArrayBufferView_NonInline(HeapObject o);
@@ -212,11 +214,6 @@ class TorqueGeneratedJSArrayBuffer : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=21&c=3
   inline void set_backing_store(Address value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=22&c=3
-  inline Address extension() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=22&c=3
-  inline void set_extension(Address value);
-
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=23&c=3
   inline uint32_t bit_field() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=23&c=3
@@ -252,7 +249,7 @@ class TorqueGeneratedJSArrayBuffer : public P {
   static constexpr int kBackingStoreOffsetEnd = kBackingStoreOffset + kSystemPointerSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=22&c=3
   static constexpr int kExtensionOffset = kBackingStoreOffsetEnd + 1;
-  static constexpr int kExtensionOffsetEnd = kExtensionOffset + kSystemPointerSize - 1;
+  static constexpr int kExtensionOffsetEnd = kExtensionOffset + kExternalPointerSlotSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=23&c=3
   static constexpr int kBitFieldOffset = kExtensionOffsetEnd + 1;
   static constexpr int kBitFieldOffsetEnd = kBitFieldOffset + kInt32Size - 1;
@@ -279,27 +276,27 @@ class TorqueGeneratedJSArrayBuffer : public P {
   inline explicit TorqueGeneratedJSArrayBuffer(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
-// Alias for HeapObject::IsJSDataView() that avoids inlining.
+// Alias for HeapObject::IsJSDataViewOrRabGsabDataView() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-V8_EXPORT_PRIVATE bool IsJSDataView_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSDataViewOrRabGsabDataView_NonInline(HeapObject o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
 template <class D, class P>
-class TorqueGeneratedJSDataView : public P {
+class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   static_assert(
-      std::is_same<JSDataView, D>::value,
-      "Use this class as direct base for JSDataView.");
+      std::is_same<JSDataViewOrRabGsabDataView, D>::value,
+      "Use this class as direct base for JSDataViewOrRabGsabDataView.");
   static_assert(
       std::is_same<JSArrayBufferView, P>::value,
-      "Pass in JSArrayBufferView as second template parameter for TorqueGeneratedJSDataView.");
+      "Pass in JSArrayBufferView as second template parameter for TorqueGeneratedJSDataViewOrRabGsabDataView.");
 
  public: 
   using Super = P;
-  using TorqueGeneratedClass = TorqueGeneratedJSDataView<D,P>;
+  using TorqueGeneratedClass = TorqueGeneratedJSDataViewOrRabGsabDataView<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
   inline Address data_pointer() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
   inline void set_data_pointer(Address value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
@@ -309,14 +306,12 @@ class TorqueGeneratedJSDataView : public P {
     return base::bit_cast<D>(object);
   }
 
-  DECL_PRINTER(JSDataView)
-
 #ifdef VERIFY_HEAP
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-  V8_EXPORT_PRIVATE void JSDataViewVerify(Isolate* isolate);
+  V8_EXPORT_PRIVATE void JSDataViewOrRabGsabDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
   static constexpr int kDataPointerOffset = P::kHeaderSize;
   static constexpr int kDataPointerOffsetEnd = kDataPointerOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kDataPointerOffsetEnd + 1;
@@ -324,6 +319,60 @@ class TorqueGeneratedJSDataView : public P {
   static constexpr int kStartOfStrongFieldsOffset = kDataPointerOffsetEnd + 1;
   static constexpr int kEndOfStrongFieldsOffset = kDataPointerOffsetEnd + 1;
   static constexpr int kHeaderSize = kDataPointerOffsetEnd + 1;
+
+  friend class Factory;
+
+  template <class DAlias = D>
+  constexpr TorqueGeneratedJSDataViewOrRabGsabDataView() : P() {
+    static_assert(
+        std::is_base_of<TorqueGeneratedJSDataViewOrRabGsabDataView, DAlias>::value,
+        "class TorqueGeneratedJSDataViewOrRabGsabDataView should be used as direct base for JSDataViewOrRabGsabDataView.");
+  }
+
+ protected:
+  inline explicit TorqueGeneratedJSDataViewOrRabGsabDataView(Address ptr);
+  // Special-purpose constructor for subclasses that have fast paths where
+  // their ptr() is a Smi.
+  inline explicit TorqueGeneratedJSDataViewOrRabGsabDataView(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
+};
+
+// Alias for HeapObject::IsJSDataView() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+V8_EXPORT_PRIVATE bool IsJSDataView_NonInline(HeapObject o);
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+template <class D, class P>
+class TorqueGeneratedJSDataView : public P {
+  static_assert(
+      std::is_same<JSDataView, D>::value,
+      "Use this class as direct base for JSDataView.");
+  static_assert(
+      std::is_same<JSDataViewOrRabGsabDataView, P>::value,
+      "Pass in JSDataViewOrRabGsabDataView as second template parameter for TorqueGeneratedJSDataView.");
+
+ public: 
+  using Super = P;
+  using TorqueGeneratedClass = TorqueGeneratedJSDataView<D,P>;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+  V8_INLINE static D cast(Object object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+  V8_INLINE static D unchecked_cast(Object object) {
+    return base::bit_cast<D>(object);
+  }
+
+  DECL_PRINTER(JSDataView)
+
+#ifdef VERIFY_HEAP
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+  V8_EXPORT_PRIVATE void JSDataViewVerify(Isolate* isolate);
+#endif  // VERIFY_HEAP
+
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
 
   friend class Factory;
 
@@ -339,5 +388,59 @@ class TorqueGeneratedJSDataView : public P {
   // Special-purpose constructor for subclasses that have fast paths where
   // their ptr() is a Smi.
   inline explicit TorqueGeneratedJSDataView(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
+};
+
+// Alias for HeapObject::IsJSRabGsabDataView() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+V8_EXPORT_PRIVATE bool IsJSRabGsabDataView_NonInline(HeapObject o);
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+template <class D, class P>
+class TorqueGeneratedJSRabGsabDataView : public P {
+  static_assert(
+      std::is_same<JSRabGsabDataView, D>::value,
+      "Use this class as direct base for JSRabGsabDataView.");
+  static_assert(
+      std::is_same<JSDataViewOrRabGsabDataView, P>::value,
+      "Pass in JSDataViewOrRabGsabDataView as second template parameter for TorqueGeneratedJSRabGsabDataView.");
+
+ public: 
+  using Super = P;
+  using TorqueGeneratedClass = TorqueGeneratedJSRabGsabDataView<D,P>;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+  V8_INLINE static D cast(Object object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+  V8_INLINE static D unchecked_cast(Object object) {
+    return base::bit_cast<D>(object);
+  }
+
+  DECL_PRINTER(JSRabGsabDataView)
+
+#ifdef VERIFY_HEAP
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+  V8_EXPORT_PRIVATE void JSRabGsabDataViewVerify(Isolate* isolate);
+#endif  // VERIFY_HEAP
+
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
+
+  friend class Factory;
+
+  template <class DAlias = D>
+  constexpr TorqueGeneratedJSRabGsabDataView() : P() {
+    static_assert(
+        std::is_base_of<TorqueGeneratedJSRabGsabDataView, DAlias>::value,
+        "class TorqueGeneratedJSRabGsabDataView should be used as direct base for JSRabGsabDataView.");
+  }
+
+ protected:
+  inline explicit TorqueGeneratedJSRabGsabDataView(Address ptr);
+  // Special-purpose constructor for subclasses that have fast paths where
+  // their ptr() is a Smi.
+  inline explicit TorqueGeneratedJSRabGsabDataView(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

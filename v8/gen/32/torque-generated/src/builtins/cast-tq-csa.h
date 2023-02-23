@@ -19,10 +19,10 @@ TNode<BoolT> IsAllocationSite_0(compiler::CodeAssemblerState* state_, TNode<Heap
 TNode<BoolT> IsCell_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=32&c=1
-TNode<BoolT> IsCode_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o);
+TNode<BoolT> IsInstructionStream_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=37&c=1
-TNode<BoolT> IsCodeDataContainer_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o);
+TNode<BoolT> IsCode_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=42&c=1
 TNode<BoolT> IsContext_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o);
@@ -288,6 +288,9 @@ TNode<RegExpMatchInfo> UnsafeCast_RegExpMatchInfo_0(compiler::CodeAssemblerState
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=840&c=1
 TNode<Object> Cast_Object_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label__CastError);
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+TNode<BoolT> Is_TheHole_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=14&c=10
 TNode<BoolT> Is_AccessorInfo_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
 
@@ -301,10 +304,10 @@ TNode<BoolT> Is_AllocationSite_HeapObject_0(compiler::CodeAssemblerState* state_
 TNode<BoolT> Is_Cell_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=34&c=10
-TNode<BoolT> Is_Code_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
+TNode<BoolT> Is_InstructionStream_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=39&c=10
-TNode<BoolT> Is_CodeDataContainer_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
+TNode<BoolT> Is_Code_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=44&c=10
 TNode<BoolT> Is_Context_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
@@ -448,6 +451,12 @@ TNode<BoolT> Is_JSPrimitiveWrapper_Object_0(compiler::CodeAssemblerState* state_
 TNode<BoolT> Is_Map_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+TNode<BoolT> Is_JSDataView_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+TNode<BoolT> Is_JSRabGsabDataView_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
 TNode<BoolT> Is_JSFinalizationRegistry_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
@@ -471,6 +480,9 @@ TNode<AllocationSite> Cast_AllocationSite_1(compiler::CodeAssemblerState* state_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
 TNode<BoolT> Is_CoverageInfo_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+TNode<FunctionTemplateInfo> Cast_FunctionTemplateInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
 TNode<BoolT> Is_PromiseFulfillReactionJobTask_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
@@ -485,9 +497,6 @@ TNode<BoolT> Is_Constructor_Object_0(compiler::CodeAssemblerState* state_, TNode
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
 TNode<BoolT> Is_NativeContext_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
-TNode<WasmObject> Cast_WasmObject_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
 TNode<BoolT> Is_JSRegExp_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);

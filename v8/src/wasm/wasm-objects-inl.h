@@ -56,6 +56,7 @@ TQ_OBJECT_CONSTRUCTORS_IMPL(WasmArray)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmContinuationObject)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmSuspenderObject)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmResumeData)
+TQ_OBJECT_CONSTRUCTORS_IMPL(WasmNull)
 
 CAST_ACCESSOR(WasmInstanceObject)
 
@@ -142,6 +143,10 @@ float WasmGlobalObject::GetF32() {
 
 double WasmGlobalObject::GetF64() {
   return base::ReadUnalignedValue<double>(address());
+}
+
+byte* WasmGlobalObject::GetS128RawBytes() {
+  return reinterpret_cast<byte*>(address());
 }
 
 Handle<Object> WasmGlobalObject::GetRef() {

@@ -34,7 +34,7 @@ void TorqueGeneratedInterpreterData<InterpreterData, Struct>::InterpreterDataVer
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
 bool IsSharedFunctionInfo_NonInline(HeapObject o) {
   return o.IsSharedFunctionInfo();
 }
@@ -48,7 +48,7 @@ void TorqueGeneratedSharedFunctionInfo<SharedFunctionInfo, HeapObject>::SharedFu
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=112&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=111&c=1
 bool IsUncompiledData_NonInline(HeapObject o) {
   return o.IsUncompiledData();
 }
@@ -62,7 +62,7 @@ void TorqueGeneratedUncompiledData<UncompiledData, HeapObject>::UncompiledDataVe
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=119&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=118&c=1
 bool IsUncompiledDataWithoutPreparseData_NonInline(HeapObject o) {
   return o.IsUncompiledDataWithoutPreparseData();
 }
@@ -76,7 +76,7 @@ void TorqueGeneratedUncompiledDataWithoutPreparseData<UncompiledDataWithoutPrepa
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=125&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=124&c=1
 bool IsUncompiledDataWithPreparseData_NonInline(HeapObject o) {
   return o.IsUncompiledDataWithPreparseData();
 }
@@ -90,7 +90,7 @@ void TorqueGeneratedUncompiledDataWithPreparseData<UncompiledDataWithPreparseDat
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=132&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=1
 bool IsUncompiledDataWithoutPreparseDataWithJob_NonInline(HeapObject o) {
   return o.IsUncompiledDataWithoutPreparseDataWithJob();
 }
@@ -104,7 +104,7 @@ void TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<UncompiledDataWitho
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=141&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=140&c=1
 bool IsUncompiledDataWithPreparseDataAndJob_NonInline(HeapObject o) {
   return o.IsUncompiledDataWithPreparseDataAndJob();
 }
@@ -118,7 +118,7 @@ void TorqueGeneratedUncompiledDataWithPreparseDataAndJob<UncompiledDataWithPrepa
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=160&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=159&c=1
 bool IsOnHeapBasicBlockProfilerData_NonInline(HeapObject o) {
   return o.IsOnHeapBasicBlockProfilerData();
 }

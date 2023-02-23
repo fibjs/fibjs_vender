@@ -49,6 +49,20 @@ void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSObjectWithEmbedderSlots>::JSA
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
+bool IsJSDataViewOrRabGsabDataView_NonInline(HeapObject o) {
+  return o.IsJSDataViewOrRabGsabDataView();
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedJSDataViewOrRabGsabDataView<JSDataViewOrRabGsabDataView, JSArrayBufferView>::JSDataViewOrRabGsabDataViewVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::JSDataViewOrRabGsabDataViewVerify(JSDataViewOrRabGsabDataView::cast(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
 bool IsJSDataView_NonInline(HeapObject o) {
   return o.IsJSDataView();
 }
@@ -56,8 +70,22 @@ bool IsJSDataView_NonInline(HeapObject o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedJSDataView<JSDataView, JSArrayBufferView>::JSDataViewVerify(Isolate* isolate) {
+void TorqueGeneratedJSDataView<JSDataView, JSDataViewOrRabGsabDataView>::JSDataViewVerify(Isolate* isolate) {
   TorqueGeneratedClassVerifiers::JSDataViewVerify(JSDataView::cast(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+bool IsJSRabGsabDataView_NonInline(HeapObject o) {
+  return o.IsJSRabGsabDataView();
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedJSRabGsabDataView<JSRabGsabDataView, JSDataViewOrRabGsabDataView>::JSRabGsabDataViewVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::JSRabGsabDataViewVerify(JSRabGsabDataView::cast(*this), isolate);
 }
 
 

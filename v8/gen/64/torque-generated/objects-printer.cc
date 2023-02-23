@@ -453,6 +453,7 @@ void TorqueGeneratedFeedbackVector<FeedbackVector, HeapObject>::FeedbackVectorPr
   os << "\n - flags: " << this->flags();
   os << "\n - shared_function_info: " << Brief(this->shared_function_info());
   os << "\n - closure_feedback_cell_array: " << Brief(this->closure_feedback_cell_array());
+  os << "\n - parent_feedback_cell: " << Brief(this->parent_feedback_cell());
   os << "\n - maybe_optimized_code: " << Brief(this->maybe_optimized_code());
   os << '\n';
 }
@@ -503,14 +504,13 @@ void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSObjectWithEmbedderSlots>::JSA
   os << "\n - raw_byte_length: " << this->raw_byte_length();
   os << "\n - raw_max_byte_length: " << this->raw_max_byte_length();
   os << "\n - backing_store: " << this->backing_store();
-  os << "\n - extension: " << this->extension();
   os << "\n - bit_field: " << this->bit_field();
   os << "\n - optional_padding: " << this->optional_padding();
   os << '\n';
 }
 
 template <>
-void TorqueGeneratedJSDataView<JSDataView, JSArrayBufferView>::JSDataViewPrint(std::ostream& os) {
+void TorqueGeneratedJSDataView<JSDataView, JSDataViewOrRabGsabDataView>::JSDataViewPrint(std::ostream& os) {
   this->PrintHeader(os, "JSDataView");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
@@ -519,7 +519,21 @@ void TorqueGeneratedJSDataView<JSDataView, JSArrayBufferView>::JSDataViewPrint(s
   os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - bit_field: " << this->JSArrayBufferView::TorqueGeneratedClass::bit_field();
   os << "\n - optional_padding: " << this->JSArrayBufferView::TorqueGeneratedClass::optional_padding();
-  os << "\n - data_pointer: " << this->data_pointer();
+  os << "\n - data_pointer: " << this->JSDataViewOrRabGsabDataView::TorqueGeneratedClass::data_pointer();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSRabGsabDataView<JSRabGsabDataView, JSDataViewOrRabGsabDataView>::JSRabGsabDataViewPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSRabGsabDataView");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - buffer: " << Brief(this->JSArrayBufferView::TorqueGeneratedClass::buffer());
+  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
+  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
+  os << "\n - bit_field: " << this->JSArrayBufferView::TorqueGeneratedClass::bit_field();
+  os << "\n - optional_padding: " << this->JSArrayBufferView::TorqueGeneratedClass::optional_padding();
+  os << "\n - data_pointer: " << this->JSDataViewOrRabGsabDataView::TorqueGeneratedClass::data_pointer();
   os << '\n';
 }
 
@@ -850,7 +864,7 @@ void TorqueGeneratedJSShadowRealm<JSShadowRealm, JSObject>::JSShadowRealmPrint(s
 }
 
 template <>
-void TorqueGeneratedJSSharedArray<JSSharedArray, JSObject>::JSSharedArrayPrint(std::ostream& os) {
+void TorqueGeneratedJSSharedArray<JSSharedArray, AlwaysSharedSpaceJSObject>::JSSharedArrayPrint(std::ostream& os) {
   this->PrintHeader(os, "JSSharedArray");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
@@ -858,7 +872,7 @@ void TorqueGeneratedJSSharedArray<JSSharedArray, JSObject>::JSSharedArrayPrint(s
 }
 
 template <>
-void TorqueGeneratedJSSharedStruct<JSSharedStruct, JSObject>::JSSharedStructPrint(std::ostream& os) {
+void TorqueGeneratedJSSharedStruct<JSSharedStruct, AlwaysSharedSpaceJSObject>::JSSharedStructPrint(std::ostream& os) {
   this->PrintHeader(os, "JSSharedStruct");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
@@ -1150,9 +1164,10 @@ void TorqueGeneratedScript<Script, Struct>::ScriptPrint(std::ostream& os) {
   os << "\n - script_type: " << this->script_type();
   os << "\n - line_ends: " << Brief(this->line_ends());
   os << "\n - id: " << this->id();
-  os << "\n - eval_from_shared_or_wrapped_arguments_or_sfi_table: " << Brief(this->eval_from_shared_or_wrapped_arguments_or_sfi_table());
+  os << "\n - eval_from_shared_or_wrapped_arguments: " << Brief(this->eval_from_shared_or_wrapped_arguments());
   os << "\n - eval_from_position: " << Brief(this->eval_from_position());
   os << "\n - shared_function_infos: " << Brief(this->shared_function_infos());
+  os << "\n - compiled_lazy_function_positions: " << Brief(this->compiled_lazy_function_positions());
   os << "\n - flags: " << this->flags();
   os << "\n - source_url: " << Brief(this->source_url());
   os << "\n - source_mapping_url: " << Brief(this->source_mapping_url());
@@ -1485,6 +1500,75 @@ void TorqueGeneratedTurbofanOtherNumberConstantType<TurbofanOtherNumberConstantT
 }
 
 template <>
+void TorqueGeneratedTurboshaftWord32Type<TurboshaftWord32Type, TurboshaftType>::TurboshaftWord32TypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftWord32Type");
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftWord32RangeType<TurboshaftWord32RangeType, TurboshaftWord32Type>::TurboshaftWord32RangeTypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftWord32RangeType");
+  os << "\n - from: " << this->from();
+  os << "\n - to: " << this->to();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftWord32SetType<TurboshaftWord32SetType, TurboshaftWord32Type>::TurboshaftWord32SetTypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftWord32SetType");
+  os << "\n - set_size: " << this->set_size();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftWord64Type<TurboshaftWord64Type, TurboshaftType>::TurboshaftWord64TypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftWord64Type");
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftWord64RangeType<TurboshaftWord64RangeType, TurboshaftWord64Type>::TurboshaftWord64RangeTypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftWord64RangeType");
+  os << "\n - from_high: " << this->from_high();
+  os << "\n - from_low: " << this->from_low();
+  os << "\n - to_high: " << this->to_high();
+  os << "\n - to_low: " << this->to_low();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftWord64SetType<TurboshaftWord64SetType, TurboshaftWord64Type>::TurboshaftWord64SetTypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftWord64SetType");
+  os << "\n - set_size: " << this->set_size();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftFloat64Type<TurboshaftFloat64Type, TurboshaftType>::TurboshaftFloat64TypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftFloat64Type");
+  os << "\n - special_values: " << this->special_values();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftFloat64RangeType<TurboshaftFloat64RangeType, TurboshaftFloat64Type>::TurboshaftFloat64RangeTypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftFloat64RangeType");
+  os << "\n - special_values: " << this->TurboshaftFloat64Type::TorqueGeneratedClass::special_values();
+  os << "\n - _padding: " << this->_padding();
+  os << "\n - min: " << this->min();
+  os << "\n - max: " << this->max();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedTurboshaftFloat64SetType<TurboshaftFloat64SetType, TurboshaftFloat64Type>::TurboshaftFloat64SetTypePrint(std::ostream& os) {
+  this->PrintHeader(os, "TurboshaftFloat64SetType");
+  os << "\n - special_values: " << this->TurboshaftFloat64Type::TorqueGeneratedClass::special_values();
+  os << "\n - set_size: " << this->set_size();
+  os << '\n';
+}
+
+template <>
 void TorqueGeneratedInternalClass<InternalClass, HeapObject>::InternalClassPrint(std::ostream& os) {
   this->PrintHeader(os, "InternalClass");
   os << "\n - a: " << this->a();
@@ -1750,6 +1834,15 @@ void TorqueGeneratedJSSegments<JSSegments, JSObject>::JSSegmentsPrint(std::ostre
 }
 
 template <>
+void TorqueGeneratedWasmArray<WasmArray, WasmObject>::WasmArrayPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmArray");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - length: " << this->length();
+  os << "\n - optional_padding: " << this->optional_padding();
+  os << '\n';
+}
+
+template <>
 void TorqueGeneratedWasmApiFunctionRef<WasmApiFunctionRef, HeapObject>::WasmApiFunctionRefPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmApiFunctionRef");
   os << "\n - isolate_root: " << this->isolate_root();
@@ -1780,6 +1873,7 @@ void TorqueGeneratedWasmExportedFunctionData<WasmExportedFunctionData, WasmFunct
   os << "\n - wrapper_budget: " << this->wrapper_budget();
   os << "\n - c_wrapper_code: " << Brief(this->c_wrapper_code());
   os << "\n - packed_args_size: " << this->packed_args_size();
+  os << "\n - canonical_type_index: " << this->canonical_type_index();
   os << '\n';
 }
 
@@ -1911,6 +2005,7 @@ void TorqueGeneratedWasmTagObject<WasmTagObject, JSObject>::WasmTagObjectPrint(s
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - serialized_signature: " << Brief(this->serialized_signature());
   os << "\n - tag: " << Brief(this->tag());
+  os << "\n - canonical_type_index: " << this->canonical_type_index();
   os << '\n';
 }
 
@@ -1940,19 +2035,16 @@ void TorqueGeneratedWasmStruct<WasmStruct, WasmObject>::WasmStructPrint(std::ost
 }
 
 template <>
-void TorqueGeneratedWasmArray<WasmArray, WasmObject>::WasmArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "WasmArray");
-  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
-  os << "\n - length: " << this->length();
-  os << "\n - optional_padding: " << this->optional_padding();
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedWasmStringViewIter<WasmStringViewIter, HeapObject>::WasmStringViewIterPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmStringViewIter");
   os << "\n - string: " << Brief(this->string());
   os << "\n - offset: " << this->offset();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedWasmNull<WasmNull, HeapObject>::WasmNullPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmNull");
   os << '\n';
 }
 

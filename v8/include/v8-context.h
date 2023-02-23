@@ -9,6 +9,7 @@
 
 #include "v8-data.h"          // NOLINT(build/include_directory)
 #include "v8-local-handle.h"  // NOLINT(build/include_directory)
+#include "v8-maybe.h"         // NOLINT(build/include_directory)
 #include "v8-snapshot.h"      // NOLINT(build/include_directory)
 #include "v8config.h"         // NOLINT(build/include_directory)
 
@@ -162,6 +163,13 @@ class V8_EXPORT Context : public Data {
    * context that was in place when entering the current context.
    */
   void Exit();
+
+  /**
+   * Attempts to recursively freeze all objects reachable from this context.
+   * Some objects (generators, iterators, non-const closures) can not be frozen
+   * and will cause this method to throw an error.
+   */
+  Maybe<void> DeepFreeze();
 
   /** Returns the isolate associated with a current context. */
   Isolate* GetIsolate();
@@ -365,8 +373,7 @@ Local<Value> Context::GetEmbedderData(int index) {
 #ifdef V8_COMPRESS_POINTERS
   // We read the full pointer value and then decompress it in order to avoid
   // dealing with potential endiannes issues.
-  value =
-      I::DecompressTaggedAnyField(embedder_data, static_cast<uint32_t>(value));
+  value = I::DecompressTaggedField(embedder_data, static_cast<uint32_t>(value));
 #endif
   internal::Isolate* isolate = internal::IsolateFromNeverReadOnlySpaceObject(
       *reinterpret_cast<A*>(this));

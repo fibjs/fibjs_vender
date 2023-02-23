@@ -46,11 +46,6 @@
   /* V8 side owner: manoskouk */                                               \
   V(typed_funcref, "typed function references", false)                         \
                                                                                \
-  /* Memory64 proposal. */                                                     \
-  /* https://github.com/WebAssembly/memory64 */                                \
-  /* V8 side owner: clemensb */                                                \
-  V(memory64, "memory64", false)                                               \
-                                                                               \
   /* Relaxed SIMD proposal. */                                                 \
   /* https://github.com/WebAssembly/relaxed-simd */                            \
   /* V8 side owner: zhin */                                                    \
@@ -81,7 +76,7 @@
 // exposed as chrome://flags/#enable-experimental-webassembly-features). Staged
 // features get limited fuzzer coverage, and should come with their own tests.
 // They are not run through all fuzzers though and don't get much exposure in
-// the wild. Staged features do not necessarily be fully stabilized. They should
+// the wild. Staged features are not necessarily fully stabilized. They should
 // be shipped with enough lead time to the next branch to allow for
 // stabilization.
 #define FOREACH_WASM_STAGING_FEATURE_FLAG(V) /*          (force 80 columns) */ \
@@ -95,7 +90,12 @@
   /* https://github.com/webassembly/js-types */                                \
   /* V8 side owner: ahaas */                                                   \
   /* Staged in v7.8. */                                                        \
-  V(type_reflection, "wasm type reflection in JS", false)
+  V(type_reflection, "wasm type reflection in JS", false)                      \
+                                                                               \
+  /* Memory64 proposal. */                                                     \
+  /* https://github.com/WebAssembly/memory64 */                                \
+  /* V8 side owner: clemensb */                                                \
+  V(memory64, "memory64", false)
 
 // #############################################################################
 // Shipped features (enabled by default). Remove the feature flag once they hit

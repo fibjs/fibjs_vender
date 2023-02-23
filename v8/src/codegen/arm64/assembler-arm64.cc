@@ -64,8 +64,11 @@ unsigned SimulatorFeaturesFromCommandLine() {
 
 constexpr unsigned CpuFeaturesFromCompiler() {
   unsigned features = 0;
-#if defined(__ARM_FEATURE_JCVT)
+#if defined(__ARM_FEATURE_JCVT) && !defined(V8_TARGET_OS_IOS)
   features |= 1u << JSCVT;
+#endif
+#if defined(__ARM_FEATURE_DOTPROD)
+  features |= 1u << DOTPROD;
 #endif
   return features;
 }
@@ -75,6 +78,7 @@ constexpr unsigned CpuFeaturesFromTargetOS() {
 #if defined(V8_TARGET_OS_MACOS) && !defined(V8_TARGET_OS_IOS)
   // TODO(v8:13004): Detect if an iPhone is new enough to support jscvt.
   features |= 1u << JSCVT;
+  features |= 1u << DOTPROD;
 #endif
   return features;
 }
@@ -105,6 +109,9 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
   unsigned runtime = 0;
   if (cpu.has_jscvt()) {
     runtime |= 1u << JSCVT;
+  }
+  if (cpu.has_dot_prod()) {
+    runtime |= 1u << DOTPROD;
   }
 
   // Use the best of the features found by CPU detection and those inferred from
@@ -374,16 +381,16 @@ void Assembler::AllocateAndInstallRequestedHeapNumbers(Isolate* isolate) {
 }
 
 void Assembler::GetCode(Isolate* isolate, CodeDesc* desc,
-                        SafepointTableBuilder* safepoint_table_builder,
+                        SafepointTableBuilderBase* safepoint_table_builder,
                         int handler_table_offset) {
   // As a crutch to avoid having to add manual Align calls wherever we use a
-  // raw workflow to create Code objects (mostly in tests), add another Align
-  // call here. It does no harm - the end of the Code object is aligned to the
-  // (larger) kCodeAlignment anyways.
+  // raw workflow to create InstructionStream objects (mostly in tests), add
+  // another Align call here. It does no harm - the end of the InstructionStream
+  // object is aligned to the (larger) kCodeAlignment anyways.
   // TODO(jgruber): Consider moving responsibility for proper alignment to
   // metadata table builders (safepoint, handler, constant pool, code
   // comments).
-  DataAlign(Code::kMetadataAlignment);
+  DataAlign(InstructionStream::kMetadataAlignment);
 
   // Emit constant pool if necessary.
   ForceConstantPoolEmissionWithoutJump();
@@ -1316,6 +1323,10 @@ Operand Operand::EmbeddedNumber(double number) {
   if (DoubleToSmiInteger(number, &smi)) {
     return Operand(Immediate(Smi::FromInt(smi)));
   }
+  return EmbeddedHeapNumber(number);
+}
+
+Operand Operand::EmbeddedHeapNumber(double number) {
   Operand result(0, RelocInfo::FULL_EMBEDDED_OBJECT);
   result.heap_number_request_.emplace(number);
   DCHECK(result.IsHeapNumberRequest());
@@ -1418,6 +1429,14 @@ void Assembler::stlxrh(const Register& rs, const Register& rt,
   DCHECK(rn.Is64Bits());
   DCHECK(rs != rt && rs != rn);
   Emit(STLXR_h | Rs(rs) | Rt2(x31) | RnSP(rn) | Rt(rt));
+}
+
+void Assembler::sdot(const VRegister& vd, const VRegister& vn,
+                     const VRegister& vm) {
+  DCHECK(CpuFeatures::IsSupported(DOTPROD));
+  DCHECK(vn.Is16B() && vd.Is4S());
+  DCHECK(AreSameFormat(vn, vm));
+  Emit(NEON_Q | NEON_SDOT | Rm(vm) | Rn(vn) | Rd(vd));
 }
 
 void Assembler::NEON3DifferentL(const VRegister& vd, const VRegister& vn,
@@ -3573,7 +3592,7 @@ Instr Assembler::ImmNEONFP(double imm) {
   return ImmNEONabcdefgh(FPToImm8(imm));
 }
 
-// Code generation helpers.
+// InstructionStream generation helpers.
 void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
                          MoveWideImmediateOp mov_op) {
   // Ignore the top 32 bits of an immediate if we're moving to a W register.
@@ -4356,7 +4375,8 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data,
   DCHECK(constpool_.IsBlocked());
 
   // We do not try to reuse pool constants.
-  RelocInfo rinfo(reinterpret_cast<Address>(pc_), rmode, data, Code());
+  RelocInfo rinfo(reinterpret_cast<Address>(pc_), rmode, data,
+                  InstructionStream());
 
   DCHECK_GE(buffer_space(), kMaxRelocSize);  // too late to grow buffer here
   reloc_info_writer.Write(&rinfo);
@@ -4379,7 +4399,7 @@ void Assembler::near_call(int offset, RelocInfo::Mode rmode) {
 void Assembler::near_call(HeapNumberRequest request) {
   BlockPoolsScope no_pool_before_bl_instr(this);
   RequestHeapNumber(request);
-  EmbeddedObjectIndex index = AddEmbeddedObject(Handle<CodeT>());
+  EmbeddedObjectIndex index = AddEmbeddedObject(Handle<Code>());
   RecordRelocInfo(RelocInfo::CODE_TARGET, index, NO_POOL_ENTRY);
   DCHECK(is_int32(index));
   bl(static_cast<int>(index));
@@ -4482,7 +4502,8 @@ intptr_t Assembler::MaxPCOffsetAfterVeneerPoolIfEmittedNow(size_t margin) {
 void Assembler::RecordVeneerPool(int location_offset, int size) {
   Assembler::BlockPoolsScope block_pools(this, PoolEmissionCheck::kSkip);
   RelocInfo rinfo(reinterpret_cast<Address>(buffer_start_) + location_offset,
-                  RelocInfo::VENEER_POOL, static_cast<intptr_t>(size), Code());
+                  RelocInfo::VENEER_POOL, static_cast<intptr_t>(size),
+                  InstructionStream());
   reloc_info_writer.Write(&rinfo);
 }
 

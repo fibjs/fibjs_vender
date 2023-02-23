@@ -22,7 +22,7 @@ class TorqueGeneratedFreeSpace : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=6&c=3
   inline void set_size(int value);
 
-  // Torque type: (Uninitialized | class FreeSpace)
+  // Torque type: (Smi | Uninitialized | class FreeSpace)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
   inline MaybeObject next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
