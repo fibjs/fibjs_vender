@@ -18,7 +18,7 @@ namespace internal {
 class JSObject;
 class EmbedderDataSlot;
 
-class CppMarkingState final {
+class CppMarkingState {
  public:
   using EmbedderDataSnapshot =
       std::pair<EmbedderDataSlot::EmbedderDataSlotSnapshot,

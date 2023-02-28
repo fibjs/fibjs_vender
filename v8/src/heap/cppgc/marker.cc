@@ -395,32 +395,15 @@ void MarkerBase::ProcessWeakness() {
   }
 #endif  // defined(CPPGC_YOUNG_GENERATION)
 
-  {
-    // First, process weak container callbacks.
-    StatsCollector::EnabledScope stats_scope(
-        heap().stats_collector(),
-        StatsCollector::kWeakContainerCallbacksProcessing);
-    MarkingWorklists::WeakCallbackItem item;
-    MarkingWorklists::WeakCallbackWorklist::Local& collections_local =
-        mutator_marking_state_.weak_container_callback_worklist();
-    while (collections_local.Pop(&item)) {
-      item.callback(broker, item.parameter);
-    }
-  }
-  {
-    // Then, process custom weak callbacks.
-    StatsCollector::EnabledScope stats_scope(
-        heap().stats_collector(), StatsCollector::kCustomCallbacksProcessing);
-    MarkingWorklists::WeakCallbackItem item;
-    MarkingWorklists::WeakCustomCallbackWorklist::Local& custom_callbacks =
-        mutator_marking_state_.weak_custom_callback_worklist();
-    while (custom_callbacks.Pop(&item)) {
-      item.callback(broker, item.parameter);
+  MarkingWorklists::WeakCallbackItem item;
+  MarkingWorklists::WeakCallbackWorklist::Local& local =
+      mutator_marking_state_.weak_callback_worklist();
+  while (local.Pop(&item)) {
+    item.callback(broker, item.parameter);
 #if defined(CPPGC_YOUNG_GENERATION)
-      if (heap().generational_gc_supported())
-        heap().remembered_set().AddWeakCallback(item);
+    if (heap().generational_gc_supported())
+      heap().remembered_set().AddWeakCallback(item);
 #endif  // defined(CPPGC_YOUNG_GENERATION)
-    }
   }
 
   if (job_handle) {

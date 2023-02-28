@@ -16,7 +16,7 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceWeakArrayListOb
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 inline intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -198,7 +198,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);

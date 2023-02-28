@@ -151,8 +151,7 @@ namespace interpreter {
   V(SetKeyedProperty, ImplicitRegisterUse::kReadWriteAccumulator,              \
     OperandType::kReg, OperandType::kReg, OperandType::kIdx)                   \
   V(DefineKeyedOwnProperty, ImplicitRegisterUse::kReadWriteAccumulator,        \
-    OperandType::kReg, OperandType::kReg, OperandType::kFlag8,                 \
-    OperandType::kIdx)                                                         \
+    OperandType::kReg, OperandType::kReg, OperandType::kIdx)                   \
   V(StaInArrayLiteral, ImplicitRegisterUse::kReadWriteAccumulator,             \
     OperandType::kReg, OperandType::kReg, OperandType::kIdx)                   \
   V(DefineKeyedOwnPropertyInLiteral, ImplicitRegisterUse::kReadAccumulator,    \

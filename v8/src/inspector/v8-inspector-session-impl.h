@@ -21,7 +21,6 @@ class InjectedScript;
 class RemoteObjectIdBase;
 class V8ConsoleAgentImpl;
 class V8DebuggerAgentImpl;
-class V8DebuggerBarrier;
 class V8InspectorImpl;
 class V8HeapProfilerAgentImpl;
 class V8ProfilerAgentImpl;
@@ -36,8 +35,7 @@ class V8InspectorSessionImpl : public V8InspectorSession,
   static std::unique_ptr<V8InspectorSessionImpl> create(
       V8InspectorImpl*, int contextGroupId, int sessionId,
       V8Inspector::Channel*, StringView state,
-      v8_inspector::V8Inspector::ClientTrustLevel,
-      std::shared_ptr<V8DebuggerBarrier>);
+      v8_inspector::V8Inspector::ClientTrustLevel);
   ~V8InspectorSessionImpl() override;
   V8InspectorSessionImpl(const V8InspectorSessionImpl&) = delete;
   V8InspectorSessionImpl& operator=(const V8InspectorSessionImpl&) = delete;
@@ -100,8 +98,6 @@ class V8InspectorSessionImpl : public V8InspectorSession,
   static const unsigned kInspectedObjectBufferSize = 5;
 
   void triggerPreciseCoverageDeltaUpdate(StringView occasion) override;
-  void stop() override;
-
   V8Inspector::ClientTrustLevel clientTrustLevel() {
     return m_clientTrustLevel;
   }
@@ -109,8 +105,7 @@ class V8InspectorSessionImpl : public V8InspectorSession,
  private:
   V8InspectorSessionImpl(V8InspectorImpl*, int contextGroupId, int sessionId,
                          V8Inspector::Channel*, StringView state,
-                         V8Inspector::ClientTrustLevel,
-                         std::shared_ptr<V8DebuggerBarrier>);
+                         V8Inspector::ClientTrustLevel);
   protocol::DictionaryValue* agentState(const String16& name);
 
   // protocol::FrontendChannel implementation.

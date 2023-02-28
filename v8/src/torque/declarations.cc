@@ -256,20 +256,21 @@ Intrinsic* Declarations::DeclareIntrinsic(const std::string& name,
 
 Builtin* Declarations::CreateBuiltin(std::string external_name,
                                      std::string readable_name,
-                                     Builtin::Kind kind, Builtin::Flags flags,
-                                     Signature signature,
+                                     Builtin::Kind kind, Signature signature,
+
                                      base::Optional<Statement*> body) {
   return RegisterDeclarable(std::unique_ptr<Builtin>(
       new Builtin(std::move(external_name), std::move(readable_name), kind,
-                  flags, std::move(signature), body)));
+                  std::move(signature), body)));
 }
 
 Builtin* Declarations::DeclareBuiltin(const std::string& name,
-                                      Builtin::Kind kind, Builtin::Flags flags,
+                                      Builtin::Kind kind,
                                       const Signature& signature,
+
                                       base::Optional<Statement*> body) {
   CheckAlreadyDeclared<Builtin>(name, "builtin");
-  return Declare(name, CreateBuiltin(name, name, kind, flags, signature, body));
+  return Declare(name, CreateBuiltin(name, name, kind, signature, body));
 }
 
 RuntimeFunction* Declarations::DeclareRuntimeFunction(

@@ -24,6 +24,7 @@ namespace internal {
 void MarkingWorklists::Clear() {
   shared_.Clear();
   on_hold_.Clear();
+  wrapper_.Clear();
   other_.Clear();
   for (auto& cw : context_worklists_) {
     cw.worklist->Clear();
@@ -106,6 +107,7 @@ MarkingWorklists::Local::Local(
     : active_(&shared_),
       shared_(*global->shared()),
       on_hold_(*global->on_hold()),
+      wrapper_(*global->wrapper()),
       active_context_(kSharedContext),
       is_per_context_mode_(!global->context_worklists().empty()),
       worklist_by_context_(
@@ -116,6 +118,7 @@ MarkingWorklists::Local::Local(
 void MarkingWorklists::Local::Publish() {
   shared_.Publish();
   on_hold_.Publish();
+  wrapper_.Publish();
   other_.Publish();
   if (is_per_context_mode_) {
     for (auto& cw : worklist_by_context_) {
@@ -150,7 +153,11 @@ bool MarkingWorklists::Local::IsEmpty() {
 }
 
 bool MarkingWorklists::Local::IsWrapperEmpty() const {
-  return !cpp_marking_state_ || cpp_marking_state_->IsLocalEmpty();
+  if (cpp_marking_state_) {
+    DCHECK(wrapper_.IsLocalAndGlobalEmpty());
+    return cpp_marking_state_->IsLocalEmpty();
+  }
+  return wrapper_.IsLocalAndGlobalEmpty();
 }
 
 void MarkingWorklists::Local::ShareWork() {

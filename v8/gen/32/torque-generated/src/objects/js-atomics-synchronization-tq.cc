@@ -14,7 +14,7 @@ bool IsJSSynchronizationPrimitive_NonInline(HeapObject o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedJSSynchronizationPrimitive<JSSynchronizationPrimitive, AlwaysSharedSpaceJSObject>::JSSynchronizationPrimitiveVerify(Isolate* isolate) {
+void TorqueGeneratedJSSynchronizationPrimitive<JSSynchronizationPrimitive, JSObject>::JSSynchronizationPrimitiveVerify(Isolate* isolate) {
   TorqueGeneratedClassVerifiers::JSSynchronizationPrimitiveVerify(JSSynchronizationPrimitive::cast(*this), isolate);
 }
 

@@ -99,9 +99,6 @@ void ReadOnlyHeap::SetUp(Isolate* isolate,
       artifacts = InitializeSharedReadOnlyArtifacts();
 
       ro_heap = CreateInitalHeapForBootstrapping(isolate, artifacts);
-
-      // Ensure the first read-only page ends up first in the cage.
-      ro_heap->read_only_space()->EnsurePage();
       artifacts->VerifyChecksum(read_only_snapshot_data, true);
     }
   } else {
@@ -120,15 +117,7 @@ void ReadOnlyHeap::DeserializeIntoIsolate(Isolate* isolate,
   DCHECK_NOT_NULL(read_only_snapshot_data);
   ReadOnlyDeserializer des(isolate, read_only_snapshot_data, can_rehash);
   des.DeserializeIntoIsolate();
-  OnCreateRootsComplete(isolate);
   InitFromIsolate(isolate);
-}
-
-void ReadOnlyHeap::OnCreateRootsComplete(Isolate* isolate) {
-  DCHECK_NOT_NULL(isolate);
-  DCHECK(!roots_init_complete_);
-  if (IsReadOnlySpaceShared()) InitializeFromIsolateRoots(isolate);
-  roots_init_complete_ = true;
 }
 
 void ReadOnlyHeap::OnCreateHeapObjectsComplete(Isolate* isolate) {
@@ -156,8 +145,7 @@ ReadOnlyHeap* ReadOnlyHeap::CreateInitalHeapForBootstrapping(
   } else {
     std::unique_ptr<SoleReadOnlyHeap> sole_ro_heap(
         new SoleReadOnlyHeap(ro_space));
-    // The global shared ReadOnlyHeap is used with shared cage and if pointer
-    // compression is disabled.
+    // The global shared ReadOnlyHeap is only used without pointer compression.
     SoleReadOnlyHeap::shared_ro_heap_ = sole_ro_heap.get();
     ro_heap = std::move(sole_ro_heap);
   }
@@ -181,9 +169,10 @@ void SoleReadOnlyHeap::InitializeFromIsolateRoots(Isolate* isolate) {
 }
 
 void ReadOnlyHeap::InitFromIsolate(Isolate* isolate) {
-  DCHECK(roots_init_complete_);
+  DCHECK(!init_complete_);
   read_only_space_->ShrinkPages();
   if (IsReadOnlySpaceShared()) {
+    InitializeFromIsolateRoots(isolate);
     std::shared_ptr<ReadOnlyArtifacts> artifacts(
         *read_only_artifacts_.Pointer());
 
@@ -198,6 +187,7 @@ void ReadOnlyHeap::InitFromIsolate(Isolate* isolate) {
   } else {
     read_only_space_->Seal(ReadOnlySpace::SealMode::kDoNotDetachFromHeap);
   }
+  init_complete_ = true;
 }
 
 void ReadOnlyHeap::OnHeapTearDown(Heap* heap) {

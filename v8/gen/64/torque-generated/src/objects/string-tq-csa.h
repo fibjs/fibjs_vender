@@ -204,9 +204,6 @@ TNode<Smi> Call_char16_char16_1(compiler::CodeAssemblerState* state_, TorqueStru
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=172&c=10
 TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_SliceIterator_char16_ConstReference_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructSliceIterator_char16_ConstReference_char16_0 p_content);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=10
-void InitializeFieldsFromIterator_char8_TwoByteToOneByteIterator_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_char8_MutableReference_char8_0 p_target, TorqueStructTwoByteToOneByteIterator_0 p_originIterator);
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=148&c=10
 void InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_char16_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_char16_MutableReference_char16_0 p_target, TorqueStructSliceIterator_char16_ConstReference_char16_0 p_originIterator);
 

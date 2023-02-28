@@ -10,6 +10,9 @@ namespace internal {
 TNode<String> kConstructorString_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=88&c=1
 TNode<String> kThenString_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=166&c=9
+TNode<BoolT> Is_WasmObject_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
 } // namespace internal
 } // namespace v8
 

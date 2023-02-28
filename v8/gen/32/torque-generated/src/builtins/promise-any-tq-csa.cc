@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-any-tq-csa.h"
@@ -542,7 +540,7 @@ TNode<Object> PerformPromiseAny_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp2 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch5__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch5__label);
-    std::tie(tmp3, tmp4) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp3, tmp4) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp2}).Flatten();
     }
     if (catch5__label.is_used()) {
       compiler::CodeAssemblerLabel catch5_skip(&ca_);

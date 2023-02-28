@@ -61,7 +61,7 @@ T ForwardingAddress(T heap_obj) {
   MapWord map_word = heap_obj.map_word(kRelaxedLoad);
 
   if (map_word.IsForwardingAddress()) {
-    return T::cast(map_word.ToForwardingAddress(heap_obj));
+    return T::cast(map_word.ToForwardingAddress());
   } else if (Heap::InFromPage(heap_obj)) {
     DCHECK(!v8_flags.minor_mc);
     return T();
@@ -160,12 +160,12 @@ void Heap::SetFunctionsMarkedForManualOptimization(Object hash_table) {
       hash_table.ptr();
 }
 
-PagedSpace* Heap::paged_space(int idx) const {
+PagedSpace* Heap::paged_space(int idx) {
   DCHECK(idx == OLD_SPACE || idx == CODE_SPACE || idx == SHARED_SPACE);
   return static_cast<PagedSpace*>(space_[idx].get());
 }
 
-Space* Heap::space(int idx) const { return space_[idx].get(); }
+Space* Heap::space(int idx) { return space_[idx].get(); }
 
 Address* Heap::NewSpaceAllocationTopAddress() {
   return new_space_ ? new_space_->allocation_top_address() : nullptr;
@@ -389,10 +389,6 @@ bool Heap::IsPendingAllocationInternal(HeapObject object) {
 
     case SHARED_SPACE:
     case SHARED_LO_SPACE:
-      // TODO(v8:13267): Ensure that all shared space objects have a memory
-      // barrier after initialization.
-      return false;
-
     case RO_SPACE:
       UNREACHABLE();
   }
@@ -500,12 +496,24 @@ bool Heap::HasDirtyJSFinalizationRegistries() {
   return !dirty_js_finalization_registries_list().IsUndefined(isolate());
 }
 
+VerifyPointersVisitor::VerifyPointersVisitor(Heap* heap)
+    : ObjectVisitorWithCageBases(heap), heap_(heap) {}
+
 AlwaysAllocateScope::AlwaysAllocateScope(Heap* heap) : heap_(heap) {
   heap_->always_allocate_scope_count_++;
 }
 
 AlwaysAllocateScope::~AlwaysAllocateScope() {
   heap_->always_allocate_scope_count_--;
+}
+
+OptionalAlwaysAllocateScope::OptionalAlwaysAllocateScope(Heap* heap)
+    : heap_(heap) {
+  if (heap_) heap_->always_allocate_scope_count_++;
+}
+
+OptionalAlwaysAllocateScope::~OptionalAlwaysAllocateScope() {
+  if (heap_) heap_->always_allocate_scope_count_--;
 }
 
 AlwaysAllocateScopeForTesting::AlwaysAllocateScopeForTesting(Heap* heap)
@@ -595,8 +603,7 @@ CodePageCollectionMemoryModificationScope::
 }
 
 #ifdef V8_ENABLE_THIRD_PARTY_HEAP
-CodePageMemoryModificationScope::CodePageMemoryModificationScope(
-    InstructionStream code)
+CodePageMemoryModificationScope::CodePageMemoryModificationScope(Code code)
     :
 #if V8_HEAP_USE_PTHREAD_JIT_WRITE_PROTECT || V8_HEAP_USE_PKU_JIT_WRITE_PROTECT
       rwx_write_scope_("A part of CodePageMemoryModificationScope"),
@@ -605,8 +612,7 @@ CodePageMemoryModificationScope::CodePageMemoryModificationScope(
       scope_active_(false) {
 }
 #else
-CodePageMemoryModificationScope::CodePageMemoryModificationScope(
-    InstructionStream code)
+CodePageMemoryModificationScope::CodePageMemoryModificationScope(Code code)
     : CodePageMemoryModificationScope(BasicMemoryChunk::FromHeapObject(code)) {}
 #endif
 

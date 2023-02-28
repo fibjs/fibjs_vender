@@ -27,7 +27,7 @@
 namespace v8 {
 namespace internal {
 
-void SharedMacroAssemblerBase::Move(Register dst, uint32_t src) {
+void SharedTurboAssembler::Move(Register dst, uint32_t src) {
   // Helper to paper over the different assembler function names.
 #if V8_TARGET_ARCH_IA32
   mov(dst, Immediate(src));
@@ -38,7 +38,7 @@ void SharedMacroAssemblerBase::Move(Register dst, uint32_t src) {
 #endif
 }
 
-void SharedMacroAssemblerBase::Move(Register dst, Register src) {
+void SharedTurboAssembler::Move(Register dst, Register src) {
   // Helper to paper over the different assembler function names.
   if (dst != src) {
 #if V8_TARGET_ARCH_IA32
@@ -51,7 +51,7 @@ void SharedMacroAssemblerBase::Move(Register dst, Register src) {
   }
 }
 
-void SharedMacroAssemblerBase::Add(Register dst, Immediate src) {
+void SharedTurboAssembler::Add(Register dst, Immediate src) {
   // Helper to paper over the different assembler function names.
 #if V8_TARGET_ARCH_IA32
   add(dst, src);
@@ -62,7 +62,7 @@ void SharedMacroAssemblerBase::Add(Register dst, Immediate src) {
 #endif
 }
 
-void SharedMacroAssemblerBase::And(Register dst, Immediate src) {
+void SharedTurboAssembler::And(Register dst, Immediate src) {
   // Helper to paper over the different assembler function names.
 #if V8_TARGET_ARCH_IA32
   and_(dst, src);
@@ -77,8 +77,8 @@ void SharedMacroAssemblerBase::And(Register dst, Immediate src) {
 #endif
 }
 
-void SharedMacroAssemblerBase::Movhps(XMMRegister dst, XMMRegister src1,
-                                      Operand src2) {
+void SharedTurboAssembler::Movhps(XMMRegister dst, XMMRegister src1,
+                                  Operand src2) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
     vmovhps(dst, src1, src2);
@@ -90,8 +90,8 @@ void SharedMacroAssemblerBase::Movhps(XMMRegister dst, XMMRegister src1,
   }
 }
 
-void SharedMacroAssemblerBase::Movlps(XMMRegister dst, XMMRegister src1,
-                                      Operand src2) {
+void SharedTurboAssembler::Movlps(XMMRegister dst, XMMRegister src1,
+                                  Operand src2) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
     vmovlps(dst, src1, src2);
@@ -102,34 +102,9 @@ void SharedMacroAssemblerBase::Movlps(XMMRegister dst, XMMRegister src1,
     movlps(dst, src2);
   }
 }
-void SharedMacroAssemblerBase::Blendvpd(XMMRegister dst, XMMRegister src1,
-                                        XMMRegister src2, XMMRegister mask) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vblendvpd(dst, src1, src2, mask);
-  } else {
-    CpuFeatureScope scope(this, SSE4_1);
-    DCHECK_EQ(mask, xmm0);
-    DCHECK_EQ(dst, src1);
-    blendvpd(dst, src2);
-  }
-}
 
-void SharedMacroAssemblerBase::Blendvps(XMMRegister dst, XMMRegister src1,
-                                        XMMRegister src2, XMMRegister mask) {
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope scope(this, AVX);
-    vblendvps(dst, src1, src2, mask);
-  } else {
-    CpuFeatureScope scope(this, SSE4_1);
-    DCHECK_EQ(mask, xmm0);
-    DCHECK_EQ(dst, src1);
-    blendvps(dst, src2);
-  }
-}
-
-void SharedMacroAssemblerBase::Pblendvb(XMMRegister dst, XMMRegister src1,
-                                        XMMRegister src2, XMMRegister mask) {
+void SharedTurboAssembler::Pblendvb(XMMRegister dst, XMMRegister src1,
+                                    XMMRegister src2, XMMRegister mask) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
     vpblendvb(dst, src1, src2, mask);
@@ -141,8 +116,8 @@ void SharedMacroAssemblerBase::Pblendvb(XMMRegister dst, XMMRegister src1,
   }
 }
 
-void SharedMacroAssemblerBase::Shufps(XMMRegister dst, XMMRegister src1,
-                                      XMMRegister src2, uint8_t imm8) {
+void SharedTurboAssembler::Shufps(XMMRegister dst, XMMRegister src1,
+                                  XMMRegister src2, uint8_t imm8) {
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
     vshufps(dst, src1, src2, imm8);
@@ -154,8 +129,8 @@ void SharedMacroAssemblerBase::Shufps(XMMRegister dst, XMMRegister src1,
   }
 }
 
-void SharedMacroAssemblerBase::F64x2ExtractLane(DoubleRegister dst,
-                                                XMMRegister src, uint8_t lane) {
+void SharedTurboAssembler::F64x2ExtractLane(DoubleRegister dst, XMMRegister src,
+                                            uint8_t lane) {
   ASM_CODE_COMMENT(this);
   if (lane == 0) {
     if (dst != src) {
@@ -173,10 +148,8 @@ void SharedMacroAssemblerBase::F64x2ExtractLane(DoubleRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::F64x2ReplaceLane(XMMRegister dst,
-                                                XMMRegister src,
-                                                DoubleRegister rep,
-                                                uint8_t lane) {
+void SharedTurboAssembler::F64x2ReplaceLane(XMMRegister dst, XMMRegister src,
+                                            DoubleRegister rep, uint8_t lane) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -199,8 +172,8 @@ void SharedMacroAssemblerBase::F64x2ReplaceLane(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::F32x4Min(XMMRegister dst, XMMRegister lhs,
-                                        XMMRegister rhs, XMMRegister scratch) {
+void SharedTurboAssembler::F32x4Min(XMMRegister dst, XMMRegister lhs,
+                                    XMMRegister rhs, XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // The minps instruction doesn't propagate NaNs and +0's in its first
   // operand. Perform minps in both orders, merge the results, and adjust.
@@ -228,8 +201,8 @@ void SharedMacroAssemblerBase::F32x4Min(XMMRegister dst, XMMRegister lhs,
   Andnps(dst, dst, scratch);
 }
 
-void SharedMacroAssemblerBase::F32x4Max(XMMRegister dst, XMMRegister lhs,
-                                        XMMRegister rhs, XMMRegister scratch) {
+void SharedTurboAssembler::F32x4Max(XMMRegister dst, XMMRegister lhs,
+                                    XMMRegister rhs, XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // The maxps instruction doesn't propagate NaNs and +0's in its first
   // operand. Perform maxps in both orders, merge the results, and adjust.
@@ -260,8 +233,8 @@ void SharedMacroAssemblerBase::F32x4Max(XMMRegister dst, XMMRegister lhs,
   Andnps(dst, dst, scratch);
 }
 
-void SharedMacroAssemblerBase::F64x2Min(XMMRegister dst, XMMRegister lhs,
-                                        XMMRegister rhs, XMMRegister scratch) {
+void SharedTurboAssembler::F64x2Min(XMMRegister dst, XMMRegister lhs,
+                                    XMMRegister rhs, XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -298,8 +271,8 @@ void SharedMacroAssemblerBase::F64x2Min(XMMRegister dst, XMMRegister lhs,
   }
 }
 
-void SharedMacroAssemblerBase::F64x2Max(XMMRegister dst, XMMRegister lhs,
-                                        XMMRegister rhs, XMMRegister scratch) {
+void SharedTurboAssembler::F64x2Max(XMMRegister dst, XMMRegister lhs,
+                                    XMMRegister rhs, XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -338,7 +311,7 @@ void SharedMacroAssemblerBase::F64x2Max(XMMRegister dst, XMMRegister lhs,
   }
 }
 
-void SharedMacroAssemblerBase::F32x4Splat(XMMRegister dst, DoubleRegister src) {
+void SharedTurboAssembler::F32x4Splat(XMMRegister dst, DoubleRegister src) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX2)) {
     CpuFeatureScope avx2_scope(this, AVX2);
@@ -356,8 +329,8 @@ void SharedMacroAssemblerBase::F32x4Splat(XMMRegister dst, DoubleRegister src) {
   }
 }
 
-void SharedMacroAssemblerBase::F32x4ExtractLane(FloatRegister dst,
-                                                XMMRegister src, uint8_t lane) {
+void SharedTurboAssembler::F32x4ExtractLane(FloatRegister dst, XMMRegister src,
+                                            uint8_t lane) {
   ASM_CODE_COMMENT(this);
   DCHECK_LT(lane, 4);
   // These instructions are shorter than insertps, but will leave junk in
@@ -378,8 +351,8 @@ void SharedMacroAssemblerBase::F32x4ExtractLane(FloatRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::S128Store32Lane(Operand dst, XMMRegister src,
-                                               uint8_t laneidx) {
+void SharedTurboAssembler::S128Store32Lane(Operand dst, XMMRegister src,
+                                           uint8_t laneidx) {
   ASM_CODE_COMMENT(this);
   if (laneidx == 0) {
     Movss(dst, src);
@@ -390,8 +363,8 @@ void SharedMacroAssemblerBase::S128Store32Lane(Operand dst, XMMRegister src,
 }
 
 template <typename Op>
-void SharedMacroAssemblerBase::I8x16SplatPreAvx2(XMMRegister dst, Op src,
-                                                 XMMRegister scratch) {
+void SharedTurboAssembler::I8x16SplatPreAvx2(XMMRegister dst, Op src,
+                                             XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   DCHECK(!CpuFeatures::IsSupported(AVX2));
   CpuFeatureScope ssse3_scope(this, SSSE3);
@@ -400,8 +373,8 @@ void SharedMacroAssemblerBase::I8x16SplatPreAvx2(XMMRegister dst, Op src,
   Pshufb(dst, scratch);
 }
 
-void SharedMacroAssemblerBase::I8x16Splat(XMMRegister dst, Register src,
-                                          XMMRegister scratch) {
+void SharedTurboAssembler::I8x16Splat(XMMRegister dst, Register src,
+                                      XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX2)) {
     CpuFeatureScope avx2_scope(this, AVX2);
@@ -412,8 +385,8 @@ void SharedMacroAssemblerBase::I8x16Splat(XMMRegister dst, Register src,
   }
 }
 
-void SharedMacroAssemblerBase::I8x16Splat(XMMRegister dst, Operand src,
-                                          XMMRegister scratch) {
+void SharedTurboAssembler::I8x16Splat(XMMRegister dst, Operand src,
+                                      XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   DCHECK_OPERAND_IS_NOT_REG(src);
   if (CpuFeatures::IsSupported(AVX2)) {
@@ -424,9 +397,9 @@ void SharedMacroAssemblerBase::I8x16Splat(XMMRegister dst, Operand src,
   }
 }
 
-void SharedMacroAssemblerBase::I8x16Shl(XMMRegister dst, XMMRegister src1,
-                                        uint8_t src2, Register tmp1,
-                                        XMMRegister tmp2) {
+void SharedTurboAssembler::I8x16Shl(XMMRegister dst, XMMRegister src1,
+                                    uint8_t src2, Register tmp1,
+                                    XMMRegister tmp2) {
   ASM_CODE_COMMENT(this);
   DCHECK_NE(dst, tmp2);
   // Perform 16-bit shift, then mask away low bits.
@@ -446,9 +419,9 @@ void SharedMacroAssemblerBase::I8x16Shl(XMMRegister dst, XMMRegister src1,
   Pand(dst, tmp2);
 }
 
-void SharedMacroAssemblerBase::I8x16Shl(XMMRegister dst, XMMRegister src1,
-                                        Register src2, Register tmp1,
-                                        XMMRegister tmp2, XMMRegister tmp3) {
+void SharedTurboAssembler::I8x16Shl(XMMRegister dst, XMMRegister src1,
+                                    Register src2, Register tmp1,
+                                    XMMRegister tmp2, XMMRegister tmp3) {
   ASM_CODE_COMMENT(this);
   DCHECK(!AreAliased(dst, tmp2, tmp3));
   DCHECK(!AreAliased(src1, tmp2, tmp3));
@@ -473,8 +446,8 @@ void SharedMacroAssemblerBase::I8x16Shl(XMMRegister dst, XMMRegister src1,
   Psllw(dst, dst, tmp3);
 }
 
-void SharedMacroAssemblerBase::I8x16ShrS(XMMRegister dst, XMMRegister src1,
-                                         uint8_t src2, XMMRegister tmp) {
+void SharedTurboAssembler::I8x16ShrS(XMMRegister dst, XMMRegister src1,
+                                     uint8_t src2, XMMRegister tmp) {
   ASM_CODE_COMMENT(this);
   // Unpack bytes into words, do word (16-bit) shifts, and repack.
   DCHECK_NE(dst, tmp);
@@ -487,9 +460,9 @@ void SharedMacroAssemblerBase::I8x16ShrS(XMMRegister dst, XMMRegister src1,
   Packsswb(dst, tmp);
 }
 
-void SharedMacroAssemblerBase::I8x16ShrS(XMMRegister dst, XMMRegister src1,
-                                         Register src2, Register tmp1,
-                                         XMMRegister tmp2, XMMRegister tmp3) {
+void SharedTurboAssembler::I8x16ShrS(XMMRegister dst, XMMRegister src1,
+                                     Register src2, Register tmp1,
+                                     XMMRegister tmp2, XMMRegister tmp3) {
   ASM_CODE_COMMENT(this);
   DCHECK(!AreAliased(dst, tmp2, tmp3));
   DCHECK_NE(src1, tmp2);
@@ -508,9 +481,9 @@ void SharedMacroAssemblerBase::I8x16ShrS(XMMRegister dst, XMMRegister src1,
   Packsswb(dst, tmp2);
 }
 
-void SharedMacroAssemblerBase::I8x16ShrU(XMMRegister dst, XMMRegister src1,
-                                         uint8_t src2, Register tmp1,
-                                         XMMRegister tmp2) {
+void SharedTurboAssembler::I8x16ShrU(XMMRegister dst, XMMRegister src1,
+                                     uint8_t src2, Register tmp1,
+                                     XMMRegister tmp2) {
   ASM_CODE_COMMENT(this);
   DCHECK_NE(dst, tmp2);
   if (!CpuFeatures::IsSupported(AVX) && (dst != src1)) {
@@ -530,9 +503,9 @@ void SharedMacroAssemblerBase::I8x16ShrU(XMMRegister dst, XMMRegister src1,
   Pand(dst, tmp2);
 }
 
-void SharedMacroAssemblerBase::I8x16ShrU(XMMRegister dst, XMMRegister src1,
-                                         Register src2, Register tmp1,
-                                         XMMRegister tmp2, XMMRegister tmp3) {
+void SharedTurboAssembler::I8x16ShrU(XMMRegister dst, XMMRegister src1,
+                                     Register src2, Register tmp1,
+                                     XMMRegister tmp2, XMMRegister tmp3) {
   ASM_CODE_COMMENT(this);
   DCHECK(!AreAliased(dst, tmp2, tmp3));
   DCHECK_NE(src1, tmp2);
@@ -552,14 +525,14 @@ void SharedMacroAssemblerBase::I8x16ShrU(XMMRegister dst, XMMRegister src1,
 }
 
 template <typename Op>
-void SharedMacroAssemblerBase::I16x8SplatPreAvx2(XMMRegister dst, Op src) {
+void SharedTurboAssembler::I16x8SplatPreAvx2(XMMRegister dst, Op src) {
   DCHECK(!CpuFeatures::IsSupported(AVX2));
   Movd(dst, src);
   Pshuflw(dst, dst, uint8_t{0x0});
   Punpcklqdq(dst, dst);
 }
 
-void SharedMacroAssemblerBase::I16x8Splat(XMMRegister dst, Register src) {
+void SharedTurboAssembler::I16x8Splat(XMMRegister dst, Register src) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX2)) {
     CpuFeatureScope avx2_scope(this, AVX2);
@@ -570,7 +543,7 @@ void SharedMacroAssemblerBase::I16x8Splat(XMMRegister dst, Register src) {
   }
 }
 
-void SharedMacroAssemblerBase::I16x8Splat(XMMRegister dst, Operand src) {
+void SharedTurboAssembler::I16x8Splat(XMMRegister dst, Operand src) {
   ASM_CODE_COMMENT(this);
   DCHECK_OPERAND_IS_NOT_REG(src);
   if (CpuFeatures::IsSupported(AVX2)) {
@@ -581,20 +554,18 @@ void SharedMacroAssemblerBase::I16x8Splat(XMMRegister dst, Operand src) {
   }
 }
 
-void SharedMacroAssemblerBase::I16x8ExtMulLow(XMMRegister dst, XMMRegister src1,
-                                              XMMRegister src2,
-                                              XMMRegister scratch,
-                                              bool is_signed) {
+void SharedTurboAssembler::I16x8ExtMulLow(XMMRegister dst, XMMRegister src1,
+                                          XMMRegister src2, XMMRegister scratch,
+                                          bool is_signed) {
   ASM_CODE_COMMENT(this);
   is_signed ? Pmovsxbw(scratch, src1) : Pmovzxbw(scratch, src1);
   is_signed ? Pmovsxbw(dst, src2) : Pmovzxbw(dst, src2);
   Pmullw(dst, scratch);
 }
 
-void SharedMacroAssemblerBase::I16x8ExtMulHighS(XMMRegister dst,
-                                                XMMRegister src1,
-                                                XMMRegister src2,
-                                                XMMRegister scratch) {
+void SharedTurboAssembler::I16x8ExtMulHighS(XMMRegister dst, XMMRegister src1,
+                                            XMMRegister src2,
+                                            XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -616,10 +587,9 @@ void SharedMacroAssemblerBase::I16x8ExtMulHighS(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I16x8ExtMulHighU(XMMRegister dst,
-                                                XMMRegister src1,
-                                                XMMRegister src2,
-                                                XMMRegister scratch) {
+void SharedTurboAssembler::I16x8ExtMulHighU(XMMRegister dst, XMMRegister src1,
+                                            XMMRegister src2,
+                                            XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // The logic here is slightly complicated to handle all the cases of register
   // aliasing. This allows flexibility for callers in TurboFan and Liftoff.
@@ -667,8 +637,8 @@ void SharedMacroAssemblerBase::I16x8ExtMulHighU(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I16x8SConvertI8x16High(XMMRegister dst,
-                                                      XMMRegister src) {
+void SharedTurboAssembler::I16x8SConvertI8x16High(XMMRegister dst,
+                                                  XMMRegister src) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -690,9 +660,9 @@ void SharedMacroAssemblerBase::I16x8SConvertI8x16High(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I16x8UConvertI8x16High(XMMRegister dst,
-                                                      XMMRegister src,
-                                                      XMMRegister scratch) {
+void SharedTurboAssembler::I16x8UConvertI8x16High(XMMRegister dst,
+                                                  XMMRegister src,
+                                                  XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -716,10 +686,9 @@ void SharedMacroAssemblerBase::I16x8UConvertI8x16High(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I16x8Q15MulRSatS(XMMRegister dst,
-                                                XMMRegister src1,
-                                                XMMRegister src2,
-                                                XMMRegister scratch) {
+void SharedTurboAssembler::I16x8Q15MulRSatS(XMMRegister dst, XMMRegister src1,
+                                            XMMRegister src2,
+                                            XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // k = i16x8.splat(0x8000)
   Pcmpeqd(scratch, scratch);
@@ -735,9 +704,9 @@ void SharedMacroAssemblerBase::I16x8Q15MulRSatS(XMMRegister dst,
   Pxor(dst, scratch);
 }
 
-void SharedMacroAssemblerBase::I16x8DotI8x16I7x16S(XMMRegister dst,
-                                                   XMMRegister src1,
-                                                   XMMRegister src2) {
+void SharedTurboAssembler::I16x8DotI8x16I7x16S(XMMRegister dst,
+                                               XMMRegister src1,
+                                               XMMRegister src2) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -750,33 +719,9 @@ void SharedMacroAssemblerBase::I16x8DotI8x16I7x16S(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I32x4DotI8x16I7x16AddS(
-    XMMRegister dst, XMMRegister src1, XMMRegister src2, XMMRegister src3,
-    XMMRegister scratch, XMMRegister splat_reg) {
-  ASM_CODE_COMMENT(this);
-  // k = i16x8.splat(1)
-  Pcmpeqd(splat_reg, splat_reg);
-  Psrlw(splat_reg, splat_reg, byte{15});
-
-  if (CpuFeatures::IsSupported(AVX)) {
-    CpuFeatureScope avx_scope(this, AVX);
-    vpmaddubsw(scratch, src2, src1);
-  } else {
-    movdqa(scratch, src2);
-    pmaddubsw(scratch, src1);
-  }
-  Pmaddwd(scratch, splat_reg);
-  if (dst == src3) {
-    Paddd(dst, scratch);
-  } else {
-    Movdqa(dst, src3);
-    Paddd(dst, scratch);
-  }
-}
-
-void SharedMacroAssemblerBase::I32x4ExtAddPairwiseI16x8U(XMMRegister dst,
-                                                         XMMRegister src,
-                                                         XMMRegister tmp) {
+void SharedTurboAssembler::I32x4ExtAddPairwiseI16x8U(XMMRegister dst,
+                                                     XMMRegister src,
+                                                     XMMRegister tmp) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -818,10 +763,9 @@ void SharedMacroAssemblerBase::I32x4ExtAddPairwiseI16x8U(XMMRegister dst,
 // 1. Multiply low word into scratch.
 // 2. Multiply high word (can be signed or unsigned) into dst.
 // 3. Unpack and interleave scratch and dst into dst.
-void SharedMacroAssemblerBase::I32x4ExtMul(XMMRegister dst, XMMRegister src1,
-                                           XMMRegister src2,
-                                           XMMRegister scratch, bool low,
-                                           bool is_signed) {
+void SharedTurboAssembler::I32x4ExtMul(XMMRegister dst, XMMRegister src1,
+                                       XMMRegister src2, XMMRegister scratch,
+                                       bool low, bool is_signed) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -837,8 +781,8 @@ void SharedMacroAssemblerBase::I32x4ExtMul(XMMRegister dst, XMMRegister src1,
   }
 }
 
-void SharedMacroAssemblerBase::I32x4SConvertI16x8High(XMMRegister dst,
-                                                      XMMRegister src) {
+void SharedTurboAssembler::I32x4SConvertI16x8High(XMMRegister dst,
+                                                  XMMRegister src) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -860,9 +804,9 @@ void SharedMacroAssemblerBase::I32x4SConvertI16x8High(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I32x4UConvertI16x8High(XMMRegister dst,
-                                                      XMMRegister src,
-                                                      XMMRegister scratch) {
+void SharedTurboAssembler::I32x4UConvertI16x8High(XMMRegister dst,
+                                                  XMMRegister src,
+                                                  XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -886,8 +830,8 @@ void SharedMacroAssemblerBase::I32x4UConvertI16x8High(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2Neg(XMMRegister dst, XMMRegister src,
-                                        XMMRegister scratch) {
+void SharedTurboAssembler::I64x2Neg(XMMRegister dst, XMMRegister src,
+                                    XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope scope(this, AVX);
@@ -903,8 +847,8 @@ void SharedMacroAssemblerBase::I64x2Neg(XMMRegister dst, XMMRegister src,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2Abs(XMMRegister dst, XMMRegister src,
-                                        XMMRegister scratch) {
+void SharedTurboAssembler::I64x2Abs(XMMRegister dst, XMMRegister src,
+                                    XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -924,8 +868,8 @@ void SharedMacroAssemblerBase::I64x2Abs(XMMRegister dst, XMMRegister src,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2GtS(XMMRegister dst, XMMRegister src0,
-                                        XMMRegister src1, XMMRegister scratch) {
+void SharedTurboAssembler::I64x2GtS(XMMRegister dst, XMMRegister src0,
+                                    XMMRegister src1, XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -958,8 +902,8 @@ void SharedMacroAssemblerBase::I64x2GtS(XMMRegister dst, XMMRegister src0,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2GeS(XMMRegister dst, XMMRegister src0,
-                                        XMMRegister src1, XMMRegister scratch) {
+void SharedTurboAssembler::I64x2GeS(XMMRegister dst, XMMRegister src0,
+                                    XMMRegister src1, XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -993,8 +937,8 @@ void SharedMacroAssemblerBase::I64x2GeS(XMMRegister dst, XMMRegister src0,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2ShrS(XMMRegister dst, XMMRegister src,
-                                         uint8_t shift, XMMRegister xmm_tmp) {
+void SharedTurboAssembler::I64x2ShrS(XMMRegister dst, XMMRegister src,
+                                     uint8_t shift, XMMRegister xmm_tmp) {
   ASM_CODE_COMMENT(this);
   DCHECK_GT(64, shift);
   DCHECK_NE(xmm_tmp, dst);
@@ -1026,10 +970,10 @@ void SharedMacroAssemblerBase::I64x2ShrS(XMMRegister dst, XMMRegister src,
   Psubq(dst, xmm_tmp);
 }
 
-void SharedMacroAssemblerBase::I64x2ShrS(XMMRegister dst, XMMRegister src,
-                                         Register shift, XMMRegister xmm_tmp,
-                                         XMMRegister xmm_shift,
-                                         Register tmp_shift) {
+void SharedTurboAssembler::I64x2ShrS(XMMRegister dst, XMMRegister src,
+                                     Register shift, XMMRegister xmm_tmp,
+                                     XMMRegister xmm_shift,
+                                     Register tmp_shift) {
   ASM_CODE_COMMENT(this);
   DCHECK_NE(xmm_tmp, dst);
   DCHECK_NE(xmm_tmp, src);
@@ -1056,9 +1000,9 @@ void SharedMacroAssemblerBase::I64x2ShrS(XMMRegister dst, XMMRegister src,
   Psubq(dst, xmm_tmp);
 }
 
-void SharedMacroAssemblerBase::I64x2Mul(XMMRegister dst, XMMRegister lhs,
-                                        XMMRegister rhs, XMMRegister tmp1,
-                                        XMMRegister tmp2) {
+void SharedTurboAssembler::I64x2Mul(XMMRegister dst, XMMRegister lhs,
+                                    XMMRegister rhs, XMMRegister tmp1,
+                                    XMMRegister tmp2) {
   ASM_CODE_COMMENT(this);
   DCHECK(!AreAliased(dst, tmp1, tmp2));
   DCHECK(!AreAliased(lhs, tmp1, tmp2));
@@ -1106,10 +1050,9 @@ void SharedMacroAssemblerBase::I64x2Mul(XMMRegister dst, XMMRegister lhs,
 // 2. Unpack src1, src0 into even-number elements of dst.
 // 3. Multiply 1. with 2.
 // For non-AVX, use non-destructive pshufd instead of punpckldq/punpckhdq.
-void SharedMacroAssemblerBase::I64x2ExtMul(XMMRegister dst, XMMRegister src1,
-                                           XMMRegister src2,
-                                           XMMRegister scratch, bool low,
-                                           bool is_signed) {
+void SharedTurboAssembler::I64x2ExtMul(XMMRegister dst, XMMRegister src1,
+                                       XMMRegister src2, XMMRegister scratch,
+                                       bool low, bool is_signed) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -1138,8 +1081,8 @@ void SharedMacroAssemblerBase::I64x2ExtMul(XMMRegister dst, XMMRegister src1,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2SConvertI32x4High(XMMRegister dst,
-                                                      XMMRegister src) {
+void SharedTurboAssembler::I64x2SConvertI32x4High(XMMRegister dst,
+                                                  XMMRegister src) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -1156,9 +1099,9 @@ void SharedMacroAssemblerBase::I64x2SConvertI32x4High(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::I64x2UConvertI32x4High(XMMRegister dst,
-                                                      XMMRegister src,
-                                                      XMMRegister scratch) {
+void SharedTurboAssembler::I64x2UConvertI32x4High(XMMRegister dst,
+                                                  XMMRegister src,
+                                                  XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (CpuFeatures::IsSupported(AVX)) {
     CpuFeatureScope avx_scope(this, AVX);
@@ -1178,8 +1121,8 @@ void SharedMacroAssemblerBase::I64x2UConvertI32x4High(XMMRegister dst,
   }
 }
 
-void SharedMacroAssemblerBase::S128Not(XMMRegister dst, XMMRegister src,
-                                       XMMRegister scratch) {
+void SharedTurboAssembler::S128Not(XMMRegister dst, XMMRegister src,
+                                   XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   if (dst == src) {
     Pcmpeqd(scratch, scratch);
@@ -1190,9 +1133,9 @@ void SharedMacroAssemblerBase::S128Not(XMMRegister dst, XMMRegister src,
   }
 }
 
-void SharedMacroAssemblerBase::S128Select(XMMRegister dst, XMMRegister mask,
-                                          XMMRegister src1, XMMRegister src2,
-                                          XMMRegister scratch) {
+void SharedTurboAssembler::S128Select(XMMRegister dst, XMMRegister mask,
+                                      XMMRegister src1, XMMRegister src2,
+                                      XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // v128.select = v128.or(v128.and(v1, c), v128.andnot(v2, c)).
   // pandn(x, y) = !x & y, so we have to flip the mask and input.
@@ -1211,8 +1154,8 @@ void SharedMacroAssemblerBase::S128Select(XMMRegister dst, XMMRegister mask,
   }
 }
 
-void SharedMacroAssemblerBase::S128Load8Splat(XMMRegister dst, Operand src,
-                                              XMMRegister scratch) {
+void SharedTurboAssembler::S128Load8Splat(XMMRegister dst, Operand src,
+                                          XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // The trap handler uses the current pc to creating a landing, so that it can
   // determine if a trap occured in Wasm code due to a OOB load. Make sure the
@@ -1234,8 +1177,8 @@ void SharedMacroAssemblerBase::S128Load8Splat(XMMRegister dst, Operand src,
   }
 }
 
-void SharedMacroAssemblerBase::S128Load16Splat(XMMRegister dst, Operand src,
-                                               XMMRegister scratch) {
+void SharedTurboAssembler::S128Load16Splat(XMMRegister dst, Operand src,
+                                           XMMRegister scratch) {
   ASM_CODE_COMMENT(this);
   // The trap handler uses the current pc to creating a landing, so that it can
   // determine if a trap occured in Wasm code due to a OOB load. Make sure the
@@ -1256,7 +1199,7 @@ void SharedMacroAssemblerBase::S128Load16Splat(XMMRegister dst, Operand src,
   }
 }
 
-void SharedMacroAssemblerBase::S128Load32Splat(XMMRegister dst, Operand src) {
+void SharedTurboAssembler::S128Load32Splat(XMMRegister dst, Operand src) {
   ASM_CODE_COMMENT(this);
   // The trap handler uses the current pc to creating a landing, so that it can
   // determine if a trap occured in Wasm code due to a OOB load. Make sure the
@@ -1270,8 +1213,8 @@ void SharedMacroAssemblerBase::S128Load32Splat(XMMRegister dst, Operand src) {
   }
 }
 
-void SharedMacroAssemblerBase::S128Store64Lane(Operand dst, XMMRegister src,
-                                               uint8_t laneidx) {
+void SharedTurboAssembler::S128Store64Lane(Operand dst, XMMRegister src,
+                                           uint8_t laneidx) {
   ASM_CODE_COMMENT(this);
   if (laneidx == 0) {
     Movlps(dst, src);
@@ -1287,37 +1230,37 @@ void SharedMacroAssemblerBase::S128Store64Lane(Operand dst, XMMRegister src,
   if (CpuFeatures::IsSupported(FMA3)) {       \
     CpuFeatureScope fma3_scope(this, FMA3);   \
     if (dst == src1) {                        \
-      vfmadd213##ps_or_pd(dst, src2, src3);   \
+      vfmadd231##ps_or_pd(dst, src2, src3);   \
     } else if (dst == src2) {                 \
-      vfmadd213##ps_or_pd(dst, src1, src3);   \
+      vfmadd132##ps_or_pd(dst, src1, src3);   \
     } else if (dst == src3) {                 \
-      vfmadd231##ps_or_pd(dst, src2, src1);   \
+      vfmadd213##ps_or_pd(dst, src2, src1);   \
     } else {                                  \
       CpuFeatureScope avx_scope(this, AVX);   \
       vmovups(dst, src1);                     \
-      vfmadd213##ps_or_pd(dst, src2, src3);   \
+      vfmadd231##ps_or_pd(dst, src2, src3);   \
     }                                         \
   } else if (CpuFeatures::IsSupported(AVX)) { \
     CpuFeatureScope avx_scope(this, AVX);     \
-    vmul##ps_or_pd(tmp, src1, src2);          \
-    vadd##ps_or_pd(dst, tmp, src3);           \
+    vmul##ps_or_pd(tmp, src2, src3);          \
+    vadd##ps_or_pd(dst, src1, tmp);           \
   } else {                                    \
     if (dst == src1) {                        \
-      mul##ps_or_pd(dst, src2);               \
-      add##ps_or_pd(dst, src3);               \
+      movaps(tmp, src2);                      \
+      mul##ps_or_pd(tmp, src3);               \
+      add##ps_or_pd(dst, tmp);                \
     } else if (dst == src2) {                 \
       DCHECK_NE(src2, src1);                  \
-      mul##ps_or_pd(dst, src1);               \
-      add##ps_or_pd(dst, src3);               \
+      mul##ps_or_pd(src2, src3);              \
+      add##ps_or_pd(src2, src1);              \
     } else if (dst == src3) {                 \
       DCHECK_NE(src3, src1);                  \
-      movaps(tmp, src1);                      \
-      mul##ps_or_pd(tmp, src2);               \
-      add##ps_or_pd(dst, tmp);                \
+      mul##ps_or_pd(src3, src2);              \
+      add##ps_or_pd(src3, src1);              \
     } else {                                  \
-      movaps(dst, src1);                      \
-      mul##ps_or_pd(dst, src2);               \
-      add##ps_or_pd(dst, src3);               \
+      movaps(dst, src2);                      \
+      mul##ps_or_pd(dst, src3);               \
+      add##ps_or_pd(dst, src1);               \
     }                                         \
   }
 
@@ -1327,50 +1270,50 @@ void SharedMacroAssemblerBase::S128Store64Lane(Operand dst, XMMRegister src,
   if (CpuFeatures::IsSupported(FMA3)) {       \
     CpuFeatureScope fma3_scope(this, FMA3);   \
     if (dst == src1) {                        \
-      vfnmadd213##ps_or_pd(dst, src2, src3);  \
+      vfnmadd231##ps_or_pd(dst, src2, src3);  \
     } else if (dst == src2) {                 \
-      vfnmadd213##ps_or_pd(dst, src1, src3);  \
+      vfnmadd132##ps_or_pd(dst, src1, src3);  \
     } else if (dst == src3) {                 \
-      vfnmadd231##ps_or_pd(dst, src2, src1);  \
+      vfnmadd213##ps_or_pd(dst, src2, src1);  \
     } else {                                  \
       CpuFeatureScope avx_scope(this, AVX);   \
       vmovups(dst, src1);                     \
-      vfnmadd213##ps_or_pd(dst, src2, src3);  \
+      vfnmadd231##ps_or_pd(dst, src2, src3);  \
     }                                         \
   } else if (CpuFeatures::IsSupported(AVX)) { \
     CpuFeatureScope avx_scope(this, AVX);     \
-    vmul##ps_or_pd(tmp, src1, src2);          \
-    vsub##ps_or_pd(dst, src3, tmp);           \
+    vmul##ps_or_pd(tmp, src2, src3);          \
+    vsub##ps_or_pd(dst, src1, tmp);           \
   } else {                                    \
-    movaps(tmp, src1);                        \
-    mul##ps_or_pd(tmp, src2);                 \
-    if (dst != src3) {                        \
-      movaps(dst, src3);                      \
+    movaps(tmp, src2);                        \
+    mul##ps_or_pd(tmp, src3);                 \
+    if (dst != src1) {                        \
+      movaps(dst, src1);                      \
     }                                         \
     sub##ps_or_pd(dst, tmp);                  \
   }
 
-void SharedMacroAssemblerBase::F32x4Qfma(XMMRegister dst, XMMRegister src1,
-                                         XMMRegister src2, XMMRegister src3,
-                                         XMMRegister tmp) {
+void SharedTurboAssembler::F32x4Qfma(XMMRegister dst, XMMRegister src1,
+                                     XMMRegister src2, XMMRegister src3,
+                                     XMMRegister tmp) {
   QFMA(ps)
 }
 
-void SharedMacroAssemblerBase::F32x4Qfms(XMMRegister dst, XMMRegister src1,
-                                         XMMRegister src2, XMMRegister src3,
-                                         XMMRegister tmp) {
+void SharedTurboAssembler::F32x4Qfms(XMMRegister dst, XMMRegister src1,
+                                     XMMRegister src2, XMMRegister src3,
+                                     XMMRegister tmp) {
   QFMS(ps)
 }
 
-void SharedMacroAssemblerBase::F64x2Qfma(XMMRegister dst, XMMRegister src1,
-                                         XMMRegister src2, XMMRegister src3,
-                                         XMMRegister tmp) {
+void SharedTurboAssembler::F64x2Qfma(XMMRegister dst, XMMRegister src1,
+                                     XMMRegister src2, XMMRegister src3,
+                                     XMMRegister tmp) {
   QFMA(pd);
 }
 
-void SharedMacroAssemblerBase::F64x2Qfms(XMMRegister dst, XMMRegister src1,
-                                         XMMRegister src2, XMMRegister src3,
-                                         XMMRegister tmp) {
+void SharedTurboAssembler::F64x2Qfms(XMMRegister dst, XMMRegister src1,
+                                     XMMRegister src2, XMMRegister src3,
+                                     XMMRegister tmp) {
   QFMS(pd);
 }
 

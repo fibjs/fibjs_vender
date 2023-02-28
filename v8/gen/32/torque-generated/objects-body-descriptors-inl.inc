@@ -213,69 +213,6 @@ class TurbofanOtherNumberConstantType::BodyDescriptor final : public DataOnlyBod
   }
 
 };
-class TurboshaftWord32Type::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 4;
-  }
-
-};
-class TurboshaftWord32RangeType::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 12;
-  }
-
-};
-class TurboshaftWord32SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return TurboshaftWord32SetType::unchecked_cast(raw_object).AllocatedSize();
-  }
-
-};
-class TurboshaftWord64Type::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 4;
-  }
-
-};
-class TurboshaftWord64RangeType::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 20;
-  }
-
-};
-class TurboshaftWord64SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return TurboshaftWord64SetType::unchecked_cast(raw_object).AllocatedSize();
-  }
-
-};
-class TurboshaftFloat64Type::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 8;
-  }
-
-};
-class TurboshaftFloat64RangeType::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 28;
-  }
-
-};
-class TurboshaftFloat64SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
- public:
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return TurboshaftFloat64SetType::unchecked_cast(raw_object).AllocatedSize();
-  }
-
-};
 class InternalClass::BodyDescriptor final : public SuffixRangeBodyDescriptor<4> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {

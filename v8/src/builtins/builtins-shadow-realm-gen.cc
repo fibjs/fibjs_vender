@@ -38,9 +38,6 @@ class ShadowRealmBuiltinsAssembler : public CodeStubAssembler {
   TNode<JSFunction> AllocateImportValueFulfilledFunction(
       TNode<NativeContext> caller_context, TNode<NativeContext> eval_context,
       TNode<String> specifier, TNode<String> export_name);
-  void ShadowRealmThrow(TNode<Context> context,
-                        MessageTemplate fallback_message,
-                        TNode<Object> exception);
 };
 
 TNode<JSObject> ShadowRealmBuiltinsAssembler::AllocateJSWrappedFunction(
@@ -98,14 +95,6 @@ void ShadowRealmBuiltinsAssembler::CheckAccessor(TNode<DescriptorArray> array,
   GotoIfNot(TaggedEqual(key, name), bailout);
   TNode<Object> value = LoadValueByDescriptorEntry(array, index);
   GotoIfNot(IsAccessorInfo(CAST(value)), bailout);
-}
-
-void ShadowRealmBuiltinsAssembler::ShadowRealmThrow(
-    TNode<Context> context, MessageTemplate fallback_message,
-    TNode<Object> exception) {
-  TNode<Smi> template_index = SmiConstant(static_cast<int>(fallback_message));
-  CallRuntime(Runtime::kShadowRealmThrow, context, template_index, exception);
-  Unreachable();
 }
 
 // https://tc39.es/proposal-shadowrealm/#sec-getwrappedvalue
@@ -270,7 +259,7 @@ TF_BUILTIN(CallWrappedFunction, ShadowRealmBuiltinsAssembler) {
         StoreFixedArrayElement(
             wrapped_args, IntPtrAdd(index, IntPtrConstant(1)), wrapped_value);
       },
-      1, LoopUnrollingMode::kNo, IndexAdvanceMode::kPost);
+      1, IndexAdvanceMode::kPost);
 
   TVARIABLE(Object, var_exception);
   TNode<Object> result;
@@ -296,8 +285,11 @@ TF_BUILTIN(CallWrappedFunction, ShadowRealmBuiltinsAssembler) {
   // 11. Else,
   BIND(&call_exception);
   // 11a. Throw a TypeError exception.
-  ShadowRealmThrow(context, MessageTemplate::kCallWrappedFunctionThrew,
-                   var_exception.value());
+  // TODO(v8:11989): provide a non-observable inspection on the
+  // pending_exception to the newly created TypeError.
+  // https://github.com/tc39/proposal-shadowrealm/issues/353
+  ThrowTypeError(context, MessageTemplate::kCallShadowRealmFunctionThrown,
+                 var_exception.value());
 
   BIND(&target_not_callable);
   // A wrapped value should not be non-callable.
@@ -424,9 +416,10 @@ TF_BUILTIN(ShadowRealmImportValueFulfilled, ShadowRealmBuiltinsAssembler) {
 
 TF_BUILTIN(ShadowRealmImportValueRejected, ShadowRealmBuiltinsAssembler) {
   TNode<Context> context = Parameter<Context>(Descriptor::kContext);
-  TNode<Object> exception = Parameter<Object>(Descriptor::kException);
-  ShadowRealmThrow(context, MessageTemplate::kImportShadowRealmRejected,
-                   exception);
+  // TODO(v8:11989): provide a non-observable inspection on the
+  // pending_exception to the newly created TypeError.
+  // https://github.com/tc39/proposal-shadowrealm/issues/353
+  ThrowTypeError(context, MessageTemplate::kImportShadowRealmRejected);
 }
 
 }  // namespace internal

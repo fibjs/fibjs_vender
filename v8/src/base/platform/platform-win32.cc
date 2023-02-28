@@ -1022,7 +1022,7 @@ void OS::SetDataReadOnly(void* address, size_t size) {
 
   unsigned long old_protection;
   CHECK(VirtualProtect(address, size, PAGE_READONLY, &old_protection));
-  CHECK(old_protection == PAGE_READWRITE || old_protection == PAGE_WRITECOPY);
+  CHECK_EQ(PAGE_READWRITE, old_protection);
 }
 
 // static

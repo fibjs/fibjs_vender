@@ -185,10 +185,6 @@ void ArmDebugger::RedoBreakpoint() {
 }
 
 void ArmDebugger::Debug() {
-  if (v8_flags.correctness_fuzzer_suppressions) {
-    PrintF("Debugger disabled for differential fuzzing.\n");
-    return;
-  }
   intptr_t last_pc = -1;
   bool done = false;
 

@@ -10,13 +10,13 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWi
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 inline intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
@@ -138,7 +138,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -174,7 +174,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);

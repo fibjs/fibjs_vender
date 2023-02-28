@@ -86,14 +86,14 @@ void TorqueGeneratedJSFunction<D, P>::set_feedback_cell(FeedbackCell value, Writ
   CONDITIONAL_WRITE_BARRIER(*this, kFeedbackCellOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
 template<class D, class P>
 Code TorqueGeneratedJSFunction<D, P>::code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSFunction::code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
 template<class D, class P>
 Code TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
   Code value;
@@ -102,7 +102,7 @@ Code TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
 template<class D, class P>
 void TorqueGeneratedJSFunction<D, P>::set_code(Code value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsCode());
@@ -110,14 +110,14 @@ void TorqueGeneratedJSFunction<D, P>::set_code(Code value, WriteBarrierMode mode
   CONDITIONAL_WRITE_BARRIER(*this, kCodeOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSFunction::prototype_or_initial_map(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map(PtrComprCageBase cage_base) const {
   HeapObject value;
@@ -126,7 +126,7 @@ HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map(PtrComprCag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
 template<class D, class P>
 void TorqueGeneratedJSFunction<D, P>::set_prototype_or_initial_map(HeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSReceiver() || value.IsMap());

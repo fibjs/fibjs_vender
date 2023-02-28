@@ -98,6 +98,8 @@ class ValueSerializer {
   void SetTreatArrayBufferViewsAsHostObjects(bool mode);
 
  private:
+  friend class WebSnapshotSerializer;
+
   // Managing allocations of the internal buffer.
   Maybe<bool> ExpandBuffer(size_t required_capacity);
 
@@ -247,6 +249,8 @@ class ValueDeserializer {
   bool ReadByte(uint8_t* value) V8_WARN_UNUSED_RESULT;
 
  private:
+  friend class WebSnapshotDeserializer;
+
   // Reading the wire format.
   Maybe<SerializationTag> PeekTag() const V8_WARN_UNUSED_RESULT;
   void ConsumeTag(SerializationTag peeked_tag);
@@ -293,15 +297,15 @@ class ValueDeserializer {
   MaybeHandle<JSRegExp> ReadJSRegExp() V8_WARN_UNUSED_RESULT;
   MaybeHandle<JSMap> ReadJSMap() V8_WARN_UNUSED_RESULT;
   MaybeHandle<JSSet> ReadJSSet() V8_WARN_UNUSED_RESULT;
-  MaybeHandle<JSArrayBuffer> ReadJSArrayBuffer(
-      bool is_shared, bool is_resizable) V8_WARN_UNUSED_RESULT;
+  MaybeHandle<JSArrayBuffer> ReadJSArrayBuffer(bool is_shared)
+      V8_WARN_UNUSED_RESULT;
   MaybeHandle<JSArrayBuffer> ReadTransferredJSArrayBuffer()
       V8_WARN_UNUSED_RESULT;
   MaybeHandle<JSArrayBufferView> ReadJSArrayBufferView(
       Handle<JSArrayBuffer> buffer) V8_WARN_UNUSED_RESULT;
-  bool ValidateJSArrayBufferViewFlags(
-      JSArrayBuffer buffer, uint32_t serialized_flags, bool& is_length_tracking,
-      bool& is_backed_by_rab) V8_WARN_UNUSED_RESULT;
+  bool ValidateAndSetJSArrayBufferViewFlags(
+      JSArrayBufferView view, JSArrayBuffer buffer,
+      uint32_t serialized_flags) V8_WARN_UNUSED_RESULT;
   MaybeHandle<Object> ReadJSError() V8_WARN_UNUSED_RESULT;
 #if V8_ENABLE_WEBASSEMBLY
   MaybeHandle<JSObject> ReadWasmModuleTransfer() V8_WARN_UNUSED_RESULT;

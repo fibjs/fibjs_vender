@@ -168,7 +168,7 @@ void EmitLoad(InstructionSelector* selector, Node* node, InstructionCode opcode,
       selector->CanAddressRelativeToRootsRegister(m.ResolvedValue())) {
     ptrdiff_t const delta =
         g.GetIntegerConstantValue(index) +
-        MacroAssemblerBase::RootRegisterOffsetForExternalReference(
+        TurboAssemblerBase::RootRegisterOffsetForExternalReference(
             selector->isolate(), m.ResolvedValue());
     // Check that the delta is a 32-bit integer due to the limitations of
     // immediate operands.
@@ -280,10 +280,10 @@ void InstructionSelector::VisitLoad(Node* node) {
       opcode = kRiscvLoadDecompressTaggedSigned;
       break;
     case MachineRepresentation::kTaggedPointer:
-      opcode = kRiscvLoadDecompressTagged;
+      opcode = kRiscvLoadDecompressTaggedPointer;
       break;
     case MachineRepresentation::kTagged:
-      opcode = kRiscvLoadDecompressTagged;
+      opcode = kRiscvLoadDecompressAnyTagged;
       break;
 #else
     case MachineRepresentation::kTaggedSigned:   // Fall through.
@@ -1938,10 +1938,10 @@ void InstructionSelector::VisitWord64AtomicLoad(Node* node) {
       opcode = kRiscv64LdDecompressTaggedSigned;
       break;
     case MachineRepresentation::kTaggedPointer:
-      opcode = kRiscv64LdDecompressTagged;
+      opcode = kRiscv64LdDecompressTaggedPointer;
       break;
     case MachineRepresentation::kTagged:
-      opcode = kRiscv64LdDecompressTagged;
+      opcode = kRiscv64LdDecompressAnyTagged;
       break;
 #else
     case MachineRepresentation::kTaggedSigned:   // Fall through.

@@ -65,8 +65,7 @@ void RelocInfo::apply(intptr_t delta) {
 }
 
 Address RelocInfo::target_address() {
-  DCHECK(IsCodeTargetMode(rmode_) || IsWasmCall(rmode_) ||
-         IsNearBuiltinEntry(rmode_));
+  DCHECK(IsCodeTargetMode(rmode_) || IsWasmCall(rmode_));
   return Assembler::target_address_at(pc_, constant_pool_);
 }
 
@@ -128,7 +127,7 @@ Handle<HeapObject> Assembler::compressed_embedded_object_handle_at(
 }
 
 void Assembler::deserialization_set_special_target_at(
-    Address instruction_payload, InstructionStream code, Address target) {
+    Address instruction_payload, Code code, Address target) {
   set_target_address_at(instruction_payload,
                         !code.is_null() ? code.constant_pool() : kNullAddress,
                         target);
@@ -162,7 +161,7 @@ void Assembler::deserialization_set_target_internal_reference_at(
 HeapObject RelocInfo::target_object(PtrComprCageBase cage_base) {
   DCHECK(IsCodeTarget(rmode_) || IsEmbeddedObjectMode(rmode_));
   if (IsCompressedEmbeddedObject(rmode_)) {
-    return HeapObject::cast(Object(V8HeapCompressionScheme::DecompressTagged(
+    return HeapObject::cast(Object(V8HeapCompressionScheme::DecompressTaggedAny(
         cage_base,
         Assembler::target_compressed_address_at(pc_, constant_pool_))));
   } else {
@@ -245,20 +244,7 @@ Handle<Code> Assembler::relative_code_target_object_handle_at(
   return Handle<Code>::cast(GetEmbeddedObject(code_target_index));
 }
 
-Builtin Assembler::target_builtin_at(Address pc) {
-  Instr instr1 = Assembler::instr_at(pc);
-  Instr instr2 = Assembler::instr_at(pc + kInstrSize);
-  DCHECK(IsAuipc(instr1));
-  DCHECK(IsJalr(instr2));
-  int32_t builtin_id = BrachlongOffset(instr1, instr2);
-  DCHECK(Builtins::IsBuiltinId(builtin_id));
-  return static_cast<Builtin>(builtin_id);
-}
-
-Builtin RelocInfo::target_builtin_at(Assembler* origin) {
-  DCHECK(IsNearBuiltinEntry(rmode_));
-  return Assembler::target_builtin_at(pc_);
-}
+Builtin RelocInfo::target_builtin_at(Assembler* origin) { UNREACHABLE(); }
 
 Address RelocInfo::target_off_heap_target() {
   DCHECK(IsOffHeapTarget(rmode_));

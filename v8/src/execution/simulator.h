@@ -110,8 +110,9 @@ class GeneratedCode {
     return GeneratedCode(isolate, reinterpret_cast<Signature*>(buffer));
   }
 
-  static GeneratedCode FromCode(Code code) {
-    return FromAddress(code.GetIsolate(), code.InstructionStart());
+  template <typename CodeOrCodeT>
+  static GeneratedCode FromCode(CodeOrCodeT code) {
+    return FromAddress(code.GetIsolate(), code.entry());
   }
 
 #ifdef USE_SIMULATOR

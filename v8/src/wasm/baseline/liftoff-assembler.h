@@ -30,57 +30,68 @@ class CallDescriptor;
 
 namespace wasm {
 
-inline constexpr Condition Negate(Condition cond) {
+enum LiftoffCondition {
+  kEqual,
+  kEqualZero = kEqual,  // When used in a unary operation.
+  kUnequal,
+  kNotEqualZero = kUnequal,  // When used in a unary operation.
+  kSignedLessThan,
+  kSignedLessEqual,
+  kSignedGreaterThan,
+  kSignedGreaterEqual,
+  kUnsignedLessThan,
+  kUnsignedLessEqual,
+  kUnsignedGreaterThan,
+  kUnsignedGreaterEqual
+};
+
+inline constexpr LiftoffCondition Negate(LiftoffCondition cond) {
   switch (cond) {
     case kEqual:
-      return kNotEqual;
-    case kNotEqual:
+      return kUnequal;
+    case kUnequal:
       return kEqual;
-    case kLessThan:
-      return kGreaterThanEqual;
-    case kLessThanEqual:
-      return kGreaterThan;
-    case kGreaterThanEqual:
-      return kLessThan;
-    case kGreaterThan:
-      return kLessThanEqual;
+    case kSignedLessThan:
+      return kSignedGreaterEqual;
+    case kSignedLessEqual:
+      return kSignedGreaterThan;
+    case kSignedGreaterEqual:
+      return kSignedLessThan;
+    case kSignedGreaterThan:
+      return kSignedLessEqual;
     case kUnsignedLessThan:
-      return kUnsignedGreaterThanEqual;
-    case kUnsignedLessThanEqual:
+      return kUnsignedGreaterEqual;
+    case kUnsignedLessEqual:
       return kUnsignedGreaterThan;
-    case kUnsignedGreaterThanEqual:
+    case kUnsignedGreaterEqual:
       return kUnsignedLessThan;
     case kUnsignedGreaterThan:
-      return kUnsignedLessThanEqual;
-    default:
-      UNREACHABLE();
+      return kUnsignedLessEqual;
   }
 }
 
-inline constexpr Condition Flip(Condition cond) {
+inline constexpr LiftoffCondition Flip(LiftoffCondition cond) {
   switch (cond) {
     case kEqual:
       return kEqual;
-    case kNotEqual:
-      return kNotEqual;
-    case kLessThan:
-      return kGreaterThan;
-    case kLessThanEqual:
-      return kGreaterThanEqual;
-    case kGreaterThanEqual:
-      return kLessThanEqual;
-    case kGreaterThan:
-      return kLessThan;
+    case kUnequal:
+      return kUnequal;
+    case kSignedLessThan:
+      return kSignedGreaterThan;
+    case kSignedLessEqual:
+      return kSignedGreaterEqual;
+    case kSignedGreaterEqual:
+      return kSignedLessEqual;
+    case kSignedGreaterThan:
+      return kSignedLessThan;
     case kUnsignedLessThan:
       return kUnsignedGreaterThan;
-    case kUnsignedLessThanEqual:
-      return kUnsignedGreaterThanEqual;
-    case kUnsignedGreaterThanEqual:
-      return kUnsignedLessThanEqual;
+    case kUnsignedLessEqual:
+      return kUnsignedGreaterEqual;
+    case kUnsignedGreaterEqual:
+      return kUnsignedLessEqual;
     case kUnsignedGreaterThan:
       return kUnsignedLessThan;
-    default:
-      UNREACHABLE();
   }
 }
 
@@ -98,15 +109,16 @@ class FreezeCacheState {
 #endif
 };
 
-class LiftoffAssembler : public MacroAssembler {
+class LiftoffAssembler : public TurboAssembler {
  public:
   // Each slot in our stack frame currently has exactly 8 bytes.
   static constexpr int kStackSlotSize = 8;
 
-  static constexpr ValueKind kIntPtrKind =
+  static constexpr ValueKind kPointerKind =
       kSystemPointerSize == kInt32Size ? kI32 : kI64;
-  // A tagged value known to be a Smi can be treated like a ptr-sized int.
-  static constexpr ValueKind kSmiKind = kTaggedSize == kInt32Size ? kI32 : kI64;
+  static constexpr ValueKind kTaggedKind =
+      kTaggedSize == kInt32Size ? kI32 : kI64;
+  static constexpr ValueKind kSmiKind = kTaggedKind;
 
   using ValueKindSig = Signature<ValueKind>;
 
@@ -238,7 +250,7 @@ class LiftoffAssembler : public MacroAssembler {
 
     // TODO(jkummerow): Wrap all accesses to {stack_state} in accessors that
     // check {frozen}.
-    base::SmallVector<VarState, 16> stack_state;
+    base::SmallVector<VarState, 8> stack_state;
     LiftoffRegList used_registers;
     uint32_t register_use_count[kAfterMaxLiftoffRegCode] = {0};
     LiftoffRegList last_spilled_regs;
@@ -258,6 +270,7 @@ class LiftoffAssembler : public MacroAssembler {
             kFpCacheRegList.MaskOut(used_registers).MaskOut(pinned);
         return available_regs.HasAdjacentFpRegsSet();
       }
+      DCHECK(rc == kGpReg || rc == kFpReg);
       LiftoffRegList candidates = GetCacheRegList(rc);
       return has_unused_register(candidates.MaskOut(pinned));
     }
@@ -281,6 +294,7 @@ class LiftoffAssembler : public MacroAssembler {
         DCHECK(is_free(LiftoffRegister::ForFpPair(low)));
         return LiftoffRegister::ForFpPair(low);
       }
+      DCHECK(rc == kGpReg || rc == kFpReg);
       LiftoffRegList candidates = GetCacheRegList(rc);
       return unused_register(candidates, pinned);
     }
@@ -451,7 +465,11 @@ class LiftoffAssembler : public MacroAssembler {
       return reg;
     }
 
-    void Steal(CacheState& source);
+    // TODO(clemensb): Don't copy the full parent state (this makes us N^2).
+    void InitMerge(const CacheState& source, uint32_t num_locals,
+                   uint32_t arity, uint32_t stack_depth);
+
+    void Steal(const CacheState& source);
 
     void Split(const CacheState& source);
 
@@ -467,39 +485,15 @@ class LiftoffAssembler : public MacroAssembler {
   explicit LiftoffAssembler(std::unique_ptr<AssemblerBuffer>);
   ~LiftoffAssembler() override;
 
-  // Load a cache slot to a free register.
-  V8_INLINE LiftoffRegister LoadToRegister(VarState slot,
-                                           LiftoffRegList pinned) {
-    if (V8_LIKELY(slot.is_reg())) return slot.reg();
-    // TODO(13742): Remove this hack.
-    std::aligned_storage_t<sizeof(LiftoffRegister), alignof(LiftoffRegister)>
-        reg_storage;
-    LiftoffRegister* out_reg = reinterpret_cast<LiftoffRegister*>(&reg_storage);
-    LoadToRegister(slot, pinned, out_reg);
-    return *out_reg;
-  }
+  LiftoffRegister LoadToRegister(VarState slot, LiftoffRegList pinned);
 
-  // Slow path called for the method above.
-  // TODO(13742): Use a return value instead of output parameter.
-  V8_NOINLINE V8_PRESERVE_MOST void LoadToRegister(VarState slot,
-                                                   LiftoffRegList pinned,
-                                                   LiftoffRegister* dst);
+  LiftoffRegister LoadToRegister(VarState slot, LiftoffRegister dst);
 
-  // Load a non-register cache slot to a given (fixed) register.
-  void LoadToFixedRegister(VarState slot, LiftoffRegister reg) {
-    DCHECK(slot.is_const() || slot.is_stack());
-    if (slot.is_const()) {
-      LoadConstant(reg, slot.constant());
-    } else {
-      Fill(reg, slot.offset(), slot.kind());
-    }
-  }
-
-  V8_INLINE LiftoffRegister PopToRegister(LiftoffRegList pinned = {}) {
+  LiftoffRegister PopToRegister(LiftoffRegList pinned = {}) {
     DCHECK(!cache_state_.stack_state.empty());
     VarState slot = cache_state_.stack_state.back();
     cache_state_.stack_state.pop_back();
-    if (V8_LIKELY(slot.is_reg())) {
+    if (slot.is_reg()) {
       cache_state_.dec_used(slot.reg());
       return slot.reg();
     }
@@ -510,7 +504,7 @@ class LiftoffAssembler : public MacroAssembler {
     DCHECK(!cache_state_.stack_state.empty());
     VarState slot = cache_state_.stack_state.back();
     cache_state_.stack_state.pop_back();
-    if (V8_LIKELY(slot.is_reg())) {
+    if (slot.is_reg()) {
       cache_state_.dec_used(slot.reg());
       if (slot.reg() == reg) return;
       if (cache_state_.is_used(reg)) SpillRegister(reg);
@@ -518,7 +512,7 @@ class LiftoffAssembler : public MacroAssembler {
       return;
     }
     if (cache_state_.is_used(reg)) SpillRegister(reg);
-    LoadToFixedRegister(slot, reg);
+    LoadToRegister(slot, reg);
   }
 
   // Use this to pop a value into a register that has no other uses, so it
@@ -546,11 +540,9 @@ class LiftoffAssembler : public MacroAssembler {
 
   void DropValues(int count);
 
-  // Drop a specific value from the stack; this is an expensive operation which
-  // is currently only used for exceptions.
-  // Careful: this indexes "from the other end", i.e. offset=0 is the value at
-  // the bottom of the stack.
-  void DropExceptionValueAtOffset(int offset);
+  // Careful: this indexes "from the other end", i.e. depth=0 is the value
+  // at the bottom of the stack!
+  void DropValue(int depth);
 
   // Ensure that the loop inputs are either in a register or spilled to the
   // stack, so that we can merge different values on the back-edge.
@@ -591,7 +583,7 @@ class LiftoffAssembler : public MacroAssembler {
   }
 
   void PushConstant(ValueKind kind, int32_t i32_const) {
-    V8_ASSUME(kind == kI32 || kind == kI64);
+    DCHECK(kind == kI32 || kind == kI64);
     cache_state_.stack_state.emplace_back(kind, i32_const,
                                           NextSpillOffset(kind));
   }
@@ -600,7 +592,7 @@ class LiftoffAssembler : public MacroAssembler {
     cache_state_.stack_state.emplace_back(kind, NextSpillOffset(kind));
   }
 
-  V8_NOINLINE V8_PRESERVE_MOST void SpillRegister(LiftoffRegister);
+  void SpillRegister(LiftoffRegister);
 
   uint32_t GetNumUses(LiftoffRegister reg) const {
     return cache_state_.get_use_count(reg);
@@ -636,6 +628,7 @@ class LiftoffAssembler : public MacroAssembler {
       DoubleRegister low_fp = SpillAdjacentFpRegisters(pinned).fp();
       return LiftoffRegister::ForFpPair(low_fp);
     }
+    DCHECK(rc == kGpReg || rc == kFpReg);
     LiftoffRegList candidates = GetCacheRegList(rc).MaskOut(pinned);
     return GetUnusedRegister(candidates);
   }
@@ -644,15 +637,13 @@ class LiftoffAssembler : public MacroAssembler {
   LiftoffRegister GetUnusedRegister(LiftoffRegList candidates) {
     DCHECK(!cache_state_.frozen);
     DCHECK(!candidates.is_empty());
-    if (V8_LIKELY(cache_state_.has_unused_register(candidates))) {
+    if (cache_state_.has_unused_register(candidates)) {
       return cache_state_.unused_register(candidates);
     }
-    // TODO(13742): Remove this hack.
-    std::aligned_storage_t<sizeof(LiftoffRegister), alignof(LiftoffRegister)>
-        reg_storage;
-    LiftoffRegister* out_reg = reinterpret_cast<LiftoffRegister*>(&reg_storage);
-    SpillOneRegister(candidates, out_reg);
-    return *out_reg;
+    if (cache_state_.has_volatile_register(candidates)) {
+      return cache_state_.take_volatile_register(candidates);
+    }
+    return SpillOneRegister(candidates);
   }
 
   // Performs operations on locals and the top {arity} value stack entries
@@ -660,15 +651,8 @@ class LiftoffAssembler : public MacroAssembler {
   // avoids making each subsequent (conditional) branch repeat this work.
   void PrepareForBranch(uint32_t arity, LiftoffRegList pinned);
 
-  // These methods handle control-flow merges. {MergeIntoNewState} is used to
-  // generate a new {CacheState} for a merge point, and also emits code to
-  // transfer values from the current state to the new merge state.
-  // {MergeFullStackWith} and {MergeStackWith} then later generate the code for
-  // more merges into an existing state.
-  V8_NODISCARD CacheState MergeIntoNewState(uint32_t num_locals, uint32_t arity,
-                                            uint32_t stack_depth);
-  void MergeFullStackWith(CacheState& target);
   enum JumpDirection { kForwardJump, kBackwardJump };
+  void MergeFullStackWith(CacheState& target, const CacheState& source);
   void MergeStackWith(CacheState& target, uint32_t arity, JumpDirection);
 
   void Spill(VarState* slot);
@@ -745,12 +729,8 @@ class LiftoffAssembler : public MacroAssembler {
     ParallelRegisterMove(base::VectorOf(moves));
   }
 
-  // Move the top stack values into the expected return locations specified by
-  // the given call descriptor.
-  void MoveToReturnLocations(const FunctionSig*, compiler::CallDescriptor*);
-  // Slow path for multi-return, called from {MoveToReturnLocations}.
-  V8_NOINLINE V8_PRESERVE_MOST void MoveToReturnLocationsMultiReturn(
-      const FunctionSig*, compiler::CallDescriptor*);
+  void MoveToReturnLocations(const FunctionSig*,
+                             compiler::CallDescriptor* descriptor);
 #if DEBUG
   void SetCacheStateFrozen() { cache_state_.frozen++; }
   void UnfreezeCacheState() {
@@ -791,7 +771,8 @@ class LiftoffAssembler : public MacroAssembler {
   inline void LoadTaggedPointerFromInstance(Register dst, Register instance,
                                             int offset);
   inline void LoadExternalPointer(Register dst, Register instance, int offset,
-                                  ExternalPointerTag tag, Register scratch);
+                                  ExternalPointerTag tag,
+                                  Register isolate_root);
   inline void SpillInstance(Register instance);
   inline void ResetOSRTarget();
   inline void LoadTaggedPointer(Register dst, Register src_addr,
@@ -839,47 +820,40 @@ class LiftoffAssembler : public MacroAssembler {
                     bool is_store_mem = false, bool i64_offset = false);
   inline void AtomicLoad(LiftoffRegister dst, Register src_addr,
                          Register offset_reg, uintptr_t offset_imm,
-                         LoadType type, LiftoffRegList pinned, bool i64_offset);
+                         LoadType type, LiftoffRegList pinned);
   inline void AtomicStore(Register dst_addr, Register offset_reg,
                           uintptr_t offset_imm, LiftoffRegister src,
-                          StoreType type, LiftoffRegList pinned,
-                          bool i64_offset);
+                          StoreType type, LiftoffRegList pinned);
 
   inline void AtomicAdd(Register dst_addr, Register offset_reg,
                         uintptr_t offset_imm, LiftoffRegister value,
-                        LiftoffRegister result, StoreType type,
-                        bool i64_offset);
+                        LiftoffRegister result, StoreType type);
 
   inline void AtomicSub(Register dst_addr, Register offset_reg,
                         uintptr_t offset_imm, LiftoffRegister value,
-                        LiftoffRegister result, StoreType type,
-                        bool i64_offset);
+                        LiftoffRegister result, StoreType type);
 
   inline void AtomicAnd(Register dst_addr, Register offset_reg,
                         uintptr_t offset_imm, LiftoffRegister value,
-                        LiftoffRegister result, StoreType type,
-                        bool i64_offset);
+                        LiftoffRegister result, StoreType type);
 
   inline void AtomicOr(Register dst_addr, Register offset_reg,
                        uintptr_t offset_imm, LiftoffRegister value,
-                       LiftoffRegister result, StoreType type, bool i64_offset);
+                       LiftoffRegister result, StoreType type);
 
   inline void AtomicXor(Register dst_addr, Register offset_reg,
                         uintptr_t offset_imm, LiftoffRegister value,
-                        LiftoffRegister result, StoreType type,
-                        bool i64_offset);
+                        LiftoffRegister result, StoreType type);
 
   inline void AtomicExchange(Register dst_addr, Register offset_reg,
                              uintptr_t offset_imm, LiftoffRegister value,
-                             LiftoffRegister result, StoreType type,
-                             bool i64_offset);
+                             LiftoffRegister result, StoreType type);
 
   inline void AtomicCompareExchange(Register dst_addr, Register offset_reg,
                                     uintptr_t offset_imm,
                                     LiftoffRegister expected,
                                     LiftoffRegister new_value,
-                                    LiftoffRegister value, StoreType type,
-                                    bool i64_offset);
+                                    LiftoffRegister value, StoreType type);
 
   inline void AtomicFence();
 
@@ -1027,7 +1001,7 @@ class LiftoffAssembler : public MacroAssembler {
     }
   }
 
-  void emit_ptrsize_set_cond(Condition condition, Register dst,
+  void emit_ptrsize_set_cond(LiftoffCondition condition, Register dst,
                              LiftoffRegister lhs, LiftoffRegister rhs) {
     if (kSystemPointerSize == 8) {
       emit_i64_set_cond(condition, dst, lhs, rhs);
@@ -1107,23 +1081,24 @@ class LiftoffAssembler : public MacroAssembler {
   inline void emit_jump(Label*);
   inline void emit_jump(Register);
 
-  inline void emit_cond_jump(Condition, Label*, ValueKind value, Register lhs,
-                             Register rhs, const FreezeCacheState& frozen);
-  inline void emit_i32_cond_jumpi(Condition, Label*, Register lhs, int imm,
-                                  const FreezeCacheState& frozen);
+  inline void emit_cond_jump(LiftoffCondition, Label*, ValueKind value,
+                             Register lhs, Register rhs,
+                             const FreezeCacheState& frozen);
+  inline void emit_i32_cond_jumpi(LiftoffCondition, Label*, Register lhs,
+                                  int imm, const FreezeCacheState& frozen);
   inline void emit_i32_subi_jump_negative(Register value, int subtrahend,
                                           Label* result_negative,
                                           const FreezeCacheState& frozen);
   // Set {dst} to 1 if condition holds, 0 otherwise.
   inline void emit_i32_eqz(Register dst, Register src);
-  inline void emit_i32_set_cond(Condition, Register dst, Register lhs,
+  inline void emit_i32_set_cond(LiftoffCondition, Register dst, Register lhs,
                                 Register rhs);
   inline void emit_i64_eqz(Register dst, LiftoffRegister src);
-  inline void emit_i64_set_cond(Condition condition, Register dst,
+  inline void emit_i64_set_cond(LiftoffCondition condition, Register dst,
                                 LiftoffRegister lhs, LiftoffRegister rhs);
-  inline void emit_f32_set_cond(Condition condition, Register dst,
+  inline void emit_f32_set_cond(LiftoffCondition condition, Register dst,
                                 DoubleRegister lhs, DoubleRegister rhs);
-  inline void emit_f64_set_cond(Condition condition, Register dst,
+  inline void emit_f64_set_cond(LiftoffCondition condition, Register dst,
                                 DoubleRegister lhs, DoubleRegister rhs);
 
   // Optional select support: Returns false if generic code (via branches)
@@ -1684,10 +1659,7 @@ class LiftoffAssembler : public MacroAssembler {
  private:
   LiftoffRegister LoadI64HalfIntoRegister(VarState slot, RegPairHalf half);
 
-  // Spill one of the candidate registers.
-  // TODO(13742): Use return value instead of output parameter.
-  V8_NOINLINE V8_PRESERVE_MOST void SpillOneRegister(
-      LiftoffRegList candidates, LiftoffRegister* spilled_reg);
+  V8_NOINLINE LiftoffRegister SpillOneRegister(LiftoffRegList candidates);
   // Spill one or two fp registers to get a pair of adjacent fp registers.
   LiftoffRegister SpillAdjacentFpRegisters(LiftoffRegList pinned);
 
@@ -1880,7 +1852,7 @@ class LiftoffStackSlots {
 };
 
 #if DEBUG
-bool CompatibleStackSlotTypes(ValueKind a, ValueKind b);
+bool CheckCompatibleStackSlotTypes(ValueKind a, ValueKind b);
 #endif
 
 }  // namespace wasm

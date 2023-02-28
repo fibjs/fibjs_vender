@@ -4,5 +4,5 @@
 
 extern class FreeSpace extends HeapObject {
   size: Smi;
-  next: FreeSpace|Smi|Uninitialized;
+  next: FreeSpace|Uninitialized;
 }

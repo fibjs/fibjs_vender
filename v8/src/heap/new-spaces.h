@@ -13,7 +13,6 @@
 #include "src/base/platform/mutex.h"
 #include "src/common/globals.h"
 #include "src/heap/allocation-observer.h"
-#include "src/heap/heap-verifier.h"
 #include "src/heap/heap.h"
 #include "src/heap/paged-spaces.h"
 #include "src/heap/spaces.h"
@@ -27,6 +26,9 @@ class MemoryChunk;
 class SemiSpaceNewSpace;
 
 enum SemiSpaceId { kFromSpace = 0, kToSpace = 1 };
+
+using ParkedAllocationBuffer = std::pair<int, Address>;
+using ParkedAllocationBuffersVector = std::vector<ParkedAllocationBuffer>;
 
 // -----------------------------------------------------------------------------
 // SemiSpace in young generation
@@ -173,10 +175,7 @@ class SemiSpace final : public Space {
 #endif
 
 #ifdef VERIFY_HEAP
-  void Verify(Isolate* isolate, SpaceVerificationVisitor* visitor) const final {
-    UNREACHABLE();
-  }
-  void VerifyPageMetadata() const;
+  virtual void Verify() const;
 #endif
 
   void AddRangeToActiveSystemPages(Address start, Address end);
@@ -243,6 +242,8 @@ class NewSpace : NON_EXPORTED_BASE(public SpaceWithLinearArea) {
   inline bool Contains(HeapObject o) const;
   virtual bool ContainsSlow(Address a) const = 0;
 
+  void ResetParkedAllocationBuffers();
+
 #if DEBUG
   void VerifyTop() const override;
 #endif  // DEBUG
@@ -285,6 +286,15 @@ class NewSpace : NON_EXPORTED_BASE(public SpaceWithLinearArea) {
   // Creates a filler object in the linear allocation area.
   virtual void MakeLinearAllocationAreaIterable() = 0;
 
+#ifdef VERIFY_HEAP
+  virtual void Verify(Isolate* isolate) const = 0;
+  // VerifyImpl verifies objects on the space starting from |current_page| and
+  // |current_address|. |current_address| should be a valid limit on
+  // |current_page| (see BasicMemoryChunk::ContainsLimit).
+  void VerifyImpl(Isolate* isolate, const Page* current_page,
+                  Address current_address) const;
+#endif
+
   virtual void MakeIterable() = 0;
 
 #ifdef V8_ENABLE_INNER_POINTER_RESOLUTION_OSB
@@ -320,6 +330,8 @@ class NewSpace : NON_EXPORTED_BASE(public SpaceWithLinearArea) {
   AllocationCounter allocation_counter_;
   LinearAreaOriginalData linear_area_original_data_;
 
+  ParkedAllocationBuffersVector parked_allocation_buffers_;
+
   virtual void RemovePage(Page* page) = 0;
 
   bool SupportsAllocationObserver() const final { return true; }
@@ -332,9 +344,6 @@ class NewSpace : NON_EXPORTED_BASE(public SpaceWithLinearArea) {
 // forwards most functions to the appropriate semispace.
 
 class V8_EXPORT_PRIVATE SemiSpaceNewSpace final : public NewSpace {
-  using ParkedAllocationBuffer = std::pair<int, Address>;
-  using ParkedAllocationBuffersVector = std::vector<ParkedAllocationBuffer>;
-
  public:
   static SemiSpaceNewSpace* From(NewSpace* space) {
     DCHECK(!v8_flags.minor_mc);
@@ -456,17 +465,12 @@ class V8_EXPORT_PRIVATE SemiSpaceNewSpace final : public NewSpace {
   bool AddParkedAllocationBuffer(int size_in_bytes,
                                  AllocationAlignment alignment);
 
-  void ResetParkedAllocationBuffers();
-
   // Creates a filler object in the linear allocation area and closes it.
   void FreeLinearAllocationArea() final;
 
 #ifdef VERIFY_HEAP
   // Verify the active semispace.
-  void Verify(Isolate* isolate, SpaceVerificationVisitor* visitor) const final;
-
-  // VerifyObjects verifies all objects in the active semi space.
-  void VerifyObjects(Isolate* isolate, SpaceVerificationVisitor* visitor) const;
+  void Verify(Isolate* isolate) const final;
 #endif
 
 #ifdef DEBUG
@@ -534,8 +538,6 @@ class V8_EXPORT_PRIVATE SemiSpaceNewSpace final : public NewSpace {
   SemiSpace to_space_;
   SemiSpace from_space_;
   VirtualMemory reservation_;
-
-  ParkedAllocationBuffersVector parked_allocation_buffers_;
 
   bool EnsureAllocation(int size_in_bytes, AllocationAlignment alignment,
                         AllocationOrigin origin,
@@ -622,12 +624,7 @@ class V8_EXPORT_PRIVATE PagedSpaceForNewSpace final : public PagedSpaceBase {
   }
 
 #ifdef VERIFY_HEAP
-  void Verify(Isolate* isolate, SpaceVerificationVisitor* visitor) const final {
-    PagedSpaceBase::Verify(isolate, visitor);
-
-    DCHECK_EQ(current_capacity_, target_capacity_);
-    DCHECK_EQ(current_capacity_, Page::kPageSize * CountTotalPages());
-  }
+  void Verify(Isolate* isolate, ObjectVisitor* visitor) const final;
 #endif
 
   void MakeIterable() { free_list()->RepairLists(heap()); }
@@ -637,8 +634,6 @@ class V8_EXPORT_PRIVATE PagedSpaceForNewSpace final : public PagedSpaceBase {
 #endif  // V8_ENABLE_INNER_POINTER_RESOLUTION_OSB
 
   bool ShouldReleasePage() const;
-
-  void RefillFreeList() final;
 
  private:
   bool PreallocatePages();
@@ -753,9 +748,7 @@ class V8_EXPORT_PRIVATE PagedNewSpace final : public NewSpace {
 
 #ifdef VERIFY_HEAP
   // Verify the active semispace.
-  void Verify(Isolate* isolate, SpaceVerificationVisitor* visitor) const final {
-    paged_space_.Verify(isolate, visitor);
-  }
+  void Verify(Isolate* isolate) const final;
 #endif
 
 #ifdef DEBUG

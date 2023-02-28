@@ -42,8 +42,6 @@ const skip_list = [
 
     "^src/diagnostics/unwinding-info-win64.cc",
 
-    "^src/compiler/revectorizer.cc",
-
     "^src/d8/",
 
     "^src/extensions/vtunedomain-support-extension.cc",
@@ -185,8 +183,8 @@ function gen_list(arch, os) {
             skip_name("^src/diagnostics/etw-jit-win.cc")
 
             if (arch == "i386") {
-                skip_name("^src/heap/base/asm/ia32/push_registers_asm.cc")
-                src_list.push("src/heap/base/asm/ia32/push_registers_masm.asm")
+                skip_name("^src/heap/base/asm/ia32/save_registers_asm.cc")
+                src_list.push("src/heap/base/asm/ia32/save_registers_masm.asm")
             } else {
                 src_list.push(
                     "src/trap-handler/handler-outside-win.cc",
@@ -196,11 +194,11 @@ function gen_list(arch, os) {
                 if (arch == "amd64") {
                     src_list.push("src/trap-handler/handler-inside-win.cc");
 
-                    skip_name("^src/heap/base/asm/x64/push_registers_asm.cc")
-                    src_list.push("src/heap/base/asm/x64/push_registers_masm.asm")
+                    skip_name("^src/heap/base/asm/x64/save_registers_asm.cc")
+                    src_list.push("src/heap/base/asm/x64/save_registers_masm.asm")
                 } else if (arch == "arm64") {
-                    skip_name("^src/heap/base/asm/arm64/push_registers_asm.cc")
-                    src_list.push("src/heap/base/asm/arm64/push_registers_masm.S")
+                    skip_name("^src/heap/base/asm/arm64/save_registers_asm.cc")
+                    src_list.push("src/heap/base/asm/arm64/save_registers_masm.S")
                 }
             }
             src_list.push("src/snapshot/embedded/platform-embedded-file-writer-mac.cc")

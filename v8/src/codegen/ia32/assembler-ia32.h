@@ -79,23 +79,7 @@ enum Condition {
   zero = equal,
   not_zero = not_equal,
   sign = negative,
-  not_sign = positive,
-
-  // Unified cross-platform condition names/aliases.
-  kEqual = equal,
-  kNotEqual = not_equal,
-  kLessThan = less,
-  kGreaterThan = greater,
-  kLessThanEqual = less_equal,
-  kGreaterThanEqual = greater_equal,
-  kUnsignedLessThan = below,
-  kUnsignedGreaterThan = above,
-  kUnsignedLessThanEqual = below_equal,
-  kUnsignedGreaterThanEqual = above_equal,
-  kOverflow = overflow,
-  kNoOverflow = no_overflow,
-  kZero = equal,
-  kNotZero = not_equal,
+  not_sign = positive
 };
 
 // Returns the equivalent of !cc.
@@ -421,7 +405,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // This sets the branch destination (which is in the instruction on x86).
   // This is for calls and branches within generated code.
   inline static void deserialization_set_special_target_at(
-      Address instruction_payload, InstructionStream code, Address target);
+      Address instruction_payload, Code code, Address target);
 
   // Get the size of the special target encoded at 'instruction_payload'.
   inline static int deserialization_special_target_size(
@@ -449,7 +433,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static constexpr byte kJzShortOpcode = kJccShortPrefix | zero;
 
   // ---------------------------------------------------------------------------
-  // InstructionStream generation
+  // Code generation
   //
   // - function names correspond one-to-one to ia32 instruction mnemonics
   // - unless specified otherwise, instructions operate on 32bit operands

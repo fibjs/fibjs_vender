@@ -18,8 +18,6 @@
 #include "src/flags/flags.h"
 #include "src/heap/allocation-observer.h"
 #include "src/heap/allocation-stats.h"
-#include "src/heap/heap-verifier.h"
-#include "src/heap/heap.h"
 #include "src/heap/memory-chunk-layout.h"
 #include "src/heap/memory-chunk.h"
 #include "src/heap/spaces.h"
@@ -186,10 +184,13 @@ class V8_EXPORT_PRIVATE PagedSpaceBase
 
 #ifdef VERIFY_HEAP
   // Verify integrity of this space.
-  void Verify(Isolate* isolate,
-              SpaceVerificationVisitor* visitor) const override;
+  virtual void Verify(Isolate* isolate, ObjectVisitor* visitor) const;
 
   void VerifyLiveBytes() const;
+
+  // Overridden by subclasses to verify space-specific object
+  // properties (e.g., only maps or free-list nodes are in map space).
+  virtual void VerifyObject(HeapObject obj) const {}
 #endif
 
 #ifdef DEBUG
@@ -225,7 +226,7 @@ class V8_EXPORT_PRIVATE PagedSpaceBase
 
   // Refills the free list from the corresponding free list filled by the
   // sweeper.
-  virtual void RefillFreeList() = 0;
+  void RefillFreeList();
 
   base::Mutex* mutex() { return &space_mutex_; }
 
@@ -291,9 +292,7 @@ class V8_EXPORT_PRIVATE PagedSpaceBase
     base::Optional<base::MutexGuard> guard_;
   };
 
-  bool SupportsConcurrentAllocation() const {
-    return !is_compaction_space() && (identity() != NEW_SPACE);
-  }
+  bool SupportsConcurrentAllocation() const { return !is_compaction_space(); }
 
   // Set space linear allocation area.
   void SetTopAndLimit(Address top, Address limit);
@@ -302,9 +301,9 @@ class V8_EXPORT_PRIVATE PagedSpaceBase
     return !is_compaction_space();
   }
 
- protected:
   void RefineAllocatedBytesAfterSweeping(Page* page);
 
+ protected:
   void UpdateInlineAllocationLimit(size_t min_size) override;
 
   // PagedSpaces that should be included in snapshots have different, i.e.,
@@ -329,10 +328,10 @@ class V8_EXPORT_PRIVATE PagedSpaceBase
   V8_WARN_UNUSED_RESULT bool TryAllocationFromFreeListMain(
       size_t size_in_bytes, AllocationOrigin origin);
 
-  V8_WARN_UNUSED_RESULT bool ContributeToSweepingMain(
-      int required_freed_bytes, int max_pages, int size_in_bytes,
-      AllocationOrigin origin, GCTracer::Scope::ScopeId sweeping_scope_id,
-      ThreadKind sweeping_scope_kind);
+  V8_WARN_UNUSED_RESULT bool ContributeToSweepingMain(int required_freed_bytes,
+                                                      int max_pages,
+                                                      int size_in_bytes,
+                                                      AllocationOrigin origin);
 
   // Refills LAB for EnsureLabMain. This function is space-dependent. Returns
   // false if there is not enough space and the caller has to retry after
@@ -383,8 +382,6 @@ class V8_EXPORT_PRIVATE PagedSpace : public PagedSpaceBase {
       : PagedSpaceBase(heap, id, executable, free_list, allocation_counter_,
                        allocation_info, linear_area_original_data_,
                        compaction_space_kind) {}
-
-  void RefillFreeList() final;
 
  private:
   AllocationCounter allocation_counter_;

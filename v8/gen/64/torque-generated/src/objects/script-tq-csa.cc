@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/script-tq-csa.h"
@@ -75,7 +73,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=17&c=1
 TNode<Script> Cast_Script_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -111,7 +109,7 @@ TNode<Script> Cast_Script_0(compiler::CodeAssemblerState* state_, TNode<HeapObje
   return TNode<Script>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
 TNode<PrimitiveHeapObject> LoadScriptSource_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -132,7 +130,7 @@ TNode<PrimitiveHeapObject> LoadScriptSource_0(compiler::CodeAssemblerState* stat
   return TNode<PrimitiveHeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
 void StoreScriptSource_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -151,7 +149,7 @@ void StoreScriptSource_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
 TNode<Object> LoadScriptName_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -172,7 +170,7 @@ TNode<Object> LoadScriptName_0(compiler::CodeAssemblerState* state_, TNode<Scrip
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
 void StoreScriptName_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -191,7 +189,7 @@ void StoreScriptName_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=25&c=3
 TNode<Smi> LoadScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -212,7 +210,7 @@ TNode<Smi> LoadScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Sc
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=25&c=3
 void StoreScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -231,7 +229,7 @@ void StoreScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Script>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=29&c=3
 TNode<Smi> LoadScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -252,7 +250,7 @@ TNode<Smi> LoadScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=29&c=3
 void StoreScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -271,7 +269,7 @@ void StoreScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<Scrip
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
 TNode<Object> LoadScriptContextData_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -292,7 +290,7 @@ TNode<Object> LoadScriptContextData_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
 void StoreScriptContextData_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -311,7 +309,7 @@ void StoreScriptContextData_0(compiler::CodeAssemblerState* state_, TNode<Script
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
 TNode<Smi> LoadScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -332,7 +330,7 @@ TNode<Smi> LoadScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Sc
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
 void StoreScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -351,7 +349,7 @@ void StoreScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Script>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
 TNode<HeapObject> LoadScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -372,7 +370,7 @@ TNode<HeapObject> LoadScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
 void StoreScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -391,7 +389,7 @@ void StoreScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<Script> p
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=40&c=3
 TNode<Smi> LoadScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -412,7 +410,7 @@ TNode<Smi> LoadScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=40&c=3
 void StoreScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -432,7 +430,7 @@ void StoreScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TN
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-TNode<HeapObject> LoadScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
+TNode<HeapObject> LoadScriptEvalFromSharedOrWrappedArgumentsOrSfiTable_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -453,7 +451,7 @@ TNode<HeapObject> LoadScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAss
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-void StoreScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
+void StoreScriptEvalFromSharedOrWrappedArgumentsOrSfiTable_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -551,47 +549,7 @@ void StoreScriptSharedFunctionInfos_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
-TNode<HeapObject> LoadScriptCompiledLazyFunctionPositions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 96);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
-void StoreScriptCompiledLazyFunctionPositions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 96);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=52&c=3
 TNode<Smi> LoadScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -603,7 +561,7 @@ TNode<Smi> LoadScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script>
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 104);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 96);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -612,7 +570,7 @@ TNode<Smi> LoadScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script>
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=52&c=3
 void StoreScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -623,7 +581,7 @@ void StoreScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o,
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 104);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 96);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -631,7 +589,7 @@ void StoreScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
 TNode<PrimitiveHeapObject> LoadScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -643,7 +601,7 @@ TNode<PrimitiveHeapObject> LoadScriptSourceUrl_0(compiler::CodeAssemblerState* s
   TNode<PrimitiveHeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 112);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 104);
     tmp1 = CodeStubAssembler(state_).LoadReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -652,7 +610,7 @@ TNode<PrimitiveHeapObject> LoadScriptSourceUrl_0(compiler::CodeAssemblerState* s
   return TNode<PrimitiveHeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
 void StoreScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -663,7 +621,7 @@ void StoreScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> 
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 112);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 104);
     CodeStubAssembler(state_).StoreReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -671,7 +629,7 @@ void StoreScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
 TNode<Object> LoadScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -683,7 +641,7 @@ TNode<Object> LoadScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_,
   TNode<Object> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 120);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 112);
     tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -692,7 +650,7 @@ TNode<Object> LoadScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_,
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
 void StoreScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -703,7 +661,7 @@ void StoreScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<S
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 120);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 112);
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -711,7 +669,7 @@ void StoreScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<S
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
 TNode<FixedArray> LoadScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -723,7 +681,7 @@ TNode<FixedArray> LoadScriptHostDefinedOptions_0(compiler::CodeAssemblerState* s
   TNode<FixedArray> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 128);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 120);
     tmp1 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -732,7 +690,7 @@ TNode<FixedArray> LoadScriptHostDefinedOptions_0(compiler::CodeAssemblerState* s
   return TNode<FixedArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
 void StoreScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<FixedArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -743,7 +701,7 @@ void StoreScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 128);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 120);
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -751,7 +709,7 @@ void StoreScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
 TNode<PrimitiveHeapObject> LoadScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -763,7 +721,7 @@ TNode<PrimitiveHeapObject> LoadScriptSourceHash_0(compiler::CodeAssemblerState* 
   TNode<PrimitiveHeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 136);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 128);
     tmp1 = CodeStubAssembler(state_).LoadReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -772,7 +730,7 @@ TNode<PrimitiveHeapObject> LoadScriptSourceHash_0(compiler::CodeAssemblerState* 
   return TNode<PrimitiveHeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
 void StoreScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -783,7 +741,7 @@ void StoreScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script>
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 136);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 128);
     CodeStubAssembler(state_).StoreReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -791,7 +749,7 @@ void StoreScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=17&c=1
 TNode<Script> DownCastForTorqueClass_Script_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

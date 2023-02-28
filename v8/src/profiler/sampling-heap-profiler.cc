@@ -81,12 +81,7 @@ void SamplingHeapProfiler::SampleObject(Address soon_object, size_t size) {
   HeapObject heap_object = HeapObject::FromAddress(soon_object);
   Handle<Object> obj(heap_object, isolate_);
 
-  // Since soon_object can be in code space we can't use v8::Utils::ToLocal.
-  DCHECK(obj.is_null() ||
-         (obj->IsSmi() ||
-          (V8_EXTERNAL_CODE_SPACE_BOOL && IsCodeSpaceObject(heap_object)) ||
-          !obj->IsTheHole()));
-  Local<v8::Value> loc(reinterpret_cast<v8::Value*>(obj.location()));
+  Local<v8::Value> loc = v8::Utils::ToLocal(obj);
 
   AllocationNode* node = AddStack();
   node->allocations_[size]++;
@@ -150,7 +145,7 @@ SamplingHeapProfiler::AllocationNode* SamplingHeapProfiler::AddStack() {
   AllocationNode* node = &profile_root_;
 
   std::vector<SharedFunctionInfo> stack;
-  JavaScriptStackFrameIterator frame_it(isolate_);
+  JavaScriptFrameIterator frame_it(isolate_);
   int frames_captured = 0;
   bool found_arguments_marker_frames = false;
   while (!frame_it.done() && frames_captured < stack_depth_) {

@@ -371,16 +371,7 @@ void PrintSingleDeoptFrame(
     LazyDeoptInfo* lazy_deopt_info_if_top_frame = nullptr) {
   switch (frame.type()) {
     case DeoptFrame::FrameType::kInterpretedFrame: {
-      os << "@" << frame.as_interpreted().bytecode_position();
-      if (!v8_flags.print_maglev_deopt_verbose) {
-        int count = 0;
-        frame.as_interpreted().frame_state()->ForEachValue(
-            frame.as_interpreted().unit(),
-            [&](ValueNode* node, interpreter::Register reg) { count++; });
-        os << " (" << count << " live vars)";
-        return;
-      }
-      os << " : {";
+      os << "@" << frame.as_interpreted().bytecode_position() << " : {";
       bool first = true;
       frame.as_interpreted().frame_state()->ForEachValue(
           frame.as_interpreted().unit(),
@@ -404,9 +395,8 @@ void PrintSingleDeoptFrame(
       break;
     }
     case DeoptFrame::FrameType::kBuiltinContinuationFrame: {
-      os << "@" << Builtins::name(frame.as_builtin_continuation().builtin_id());
-      if (!v8_flags.print_maglev_deopt_verbose) return;
-      os << " : {";
+      os << "@" << Builtins::name(frame.as_builtin_continuation().builtin_id())
+         << " : {";
       int arg_index = 0;
       for (ValueNode* node : frame.as_builtin_continuation().parameters()) {
         os << "a" << arg_index << ":" << PrintNodeLabel(graph_labeller, node)
@@ -520,7 +510,7 @@ void PrintExceptionHandlerPoint(std::ostream& os,
     // No phis in the block.
     return;
   }
-  int handler_offset = first_phi->merge_state()->merge_offset();
+  int handler_offset = first_phi->merge_offset();
 
   // The exception handler liveness should be a subset of lazy_deopt_info one.
   auto* liveness = block->state()->frame_state().liveness();

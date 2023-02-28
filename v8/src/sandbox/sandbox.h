@@ -156,6 +156,7 @@ class V8_EXPORT_PRIVATE Sandbox {
     return Contains(reinterpret_cast<Address>(ptr));
   }
 
+#ifdef V8_ENABLE_SANDBOX
   class SandboxedPointerConstants final {
    public:
     Address empty_backing_store_buffer() const {
@@ -174,6 +175,7 @@ class V8_EXPORT_PRIVATE Sandbox {
     Address empty_backing_store_buffer_ = 0;
   };
   const SandboxedPointerConstants& constants() const { return constants_; }
+#endif
 
   Address base_address() const { return reinterpret_cast<Address>(&base_); }
   Address end_address() const { return reinterpret_cast<Address>(&end_); }
@@ -207,11 +209,8 @@ class V8_EXPORT_PRIVATE Sandbox {
                                             size_t size,
                                             size_t size_to_reserve);
 
-  // Performs final initialization steps after the sandbox address space has
-  // been initialized. Called from the two Initialize variants above.
-  void FinishInitialization();
-
-  // Initialize the constant objects for this sandbox.
+  // Initialize the constant objects for this sandbox. Called by the Initialize
+  // methods above.
   void InitializeConstants();
 
   Address base_ = kNullAddress;
@@ -232,13 +231,18 @@ class V8_EXPORT_PRIVATE Sandbox {
   // The page allocator instance for this sandbox.
   std::unique_ptr<v8::PageAllocator> sandbox_page_allocator_;
 
+#ifdef V8_ENABLE_SANDBOX
   // Constant objects inside this sandbox.
   SandboxedPointerConstants constants_;
+#endif
 };
 
-V8_EXPORT_PRIVATE Sandbox* GetProcessWideSandbox();
-
 #endif  // V8_ENABLE_SANDBOX
+
+#ifdef V8_ENABLE_SANDBOX
+// This function is only available when the sandbox is actually used.
+V8_EXPORT_PRIVATE Sandbox* GetProcessWideSandbox();
+#endif
 
 V8_INLINE void* EmptyBackingStoreBuffer() {
 #ifdef V8_ENABLE_SANDBOX

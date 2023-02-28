@@ -24,7 +24,6 @@ bool CanAllocate(const Node* node) {
     case IrOpcode::kAbortCSADcheck:
     case IrOpcode::kBitcastTaggedToWord:
     case IrOpcode::kBitcastWordToTagged:
-    case IrOpcode::kCheckTurboshaftTypeOf:
     case IrOpcode::kComment:
     case IrOpcode::kDebugBreak:
     case IrOpcode::kDeoptimizeIf:
@@ -41,7 +40,6 @@ bool CanAllocate(const Node* node) {
     case IrOpcode::kLoadTransform:
     case IrOpcode::kMemoryBarrier:
     case IrOpcode::kProtectedLoad:
-    case IrOpcode::kLoadTrapOnNull:
     case IrOpcode::kProtectedStore:
     case IrOpcode::kRetain:
     case IrOpcode::kStackPointerGreaterThan:

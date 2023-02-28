@@ -1,43 +1,43 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNames(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalInfos(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunctionName(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInfo(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockList(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariableCount(ScopeInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariables(ScopeInfo p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 inline intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=72&c=1
@@ -49,28 +49,28 @@ inline Smi TqRuntimeFromConstexpr_Smi_constexpr_IntegerLiteral_0(IntegerLiteral 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=188&c=26
 inline intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1
 inline uint32_t TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(VariableAllocationInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariableInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefined_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=129&c=1
@@ -79,25 +79,25 @@ inline uint32_t TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(uint32_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=150&c=1
 inline bool TqRuntimeFromConstexpr_bool_constexpr_bool_0(bool p_b);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModuleInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=113&c=23
 inline intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=369&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=366&c=1
 inline uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=97&c=36
@@ -106,7 +106,7 @@ inline intptr_t TqRuntimeTimesSizeOf_Smi_0(intptr_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=96&c=12
 inline std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr_t p_offset);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=53&c=10
@@ -121,7 +121,7 @@ inline Smi TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNames
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNames
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNames(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -177,7 +177,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -239,7 +239,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalInfos
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalInfos
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalInfos(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -275,7 +275,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalI
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -333,7 +333,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVar
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoFunctionVariableInfo
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoFunctionVariableInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -395,7 +395,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVaria
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoInferredFunctionName
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoInferredFunctionName
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunctionName(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -453,7 +453,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunct
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoPositionInfo
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoPositionInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -491,29 +491,22 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
   bool tmp29{}; USE(tmp29);
   intptr_t tmp30{}; USE(tmp30);
   Smi tmp31{}; USE(tmp31);
-  uint32_t tmp32{}; USE(tmp32);
-  uint32_t tmp33{}; USE(tmp33);
-  bool tmp34{}; USE(tmp34);
-  bool phi_bb17_9{}; USE(phi_bb17_9);
-  bool tmp35{}; USE(tmp35);
-  intptr_t tmp36{}; USE(tmp36);
-  Smi tmp37{}; USE(tmp37);
+  bool tmp32{}; USE(tmp32);
+  bool tmp33{}; USE(tmp33);
+  intptr_t tmp34{}; USE(tmp34);
+  Smi tmp35{}; USE(tmp35);
+  uint32_t tmp36{}; USE(tmp36);
+  uint32_t tmp37{}; USE(tmp37);
   bool tmp38{}; USE(tmp38);
-  bool tmp39{}; USE(tmp39);
-  intptr_t tmp40{}; USE(tmp40);
-  Smi tmp41{}; USE(tmp41);
-  uint32_t tmp42{}; USE(tmp42);
-  uint32_t tmp43{}; USE(tmp43);
-  bool tmp44{}; USE(tmp44);
-  bool phi_bb23_9{}; USE(phi_bb23_9);
   bool phi_bb20_9{}; USE(phi_bb20_9);
-  intptr_t tmp45{}; USE(tmp45);
-  intptr_t tmp46{}; USE(tmp46);
+  bool phi_bb17_9{}; USE(phi_bb17_9);
+  intptr_t tmp39{}; USE(tmp39);
+  intptr_t tmp40{}; USE(tmp40);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
-  intptr_t tmp47{}; USE(tmp47);
-  Object tmp48{}; USE(tmp48);
-  intptr_t tmp49{}; USE(tmp49);
-  intptr_t tmp50{}; USE(tmp50);
+  intptr_t tmp41{}; USE(tmp41);
+  Object tmp42{}; USE(tmp42);
+  intptr_t tmp43{}; USE(tmp43);
+  intptr_t tmp44{}; USE(tmp44);
   goto block0;
 
   block0:
@@ -603,83 +596,62 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
   block16:
   tmp30 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
   tmp31 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp30));
-  tmp32 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp31.value()));
-  tmp33 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::SHADOW_REALM_SCOPE);
-  tmp34 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp32, tmp33);
-  phi_bb17_9 = tmp34;
-  goto block17;
-
-  block17:
-  if (phi_bb17_9) {
+  tmp32 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 29, 1, uint32_t>::decode(tmp31.value()));
+  if (tmp32) {
     goto block18;
   } else {
     goto block19;
   }
 
   block18:
-  tmp35 = TqRuntimeFromConstexpr_bool_constexpr_bool_0(true);
-  phi_bb20_9 = tmp35;
+  tmp33 = TqRuntimeFromConstexpr_bool_constexpr_bool_0(false);
+  phi_bb20_9 = tmp33;
   goto block20;
 
   block19:
-  tmp36 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp37 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp36));
-  tmp38 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 29, 1, uint32_t>::decode(tmp37.value()));
-  if (tmp38) {
-    goto block21;
-  } else {
-    goto block22;
-  }
-
-  block21:
-  tmp39 = TqRuntimeFromConstexpr_bool_constexpr_bool_0(false);
-  phi_bb23_9 = tmp39;
-  goto block23;
-
-  block22:
-  tmp40 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp41 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp40));
-  tmp42 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp41.value()));
-  tmp43 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::CLASS_SCOPE);
-  tmp44 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp42, tmp43);
-  phi_bb23_9 = tmp44;
-  goto block23;
-
-  block23:
-  phi_bb20_9 = phi_bb23_9;
+  tmp34 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
+  tmp35 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp34));
+  tmp36 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp35.value()));
+  tmp37 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::CLASS_SCOPE);
+  tmp38 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp36, tmp37);
+  phi_bb20_9 = tmp38;
   goto block20;
 
   block20:
-  if (phi_bb20_9) {
+  phi_bb17_9 = phi_bb20_9;
+  goto block17;
+
+  block17:
+  if (phi_bb17_9) {
     goto block2;
   } else {
     goto block3;
   }
 
   block2:
-  tmp45 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x1ull));
-  phi_bb4_8 = tmp45;
+  tmp39 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x1ull));
+  phi_bb4_8 = tmp39;
   goto block4;
 
   block3:
-  tmp46 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x0ull));
-  phi_bb4_8 = tmp46;
+  tmp40 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x0ull));
+  phi_bb4_8 = tmp40;
   goto block4;
 
   block4:
-  tmp47 = TqRuntimeConvert_intptr_intptr_0(phi_bb4_8);
-  std::tie(tmp48, tmp49, tmp50) = TqRuntimeNewMutableSlice_PositionInfo_0(p_o, tmp5, tmp47);
-  goto block25;
+  tmp41 = TqRuntimeConvert_intptr_intptr_0(phi_bb4_8);
+  std::tie(tmp42, tmp43, tmp44) = TqRuntimeNewMutableSlice_PositionInfo_0(p_o, tmp5, tmp41);
+  goto block22;
 
-  block25:
-  return std::make_tuple(tmp48, tmp49, tmp50);
+  block22:
+  return std::make_tuple(tmp42, tmp43, tmp44);
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoPositionInfo
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoOuterScopeInfo
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoOuterScopeInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInfo(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -737,7 +709,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInf
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoLocalsBlockList
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoLocalsBlockList
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockList(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -795,7 +767,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockLi
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleInfo
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -857,7 +829,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(Sc
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleVariableCount
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleVariableCount
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariableCount(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -919,7 +891,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleVariables
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleVariables
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariables(ScopeInfo p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1028,7 +1000,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=286&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
 intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -1100,7 +1072,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_String_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_String_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1136,7 +1108,7 @@ intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_NameToIndexHashTable_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_NameToIndexHashTable_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1156,7 +1128,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashT
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1176,7 +1148,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_Variab
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1196,7 +1168,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_o
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1
 uint32_t TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(VariableAllocationInfo p_o) {
   DisallowGarbageCollection no_gc;
   uint32_t tmp0{}; USE(tmp0);
@@ -1216,7 +1188,7 @@ uint32_t TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(Variable
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_FunctionVariableInfo_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_FunctionVariableInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariableInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1236,7 +1208,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariable
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_String_OR_Undefined_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_String_OR_Undefined_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefined_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1294,7 +1266,7 @@ bool TqRuntimeFromConstexpr_bool_constexpr_bool_0(bool p_b) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_PositionInfo_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_PositionInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1314,7 +1286,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(O
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1334,7 +1306,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_Scope
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_HashTable_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_HashTable_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1354,7 +1326,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Obje
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_SourceTextModuleInfo_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_SourceTextModuleInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModuleInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1374,7 +1346,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModule
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1412,7 +1384,7 @@ intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_uintptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_uintptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=369&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=366&c=1
 uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
@@ -1469,7 +1441,7 @@ std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_ModuleVariable_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_ModuleVariable_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1540,7 +1512,7 @@ Smi TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i) {
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_Smi_constexpr_int31_0
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=113&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=112&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::flags() const {
   int value;
@@ -1548,13 +1520,13 @@ int TorqueGeneratedScopeInfo<D, P>::flags() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=113&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=112&c=9
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=115&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::parameter_count() const {
   int value;
@@ -1562,13 +1534,13 @@ int TorqueGeneratedScopeInfo<D, P>::parameter_count() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=115&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_parameter_count(int value) {
   WRITE_FIELD(*this, kParameterCountOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=120&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=119&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::context_local_count() const {
   int value;
@@ -1576,20 +1548,20 @@ int TorqueGeneratedScopeInfo<D, P>::context_local_count() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=120&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=119&c=9
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_context_local_count(int value) {
   WRITE_FIELD(*this, kContextLocalCountOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 template<class D, class P>
 String TorqueGeneratedScopeInfo<D, P>::context_local_names(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::context_local_names(cage_base, i);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 template<class D, class P>
 String TorqueGeneratedScopeInfo<D, P>::context_local_names(PtrComprCageBase cage_base, int i) const {
   String value;
@@ -1601,7 +1573,7 @@ String TorqueGeneratedScopeInfo<D, P>::context_local_names(PtrComprCageBase cage
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_context_local_names(int i, String value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
@@ -1612,14 +1584,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_context_local_names(int i, String value
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 template<class D, class P>
 NameToIndexHashTable TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtable() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::context_local_names_hashtable(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 template<class D, class P>
 NameToIndexHashTable TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtable(PtrComprCageBase cage_base) const {
   NameToIndexHashTable value;
@@ -1631,7 +1603,7 @@ NameToIndexHashTable TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtab
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_context_local_names_hashtable(NameToIndexHashTable value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
@@ -1642,7 +1614,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_context_local_names_hashtable(NameToInd
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::context_local_infos(int i) const {
   int value;
@@ -1653,7 +1625,7 @@ int TorqueGeneratedScopeInfo<D, P>::context_local_infos(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_context_local_infos(int i, int value) {
   DCHECK_GE(i, 0);
@@ -1662,7 +1634,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_context_local_infos(int i, int value) {
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::saved_class_variable_info() const {
   int value;
@@ -1673,7 +1645,7 @@ int TorqueGeneratedScopeInfo<D, P>::saved_class_variable_info() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_saved_class_variable_info(int value) {
   DCHECK_GE(0, 0);
@@ -1682,14 +1654,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_saved_class_variable_info(int value) {
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 template<class D, class P>
 Object TorqueGeneratedScopeInfo<D, P>::function_variable_info_name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::function_variable_info_name(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 template<class D, class P>
 Object TorqueGeneratedScopeInfo<D, P>::function_variable_info_name(PtrComprCageBase cage_base) const {
   Object value;
@@ -1701,7 +1673,7 @@ Object TorqueGeneratedScopeInfo<D, P>::function_variable_info_name(PtrComprCageB
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_name(Object value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
@@ -1712,7 +1684,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_name(Object valu
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::function_variable_info_context_or_stack_slot_index() const {
   int value;
@@ -1723,7 +1695,7 @@ int TorqueGeneratedScopeInfo<D, P>::function_variable_info_context_or_stack_slot
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_context_or_stack_slot_index(int value) {
   DCHECK_GE(0, 0);
@@ -1732,14 +1704,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_context_or_stack
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScopeInfo<D, P>::inferred_function_name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::inferred_function_name(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedScopeInfo<D, P>::inferred_function_name(PtrComprCageBase cage_base) const {
   PrimitiveHeapObject value;
@@ -1751,7 +1723,7 @@ PrimitiveHeapObject TorqueGeneratedScopeInfo<D, P>::inferred_function_name(PtrCo
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_inferred_function_name(PrimitiveHeapObject value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
@@ -1762,7 +1734,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_inferred_function_name(PrimitiveHeapObj
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::position_info_start() const {
   int value;
@@ -1773,7 +1745,7 @@ int TorqueGeneratedScopeInfo<D, P>::position_info_start() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_position_info_start(int value) {
   DCHECK_GE(0, 0);
@@ -1782,7 +1754,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_position_info_start(int value) {
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::position_info_end() const {
   int value;
@@ -1793,7 +1765,7 @@ int TorqueGeneratedScopeInfo<D, P>::position_info_end() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_position_info_end(int value) {
   DCHECK_GE(0, 0);
@@ -1802,14 +1774,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_position_info_end(int value) {
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedScopeInfo<D, P>::outer_scope_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::outer_scope_info(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedScopeInfo<D, P>::outer_scope_info(PtrComprCageBase cage_base) const {
   HeapObject value;
@@ -1821,7 +1793,7 @@ HeapObject TorqueGeneratedScopeInfo<D, P>::outer_scope_info(PtrComprCageBase cag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_outer_scope_info(HeapObject value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
@@ -1832,14 +1804,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_outer_scope_info(HeapObject value, Writ
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedScopeInfo<D, P>::locals_block_list() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::locals_block_list(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedScopeInfo<D, P>::locals_block_list(PtrComprCageBase cage_base) const {
   FixedArray value;
@@ -1851,7 +1823,7 @@ FixedArray TorqueGeneratedScopeInfo<D, P>::locals_block_list(PtrComprCageBase ca
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_locals_block_list(FixedArray value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
@@ -1862,14 +1834,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_locals_block_list(FixedArray value, Wri
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedScopeInfo<D, P>::module_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::module_info(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedScopeInfo<D, P>::module_info(PtrComprCageBase cage_base) const {
   FixedArray value;
@@ -1881,7 +1853,7 @@ FixedArray TorqueGeneratedScopeInfo<D, P>::module_info(PtrComprCageBase cage_bas
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_module_info(FixedArray value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
@@ -1892,7 +1864,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_info(FixedArray value, WriteBarr
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::module_variable_count() const {
   int value;
@@ -1903,7 +1875,7 @@ int TorqueGeneratedScopeInfo<D, P>::module_variable_count() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_module_variable_count(int value) {
   DCHECK_GE(0, 0);
@@ -1912,14 +1884,14 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variable_count(int value) {
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 String TorqueGeneratedScopeInfo<D, P>::module_variables_name(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::module_variables_name(cage_base, i);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 String TorqueGeneratedScopeInfo<D, P>::module_variables_name(PtrComprCageBase cage_base, int i) const {
   String value;
@@ -1931,7 +1903,7 @@ String TorqueGeneratedScopeInfo<D, P>::module_variables_name(PtrComprCageBase ca
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_module_variables_name(int i, String value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
@@ -1942,7 +1914,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variables_name(int i, String val
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::module_variables_index(int i) const {
   int value;
@@ -1953,7 +1925,7 @@ int TorqueGeneratedScopeInfo<D, P>::module_variables_index(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_module_variables_index(int i, int value) {
   DCHECK_GE(i, 0);
@@ -1962,7 +1934,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variables_index(int i, int value
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::module_variables_properties(int i) const {
   int value;
@@ -1973,7 +1945,7 @@ int TorqueGeneratedScopeInfo<D, P>::module_variables_properties(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 void TorqueGeneratedScopeInfo<D, P>::set_module_variables_properties(int i, int value) {
   DCHECK_GE(i, 0);
@@ -1982,79 +1954,79 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variables_properties(int i, int 
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=110&c=1
 template<class D, class P>
 D TorqueGeneratedScopeInfo<D, P>::cast(Object object) {
     return D(object.ptr());
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::ContextLocalNamesHashtableOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::ContextLocalInfosOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoContextLocalInfos(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::SavedClassVariableInfoOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::FunctionVariableInfoOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::InferredFunctionNameOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoInferredFunctionName(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::PositionInfoOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoPositionInfo(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::OuterScopeInfoOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoOuterScopeInfo(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::LocalsBlockListOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoLocalsBlockList(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::ModuleInfoOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoModuleInfo(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::ModuleVariableCountOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoModuleVariableCount(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::ModuleVariablesOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceScopeInfoModuleVariables(*static_cast<const D*>(this))));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=110&c=1
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::AllocatedSize() const {
   auto slice = TqRuntimeFieldSliceScopeInfoModuleVariables(*static_cast<const D*>(this));

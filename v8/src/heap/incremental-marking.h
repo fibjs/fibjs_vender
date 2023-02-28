@@ -132,7 +132,6 @@ class V8_EXPORT_PRIVATE IncrementalMarking final {
   bool IsCompacting() { return IsMarking() && is_compacting_; }
 
   Heap* heap() const { return heap_; }
-  Isolate* isolate() const;
 
   IncrementalMarkingJob* incremental_marking_job() {
     return &incremental_marking_job_;

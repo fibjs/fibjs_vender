@@ -224,21 +224,7 @@ void String::MakeThin(
   int old_size = SizeFromMap(initial_map);
   Map target_map = ComputeThinStringMap(isolate, initial_shape,
                                         internalized.IsOneByteRepresentation());
-  const bool in_shared_heap = InSharedWritableHeap();
-  if (in_shared_heap) {
-    // Objects in the shared heap are always direct, therefore they can't have
-    // any invalidated slots.
-    update_invalidated_object_size = UpdateInvalidatedObjectSize::kNo;
-  }
   if (initial_shape.IsExternal()) {
-    // Conservatively assume ExternalStrings may have recorded slots if they
-    // don't reside in shared heap, because they could have been transitioned
-    // from ConsStrings without having had the recorded slots cleared.
-    // In the shared heap no such transitions are possible, as it can't contain
-    // indirect strings.
-    // TODO(v8:13374): Fix this more uniformly.
-    may_contain_recorded_slots = !in_shared_heap;
-
     // Notify GC about the layout change before the transition to avoid
     // concurrent marking from observing any in-between state (e.g.
     // ExternalString map where the resource external pointer is overwritten
@@ -246,11 +232,14 @@ void String::MakeThin(
     // ExternalString -> ThinString transitions can only happen on the
     // main-thread.
     isolate->AsIsolate()->heap()->NotifyObjectLayoutChange(
-        *this, no_gc,
-        may_contain_recorded_slots ? InvalidateRecordedSlots::kYes
-                                   : InvalidateRecordedSlots::kNo,
-        ThinString::kSize);
+        *this, no_gc, InvalidateRecordedSlots::kYes, ThinString::kSize);
     MigrateExternalString(isolate->AsIsolate(), *this, internalized);
+
+    // Conservatively assume ExternalStrings may have recorded slots, because
+    // they could have been transitioned from ConsStrings without having had the
+    // recorded slots cleared.
+    // TODO(v8:13374): Fix this more uniformly.
+    may_contain_recorded_slots = true;
   }
 
   // Update actual first and then do release store on the map word. This ensures
@@ -388,14 +377,12 @@ void String::MakeExternalDuringGC(Isolate* isolate, T* resource) {
   // Byte size of the external String object.
   int new_size = this->SizeFromMap(new_map);
 
-  // Shared strings are never indirect.
+  // Shared strings are never indirect or large.
+  DCHECK(!isolate->heap()->IsLargeObject(*this));
   DCHECK(!StringShape(*this).IsIndirect());
 
-  if (!isolate->heap()->IsLargeObject(*this)) {
-    isolate->heap()->NotifyObjectSizeChange(*this, size, new_size,
-                                            ClearRecordedSlots::kNo,
-                                            UpdateInvalidatedObjectSize::kNo);
-  }
+  isolate->heap()->NotifyObjectSizeChange(*this, size, new_size,
+                                          ClearRecordedSlots::kNo);
 
   // The external pointer slots must be initialized before the new map is
   // installed. Otherwise, a GC marking thread may see the new map before the
@@ -475,15 +462,9 @@ bool String::MakeExternal(v8::String::ExternalStringResource* resource) {
   }
 
   if (!isolate->heap()->IsLargeObject(*this)) {
-    // Strings in the shared heap are never indirect and thus cannot have any
-    // invalidated slots.
-    const auto update_invalidated_object_size =
-        InSharedWritableHeap() ? UpdateInvalidatedObjectSize::kNo
-                               : UpdateInvalidatedObjectSize::kYes;
     isolate->heap()->NotifyObjectSizeChange(
         *this, size, new_size,
-        has_pointers ? ClearRecordedSlots::kYes : ClearRecordedSlots::kNo,
-        update_invalidated_object_size);
+        has_pointers ? ClearRecordedSlots::kYes : ClearRecordedSlots::kNo);
   } else {
     // We don't need special handling for the combination IsLargeObject &&
     // has_pointers, because indirect strings never get that large.
@@ -561,19 +542,13 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
     int new_size = this->SizeFromMap(new_map);
 
     if (has_pointers) {
-      DCHECK(!InSharedWritableHeap());
       isolate->heap()->NotifyObjectLayoutChange(
           *this, no_gc, InvalidateRecordedSlots::kYes, new_size);
     }
-    // Strings in the shared heap are never indirect and thus cannot have any
-    // invalidated slots.
-    const auto update_invalidated_object_size =
-        InSharedWritableHeap() ? UpdateInvalidatedObjectSize::kNo
-                               : UpdateInvalidatedObjectSize::kYes;
+
     isolate->heap()->NotifyObjectSizeChange(
         *this, size, new_size,
-        has_pointers ? ClearRecordedSlots::kYes : ClearRecordedSlots::kNo,
-        update_invalidated_object_size);
+        has_pointers ? ClearRecordedSlots::kYes : ClearRecordedSlots::kNo);
   } else {
     // We don't need special handling for the combination IsLargeObject &&
     // has_pointers, because indirect strings never get that large.
@@ -621,7 +596,8 @@ bool String::SupportsExternalization() {
   DCHECK_LE(ExternalString::kUncachedSize, this->Size());
 #endif
 
-  return true;
+  Isolate* isolate = GetIsolateFromWritableObject(*this);
+  return !isolate->heap()->IsInGCPostProcessing();
 }
 
 const char* String::PrefixForDebugPrint() const {
@@ -1680,8 +1656,7 @@ uint32_t HashString(String string, size_t start, int length, uint64_t seed,
                         access_guard);
     chars = buffer.get();
   } else {
-    chars = string.GetDirectStringChars<Char>(cage_base, no_gc, access_guard) +
-            start;
+    chars = string.GetChars<Char>(cage_base, no_gc, access_guard) + start;
   }
 
   return StringHasher::HashSequentialString<Char>(chars, length, seed);
@@ -1706,7 +1681,7 @@ uint32_t String::ComputeAndSetRawHash(
   DCHECK_IMPLIES(!v8_flags.shared_string_table, !HasHashCode());
 
   // Store the hash code in the object.
-  uint64_t seed = HashSeed(EarlyGetReadOnlyRoots());
+  uint64_t seed = HashSeed(GetReadOnlyRoots());
   size_t start = 0;
   String string = *this;
   PtrComprCageBase cage_base = GetPtrComprCageBase(string);
@@ -1789,8 +1764,7 @@ void String::PrintOn(std::ostream& ostream) {
   }
 }
 
-Handle<String> SeqString::Truncate(Isolate* isolate, Handle<SeqString> string,
-                                   int new_length) {
+Handle<String> SeqString::Truncate(Handle<SeqString> string, int new_length) {
   if (new_length == 0) return string->GetReadOnlyRoots().empty_string_handle();
 
   int new_size, old_size;
@@ -1812,20 +1786,16 @@ Handle<String> SeqString::Truncate(Isolate* isolate, Handle<SeqString> string,
   DCHECK(IsAligned(start_of_string + new_size, kObjectAlignment));
 #endif
 
-  Heap* heap = isolate->heap();
+  Heap* heap = Heap::FromWritableHeapObject(*string);
   if (!heap->IsLargeObject(*string)) {
     // Sizes are pointer size aligned, so that we can use filler objects
     // that are a multiple of pointer size.
-    // No slot invalidation needed since this method is only used on freshly
-    // allocated strings.
     heap->NotifyObjectSizeChange(*string, old_size, new_size,
-                                 ClearRecordedSlots::kNo,
-                                 UpdateInvalidatedObjectSize::kNo);
+                                 ClearRecordedSlots::kNo);
   }
   // We are storing the new length using release store after creating a filler
   // for the left-over space to avoid races with the sweeper thread.
   string->set_length(new_length, kReleaseStore);
-  string->ClearPadding();
 
   return string;
 }
@@ -1849,25 +1819,6 @@ SeqString::DataAndPaddingSizes SeqTwoByteString::GetDataAndPaddingSizes()
   int data_size = SeqString::kHeaderSize + length() * base::kUC16Size;
   int padding_size = SizeFor(length()) - data_size;
   return DataAndPaddingSizes{data_size, padding_size};
-}
-
-#ifdef VERIFY_HEAP
-V8_EXPORT_PRIVATE void SeqString::SeqStringVerify(Isolate* isolate) {
-  TorqueGeneratedSeqString<SeqString, String>::SeqStringVerify(isolate);
-  DataAndPaddingSizes sz = GetDataAndPaddingSizes();
-  auto padding = reinterpret_cast<char*>(address() + sz.data_size);
-  CHECK(sz.padding_size <= kTaggedSize);
-  for (int i = 0; i < sz.padding_size; ++i) {
-    CHECK_EQ(padding[i], 0);
-  }
-}
-#endif  // VERIFY_HEAP
-
-void SeqString::ClearPadding() {
-  DataAndPaddingSizes sz = GetDataAndPaddingSizes();
-  DCHECK_EQ(address() + sz.data_size + sz.padding_size, address() + Size());
-  if (sz.padding_size == 0) return;
-  memset(reinterpret_cast<void*>(address() + sz.data_size), 0, sz.padding_size);
 }
 
 uint16_t ConsString::Get(

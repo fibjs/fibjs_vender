@@ -6,16 +6,10 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
-TNode<AlwaysSharedSpaceJSObject> Cast_AlwaysSharedSpaceJSObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=5&c=1
 TNode<JSSharedStruct> Cast_JSSharedStruct_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
-TNode<AlwaysSharedSpaceJSObject> DownCastForTorqueClass_AlwaysSharedSpaceJSObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=5&c=1
 TNode<JSSharedStruct> DownCastForTorqueClass_JSSharedStruct_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 } // namespace internal

@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-misc-tq-csa.h"
@@ -257,16 +255,15 @@ TNode<PromiseFulfillReactionJobTask> NewPromiseFulfillReactionJobTask_0(compiler
   TNode<IntPtrT> tmp4;
   TNode<HeapObject> tmp5;
   TNode<BoolT> tmp6;
-  TNode<BoolT> tmp7;
-  TNode<IntPtrT> tmp8;
-  TNode<HeapObject> tmp9;
+  TNode<IntPtrT> tmp7;
+  TNode<HeapObject> tmp8;
+  TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<IntPtrT> tmp15;
-  TNode<PromiseFulfillReactionJobTask> tmp16;
+  TNode<PromiseFulfillReactionJobTask> tmp15;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_handlerContext});
@@ -275,27 +272,26 @@ TNode<PromiseFulfillReactionJobTask> NewPromiseFulfillReactionJobTask_0(compiler
     std::tie(tmp3, tmp4) = ContextSlot_NativeContext_NativeContext_HeapObject_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp2}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp9 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp8}, TNode<Map>{tmp1}, TNode<BoolT>{tmp6}, TNode<BoolT>{tmp7});
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, p_argument);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp9, tmp12}, p_handlerContext);
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_handler);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp14}, p_promiseOrCapability);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp15}, tmp5);
-    tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp9});
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp8 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp7}, TNode<Map>{tmp1}, TNode<BoolT>{tmp6});
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp1);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp10}, p_argument);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp8, tmp11}, p_handlerContext);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp12}, p_handler);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp13}, p_promiseOrCapability);
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp14}, tmp5);
+    tmp15 = TORQUE_CAST(TNode<HeapObject>{tmp8});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<PromiseFulfillReactionJobTask>{tmp16};
+  return TNode<PromiseFulfillReactionJobTask>{tmp15};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-misc.tq?l=92&c=1
@@ -313,16 +309,15 @@ TNode<PromiseRejectReactionJobTask> NewPromiseRejectReactionJobTask_0(compiler::
   TNode<IntPtrT> tmp4;
   TNode<HeapObject> tmp5;
   TNode<BoolT> tmp6;
-  TNode<BoolT> tmp7;
-  TNode<IntPtrT> tmp8;
-  TNode<HeapObject> tmp9;
+  TNode<IntPtrT> tmp7;
+  TNode<HeapObject> tmp8;
+  TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<IntPtrT> tmp15;
-  TNode<PromiseRejectReactionJobTask> tmp16;
+  TNode<PromiseRejectReactionJobTask> tmp15;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_handlerContext});
@@ -331,27 +326,26 @@ TNode<PromiseRejectReactionJobTask> NewPromiseRejectReactionJobTask_0(compiler::
     std::tie(tmp3, tmp4) = ContextSlot_NativeContext_NativeContext_HeapObject_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp2}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp9 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp8}, TNode<Map>{tmp1}, TNode<BoolT>{tmp6}, TNode<BoolT>{tmp7});
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, p_argument);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp9, tmp12}, p_handlerContext);
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_handler);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp14}, p_promiseOrCapability);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp15}, tmp5);
-    tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp9});
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp8 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp7}, TNode<Map>{tmp1}, TNode<BoolT>{tmp6});
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp1);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp10}, p_argument);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp8, tmp11}, p_handlerContext);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp12}, p_handler);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp13}, p_promiseOrCapability);
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp14}, tmp5);
+    tmp15 = TORQUE_CAST(TNode<HeapObject>{tmp8});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<PromiseRejectReactionJobTask>{tmp16};
+  return TNode<PromiseRejectReactionJobTask>{tmp15};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-misc.tq?l=109&c=1
@@ -736,16 +730,15 @@ TNode<PromiseReaction> NewPromiseReaction_0(compiler::CodeAssemblerState* state_
   TNode<IntPtrT> tmp4;
   TNode<HeapObject> tmp5;
   TNode<BoolT> tmp6;
-  TNode<BoolT> tmp7;
-  TNode<IntPtrT> tmp8;
-  TNode<HeapObject> tmp9;
+  TNode<IntPtrT> tmp7;
+  TNode<HeapObject> tmp8;
+  TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<IntPtrT> tmp15;
-  TNode<PromiseReaction> tmp16;
+  TNode<PromiseReaction> tmp15;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_handlerContext});
@@ -754,27 +747,26 @@ TNode<PromiseReaction> NewPromiseReaction_0(compiler::CodeAssemblerState* state_
     std::tie(tmp3, tmp4) = ContextSlot_NativeContext_NativeContext_HeapObject_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp2}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp9 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp8}, TNode<Map>{tmp1}, TNode<BoolT>{tmp6}, TNode<BoolT>{tmp7});
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, p_next);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp12}, p_rejectHandler);
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_fulfillHandler);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp14}, p_promiseOrCapability);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp15}, tmp5);
-    tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp9});
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp8 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp7}, TNode<Map>{tmp1}, TNode<BoolT>{tmp6});
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp1);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp10}, p_next);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp11}, p_rejectHandler);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp12}, p_fulfillHandler);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp8, tmp13}, p_promiseOrCapability);
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp14}, tmp5);
+    tmp15 = TORQUE_CAST(TNode<HeapObject>{tmp8});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<PromiseReaction>{tmp16};
+  return TNode<PromiseReaction>{tmp15};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-misc.tq?l=292&c=1
@@ -789,40 +781,38 @@ TNode<PromiseResolveThenableJobTask> NewPromiseResolveThenableJobTask_0(compiler
   TNode<NativeContext> tmp1;
   TNode<Map> tmp2;
   TNode<BoolT> tmp3;
-  TNode<BoolT> tmp4;
-  TNode<IntPtrT> tmp5;
-  TNode<HeapObject> tmp6;
+  TNode<IntPtrT> tmp4;
+  TNode<HeapObject> tmp5;
+  TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<IntPtrT> tmp11;
-  TNode<PromiseResolveThenableJobTask> tmp12;
+  TNode<PromiseResolveThenableJobTask> tmp11;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = ExtractHandlerContext_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_then});
     tmp1 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{tmp0});
     tmp2 = CodeStubAssembler(state_).PromiseResolveThenableJobTaskMapConstant();
     tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp4 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    tmp6 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp5}, TNode<Map>{tmp2}, TNode<BoolT>{tmp3}, TNode<BoolT>{tmp4});
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp6, tmp7}, tmp2);
-    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp6, tmp8}, tmp1);
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<JSPromise>(CodeStubAssembler::Reference{tmp6, tmp9}, p_promiseToResolve);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp6, tmp10}, p_thenable);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp6, tmp11}, p_then);
-    tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp6});
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp5 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp4}, TNode<Map>{tmp2}, TNode<BoolT>{tmp3});
+    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp5, tmp6}, tmp2);
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp5, tmp7}, tmp1);
+    tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<JSPromise>(CodeStubAssembler::Reference{tmp5, tmp8}, p_promiseToResolve);
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp5, tmp9}, p_thenable);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp5, tmp10}, p_then);
+    tmp11 = TORQUE_CAST(TNode<HeapObject>{tmp5});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<PromiseResolveThenableJobTask>{tmp12};
+  return TNode<PromiseResolveThenableJobTask>{tmp11};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-misc.tq?l=358&c=1

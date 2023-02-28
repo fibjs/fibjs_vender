@@ -62,7 +62,7 @@ class BitField final {
   }
 
   // Returns a type U with the bit field value updated.
-  V8_NODISCARD static constexpr U update(U previous, T value) {
+  static constexpr U update(U previous, T value) {
     return (previous & ~kMask) | encode(value);
   }
 

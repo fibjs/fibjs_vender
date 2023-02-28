@@ -48,13 +48,14 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   for (unsigned int i = 0; i < images_count; ++i) {
     const mach_header* header = _dyld_get_image_header(i);
     if (header == nullptr) continue;
-    unsigned long size;
 #if V8_HOST_ARCH_I32
-    uint8_t* code_ptr = getsectiondata(header, SEG_TEXT, SECT_TEXT, &size);
+    unsigned int size;
+    char* code_ptr = getsectdatafromheader(header, SEG_TEXT, SECT_TEXT, &size);
 #else
-    const mach_header_64* header64 =
-        reinterpret_cast<const mach_header_64*>(header);
-    uint8_t* code_ptr = getsectiondata(header64, SEG_TEXT, SECT_TEXT, &size);
+    uint64_t size;
+    char* code_ptr = getsectdatafromheader_64(
+        reinterpret_cast<const mach_header_64*>(header), SEG_TEXT, SECT_TEXT,
+        &size);
 #endif
     if (code_ptr == nullptr) continue;
     const intptr_t slide = _dyld_get_image_vmaddr_slide(i);

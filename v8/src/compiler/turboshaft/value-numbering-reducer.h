@@ -71,13 +71,9 @@ namespace turboshaft {
 template <class Next>
 class ValueNumberingReducer : public Next {
  public:
-  TURBOSHAFT_REDUCER_BOILERPLATE()
-
-  template <class... Args>
-  explicit ValueNumberingReducer(const std::tuple<Args...>& args)
-      : Next(args),
-        dominator_path_(Asm().phase_zone()),
-        depths_heads_(Asm().phase_zone()) {
+  using Next::Asm;
+  ValueNumberingReducer()
+      : dominator_path_(Asm().phase_zone()), depths_heads_(Asm().phase_zone()) {
     table_ = Asm().phase_zone()->template NewVector<Entry>(
         base::bits::RoundUpToPowerOfTwo(
             std::max<size_t>(128, Asm().input_graph().op_id_capacity() / 2)),
@@ -161,7 +157,7 @@ class ValueNumberingReducer : public Next {
             (!same_block_only ||
              entry.block == Asm().current_block()->index()) &&
             entry_op.Cast<Op>() == op) {
-          Next::RemoveLast(op_idx);
+          Asm().output_graph().RemoveLast();
           return entry.value;
         }
       }

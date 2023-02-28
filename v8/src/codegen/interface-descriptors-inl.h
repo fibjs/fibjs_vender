@@ -329,20 +329,6 @@ constexpr auto StoreGlobalBaselineDescriptor::registers() {
 }
 
 // static
-constexpr auto DefineKeyedOwnDescriptor::registers() {
-  return RegisterArray(StoreDescriptor::ReceiverRegister(),
-                       StoreDescriptor::NameRegister(),
-                       StoreDescriptor::ValueRegister(),
-                       DefineKeyedOwnDescriptor::FlagsRegister(),
-                       StoreDescriptor::SlotRegister());
-}
-
-// static
-constexpr auto DefineKeyedOwnBaselineDescriptor::registers() {
-  return DefineKeyedOwnDescriptor::registers();
-}
-
-// static
 constexpr auto LoadWithReceiverBaselineDescriptor::registers() {
   return RegisterArray(
       LoadDescriptor::ReceiverRegister(),
@@ -538,15 +524,6 @@ constexpr auto StoreWithVectorDescriptor::registers() {
                        StoreDescriptor::NameRegister(),
                        StoreDescriptor::ValueRegister(),
                        StoreDescriptor::SlotRegister(), VectorRegister());
-}
-
-// static
-constexpr auto DefineKeyedOwnWithVectorDescriptor::registers() {
-  return RegisterArray(StoreDescriptor::ReceiverRegister(),
-                       StoreDescriptor::NameRegister(),
-                       StoreDescriptor::ValueRegister(),
-                       DefineKeyedOwnDescriptor::FlagsRegister(),
-                       StoreDescriptor::SlotRegister());
 }
 
 // static

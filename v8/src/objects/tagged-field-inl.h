@@ -35,9 +35,10 @@ Address TaggedField<T, kFieldOffset, CompressionScheme>::tagged_to_full(
   if (kIsSmi) {
     return CompressionScheme::DecompressTaggedSigned(tagged_value);
   } else if (kIsHeapObject) {
-    return CompressionScheme::DecompressTagged(on_heap_addr, tagged_value);
+    return CompressionScheme::DecompressTaggedPointer(on_heap_addr,
+                                                      tagged_value);
   } else {
-    return CompressionScheme::DecompressTagged(on_heap_addr, tagged_value);
+    return CompressionScheme::DecompressTaggedAny(on_heap_addr, tagged_value);
   }
 #else
   return tagged_value;

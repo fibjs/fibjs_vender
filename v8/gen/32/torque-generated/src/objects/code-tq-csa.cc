@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/code-tq-csa.h"
@@ -112,7 +110,7 @@ TNode<BytecodeArray> Cast_BytecodeArray_0(compiler::CodeAssemblerState* state_, 
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=29&c=1
-TNode<Code> Cast_Code_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+TNode<CodeDataContainer> Cast_CodeDataContainer_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -121,11 +119,11 @@ TNode<Code> Cast_Code_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> 
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Code> tmp0;
+  TNode<CodeDataContainer> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = DownCastForTorqueClass_Code_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    tmp0 = DownCastForTorqueClass_CodeDataContainer_0(state_, TNode<HeapObject>{p_obj}, &label1);
     ca_.Goto(&block3);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -144,7 +142,7 @@ TNode<Code> Cast_Code_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> 
   }
 
     ca_.Bind(&block5);
-  return TNode<Code>{tmp0};
+  return TNode<CodeDataContainer>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=9&c=3
@@ -573,7 +571,7 @@ TNode<BytecodeArray> DownCastForTorqueClass_BytecodeArray_0(compiler::CodeAssemb
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=29&c=1
-TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+TNode<CodeDataContainer> DownCastForTorqueClass_CodeDataContainer_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -599,7 +597,7 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(245), static_cast<InstanceType>(245))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(237), static_cast<InstanceType>(237))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -608,7 +606,7 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
 
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<Code>())) {
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<CodeDataContainer>())) {
       ca_.Goto(&block6);
     } else {
       ca_.Goto(&block7);
@@ -619,7 +617,7 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<Code>();
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<CodeDataContainer>();
     tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
@@ -642,7 +640,7 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(245));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(237));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -676,12 +674,12 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(245), static_cast<InstanceType>(245))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(237), static_cast<InstanceType>(237))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(245));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(237));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -701,7 +699,7 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
     ca_.Goto(&block5);
   }
 
-  TNode<Code> tmp20;
+  TNode<CodeDataContainer> tmp20;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
@@ -714,7 +712,7 @@ TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, 
   }
 
     ca_.Bind(&block15);
-  return TNode<Code>{tmp20};
+  return TNode<CodeDataContainer>{tmp20};
 }
 
 } // namespace internal

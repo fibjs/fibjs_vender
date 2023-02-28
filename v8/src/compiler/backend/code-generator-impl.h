@@ -90,7 +90,7 @@ class InstructionOperandConverter {
     return ToExternalReference(instr_->InputAt(index));
   }
 
-  Handle<Code> InputCode(size_t index) {
+  Handle<CodeT> InputCode(size_t index) {
     return ToCode(instr_->InputAt(index));
   }
 
@@ -172,7 +172,7 @@ class InstructionOperandConverter {
     return ToConstant(op).ToExternalReference();
   }
 
-  Handle<Code> ToCode(InstructionOperand* op) {
+  Handle<CodeT> ToCode(InstructionOperand* op) {
     return ToConstant(op).ToCode();
   }
 
@@ -266,14 +266,14 @@ class OutOfLineCode : public ZoneObject {
   Label* entry() { return &entry_; }
   Label* exit() { return &exit_; }
   const Frame* frame() const { return frame_; }
-  MacroAssembler* masm() { return masm_; }
+  TurboAssembler* tasm() { return tasm_; }
   OutOfLineCode* next() const { return next_; }
 
  private:
   Label entry_;
   Label exit_;
   const Frame* const frame_;
-  MacroAssembler* const masm_;
+  TurboAssembler* const tasm_;
   OutOfLineCode* const next_;
 };
 

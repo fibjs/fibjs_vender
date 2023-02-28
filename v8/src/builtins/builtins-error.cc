@@ -52,7 +52,7 @@ BUILTIN(ErrorCaptureStackTrace) {
 
   // Explicitly check for frozen objects. Other access checks are performed by
   // the LookupIterator in SetAccessor below.
-  if (!JSObject::IsExtensible(isolate, object)) {
+  if (!JSObject::IsExtensible(object)) {
     return isolate->Throw(*isolate->factory()->NewTypeError(
         MessageTemplate::kDefineDisallowed, name));
   }

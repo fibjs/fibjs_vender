@@ -1,4 +1,4 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=20&c=3
 template<class D, class P>
 int TorqueGeneratedPropertyDescriptorObject<D, P>::flags() const {
   int value;
@@ -6,20 +6,20 @@ int TorqueGeneratedPropertyDescriptorObject<D, P>::flags() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=21&c=3
 template<class D, class P>
 Object TorqueGeneratedPropertyDescriptorObject<D, P>::value() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPropertyDescriptorObject::value(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=21&c=3
 template<class D, class P>
 Object TorqueGeneratedPropertyDescriptorObject<D, P>::value(PtrComprCageBase cage_base) const {
   Object value;
@@ -28,7 +28,7 @@ Object TorqueGeneratedPropertyDescriptorObject<D, P>::value(PtrComprCageBase cag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_value(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsTheHole());
@@ -36,14 +36,14 @@ void TorqueGeneratedPropertyDescriptorObject<D, P>::set_value(Object value, Writ
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=22&c=3
 template<class D, class P>
 Object TorqueGeneratedPropertyDescriptorObject<D, P>::get() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPropertyDescriptorObject::get(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=22&c=3
 template<class D, class P>
 Object TorqueGeneratedPropertyDescriptorObject<D, P>::get(PtrComprCageBase cage_base) const {
   Object value;
@@ -52,7 +52,7 @@ Object TorqueGeneratedPropertyDescriptorObject<D, P>::get(PtrComprCageBase cage_
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=22&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_get(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsTheHole());
@@ -60,14 +60,14 @@ void TorqueGeneratedPropertyDescriptorObject<D, P>::set_get(Object value, WriteB
   CONDITIONAL_WRITE_BARRIER(*this, kGetOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=23&c=3
 template<class D, class P>
 Object TorqueGeneratedPropertyDescriptorObject<D, P>::set() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPropertyDescriptorObject::set(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=23&c=3
 template<class D, class P>
 Object TorqueGeneratedPropertyDescriptorObject<D, P>::set(PtrComprCageBase cage_base) const {
   Object value;
@@ -76,7 +76,7 @@ Object TorqueGeneratedPropertyDescriptorObject<D, P>::set(PtrComprCageBase cage_
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_set(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsTheHole());

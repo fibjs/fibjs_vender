@@ -482,7 +482,6 @@ class ArrayBufferViewAccessBuilder {
         instance_type_(instance_type),
         candidates_(std::move(candidates)) {
     DCHECK_NOT_NULL(assembler_);
-    // TODO(v8:11111): Optimize for JS_RAB_GSAB_DATA_VIEW_TYPE too.
     DCHECK(instance_type_ == JS_DATA_VIEW_TYPE ||
            instance_type_ == JS_TYPED_ARRAY_TYPE);
   }
@@ -495,7 +494,6 @@ class ArrayBufferViewAccessBuilder {
   }
 
   base::Optional<int> TryComputeStaticElementShift() {
-    DCHECK(instance_type_ != JS_RAB_GSAB_DATA_VIEW_TYPE);
     if (instance_type_ == JS_DATA_VIEW_TYPE) return 0;
     if (candidates_.empty()) return base::nullopt;
     int shift = ElementsKindToShiftSize(*candidates_.begin());
@@ -508,7 +506,6 @@ class ArrayBufferViewAccessBuilder {
   }
 
   base::Optional<int> TryComputeStaticElementSize() {
-    DCHECK(instance_type_ != JS_RAB_GSAB_DATA_VIEW_TYPE);
     if (instance_type_ == JS_DATA_VIEW_TYPE) return 1;
     if (candidates_.empty()) return base::nullopt;
     int size = ElementsKindToByteSize(*candidates_.begin());
@@ -844,11 +841,6 @@ TNode<Object> JSGraphAssembler::JSCallRuntime2(Runtime::FunctionId function_id,
   });
 }
 
-Node* JSGraphAssembler::Chained(const Operator* op, Node* input) {
-  return AddNode(
-      graph()->NewNode(common()->Chained(op), input, effect(), control()));
-}
-
 Node* GraphAssembler::TypeGuard(Type type, Node* value) {
   return AddNode(
       graph()->NewNode(common()->TypeGuard(type), value, effect(), control()));
@@ -864,7 +856,8 @@ Node* GraphAssembler::DebugBreak() {
       graph()->NewNode(machine()->DebugBreak(), effect(), control()));
 }
 
-Node* GraphAssembler::Unreachable() {
+Node* GraphAssembler::Unreachable(
+    GraphAssemblerLabel<0u>* block_updater_successor) {
   Node* result = UnreachableWithoutConnectToEnd();
   ConnectUnreachableToEnd();
   InitializeEffectControl(nullptr, nullptr);
@@ -931,12 +924,6 @@ Node* GraphAssembler::ProtectedStore(MachineRepresentation rep, Node* object,
 Node* GraphAssembler::ProtectedLoad(MachineType type, Node* object,
                                     Node* offset) {
   return AddNode(graph()->NewNode(machine()->ProtectedLoad(type), object,
-                                  offset, effect(), control()));
-}
-
-Node* GraphAssembler::LoadTrapOnNull(MachineType type, Node* object,
-                                     Node* offset) {
-  return AddNode(graph()->NewNode(machine()->LoadTrapOnNull(type), object,
                                   offset, effect(), control()));
 }
 

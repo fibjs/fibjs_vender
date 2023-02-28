@@ -69,11 +69,6 @@ class CanBeHandledVisitor final : private RegExpVisitor {
     return nullptr;
   }
 
-  void* VisitClassSetOperand(RegExpClassSetOperand* node, void*) override {
-    result_ = !node->has_strings();
-    return nullptr;
-  }
-
   void* VisitClassSetExpression(RegExpClassSetExpression* node,
                                 void*) override {
     result_ = false;
@@ -396,10 +391,11 @@ class CompileVisitor : private RegExpVisitor {
     return nullptr;
   }
 
-  void CompileCharacterRanges(ZoneList<CharacterRange>* ranges, bool negated) {
+  void* VisitClassRanges(RegExpClassRanges* node, void*) override {
     // A character class is compiled as Disjunction over its `CharacterRange`s.
+    ZoneList<CharacterRange>* ranges = node->ranges(zone_);
     CharacterRange::Canonicalize(ranges);
-    if (negated) {
+    if (node->is_negated()) {
       // The complement of a disjoint, non-adjacent (i.e. `Canonicalize`d)
       // union of k intervals is a union of at most k + 1 intervals.
       ZoneList<CharacterRange>* negated =
@@ -426,17 +422,6 @@ class CompileVisitor : private RegExpVisitor {
 
       assembler_.ConsumeRange(from_uc16, to_uc16);
     });
-  }
-
-  void* VisitClassRanges(RegExpClassRanges* node, void*) override {
-    CompileCharacterRanges(node->ranges(zone_), node->is_negated());
-    return nullptr;
-  }
-
-  void* VisitClassSetOperand(RegExpClassSetOperand* node, void*) override {
-    // TODO(v8:11935): Support strings.
-    DCHECK(!node->has_strings());
-    CompileCharacterRanges(node->ranges(), false);
     return nullptr;
   }
 

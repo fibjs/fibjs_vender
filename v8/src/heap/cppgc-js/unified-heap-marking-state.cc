@@ -11,15 +11,11 @@ namespace v8 {
 namespace internal {
 
 UnifiedHeapMarkingState::UnifiedHeapMarkingState(
-    Heap* heap, MarkingWorklists::Local* local_marking_worklist,
-    cppgc::internal::CollectionType collection_type)
+    Heap* heap, MarkingWorklists::Local* local_marking_worklist)
     : heap_(heap),
       marking_state_(heap_ ? heap_->marking_state() : nullptr),
       local_marking_worklist_(local_marking_worklist),
-      track_retaining_path_(v8_flags.track_retaining_path),
-      mark_mode_(collection_type == cppgc::internal::CollectionType::kMinor
-                     ? TracedHandles::MarkMode::kOnlyYoung
-                     : TracedHandles::MarkMode::kAll) {
+      track_retaining_path_(v8_flags.track_retaining_path) {
   DCHECK_IMPLIES(v8_flags.track_retaining_path,
                  !v8_flags.concurrent_marking && !v8_flags.parallel_marking);
   DCHECK_IMPLIES(heap_, marking_state_);

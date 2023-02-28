@@ -45,6 +45,49 @@ TNode<IntPtrT> RegExpBuiltinsAssembler::IntPtrZero() {
   return IntPtrConstant(0);
 }
 
+// If code is a builtin, return the address to the (possibly embedded) builtin
+// code entry, otherwise return the entry of the code object itself.
+TNode<RawPtrT> RegExpBuiltinsAssembler::LoadCodeObjectEntry(TNode<CodeT> code) {
+  if (V8_EXTERNAL_CODE_SPACE_BOOL) {
+    // When external code space is enabled we can load the entry point directly
+    // from the CodeT object.
+    return GetCodeEntry(code);
+  }
+
+  TVARIABLE(RawPtrT, var_result);
+
+  Label if_code_is_off_heap(this), out(this);
+  TNode<Int32T> builtin_index =
+      LoadObjectField<Int32T>(code, Code::kBuiltinIndexOffset);
+  {
+    GotoIfNot(
+        Word32Equal(builtin_index,
+                    Int32Constant(static_cast<int>(Builtin::kNoBuiltinId))),
+        &if_code_is_off_heap);
+    var_result = ReinterpretCast<RawPtrT>(
+        IntPtrAdd(BitcastTaggedToWord(code),
+                  IntPtrConstant(Code::kHeaderSize - kHeapObjectTag)));
+    Goto(&out);
+  }
+
+  BIND(&if_code_is_off_heap);
+  {
+    TNode<IntPtrT> builtin_entry_offset_from_isolate_root =
+        IntPtrAdd(IntPtrConstant(IsolateData::builtin_entry_table_offset()),
+                  ChangeInt32ToIntPtr(Word32Shl(
+                      builtin_index, Int32Constant(kSystemPointerSizeLog2))));
+
+    var_result = ReinterpretCast<RawPtrT>(
+        Load(MachineType::Pointer(),
+             ExternalConstant(ExternalReference::isolate_root(isolate())),
+             builtin_entry_offset_from_isolate_root));
+    Goto(&out);
+  }
+
+  BIND(&out);
+  return var_result.value();
+}
+
 // -----------------------------------------------------------------------------
 // ES6 section 21.2 RegExp Objects
 
@@ -516,7 +559,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
 #endif
 
   GotoIf(TaggedIsSmi(var_code.value()), &runtime);
-  TNode<Code> code = CAST(var_code.value());
+  TNode<CodeT> code = CAST(var_code.value());
 
   Label if_success(this), if_exception(this, Label::kDeferred);
   {
@@ -580,7 +623,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
     MachineType arg8_type = type_tagged;
     TNode<JSRegExp> arg8 = regexp;
 
-    TNode<RawPtrT> code_entry = GetCodeEntry(code);
+    TNode<RawPtrT> code_entry = LoadCodeObjectEntry(code);
 
     // AIX uses function descriptors on CFunction calls. code_entry in this case
     // may also point to a Regex interpreter entry trampoline which does not
@@ -669,7 +712,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
                                 var_to_offset.value(), smi_value);
             Increment(&var_to_offset, kTaggedSize);
           },
-          kInt32Size, LoopUnrollingMode::kYes, IndexAdvanceMode::kPost);
+          kInt32Size, IndexAdvanceMode::kPost);
     }
 
     var_result = match_info;
@@ -736,8 +779,10 @@ TNode<BoolT> RegExpBuiltinsAssembler::IsFastRegExpNoPrototype(
   Label out(this);
   TVARIABLE(BoolT, var_result);
 
+#ifdef V8_ENABLE_FORCE_SLOW_PATH
   var_result = Int32FalseConstant();
   GotoIfForceSlowPath(&out);
+#endif
 
   const TNode<NativeContext> native_context = LoadNativeContext(context);
   const TNode<HeapObject> regexp_fun =
@@ -1023,13 +1068,13 @@ TNode<String> RegExpBuiltinsAssembler::FlagsGetter(TNode<Context> context,
     BIND(&next);                                                           \
   } while (false)
 
-    CASE_FOR_FLAG("hasIndices", JSRegExp::kHasIndices);
     CASE_FOR_FLAG("global", JSRegExp::kGlobal);
     CASE_FOR_FLAG("ignoreCase", JSRegExp::kIgnoreCase);
     CASE_FOR_FLAG("multiline", JSRegExp::kMultiline);
     CASE_FOR_FLAG("dotAll", JSRegExp::kDotAll);
     CASE_FOR_FLAG("unicode", JSRegExp::kUnicode);
     CASE_FOR_FLAG("sticky", JSRegExp::kSticky);
+    CASE_FOR_FLAG("hasIndices", JSRegExp::kHasIndices);
 #undef CASE_FOR_FLAG
 
 #define CASE_FOR_FLAG(NAME, V8_FLAG_EXTERN_REF, FLAG)                      \
@@ -1087,6 +1132,7 @@ TNode<String> RegExpBuiltinsAssembler::FlagsGetter(TNode<Context> context,
 #undef CASE_FOR_FLAG
 
     if (is_fastpath) {
+#ifdef V8_ENABLE_FORCE_SLOW_PATH
       result = string;
       Goto(&done);
 
@@ -1099,6 +1145,9 @@ TNode<String> RegExpBuiltinsAssembler::FlagsGetter(TNode<Context> context,
 
       BIND(&done);
       return result.value();
+#else
+      return string;
+#endif
     } else {
       return string;
     }

@@ -6,4 +6,3 @@ nikolaos@chromium.org
 omerkatz@chromium.org
 
 per-file *factory*=file:../objects/OWNERS
-per-file static-roots.h=file:../../COMMON_OWNERS

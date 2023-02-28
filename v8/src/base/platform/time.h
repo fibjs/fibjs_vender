@@ -91,10 +91,10 @@ class V8_BASE_EXPORT TimeDelta final {
     return TimeDelta(nanoseconds / TimeConstants::kNanosecondsPerMicrosecond);
   }
 
-  static constexpr TimeDelta FromSecondsD(double seconds) {
+  static TimeDelta FromSecondsD(double seconds) {
     return FromDouble(seconds * TimeConstants::kMicrosecondsPerSecond);
   }
-  static constexpr TimeDelta FromMillisecondsD(double milliseconds) {
+  static TimeDelta FromMillisecondsD(double milliseconds) {
     return FromDouble(milliseconds *
                       TimeConstants::kMicrosecondsPerMillisecond);
   }
@@ -210,7 +210,8 @@ class V8_BASE_EXPORT TimeDelta final {
   }
 
  private:
-  static constexpr inline TimeDelta FromDouble(double value);
+  // TODO(v8:10620): constexpr requires constexpr saturated_cast.
+  static inline TimeDelta FromDouble(double value);
 
   template<class TimeClass> friend class time_internal::TimeBase;
   // Constructs a delta given the duration in microseconds. This is private
@@ -223,7 +224,7 @@ class V8_BASE_EXPORT TimeDelta final {
 };
 
 // static
-constexpr TimeDelta TimeDelta::FromDouble(double value) {
+TimeDelta TimeDelta::FromDouble(double value) {
   return TimeDelta(saturated_cast<int64_t>(value));
 }
 

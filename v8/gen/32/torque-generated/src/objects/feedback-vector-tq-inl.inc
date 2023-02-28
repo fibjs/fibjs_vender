@@ -35,7 +35,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceFeedbackVectorRawFeedb
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
   tmp1 = (p_o).ReadField<int32_t>(tmp0);
   tmp2 = TqRuntimeConvert_intptr_int32_0(tmp1);
-  tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x24ull));
+  tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x20ull));
   std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_MaybeObject_0(p_o, tmp3, tmp2);
   goto block2;
 
@@ -268,38 +268,14 @@ void TorqueGeneratedFeedbackVector<D, P>::set_closure_feedback_cell_array(Closur
   CONDITIONAL_WRITE_BARRIER(*this, kClosureFeedbackCellArrayOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
-template<class D, class P>
-FeedbackCell TorqueGeneratedFeedbackVector<D, P>::parent_feedback_cell() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedFeedbackVector::parent_feedback_cell(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
-template<class D, class P>
-FeedbackCell TorqueGeneratedFeedbackVector<D, P>::parent_feedback_cell(PtrComprCageBase cage_base) const {
-  FeedbackCell value;
-  value = TaggedField<FeedbackCell>::load(cage_base, *this, kParentFeedbackCellOffset);
-  DCHECK(value.IsFeedbackCell());
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
-template<class D, class P>
-void TorqueGeneratedFeedbackVector<D, P>::set_parent_feedback_cell(FeedbackCell value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFeedbackCell());
-  WRITE_FIELD(*this, kParentFeedbackCellOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kParentFeedbackCellOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
 template<class D, class P>
 MaybeObject TorqueGeneratedFeedbackVector<D, P>::maybe_optimized_code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackVector::maybe_optimized_code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
 template<class D, class P>
 MaybeObject TorqueGeneratedFeedbackVector<D, P>::maybe_optimized_code(PtrComprCageBase cage_base) const {
   MaybeObject value;
@@ -308,7 +284,7 @@ MaybeObject TorqueGeneratedFeedbackVector<D, P>::maybe_optimized_code(PtrComprCa
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_maybe_optimized_code(MaybeObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsCleared() || (value.IsWeak() && value.GetHeapObjectOrSmi().IsCode()));

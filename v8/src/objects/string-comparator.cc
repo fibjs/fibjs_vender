@@ -16,10 +16,7 @@ void StringComparator::State::Init(
   if (!cons_string.is_null()) {
     int offset;
     string = iter_.Next(&offset);
-    // We are resetting the iterator with zero offset, so we should never have
-    // a per-segment offset.
-    DCHECK_EQ(offset, 0);
-    String::VisitFlat(this, string, 0, access_guard);
+    String::VisitFlat(this, string, offset, access_guard);
   }
 }
 

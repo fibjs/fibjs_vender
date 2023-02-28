@@ -17,11 +17,6 @@
 namespace cppgc {
 namespace internal {
 
-enum class WriteBarrierSlotType {
-  kCompressed,
-  kUncompressed,
-};
-
 #if defined(CPPGC_POINTER_COMPRESSION)
 
 #if defined(__clang__)
@@ -69,8 +64,6 @@ class CageBaseGlobal final {
 class V8_TRIVIAL_ABI CompressedPointer final {
  public:
   using IntegralType = uint32_t;
-  static constexpr auto kWriteBarrierSlotType =
-      WriteBarrierSlotType::kCompressed;
 
   V8_INLINE CompressedPointer() : value_(0u) {}
   V8_INLINE explicit CompressedPointer(const void* ptr)
@@ -180,8 +173,6 @@ class V8_TRIVIAL_ABI CompressedPointer final {
 class V8_TRIVIAL_ABI RawPointer final {
  public:
   using IntegralType = uintptr_t;
-  static constexpr auto kWriteBarrierSlotType =
-      WriteBarrierSlotType::kUncompressed;
 
   V8_INLINE RawPointer() : ptr_(nullptr) {}
   V8_INLINE explicit RawPointer(const void* ptr) : ptr_(ptr) {}
@@ -234,9 +225,9 @@ class V8_TRIVIAL_ABI RawPointer final {
 };
 
 #if defined(CPPGC_POINTER_COMPRESSION)
-using DefaultMemberStorage = CompressedPointer;
+using MemberStorage = CompressedPointer;
 #else   // !defined(CPPGC_POINTER_COMPRESSION)
-using DefaultMemberStorage = RawPointer;
+using MemberStorage = RawPointer;
 #endif  // !defined(CPPGC_POINTER_COMPRESSION)
 
 }  // namespace internal

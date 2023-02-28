@@ -65,7 +65,7 @@ void EmitLoad(InstructionSelector* selector, Node* node, InstructionCode opcode,
       selector->CanAddressRelativeToRootsRegister(m.ResolvedValue())) {
     ptrdiff_t const delta =
         g.GetIntegerConstantValue(index) +
-        MacroAssemblerBase::RootRegisterOffsetForExternalReference(
+        TurboAssemblerBase::RootRegisterOffsetForExternalReference(
             selector->isolate(), m.ResolvedValue());
     // Check that the delta is a 32-bit integer due to the limitations of
     // immediate operands.

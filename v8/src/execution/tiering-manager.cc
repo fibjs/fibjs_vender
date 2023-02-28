@@ -15,7 +15,6 @@
 #include "src/diagnostics/code-tracer.h"
 #include "src/execution/execution.h"
 #include "src/execution/frames-inl.h"
-#include "src/flags/flags.h"
 #include "src/handles/global-handles.h"
 #include "src/init/bootstrapper.h"
 #include "src/interpreter/interpreter.h"
@@ -97,10 +96,10 @@ static_assert(sizeof(OptimizationDecision) <= kInt32Size);
 
 namespace {
 
-void TraceInOptimizationQueue(JSFunction function, CodeKind calling_code_kind) {
+void TraceInOptimizationQueue(JSFunction function) {
   if (v8_flags.trace_opt_verbose) {
-    PrintF("[not marking function %s (%s) for optimization: already queued]\n",
-           function.DebugNameCStr().get(), CodeKindToString(calling_code_kind));
+    PrintF("[not marking function %s for optimization: already queued]\n",
+           function.DebugNameCStr().get());
   }
 }
 
@@ -230,6 +229,9 @@ bool SmallEnoughForOSR(Isolate* isolate, JSFunction function,
 
 void TrySetOsrUrgency(Isolate* isolate, JSFunction function, int osr_urgency) {
   SharedFunctionInfo shared = function.shared();
+  // Guaranteed since we've got a feedback vector.
+  DCHECK(shared.IsUserJavaScript());
+
   if (V8_UNLIKELY(!v8_flags.use_osr)) return;
   if (V8_UNLIKELY(shared.optimization_disabled())) return;
 
@@ -275,13 +277,11 @@ void TieringManager::MaybeOptimizeFrame(JSFunction function,
   const TieringState tiering_state = function.feedback_vector().tiering_state();
   const TieringState osr_tiering_state =
       function.feedback_vector().osr_tiering_state();
-  // Attenzione! Update this constant in case the condition below changes.
-  static_assert(kTieringStateInProgressBlocksTierup);
   if (V8_UNLIKELY(IsInProgress(tiering_state)) ||
       V8_UNLIKELY(IsInProgress(osr_tiering_state))) {
-    // Note: This effectively disables further tiering actions (e.g. OSR, or
-    // tiering up into Maglev) for the function while it is being compiled.
-    TraceInOptimizationQueue(function, calling_code_kind);
+    // Note: This effectively disables OSR for the function while it is being
+    // compiled.
+    TraceInOptimizationQueue(function);
     return;
   }
 
@@ -342,7 +342,6 @@ OptimizationDecision TieringManager::ShouldOptimize(
   if (TiersUpToMaglev(calling_code_kind) &&
       function.shared().PassesFilter(v8_flags.maglev_filter) &&
       !function.shared(isolate_).maglev_compilation_failed()) {
-    if (any_ic_changed_) return OptimizationDecision::DoNotOptimize();
     return OptimizationDecision::Maglev();
   } else if (calling_code_kind == CodeKind::TURBOFAN) {
     // Already in the top tier.
@@ -382,22 +381,6 @@ OptimizationDecision TieringManager::ShouldOptimize(
   }
 
   return OptimizationDecision::DoNotOptimize();
-}
-
-void TieringManager::NotifyICChanged(FeedbackVector vector) {
-  if (v8_flags.global_ic_updated_flag) {
-    any_ic_changed_ = true;
-  }
-  if (v8_flags.reset_interrupt_on_ic_update) {
-    CodeKind code_kind = vector.has_optimized_code()
-                             ? vector.optimized_code().kind()
-                         : vector.shared_function_info().HasBaselineCode()
-                             ? CodeKind::BASELINE
-                             : CodeKind::INTERPRETED_FUNCTION;
-    int interrupt_budget =
-        ::i::InterruptBudgetFor(code_kind, vector.tiering_state());
-    vector.parent_feedback_cell().set_interrupt_budget(interrupt_budget);
-  }
 }
 
 TieringManager::OnInterruptTickScope::OnInterruptTickScope(

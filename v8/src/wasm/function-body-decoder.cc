@@ -7,7 +7,6 @@
 #include "src/utils/ostreams.h"
 #include "src/wasm/decoder.h"
 #include "src/wasm/function-body-decoder-impl.h"
-#include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-limits.h"
 #include "src/wasm/wasm-linkage.h"
 #include "src/wasm/wasm-module.h"
@@ -70,13 +69,12 @@ BytecodeIterator::BytecodeIterator(const byte* start, const byte* end,
   if (pc_ > end_) pc_ = end_;
 }
 
-DecodeResult ValidateFunctionBody(const WasmFeatures& enabled,
+DecodeResult ValidateFunctionBody(AccountingAllocator* allocator,
+                                  const WasmFeatures& enabled,
                                   const WasmModule* module,
                                   WasmFeatures* detected,
                                   const FunctionBody& body) {
-  // Asm.js functions should never be validated; they are valid by design.
-  DCHECK_EQ(kWasmOrigin, module->origin);
-  Zone zone(GetWasmEngine()->allocator(), ZONE_NAME);
+  Zone zone(allocator, ZONE_NAME);
   WasmFullDecoder<Decoder::FullValidationTag, EmptyInterface> decoder(
       &zone, module, enabled, detected, body);
   decoder.Decode();
@@ -325,13 +323,12 @@ bool PrintRawWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
 }
 
 BitVector* AnalyzeLoopAssignmentForTesting(Zone* zone, uint32_t num_locals,
-                                           const byte* start, const byte* end,
-                                           bool* loop_is_innermost) {
+                                           const byte* start, const byte* end) {
   WasmFeatures no_features = WasmFeatures::None();
   WasmDecoder<Decoder::FullValidationTag> decoder(
       zone, nullptr, no_features, &no_features, nullptr, start, end, 0);
   return WasmDecoder<Decoder::FullValidationTag>::AnalyzeLoopAssignment(
-      &decoder, start, num_locals, zone, loop_is_innermost);
+      &decoder, start, num_locals, zone);
 }
 
 }  // namespace wasm

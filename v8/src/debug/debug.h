@@ -69,7 +69,6 @@ class BreakLocation {
   static BreakLocation Invalid() { return BreakLocation(-1, NOT_DEBUG_BREAK); }
   static BreakLocation FromFrame(Handle<DebugInfo> debug_info,
                                  JavaScriptFrame* frame);
-  static bool IsPausedInJsFunctionEntry(JavaScriptFrame* frame);
 
   static void AllAtCurrentStatement(Handle<DebugInfo> debug_info,
                                     JavaScriptFrame* frame,
@@ -223,7 +222,7 @@ class V8_EXPORT_PRIVATE Debug {
   // Debug event triggers.
   void OnDebugBreak(Handle<FixedArray> break_points_hit, StepAction stepAction,
                     debug::BreakReasons break_reasons = {});
-  debug::DebugDelegate::ActionAfterInstrumentation OnInstrumentationBreak();
+  debug::DebugDelegate::PauseAfterInstrumentation OnInstrumentationBreak();
 
   base::Optional<Object> OnThrow(Handle<Object> exception)
       V8_WARN_UNUSED_RESULT;
@@ -576,9 +575,6 @@ class V8_EXPORT_PRIVATE Debug {
 
     // Source statement position from last step next action.
     int last_statement_position_;
-
-    // Bytecode offset from last step next action.
-    int last_bytecode_offset_;
 
     // Frame pointer from last step next or step frame action.
     int last_frame_count_;

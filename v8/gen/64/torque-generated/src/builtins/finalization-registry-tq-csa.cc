@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/finalization-registry-tq-csa.h"
@@ -604,9 +602,9 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
   TNode<Oddball> tmp21;
   TNode<Oddball> tmp22;
   TNode<BoolT> tmp23;
-  TNode<BoolT> tmp24;
-  TNode<IntPtrT> tmp25;
-  TNode<HeapObject> tmp26;
+  TNode<IntPtrT> tmp24;
+  TNode<HeapObject> tmp25;
+  TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<IntPtrT> tmp29;
@@ -615,10 +613,9 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
   TNode<IntPtrT> tmp32;
   TNode<IntPtrT> tmp33;
   TNode<IntPtrT> tmp34;
-  TNode<IntPtrT> tmp35;
-  TNode<WeakCell> tmp36;
-  TNode<Oddball> tmp37;
-  TNode<BoolT> tmp38;
+  TNode<WeakCell> tmp35;
+  TNode<Oddball> tmp36;
+  TNode<BoolT> tmp37;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_10);
     tmp18 = GetWeakCellMap_0(state_, TNode<Context>{parameter0});
@@ -627,47 +624,46 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
     tmp21 = Undefined_0(state_);
     tmp22 = Undefined_0(state_);
     tmp23 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    tmp24 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp25 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
-    tmp26 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp25}, TNode<Map>{tmp18}, TNode<BoolT>{tmp23}, TNode<BoolT>{tmp24});
-    tmp27 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp26, tmp27}, tmp18);
-    tmp28 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp28}, tmp0);
-    tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp29}, tmp8);
-    tmp30 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp30}, phi_bb13_10);
-    tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp26, tmp31}, tmp10);
-    tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp32}, tmp19);
-    tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp33}, tmp20);
-    tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp34}, tmp21);
-    tmp35 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp35}, tmp22);
-    tmp36 = TORQUE_CAST(TNode<HeapObject>{tmp26});
-    PushCell_0(state_, TNode<JSFinalizationRegistry>{tmp0}, TNode<WeakCell>{tmp36});
-    tmp37 = Undefined_0(state_);
-    tmp38 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{phi_bb13_10}, TNode<HeapObject>{tmp37});
-    ca_.Branch(tmp38, &block18, std::vector<compiler::Node*>{phi_bb13_10}, &block19, std::vector<compiler::Node*>{phi_bb13_10});
+    tmp24 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
+    tmp25 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp24}, TNode<Map>{tmp18}, TNode<BoolT>{tmp23});
+    tmp26 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp25, tmp26}, tmp18);
+    tmp27 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp27}, tmp0);
+    tmp28 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp28}, tmp8);
+    tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp29}, phi_bb13_10);
+    tmp30 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp25, tmp30}, tmp10);
+    tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp31}, tmp19);
+    tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp32}, tmp20);
+    tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp33}, tmp21);
+    tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp25, tmp34}, tmp22);
+    tmp35 = TORQUE_CAST(TNode<HeapObject>{tmp25});
+    PushCell_0(state_, TNode<JSFinalizationRegistry>{tmp0}, TNode<WeakCell>{tmp35});
+    tmp36 = Undefined_0(state_);
+    tmp37 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{phi_bb13_10}, TNode<HeapObject>{tmp36});
+    ca_.Branch(tmp37, &block18, std::vector<compiler::Node*>{phi_bb13_10}, &block19, std::vector<compiler::Node*>{phi_bb13_10});
   }
 
   TNode<HeapObject> phi_bb18_10;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_10);
-    CodeStubAssembler(state_).CallRuntime(Runtime::kJSFinalizationRegistryRegisterWeakCellWithUnregisterToken, parameter0, tmp0, tmp36);
+    CodeStubAssembler(state_).CallRuntime(Runtime::kJSFinalizationRegistryRegisterWeakCellWithUnregisterToken, parameter0, tmp0, tmp35);
     ca_.Goto(&block19, phi_bb18_10);
   }
 
   TNode<HeapObject> phi_bb19_10;
-  TNode<Oddball> tmp39;
+  TNode<Oddball> tmp38;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_10);
-    tmp39 = Undefined_0(state_);
-    arguments.PopAndReturn(tmp39);
+    tmp38 = Undefined_0(state_);
+    arguments.PopAndReturn(tmp38);
   }
 }
 

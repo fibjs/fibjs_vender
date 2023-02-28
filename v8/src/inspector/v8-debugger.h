@@ -71,8 +71,7 @@ class V8Debugger : public v8::debug::DebugDelegate,
   void stepOverStatement(int targetContextGroupId);
   void stepOutOfFunction(int targetContextGroupId);
 
-  void terminateExecution(v8::Local<v8::Context> context,
-                          std::unique_ptr<TerminateExecutionCallback> callback);
+  void terminateExecution(std::unique_ptr<TerminateExecutionCallback> callback);
 
   Response continueToLocation(int targetContextGroupId,
                               V8DebuggerScript* script,
@@ -194,7 +193,7 @@ class V8Debugger : public v8::debug::DebugDelegate,
       v8::Local<v8::Context> paused_context,
       const std::vector<v8::debug::BreakpointId>& break_points_hit,
       v8::debug::BreakReasons break_reasons) override;
-  ActionAfterInstrumentation BreakOnInstrumentation(
+  PauseAfterInstrumentation BreakOnInstrumentation(
       v8::Local<v8::Context> paused_context, v8::debug::BreakpointId) override;
   void ExceptionThrown(v8::Local<v8::Context> paused_context,
                        v8::Local<v8::Value> exception,
@@ -210,8 +209,6 @@ class V8Debugger : public v8::debug::DebugDelegate,
   int currentContextGroupId();
 
   bool hasScheduledBreakOnNextFunctionCall() const;
-
-  void quitMessageLoopIfAgentsFinishedInstrumentation();
 
   v8::Isolate* m_isolate;
   V8InspectorImpl* m_inspector;
@@ -300,7 +297,6 @@ class V8Debugger : public v8::debug::DebugDelegate,
   std::unordered_map<int, internal::V8DebuggerId> m_contextGroupIdToDebuggerId;
 
   std::unique_ptr<TerminateExecutionCallback> m_terminateExecutionCallback;
-  v8::Global<v8::Context> m_terminateExecutionCallbackContext;
 };
 
 }  // namespace v8_inspector

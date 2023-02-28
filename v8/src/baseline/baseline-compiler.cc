@@ -439,8 +439,8 @@ void BaselineCompiler::LoadFeedbackVector(Register output) {
 
 void BaselineCompiler::LoadClosureFeedbackArray(Register output) {
   LoadFeedbackVector(output);
-  __ LoadTaggedField(output, output,
-                     FeedbackVector::kClosureFeedbackCellArrayOffset);
+  __ LoadTaggedPointerField(output, output,
+                            FeedbackVector::kClosureFeedbackCellArrayOffset);
 }
 
 void BaselineCompiler::SelectBooleanConstant(
@@ -561,7 +561,8 @@ void BaselineCompiler::VerifyFrame() {
       __ Move(scratch, __ FeedbackVectorOperand());
       Label is_smi, is_ok;
       __ JumpIfSmi(scratch, &is_smi);
-      __ JumpIfObjectTypeFast(kEqual, scratch, FEEDBACK_VECTOR_TYPE, &is_ok);
+      __ JumpIfObjectType(Condition::kEqual, scratch, FEEDBACK_VECTOR_TYPE,
+                          scratch, &is_ok);
       __ Bind(&is_smi);
       __ masm()->Abort(AbortReason::kExpectedFeedbackVector);
       __ Bind(&is_ok);
@@ -668,8 +669,8 @@ void BaselineCompiler::JumpIfToBoolean(bool do_jump_if_true, Label* label,
   // the original value into kInterpreterAccumulatorRegister, so we don't have
   // to worry about it getting clobbered.
   static_assert(kReturnRegister0 == kInterpreterAccumulatorRegister);
-  __ JumpIfSmi(do_jump_if_true ? kNotEqual : kEqual, kReturnRegister1,
-               Smi::FromInt(0), label, distance);
+  __ JumpIfSmi(do_jump_if_true ? Condition::kNotEqual : Condition::kEqual,
+               kReturnRegister1, Smi::FromInt(0), label, distance);
 }
 
 void BaselineCompiler::VisitLdaZero() {
@@ -753,8 +754,8 @@ void BaselineCompiler::VisitLdaCurrentContextSlot() {
   BaselineAssembler::ScratchRegisterScope scratch_scope(&basm_);
   Register context = scratch_scope.AcquireScratch();
   __ LoadContext(context);
-  __ LoadTaggedField(kInterpreterAccumulatorRegister, context,
-                     Context::OffsetOfElementAt(Index(0)));
+  __ LoadTaggedAnyField(kInterpreterAccumulatorRegister, context,
+                        Context::OffsetOfElementAt(Index(0)));
 }
 
 void BaselineCompiler::VisitLdaImmutableCurrentContextSlot() {
@@ -941,8 +942,7 @@ void BaselineCompiler::VisitDefineKeyedOwnProperty() {
       RegisterOperand(0),               // object
       RegisterOperand(1),               // key
       kInterpreterAccumulatorRegister,  // value
-      Flag8AsSmi(2),                    // flags
-      IndexAsTagged(3));                // slot
+      IndexAsTagged(2));                // slot
 }
 
 void BaselineCompiler::VisitStaInArrayLiteral() {
@@ -1349,9 +1349,9 @@ void BaselineCompiler::VisitIntrinsicCreateJSGeneratorObject(
 void BaselineCompiler::VisitIntrinsicGeneratorGetResumeMode(
     interpreter::RegisterList args) {
   __ LoadRegister(kInterpreterAccumulatorRegister, args[0]);
-  __ LoadTaggedField(kInterpreterAccumulatorRegister,
-                     kInterpreterAccumulatorRegister,
-                     JSGeneratorObject::kResumeModeOffset);
+  __ LoadTaggedAnyField(kInterpreterAccumulatorRegister,
+                        kInterpreterAccumulatorRegister,
+                        JSGeneratorObject::kResumeModeOffset);
 }
 
 void BaselineCompiler::VisitIntrinsicGeneratorClose(
@@ -1489,7 +1489,8 @@ void BaselineCompiler::VisitTestReferenceEqual() {
   SelectBooleanConstant(
       kInterpreterAccumulatorRegister,
       [&](Label* is_true, Label::Distance distance) {
-        __ JumpIfTagged(kEqual, __ RegisterFrameOperand(RegisterOperand(0)),
+        __ JumpIfTagged(Condition::kEqual,
+                        __ RegisterFrameOperand(RegisterOperand(0)),
                         kInterpreterAccumulatorRegister, is_true, distance);
       });
 }
@@ -1519,8 +1520,8 @@ void BaselineCompiler::VisitTestUndetectable() {
   Register map_bit_field = kInterpreterAccumulatorRegister;
   __ LoadMap(map_bit_field, kInterpreterAccumulatorRegister);
   __ LoadWord8Field(map_bit_field, map_bit_field, Map::kBitFieldOffset);
-  __ TestAndBranch(map_bit_field, Map::Bits1::IsUndetectableBit::kMask, kZero,
-                   &not_undetectable, Label::kNear);
+  __ TestAndBranch(map_bit_field, Map::Bits1::IsUndetectableBit::kMask,
+                   Condition::kZero, &not_undetectable, Label::kNear);
 
   __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
   __ Jump(&done, Label::kNear);
@@ -1560,8 +1561,9 @@ void BaselineCompiler::VisitTestTypeOf() {
     case interpreter::TestTypeOfFlags::LiteralFlag::kNumber: {
       Label is_smi, is_heap_number;
       __ JumpIfSmi(kInterpreterAccumulatorRegister, &is_smi, Label::kNear);
-      __ JumpIfObjectTypeFast(kEqual, kInterpreterAccumulatorRegister,
-                              HEAP_NUMBER_TYPE, &is_heap_number, Label::kNear);
+      __ JumpIfObjectType(Condition::kEqual, kInterpreterAccumulatorRegister,
+                          HEAP_NUMBER_TYPE, scratch_scope.AcquireScratch(),
+                          &is_heap_number, Label::kNear);
 
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kFalseValue);
       __ Jump(&done, Label::kNear);
@@ -1575,9 +1577,10 @@ void BaselineCompiler::VisitTestTypeOf() {
       Label is_smi, bad_instance_type;
       __ JumpIfSmi(kInterpreterAccumulatorRegister, &is_smi, Label::kNear);
       static_assert(INTERNALIZED_STRING_TYPE == FIRST_TYPE);
-      __ JumpIfObjectType(kGreaterThanEqual, kInterpreterAccumulatorRegister,
-                          FIRST_NONSTRING_TYPE, scratch_scope.AcquireScratch(),
-                          &bad_instance_type, Label::kNear);
+      __ JumpIfObjectType(Condition::kGreaterThanEqual,
+                          kInterpreterAccumulatorRegister, FIRST_NONSTRING_TYPE,
+                          scratch_scope.AcquireScratch(), &bad_instance_type,
+                          Label::kNear);
 
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
       __ Jump(&done, Label::kNear);
@@ -1590,8 +1593,9 @@ void BaselineCompiler::VisitTestTypeOf() {
     case interpreter::TestTypeOfFlags::LiteralFlag::kSymbol: {
       Label is_smi, bad_instance_type;
       __ JumpIfSmi(kInterpreterAccumulatorRegister, &is_smi, Label::kNear);
-      __ JumpIfObjectTypeFast(kNotEqual, kInterpreterAccumulatorRegister,
-                              SYMBOL_TYPE, &bad_instance_type, Label::kNear);
+      __ JumpIfObjectType(Condition::kNotEqual, kInterpreterAccumulatorRegister,
+                          SYMBOL_TYPE, scratch_scope.AcquireScratch(),
+                          &bad_instance_type, Label::kNear);
 
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
       __ Jump(&done, Label::kNear);
@@ -1619,8 +1623,9 @@ void BaselineCompiler::VisitTestTypeOf() {
     case interpreter::TestTypeOfFlags::LiteralFlag::kBigInt: {
       Label is_smi, bad_instance_type;
       __ JumpIfSmi(kInterpreterAccumulatorRegister, &is_smi, Label::kNear);
-      __ JumpIfObjectTypeFast(kNotEqual, kInterpreterAccumulatorRegister,
-                              BIGINT_TYPE, &bad_instance_type, Label::kNear);
+      __ JumpIfObjectType(Condition::kNotEqual, kInterpreterAccumulatorRegister,
+                          BIGINT_TYPE, scratch_scope.AcquireScratch(),
+                          &bad_instance_type, Label::kNear);
 
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
       __ Jump(&done, Label::kNear);
@@ -1643,7 +1648,7 @@ void BaselineCompiler::VisitTestTypeOf() {
       __ LoadMap(map_bit_field, kInterpreterAccumulatorRegister);
       __ LoadWord8Field(map_bit_field, map_bit_field, Map::kBitFieldOffset);
       __ TestAndBranch(map_bit_field, Map::Bits1::IsUndetectableBit::kMask,
-                       kZero, &not_undetectable, Label::kNear);
+                       Condition::kZero, &not_undetectable, Label::kNear);
 
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
       __ Jump(&done, Label::kNear);
@@ -1662,10 +1667,10 @@ void BaselineCompiler::VisitTestTypeOf() {
       Register map_bit_field = kInterpreterAccumulatorRegister;
       __ LoadMap(map_bit_field, kInterpreterAccumulatorRegister);
       __ LoadWord8Field(map_bit_field, map_bit_field, Map::kBitFieldOffset);
-      __ TestAndBranch(map_bit_field, Map::Bits1::IsCallableBit::kMask, kZero,
-                       &not_callable, Label::kNear);
+      __ TestAndBranch(map_bit_field, Map::Bits1::IsCallableBit::kMask,
+                       Condition::kZero, &not_callable, Label::kNear);
       __ TestAndBranch(map_bit_field, Map::Bits1::IsUndetectableBit::kMask,
-                       kNotZero, &undetectable, Label::kNear);
+                       Condition::kNotZero, &undetectable, Label::kNear);
 
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
       __ Jump(&done, Label::kNear);
@@ -1687,7 +1692,7 @@ void BaselineCompiler::VisitTestTypeOf() {
       // If the object's instance type isn't within the range, return false.
       static_assert(LAST_JS_RECEIVER_TYPE == LAST_TYPE);
       Register map = scratch_scope.AcquireScratch();
-      __ JumpIfObjectType(kLessThan, kInterpreterAccumulatorRegister,
+      __ JumpIfObjectType(Condition::kLessThan, kInterpreterAccumulatorRegister,
                           FIRST_JS_RECEIVER_TYPE, map, &bad_instance_type,
                           Label::kNear);
 
@@ -1697,7 +1702,8 @@ void BaselineCompiler::VisitTestTypeOf() {
       __ TestAndBranch(map_bit_field,
                        Map::Bits1::IsUndetectableBit::kMask |
                            Map::Bits1::IsCallableBit::kMask,
-                       kNotZero, &undetectable_or_callable, Label::kNear);
+                       Condition::kNotZero, &undetectable_or_callable,
+                       Label::kNear);
 
       __ Bind(&is_null);
       __ LoadRoot(kInterpreterAccumulatorRegister, RootIndex::kTrueValue);
@@ -1911,8 +1917,8 @@ void BaselineCompiler::VisitJumpLoop() {
                       FeedbackVector::kOsrStateOffset);
     static_assert(FeedbackVector::MaybeHasOptimizedOsrCodeBit::encode(true) >
                   FeedbackVector::kMaxOsrUrgency);
-    __ JumpIfByte(kUnsignedGreaterThan, osr_state, loop_depth, &osr_armed,
-                  Label::kNear);
+    __ JumpIfByte(Condition::kUnsignedGreaterThan, osr_state, loop_depth,
+                  &osr_armed, Label::kNear);
   }
 
   __ Bind(&osr_not_armed);
@@ -1939,8 +1945,8 @@ void BaselineCompiler::VisitJumpLoop() {
                                iterator().GetSlotOperand(2), &osr,
                                Label::kNear);
     __ DecodeField<FeedbackVector::OsrUrgencyBits>(scratch1);
-    __ JumpIfByte(kUnsignedLessThanEqual, scratch1, loop_depth, &osr_not_armed,
-                  Label::kNear);
+    __ JumpIfByte(Condition::kUnsignedLessThanEqual, scratch1, loop_depth,
+                  &osr_not_armed, Label::kNear);
 
     __ Bind(&osr);
     CallBuiltin<Builtin::kBaselineOnStackReplacement>(maybe_target_code);
@@ -2042,8 +2048,9 @@ void BaselineCompiler::VisitJumpIfJSReceiver() {
   Label is_smi, dont_jump;
   __ JumpIfSmi(kInterpreterAccumulatorRegister, &is_smi, Label::kNear);
 
-  __ JumpIfObjectTypeFast(kLessThan, kInterpreterAccumulatorRegister,
-                          FIRST_JS_RECEIVER_TYPE, &dont_jump);
+  __ JumpIfObjectType(Condition::kLessThan, kInterpreterAccumulatorRegister,
+                      FIRST_JS_RECEIVER_TYPE, scratch_scope.AcquireScratch(),
+                      &dont_jump);
   UpdateInterruptBudgetAndDoInterpreterJump();
 
   __ Bind(&is_smi);
@@ -2089,7 +2096,8 @@ void BaselineCompiler::VisitForInContinue() {
                         [&](Label* is_true, Label::Distance distance) {
                           LoadRegister(kInterpreterAccumulatorRegister, 0);
                           __ JumpIfTagged(
-                              kNotEqual, kInterpreterAccumulatorRegister,
+                              Condition::kNotEqual,
+                              kInterpreterAccumulatorRegister,
                               __ RegisterFrameOperand(RegisterOperand(1)),
                               is_true, distance);
                         });
@@ -2181,8 +2189,8 @@ void BaselineCompiler::VisitThrowIfNotSuperConstructor() {
   Register map_bit_field = scratch_scope.AcquireScratch();
   __ LoadMap(map_bit_field, reg);
   __ LoadWord8Field(map_bit_field, map_bit_field, Map::kBitFieldOffset);
-  __ TestAndBranch(map_bit_field, Map::Bits1::IsConstructorBit::kMask, kNotZero,
-                   &done, Label::kNear);
+  __ TestAndBranch(map_bit_field, Map::Bits1::IsConstructorBit::kMask,
+                   Condition::kNotZero, &done, Label::kNear);
 
   CallRuntime(Runtime::kThrowNotSuperConstructor, reg, __ FunctionOperand());
 
@@ -2206,8 +2214,8 @@ void BaselineCompiler::VisitSwitchOnGeneratorState() {
       Smi::FromInt(JSGeneratorObject::kGeneratorExecuting));
 
   Register context = scratch_scope.AcquireScratch();
-  __ LoadTaggedField(context, generator_object,
-                     JSGeneratorObject::kContextOffset);
+  __ LoadTaggedAnyField(context, generator_object,
+                        JSGeneratorObject::kContextOffset);
   __ StoreContext(context);
 
   interpreter::JumpTableTargetOffsets offsets =

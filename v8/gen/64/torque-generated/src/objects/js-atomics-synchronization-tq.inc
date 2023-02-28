@@ -12,8 +12,8 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
       std::is_same<JSSynchronizationPrimitive, D>::value,
       "Use this class as direct base for JSSynchronizationPrimitive.");
   static_assert(
-      std::is_same<AlwaysSharedSpaceJSObject, P>::value,
-      "Pass in AlwaysSharedSpaceJSObject as second template parameter for TorqueGeneratedJSSynchronizationPrimitive.");
+      std::is_same<JSObject, P>::value,
+      "Pass in JSObject as second template parameter for TorqueGeneratedJSSynchronizationPrimitive.");
 
  public: 
   using Super = P;

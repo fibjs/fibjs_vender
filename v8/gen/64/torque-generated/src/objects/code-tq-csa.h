@@ -10,7 +10,7 @@ namespace internal {
 TNode<BytecodeArray> Cast_BytecodeArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=29&c=1
-TNode<Code> Cast_Code_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
+TNode<CodeDataContainer> Cast_CodeDataContainer_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=9&c=3
 TNode<FixedArray> LoadBytecodeArrayConstantPool_0(compiler::CodeAssemblerState* state_, TNode<BytecodeArray> p_o);
@@ -58,7 +58,7 @@ void StoreBytecodeArrayBytecodeAge_0(compiler::CodeAssemblerState* state_, TNode
 TNode<BytecodeArray> DownCastForTorqueClass_BytecodeArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=29&c=1
-TNode<Code> DownCastForTorqueClass_Code_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
+TNode<CodeDataContainer> DownCastForTorqueClass_CodeDataContainer_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 } // namespace internal
 } // namespace v8

@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/scope-info-tq-csa.h"
@@ -255,28 +253,7 @@ TNode<Uint32T> FromConstexpr_ScopeType_constexpr_WITH_SCOPE_0(compiler::CodeAsse
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=8&c=1
-TNode<Uint32T> FromConstexpr_ScopeType_constexpr_SHADOW_REALM_SCOPE_0(compiler::CodeAssemblerState* state_, ScopeType p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Uint32T> tmp0;
-  TNode<Uint32T> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = ca_.Uint32Constant(CastToUnderlyingTypeIfEnum(p_o));
-    tmp1 = (TNode<Uint32T>{tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Uint32T>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1
 TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_NONE_0(compiler::CodeAssemblerState* state_, VariableAllocationInfo p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -297,7 +274,7 @@ TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_NONE_0(compiler::C
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1
 TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_STACK_0(compiler::CodeAssemblerState* state_, VariableAllocationInfo p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -318,7 +295,7 @@ TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_STACK_0(compiler::
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1
 TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_CONTEXT_0(compiler::CodeAssemblerState* state_, VariableAllocationInfo p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -339,7 +316,7 @@ TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_CONTEXT_0(compiler
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1
 TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_UNUSED_0(compiler::CodeAssemblerState* state_, VariableAllocationInfo p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -360,7 +337,7 @@ TNode<Uint32T> FromConstexpr_VariableAllocationInfo_constexpr_UNUSED_0(compiler:
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kLet_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -381,7 +358,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kLet_0(compiler::CodeAssembl
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kConst_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -402,7 +379,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kConst_0(compiler::CodeAssem
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kVar_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -423,7 +400,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kVar_0(compiler::CodeAssembl
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kTemporary_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -444,7 +421,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kTemporary_0(compiler::CodeA
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kDynamic_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -465,7 +442,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kDynamic_0(compiler::CodeAss
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kDynamicGlobal_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -486,7 +463,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kDynamicGlobal_0(compiler::C
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kDynamicLocal_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -507,7 +484,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kDynamicLocal_0(compiler::Co
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateMethod_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -528,7 +505,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateMethod_0(compiler::C
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateSetterOnly_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -549,7 +526,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateSetterOnly_0(compile
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateGetterOnly_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -570,7 +547,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateGetterOnly_0(compile
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1
 TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateGetterAndSetter_0(compiler::CodeAssemblerState* state_, VariableMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -591,7 +568,7 @@ TNode<Uint32T> FromConstexpr_VariableMode_constexpr_kPrivateGetterAndSetter_0(co
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=45&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=44&c=1
 TNode<Uint32T> FromConstexpr_InitializationFlag_constexpr_kNeedsInitialization_0(compiler::CodeAssemblerState* state_, InitializationFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -612,7 +589,7 @@ TNode<Uint32T> FromConstexpr_InitializationFlag_constexpr_kNeedsInitialization_0
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=45&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=44&c=1
 TNode<Uint32T> FromConstexpr_InitializationFlag_constexpr_kCreatedInitialized_0(compiler::CodeAssemblerState* state_, InitializationFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -633,7 +610,7 @@ TNode<Uint32T> FromConstexpr_InitializationFlag_constexpr_kCreatedInitialized_0(
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=49&c=1
 TNode<Uint32T> FromConstexpr_IsStaticFlag_constexpr_kNotStatic_0(compiler::CodeAssemblerState* state_, IsStaticFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -654,7 +631,7 @@ TNode<Uint32T> FromConstexpr_IsStaticFlag_constexpr_kNotStatic_0(compiler::CodeA
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=49&c=1
 TNode<Uint32T> FromConstexpr_IsStaticFlag_constexpr_kStatic_0(compiler::CodeAssemblerState* state_, IsStaticFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -675,7 +652,7 @@ TNode<Uint32T> FromConstexpr_IsStaticFlag_constexpr_kStatic_0(compiler::CodeAsse
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=52&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=51&c=1
 TNode<Uint32T> FromConstexpr_MaybeAssignedFlag_constexpr_kNotAssigned_0(compiler::CodeAssemblerState* state_, MaybeAssignedFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -696,7 +673,7 @@ TNode<Uint32T> FromConstexpr_MaybeAssignedFlag_constexpr_kNotAssigned_0(compiler
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=52&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=51&c=1
 TNode<Uint32T> FromConstexpr_MaybeAssignedFlag_constexpr_kMaybeAssigned_0(compiler::CodeAssemblerState* state_, MaybeAssignedFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -717,7 +694,7 @@ TNode<Uint32T> FromConstexpr_MaybeAssignedFlag_constexpr_kMaybeAssigned_0(compil
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=110&c=1
 TNode<ScopeInfo> Cast_ScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -753,7 +730,7 @@ TNode<ScopeInfo> Cast_ScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<He
   return TNode<ScopeInfo>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=187&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=185&c=1
 TNode<IntPtrT> IndexOfInlinedLocalName_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_scopeInfo, TNode<Name> p_name, compiler::CodeAssemblerLabel* label_NotFound) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -863,7 +840,7 @@ TNode<IntPtrT> IndexOfInlinedLocalName_0(compiler::CodeAssemblerState* state_, T
   return TNode<IntPtrT>{phi_bb17_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=200&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=198&c=1
 TNode<IntPtrT> IndexOfLocalName_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_scopeInfo, TNode<Name> p_name, compiler::CodeAssemblerLabel* label_NotFound) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -987,7 +964,7 @@ TNode<IntPtrT> IndexOfLocalName_0(compiler::CodeAssemblerState* state_, TNode<Sc
   return TNode<IntPtrT>{phi_bb22_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=113&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=112&c=9
 TNode<Smi> LoadScopeInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1008,7 +985,7 @@ TNode<Smi> LoadScopeInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<Scop
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=115&c=3
 TNode<Smi> LoadScopeInfoParameterCount_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1029,7 +1006,7 @@ TNode<Smi> LoadScopeInfoParameterCount_0(compiler::CodeAssemblerState* state_, T
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=115&c=3
 void StoreScopeInfoParameterCount_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1048,7 +1025,7 @@ void StoreScopeInfoParameterCount_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=120&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=119&c=9
 TNode<Smi> LoadScopeInfoContextLocalCount_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1069,7 +1046,7 @@ TNode<Smi> LoadScopeInfoContextLocalCount_0(compiler::CodeAssemblerState* state_
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 TorqueStructSlice_String_MutableReference_String_0 FieldSliceScopeInfoContextLocalNames_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1129,7 +1106,7 @@ TorqueStructSlice_String_MutableReference_String_0 FieldSliceScopeInfoContextLoc
   return TorqueStructSlice_String_MutableReference_String_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 TNode<String> LoadScopeInfoContextLocalNames_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1177,7 +1154,7 @@ TNode<String> LoadScopeInfoContextLocalNames_0(compiler::CodeAssemblerState* sta
   return TNode<String>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 void StoreScopeInfoContextLocalNames_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i, TNode<String> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1223,7 +1200,7 @@ void StoreScopeInfoContextLocalNames_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0 FieldSliceScopeInfoContextLocalNamesHashtable_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1289,7 +1266,7 @@ TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0 F
   return TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0{TNode<Object>{tmp14}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp16}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 TNode<NameToIndexHashTable> LoadScopeInfoContextLocalNamesHashtable_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1339,7 +1316,7 @@ TNode<NameToIndexHashTable> LoadScopeInfoContextLocalNamesHashtable_0(compiler::
   return TNode<NameToIndexHashTable>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 void StoreScopeInfoContextLocalNamesHashtable_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<NameToIndexHashTable> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1387,7 +1364,7 @@ void StoreScopeInfoContextLocalNamesHashtable_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_VariableProperties_0 FieldSliceScopeInfoContextLocalInfos_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1424,7 +1401,7 @@ TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_Variab
   return TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_VariableProperties_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 TNode<Smi> LoadScopeInfoContextLocalInfos_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1472,7 +1449,7 @@ TNode<Smi> LoadScopeInfoContextLocalInfos_0(compiler::CodeAssemblerState* state_
   return TNode<Smi>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 void StoreScopeInfoContextLocalInfos_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1518,7 +1495,7 @@ void StoreScopeInfoContextLocalInfos_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 TorqueStructSlice_Smi_MutableReference_Smi_0 FieldSliceScopeInfoSavedClassVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1580,7 +1557,7 @@ TorqueStructSlice_Smi_MutableReference_Smi_0 FieldSliceScopeInfoSavedClassVariab
   return TorqueStructSlice_Smi_MutableReference_Smi_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 TNode<Smi> LoadScopeInfoSavedClassVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1630,7 +1607,7 @@ TNode<Smi> LoadScopeInfoSavedClassVariableInfo_0(compiler::CodeAssemblerState* s
   return TNode<Smi>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 void StoreScopeInfoSavedClassVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1678,7 +1655,7 @@ void StoreScopeInfoSavedClassVariableInfo_0(compiler::CodeAssemblerState* state_
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0 FieldSliceScopeInfoFunctionVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1744,7 +1721,7 @@ TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0 F
   return TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0{TNode<Object>{tmp14}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp16}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0 FieldSliceScopeInfoInferredFunctionName_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1806,7 +1783,7 @@ TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0 Fie
   return TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 TNode<PrimitiveHeapObject> LoadScopeInfoInferredFunctionName_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1856,7 +1833,7 @@ TNode<PrimitiveHeapObject> LoadScopeInfoInferredFunctionName_0(compiler::CodeAss
   return TNode<PrimitiveHeapObject>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 void StoreScopeInfoInferredFunctionName_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1904,7 +1881,7 @@ void StoreScopeInfoInferredFunctionName_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0 FieldSliceScopeInfoPositionInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1920,17 +1897,14 @@ TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0 FieldSliceScopeIn
   compiler::CodeAssemblerParameterizedLabel<BoolT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BoolT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Object> tmp0;
@@ -2051,108 +2025,80 @@ TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0 FieldSliceScopeIn
 
   TNode<IntPtrT> tmp30;
   TNode<Smi> tmp31;
-  TNode<Uint32T> tmp32;
-  TNode<Uint32T> tmp33;
-  TNode<BoolT> tmp34;
+  TNode<BoolT> tmp32;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp30 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp31 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp30});
-    tmp32 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<ScopeType, 32, 4, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp31))));
-    tmp33 = FromConstexpr_uint32_constexpr_uint32_0(state_, ScopeType::SHADOW_REALM_SCOPE);
-    tmp34 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp32}, TNode<Uint32T>{tmp33});
-    ca_.Goto(&block17, tmp34);
+    tmp32 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<bool, 61, 1, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp31))));
+    ca_.Branch(tmp32, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
-  TNode<BoolT> phi_bb17_9;
-  if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_9);
-    ca_.Branch(phi_bb17_9, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
-  }
-
-  TNode<BoolT> tmp35;
+  TNode<BoolT> tmp33;
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    tmp35 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block20, tmp35);
+    tmp33 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    ca_.Goto(&block20, tmp33);
   }
 
-  TNode<IntPtrT> tmp36;
-  TNode<Smi> tmp37;
+  TNode<IntPtrT> tmp34;
+  TNode<Smi> tmp35;
+  TNode<Uint32T> tmp36;
+  TNode<Uint32T> tmp37;
   TNode<BoolT> tmp38;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    tmp36 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp37 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp36});
-    tmp38 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<bool, 61, 1, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp37))));
-    ca_.Branch(tmp38, &block21, std::vector<compiler::Node*>{}, &block22, std::vector<compiler::Node*>{});
-  }
-
-  TNode<BoolT> tmp39;
-  if (block21.is_used()) {
-    ca_.Bind(&block21);
-    tmp39 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block23, tmp39);
-  }
-
-  TNode<IntPtrT> tmp40;
-  TNode<Smi> tmp41;
-  TNode<Uint32T> tmp42;
-  TNode<Uint32T> tmp43;
-  TNode<BoolT> tmp44;
-  if (block22.is_used()) {
-    ca_.Bind(&block22);
-    tmp40 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp41 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp40});
-    tmp42 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<ScopeType, 32, 4, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp41))));
-    tmp43 = FromConstexpr_uint32_constexpr_uint32_0(state_, ScopeType::CLASS_SCOPE);
-    tmp44 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp42}, TNode<Uint32T>{tmp43});
-    ca_.Goto(&block23, tmp44);
-  }
-
-  TNode<BoolT> phi_bb23_9;
-  if (block23.is_used()) {
-    ca_.Bind(&block23, &phi_bb23_9);
-    ca_.Goto(&block20, phi_bb23_9);
+    tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp35 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp34});
+    tmp36 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<ScopeType, 32, 4, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp35))));
+    tmp37 = FromConstexpr_uint32_constexpr_uint32_0(state_, ScopeType::CLASS_SCOPE);
+    tmp38 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp36}, TNode<Uint32T>{tmp37});
+    ca_.Goto(&block20, tmp38);
   }
 
   TNode<BoolT> phi_bb20_9;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_9);
-    ca_.Branch(phi_bb20_9, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+    ca_.Goto(&block17, phi_bb20_9);
   }
 
-  TNode<IntPtrT> tmp45;
+  TNode<BoolT> phi_bb17_9;
+  if (block17.is_used()) {
+    ca_.Bind(&block17, &phi_bb17_9);
+    ca_.Branch(phi_bb17_9, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+  }
+
+  TNode<IntPtrT> tmp39;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    ca_.Goto(&block4, tmp45);
+    tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    ca_.Goto(&block4, tmp39);
   }
 
-  TNode<IntPtrT> tmp46;
+  TNode<IntPtrT> tmp40;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp46 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block4, tmp46);
+    tmp40 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    ca_.Goto(&block4, tmp40);
   }
 
   TNode<IntPtrT> phi_bb4_8;
-  TNode<IntPtrT> tmp47;
-  TNode<Object> tmp48;
-  TNode<IntPtrT> tmp49;
-  TNode<IntPtrT> tmp50;
+  TNode<IntPtrT> tmp41;
+  TNode<Object> tmp42;
+  TNode<IntPtrT> tmp43;
+  TNode<IntPtrT> tmp44;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_8);
-    tmp47 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{phi_bb4_8});
-    std::tie(tmp48, tmp49, tmp50) = NewMutableSlice_PositionInfo_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp47}).Flatten();
-    ca_.Goto(&block25);
+    tmp41 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{phi_bb4_8});
+    std::tie(tmp42, tmp43, tmp44) = NewMutableSlice_PositionInfo_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp41}).Flatten();
+    ca_.Goto(&block22);
   }
 
-    ca_.Bind(&block25);
-  return TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0{TNode<Object>{tmp48}, TNode<IntPtrT>{tmp49}, TNode<IntPtrT>{tmp50}, TorqueStructUnsafe_0{}};
+    ca_.Bind(&block22);
+  return TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0{TNode<Object>{tmp42}, TNode<IntPtrT>{tmp43}, TNode<IntPtrT>{tmp44}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0 FieldSliceScopeInfoOuterScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2214,7 +2160,7 @@ TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0 F
   return TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 TNode<HeapObject> LoadScopeInfoOuterScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2264,7 +2210,7 @@ TNode<HeapObject> LoadScopeInfoOuterScopeInfo_0(compiler::CodeAssemblerState* st
   return TNode<HeapObject>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 void StoreScopeInfoOuterScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2312,7 +2258,7 @@ void StoreScopeInfoOuterScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 TorqueStructSlice_HashTable_MutableReference_HashTable_0 FieldSliceScopeInfoLocalsBlockList_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2374,7 +2320,7 @@ TorqueStructSlice_HashTable_MutableReference_HashTable_0 FieldSliceScopeInfoLoca
   return TorqueStructSlice_HashTable_MutableReference_HashTable_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 TNode<FixedArray> LoadScopeInfoLocalsBlockList_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2424,7 +2370,7 @@ TNode<FixedArray> LoadScopeInfoLocalsBlockList_0(compiler::CodeAssemblerState* s
   return TNode<FixedArray>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 void StoreScopeInfoLocalsBlockList_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<FixedArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2472,7 +2418,7 @@ void StoreScopeInfoLocalsBlockList_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0 FieldSliceScopeInfoModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2538,7 +2484,7 @@ TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0 F
   return TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0{TNode<Object>{tmp14}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp16}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 TNode<FixedArray> LoadScopeInfoModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2588,7 +2534,7 @@ TNode<FixedArray> LoadScopeInfoModuleInfo_0(compiler::CodeAssemblerState* state_
   return TNode<FixedArray>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 void StoreScopeInfoModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o, TNode<FixedArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2636,7 +2582,7 @@ void StoreScopeInfoModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<Scop
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 TorqueStructSlice_Smi_ConstReference_Smi_0 FieldSliceScopeInfoModuleVariableCount_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2702,7 +2648,7 @@ TorqueStructSlice_Smi_ConstReference_Smi_0 FieldSliceScopeInfoModuleVariableCoun
   return TorqueStructSlice_Smi_ConstReference_Smi_0{TNode<Object>{tmp14}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp16}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 TNode<Smi> LoadScopeInfoModuleVariableCount_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2752,7 +2698,7 @@ TNode<Smi> LoadScopeInfoModuleVariableCount_0(compiler::CodeAssemblerState* stat
   return TNode<Smi>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 TorqueStructSlice_ModuleVariable_MutableReference_ModuleVariable_0 FieldSliceScopeInfoModuleVariables_0(compiler::CodeAssemblerState* state_, TNode<ScopeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2849,7 +2795,7 @@ TorqueStructSlice_ModuleVariable_MutableReference_ModuleVariable_0 FieldSliceSco
   return TorqueStructSlice_ModuleVariable_MutableReference_ModuleVariable_0{TNode<Object>{tmp25}, TNode<IntPtrT>{tmp26}, TNode<IntPtrT>{tmp27}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=110&c=1
 TNode<ScopeInfo> DownCastForTorqueClass_ScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2876,7 +2822,7 @@ TNode<ScopeInfo> DownCastForTorqueClass_ScopeInfo_0(compiler::CodeAssemblerState
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(261), static_cast<InstanceType>(261))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(252), static_cast<InstanceType>(252))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2919,7 +2865,7 @@ TNode<ScopeInfo> DownCastForTorqueClass_ScopeInfo_0(compiler::CodeAssemblerState
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(261));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(252));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2953,12 +2899,12 @@ TNode<ScopeInfo> DownCastForTorqueClass_ScopeInfo_0(compiler::CodeAssemblerState
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(261), static_cast<InstanceType>(261))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(252), static_cast<InstanceType>(252))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(261));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(252));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2994,7 +2940,7 @@ TNode<ScopeInfo> DownCastForTorqueClass_ScopeInfo_0(compiler::CodeAssemblerState
   return TNode<ScopeInfo>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
 TorqueStructSlice_String_MutableReference_String_0 NewMutableSlice_String_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3015,7 +2961,7 @@ TorqueStructSlice_String_MutableReference_String_0 NewMutableSlice_String_0(comp
   return TorqueStructSlice_String_MutableReference_String_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
 TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0 NewMutableSlice_NameToIndexHashTable_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3036,7 +2982,7 @@ TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0 N
   return TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
 TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_VariableProperties_0 NewMutableSlice_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3057,7 +3003,7 @@ TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_Variab
   return TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_VariableProperties_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
 TorqueStructSlice_Smi_MutableReference_Smi_0 NewMutableSlice_Smi_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3078,7 +3024,7 @@ TorqueStructSlice_Smi_MutableReference_Smi_0 NewMutableSlice_Smi_0(compiler::Cod
   return TorqueStructSlice_Smi_MutableReference_Smi_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
 TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0 NewMutableSlice_FunctionVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3099,7 +3045,7 @@ TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0 N
   return TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
 TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0 NewMutableSlice_String_OR_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3120,7 +3066,7 @@ TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0 New
   return TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0 NewMutableSlice_PositionInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3141,7 +3087,7 @@ TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0 NewMutableSlice_P
   return TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
 TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0 NewMutableSlice_TheHole_OR_ScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3162,7 +3108,7 @@ TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0 N
   return TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
 TorqueStructSlice_HashTable_MutableReference_HashTable_0 NewMutableSlice_HashTable_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3183,7 +3129,7 @@ TorqueStructSlice_HashTable_MutableReference_HashTable_0 NewMutableSlice_HashTab
   return TorqueStructSlice_HashTable_MutableReference_HashTable_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0 NewMutableSlice_SourceTextModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3204,7 +3150,7 @@ TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0 N
   return TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
 TorqueStructSlice_Smi_ConstReference_Smi_0 NewConstSlice_Smi_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3225,7 +3171,7 @@ TorqueStructSlice_Smi_ConstReference_Smi_0 NewConstSlice_Smi_0(compiler::CodeAss
   return TorqueStructSlice_Smi_ConstReference_Smi_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 TorqueStructSlice_ModuleVariable_MutableReference_ModuleVariable_0 NewMutableSlice_ModuleVariable_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -243,97 +243,6 @@ class BigIntBitwiseAndDescriptor : public StaticCallInterfaceDescriptor<BigIntBi
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseAndDescriptor)
 };
 
-class BigIntBitwiseOrNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseOrNoThrowDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseOrNoThrowDescriptor)
-};
-
-class BigIntBitwiseOrDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseOrDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseOrDescriptor)
-};
-
-class BigIntBitwiseXorNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseXorNoThrowDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseXorNoThrowDescriptor)
-};
-
-class BigIntBitwiseXorDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseXorDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseXorDescriptor)
-};
-
-class BigIntShiftLeftNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftLeftNoThrowDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftLeftNoThrowDescriptor)
-};
-
-class BigIntShiftLeftDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftLeftDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftLeftDescriptor)
-};
-
-class BigIntShiftRightNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftRightNoThrowDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftRightNoThrowDescriptor)
-};
-
-class BigIntShiftRightDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftRightDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftRightDescriptor)
-};
-
-class BigIntEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntEqualDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntEqualDescriptor)
-};
-
-class BigIntLessThanDescriptor : public StaticCallInterfaceDescriptor<BigIntLessThanDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntLessThanDescriptor)
-};
-
-class BigIntGreaterThanDescriptor : public StaticCallInterfaceDescriptor<BigIntGreaterThanDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntGreaterThanDescriptor)
-};
-
-class BigIntLessThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntLessThanOrEqualDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntLessThanOrEqualDescriptor)
-};
-
-class BigIntGreaterThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntGreaterThanOrEqualDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(BigIntGreaterThanOrEqualDescriptor)
-};
-
 class BigIntUnaryMinusDescriptor : public StaticCallInterfaceDescriptor<BigIntUnaryMinusDescriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS(1, kBigint)
@@ -1020,20 +929,6 @@ class CheckTurbofanTypeDescriptor : public StaticCallInterfaceDescriptor<CheckTu
   DECLARE_DEFAULT_DESCRIPTOR(CheckTurbofanTypeDescriptor)
 };
 
-class CheckTurboshaftWord32TypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurboshaftWord32TypeDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kValue, kExpectedType, kNodeId)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
-  DECLARE_DEFAULT_DESCRIPTOR(CheckTurboshaftWord32TypeDescriptor)
-};
-
-class CheckTurboshaftWord64TypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurboshaftWord64TypeDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kValueHigh, kValueLow, kExpectedType, kNodeId)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
-  DECLARE_DEFAULT_DESCRIPTOR(CheckTurboshaftWord64TypeDescriptor)
-};
-
 class GenericBuiltinTest_JSAny_0Descriptor : public StaticCallInterfaceDescriptor<GenericBuiltinTest_JSAny_0Descriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kParam)
@@ -1594,13 +1489,6 @@ class ThrowWasmTrapArrayTooLargeDescriptor : public StaticCallInterfaceDescripto
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapArrayTooLargeDescriptor)
 };
 
-class ThrowWasmTrapStringOffsetOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapStringOffsetOutOfBoundsDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapStringOffsetOutOfBoundsDescriptor)
-};
-
 class WasmStringNewWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringNewWtf8Descriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kOffset, kSize, kMemory, kUtf8Variant)
@@ -1627,13 +1515,6 @@ class WasmStringNewWtf16ArrayDescriptor : public StaticCallInterfaceDescriptor<W
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kStart, kEnd)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringNewWtf16ArrayDescriptor)
-};
-
-class WasmStringAsWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmStringAsWtf16Descriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStr)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(WasmStringAsWtf16Descriptor)
 };
 
 class WasmStringConstDescriptor : public StaticCallInterfaceDescriptor<WasmStringConstDescriptor> {
@@ -1790,32 +1671,18 @@ class WasmStringViewIterSliceDescriptor : public StaticCallInterfaceDescriptor<W
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewIterSliceDescriptor)
 };
 
-class WasmStringCompareDescriptor : public StaticCallInterfaceDescriptor<WasmStringCompareDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kLhs, kRhs)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(WasmStringCompareDescriptor)
-};
-
-class WasmStringFromCodePointDescriptor : public StaticCallInterfaceDescriptor<WasmStringFromCodePointDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kCodePoint)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
-  DECLARE_DEFAULT_DESCRIPTOR(WasmStringFromCodePointDescriptor)
-};
-
-class WasmStringHashDescriptor : public StaticCallInterfaceDescriptor<WasmStringHashDescriptor> {
- public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
-  DECLARE_DEFAULT_DESCRIPTOR(WasmStringHashDescriptor)
-};
-
 class WasmExternInternalizeDescriptor : public StaticCallInterfaceDescriptor<WasmExternInternalizeDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kExternObject)
+  DEFINE_RESULT_AND_PARAMETERS(1, kExternObject)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmExternInternalizeDescriptor)
+};
+
+class WasmExternExternalizeDescriptor : public StaticCallInterfaceDescriptor<WasmExternExternalizeDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kAnyObject)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmExternExternalizeDescriptor)
 };
 
 class LoadJoinElement_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinElement_GenericElementsAccessor_0Descriptor> {

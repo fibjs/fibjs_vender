@@ -11,11 +11,9 @@
 #include "include/v8-platform.h"
 #include "src/base/macros.h"
 #include "src/common/globals.h"
-#include "src/heap/allocation-result.h"
 #include "src/heap/allocation-stats.h"
 #include "src/heap/base-space.h"
 #include "src/heap/basic-memory-chunk.h"
-#include "src/heap/heap-verifier.h"
 #include "src/heap/list.h"
 #include "src/heap/memory-chunk.h"
 
@@ -24,7 +22,7 @@ namespace internal {
 
 class MemoryAllocator;
 class ReadOnlyHeap;
-class SnapshotByteSource;
+class SnapshotData;
 
 class ReadOnlyPage : public BasicMemoryChunk {
  public:
@@ -225,7 +223,7 @@ class ReadOnlySpace : public BaseSpace {
   bool ContainsSlow(Address addr) const;
   V8_EXPORT_PRIVATE void ShrinkPages();
 #ifdef VERIFY_HEAP
-  void Verify(Isolate* isolate, SpaceVerificationVisitor* visitor) const final;
+  void Verify(Isolate* isolate) const;
 #ifdef DEBUG
   void VerifyCounters(Heap* heap) const;
 #endif  // DEBUG
@@ -235,11 +233,6 @@ class ReadOnlySpace : public BaseSpace {
   int AreaSize() const { return static_cast<int>(area_size_); }
 
   Address FirstPageAddress() const { return pages_.front()->address(); }
-
-  void InitFromMemoryDump(Isolate* isolate, SnapshotByteSource* source);
-
-  // Ensure the read only space has at least one allocated page
-  void EnsurePage();
 
  protected:
   friend class SingleCopyReadOnlyArtifacts;
@@ -274,8 +267,6 @@ class ReadOnlySpace : public BaseSpace {
 
   size_t capacity_;
   const size_t area_size_;
-
-  friend class Heap;
 };
 
 class SharedReadOnlySpace : public ReadOnlySpace {

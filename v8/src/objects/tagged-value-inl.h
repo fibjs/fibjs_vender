@@ -30,7 +30,7 @@ inline StrongTaggedValue::StrongTaggedValue(Object o)
 
 Object StrongTaggedValue::ToObject(Isolate* isolate, StrongTaggedValue object) {
 #ifdef V8_COMPRESS_POINTERS
-  return Object(CompressionScheme::DecompressTagged(isolate, object.ptr()));
+  return Object(CompressionScheme::DecompressTaggedAny(isolate, object.ptr()));
 #else
   return Object(object.ptr());
 #endif
@@ -49,7 +49,7 @@ inline TaggedValue::TaggedValue(MaybeObject o)
 MaybeObject TaggedValue::ToMaybeObject(Isolate* isolate, TaggedValue object) {
 #ifdef V8_COMPRESS_POINTERS
   return MaybeObject(
-      CompressionScheme::DecompressTagged(isolate, object.ptr()));
+      CompressionScheme::DecompressTaggedAny(isolate, object.ptr()));
 #else
   return MaybeObject(object.ptr());
 #endif

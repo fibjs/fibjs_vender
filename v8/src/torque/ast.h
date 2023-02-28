@@ -595,13 +595,11 @@ struct AssumeTypeImpossibleExpression : Expression {
 struct NewExpression : Expression {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(NewExpression)
   NewExpression(SourcePosition pos, TypeExpression* type,
-                std::vector<NameAndExpression> initializers, bool pretenured,
-                bool clear_padding)
+                std::vector<NameAndExpression> initializers, bool pretenured)
       : Expression(kKind, pos),
         type(type),
         initializers(std::move(initializers)),
-        pretenured(pretenured),
-        clear_padding(clear_padding) {}
+        pretenured(pretenured) {}
 
   void VisitAllSubExpressions(VisitCallback callback) override {
     for (auto& initializer : initializers) {
@@ -613,7 +611,6 @@ struct NewExpression : Expression {
   TypeExpression* type;
   std::vector<NameAndExpression> initializers;
   bool pretenured;
-  bool clear_padding;
 };
 
 enum class ImplicitKind { kNoImplicit, kJSImplicit, kImplicit };
@@ -727,10 +724,13 @@ struct ReturnStatement : Statement {
 
 struct DebugStatement : Statement {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(DebugStatement)
-  enum class Kind { kUnreachable, kDebug };
-  DebugStatement(SourcePosition pos, Kind kind)
-      : Statement(kKind, pos), kind(kind) {}
-  Kind kind;
+  DebugStatement(SourcePosition pos, const std::string& reason,
+                 bool never_continues)
+      : Statement(kKind, pos),
+        reason(reason),
+        never_continues(never_continues) {}
+  std::string reason;
+  bool never_continues;
 };
 
 struct AssertStatement : Statement {
@@ -1083,13 +1083,10 @@ struct TorqueBuiltinDeclaration : BuiltinDeclaration {
                            bool javascript_linkage, Identifier* name,
                            ParameterList parameters,
                            TypeExpression* return_type,
-                           bool has_custom_interface_descriptor,
                            base::Optional<Statement*> body)
       : BuiltinDeclaration(kKind, pos, javascript_linkage, transitioning, name,
                            std::move(parameters), return_type),
-        has_custom_interface_descriptor(has_custom_interface_descriptor),
         body(body) {}
-  bool has_custom_interface_descriptor;
   base::Optional<Statement*> body;
 };
 

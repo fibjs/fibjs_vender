@@ -64,9 +64,7 @@ BasicMemoryChunk::BasicMemoryChunk(Heap* heap, BaseSpace* space,
       high_water_mark_(area_start - reinterpret_cast<Address>(this)),
       owner_(space),
       reservation_(std::move(reservation)) {
-  if (space->identity() != RO_SPACE) {
-    marking_bitmap<AccessMode::NON_ATOMIC>()->Clear();
-  }
+  marking_bitmap<AccessMode::NON_ATOMIC>()->Clear();
 }
 
 bool BasicMemoryChunk::InOldSpace() const {
@@ -85,19 +83,6 @@ void BasicMemoryChunk::SynchronizedHeapLoad() const {
         InReadOnlySpaceRaw());
 }
 #endif
-
-// static
-MarkBit BasicMemoryChunk::ComputeMarkBit(HeapObject object) {
-  return BasicMemoryChunk::ComputeMarkBit(object.address());
-}
-
-// static
-MarkBit BasicMemoryChunk::ComputeMarkBit(Address address) {
-  BasicMemoryChunk* chunk = BasicMemoryChunk::FromAddress(address);
-  int index = chunk->AddressToMarkbitIndex(address);
-  return chunk->marking_bitmap<AccessMode::NON_ATOMIC>()->MarkBitFromIndex(
-      index);
-}
 
 class BasicMemoryChunkValidator {
   // Computed offsets should match the compiler generated ones.

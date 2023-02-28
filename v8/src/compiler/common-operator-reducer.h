@@ -27,7 +27,7 @@ class V8_EXPORT_PRIVATE CommonOperatorReducer final
   CommonOperatorReducer(Editor* editor, Graph* graph, JSHeapBroker* broker,
                         CommonOperatorBuilder* common,
                         MachineOperatorBuilder* machine, Zone* temp_zone,
-                        BranchSemantics default_branch_semantics);
+                        BranchSemantics branch_semantics);
   ~CommonOperatorReducer() final = default;
 
   const char* reducer_name() const override { return "CommonOperatorReducer"; }
@@ -50,12 +50,7 @@ class V8_EXPORT_PRIVATE CommonOperatorReducer final
   Reduction Change(Node* node, Operator const* op, Node* a, Node* b);
 
   // Helper to determine if conditions are true or false.
-  Decision DecideCondition(Node* const cond, BranchSemantics branch_semantics);
-  BranchSemantics BranchSemanticsOf(const Node* branch) {
-    BranchSemantics bs = BranchParametersOf(branch->op()).semantics();
-    if (bs != BranchSemantics::kUnspecified) return bs;
-    return default_branch_semantics_;
-  }
+  Decision DecideCondition(Node* const cond);
 
   Graph* graph() const { return graph_; }
   JSHeapBroker* broker() const { return broker_; }
@@ -69,7 +64,7 @@ class V8_EXPORT_PRIVATE CommonOperatorReducer final
   MachineOperatorBuilder* const machine_;
   Node* const dead_;
   Zone* zone_;
-  BranchSemantics default_branch_semantics_;
+  BranchSemantics branch_semantics_;
 };
 
 }  // namespace compiler

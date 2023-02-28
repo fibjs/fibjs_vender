@@ -57,7 +57,7 @@ void WasmFunctionBuilder::EmitU32V(uint32_t val) { body_.write_u32v(val); }
 void WasmFunctionBuilder::SetSignature(const FunctionSig* sig) {
   DCHECK(!locals_.has_sig());
   locals_.set_sig(sig);
-  signature_index_ = builder_->AddSignature(sig, true);
+  signature_index_ = builder_->AddSignature(sig);
 }
 
 void WasmFunctionBuilder::SetSignature(uint32_t sig_index) {
@@ -305,40 +305,38 @@ void WasmModuleBuilder::AddDataSegment(const byte* data, uint32_t size,
 }
 
 uint32_t WasmModuleBuilder::ForceAddSignature(const FunctionSig* sig,
-                                              bool is_final,
                                               uint32_t supertype) {
   uint32_t index = static_cast<uint32_t>(types_.size());
   signature_map_.emplace(*sig, index);
-  types_.emplace_back(sig, supertype, is_final);
+  types_.emplace_back(sig, supertype);
   return index;
 }
 
-uint32_t WasmModuleBuilder::AddSignature(const FunctionSig* sig, bool is_final,
+uint32_t WasmModuleBuilder::AddSignature(const FunctionSig* sig,
                                          uint32_t supertype) {
   auto sig_entry = signature_map_.find(*sig);
   if (sig_entry != signature_map_.end()) return sig_entry->second;
-  return ForceAddSignature(sig, is_final, supertype);
+  return ForceAddSignature(sig, supertype);
 }
 
 uint32_t WasmModuleBuilder::AddException(const FunctionSig* type) {
   DCHECK_EQ(0, type->return_count());
-  int type_index = AddSignature(type, true);
+  int type_index = AddSignature(type);
   uint32_t except_index = static_cast<uint32_t>(exceptions_.size());
   exceptions_.push_back(type_index);
   return except_index;
 }
 
-uint32_t WasmModuleBuilder::AddStructType(StructType* type, bool is_final,
+uint32_t WasmModuleBuilder::AddStructType(StructType* type,
                                           uint32_t supertype) {
   uint32_t index = static_cast<uint32_t>(types_.size());
-  types_.emplace_back(type, supertype, is_final);
+  types_.emplace_back(type, supertype);
   return index;
 }
 
-uint32_t WasmModuleBuilder::AddArrayType(ArrayType* type, bool is_final,
-                                         uint32_t supertype) {
+uint32_t WasmModuleBuilder::AddArrayType(ArrayType* type, uint32_t supertype) {
   uint32_t index = static_cast<uint32_t>(types_.size());
-  types_.emplace_back(type, supertype, is_final);
+  types_.emplace_back(type, supertype);
   return index;
 }
 
@@ -392,7 +390,7 @@ uint32_t WasmModuleBuilder::AddImport(base::Vector<const char> name,
                                       FunctionSig* sig,
                                       base::Vector<const char> module) {
   DCHECK(adding_imports_allowed_);
-  function_imports_.push_back({module, name, AddSignature(sig, true)});
+  function_imports_.push_back({module, name, AddSignature(sig)});
   return static_cast<uint32_t>(function_imports_.size() - 1);
 }
 
@@ -615,13 +613,9 @@ void WasmModuleBuilder::WriteTo(ZoneBuffer* buffer) const {
       const TypeDefinition& type = types_[i];
 
       if (type.supertype != kNoSuperType) {
-        buffer->write_u8(type.is_final ? kWasmSubtypeFinalCode
-                                       : kWasmSubtypeCode);
-        buffer->write_u8(1);
-        buffer->write_u32v(type.supertype);
-      } else if (!type.is_final) {
         buffer->write_u8(kWasmSubtypeCode);
-        buffer->write_u8(0);
+        buffer->write_u8(1);  // The supertype count is always 1.
+        buffer->write_u32v(type.supertype);
       }
       switch (type.kind) {
         case TypeDefinition::kFunction: {

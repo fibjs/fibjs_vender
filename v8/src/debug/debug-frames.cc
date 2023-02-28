@@ -108,8 +108,7 @@ RedirectActiveFunctions::RedirectActiveFunctions(SharedFunctionInfo shared,
 
 void RedirectActiveFunctions::VisitThread(Isolate* isolate,
                                           ThreadLocalTop* top) {
-  for (JavaScriptStackFrameIterator it(isolate, top); !it.done();
-       it.Advance()) {
+  for (JavaScriptFrameIterator it(isolate, top); !it.done(); it.Advance()) {
     JavaScriptFrame* frame = it.frame();
     JSFunction function = frame->function();
     if (!frame->is_interpreted()) continue;

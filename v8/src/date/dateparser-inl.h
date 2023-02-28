@@ -192,7 +192,7 @@ DateParser::DateToken DateParser::DateStringTokenizer<CharType>::Scan() {
   if (in_->Skip('+')) return DateToken::Symbol('+');
   if (in_->Skip('.')) return DateToken::Symbol('.');
   if (in_->Skip(')')) return DateToken::Symbol(')');
-  if (in_->IsAsciiAlphaOrAbove() && !in_->IsWhiteSpaceChar()) {
+  if (in_->IsAsciiAlphaOrAbove()) {
     DCHECK_EQ(KeywordTable::kPrefixLength, 3);
     uint32_t buffer[3] = {0, 0, 0};
     int length = in_->ReadWord(buffer, 3);

@@ -90,9 +90,9 @@ inline MemOperand CFunctionArgumentOperand(int index) {
   return MemOperand(sp, offset);
 }
 
-class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
+class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
  public:
-  using MacroAssemblerBase::MacroAssemblerBase;
+  using TurboAssemblerBase::TurboAssemblerBase;
 
   // Activation support.
   void EnterFrame(StackFrame::Type type);
@@ -135,7 +135,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // Calls Abort(msg) if the condition cc is not satisfied.
   // Use --debug_code to enable.
   void Assert(Condition cc, AbortReason reason, Register rs,
-              Operand rt) NOOP_UNLESS_DEBUG_CODE;
+              Operand rt) NOOP_UNLESS_DEBUG_CODE
 
   // Like Assert(), but always enabled.
   void Check(Condition cc, AbortReason reason, Register rs, Operand rt);
@@ -263,16 +263,9 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void CallBuiltin(Builtin builtin);
   void TailCallBuiltin(Builtin builtin);
 
-  // Load the code entry point from the Code object.
-  void LoadCodeEntry(Register destination, Register code_data_container_object);
-  // Load code entry point from the Code object and compute
-  // InstructionStream object pointer out of it. Must not be used for
-  // Codes corresponding to builtins, because their entry points
-  // values point to the embedded instruction stream in .text section.
-  void LoadCodeInstructionStreamNonBuiltin(Register destination,
-                                           Register code_data_container_object);
-  void CallCodeObject(Register code_data_container_object);
-  void JumpCodeObject(Register code_data_container_object,
+  void LoadCodeObjectEntry(Register destination, Register code_object);
+  void CallCodeObject(Register code_object);
+  void JumpCodeObject(Register code_object,
                       JumpMode jump_mode = JumpMode::kJump);
 
   // Generates an instruction sequence s.t. the return address points to the
@@ -543,8 +536,8 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   }
 
   // Abort execution if argument is a smi, enabled via --debug-code.
-  void AssertNotSmi(Register object) NOOP_UNLESS_DEBUG_CODE;
-  void AssertSmi(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertNotSmi(Register object) NOOP_UNLESS_DEBUG_CODE
+  void AssertSmi(Register object) NOOP_UNLESS_DEBUG_CODE
 
   int CalculateStackPassedWords(int num_reg_arguments,
                                 int num_double_arguments);
@@ -571,23 +564,12 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // garbage collection, since that might move the code and invalidate the
   // return address (unless this is somehow accounted for by the called
   // function).
-  enum class SetIsolateDataSlots {
-    kNo,
-    kYes,
-  };
-  void CallCFunction(
-      ExternalReference function, int num_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-  void CallCFunction(
-      Register function, int num_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-  void CallCFunction(
-      ExternalReference function, int num_reg_arguments,
-      int num_double_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-  void CallCFunction(
-      Register function, int num_reg_arguments, int num_double_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
+  void CallCFunction(ExternalReference function, int num_arguments);
+  void CallCFunction(Register function, int num_arguments);
+  void CallCFunction(ExternalReference function, int num_reg_arguments,
+                     int num_double_arguments);
+  void CallCFunction(Register function, int num_reg_arguments,
+                     int num_double_arguments);
   void MovFromFloatResult(DoubleRegister dst);
   void MovFromFloatParameter(DoubleRegister dst);
 
@@ -924,6 +906,79 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // Define an exception handler and bind a label.
   void BindExceptionHandler(Label* label) { bind(label); }
 
+ protected:
+  inline Register GetRtAsRegisterHelper(const Operand& rt, Register scratch);
+  inline int32_t GetOffset(int32_t offset, Label* L, OffsetSize bits);
+
+ private:
+  bool has_double_zero_reg_set_ = false;
+
+  // Performs a truncating conversion of a floating point number as used by
+  // the JS bitwise operations. See ECMA-262 9.5: ToInt32. Goes to 'done' if it
+  // succeeds, otherwise falls through if result is saturated. On return
+  // 'result' either holds answer, or is clobbered on fall through.
+  void TryInlineTruncateDoubleToI(Register result, DoubleRegister input,
+                                  Label* done);
+
+  void CompareF(SecondaryField sizeField, FPUCondition cc, FPURegister cmp1,
+                FPURegister cmp2);
+
+  void CompareIsNanF(SecondaryField sizeField, FPURegister cmp1,
+                     FPURegister cmp2);
+
+  void BranchShortMSA(MSABranchDF df, Label* target, MSABranchCondition cond,
+                      MSARegister wt, BranchDelaySlot bd = PROTECT);
+
+  void CallCFunctionHelper(Register function, int num_reg_arguments,
+                           int num_double_arguments);
+
+  // TODO(mips) Reorder parameters so out parameters come last.
+  bool CalculateOffset(Label* L, int32_t* offset, OffsetSize bits);
+  bool CalculateOffset(Label* L, int32_t* offset, OffsetSize bits,
+                       Register* scratch, const Operand& rt);
+
+  void BranchShortHelperR6(int32_t offset, Label* L);
+  void BranchShortHelper(int16_t offset, Label* L, BranchDelaySlot bdslot);
+  bool BranchShortHelperR6(int32_t offset, Label* L, Condition cond,
+                           Register rs, const Operand& rt);
+  bool BranchShortHelper(int16_t offset, Label* L, Condition cond, Register rs,
+                         const Operand& rt, BranchDelaySlot bdslot);
+  bool BranchShortCheck(int32_t offset, Label* L, Condition cond, Register rs,
+                        const Operand& rt, BranchDelaySlot bdslot);
+
+  void BranchAndLinkShortHelperR6(int32_t offset, Label* L);
+  void BranchAndLinkShortHelper(int16_t offset, Label* L,
+                                BranchDelaySlot bdslot);
+  void BranchAndLinkShort(int32_t offset, BranchDelaySlot bdslot = PROTECT);
+  void BranchAndLinkShort(Label* L, BranchDelaySlot bdslot = PROTECT);
+  bool BranchAndLinkShortHelperR6(int32_t offset, Label* L, Condition cond,
+                                  Register rs, const Operand& rt);
+  bool BranchAndLinkShortHelper(int16_t offset, Label* L, Condition cond,
+                                Register rs, const Operand& rt,
+                                BranchDelaySlot bdslot);
+  bool BranchAndLinkShortCheck(int32_t offset, Label* L, Condition cond,
+                               Register rs, const Operand& rt,
+                               BranchDelaySlot bdslot);
+  void BranchLong(Label* L, BranchDelaySlot bdslot);
+  void BranchAndLinkLong(Label* L, BranchDelaySlot bdslot);
+
+  template <typename RoundFunc>
+  void RoundDouble(FPURegister dst, FPURegister src, FPURoundingMode mode,
+                   RoundFunc round);
+
+  template <typename RoundFunc>
+  void RoundFloat(FPURegister dst, FPURegister src, FPURoundingMode mode,
+                  RoundFunc round);
+
+  // Push a fixed frame, consisting of ra, fp.
+  void PushCommonFrame(Register marker_reg = no_reg);
+};
+
+// MacroAssembler implements a collection of frequently used macros.
+class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+ public:
+  using TurboAssembler::TurboAssembler;
+
   // It assumes that the arguments are located below the stack pointer.
   // argc is the number of arguments not including the receiver.
   // TODO(victorgomes): Remove this function once we stick with the reversed
@@ -942,9 +997,9 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // less efficient form using xor instead of mov is emitted.
   void Swap(Register reg1, Register reg2, Register scratch = no_reg);
 
-  void TestCodeIsMarkedForDeoptimizationAndJump(Register code_data_container,
-                                                Register scratch,
-                                                Condition cond, Label* target);
+  void TestCodeTIsMarkedForDeoptimizationAndJump(Register codet,
+                                                 Register scratch,
+                                                 Condition cond, Label* target);
   Operand ClearedValue() const;
 
   void PushRoot(RootIndex index) {
@@ -1025,17 +1080,23 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void Msub_d(FPURegister fd, FPURegister fr, FPURegister fs, FPURegister ft,
               FPURegister scratch);
 
+  void BranchShortMSA(MSABranchDF df, Label* target, MSABranchCondition cond,
+                      MSARegister wt, BranchDelaySlot bd = PROTECT);
+
   // Enter exit frame.
   // argc - argument count to be dropped by LeaveExitFrame.
+  // save_doubles - saves FPU registers on stack, currently disabled.
   // stack_space - extra stack space.
-  void EnterExitFrame(int stack_space, StackFrame::Type frame_type);
+  void EnterExitFrame(bool save_doubles, int stack_space = 0,
+                      StackFrame::Type frame_type = StackFrame::EXIT);
 
   // Leave the current exit frame.
-  void LeaveExitFrame(Register arg_count, bool do_return = NO_EMIT_RETURN,
+  void LeaveExitFrame(bool save_doubles, Register arg_count,
+                      bool do_return = NO_EMIT_RETURN,
                       bool argument_count_is_length = false);
 
   // Make sure the stack is aligned. Only emits code in debug mode.
-  void AssertStackIsAligned() NOOP_UNLESS_DEBUG_CODE;
+  void AssertStackIsAligned() NOOP_UNLESS_DEBUG_CODE
 
   // Load the global proxy from the current context.
   void LoadGlobalProxy(Register dst) {
@@ -1091,17 +1152,20 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // Runtime calls.
 
   // Call a runtime routine.
-  void CallRuntime(const Runtime::Function* f, int num_arguments);
+  void CallRuntime(const Runtime::Function* f, int num_arguments,
+                   SaveFPRegsMode save_doubles = SaveFPRegsMode::kIgnore);
 
   // Convenience function: Same as above, but takes the fid instead.
-  void CallRuntime(Runtime::FunctionId fid) {
+  void CallRuntime(Runtime::FunctionId fid,
+                   SaveFPRegsMode save_doubles = SaveFPRegsMode::kIgnore) {
     const Runtime::Function* function = Runtime::FunctionForId(fid);
-    CallRuntime(function, function->nargs);
+    CallRuntime(function, function->nargs, save_doubles);
   }
 
   // Convenience function: Same as above, but takes the fid instead.
-  void CallRuntime(Runtime::FunctionId fid, int num_arguments) {
-    CallRuntime(Runtime::FunctionForId(fid), num_arguments);
+  void CallRuntime(Runtime::FunctionId fid, int num_arguments,
+                   SaveFPRegsMode save_doubles = SaveFPRegsMode::kIgnore) {
+    CallRuntime(Runtime::FunctionForId(fid), num_arguments, save_doubles);
   }
 
   // Convenience function: tail call a runtime routine (jump).
@@ -1158,32 +1222,32 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
                     BranchDelaySlot bd = PROTECT);
 
   // Abort execution if argument is not a Constructor, enabled via --debug-code.
-  void AssertConstructor(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertConstructor(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
-  void AssertFunction(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertFunction(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a callable JSFunction, enabled via
   // --debug-code.
-  void AssertCallableFunction(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertCallableFunction(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a JSBoundFunction,
   // enabled via --debug-code.
-  void AssertBoundFunction(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertBoundFunction(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a JSGeneratorObject (or subclass),
   // enabled via --debug-code.
-  void AssertGeneratorObject(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertGeneratorObject(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object,
-                                       Register scratch) NOOP_UNLESS_DEBUG_CODE;
+                                       Register scratch) NOOP_UNLESS_DEBUG_CODE
 
   // ---------------------------------------------------------------------------
   // Tiering support.
   void AssertFeedbackVector(Register object,
-                            Register scratch) NOOP_UNLESS_DEBUG_CODE;
+                            Register scratch) NOOP_UNLESS_DEBUG_CODE
   void ReplaceClosureCodeWithOptimizedCode(Register optimized_code,
                                            Register closure, Register scratch1,
                                            Register scratch2);
@@ -1204,84 +1268,17 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
     DecodeField<Field>(reg, reg);
   }
 
- protected:
-  inline Register GetRtAsRegisterHelper(const Operand& rt, Register scratch);
-  inline int32_t GetOffset(int32_t offset, Label* L, OffsetSize bits);
-
  private:
-  bool has_double_zero_reg_set_ = false;
-
   // Helper functions for generating invokes.
   void InvokePrologue(Register expected_parameter_count,
                       Register actual_parameter_count, Label* done,
                       InvokeType type);
 
-  // Performs a truncating conversion of a floating point number as used by
-  // the JS bitwise operations. See ECMA-262 9.5: ToInt32. Goes to 'done' if it
-  // succeeds, otherwise falls through if result is saturated. On return
-  // 'result' either holds answer, or is clobbered on fall through.
-  void TryInlineTruncateDoubleToI(Register result, DoubleRegister input,
-                                  Label* done);
-
-  void CompareF(SecondaryField sizeField, FPUCondition cc, FPURegister cmp1,
-                FPURegister cmp2);
-
-  void CompareIsNanF(SecondaryField sizeField, FPURegister cmp1,
-                     FPURegister cmp2);
-
-  void BranchShortMSA(MSABranchDF df, Label* target, MSABranchCondition cond,
-                      MSARegister wt, BranchDelaySlot bd = PROTECT);
-
-  void CallCFunctionHelper(
-      Register function, int num_reg_arguments, int num_double_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-
-  // TODO(mips) Reorder parameters so out parameters come last.
-  bool CalculateOffset(Label* L, int32_t* offset, OffsetSize bits);
-  bool CalculateOffset(Label* L, int32_t* offset, OffsetSize bits,
-                       Register* scratch, const Operand& rt);
-
-  void BranchShortHelperR6(int32_t offset, Label* L);
-  void BranchShortHelper(int16_t offset, Label* L, BranchDelaySlot bdslot);
-  bool BranchShortHelperR6(int32_t offset, Label* L, Condition cond,
-                           Register rs, const Operand& rt);
-  bool BranchShortHelper(int16_t offset, Label* L, Condition cond, Register rs,
-                         const Operand& rt, BranchDelaySlot bdslot);
-  bool BranchShortCheck(int32_t offset, Label* L, Condition cond, Register rs,
-                        const Operand& rt, BranchDelaySlot bdslot);
-
-  void BranchAndLinkShortHelperR6(int32_t offset, Label* L);
-  void BranchAndLinkShortHelper(int16_t offset, Label* L,
-                                BranchDelaySlot bdslot);
-  void BranchAndLinkShort(int32_t offset, BranchDelaySlot bdslot = PROTECT);
-  void BranchAndLinkShort(Label* L, BranchDelaySlot bdslot = PROTECT);
-  bool BranchAndLinkShortHelperR6(int32_t offset, Label* L, Condition cond,
-                                  Register rs, const Operand& rt);
-  bool BranchAndLinkShortHelper(int16_t offset, Label* L, Condition cond,
-                                Register rs, const Operand& rt,
-                                BranchDelaySlot bdslot);
-  bool BranchAndLinkShortCheck(int32_t offset, Label* L, Condition cond,
-                               Register rs, const Operand& rt,
-                               BranchDelaySlot bdslot);
-  void BranchLong(Label* L, BranchDelaySlot bdslot);
-  void BranchAndLinkLong(Label* L, BranchDelaySlot bdslot);
-
-  template <typename RoundFunc>
-  void RoundDouble(FPURegister dst, FPURegister src, FPURoundingMode mode,
-                   RoundFunc round);
-
-  template <typename RoundFunc>
-  void RoundFloat(FPURegister dst, FPURegister src, FPURoundingMode mode,
-                  RoundFunc round);
-
-  // Push a fixed frame, consisting of ra, fp.
-  void PushCommonFrame(Register marker_reg = no_reg);
-
   DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
 };
 
 template <typename Func>
-void MacroAssembler::GenerateSwitchTable(Register index, size_t case_count,
+void TurboAssembler::GenerateSwitchTable(Register index, size_t case_count,
                                          Func GetLabelFunction) {
   // Ensure that dd-ed labels following this instruction use 8 bytes aligned
   // addresses.

@@ -98,58 +98,41 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
                                   const byte** input_end);
 
  private:
-  static constexpr int kFramePointerOffset = 0;
-
   // Above the frame pointer - Stored registers and stack passed parameters.
-  static constexpr int kReturnAddressOffset =
-      kFramePointerOffset + kSystemPointerSize;
+  static const int kFramePointer = 0;
+  static const int kReturnAddress = kFramePointer + kSystemPointerSize;
   // Callee-saved registers (x19-x28).
-  static constexpr int kNumCalleeSavedRegisters = 10;
-  static constexpr int kCalleeSavedRegistersOffset =
-      kReturnAddressOffset + kSystemPointerSize;
+  static const int kNumCalleeSavedRegisters = 10;
+  static const int kCalleeSavedRegisters = kReturnAddress + kSystemPointerSize;
 
-  // Below the frame pointer - the stack frame type marker and locals.
-  static constexpr int kFrameTypeOffset =
-      kFramePointerOffset - kSystemPointerSize;
-  static_assert(kFrameTypeOffset ==
-                CommonFrameConstants::kContextOrFrameTypeOffset);
-  static constexpr int kPaddingAfterFrameType = kSystemPointerSize;
+  // Below the frame pointer.
   // Register parameters stored by setup code.
-  static constexpr int kIsolateOffset =
-      kFrameTypeOffset - kPaddingAfterFrameType - kSystemPointerSize;
-  static constexpr int kDirectCallOffset = kIsolateOffset - kSystemPointerSize;
-  // For the case of global regular expression, we have room to store at least
-  // one set of capture results.  For the case of non-global regexp, we ignore
-  // this value.
-  static constexpr int kNumOutputRegistersOffset =
-      kDirectCallOffset - kSystemPointerSize;
-  static constexpr int kInputStringOffset =
-      kNumOutputRegistersOffset - kSystemPointerSize;
+  static const int kIsolate = -kSystemPointerSize;
+  static const int kDirectCall = kIsolate - kSystemPointerSize;
+  static const int kOutputSize = kDirectCall - kSystemPointerSize;
+  static const int kInput = kOutputSize - kSystemPointerSize;
   // When adding local variables remember to push space for them in
   // the frame in GetCode.
-  static constexpr int kSuccessfulCapturesOffset =
-      kInputStringOffset - kSystemPointerSize;
-  static constexpr int kBacktrackCountOffset =
-      kSuccessfulCapturesOffset - kSystemPointerSize;
+  static const int kSuccessCounter = kInput - kSystemPointerSize;
+  static const int kBacktrackCount = kSuccessCounter - kSystemPointerSize;
   // Stores the initial value of the regexp stack pointer in a
   // position-independent representation (in case the regexp stack grows and
   // thus moves).
-  static constexpr int kRegExpStackBasePointerOffset =
-      kBacktrackCountOffset - kSystemPointerSize;
+  static const int kRegExpStackBasePointer =
+      kBacktrackCount - kSystemPointerSize;
   // A padding slot to preserve alignment.
-  static constexpr int kStackLocalPadding =
-      kRegExpStackBasePointerOffset - kSystemPointerSize;
+  static const int kStackLocalPadding =
+      kRegExpStackBasePointer - kSystemPointerSize;
   static constexpr int kNumberOfStackLocals = 4;
 
   // First position register address on the stack. Following positions are
   // below it. A position is a 32 bit value.
-  static constexpr int kFirstRegisterOnStackOffset =
-      kStackLocalPadding - kWRegSize;
+  static const int kFirstRegisterOnStack = kStackLocalPadding - kWRegSize;
   // A capture is a 64 bit value holding two position.
-  static constexpr int kFirstCaptureOnStackOffset =
-      kStackLocalPadding - kXRegSize;
+  static const int kFirstCaptureOnStack = kStackLocalPadding - kXRegSize;
 
-  static constexpr int kInitialBufferSize = 1024;
+  // Initial size of code buffer.
+  static const int kRegExpCodeSize = 1024;
 
   // Registers x0 to x7 are used to store the first captures, they need to be
   // retained over calls to C++ code.
@@ -158,15 +141,12 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
 
   // When initializing registers to a non-position value we can unroll
   // the loop. Set the limit of registers to unroll.
-  static constexpr int kNumRegistersToUnroll = 16;
+  static const int kNumRegistersToUnroll = 16;
 
   // We are using x0 to x7 as a register cache. Each hardware register must
   // contain one capture, that is two 32 bit registers. We can cache at most
   // 16 registers.
-  static constexpr int kNumCachedRegisters = 16;
-
-  void CallCFunctionFromIrregexpCode(ExternalReference function,
-                                     int num_arguments);
+  static const int kNumCachedRegisters = 16;
 
   // Check whether preemption has been requested.
   void CheckPreemption();

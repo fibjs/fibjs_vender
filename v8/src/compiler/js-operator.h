@@ -676,18 +676,18 @@ const CreateBoundFunctionParameters& CreateBoundFunctionParametersOf(
 class CreateClosureParameters final {
  public:
   CreateClosureParameters(const SharedFunctionInfoRef& shared_info,
-                          const CodeRef& code, AllocationType allocation)
+                          const CodeTRef& code, AllocationType allocation)
       : shared_info_(shared_info), code_(code), allocation_(allocation) {}
 
   SharedFunctionInfoRef shared_info(JSHeapBroker* broker) const {
     return shared_info_.AsRef(broker);
   }
-  CodeRef code(JSHeapBroker* broker) const { return code_.AsRef(broker); }
+  CodeTRef code(JSHeapBroker* broker) const { return code_.AsRef(broker); }
   AllocationType allocation() const { return allocation_; }
 
  private:
   const SharedFunctionInfoTinyRef shared_info_;
-  const CodeTinyRef code_;
+  const CodeTTinyRef code_;
   AllocationType const allocation_;
 
   friend bool operator==(CreateClosureParameters const&,
@@ -935,8 +935,6 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* ToName();
   const Operator* ToNumber();
   const Operator* ToNumberConvertBigInt();
-  const Operator* ToBigInt();
-  const Operator* ToBigIntConvertNumber();
   const Operator* ToNumeric();
   const Operator* ToObject();
   const Operator* ToString();
@@ -950,7 +948,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
   const Operator* CreateCollectionIterator(CollectionKind, IterationKind);
   const Operator* CreateBoundFunction(size_t arity, const MapRef& map);
   const Operator* CreateClosure(
-      const SharedFunctionInfoRef& shared_info, const CodeRef& code,
+      const SharedFunctionInfoRef& shared_info, const CodeTRef& code,
       AllocationType allocation = AllocationType::kYoung);
   const Operator* CreateIterResultObject();
   const Operator* CreateStringIterator();
@@ -1341,8 +1339,7 @@ class JSDefineKeyedOwnPropertyNode final : public JSNodeWrapperBase {
   V(Object, object, 0, Object) \
   V(Key, key, 1, Object)       \
   V(Value, value, 2, Object)   \
-  V(Flags, flags, 3, Object)   \
-  V(FeedbackVector, feedback_vector, 4, HeapObject)
+  V(FeedbackVector, feedback_vector, 3, HeapObject)
   INPUTS(DEFINE_INPUT_ACCESSORS)
 #undef INPUTS
 };

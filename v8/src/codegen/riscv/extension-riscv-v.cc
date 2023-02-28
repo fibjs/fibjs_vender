@@ -160,7 +160,7 @@ void AssemblerRISCVV::vid_v(VRegister vd, MaskType mask) {
     GenInstrV(funct6, OP_MVV, vd, vs1, vs2, mask);                            \
   }
 
-// void GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd, Register
+// void GenInstrV(uint8_t funct6, OpcodeRISCVV opcode, VRegister vd, Register
 // rs1,
 //                  VRegister vs2, MaskType mask = NoMask);
 #define DEFINE_OPMVX(name, funct6)                                           \
@@ -455,8 +455,9 @@ uint8_t vsew_switch(VSew vsew) {
 }
 
 // OPIVV OPFVV OPMVV
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
-                                VRegister vs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                VRegister vd, VRegister vs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_MVV || opcode == OP_FVV || opcode == OP_IVV);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((vd.code() & 0x1F) << kRvvVdShift) |
@@ -465,8 +466,9 @@ void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
   emit(instr);
 }
 
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
-                                int8_t vs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                VRegister vd, int8_t vs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_MVV || opcode == OP_FVV || opcode == OP_IVV);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((vd.code() & 0x1F) << kRvvVdShift) |
@@ -475,8 +477,9 @@ void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
   emit(instr);
 }
 // OPMVV OPFVV
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, Register rd,
-                                VRegister vs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                Register rd, VRegister vs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_MVV || opcode == OP_FVV);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((rd.code() & 0x1F) << kRvvVdShift) |
@@ -486,8 +489,9 @@ void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, Register rd,
 }
 
 // OPFVV
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, FPURegister fd,
-                                VRegister vs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                FPURegister fd, VRegister vs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_FVV);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((fd.code() & 0x1F) << kRvvVdShift) |
@@ -497,8 +501,9 @@ void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, FPURegister fd,
 }
 
 // OPIVX OPMVX
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
-                                Register rs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                VRegister vd, Register rs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_IVX || opcode == OP_MVX);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((vd.code() & 0x1F) << kRvvVdShift) |
@@ -508,8 +513,9 @@ void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
 }
 
 // OPFVF
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, VRegister vd,
-                                FPURegister fs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                VRegister vd, FPURegister fs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_FVF);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((vd.code() & 0x1F) << kRvvVdShift) |
@@ -583,8 +589,9 @@ void AssemblerRISCVV::GenInstrV(BaseOpcode opcode, uint8_t width, VRegister vd,
   emit(instr);
 }
 // vmv_xs vcpop_m vfirst_m
-void AssemblerRISCVV::GenInstrV(uint8_t funct6, Opcode opcode, Register rd,
-                                uint8_t vs1, VRegister vs2, MaskType mask) {
+void AssemblerRISCVV::GenInstrV(uint8_t funct6, OpcodeRISCVV opcode,
+                                Register rd, uint8_t vs1, VRegister vs2,
+                                MaskType mask) {
   DCHECK(opcode == OP_MVV);
   Instr instr = (funct6 << kRvvFunct6Shift) | opcode | (mask << kRvvVmShift) |
                 ((rd.code() & 0x1F) << kRvvVdShift) |

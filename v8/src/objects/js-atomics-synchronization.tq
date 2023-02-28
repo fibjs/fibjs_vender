@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 @abstract
-extern class JSSynchronizationPrimitive extends AlwaysSharedSpaceJSObject {
+extern class JSSynchronizationPrimitive extends JSObject {
   @if(TAGGED_SIZE_8_BYTES) state: uintptr;
   @ifnot(TAGGED_SIZE_8_BYTES) state: uint32;
 }

@@ -42,7 +42,7 @@ class DebugStackTraceIterator final : public debug::StackTraceIterator {
   void UpdateInlineFrameIndexAndResumableFnOnStack();
 
   Isolate* isolate_;
-  DebuggableStackFrameIterator iterator_;
+  StackTraceFrameIterator iterator_;
   std::unique_ptr<FrameInspector> frame_inspector_;
   int inlined_frame_index_;
   bool is_top_frame_;

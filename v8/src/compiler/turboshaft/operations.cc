@@ -7,8 +7,6 @@
 #include <atomic>
 #include <sstream>
 
-#include "src/base/logging.h"
-#include "src/base/optional.h"
 #include "src/base/platform/mutex.h"
 #include "src/codegen/machine-type.h"
 #include "src/common/globals.h"
@@ -396,20 +394,6 @@ void StoreOp::PrintOptions(std::ostream& os) const {
   os << "]";
 }
 
-void AllocateOp::PrintOptions(std::ostream& os) const {
-  os << "[";
-  os << type << ", ";
-  os << (allow_large_objects == AllowLargeObjects::kTrue ? "allow large objects"
-                                                         : "no large objects");
-  os << "]";
-}
-
-void DecodeExternalPointerOp::PrintOptions(std::ostream& os) const {
-  os << "[";
-  os << "tag: " << std::hex << tag << std::dec;
-  os << "]";
-}
-
 void FrameStateOp::PrintOptions(std::ostream& os) const {
   os << "[";
   os << (inlined ? "inlined" : "not inlined");
@@ -556,13 +540,6 @@ void OverflowCheckedBinopOp::PrintOptions(std::ostream& os) const {
   os << "]";
 }
 
-std::ostream& operator<<(std::ostream& os, OpIndex idx) {
-  if (!idx.valid()) {
-    return os << "<invalid OpIndex>";
-  }
-  return os << idx.id();
-}
-
 std::ostream& operator<<(std::ostream& os, BlockIndex b) {
   if (!b.valid()) {
     return os << "<invalid block>";
@@ -575,16 +552,22 @@ std::ostream& operator<<(std::ostream& os, const Block* b) {
 }
 
 std::ostream& operator<<(std::ostream& os, OpProperties opProperties) {
-#define PRINT_PROPERTY(Name, ...)             \
-  if (opProperties == OpProperties::Name()) { \
-    return os << #Name;                       \
+  if (opProperties == OpProperties::Pure()) {
+    os << "Pure";
+  } else if (opProperties == OpProperties::Reading()) {
+    os << "Reading";
+  } else if (opProperties == OpProperties::Writing()) {
+    os << "Writing";
+  } else if (opProperties == OpProperties::CanAbort()) {
+    os << "CanAbort";
+  } else if (opProperties == OpProperties::AnySideEffects()) {
+    os << "AnySideEffects";
+  } else if (opProperties == OpProperties::BlockTerminator()) {
+    os << "BlockTerminator";
+  } else {
+    UNREACHABLE();
   }
-
-  ALL_OP_PROPERTIES(PRINT_PROPERTY)
-
-#undef PRINT_PROPERTY
-
-  UNREACHABLE();
+  return os;
 }
 
 void SwitchOp::PrintOptions(std::ostream& os) const {
@@ -593,36 +576,6 @@ void SwitchOp::PrintOptions(std::ostream& os) const {
     os << "case " << c.value << ": " << c.destination << ", ";
   }
   os << " default: " << default_case << "]";
-}
-
-std::ostream& operator<<(std::ostream& os, IsObjectOp::Kind kind) {
-  switch (kind) {
-    case IsObjectOp::Kind::kBigInt:
-      return os << "BigInt";
-    case IsObjectOp::Kind::kBigInt64:
-      return os << "BigInt64";
-  }
-}
-
-std::ostream& operator<<(std::ostream& os,
-                         IsObjectOp::InputAssumptions input_assumptions) {
-  switch (input_assumptions) {
-    case IsObjectOp::InputAssumptions::kNone:
-      return os << "None";
-    case IsObjectOp::InputAssumptions::kHeapObject:
-      return os << "HeapObject";
-    case IsObjectOp::InputAssumptions::kBigInt:
-      return os << "BigInt";
-  }
-}
-
-std::ostream& operator<<(std::ostream& os, ConvertToObjectOp::Kind kind) {
-  switch (kind) {
-    case ConvertToObjectOp::Kind::kInt64ToBigInt64:
-      return os << "Int64ToBigInt64";
-    case ConvertToObjectOp::Kind::kUint64ToBigInt64:
-      return os << "Uint64ToBigInt64";
-  }
 }
 
 std::string Operation::ToString() const {

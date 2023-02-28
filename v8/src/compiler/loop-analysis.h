@@ -178,11 +178,9 @@ class V8_EXPORT_PRIVATE LoopFinder {
   static LoopTree* BuildLoopTree(Graph* graph, TickCounter* tick_counter,
                                  Zone* temp_zone);
 
-  static bool HasMarkedExits(LoopTree* loop_tree, const LoopTree::Loop* loop);
+  static bool HasMarkedExits(LoopTree* loop_tree_, const LoopTree::Loop* loop);
 
 #if V8_ENABLE_WEBASSEMBLY
-  enum class Purpose { kLoopPeeling, kLoopUnrolling };
-
   // Find all nodes in the loop headed by {loop_header} if it contains no nested
   // loops.
   // Assumption: *if* this loop has no nested loops, all exits from the loop are
@@ -194,7 +192,7 @@ class V8_EXPORT_PRIVATE LoopFinder {
   // 3) a nested loop is found in the loop.
   static ZoneUnorderedSet<Node*>* FindSmallInnermostLoopFromHeader(
       Node* loop_header, AllNodes& all_nodes, Zone* zone, size_t max_size,
-      Purpose purpose);
+      bool calls_are_large);
 #endif
 };
 

@@ -56,10 +56,7 @@ namespace compiler {
   V(X64Word64AtomicOrUint64)                               \
   V(X64Word64AtomicXorUint64)                              \
   V(X64Word64AtomicExchangeUint64)                         \
-  V(X64Word64AtomicCompareExchangeUint64)                  \
-  V(X64Movdqu256)                                          \
-  V(X64S256Load32Splat)                                    \
-  V(X64S256Load64Splat)
+  V(X64Word64AtomicCompareExchangeUint64)
 
 #define TARGET_ARCH_OPCODE_LIST(V)                   \
   TARGET_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V) \
@@ -173,7 +170,8 @@ namespace compiler {
   V(X64Float32Abs)                                   \
   V(X64Float32Neg)                                   \
   V(X64MovqDecompressTaggedSigned)                   \
-  V(X64MovqDecompressTagged)                         \
+  V(X64MovqDecompressTaggedPointer)                  \
+  V(X64MovqDecompressAnyTagged)                      \
   V(X64MovqCompressTagged)                           \
   V(X64MovqEncodeSandboxedPointer)                   \
   V(X64MovqDecodeSandboxedPointer)                   \
@@ -290,7 +288,6 @@ namespace compiler {
   V(X64I32x4Abs)                                     \
   V(X64I32x4BitMask)                                 \
   V(X64I32x4DotI16x8S)                               \
-  V(X64I32x4DotI8x16I7x16AddS)                       \
   V(X64I32x4ExtMulLowI16x8S)                         \
   V(X64I32x4ExtMulHighI16x8S)                        \
   V(X64I32x4ExtMulLowI16x8U)                         \
@@ -412,12 +409,8 @@ namespace compiler {
   V(X64I32x4AllTrue)                                 \
   V(X64I16x8AllTrue)                                 \
   V(X64I8x16AllTrue)                                 \
-  V(X64Blendvpd)                                     \
-  V(X64Blendvps)                                     \
   V(X64Pblendvb)                                     \
-  V(X64TraceInstruction)                             \
-  V(X64F32x8Add)                                     \
-  V(X64F32x8Sub)
+  V(X64TraceInstruction)
 
 // Addressing modes represent the "shape" of inputs to an instruction.
 // Many instructions support multiple addressing modes. Addressing modes

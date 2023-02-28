@@ -510,19 +510,6 @@ TF_BUILTIN(AsyncGeneratorResumeNext, AsyncGeneratorBuiltinsAssembler) {
     // Remember the {resume_type} for the {generator}.
     StoreObjectFieldNoWriteBarrier(
         generator, JSGeneratorObject::kResumeModeOffset, resume_type);
-
-    Label if_instrumentation(this, Label::kDeferred),
-        if_instrumentation_done(this);
-    Branch(IsDebugActive(), &if_instrumentation, &if_instrumentation_done);
-    BIND(&if_instrumentation);
-    {
-      const TNode<JSPromise> promise = LoadObjectField<JSPromise>(
-          next, AsyncGeneratorRequest::kPromiseOffset);
-      CallRuntime(Runtime::kDebugPushPromise, context, promise);
-      Goto(&if_instrumentation_done);
-    }
-    BIND(&if_instrumentation_done);
-
     CallStub(CodeFactory::ResumeGenerator(isolate()), context,
              LoadValueFromAsyncGeneratorRequest(next), generator);
     var_state = LoadGeneratorState(generator);
@@ -611,9 +598,8 @@ TF_BUILTIN(AsyncGeneratorReject, AsyncGeneratorBuiltinsAssembler) {
       TakeFirstAsyncGeneratorRequestFromQueue(generator);
   TNode<JSPromise> promise = LoadPromiseFromAsyncGeneratorRequest(next);
 
-  // No debug event needed, there was already a debug event that got us here.
   Return(CallBuiltin(Builtin::kRejectPromise, context, promise, value,
-                     FalseConstant()));
+                     TrueConstant()));
 }
 
 TF_BUILTIN(AsyncGeneratorYieldWithAwait, AsyncGeneratorBuiltinsAssembler) {

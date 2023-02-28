@@ -6,7 +6,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -63,7 +62,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 
 namespace v8 {
@@ -169,7 +167,7 @@ class EnumVerifier {
     }
   }
 
-  // MessageTemplate (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=368&c=1)
+  // MessageTemplate (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=363&c=1)
   void VerifyEnum_MessageTemplate(MessageTemplate x) {
     switch(x) {
       case MessageTemplate::kAllPromisesRejected: break;
@@ -253,14 +251,11 @@ class EnumVerifier {
       case MessageTemplate::kInvalidWeakRefsRegisterTarget: break;
       case MessageTemplate::kInvalidWeakRefsUnregisterToken: break;
       case MessageTemplate::kInvalidWeakRefsWeakRefConstructorTarget: break;
-      case MessageTemplate::kObjectGetterCallable: break;
-      case MessageTemplate::kObjectSetterCallable: break;
-      case MessageTemplate::kPropertyDescObject: break;
       default: break;
     }
   }
 
-  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=456&c=1)
+  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=448&c=1)
   void VerifyEnum_PropertyAttributes(PropertyAttributes x) {
     switch(x) {
       case PropertyAttributes::NONE: break;
@@ -273,7 +268,7 @@ class EnumVerifier {
     }
   }
 
-  // PrimitiveType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=505&c=1)
+  // PrimitiveType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=495&c=1)
   void VerifyEnum_PrimitiveType(PrimitiveType x) {
     switch(x) {
       case PrimitiveType::kString: break;
@@ -283,7 +278,7 @@ class EnumVerifier {
     }
   }
 
-  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=572&c=1)
+  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=562&c=1)
   void VerifyEnum_LanguageMode(LanguageMode x) {
     switch(x) {
       case LanguageMode::kStrict: break;
@@ -291,7 +286,7 @@ class EnumVerifier {
     }
   }
 
-  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=671&c=1)
+  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=661&c=1)
   void VerifyEnum_BigIntHandling(CodeStubAssembler::BigIntHandling x) {
     switch(x) {
       case CodeStubAssembler::BigIntHandling::kConvertToNumber: break;
@@ -299,7 +294,7 @@ class EnumVerifier {
     }
   }
 
-  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2004&c=1)
+  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1973&c=1)
   void VerifyEnum_HashFieldType(Name::HashFieldType x) {
     switch(x) {
       case Name::HashFieldType::kHash: break;
@@ -501,8 +496,6 @@ class EnumVerifier {
       case Context::Field::RAB_GSAB_UINT8_CLAMPED_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_BIGUINT64_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_BIGINT64_ARRAY_MAP_INDEX: break;
-      case Context::Field::ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX: break;
-      case Context::Field::DATA_PROPERTY_DESCRIPTOR_MAP_INDEX: break;
       case Context::Field::PROMISE_FUNCTION_INDEX: break;
       case Context::Field::PROMISE_THEN_INDEX: break;
       case Context::Field::PROMISE_PROTOTYPE_INDEX: break;
@@ -540,11 +533,10 @@ class EnumVerifier {
       case ScopeType::CATCH_SCOPE: break;
       case ScopeType::BLOCK_SCOPE: break;
       case ScopeType::WITH_SCOPE: break;
-      case ScopeType::SHADOW_REALM_SCOPE: break;
     }
   }
 
-  // VariableAllocationInfo (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1)
+  // VariableAllocationInfo (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=23&c=1)
   void VerifyEnum_VariableAllocationInfo(VariableAllocationInfo x) {
     switch(x) {
       case VariableAllocationInfo::NONE: break;
@@ -554,7 +546,7 @@ class EnumVerifier {
     }
   }
 
-  // VariableMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1)
+  // VariableMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=30&c=1)
   void VerifyEnum_VariableMode(VariableMode x) {
     switch(x) {
       case VariableMode::kLet: break;
@@ -571,7 +563,7 @@ class EnumVerifier {
     }
   }
 
-  // InitializationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=45&c=1)
+  // InitializationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=44&c=1)
   void VerifyEnum_InitializationFlag(InitializationFlag x) {
     switch(x) {
       case InitializationFlag::kNeedsInitialization: break;
@@ -579,7 +571,7 @@ class EnumVerifier {
     }
   }
 
-  // IsStaticFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=50&c=1)
+  // IsStaticFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=49&c=1)
   void VerifyEnum_IsStaticFlag(IsStaticFlag x) {
     switch(x) {
       case IsStaticFlag::kNotStatic: break;
@@ -587,7 +579,7 @@ class EnumVerifier {
     }
   }
 
-  // MaybeAssignedFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=52&c=1)
+  // MaybeAssignedFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=51&c=1)
   void VerifyEnum_MaybeAssignedFlag(MaybeAssignedFlag x) {
     switch(x) {
       case MaybeAssignedFlag::kNotAssigned: break;

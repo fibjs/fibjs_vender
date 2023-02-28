@@ -16,7 +16,9 @@
 #include "src/base/macros.h"
 #include "src/wasm/wasm-constants.h"
 
-namespace v8::internal::wasm {
+namespace v8 {
+namespace internal {
+namespace wasm {
 
 // These constants limit the amount of *declared* memory. At runtime, memory can
 // only grow up to kV8MaxWasmMemory{32,64}Pages.
@@ -97,8 +99,10 @@ inline uint64_t max_mem64_bytes() {
 }
 
 V8_EXPORT_PRIVATE uint32_t max_table_init_entries();
-V8_EXPORT_PRIVATE size_t max_module_size();
+size_t max_module_size();
 
-}  // namespace v8::internal::wasm
+}  // namespace wasm
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_WASM_WASM_LIMITS_H_

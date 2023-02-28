@@ -347,7 +347,7 @@ namespace {
 std::unique_ptr<Handle<Object>[]> GetCallerArguments(Isolate* isolate,
                                                      int* total_argc) {
   // Find frame containing arguments passed to the caller.
-  JavaScriptStackFrameIterator it(isolate);
+  JavaScriptFrameIterator it(isolate);
   JavaScriptFrame* frame = it.frame();
   std::vector<SharedFunctionInfo> functions;
   frame->GetFunctions(&functions);

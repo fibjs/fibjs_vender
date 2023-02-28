@@ -13,7 +13,6 @@
 #include "src/base/macros.h"
 #include "src/base/platform/mutex.h"
 #include "src/common/globals.h"
-#include "src/heap/heap-verifier.h"
 #include "src/heap/heap.h"
 #include "src/heap/memory-chunk.h"
 #include "src/heap/spaces.h"
@@ -41,7 +40,7 @@ class LargePage : public MemoryChunk {
     return static_cast<LargePage*>(MemoryChunk::FromHeapObject(o));
   }
 
-  HeapObject GetObject() const { return HeapObject::FromAddress(area_start()); }
+  HeapObject GetObject() { return HeapObject::FromAddress(area_start()); }
 
   LargePage* next_page() { return static_cast<LargePage*>(list_node_.next()); }
   const LargePage* next_page() const {
@@ -117,7 +116,7 @@ class V8_EXPORT_PRIVATE LargeObjectSpace : public Space {
   virtual bool is_off_thread() const { return false; }
 
 #ifdef VERIFY_HEAP
-  void Verify(Isolate* isolate, SpaceVerificationVisitor* visitor) const final;
+  virtual void Verify(Isolate* isolate);
 #endif
 
 #ifdef DEBUG

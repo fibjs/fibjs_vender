@@ -271,7 +271,6 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   V8_EXPORT_PRIVATE static Handle<ScopeInfo> CreateForEmptyFunction(
       Isolate* isolate);
   static Handle<ScopeInfo> CreateForNativeContext(Isolate* isolate);
-  static Handle<ScopeInfo> CreateForShadowRealmNativeContext(Isolate* isolate);
   static Handle<ScopeInfo> CreateGlobalThisBinding(Isolate* isolate);
 
   // Creates a copy of a {ScopeInfo} but with the provided locals blocklist
@@ -316,6 +315,8 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   V8_EXPORT_PRIVATE uint32_t Hash();
 
  private:
+  friend class WebSnapshotDeserializer;
+
   int InlinedLocalNamesLookup(String name);
 
   int ContextLocalNamesIndex() const;
@@ -362,7 +363,7 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
     return index;
   }
 
-  enum class BootstrappingType { kScript, kFunction, kNative, kShadowRealm };
+  enum class BootstrappingType { kScript, kFunction, kNative };
   static Handle<ScopeInfo> CreateForBootstrapping(Isolate* isolate,
                                                   BootstrappingType type);
 

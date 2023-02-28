@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-createtypedarray-tq-csa.h"
@@ -144,63 +142,60 @@ TNode<JSTypedArray> AllocateTypedArray_0(compiler::CodeAssemblerState* state_, T
   }
 
   TNode<UintPtrT> tmp8;
-  TNode<UintPtrT> tmp9;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp8 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     CodeStubAssembler(state_).StoreJSArrayBufferViewByteLength(TNode<JSArrayBufferView>{tmp5}, TNode<UintPtrT>{tmp8});
-    tmp9 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StoreJSTypedArrayLength(TNode<JSTypedArray>{tmp5}, TNode<UintPtrT>{tmp9});
     ca_.Goto(&block22);
   }
 
   if (block21.is_used()) {
     ca_.Bind(&block21);
     CodeStubAssembler(state_).StoreJSArrayBufferViewByteLength(TNode<JSArrayBufferView>{tmp5}, TNode<UintPtrT>{p_byteLength});
-    CodeStubAssembler(state_).StoreJSTypedArrayLength(TNode<JSTypedArray>{tmp5}, TNode<UintPtrT>{p_length});
     ca_.Goto(&block22);
   }
 
-  TNode<IntPtrT> tmp10;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint32T> tmp10;
   TNode<Uint32T> tmp11;
-  TNode<Uint32T> tmp12;
-  TNode<IntPtrT> tmp13;
-  TNode<BoolT> tmp14;
+  TNode<IntPtrT> tmp12;
+  TNode<BoolT> tmp13;
   if (block22.is_used()) {
     ca_.Bind(&block22);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp11 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp10});
-    tmp12 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp11), ca_.UncheckedCast<Uint32T>(p_isLengthTracking)));
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp10}, tmp12);
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp14 = IsResizableArrayBuffer_0(state_, TNode<JSArrayBuffer>{p_buffer});
-    ca_.Branch(tmp14, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
+    CodeStubAssembler(state_).StoreJSTypedArrayLength(TNode<JSTypedArray>{tmp5}, TNode<UintPtrT>{p_length});
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp9});
+    tmp11 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp10), ca_.UncheckedCast<Uint32T>(p_isLengthTracking)));
+    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp9}, tmp11);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp13 = IsResizableArrayBuffer_0(state_, TNode<JSArrayBuffer>{p_buffer});
+    ca_.Branch(tmp13, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
   }
 
+  TNode<BoolT> tmp14;
   TNode<BoolT> tmp15;
-  TNode<BoolT> tmp16;
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    tmp15 = IsSharedArrayBuffer_0(state_, TNode<JSArrayBuffer>{p_buffer});
-    tmp16 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp15});
+    tmp14 = IsSharedArrayBuffer_0(state_, TNode<JSArrayBuffer>{p_buffer});
+    tmp15 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp14});
+    ca_.Goto(&block29, tmp15);
+  }
+
+  TNode<BoolT> tmp16;
+  if (block28.is_used()) {
+    ca_.Bind(&block28);
+    tmp16 = FromConstexpr_bool_constexpr_bool_0(state_, false);
     ca_.Goto(&block29, tmp16);
   }
 
-  TNode<BoolT> tmp17;
-  if (block28.is_used()) {
-    ca_.Bind(&block28);
-    tmp17 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block29, tmp17);
-  }
-
   TNode<BoolT> phi_bb29_13;
+  TNode<Uint32T> tmp17;
   TNode<Uint32T> tmp18;
-  TNode<Uint32T> tmp19;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_13);
-    tmp18 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp13});
-    tmp19 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<bool, 1, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp18), ca_.UncheckedCast<Uint32T>(phi_bb29_13)));
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp13}, tmp19);
+    tmp17 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp12});
+    tmp18 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<bool, 1, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp17), ca_.UncheckedCast<Uint32T>(phi_bb29_13)));
+    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp12}, tmp18);
     if ((p_isOnHeap)) {
       ca_.Goto(&block30);
     } else {
@@ -214,11 +209,11 @@ TNode<JSTypedArray> AllocateTypedArray_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block32);
   }
 
-  TNode<RawPtrT> tmp20;
+  TNode<RawPtrT> tmp19;
   if (block31.is_used()) {
     ca_.Bind(&block31);
-    tmp20 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
-    TypedArrayBuiltinsAssembler(state_).SetJSTypedArrayOffHeapDataPtr(TNode<JSTypedArray>{tmp5}, TNode<RawPtrT>{tmp20}, TNode<UintPtrT>{p_byteOffset});
+    tmp19 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
+    TypedArrayBuiltinsAssembler(state_).SetJSTypedArrayOffHeapDataPtr(TNode<JSTypedArray>{tmp5}, TNode<RawPtrT>{tmp19}, TNode<UintPtrT>{p_byteOffset});
     ca_.Goto(&block32);
   }
 
@@ -232,7 +227,7 @@ TNode<JSTypedArray> AllocateTypedArray_0(compiler::CodeAssemblerState* state_, T
   return TNode<JSTypedArray>{tmp5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=86&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=85&c=1
 TNode<JSTypedArray> TypedArrayInitialize_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_initialize, TNode<Map> p_map, TNode<UintPtrT> p_length, TorqueStructTypedArrayElementsInfo p_elementsInfo, compiler::CodeAssemblerLabel* label_IfRangeError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -407,7 +402,7 @@ TNode<JSTypedArray> TypedArrayInitialize_0(compiler::CodeAssemblerState* state_,
   return TNode<JSTypedArray>{phi_bb2_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=132&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=131&c=1
 TNode<JSTypedArray> ConstructByLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_map, TNode<Object> p_lengthObj, TorqueStructTypedArrayElementsInfo p_elementsInfo) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -468,7 +463,7 @@ TNode<JSTypedArray> ConstructByLength_0(compiler::CodeAssemblerState* state_, TN
   return TNode<JSTypedArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=147&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=146&c=1
 TNode<JSTypedArray> ConstructByArrayLike_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_map, TNode<HeapObject> p_arrayLike, TNode<UintPtrT> p_length, TorqueStructTypedArrayElementsInfo p_elementsInfo) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -665,7 +660,7 @@ TNode<JSTypedArray> ConstructByArrayLike_0(compiler::CodeAssemblerState* state_,
   return TNode<JSTypedArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=199&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=198&c=1
 void ConstructByIterable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_iterable, TNode<JSReceiver> p_iteratorFn, compiler::CodeAssemblerLabel* label_IfConstructByArrayLike, compiler::TypedCodeAssemblerVariable<JSArray>* label_IfConstructByArrayLike_parameter_0, compiler::TypedCodeAssemblerVariable<UintPtrT>* label_IfConstructByArrayLike_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -684,7 +679,7 @@ void ConstructByIterable_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=210&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=209&c=1
 void ConstructByTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSTypedArray> p_srcTypedArray, compiler::CodeAssemblerLabel* label_IfConstructByArrayLike, compiler::TypedCodeAssemblerVariable<JSTypedArray>* label_IfConstructByArrayLike_parameter_0, compiler::TypedCodeAssemblerVariable<UintPtrT>* label_IfConstructByArrayLike_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -727,7 +722,7 @@ void ConstructByTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=227&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=226&c=1
 TNode<JSTypedArray> ConstructByArrayBuffer_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_target, TNode<JSReceiver> p_newTarget, TNode<JSArrayBuffer> p_buffer, TNode<Object> p_byteOffset, TNode<Object> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -859,7 +854,7 @@ TNode<JSTypedArray> ConstructByArrayBuffer_0(compiler::CodeAssemblerState* state
   TNode<Map> tmp9;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_8);
-    tmp9 = GetDerivedRabGsabTypedArrayMap_0(state_, TNode<Context>{p_context}, TNode<JSFunction>{p_target}, TNode<JSReceiver>{p_newTarget});
+    tmp9 = GetDerivedRabGsabMap_0(state_, TNode<Context>{p_context}, TNode<JSFunction>{p_target}, TNode<JSReceiver>{p_newTarget});
     ca_.Goto(&block13, tmp9, phi_bb11_8);
   }
 
@@ -1215,7 +1210,7 @@ TNode<JSTypedArray> ConstructByArrayBuffer_0(compiler::CodeAssemblerState* state
   return TNode<JSTypedArray>{tmp58};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=322&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=321&c=1
 TNode<JSTypedArray> TypedArrayCreateByLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_constructor, TNode<Number> p_length, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1272,7 +1267,7 @@ TNode<JSTypedArray> TypedArrayCreateByLength_0(compiler::CodeAssemblerState* sta
   return TNode<JSTypedArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=361&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=360&c=1
 void ConstructByJSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_obj, compiler::CodeAssemblerLabel* label_IfConstructByArrayLike, compiler::TypedCodeAssemblerVariable<JSReceiver>* label_IfConstructByArrayLike_parameter_0, compiler::TypedCodeAssemblerVariable<UintPtrT>* label_IfConstructByArrayLike_parameter_1, compiler::CodeAssemblerLabel* label_IfIteratorNotCallable, compiler::TypedCodeAssemblerVariable<Object>* label_IfIteratorNotCallable_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1535,7 +1530,7 @@ TF_BUILTIN(CreateTypedArray, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=435&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=434&c=1
 TNode<JSTypedArray> TypedArraySpeciesCreate_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, const char* p_methodName, int31_t p_numArgs, TNode<JSTypedArray> p_exemplar, TNode<Object> p_arg0, TNode<Object> p_arg1, TNode<Object> p_arg2) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1656,16 +1651,14 @@ TNode<JSTypedArray> TypedArraySpeciesCreate_0(compiler::CodeAssemblerState* stat
   return TNode<JSTypedArray>{phi_bb23_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=472&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=471&c=1
 TNode<JSTypedArray> TypedArraySpeciesCreateByLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, const char* p_methodName, TNode<JSTypedArray> p_exemplar, TNode<UintPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Number> tmp0;
@@ -1673,48 +1666,33 @@ TNode<JSTypedArray> TypedArraySpeciesCreateByLength_0(compiler::CodeAssemblerSta
   TNode<Oddball> tmp2;
   TNode<JSTypedArray> tmp3;
   TNode<UintPtrT> tmp4;
+  TNode<BoolT> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Convert_Number_uintptr_0(state_, TNode<UintPtrT>{p_length});
     tmp1 = Undefined_0(state_);
     tmp2 = Undefined_0(state_);
     tmp3 = TypedArraySpeciesCreate_0(state_, TNode<Context>{p_context}, p_methodName, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull))), TNode<JSTypedArray>{p_exemplar}, TNode<Object>{tmp0}, TNode<Object>{tmp1}, TNode<Object>{tmp2});
-    compiler::CodeAssemblerLabel label5(&ca_);
-    tmp4 = CodeStubAssembler(state_).LoadJSTypedArrayLengthAndCheckDetached(TNode<JSTypedArray>{tmp3}, &label5);
+    tmp4 = CodeStubAssembler(state_).LoadJSTypedArrayLength(TNode<JSTypedArray>{tmp3});
+    tmp5 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp4}, TNode<UintPtrT>{p_length});
+    ca_.Branch(tmp5, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+  }
+
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kTypedArrayTooShort);
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
     ca_.Goto(&block4);
-    if (label5.is_used()) {
-      ca_.Bind(&label5);
-      ca_.Goto(&block5);
-    }
   }
 
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kTypedArrayTooShort);
-  }
-
-  TNode<BoolT> tmp6;
-  if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp6 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp4}, TNode<UintPtrT>{p_length});
-    ca_.Branch(tmp6, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
-  }
-
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kTypedArrayTooShort);
-  }
-
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    ca_.Goto(&block8);
-  }
-
-    ca_.Bind(&block8);
   return TNode<JSTypedArray>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=494&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=486&c=1
 TNode<JSTypedArray> TypedArraySpeciesCreateByBuffer_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, const char* p_methodName, TNode<JSTypedArray> p_exemplar, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_beginByteOffset, TNode<Object> p_newLength) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1735,7 +1713,7 @@ TNode<JSTypedArray> TypedArraySpeciesCreateByBuffer_0(compiler::CodeAssemblerSta
   return TNode<JSTypedArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=505&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=497&c=1
 TNode<JSTypedArray> TypedArrayCreateSameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSTypedArray> p_exemplar, TNode<UintPtrT> p_newLength) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

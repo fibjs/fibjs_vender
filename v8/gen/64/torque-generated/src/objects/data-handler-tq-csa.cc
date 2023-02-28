@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/data-handler-tq-csa.h"
@@ -111,7 +109,7 @@ TNode<DataHandler> Cast_DataHandler_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<DataHandler>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
 TNode<Object> LoadDataHandlerSmiHandler_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -132,7 +130,7 @@ TNode<Object> LoadDataHandlerSmiHandler_0(compiler::CodeAssemblerState* state_, 
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
 void StoreDataHandlerSmiHandler_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -151,7 +149,7 @@ void StoreDataHandlerSmiHandler_0(compiler::CodeAssemblerState* state_, TNode<Da
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
 TNode<Object> LoadDataHandlerValidityCell_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -172,7 +170,7 @@ TNode<Object> LoadDataHandlerValidityCell_0(compiler::CodeAssemblerState* state_
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
 void StoreDataHandlerValidityCell_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -191,7 +189,7 @@ void StoreDataHandlerValidityCell_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 TNode<MaybeObject> LoadDataHandlerData1_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -212,7 +210,7 @@ TNode<MaybeObject> LoadDataHandlerData1_0(compiler::CodeAssemblerState* state_, 
   return TNode<MaybeObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 void StoreDataHandlerData1_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o, TNode<MaybeObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -231,7 +229,7 @@ void StoreDataHandlerData1_0(compiler::CodeAssemblerState* state_, TNode<DataHan
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 TNode<MaybeObject> LoadDataHandlerData2_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -252,7 +250,7 @@ TNode<MaybeObject> LoadDataHandlerData2_0(compiler::CodeAssemblerState* state_, 
   return TNode<MaybeObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 void StoreDataHandlerData2_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o, TNode<MaybeObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -271,7 +269,7 @@ void StoreDataHandlerData2_0(compiler::CodeAssemblerState* state_, TNode<DataHan
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
 TNode<MaybeObject> LoadDataHandlerData3_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -292,7 +290,7 @@ TNode<MaybeObject> LoadDataHandlerData3_0(compiler::CodeAssemblerState* state_, 
   return TNode<MaybeObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
 void StoreDataHandlerData3_0(compiler::CodeAssemblerState* state_, TNode<DataHandler> p_o, TNode<MaybeObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

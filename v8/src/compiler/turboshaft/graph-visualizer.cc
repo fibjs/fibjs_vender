@@ -85,6 +85,7 @@ void JSONTurboshaftGraphWriter::PrintBlocks() {
     first_block = false;
     os_ << "{\"id\":" << block.index().id() << ",";
     os_ << "\"type\":\"" << block.kind() << "\",";
+    os_ << "\"deferred\":" << std::boolalpha << block.IsDeferred() << ",";
     os_ << "\"predecessors\":[";
     bool first_predecessor = true;
     for (const Block* pred : block.Predecessors()) {

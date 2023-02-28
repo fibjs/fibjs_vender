@@ -65,8 +65,7 @@ class StringForwardingTable {
   // Dispose all external resources stored in the table.
   void TearDown();
   void Reset();
-  void UpdateAfterYoungEvacuation();
-  void UpdateAfterFullEvacuation();
+  void UpdateAfterEvacuation();
 
   class Record;
 

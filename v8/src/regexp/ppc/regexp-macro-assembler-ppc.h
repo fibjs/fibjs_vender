@@ -92,61 +92,41 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerPPC
 
  private:
   // Offsets from frame_pointer() of function parameters and stored registers.
-  static constexpr int kFramePointerOffset = 0;
+  static const int kFramePointer = 0;
 
   // Above the frame pointer - Stored registers and stack passed parameters.
-  static constexpr int kStoredRegistersOffset = kFramePointerOffset;
+  static const int kStoredRegisters = kFramePointer;
   // Return address (stored from link register, read into pc on return).
-  static constexpr int kReturnAddressOffset =
-      kStoredRegistersOffset + 7 * kSystemPointerSize;
-  static constexpr int kCallerFrameOffset =
-      kReturnAddressOffset + kSystemPointerSize;
+  static const int kReturnAddress = kStoredRegisters + 7 * kSystemPointerSize;
+  static const int kCallerFrame = kReturnAddress + kSystemPointerSize;
 
-  // Below the frame pointer - the stack frame type marker and locals.
-  static constexpr int kFrameTypeOffset =
-      kFramePointerOffset - kSystemPointerSize;
-  static_assert(kFrameTypeOffset ==
-                (V8_EMBEDDED_CONSTANT_POOL_BOOL
-                     ? kSystemPointerSize +
-                           CommonFrameConstants::kContextOrFrameTypeOffset
-                     : CommonFrameConstants::kContextOrFrameTypeOffset));
+  // Below the frame pointer.
   // Register parameters stored by setup code.
-  static constexpr int kIsolateOffset = kFrameTypeOffset - kSystemPointerSize;
-  static constexpr int kDirectCallOffset = kIsolateOffset - kSystemPointerSize;
-  static constexpr int kNumOutputRegistersOffset =
-      kDirectCallOffset - kSystemPointerSize;
-  static constexpr int kRegisterOutputOffset =
-      kNumOutputRegistersOffset - kSystemPointerSize;
-  static constexpr int kInputEndOffset =
-      kRegisterOutputOffset - kSystemPointerSize;
-  static constexpr int kInputStartOffset = kInputEndOffset - kSystemPointerSize;
-  static constexpr int kStartIndexOffset =
-      kInputStartOffset - kSystemPointerSize;
-  static constexpr int kInputStringOffset =
-      kStartIndexOffset - kSystemPointerSize;
+  static const int kIsolate = kFramePointer - kSystemPointerSize;
+  static const int kDirectCall = kIsolate - kSystemPointerSize;
+  static const int kNumOutputRegisters = kDirectCall - kSystemPointerSize;
+  static const int kRegisterOutput = kNumOutputRegisters - kSystemPointerSize;
+  static const int kInputEnd = kRegisterOutput - kSystemPointerSize;
+  static const int kInputStart = kInputEnd - kSystemPointerSize;
+  static const int kStartIndex = kInputStart - kSystemPointerSize;
+  static const int kInputString = kStartIndex - kSystemPointerSize;
   // When adding local variables remember to push space for them in
   // the frame in GetCode.
-  static constexpr int kSuccessfulCapturesOffset =
-      kInputStringOffset - kSystemPointerSize;
-  static constexpr int kStringStartMinusOneOffset =
-      kSuccessfulCapturesOffset - kSystemPointerSize;
-  static constexpr int kBacktrackCountOffset =
-      kStringStartMinusOneOffset - kSystemPointerSize;
+  static const int kSuccessfulCaptures = kInputString - kSystemPointerSize;
+  static const int kStringStartMinusOne =
+      kSuccessfulCaptures - kSystemPointerSize;
+  static const int kBacktrackCount = kStringStartMinusOne - kSystemPointerSize;
   // Stores the initial value of the regexp stack pointer in a
   // position-independent representation (in case the regexp stack grows and
   // thus moves).
-  static constexpr int kRegExpStackBasePointerOffset =
-      kBacktrackCountOffset - kSystemPointerSize;
+  static const int kRegExpStackBasePointer =
+      kBacktrackCount - kSystemPointerSize;
 
   // First register address. Following registers are below it on the stack.
-  static constexpr int kRegisterZeroOffset =
-      kRegExpStackBasePointerOffset - kSystemPointerSize;
+  static const int kRegisterZero = kRegExpStackBasePointer - kSystemPointerSize;
 
   // Initial size of code buffer.
-  static constexpr int kRegExpCodeSize = 1024;
-
-  void CallCFunctionFromIrregexpCode(ExternalReference function,
-                                     int num_arguments);
+  static const int kRegExpCodeSize = 1024;
 
   // Check whether preemption has been requested.
   void CheckPreemption();

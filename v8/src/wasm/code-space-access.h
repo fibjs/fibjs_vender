@@ -50,16 +50,27 @@ class V8_NODISCARD CodeSpaceWriteScope final {
   CodeSpaceWriteScope(const CodeSpaceWriteScope&) = delete;
   CodeSpaceWriteScope& operator=(const CodeSpaceWriteScope&) = delete;
 
-  static bool IsInScope() {
-    DCHECK_LE(0, scope_depth_);
-    return scope_depth_ != 0;
-  }
+  static bool IsInScope() { return current_native_module_ != nullptr; }
 
  private:
-static exlib::fiber_local<int> scope_depth_;
+  // The M1 implementation knows implicitly from the {MAP_JIT} flag during
+  // allocation which region to switch permissions for. On non-M1 hardware
+  // without memory protection key support, we need the code space from the
+  // {NativeModule}.
+static exlib::fiber_local<NativeModule*> current_native_module_;
 
+  // {SetWritable} and {SetExecutable} implicitly operate on
+  // {current_native_module_} (for mprotect-based protection).
   static void SetWritable();
   static void SetExecutable();
+
+  // Returns {true} if switching permissions happens on a per-module level, and
+  // not globally (like for MAP_JIT and PKU).
+  static bool SwitchingPerNativeModule();
+
+  // Save the previous module to put it back in {current_native_module_} when
+  // exiting this scope.
+  NativeModule* const previous_native_module_;
 };
 
 }  // namespace v8::internal::wasm

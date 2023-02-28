@@ -10,7 +10,6 @@
 #include "src/date/date.h"
 #include "src/execution/arguments.h"
 #include "src/execution/frames.h"
-#include "src/execution/isolate-utils.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles-inl.h"
 #include "src/handles/maybe-handles.h"
@@ -240,10 +239,6 @@ Maybe<bool> JSReceiver::CheckPrivateNameStore(LookupIterator* it,
     RETURN_FAILURE(isolate, GetShouldThrow(isolate, Nothing<ShouldThrow>()),
                    NewTypeError(MessageTemplate::kInvalidPrivateMemberWrite,
                                 name_string, it->GetReceiver()));
-  } else if (it->GetReceiver()->IsAlwaysSharedSpaceJSObject()) {
-    RETURN_FAILURE(
-        isolate, kThrowOnError,
-        NewTypeError(MessageTemplate::kDefineDisallowed, name_string));
   }
   return Just(true);
 }
@@ -261,7 +256,7 @@ Maybe<bool> JSReceiver::CheckIfCanDefine(Isolate* isolate, LookupIterator* it,
           NewTypeError(MessageTemplate::kRedefineDisallowed, it->GetName()));
     }
   } else if (!JSObject::IsExtensible(
-                 isolate, Handle<JSObject>::cast(it->GetReceiver()))) {
+                 Handle<JSObject>::cast(it->GetReceiver()))) {
     RETURN_FAILURE(
         isolate, GetShouldThrow(isolate, should_throw),
         NewTypeError(MessageTemplate::kDefineDisallowed, it->GetName()));
@@ -456,7 +451,7 @@ Maybe<bool> JSReceiver::SetOrCopyDataProperties(
       source_length = JSGlobalObject::cast(*from)
                           .global_dictionary(kAcquireLoad)
                           .NumberOfEnumerableProperties();
-    } else if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+    } else if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       source_length =
           from->property_dictionary_swiss().NumberOfEnumerableProperties();
     } else {
@@ -800,7 +795,7 @@ Object SetHashAndUpdateProperties(HeapObject properties, int hash) {
     return properties;
   }
 
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     DCHECK(properties.IsSwissNameDictionary());
     SwissNameDictionary::cast(properties).SetHash(hash);
   } else {
@@ -820,10 +815,9 @@ int GetIdentityHashHelper(JSReceiver object) {
   if (properties.IsPropertyArray()) {
     return PropertyArray::cast(properties).Hash();
   }
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
-    if (properties.IsSwissNameDictionary()) {
-      return SwissNameDictionary::cast(properties).Hash();
-    }
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL &&
+      properties.IsSwissNameDictionary()) {
+    return SwissNameDictionary::cast(properties).Hash();
   }
 
   if (properties.IsNameDictionary()) {
@@ -926,7 +920,7 @@ void JSReceiver::DeleteNormalizedProperty(Handle<JSReceiver> object,
 
     cell->ClearAndInvalidate(ReadOnlyRoots(isolate));
   } else {
-    if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+    if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       Handle<SwissNameDictionary> dictionary(
           object->property_dictionary_swiss(), isolate);
 
@@ -1180,11 +1174,6 @@ Maybe<bool> JSReceiver::DefineOwnProperty(Isolate* isolate,
   if (object->IsWasmObject()) {
     RETURN_FAILURE(isolate, kThrowOnError,
                    NewTypeError(MessageTemplate::kWasmObjectsAreOpaque));
-  }
-  if (object->IsAlwaysSharedSpaceJSObject()) {
-    return AlwaysSharedSpaceJSObject::DefineOwnProperty(
-        isolate, Handle<AlwaysSharedSpaceJSObject>::cast(object), key, desc,
-        should_throw);
   }
 
   // OrdinaryDefineOwnProperty, by virtue of calling
@@ -1444,7 +1433,7 @@ Maybe<bool> JSReceiver::OrdinaryDefineOwnProperty(
   it->Restart();
   // 3. Let extensible be the value of the [[Extensible]] internal slot of O.
   Handle<JSObject> object = Handle<JSObject>::cast(it->GetReceiver());
-  bool extensible = JSObject::IsExtensible(isolate, object);
+  bool extensible = JSObject::IsExtensible(object);
 
   return ValidateAndApplyPropertyDescriptor(
       isolate, it, extensible, desc, &current, should_throw, Handle<Name>());
@@ -1543,7 +1532,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
        desc->enumerable() == current->enumerable()) &&
       (!desc->has_configurable() ||
        desc->configurable() == current->configurable()) &&
-      !desc->has_value() &&
+      (!desc->has_value() ||
+       (current->has_value() && current->value()->SameValue(*desc->value()))) &&
       (!desc->has_writable() ||
        (current->has_writable() && current->writable() == desc->writable())) &&
       (!desc->has_get() ||
@@ -1623,11 +1613,7 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
       }
       // 7a ii. If Desc.[[Value]] is present and SameValue(Desc.[[Value]],
       // current.[[Value]]) is false, return false.
-      if (desc->has_value()) {
-        // We'll succeed applying the property, but the value is already the
-        // same and the property is read-only, so skip actually writing the
-        // property. Otherwise we may try to e.g., write to frozen elements.
-        if (desc->value()->SameValue(*current->value())) return Just(true);
+      if (desc->has_value() && !desc->value()->SameValue(*current->value())) {
         RETURN_FAILURE(
             isolate, GetShouldThrow(isolate, should_throw),
             NewTypeError(MessageTemplate::kRedefineDisallowed,
@@ -1741,7 +1727,7 @@ Maybe<bool> JSReceiver::CreateDataProperty(LookupIterator* it,
                                            Maybe<ShouldThrow> should_throw) {
   DCHECK(!it->check_prototype_chain());
   Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
-  Isolate* isolate = it->isolate();
+  Isolate* isolate = receiver->GetIsolate();
 
   if (receiver->IsJSObject()) {
     return JSObject::CreateDataProperty(it, value, should_throw);  // Shortcut.
@@ -1762,8 +1748,7 @@ Maybe<bool> JSReceiver::AddPrivateField(LookupIterator* it,
                                         Handle<Object> value,
                                         Maybe<ShouldThrow> should_throw) {
   Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
-  DCHECK(!receiver->IsAlwaysSharedSpaceJSObject());
-  Isolate* isolate = it->isolate();
+  Isolate* isolate = receiver->GetIsolate();
   DCHECK(it->GetName()->IsPrivateName());
   Handle<Symbol> symbol = Handle<Symbol>::cast(it->GetName());
 
@@ -1946,8 +1931,7 @@ Maybe<bool> JSReceiver::GetOwnPropertyDescriptor(LookupIterator* it,
          PropertyDescriptor::IsDataDescriptor(desc));
   return Just(true);
 }
-Maybe<bool> JSReceiver::SetIntegrityLevel(Isolate* isolate,
-                                          Handle<JSReceiver> receiver,
+Maybe<bool> JSReceiver::SetIntegrityLevel(Handle<JSReceiver> receiver,
                                           IntegrityLevel level,
                                           ShouldThrow should_throw) {
   DCHECK(level == SEALED || level == FROZEN);
@@ -1958,21 +1942,23 @@ Maybe<bool> JSReceiver::SetIntegrityLevel(Isolate* isolate,
     if (!object->HasSloppyArgumentsElements() &&
         !object->IsJSModuleNamespace()) {  // Fast path.
       // Prevent memory leaks by not adding unnecessary transitions.
-      Maybe<bool> test = JSObject::TestIntegrityLevel(isolate, object, level);
+      Maybe<bool> test = JSObject::TestIntegrityLevel(object, level);
       MAYBE_RETURN(test, Nothing<bool>());
       if (test.FromJust()) return test;
 
       if (level == SEALED) {
-        return JSObject::PreventExtensionsWithTransition<SEALED>(
-            isolate, object, should_throw);
+        return JSObject::PreventExtensionsWithTransition<SEALED>(object,
+                                                                 should_throw);
       } else {
-        return JSObject::PreventExtensionsWithTransition<FROZEN>(
-            isolate, object, should_throw);
+        return JSObject::PreventExtensionsWithTransition<FROZEN>(object,
+                                                                 should_throw);
       }
     }
   }
 
-  MAYBE_RETURN(JSReceiver::PreventExtensions(isolate, receiver, should_throw),
+  Isolate* isolate = receiver->GetIsolate();
+
+  MAYBE_RETURN(JSReceiver::PreventExtensions(receiver, should_throw),
                Nothing<bool>());
 
   Handle<FixedArray> keys;
@@ -2017,14 +2003,15 @@ Maybe<bool> JSReceiver::SetIntegrityLevel(Isolate* isolate,
 }
 
 namespace {
-Maybe<bool> GenericTestIntegrityLevel(Isolate* isolate,
-                                      Handle<JSReceiver> receiver,
+Maybe<bool> GenericTestIntegrityLevel(Handle<JSReceiver> receiver,
                                       PropertyAttributes level) {
   DCHECK(level == SEALED || level == FROZEN);
 
-  Maybe<bool> extensible = JSReceiver::IsExtensible(isolate, receiver);
+  Maybe<bool> extensible = JSReceiver::IsExtensible(receiver);
   MAYBE_RETURN(extensible, Nothing<bool>());
   if (extensible.FromJust()) return Just(false);
+
+  Isolate* isolate = receiver->GetIsolate();
 
   Handle<FixedArray> keys;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
@@ -2051,41 +2038,38 @@ Maybe<bool> GenericTestIntegrityLevel(Isolate* isolate,
 
 }  // namespace
 
-Maybe<bool> JSReceiver::TestIntegrityLevel(Isolate* isolate,
-                                           Handle<JSReceiver> receiver,
+Maybe<bool> JSReceiver::TestIntegrityLevel(Handle<JSReceiver> receiver,
                                            IntegrityLevel level) {
   if (!receiver->map().IsCustomElementsReceiverMap()) {
-    return JSObject::TestIntegrityLevel(
-        isolate, Handle<JSObject>::cast(receiver), level);
+    return JSObject::TestIntegrityLevel(Handle<JSObject>::cast(receiver),
+                                        level);
   }
-  return GenericTestIntegrityLevel(isolate, receiver, level);
+  return GenericTestIntegrityLevel(receiver, level);
 }
 
-Maybe<bool> JSReceiver::PreventExtensions(Isolate* isolate,
-                                          Handle<JSReceiver> object,
+Maybe<bool> JSReceiver::PreventExtensions(Handle<JSReceiver> object,
                                           ShouldThrow should_throw) {
   if (object->IsJSProxy()) {
     return JSProxy::PreventExtensions(Handle<JSProxy>::cast(object),
                                       should_throw);
   }
   if (object->IsWasmObject()) {
-    RETURN_FAILURE(isolate, kThrowOnError,
+    RETURN_FAILURE(object->GetIsolate(), kThrowOnError,
                    NewTypeError(MessageTemplate::kWasmObjectsAreOpaque));
   }
   DCHECK(object->IsJSObject());
-  return JSObject::PreventExtensions(isolate, Handle<JSObject>::cast(object),
+  return JSObject::PreventExtensions(Handle<JSObject>::cast(object),
                                      should_throw);
 }
 
-Maybe<bool> JSReceiver::IsExtensible(Isolate* isolate,
-                                     Handle<JSReceiver> object) {
+Maybe<bool> JSReceiver::IsExtensible(Handle<JSReceiver> object) {
   if (object->IsJSProxy()) {
     return JSProxy::IsExtensible(Handle<JSProxy>::cast(object));
   }
   if (object->IsWasmObject()) {
     return Just(false);
   }
-  return Just(JSObject::IsExtensible(isolate, Handle<JSObject>::cast(object)));
+  return Just(JSObject::IsExtensible(Handle<JSObject>::cast(object)));
 }
 
 // static
@@ -2382,18 +2366,6 @@ MaybeHandle<JSObject> JSObject::New(Handle<JSFunction> constructor,
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, initial_map,
       JSFunction::GetDerivedMap(isolate, constructor, new_target), JSObject);
-  constexpr int initial_capacity = V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL
-                                       ? SwissNameDictionary::kInitialCapacity
-                                       : NameDictionary::kInitialCapacity;
-  Handle<JSObject> result = isolate->factory()->NewFastOrSlowJSObjectFromMap(
-      initial_map, initial_capacity, AllocationType::kYoung, site);
-  return result;
-}
-
-// static
-MaybeHandle<JSObject> JSObject::NewWithMap(Isolate* isolate,
-                                           Handle<Map> initial_map,
-                                           Handle<AllocationSite> site) {
   int initial_capacity = V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL
                              ? SwissNameDictionary::kInitialCapacity
                              : NameDictionary::kInitialCapacity;
@@ -2501,8 +2473,6 @@ int JSObject::GetHeaderSize(InstanceType type,
       return JSTypedArray::kHeaderSize;
     case JS_DATA_VIEW_TYPE:
       return JSDataView::kHeaderSize;
-    case JS_RAB_GSAB_DATA_VIEW_TYPE:
-      return JSRabGsabDataView::kHeaderSize;
     case JS_SET_TYPE:
       return JSSet::kHeaderSize;
     case JS_MAP_TYPE:
@@ -2790,7 +2760,7 @@ void JSObject::SetNormalizedProperty(Handle<JSObject> object, Handle<Name> name,
       DCHECK_EQ(dictionary->CellAt(entry).value(), *value);
     }
   } else {
-    if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+    if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       Handle<SwissNameDictionary> dictionary(
           object->property_dictionary_swiss(), isolate);
       InternalIndex entry = dictionary->FindEntry(isolate, *name);
@@ -2819,10 +2789,6 @@ void JSObject::SetNormalizedProperty(Handle<JSObject> object, Handle<Name> name,
         DCHECK_GT(enumeration_index, 0);
         details = details.set_index(enumeration_index);
         dictionary->SetEntry(entry, *name, *value, details);
-      }
-      // TODO(pthier): Add flags to swiss dictionaries.
-      if (name->IsInterestingSymbol()) {
-        dictionary->set_may_have_interesting_symbols(true);
       }
     }
   }
@@ -3069,7 +3035,7 @@ void JSObject::UpdatePrototypeUserRegistration(Handle<Map> old_map,
            reinterpret_cast<void*>(new_map->ptr()));
   }
   if (was_registered) {
-    if (new_map->has_prototype_info()) {
+    if (new_map->prototype_info().IsPrototypeInfo()) {
       // The new map isn't registered with its prototype yet; reflect this fact
       // in the PrototypeInfo it just inherited from the old map.
       PrototypeInfo::cast(new_map->prototype_info())
@@ -3133,7 +3099,8 @@ void MigrateFastToFast(Isolate* isolate, Handle<JSObject> object,
     // Check if we still have space in the {object}, in which case we
     // can also simply set the map (modulo a special case for mutable
     // double boxes).
-    FieldIndex index = FieldIndex::ForDetails(*new_map, details);
+    FieldIndex index =
+        FieldIndex::ForDescriptor(isolate, *new_map, new_map->LastAdded());
     if (index.is_inobject() || index.outobject_array_index() <
                                    object->property_array(isolate).length()) {
       // Allocate HeapNumbers for double fields.
@@ -3231,7 +3198,7 @@ void MigrateFastToFast(Isolate* isolate, Handle<JSObject> object,
       }
     } else {
       DCHECK_EQ(PropertyLocation::kField, old_details.location());
-      FieldIndex index = FieldIndex::ForDetails(*old_map, old_details);
+      FieldIndex index = FieldIndex::ForDescriptor(isolate, *old_map, i);
       value = handle(object->RawFastPropertyAt(isolate, index), isolate);
       if (!old_representation.IsDouble() && representation.IsDouble()) {
         DCHECK_IMPLIES(old_representation.IsNone(),
@@ -3321,15 +3288,15 @@ void MigrateFastToSlow(Isolate* isolate, Handle<JSObject> object,
     property_count += expected_additional_properties;
   } else {
     // Make space for two more properties.
-    constexpr int initial_capacity = V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL
-                                         ? SwissNameDictionary::kInitialCapacity
-                                         : NameDictionary::kInitialCapacity;
+    int initial_capacity = V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL
+                               ? SwissNameDictionary::kInitialCapacity
+                               : NameDictionary::kInitialCapacity;
     property_count += initial_capacity;
   }
 
   Handle<NameDictionary> dictionary;
   Handle<SwissNameDictionary> ord_dictionary;
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     ord_dictionary = isolate->factory()->NewSwissNameDictionary(property_count);
   } else {
     dictionary = isolate->factory()->NewNameDictionary(property_count);
@@ -3341,7 +3308,7 @@ void MigrateFastToSlow(Isolate* isolate, Handle<JSObject> object,
     Handle<Name> key(descs->GetKey(isolate, i), isolate);
     Handle<Object> value;
     if (details.location() == PropertyLocation::kField) {
-      FieldIndex index = FieldIndex::ForDetails(*map, details);
+      FieldIndex index = FieldIndex::ForDescriptor(isolate, *map, i);
       if (details.kind() == PropertyKind::kData) {
         value = handle(object->RawFastPropertyAt(isolate, index), isolate);
         if (details.representation().IsDouble()) {
@@ -3364,7 +3331,7 @@ void MigrateFastToSlow(Isolate* isolate, Handle<JSObject> object,
                                       : PropertyConstness::kMutable;
     PropertyDetails d(details.kind(), details.attributes(), constness);
 
-    if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+    if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       ord_dictionary =
           SwissNameDictionary::Add(isolate, ord_dictionary, key, value, d);
     } else {
@@ -3372,12 +3339,9 @@ void MigrateFastToSlow(Isolate* isolate, Handle<JSObject> object,
     }
   }
 
-  if constexpr (!V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (!V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     // Copy the next enumeration index from instance descriptor.
     dictionary->set_next_enumeration_index(real_size + 1);
-    // TODO(pthier): Add flags to swiss dictionaries.
-    dictionary->set_may_have_interesting_symbols(
-        map->may_have_interesting_symbols());
   }
 
   // From here on we cannot fail and we shouldn't GC anymore.
@@ -3400,7 +3364,7 @@ void MigrateFastToSlow(Isolate* isolate, Handle<JSObject> object,
   // the left-over space to avoid races with the sweeper thread.
   object->set_map(*new_map, kReleaseStore);
 
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     object->SetProperties(*ord_dictionary);
   } else {
     object->SetProperties(*dictionary);
@@ -3529,7 +3493,7 @@ void JSObject::AllocateStorageForMap(Handle<JSObject> object, Handle<Map> map) {
     PropertyDetails details = descriptors->GetDetails(i);
     Representation representation = details.representation();
     if (!representation.IsDouble()) continue;
-    FieldIndex index = FieldIndex::ForDetails(*map, details);
+    FieldIndex index = FieldIndex::ForDescriptor(*map, i);
     auto box = isolate->factory()->NewHeapNumberWithHoleNaN();
     if (index.is_inobject()) {
       storage->set(index.property_index(), *box);
@@ -3801,7 +3765,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
   Handle<NameDictionary> dictionary;
   Handle<SwissNameDictionary> swiss_dictionary;
   int number_of_elements;
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     swiss_dictionary = handle(object->property_dictionary_swiss(), isolate);
     number_of_elements = swiss_dictionary->NumberOfElements();
   } else {
@@ -3815,7 +3779,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
 
   Handle<FixedArray> iteration_order;
   int iteration_length;
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     // |iteration_order| remains empty handle, we don't need it.
     iteration_length = swiss_dictionary->UsedCapacity();
   } else {
@@ -3829,7 +3793,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
   ReadOnlyRoots roots(isolate);
   for (int i = 0; i < iteration_length; i++) {
     PropertyKind kind;
-    if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+    if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       InternalIndex index(swiss_dictionary->EntryForEnumerationIndex(i));
       Object key = swiss_dictionary->KeyAt(index);
       if (!SwissNameDictionary::IsKey(roots, key)) {
@@ -3904,7 +3868,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
     Object value;
     PropertyDetails details = PropertyDetails::Empty();
 
-    if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+    if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       InternalIndex index(swiss_dictionary->EntryForEnumerationIndex(i));
       Object key_obj = swiss_dictionary->KeyAt(index);
       if (!SwissNameDictionary::IsKey(roots, key_obj)) {
@@ -4105,7 +4069,8 @@ Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
                                          Maybe<ShouldThrow> should_throw) {
   DCHECK(it->GetReceiver()->IsJSObject());
   MAYBE_RETURN(JSReceiver::GetPropertyAttributes(it), Nothing<bool>());
-  Isolate* isolate = it->isolate();
+  Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
+  Isolate* isolate = receiver->GetIsolate();
 
   Maybe<bool> can_define =
       JSReceiver::CheckIfCanDefine(isolate, it, value, should_throw);
@@ -4167,7 +4132,7 @@ bool TestPropertiesIntegrityLevel(JSObject object, PropertyAttributes level) {
     return TestFastPropertiesIntegrityLevel(object.map(), level);
   }
 
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     return TestDictionaryPropertiesIntegrityLevel(
         object.property_dictionary_swiss(), object.GetReadOnlyRoots(), level);
   } else {
@@ -4212,22 +4177,21 @@ bool FastTestIntegrityLevel(JSObject object, PropertyAttributes level) {
 
 }  // namespace
 
-Maybe<bool> JSObject::TestIntegrityLevel(Isolate* isolate,
-                                         Handle<JSObject> object,
+Maybe<bool> JSObject::TestIntegrityLevel(Handle<JSObject> object,
                                          IntegrityLevel level) {
   if (!object->map().IsCustomElementsReceiverMap() &&
       !object->HasSloppyArgumentsElements()) {
     return Just(FastTestIntegrityLevel(*object, level));
   }
-  return GenericTestIntegrityLevel(isolate, Handle<JSReceiver>::cast(object),
-                                   level);
+  return GenericTestIntegrityLevel(Handle<JSReceiver>::cast(object), level);
 }
 
-Maybe<bool> JSObject::PreventExtensions(Isolate* isolate,
-                                        Handle<JSObject> object,
+Maybe<bool> JSObject::PreventExtensions(Handle<JSObject> object,
                                         ShouldThrow should_throw) {
+  Isolate* isolate = object->GetIsolate();
+
   if (!object->HasSloppyArgumentsElements()) {
-    return PreventExtensionsWithTransition<NONE>(isolate, object, should_throw);
+    return PreventExtensionsWithTransition<NONE>(object, should_throw);
   }
 
   if (object->IsAccessCheckNeeded() &&
@@ -4244,8 +4208,8 @@ Maybe<bool> JSObject::PreventExtensions(Isolate* isolate,
     PrototypeIterator iter(isolate, object);
     if (iter.IsAtEnd()) return Just(true);
     DCHECK(PrototypeIterator::GetCurrent(iter)->IsJSGlobalObject());
-    return PreventExtensions(
-        isolate, PrototypeIterator::GetCurrent<JSObject>(iter), should_throw);
+    return PreventExtensions(PrototypeIterator::GetCurrent<JSObject>(iter),
+                             should_throw);
   }
 
   if (object->map().has_named_interceptor() ||
@@ -4278,7 +4242,8 @@ Maybe<bool> JSObject::PreventExtensions(Isolate* isolate,
   return Just(true);
 }
 
-bool JSObject::IsExtensible(Isolate* isolate, Handle<JSObject> object) {
+bool JSObject::IsExtensible(Handle<JSObject> object) {
+  Isolate* isolate = object->GetIsolate();
   if (object->IsAccessCheckNeeded() &&
       !isolate->MayAccess(handle(isolate->context(), isolate), object)) {
     return true;
@@ -4345,7 +4310,7 @@ Handle<NumberDictionary> CreateElementDictionary(Isolate* isolate,
 
 template <PropertyAttributes attrs>
 Maybe<bool> JSObject::PreventExtensionsWithTransition(
-    Isolate* isolate, Handle<JSObject> object, ShouldThrow should_throw) {
+    Handle<JSObject> object, ShouldThrow should_throw) {
   static_assert(attrs == NONE || attrs == SEALED || attrs == FROZEN);
 
   // Sealing/freezing sloppy arguments or namespace objects should be handled
@@ -4353,6 +4318,7 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
   DCHECK(!object->HasSloppyArgumentsElements());
   DCHECK_IMPLIES(object->IsJSModuleNamespace(), attrs == NONE);
 
+  Isolate* isolate = object->GetIsolate();
   if (object->IsAccessCheckNeeded() &&
       !isolate->MayAccess(handle(isolate->context(), isolate), object)) {
     isolate->ReportFailedAccessCheck(object);
@@ -4378,18 +4344,7 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
     if (iter.IsAtEnd()) return Just(true);
     DCHECK(PrototypeIterator::GetCurrent(iter)->IsJSGlobalObject());
     return PreventExtensionsWithTransition<attrs>(
-        isolate, PrototypeIterator::GetCurrent<JSObject>(iter), should_throw);
-  }
-
-  // Shared objects are designed to have fixed layout, i.e. their maps are
-  // effectively immutable. They are constructed seal, but the semantics of
-  // ordinary ECMAScript objects allow sealed to be upgraded to frozen. This
-  // upgrade violates the fixed layout invariant and is disallowed.
-  if (object->IsAlwaysSharedSpaceJSObject()) {
-    DCHECK(FastTestIntegrityLevel(*object, SEALED));
-    if (attrs != FROZEN) return Just(true);
-    RETURN_FAILURE(isolate, should_throw,
-                   NewTypeError(MessageTemplate::kCannotFreeze));
+        PrototypeIterator::GetCurrent<JSObject>(iter), should_throw);
   }
 
   if (object->map().has_named_interceptor() ||
@@ -4497,7 +4452,7 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
             isolate);
         JSObject::ApplyAttributesToDictionary(isolate, roots, dictionary,
                                               attrs);
-      } else if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+      } else if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
         Handle<SwissNameDictionary> dictionary(
             object->property_dictionary_swiss(), isolate);
         JSObject::ApplyAttributesToDictionary(isolate, roots, dictionary,
@@ -4569,7 +4524,7 @@ Handle<Object> JSObject::DictionaryPropertyAt(Isolate* isolate,
                                               Handle<JSObject> object,
                                               InternalIndex dict_index) {
   DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     SwissNameDictionary dict = object->property_dictionary_swiss();
     return handle(dict.ValueAt(dict_index), isolate);
   } else {
@@ -4587,7 +4542,7 @@ base::Optional<Object> JSObject::DictionaryPropertyAt(Handle<JSObject> object,
   if (heap->IsPendingAllocation(HeapObject::cast(backing_store))) return {};
 
   base::Optional<Object> maybe_obj;
-  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     if (!backing_store.IsSwissNameDictionary()) return {};
     maybe_obj = SwissNameDictionary::cast(backing_store).TryValueAt(dict_index);
   } else {
@@ -4773,7 +4728,7 @@ Object JSObject::SlowReverseLookup(Object value) {
       PropertyDetails details = descs.GetDetails(i);
       if (details.location() == PropertyLocation::kField) {
         DCHECK_EQ(PropertyKind::kData, details.kind());
-        FieldIndex field_index = FieldIndex::ForDetails(map(), details);
+        FieldIndex field_index = FieldIndex::ForDescriptor(map(), i);
         Object property = RawFastPropertyAt(field_index);
         if (field_index.is_double()) {
           DCHECK(property.IsHeapNumber());
@@ -4797,7 +4752,7 @@ Object JSObject::SlowReverseLookup(Object value) {
     return JSGlobalObject::cast(*this)
         .global_dictionary(kAcquireLoad)
         .SlowReverseLookup(value);
-  } else if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+  } else if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     return property_dictionary_swiss().SlowReverseLookup(GetIsolate(), value);
   } else {
     return property_dictionary().SlowReverseLookup(value);
@@ -4824,7 +4779,7 @@ void JSObject::MakePrototypesFast(Handle<Object> receiver,
                               where_to_start);
        !iter.IsAtEnd(); iter.Advance()) {
     Handle<Object> current = PrototypeIterator::GetCurrent(iter);
-    if (!current->IsJSObjectThatCanBeTrackedAsPrototype()) return;
+    if (!current->IsJSObject()) return;
     Handle<JSObject> current_obj = Handle<JSObject>::cast(current);
     Map current_map = current_obj->map();
     if (current_map.is_prototype_map()) {
@@ -4838,40 +4793,39 @@ void JSObject::MakePrototypesFast(Handle<Object> receiver,
   }
 }
 
-static bool PrototypeBenefitsFromNormalization(JSObject object) {
+static bool PrototypeBenefitsFromNormalization(Handle<JSObject> object) {
   DisallowGarbageCollection no_gc;
-  if (!object.HasFastProperties()) return false;
-  if (object.IsJSGlobalProxy()) return false;
+  if (!object->HasFastProperties()) return false;
+  if (object->IsJSGlobalProxy()) return false;
   // TODO(v8:11248) make bootstrapper create dict mode prototypes, too?
-  if (object.GetIsolate()->bootstrapper()->IsActive()) return false;
+  if (object->GetIsolate()->bootstrapper()->IsActive()) return false;
   if (V8_DICT_PROPERTY_CONST_TRACKING_BOOL) return true;
-  return !object.map().is_prototype_map() ||
-         !object.map().should_be_fast_prototype_map();
+  return !object->map().is_prototype_map() ||
+         !object->map().should_be_fast_prototype_map();
 }
 
 // static
 void JSObject::OptimizeAsPrototype(Handle<JSObject> object,
                                    bool enable_setup_mode) {
-  DCHECK(object->IsJSObjectThatCanBeTrackedAsPrototype());
-  if (object->IsJSGlobalObject()) return;
   Isolate* isolate = object->GetIsolate();
-  if (object->map().is_prototype_map()) {
-    if (enable_setup_mode && PrototypeBenefitsFromNormalization(*object)) {
+  if (object->IsJSGlobalObject()) return;
+  if (object->map(isolate).is_prototype_map()) {
+    if (enable_setup_mode && PrototypeBenefitsFromNormalization(object)) {
       // This is the only way PrototypeBenefitsFromNormalization can be true:
-      DCHECK(!object->map().should_be_fast_prototype_map());
+      DCHECK(!object->map(isolate).should_be_fast_prototype_map());
       // First normalize to ensure all JSFunctions are DATA_CONSTANT.
       constexpr bool kUseCache = true;
       JSObject::NormalizeProperties(isolate, object, KEEP_INOBJECT_PROPERTIES,
                                     0, kUseCache, "NormalizeAsPrototype");
     }
     if (!V8_DICT_PROPERTY_CONST_TRACKING_BOOL &&
-        object->map().should_be_fast_prototype_map() &&
+        object->map(isolate).should_be_fast_prototype_map() &&
         !object->HasFastProperties()) {
       JSObject::MigrateSlowToFast(object, 0, "OptimizeAsPrototype");
     }
   } else {
     Handle<Map> new_map;
-    if (enable_setup_mode && PrototypeBenefitsFromNormalization(*object)) {
+    if (enable_setup_mode && PrototypeBenefitsFromNormalization(object)) {
 #if DEBUG
       Handle<Map> old_map = handle(object->map(isolate), isolate);
 #endif  // DEBUG
@@ -4920,7 +4874,7 @@ void JSObject::OptimizeAsPrototype(Handle<JSObject> object,
           dict.DetailsAtPut(index, details);
         }
       };
-      if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+      if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
         make_constant(object->property_dictionary_swiss());
       } else {
         make_constant(object->property_dictionary());
@@ -4938,11 +4892,8 @@ void JSObject::OptimizeAsPrototype(Handle<JSObject> object,
 
 // static
 void JSObject::ReoptimizeIfPrototype(Handle<JSObject> object) {
-  {
-    Map map = object->map();
-    if (!map.is_prototype_map()) return;
-    if (!map.should_be_fast_prototype_map()) return;
-  }
+  if (!object->map().is_prototype_map()) return;
+  if (!object->map().should_be_fast_prototype_map()) return;
   OptimizeAsPrototype(object);
 }
 
@@ -4961,16 +4912,9 @@ void JSObject::LazyRegisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
       break;
     }
     Handle<Object> maybe_proto = PrototypeIterator::GetCurrent(iter);
-    // This checks for both proxies and shared objects.
-    //
     // Proxies on the prototype chain are not supported. They make it
     // impossible to make any assumptions about the prototype chain anyway.
-    //
-    // Objects in the shared heap have fixed layouts and their maps never
-    // change, so they don't need to be tracked as prototypes
-    // anyway. Additionally, registering users of shared objects is not
-    // threadsafe.
-    if (!maybe_proto->IsJSObjectThatCanBeTrackedAsPrototype()) continue;
+    if (maybe_proto->IsJSProxy()) return;
     Handle<JSObject> proto = Handle<JSObject>::cast(maybe_proto);
     Handle<PrototypeInfo> proto_info =
         Map::GetOrCreatePrototypeInfo(proto, isolate);
@@ -5005,8 +4949,7 @@ void JSObject::LazyRegisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
 bool JSObject::UnregisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
   DCHECK(user->is_prototype_map());
   // If it doesn't have a PrototypeInfo, it was never registered.
-  if (!user->has_prototype_info()) return false;
-  DCHECK(user->prototype_info().IsPrototypeInfo());
+  if (!user->prototype_info().IsPrototypeInfo()) return false;
   // If it had no prototype before, see if it had users that might expect
   // registration.
   if (!user->prototype().IsJSObject()) {
@@ -5052,18 +4995,16 @@ void InvalidateOnePrototypeValidityCellInternal(Map map) {
   if (maybe_cell.IsCell()) {
     // Just set the value; the cell will be replaced lazily.
     Cell cell = Cell::cast(maybe_cell);
-    Smi invalid_value = Smi::FromInt(Map::kPrototypeChainInvalid);
-    if (cell.value() != invalid_value) {
-      cell.set_value(invalid_value);
-    }
+    cell.set_value(Smi::FromInt(Map::kPrototypeChainInvalid));
   }
-  PrototypeInfo prototype_info;
-  if (map.TryGetPrototypeInfo(&prototype_info)) {
+  Object maybe_prototype_info = map.prototype_info();
+  if (maybe_prototype_info.IsPrototypeInfo()) {
+    PrototypeInfo prototype_info = PrototypeInfo::cast(maybe_prototype_info);
     prototype_info.set_prototype_chain_enum_cache(Object());
   }
 
-  // We may inline accesses to constants stored in dictionary mode prototypes in
-  // optimized code. When doing so, we install dependencies of group
+  // We may inline accesses to constants stored in dictionary mode protoypes in
+  // optimized code. When doing so, we install depenendies of group
   // |kPrototypeCheckGroup| on each prototype between the receiver's immediate
   // prototype and the holder of the constant property. This dependency is used
   // both to detect changes to the constant value itself, and other changes to
@@ -5090,8 +5031,9 @@ void InvalidatePrototypeChainsInternal(Map map) {
   for (; !map.is_null(); map = next_map, next_map = Map()) {
     InvalidateOnePrototypeValidityCellInternal(map);
 
-    PrototypeInfo proto_info;
-    if (!map.TryGetPrototypeInfo(&proto_info)) return;
+    Object maybe_proto_info = map.prototype_info();
+    if (!maybe_proto_info.IsPrototypeInfo()) return;
+    PrototypeInfo proto_info = PrototypeInfo::cast(maybe_proto_info);
     if (!proto_info.prototype_users().IsWeakArrayList()) {
       return;
     }
@@ -5218,8 +5160,6 @@ Maybe<bool> JSObject::SetPrototype(Isolate* isolate, Handle<JSObject> object,
 
   isolate->UpdateNoElementsProtectorOnSetPrototype(real_receiver);
   isolate->UpdateTypedArraySpeciesLookupChainProtectorOnSetPrototype(
-      real_receiver);
-  isolate->UpdateNumberStringPrototypeNoReplaceProtectorOnSetPrototype(
       real_receiver);
 
   Handle<Map> new_map =
@@ -5393,10 +5333,10 @@ bool JSObject::UpdateAllocationSite(Handle<JSObject> object,
     DisallowGarbageCollection no_gc;
 
     Heap* heap = object->GetHeap();
-    PretenuringHandler* pretunring_handler = heap->pretenuring_handler();
+    PretenturingHandler* pretunring_handler = heap->pretenuring_handler();
     AllocationMemento memento =
         pretunring_handler
-            ->FindAllocationMemento<PretenuringHandler::kForRuntime>(
+            ->FindAllocationMemento<PretenturingHandler::kForRuntime>(
                 object->map(), *object);
     if (memento.is_null()) return false;
 

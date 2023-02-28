@@ -485,20 +485,6 @@ bool EnforceUint32(T argument_name, Local<v8::Value> v, Local<Context> context,
   *res = static_cast<uint32_t>(double_number);
   return true;
 }
-
-// The enum values need to match "WasmCompilationMethod" in
-// tools/metrics/histograms/enums.xml.
-enum CompilationMethod {
-  kSyncCompilation = 0,
-  kAsyncCompilation = 1,
-  kStreamingCompilation = 2,
-  kAsyncInstantiation = 3,
-  kStreamingInstantiation = 4,
-};
-
-void RecordCompilationMethod(i::Isolate* isolate, CompilationMethod method) {
-  isolate->counters()->wasm_compilation_method()->AddSample(method);
-}
 }  // namespace
 
 // WebAssembly.compile(bytes) -> Promise
@@ -506,7 +492,6 @@ void WebAssemblyCompile(const v8::FunctionCallbackInfo<v8::Value>& args) {
   constexpr const char* kAPIMethodName = "WebAssembly.compile()";
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  RecordCompilationMethod(i_isolate, kAsyncCompilation);
 
   HandleScope scope(isolate);
   ScheduledErrorThrower thrower(i_isolate, kAPIMethodName);
@@ -576,7 +561,6 @@ void WebAssemblyCompileStreaming(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  RecordCompilationMethod(i_isolate, kStreamingCompilation);
   HandleScope scope(isolate);
   const char* const kAPIMethodName = "WebAssembly.compileStreaming()";
   ScheduledErrorThrower thrower(i_isolate, kAPIMethodName);
@@ -696,7 +680,6 @@ void WebAssemblyModule(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   if (i_isolate->wasm_module_callback()(args)) return;
-  RecordCompilationMethod(i_isolate, kSyncCompilation);
 
   HandleScope scope(isolate);
   ScheduledErrorThrower thrower(i_isolate, "WebAssembly.Module()");
@@ -812,7 +795,6 @@ void WebAssemblyModuleCustomSections(
 void WebAssemblyInstance(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  RecordCompilationMethod(i_isolate, kAsyncInstantiation);
   i_isolate->CountUsage(
       v8::Isolate::UseCounterFeature::kWebAssemblyInstantiation);
 
@@ -874,7 +856,6 @@ void WebAssemblyInstantiateStreaming(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  RecordCompilationMethod(i_isolate, kStreamingInstantiation);
   i_isolate->CountUsage(
       v8::Isolate::UseCounterFeature::kWebAssemblyInstantiation);
 
@@ -1135,13 +1116,15 @@ bool GetInitialOrMinimumProperty(v8::Isolate* isolate, ErrorThrower* thrower,
 namespace {
 i::Handle<i::Object> DefaultReferenceValue(i::Isolate* isolate,
                                            i::wasm::ValueType type) {
-  DCHECK(type.is_object_reference());
-  // Use undefined for JS type (externref) but null for wasm types as wasm does
-  // not know undefined.
-  if (type.heap_representation() == i::wasm::HeapType::kExtern) {
-    return isolate->factory()->undefined_value();
+  if (type.is_reference()) {
+    // Use undefined for JS type (externref) but null for wasm types as wasm
+    // does not know undefined.
+    if (type.heap_representation() == i::wasm::HeapType::kExtern) {
+      return isolate->factory()->undefined_value();
+    }
+    return isolate->factory()->null_value();
   }
-  return isolate->factory()->wasm_null();
+  UNREACHABLE();
 }
 }  // namespace
 
@@ -1196,10 +1179,8 @@ void WebAssemblyTable(const v8::FunctionCallbackInfo<v8::Value>& args) {
     } else if (enabled_features.has_gc() &&
                string->StringEquals(v8_str(isolate, "arrayref"))) {
       type = i::wasm::kWasmArrayRef;
-    } else if (enabled_features.has_gc() &&
-               string->StringEquals(v8_str(isolate, "i31ref"))) {
-      type = i::wasm::kWasmI31Ref;
     } else {
+      // TODO(7748): Add "i31ref".
       thrower.TypeError(
           "Descriptor property 'element' must be a WebAssembly reference type");
       return;
@@ -1355,7 +1336,7 @@ void WebAssemblyMemory(const v8::FunctionCallbackInfo<v8::Value>& args) {
         i::Handle<i::WasmMemoryObject>::cast(memory_obj)->array_buffer(),
         i_isolate);
     Maybe<bool> result =
-        buffer->SetIntegrityLevel(i_isolate, buffer, i::FROZEN, i::kDontThrow);
+        buffer->SetIntegrityLevel(buffer, i::FROZEN, i::kDontThrow);
     if (!result.FromJust()) {
       thrower.TypeError(
           "Status of setting SetIntegrityLevel of buffer is false.");
@@ -1409,11 +1390,9 @@ bool GetValueType(Isolate* isolate, MaybeLocal<Value> maybe,
   } else if (enabled_features.has_gc() &&
              string->StringEquals(v8_str(isolate, "arrayref"))) {
     *type = i::wasm::kWasmArrayRef;
-  } else if (enabled_features.has_gc() &&
-             string->StringEquals(v8_str(isolate, "i31ref"))) {
-    *type = i::wasm::kWasmI31Ref;
   } else {
     // Unrecognized type.
+    // TODO(7748): Add "i31ref".
     *type = i::wasm::kWasmVoid;
   }
   return true;
@@ -1571,10 +1550,7 @@ void WebAssemblyGlobal(const v8::FunctionCallbackInfo<v8::Value>& args) {
           (args.Length() < 2) ? i_isolate->factory()->null_value()
                               : Utils::OpenHandle(*value);
       const char* error_message;
-      // The JS API does not allow for indexed types.
-      // TODO(7748): Fix this if that changes.
-      DCHECK(!type.has_index());
-      if (!i::wasm::JSToWasmObject(i_isolate, value_handle, type,
+      if (!i::wasm::JSToWasmObject(i_isolate, nullptr, value_handle, type,
                                    &error_message)
                .ToHandle(&value_handle)) {
         thrower.TypeError("%s", error_message);
@@ -1669,12 +1645,8 @@ void WebAssemblyTag(const v8::FunctionCallbackInfo<v8::Value>& args) {
   // Set the tag index to 0. It is only used for debugging purposes, and has no
   // meaningful value when declared outside of a wasm module.
   auto tag = i::WasmExceptionTag::New(i_isolate, 0);
-
-  uint32_t canonical_type_index =
-      i::wasm::GetWasmEngine()->type_canonicalizer()->AddRecursiveGroup(&sig);
-
   i::Handle<i::JSObject> tag_object =
-      i::WasmTagObject::New(i_isolate, &sig, canonical_type_index, tag);
+      i::WasmTagObject::New(i_isolate, &sig, tag);
   args.GetReturnValue().Set(Utils::ToLocal(tag_object));
 }
 
@@ -1713,7 +1685,8 @@ uint32_t GetEncodedSize(i::Handle<i::WasmTagObject> tag_object) {
   i::wasm::WasmTagSig sig{0, static_cast<size_t>(serialized_sig.length()),
                           reinterpret_cast<i::wasm::ValueType*>(
                               serialized_sig.GetDataStartAddress())};
-  return i::WasmExceptionPackage::GetEncodedSize(&sig);
+  i::wasm::WasmTag tag(&sig);
+  return i::WasmExceptionPackage::GetEncodedSize(&tag);
 }
 
 void EncodeExceptionValues(v8::Isolate* isolate,
@@ -2055,10 +2028,7 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
   bool is_wasm_js_function = i::WasmJSFunction::IsWasmJSFunction(*callable);
 
   if (is_wasm_exported_function && !suspend && !promise) {
-    uint32_t canonical_sig_index =
-        i::wasm::GetWasmEngine()->type_canonicalizer()->AddRecursiveGroup(sig);
-    if (i::Handle<i::WasmExportedFunction>::cast(callable)->MatchesSignature(
-            canonical_sig_index)) {
+    if (*i::Handle<i::WasmExportedFunction>::cast(callable)->sig() == *sig) {
       args.GetReturnValue().Set(Utils::ToLocal(callable));
       return;
     }
@@ -2070,10 +2040,7 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   if (is_wasm_js_function && !suspend && !promise) {
-    uint32_t canonical_sig_index =
-        i::wasm::GetWasmEngine()->type_canonicalizer()->AddRecursiveGroup(sig);
-    if (i::Handle<i::WasmJSFunction>::cast(callable)->MatchesSignature(
-            canonical_sig_index)) {
+    if (i::Handle<i::WasmJSFunction>::cast(callable)->MatchesSignature(sig)) {
       args.GetReturnValue().Set(Utils::ToLocal(callable));
       return;
     }
@@ -2100,7 +2067,7 @@ void WebAssemblyFunction(const v8::FunctionCallbackInfo<v8::Value>& args) {
     i::Handle<i::WasmInstanceObject> instance(
         i::WasmInstanceObject::cast(data.internal().ref()), i_isolate);
     int func_index = data.function_index();
-    i::Handle<i::Code> wrapper =
+    i::Handle<i::CodeT> wrapper =
         BUILTIN_CODE(i_isolate, WasmReturnPromiseOnSuspend);
     i::Handle<i::JSFunction> result = i::WasmExportedFunction::New(
         i_isolate, instance, func_index,
@@ -2259,15 +2226,56 @@ void WebAssemblyTableGrow(const v8::FunctionCallbackInfo<v8::Value>& args) {
 namespace {
 void WasmObjectToJSReturnValue(v8::ReturnValue<v8::Value>& return_value,
                                i::Handle<i::Object> value,
-                               i::wasm::HeapType type, i::Isolate* isolate,
+                               i::wasm::HeapType::Representation repr,
+                               const i::wasm::WasmModule* module,
+                               i::Isolate* isolate,
                                ScheduledErrorThrower* thrower) {
-  const char* error_message = nullptr;
-  i::MaybeHandle<i::Object> maybe_result =
-      i::wasm::WasmToJSObject(isolate, value, type, &error_message);
-  if (maybe_result.is_null()) {
-    thrower->TypeError("%s", error_message);
-  } else {
-    return_value.Set(Utils::ToLocal(maybe_result.ToHandleChecked()));
+  switch (repr) {
+    case i::wasm::HeapType::kExtern:
+    case i::wasm::HeapType::kString:
+    // TODO(7748): Make sure i31ref is compatible with Smi, or transform here.
+    case i::wasm::HeapType::kI31:
+      return_value.Set(Utils::ToLocal(value));
+      return;
+    case i::wasm::HeapType::kFunc: {
+      if (!value->IsNull()) {
+        DCHECK(value->IsWasmInternalFunction());
+        value =
+            handle(i::Handle<i::WasmInternalFunction>::cast(value)->external(),
+                   isolate);
+      }
+      return_value.Set(Utils::ToLocal(value));
+      return;
+    }
+    case i::wasm::HeapType::kStringViewWtf8:
+      thrower->TypeError("stringview_wtf8 has no JS representation");
+      return;
+    case i::wasm::HeapType::kStringViewWtf16:
+      thrower->TypeError("stringview_wtf16 has no JS representation");
+      return;
+    case i::wasm::HeapType::kStringViewIter:
+      thrower->TypeError("stringview_iter has no JS representation");
+      return;
+    case i::wasm::HeapType::kBottom:
+      UNREACHABLE();
+    case i::wasm::HeapType::kStruct:
+    case i::wasm::HeapType::kArray:
+    case i::wasm::HeapType::kEq:
+    case i::wasm::HeapType::kAny: {
+      return_value.Set(Utils::ToLocal(value));
+      return;
+    }
+    default:
+      if (module->has_signature(repr)) {
+        if (!value->IsNull()) {
+          DCHECK(value->IsWasmInternalFunction());
+          value = handle(
+              i::Handle<i::WasmInternalFunction>::cast(value)->external(),
+              isolate);
+        }
+      }
+      return_value.Set(Utils::ToLocal(value));
+      return;
   }
 }
 }  // namespace
@@ -2307,7 +2315,12 @@ void WebAssemblyTableGet(const v8::FunctionCallbackInfo<v8::Value>& args) {
       i::WasmTableObject::Get(i_isolate, receiver, index);
 
   v8::ReturnValue<v8::Value> return_value = args.GetReturnValue();
-  WasmObjectToJSReturnValue(return_value, result, receiver->type().heap_type(),
+  const i::wasm::WasmModule* module =
+      receiver->instance().IsWasmInstanceObject()
+          ? i::WasmInstanceObject::cast(receiver->instance()).module()
+          : nullptr;
+  WasmObjectToJSReturnValue(return_value, result,
+                            receiver->type().heap_representation(), module,
                             i_isolate, &thrower);
 }
 
@@ -2333,18 +2346,19 @@ void WebAssemblyTableSet(const v8::FunctionCallbackInfo<v8::Value>& args) {
   i::Handle<i::Object> element;
   if (args.Length() >= 2) {
     element = Utils::OpenHandle(*args[1]);
-    const char* error_message;
-    if (!i::WasmTableObject::JSToWasmElement(i_isolate, table_object, element,
-                                             &error_message)
-             .ToHandle(&element)) {
-      thrower.TypeError("Argument 1 is invalid for table: %s", error_message);
-      return;
-    }
   } else if (table_object->type().is_defaultable()) {
     element = DefaultReferenceValue(i_isolate, table_object->type());
   } else {
     thrower.TypeError("Table of non-defaultable type %s needs explicit element",
                       table_object->type().name().c_str());
+    return;
+  }
+
+  const char* error_message;
+  if (!i::WasmTableObject::JSToWasmElement(i_isolate, table_object, element,
+                                           &error_message)
+           .ToHandle(&element)) {
+    thrower.TypeError("Argument 1 is invalid for table: %s", error_message);
     return;
   }
 
@@ -2421,7 +2435,7 @@ void WebAssemblyMemoryGetBuffer(
     // buffer are out of sync, handle that here when bounds checks, and Grow
     // are handled correctly.
     Maybe<bool> result =
-        buffer->SetIntegrityLevel(i_isolate, buffer, i::FROZEN, i::kDontThrow);
+        buffer->SetIntegrityLevel(buffer, i::FROZEN, i::kDontThrow);
     if (!result.FromJust()) {
       thrower.TypeError(
           "Status of setting SetIntegrityLevel of buffer is false.");
@@ -2674,9 +2688,13 @@ void WebAssemblyGlobalGetValueCommon(
       break;
     case i::wasm::kRef:
     case i::wasm::kRefNull: {
+      const i::wasm::WasmModule* module =
+          receiver->instance().IsWasmInstanceObject()
+              ? i::WasmInstanceObject::cast(receiver->instance()).module()
+              : nullptr;
       WasmObjectToJSReturnValue(return_value, receiver->GetRef(),
-                                receiver->type().heap_type(), i_isolate,
-                                &thrower);
+                                receiver->type().heap_representation(), module,
+                                i_isolate, &thrower);
       break;
     }
     case i::wasm::kRtt:
@@ -3133,19 +3151,6 @@ void WasmJs::InstallConditionalFeatures(Isolate* isolate,
                                         Handle<Context> context) {
   // This space left blank for future origin trials.
 }
-
-namespace wasm {
-// static
-std::unique_ptr<WasmStreaming> StartStreamingForTesting(
-    Isolate* isolate,
-    std::shared_ptr<wasm::CompilationResultResolver> resolver) {
-  return std::make_unique<WasmStreaming>(
-      std::make_unique<WasmStreaming::WasmStreamingImpl>(
-          reinterpret_cast<v8::Isolate*>(isolate), "StartStreamingForTesting",
-          resolver));
-}
-}  // namespace wasm
-
 #undef ASSIGN
 #undef EXTRACT_THIS
 

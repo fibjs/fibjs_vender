@@ -328,9 +328,10 @@ void CCGenerator::EmitInstruction(const ReturnInstruction& instruction,
   ReportError("Not supported in C++ output: Return");
 }
 
-void CCGenerator::EmitInstruction(const PrintErrorInstruction& instruction,
-                                  Stack<std::string>* stack) {
-  out() << "  std::cerr << " << StringLiteralQuote(instruction.message)
+void CCGenerator::EmitInstruction(
+    const PrintConstantStringInstruction& instruction,
+    Stack<std::string>* stack) {
+  out() << "  std::cout << " << StringLiteralQuote(instruction.message)
         << ";\n";
 }
 

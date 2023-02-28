@@ -4,7 +4,6 @@
 
 #include "src/compiler/loop-analysis.h"
 
-#include "src/base/v8-fallthrough.h"
 #include "src/codegen/tick-counter.h"
 #include "src/compiler/all-nodes.h"
 #include "src/compiler/common-operator.h"
@@ -554,7 +553,7 @@ LoopTree* LoopFinder::BuildLoopTree(Graph* graph, TickCounter* tick_counter,
 // static
 ZoneUnorderedSet<Node*>* LoopFinder::FindSmallInnermostLoopFromHeader(
     Node* loop_header, AllNodes& all_nodes, Zone* zone, size_t max_size,
-    Purpose purpose) {
+    bool calls_are_large) {
   auto* visited = zone->New<ZoneUnorderedSet<Node*>>(zone);
   std::vector<Node*> queue;
 
@@ -566,7 +565,6 @@ ZoneUnorderedSet<Node*>* LoopFinder::FindSmallInnermostLoopFromHeader(
   for (Node * use_name : node->uses()) {                                       \
     if (condition && visited->count(use_name) == 0) queue.push_back(use_name); \
   }
-  bool has_instruction_worth_peeling = false;
 
   while (!queue.empty()) {
     Node* node = queue.back();
@@ -598,16 +596,16 @@ ZoneUnorderedSet<Node*>* LoopFinder::FindSmallInnermostLoopFromHeader(
         }
         // All uses are outside the loop, do nothing.
         break;
-      // If unrolling, call nodes are considered to have unbounded size,
+      // If {calls_are_large}, call nodes are considered to have unbounded size,
       // i.e. >max_size, with the exception of certain wasm builtins.
       case IrOpcode::kTailCall:
       case IrOpcode::kJSWasmCall:
       case IrOpcode::kJSCall:
-        if (purpose == Purpose::kLoopUnrolling) return nullptr;
+        if (calls_are_large) return nullptr;
         ENQUEUE_USES(use, true)
         break;
       case IrOpcode::kCall: {
-        if (purpose == Purpose::kLoopPeeling) {
+        if (!calls_are_large) {
           ENQUEUE_USES(use, true);
           break;
         }
@@ -634,29 +632,14 @@ ZoneUnorderedSet<Node*>* LoopFinder::FindSmallInnermostLoopFromHeader(
             WasmCode::kWasmRethrow, WasmCode::kWasmRethrowExplicitContext,
             // Fast wasm-gc operations.
             WasmCode::kWasmRefFunc};
-        if (std::count(std::begin(unrollable_builtins),
-                       std::end(unrollable_builtins), info) == 0) {
+        if (std::count(unrollable_builtins,
+                       unrollable_builtins + arraysize(unrollable_builtins),
+                       info) == 0) {
           return nullptr;
         }
         ENQUEUE_USES(use, true)
         break;
       }
-      case IrOpcode::kWasmStructGet: {
-        // When a chained load occurs in the loop, assume that peeling might
-        // help.
-        // Extending this idea to array.get/array.len has been found to hurt
-        // more than it helps (tested on Sheets, Feb 2023).
-        Node* object = node->InputAt(0);
-        if (object->opcode() == IrOpcode::kWasmStructGet &&
-            visited->find(object) != visited->end()) {
-          has_instruction_worth_peeling = true;
-        }
-        ENQUEUE_USES(use, true);
-        break;
-      }
-      case IrOpcode::kStringPrepareForGetCodeunit:
-        has_instruction_worth_peeling = true;
-        V8_FALLTHROUGH;
       default:
         ENQUEUE_USES(use, true)
         break;
@@ -689,12 +672,6 @@ ZoneUnorderedSet<Node*>* LoopFinder::FindSmallInnermostLoopFromHeader(
     }
   }
 
-  // Only peel functions containing instructions for which loop peeling is known
-  // to be useful. TODO(7748): Add more instructions to get more benefits out of
-  // loop peeling.
-  if (purpose == Purpose::kLoopPeeling && !has_instruction_worth_peeling) {
-    return nullptr;
-  }
   return visited;
 }
 #endif  // V8_ENABLE_WEBASSEMBLY

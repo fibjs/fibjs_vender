@@ -20,7 +20,7 @@ void TorqueGeneratedJSArrayIterator<JSArrayIterator, JSObject>::JSArrayIteratorV
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
 bool IsJSArray_NonInline(HeapObject o) {
   return o.IsJSArray();
 }
@@ -34,7 +34,7 @@ void TorqueGeneratedJSArray<JSArray, JSObject>::JSArrayVerify(Isolate* isolate) 
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
 bool IsTemplateLiteralObject_NonInline(HeapObject o) {
   return o.IsTemplateLiteralObject();
 }

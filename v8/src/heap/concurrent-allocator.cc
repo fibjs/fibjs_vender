@@ -80,13 +80,8 @@ void StressConcurrentAllocatorTask::Schedule(Isolate* isolate) {
 }
 
 ConcurrentAllocator::ConcurrentAllocator(LocalHeap* local_heap,
-                                         PagedSpace* space, Context context)
-    : local_heap_(local_heap),
-      space_(space),
-      owning_heap_(space_->heap()),
-      context_(context) {
-  DCHECK_IMPLIES(!local_heap_, context_ == Context::kGC);
-}
+                                         PagedSpace* space)
+    : local_heap_(local_heap), space_(space), owning_heap_(space_->heap()) {}
 
 void ConcurrentAllocator::FreeLinearAllocationArea() {
   // The code page of the linear allocation area needs to be unprotected
@@ -95,7 +90,8 @@ void ConcurrentAllocator::FreeLinearAllocationArea() {
   if (IsLabValid() && space_->identity() == CODE_SPACE) {
     optional_scope.emplace(MemoryChunk::FromAddress(lab_.top()));
   }
-  if (lab_.top() != lab_.limit() && IsBlackAllocationEnabled()) {
+  if (lab_.top() != lab_.limit() &&
+      owning_heap()->incremental_marking()->black_allocation()) {
     Page::FromAddress(lab_.top())
         ->DestroyBlackAreaBackground(lab_.top(), lab_.limit());
   }
@@ -122,8 +118,7 @@ void ConcurrentAllocator::MarkLinearAllocationAreaBlack() {
     base::Optional<CodePageHeaderModificationScope> optional_rwx_write_scope;
     if (space_->identity() == CODE_SPACE) {
       optional_rwx_write_scope.emplace(
-          "Marking InstructionStream objects requires write access to the "
-          "Code page header");
+          "Marking Code objects requires write access to the Code page header");
     }
     Page::FromAllocationAreaAddress(top)->CreateBlackAreaBackground(top, limit);
   }
@@ -137,8 +132,7 @@ void ConcurrentAllocator::UnmarkLinearAllocationArea() {
     base::Optional<CodePageHeaderModificationScope> optional_rwx_write_scope;
     if (space_->identity() == CODE_SPACE) {
       optional_rwx_write_scope.emplace(
-          "Marking InstructionStream objects requires write access to the "
-          "Code page header");
+          "Marking Code objects requires write access to the Code page header");
     }
     Page::FromAllocationAreaAddress(top)->DestroyBlackAreaBackground(top,
                                                                      limit);
@@ -231,8 +225,7 @@ ConcurrentAllocator::AllocateFromSpaceFreeList(size_t min_size_in_bytes,
     }
   }
 
-  if (owning_heap()->ShouldExpandOldGenerationOnSlowAllocation(local_heap_,
-                                                               origin) &&
+  if (owning_heap()->ShouldExpandOldGenerationOnSlowAllocation(local_heap_) &&
       owning_heap()->CanExpandOldGenerationBackground(local_heap_,
                                                       space_->AreaSize())) {
     result = space_->TryExpandBackground(max_size_in_bytes);
@@ -284,8 +277,7 @@ AllocationResult ConcurrentAllocator::AllocateOutsideLab(
 }
 
 bool ConcurrentAllocator::IsBlackAllocationEnabled() const {
-  return context_ == Context::kNotGC &&
-         owning_heap()->incremental_marking()->black_allocation();
+  return owning_heap()->incremental_marking()->black_allocation();
 }
 
 void ConcurrentAllocator::MakeLabIterable() {

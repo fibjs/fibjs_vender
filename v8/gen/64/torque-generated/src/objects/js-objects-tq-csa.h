@@ -31,7 +31,7 @@ TNode<JSSpecialObject> Cast_JSSpecialObject_0(compiler::CodeAssemblerState* stat
 TNode<Map> GetDerivedMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_target, TNode<JSReceiver> p_newTarget);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=82&c=1
-TNode<Map> GetDerivedRabGsabTypedArrayMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_target, TNode<JSReceiver> p_newTarget);
+TNode<Map> GetDerivedRabGsabMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_target, TNode<JSReceiver> p_newTarget);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=87&c=1
 TNode<JSObject> AllocateFastOrSlowJSObjectFromMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_map);

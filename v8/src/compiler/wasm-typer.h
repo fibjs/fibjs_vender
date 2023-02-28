@@ -33,6 +33,7 @@ class WasmTyper final : public AdvancedReducer {
 
  private:
   uint32_t function_index_;
+  MachineGraph* mcgraph_;
   Zone* graph_zone_;
 };
 

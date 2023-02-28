@@ -375,7 +375,6 @@ class InternalizedStringKey final : public StringTableKey {
         // We can see already internalized strings here only when sharing the
         // string table and allowing concurrent internalization.
         DCHECK(v8_flags.shared_string_table);
-        internalized_string_ = string_;
         return;
     }
 
@@ -397,7 +396,7 @@ class InternalizedStringKey final : public StringTableKey {
       // original string is not transitioned to a ThinString (setting the
       // resource) immediately.
       DCHECK(!shape.IsShared());
-      internalized_string_ =
+      string_ =
           isolate->factory()->InternalizeExternalString<ExternalOneByteString>(
               string_);
     } else if (can_avoid_copy && shape.IsExternalTwoByte()) {
@@ -407,13 +406,13 @@ class InternalizedStringKey final : public StringTableKey {
       // original string is not transitioned to a ThinString (setting the
       // resource) immediately.
       DCHECK(!shape.IsShared());
-      internalized_string_ =
+      string_ =
           isolate->factory()->InternalizeExternalString<ExternalTwoByteString>(
               string_);
     } else {
       // Otherwise allocate a new internalized string.
-      internalized_string_ = isolate->factory()->NewInternalizedStringImpl(
-          string_, length(), raw_hash_field());
+      string_ = isolate->factory()->NewInternalizedStringImpl(string_, length(),
+                                                              raw_hash_field());
     }
   }
 
@@ -436,17 +435,11 @@ class InternalizedStringKey final : public StringTableKey {
     // in-place migrate the original string instead of internalizing the copy
     // and migrating the original string to a ThinString. This scenario doesn't
     // seem to be common enough to justify re-computing the strategy here.
-    return internalized_string_.ToHandleChecked();
+    return string_;
   }
 
  private:
   Handle<String> string_;
-  // Copy of the string to be internalized (only set if the string is not
-  // in-place internalizable). We can't override the original string, as
-  // internalized external strings don't set the resource directly (deferred to
-  // MakeThin to ensure unique ownership of the resource), and thus would break
-  // equality checks in case of hash collisions.
-  MaybeHandle<String> internalized_string_;
   MaybeHandle<Map> maybe_internalized_map_;
 };
 
@@ -740,8 +733,7 @@ Address StringTable::Data::TryStringToIndexOrLookupExisting(Isolate* isolate,
     String::WriteToFlat(source, buffer.get(), 0, length, isolate, access_guard);
     chars = buffer.get();
   } else {
-    chars =
-        source.GetDirectStringChars<Char>(isolate, no_gc, access_guard) + start;
+    chars = source.GetChars<Char>(isolate, no_gc, access_guard) + start;
   }
 
   if (!Name::IsHashFieldComputed(raw_hash_field) || !is_source_hash_usable) {

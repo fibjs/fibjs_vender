@@ -43,9 +43,9 @@ enum TargetAddressStorageMode {
   NEVER_INLINE_TARGET_ADDRESS
 };
 
-class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
+class V8_EXPORT_PRIVATE TurboAssembler : public TurboAssemblerBase {
  public:
-  using MacroAssemblerBase::MacroAssemblerBase;
+  using TurboAssemblerBase::TurboAssemblerBase;
 
   // Activation support.
   void EnterFrame(StackFrame::Type type,
@@ -250,23 +250,12 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // garbage collection, since that might move the code and invalidate the
   // return address (unless this is somehow accounted for by the called
   // function).
-  enum class SetIsolateDataSlots {
-    kNo,
-    kYes,
-  };
-  void CallCFunction(
-      ExternalReference function, int num_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-  void CallCFunction(
-      Register function, int num_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-  void CallCFunction(
-      ExternalReference function, int num_reg_arguments,
-      int num_double_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
-  void CallCFunction(
-      Register function, int num_reg_arguments, int num_double_arguments,
-      SetIsolateDataSlots set_isolate_data_slots = SetIsolateDataSlots::kYes);
+  void CallCFunction(ExternalReference function, int num_arguments);
+  void CallCFunction(Register function, int num_arguments);
+  void CallCFunction(ExternalReference function, int num_reg_arguments,
+                     int num_double_arguments);
+  void CallCFunction(Register function, int num_reg_arguments,
+                     int num_double_arguments);
 
   void MovFromFloatParameter(DwVfpRegister dst);
   void MovFromFloatResult(DwVfpRegister dst);
@@ -276,11 +265,11 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
 
   // Calls Abort(msg) if the condition cond is not satisfied.
   // Use --debug-code to enable.
-  void Assert(Condition cond, AbortReason reason) NOOP_UNLESS_DEBUG_CODE;
+  void Assert(Condition cond, AbortReason reason) NOOP_UNLESS_DEBUG_CODE
 
   // Like Assert(), but without condition.
   // Use --debug-code to enable.
-  void AssertUnreachable(AbortReason reason) NOOP_UNLESS_DEBUG_CODE;
+  void AssertUnreachable(AbortReason reason) NOOP_UNLESS_DEBUG_CODE
 
   // Like Assert(), but always enabled.
   void Check(Condition cond, AbortReason reason);
@@ -334,14 +323,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void CallBuiltin(Builtin builtin, Condition cond = al);
   void TailCallBuiltin(Builtin builtin, Condition cond = al);
 
-  // Load the code entry point from the Code object.
-  void LoadCodeEntry(Register destination, Register code_object);
-  // Load code entry point from the Code object and compute
-  // InstructionStream object pointer out of it. Must not be used for
-  // Codes corresponding to builtins, because their entry points
-  // values point to the embedded instruction stream in .text section.
-  void LoadCodeInstructionStreamNonBuiltin(Register destination,
-                                           Register code_object);
+  void LoadCodeObjectEntry(Register destination, Register code_object);
   void CallCodeObject(Register code_object);
   void JumpCodeObject(Register code_object,
                       JumpMode jump_mode = JumpMode::kJump);
@@ -607,6 +589,49 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void F64x2ConvertLowI32x4U(QwNeonRegister dst, QwNeonRegister src);
   void F64x2PromoteLowF32x4(QwNeonRegister dst, QwNeonRegister src);
 
+ private:
+  // Compare single values and then load the fpscr flags to a register.
+  void VFPCompareAndLoadFlags(const SwVfpRegister src1,
+                              const SwVfpRegister src2,
+                              const Register fpscr_flags,
+                              const Condition cond = al);
+  void VFPCompareAndLoadFlags(const SwVfpRegister src1, const float src2,
+                              const Register fpscr_flags,
+                              const Condition cond = al);
+
+  // Compare double values and then load the fpscr flags to a register.
+  void VFPCompareAndLoadFlags(const DwVfpRegister src1,
+                              const DwVfpRegister src2,
+                              const Register fpscr_flags,
+                              const Condition cond = al);
+  void VFPCompareAndLoadFlags(const DwVfpRegister src1, const double src2,
+                              const Register fpscr_flags,
+                              const Condition cond = al);
+
+  void Jump(intptr_t target, RelocInfo::Mode rmode, Condition cond = al);
+
+  // Implementation helpers for FloatMin and FloatMax.
+  template <typename T>
+  void FloatMaxHelper(T result, T left, T right, Label* out_of_line);
+  template <typename T>
+  void FloatMinHelper(T result, T left, T right, Label* out_of_line);
+  template <typename T>
+  void FloatMaxOutOfLineHelper(T result, T left, T right);
+  template <typename T>
+  void FloatMinOutOfLineHelper(T result, T left, T right);
+
+  int CalculateStackPassedWords(int num_reg_arguments,
+                                int num_double_arguments);
+
+  void CallCFunctionHelper(Register function, int num_reg_arguments,
+                           int num_double_arguments);
+};
+
+// MacroAssembler implements a collection of frequently used macros.
+class V8_EXPORT_PRIVATE MacroAssembler : public TurboAssembler {
+ public:
+  using TurboAssembler::TurboAssembler;
+
   void Mls(Register dst, Register src1, Register src2, Register srcA,
            Condition cond = al);
   void And(Register dst, Register src1, const Operand& src2,
@@ -636,12 +661,14 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
 
   // Enter exit frame.
   // stack_space - extra stack space, used for alignment before call to C.
-  void EnterExitFrame(int stack_space, StackFrame::Type frame_type);
+  void EnterExitFrame(bool save_doubles, int stack_space = 0,
+                      StackFrame::Type frame_type = StackFrame::EXIT);
 
   // Leave the current exit frame. Expects the return value in r0.
   // Expect the number of values, pushed prior to the exit frame, to
   // remove in a register (or no_reg, if there is nothing to remove).
-  void LeaveExitFrame(Register argument_count, bool argument_count_is_length);
+  void LeaveExitFrame(bool save_doubles, Register argument_count,
+                      bool argument_count_is_length = false);
 
   // Load the global proxy from the current context.
   void LoadGlobalProxy(Register dst);
@@ -745,7 +772,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   }
 
   // Tiering support.
-  void AssertFeedbackVector(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertFeedbackVector(Register object) NOOP_UNLESS_DEBUG_CODE
   void ReplaceClosureCodeWithOptimizedCode(Register optimized_code,
                                            Register closure);
   void GenerateTailCallToReturnedCode(Runtime::FunctionId function_id);
@@ -759,17 +786,20 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   // Runtime calls
 
   // Call a runtime routine.
-  void CallRuntime(const Runtime::Function* f, int num_arguments);
+  void CallRuntime(const Runtime::Function* f, int num_arguments,
+                   SaveFPRegsMode save_doubles = SaveFPRegsMode::kIgnore);
 
   // Convenience function: Same as above, but takes the fid instead.
-  void CallRuntime(Runtime::FunctionId fid) {
+  void CallRuntime(Runtime::FunctionId fid,
+                   SaveFPRegsMode save_doubles = SaveFPRegsMode::kIgnore) {
     const Runtime::Function* function = Runtime::FunctionForId(fid);
-    CallRuntime(function, function->nargs);
+    CallRuntime(function, function->nargs, save_doubles);
   }
 
   // Convenience function: Same as above, but takes the fid instead.
-  void CallRuntime(Runtime::FunctionId fid, int num_arguments) {
-    CallRuntime(Runtime::FunctionForId(fid), num_arguments);
+  void CallRuntime(Runtime::FunctionId fid, int num_arguments,
+                   SaveFPRegsMode save_doubles = SaveFPRegsMode::kIgnore) {
+    CallRuntime(Runtime::FunctionForId(fid), num_arguments, save_doubles);
   }
 
   // Convenience function: tail call a runtime routine (jump).
@@ -822,31 +852,31 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void JumpIfNotSmi(Register value, Label* not_smi_label);
 
   // Abort execution if argument is a smi, enabled via --debug-code.
-  void AssertNotSmi(Register object) NOOP_UNLESS_DEBUG_CODE;
-  void AssertSmi(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertNotSmi(Register object) NOOP_UNLESS_DEBUG_CODE
+  void AssertSmi(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a Constructor, enabled via --debug-code.
-  void AssertConstructor(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertConstructor(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a JSFunction, enabled via --debug-code.
-  void AssertFunction(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertFunction(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a callable JSFunction, enabled via
   // --debug-code.
-  void AssertCallableFunction(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertCallableFunction(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a JSBoundFunction,
   // enabled via --debug-code.
-  void AssertBoundFunction(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertBoundFunction(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not a JSGeneratorObject (or subclass),
   // enabled via --debug-code.
-  void AssertGeneratorObject(Register object) NOOP_UNLESS_DEBUG_CODE;
+  void AssertGeneratorObject(Register object) NOOP_UNLESS_DEBUG_CODE
 
   // Abort execution if argument is not undefined or an AllocationSite, enabled
   // via --debug-code.
   void AssertUndefinedOrAllocationSite(Register object,
-                                       Register scratch) NOOP_UNLESS_DEBUG_CODE;
+                                       Register scratch) NOOP_UNLESS_DEBUG_CODE
 
   template <typename Field>
   void DecodeField(Register dst, Register src) {
@@ -858,7 +888,7 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
     DecodeField<Field>(reg, reg);
   }
 
-  void TestCodeIsMarkedForDeoptimization(Register code, Register scratch);
+  void TestCodeTIsMarkedForDeoptimization(Register codet, Register scratch);
   Operand ClearedValue() const;
 
  private:
@@ -866,43 +896,6 @@ class V8_EXPORT_PRIVATE MacroAssembler : public MacroAssemblerBase {
   void InvokePrologue(Register expected_parameter_count,
                       Register actual_parameter_count, Label* done,
                       InvokeType type);
-
-  // Compare single values and then load the fpscr flags to a register.
-  void VFPCompareAndLoadFlags(const SwVfpRegister src1,
-                              const SwVfpRegister src2,
-                              const Register fpscr_flags,
-                              const Condition cond = al);
-  void VFPCompareAndLoadFlags(const SwVfpRegister src1, const float src2,
-                              const Register fpscr_flags,
-                              const Condition cond = al);
-
-  // Compare double values and then load the fpscr flags to a register.
-  void VFPCompareAndLoadFlags(const DwVfpRegister src1,
-                              const DwVfpRegister src2,
-                              const Register fpscr_flags,
-                              const Condition cond = al);
-  void VFPCompareAndLoadFlags(const DwVfpRegister src1, const double src2,
-                              const Register fpscr_flags,
-                              const Condition cond = al);
-
-  void Jump(intptr_t target, RelocInfo::Mode rmode, Condition cond = al);
-
-  // Implementation helpers for FloatMin and FloatMax.
-  template <typename T>
-  void FloatMaxHelper(T result, T left, T right, Label* out_of_line);
-  template <typename T>
-  void FloatMinHelper(T result, T left, T right, Label* out_of_line);
-  template <typename T>
-  void FloatMaxOutOfLineHelper(T result, T left, T right);
-  template <typename T>
-  void FloatMinOutOfLineHelper(T result, T left, T right);
-
-  int CalculateStackPassedWords(int num_reg_arguments,
-                                int num_double_arguments);
-
-  void CallCFunctionHelper(Register function, int num_reg_arguments,
-                           int num_double_arguments,
-                           SetIsolateDataSlots set_isolate_data_slots);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(MacroAssembler);
 };
@@ -914,7 +907,7 @@ struct MoveCycleState {
   VfpRegList scratch_v_reglist = 0;
   // Available scratch registers during the move cycle resolution scope.
   base::Optional<UseScratchRegisterScope> temps;
-  // InstructionStream of the scratch register picked by {MoveToTempLocation}.
+  // Code of the scratch register picked by {MoveToTempLocation}.
   int scratch_reg_code = -1;
 };
 

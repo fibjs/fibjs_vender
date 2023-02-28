@@ -5,7 +5,6 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
-#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -62,7 +61,6 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
-#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -322,6 +320,12 @@ TF_BUILTIN(ConvertToLocaleString, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Object> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<BoolT> tmp0;
@@ -359,17 +363,57 @@ TF_BUILTIN(ConvertToLocaleString, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp3});
   }
 
-  TNode<Object> tmp6;
-  TNode<String> tmp7;
+  TNode<BoolT> tmp6;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp6 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
-    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp6});
-    CodeStubAssembler(state_).Return(tmp7);
+    tmp6 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{parameter2});
+    ca_.Branch(tmp6, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
+  }
+
+  TNode<Object> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp7 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1});
+    ca_.Goto(&block9, tmp7);
+  }
+
+  TNode<BoolT> tmp8;
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    tmp8 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{parameter3});
+    ca_.Branch(tmp8, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
+  }
+
+  TNode<Object> tmp9;
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1}, TNode<Object>{parameter2});
+    ca_.Goto(&block12, tmp9);
+  }
+
+  TNode<Object> tmp10;
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
+    ca_.Goto(&block12, tmp10);
+  }
+
+  TNode<Object> phi_bb12_6;
+  if (block12.is_used()) {
+    ca_.Bind(&block12, &phi_bb12_6);
+    ca_.Goto(&block9, phi_bb12_6);
+  }
+
+  TNode<Object> phi_bb9_6;
+  TNode<String> tmp11;
+  if (block9.is_used()) {
+    ca_.Bind(&block9, &phi_bb9_6);
+    tmp11 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{phi_bb9_6});
+    CodeStubAssembler(state_).Return(tmp11);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=101&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=91&c=1
 TNode<BoolT> CannotUseSameArrayAccessor_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BuiltinPtr> p_loadFn, TNode<JSReceiver> p_receiver, TNode<Map> p_originalMap, TNode<Number> p_originalLen) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -470,7 +514,7 @@ TNode<BoolT> CannotUseSameArrayAccessor_JSArray_0(compiler::CodeAssemblerState* 
   return TNode<BoolT>{phi_bb10_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=103&c=1
 TNode<BoolT> CannotUseSameArrayAccessor_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BuiltinPtr> p__loadFn, TNode<JSReceiver> p_receiver, TNode<Map> p__initialMap, TNode<Number> p__initialLen) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -535,7 +579,7 @@ TNode<BoolT> CannotUseSameArrayAccessor_JSTypedArray_0(compiler::CodeAssemblerSt
   return TNode<BoolT>{phi_bb6_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=135&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=125&c=1
 TNode<IntPtrT> AddStringLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_lenA, TNode<IntPtrT> p_lenB) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -594,7 +638,7 @@ TNode<IntPtrT> AddStringLength_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=233&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=223&c=1
 TorqueStructBuffer_0 NewBuffer_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_len, TNode<String> p_sep) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -648,7 +692,7 @@ TorqueStructBuffer_0 NewBuffer_0(compiler::CodeAssemblerState* state_, TNode<Uin
   return TorqueStructBuffer_0{TNode<FixedArray>{tmp4}, TNode<IntPtrT>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<BoolT>{tmp6}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=246&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=236&c=1
 TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructBuffer_0 p_buffer, TNode<String> p_sep) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -811,7 +855,7 @@ TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   return TNode<String>{phi_bb31_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=347&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=337&c=1
 TNode<Object> ArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lenNumber, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1050,7 +1094,7 @@ TNode<Object> ArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Object>{phi_bb30_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=393&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=383&c=1
 TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lenNumber, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1588,7 +1632,7 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Object>{tmp48};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=464&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=454&c=1
 TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_IfUninitialized) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1631,7 +1675,7 @@ TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<FixedArray>{ca_.UncheckedCast<FixedArray>(tmp3)};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=476&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=466&c=1
 void SetJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_stack) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1825,7 +1869,7 @@ TF_BUILTIN(JoinStackPush, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=508&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=498&c=1
 TNode<BoolT> JoinStackPushInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2234,7 +2278,7 @@ TF_BUILTIN(JoinStackPop, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=552&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=542&c=1
 void JoinStackPopInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2730,7 +2774,7 @@ TF_BUILTIN(LoadJoinElement_GenericElementsAccessor_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=116&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=106&c=36
 TNode<JSTypedArray> UnsafeCast_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2749,7 +2793,7 @@ TNode<JSTypedArray> UnsafeCast_JSTypedArray_0(compiler::CodeAssemblerState* stat
   return TNode<JSTypedArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=257&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=247&c=7
 TNode<String> Cast_String_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2810,7 +2854,7 @@ TNode<String> Cast_String_1(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<String>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=389&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=379&c=10
 TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3759,7 +3803,7 @@ TF_BUILTIN(LoadJoinTypedElement_Uint32Elements_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=453&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=443&c=10
 TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4455,7 +4499,7 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   return TNode<String>{tmp72};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=466&c=16
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=456&c=16
 TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4475,7 +4519,7 @@ TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefi
   return TorqueStructReference_Undefined_OR_FixedArray_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=501&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=491&c=7
 TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<JSReceiver> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4581,7 +4625,7 @@ TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerSta
   return TNode<FixedArray>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=612&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=602&c=10
 TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4724,7 +4768,7 @@ TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* st
   return TNode<Object>{phi_bb1_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=668&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=658&c=10
 TNode<Object> CycleProtectedArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4867,7 +4911,7 @@ TNode<Object> CycleProtectedArrayJoin_JSTypedArray_0(compiler::CodeAssemblerStat
   return TNode<Object>{phi_bb1_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=200&c=27
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=190&c=27
 TNode<FixedArray> StoreAndGrowFixedArray_Smi_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<Smi> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4973,7 +5017,7 @@ TNode<FixedArray> StoreAndGrowFixedArray_Smi_0(compiler::CodeAssemblerState* sta
   return TNode<FixedArray>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=181&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=171&c=9
 TNode<FixedArray> StoreAndGrowFixedArray_String_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<String> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

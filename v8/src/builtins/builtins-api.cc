@@ -7,7 +7,6 @@
 #include "src/base/small-vector.h"
 #include "src/builtins/builtins-utils-inl.h"
 #include "src/builtins/builtins.h"
-#include "src/common/assert-scope.h"
 #include "src/logging/log.h"
 #include "src/logging/runtime-call-stats-scope.h"
 #include "src/objects/objects-inl.h"
@@ -118,13 +117,9 @@ V8_WARN_UNUSED_RESULT MaybeHandle<Object> HandleApiCallHelper(
       return isolate->factory()->undefined_value();
     }
     // Rebox the result.
-    {
-      DisallowGarbageCollection no_gc;
-      Object raw_result = *result;
-      DCHECK(raw_result.IsApiCallResultType());
-      if (!is_construct || raw_result.IsJSReceiver())
-        return handle(raw_result, isolate);
-    }
+    result->VerifyApiCallResultType();
+    if (!is_construct || result->IsJSReceiver())
+      return handle(*result, isolate);
   }
 
   return js_receiver;

@@ -5,7 +5,6 @@
 #include "src/objects/simd.h"
 
 #include "src/base/cpu.h"
-#include "src/codegen/cpu-features.h"
 #include "src/objects/compressed-slots.h"
 #include "src/objects/fixed-array-inl.h"
 #include "src/objects/heap-number-inl.h"
@@ -40,12 +39,8 @@ enum class SimdKinds { kSSE, kNeon, kAVX2, kNone };
 
 inline SimdKinds get_vectorization_kind() {
 #ifdef __SSE3__
-#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_X64)
-  bool has_avx2 = CpuFeatures::IsSupported(AVX2);
-#else
-  bool has_avx2 = false;
-#endif
-  if (has_avx2) {
+  static base::CPU cpu;
+  if (cpu.has_avx2()) {
     return SimdKinds::kAVX2;
   } else {
     // No need for a runtime check since we do not support x86/x64 CPUs without
