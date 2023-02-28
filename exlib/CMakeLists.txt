@@ -15,7 +15,9 @@ if(NOT ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     include_directories(
         ${PROJECT_SOURCE_DIR}/src/ctx/${ARCH}
         ${PROJECT_SOURCE_DIR}/src/ctx/common
-    )    
+    )
+else()
+    file(GLOB src_list "src/*.c*")
 endif()
 
 include(../build_tools/cmake/Library.cmake)
