@@ -6,6 +6,9 @@
  *  lion@9465.net
  */
 
+#include <stdlib.h>
+#include <stdint.h>
+
 #pragma once
 
 namespace exlib {
