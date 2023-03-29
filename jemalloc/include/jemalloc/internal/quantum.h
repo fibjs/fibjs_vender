@@ -45,7 +45,7 @@
 #  ifdef __powerpc__
 #    define LG_QUANTUM		4
 #  endif
-#  if defined(__riscv) || defined(__riscv__)
+#  if (defined(__riscv) || defined(__riscv__)) && __riscv_xlen == 64
 #    define LG_QUANTUM		4
 #  endif
 #  ifdef __s390__
@@ -64,6 +64,7 @@
 #  ifdef __loongarch64
 #    define LG_QUANTUM		4
 #  endif
+
 #  ifndef LG_QUANTUM
 #    error "Unknown minimum alignment for architecture; specify via "
 	 "--with-lg-quantum"

@@ -45,7 +45,7 @@ extern "C" {
 /* #undef JEMALLOC_USE_CXX_THROW */
 
 /* sizeof(void *) == 2^LG_SIZEOF_PTR. */
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64) || defined(__powerpc64__) || defined (__loongarch64) || defined(_WIN64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__mips64) || defined(__powerpc64__) || defined (__loongarch64) || __riscv_xlen == 64 || defined(_WIN64)
 #define LG_SIZEOF_PTR 3
 #else
 #define LG_SIZEOF_PTR 2
