@@ -123,6 +123,20 @@
 #endif
 #endif
 
+#if defined(__riscv) || defined(__riscv__)
+#if __riscv_xlen == 64
+#ifndef riscv64
+#define riscv64
+#define ARCH_BITS 64
+#endif
+#else
+#ifndef riscv32
+#define riscv32
+#define ARCH_BITS 32
+#endif
+#endif
+#endif
+
 #ifdef __loongarch64
 #ifndef loong64
 #define loong64
