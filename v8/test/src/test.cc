@@ -1,8 +1,9 @@
 
 
-#define main _main
 #include "src/init/setup-isolate-full.cc"
 #include "src/snapshot/snapshot-empty.cc"
+
+#define main _main
 #include "src/snapshot/mksnapshot.cc"
 #undef main
 
@@ -26,12 +27,10 @@ void fiber_proc(void* p)
     fname = "arm";
 #elif V8_TARGET_ARCH_MIPS64
     fname = "mips64";
-#elif V8_TARGET_ARCH_MIPS
-    fname = "mips";
 #elif V8_TARGET_ARCH_PPC64
     fname = "ppc64";
-#elif V8_TARGET_ARCH_PPC
-    fname = "ppc";
+#elif V8_TARGET_ARCH_RISCV64
+    fname = "riscv64";
 #elif V8_TARGET_ARCH_S390
     fname = "s390";
 #elif V8_TARGET_ARCH_LOONG64
