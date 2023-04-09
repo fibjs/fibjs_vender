@@ -35,6 +35,8 @@ const skip_list = [
     "^src/base/platform/condition-variable.cc",
     "^src/base/platform/semaphore.cc",
 
+    "^src/base/platform/memory-protection-key.cc",
+
 
     "^src/debug/wasm/gdb-server/",
 
