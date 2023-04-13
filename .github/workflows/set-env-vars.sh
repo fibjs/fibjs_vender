@@ -8,24 +8,24 @@ case ${TARGET_OS} in
           ;;
 esac
 
-echo "::set-output name=TARGET_OS::$TARGET_OS"
+echo "TARGET_OS=$TARGET_OS" >> $GITHUB_OUTPUT
 
-echo "::set-output name=BUILD_USE_CLANG::$BUILD_USE_CLANG"
+echo "BUILD_USE_CLANG=$BUILD_USE_CLANG" >> $GITHUB_OUTPUT
 
 export GIT_BRANCH=${GITHUB_REF#refs/heads/}
-echo "::set-output name=GIT_BRANCH::$GIT_BRANCH"
+echo "GIT_BRANCH=$GIT_BRANCH" >> $GITHUB_OUTPUT
 export GIT_COMMIT_HEAD_MSG=$(git log --format=%b -1)
-echo "::set-output name=GIT_COMMIT_HEAD_MSG::$GIT_COMMIT_HEAD_MSG"
+echo "GIT_COMMIT_HEAD_MSG=$GIT_COMMIT_HEAD_MSG" >> $GITHUB_OUTPUT
 export GIT_COMMIT_SHORTCUTS=$(git log --format=%h -1)
-echo "::set-output name=GIT_COMMIT_SHORTCUTS::$GIT_COMMIT_SHORTCUTS"
+echo "GIT_COMMIT_SHORTCUTS=$GIT_COMMIT_SHORTCUTS" >> $GITHUB_OUTPUT
 export GIT_COMMIT_TIME=$(git show -s --format="%cd" --date=format:%Y%m%d%H%M%S HEAD)
-echo "::set-output name=GIT_COMMIT_TIME::$GIT_COMMIT_TIME"
+echo "GIT_COMMIT_TIME=$GIT_COMMIT_TIME" >> $GITHUB_OUTPUT
 
 if [ "$GITHUB_REPOSITORY" == "fibjs/fibjs_vender" ]; then
     export IS_MAIN_REPO=1
 fi
 if [[ -z "$IS_MAIN_REPO" || "$GIT_BRANCH" == "dev" ]]; then
-    echo "::set-output name=IS_UPLOAD_ASSETS::1"
+    echo "IS_UPLOAD_ASSETS=1" >> $GITHUB_OUTPUT
 fi
 
 export RELEASE_TAG="$GIT_COMMIT_TIME-$GIT_COMMIT_SHORTCUTS";
@@ -33,7 +33,7 @@ if [ -z "$IS_MAIN_REPO" ]; then
     SUFFIX=${GIT_BRANCH//\//'-'}
     RELEASE_TAG="$RELEASE_TAG-$SUFFIX"
 fi
-echo "::set-output name=RELEASE_TAG::$RELEASE_TAG"
+echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_OUTPUT
 
 git fetch;
 if [ $(git tag --list | egrep "^$RELEASE_TAG$") ]; then
@@ -42,7 +42,7 @@ if [ $(git tag --list | egrep "^$RELEASE_TAG$") ]; then
 else
     export TAG_EXISTED=""
 fi
-echo "::set-output name=TAG_EXISTED::$TAG_EXISTED"
+echo "TAG_EXISTED=$TAG_EXISTED" >> $GITHUB_OUTPUT
 
 case "${TARGET_ARCH}" in
     i386)
@@ -96,9 +96,9 @@ if [[ "$RUNNER_OS" == "Windows" ]]; then
     export DIST_DIR="Windows_${TARGET_ARCH}_$BUILD_TYPE"
 fi
 
-echo "::set-output name=TARGET_OS_NAME::$TARGET_OS_NAME"
-echo "::set-output name=DIST_FILE::$DIST_FILE"
-echo "::set-output name=DIST_DIR::$DIST_DIR"
+echo "TARGET_OS_NAME=$TARGET_OS_NAME" >> $GITHUB_OUTPUT
+echo "DIST_FILE=$DIST_FILE" >> $GITHUB_OUTPUT
+echo "DIST_DIR=$DIST_DIR" >> $GITHUB_OUTPUT
 
 export DIST_FILEPATH=$RELEASE_TAG/$DIST_FILE
-echo "::set-output name=DIST_FILEPATH::$DIST_FILEPATH"
+echo "DIST_FILEPATH=$DIST_FILEPATH" >> $GITHUB_OUTPUT
