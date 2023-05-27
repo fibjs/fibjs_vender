@@ -107,6 +107,11 @@ public:
         return m_v;
     }
 
+    T* operator->()
+    {
+        return m_v;
+    }
+
     T* CompareAndSwap(T* old_value, T* new_value)
     {
         m_v.compare_exchange_strong(old_value, new_value);

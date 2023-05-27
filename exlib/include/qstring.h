@@ -578,7 +578,7 @@ public:
     {
         basic_string<char> retVal;
         static char HexChar[] = "0123456789abcdef";
-        size_t i, pos, len1;
+        size_t i, pos;
         size_t len = length();
         const T* ptr = c_str();
 
@@ -586,7 +586,6 @@ public:
         retVal.resize(i);
         char* data = retVal.c_buffer();
 
-        len1 = 0;
         pos = 0;
 
         for (i = 0; i < len; i++) {
@@ -594,15 +593,12 @@ public:
                 data[pos] = HexChar[(unsigned char)(ptr[i] >> 12)];
                 data[pos + 1] = HexChar[(unsigned char)(ptr[i] >> 8) & 0xf];
                 pos += 2;
-                len1 += 2;
             }
             data[pos] = HexChar[(unsigned char)(ptr[i] >> 4) & 0x0f];
             data[pos + 1] = HexChar[(unsigned char)ptr[i] & 0xf];
             pos += 2;
-            len1 += 2;
 
             data[pos++] = ' ';
-            len1++;
         }
 
         return retVal;
