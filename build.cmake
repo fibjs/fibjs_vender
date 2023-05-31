@@ -32,7 +32,6 @@ else()
         msgpack
         pcre
         sqlite
-        mongo
         umysql
         uuid
         exif
