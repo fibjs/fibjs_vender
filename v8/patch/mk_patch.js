@@ -17,6 +17,11 @@ function get_src(folder) {
     return src_list;
 }
 
+console.log("====================== src/base/build_config.h ======================");
+var f = fs.readTextFile('src/base/build_config.h');
+f = f.replace(/#define\s+V8_HAS_PKU_JIT_WRITE_PROTECT\s+1/, '#define V8_HAS_PKU_JIT_WRITE_PROTECT 0');
+fs.writeTextFile('src/base/build_config.h', f);
+
 var src_list = get_src('src');
 
 src_list.forEach(fname => {

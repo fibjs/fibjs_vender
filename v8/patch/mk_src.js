@@ -36,9 +36,6 @@ const skip_list = [
     "^src/base/platform/semaphore.cc",
     "^src/base/platform/platform.cc",
 
-    "^src/base/platform/memory-protection-key.cc",
-
-
     "^src/debug/wasm/gdb-server/",
 
     "^src/deoptimizer/deoptimizer-cfi-empty.cc",

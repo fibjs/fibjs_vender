@@ -36,7 +36,7 @@
 #endif
 
 #if defined(V8_OS_LINUX) && defined(V8_HOST_ARCH_X64)
-#define V8_HAS_PKU_JIT_WRITE_PROTECT 1
+#define V8_HAS_PKU_JIT_WRITE_PROTECT 0
 #else
 #define V8_HAS_PKU_JIT_WRITE_PROTECT 0
 #endif
