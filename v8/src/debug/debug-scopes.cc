@@ -36,7 +36,7 @@ ScopeIterator::ScopeIterator(Isolate* isolate, FrameInspector* frame_inspector,
 
 #if V8_ENABLE_WEBASSEMBLY
   // We should not instantiate a ScopeIterator for wasm frames.
-  DCHECK_NE(Script::TYPE_WASM, frame_inspector->GetScript()->type());
+  DCHECK_NE(Script::Type::kWasm, frame_inspector->GetScript()->type());
 #endif  // V8_ENABLE_WEBASSEMBLY
 
   TryParseAndRetrieveScopes(strategy);
@@ -225,10 +225,9 @@ void ScopeIterator::TryParseAndRetrieveScopes(ReparseStrategy strategy) {
   }
 
   if (strategy == ReparseStrategy::kScriptIfNeeded) {
-    CHECK(v8_flags.experimental_reuse_locals_blocklists);
     Object maybe_block_list = isolate_->LocalsBlockListCacheGet(scope_info);
     calculate_blocklists_ = maybe_block_list.IsTheHole();
-    strategy = calculate_blocklists_ ? ReparseStrategy::kScript
+    strategy = calculate_blocklists_ ? ReparseStrategy::kScriptIfNeeded
                                      : ReparseStrategy::kFunctionLiteral;
   }
 
@@ -529,6 +528,10 @@ ScopeIterator::ScopeType ScopeIterator::Type() const {
       case EVAL_SCOPE:
         DCHECK_IMPLIES(NeedsContext(), context_->IsEvalContext());
         return ScopeTypeEval;
+      case SHADOW_REALM_SCOPE:
+        DCHECK_IMPLIES(NeedsContext(), context_->IsNativeContext());
+        // TODO(v8:11989): New ScopeType for ShadowRealms?
+        return ScopeTypeScript;
     }
     UNREACHABLE();
   }
@@ -741,8 +744,7 @@ void ScopeIterator::DebugPrint() {
 
     case ScopeIterator::ScopeTypeScript:
       os << "Script:\n";
-      context_->global_object().native_context().script_context_table().Print(
-          os);
+      context_->native_context().script_context_table().Print(os);
       break;
 
     default:
@@ -764,9 +766,8 @@ int ScopeIterator::GetSourcePosition() const {
 }
 
 void ScopeIterator::VisitScriptScope(const Visitor& visitor) const {
-  Handle<JSGlobalObject> global(context_->global_object(), isolate_);
   Handle<ScriptContextTable> script_contexts(
-      global->native_context().script_context_table(), isolate_);
+      context_->native_context().script_context_table(), isolate_);
 
   // Skip the first script since that just declares 'this'.
   for (int context_index = 1;
@@ -921,7 +922,16 @@ bool ScopeIterator::VisitLocals(const Visitor& visitor, Mode mode,
       case VariableLocation::CONTEXT:
         if (mode == Mode::STACK) continue;
         DCHECK(var->IsContextSlot());
-        value = handle(context_->get(index), isolate_);
+
+        // We know of at least one open bug where the context and scope chain
+        // don't match (https://crbug.com/753338).
+        // Return `undefined` if the context's ScopeInfo doesn't know anything
+        // about this variable.
+        if (context_->scope_info().ContextSlotIndex(var->name()) != index) {
+          value = isolate_->factory()->undefined_value();
+        } else {
+          value = handle(context_->get(index), isolate_);
+        }
         break;
 
       case VariableLocation::MODULE: {
@@ -1069,6 +1079,14 @@ bool ScopeIterator::SetLocalVariableValue(Handle<String> variable_name,
 
         case VariableLocation::CONTEXT:
           DCHECK(var->IsContextSlot());
+
+          // We know of at least one open bug where the context and scope chain
+          // don't match (https://crbug.com/753338).
+          // Skip the write if the context's ScopeInfo doesn't know anything
+          // about this variable.
+          if (context_->scope_info().ContextSlotIndex(variable_name) != index) {
+            return false;
+          }
           context_->set(index, *new_value);
           return true;
 
@@ -1132,8 +1150,7 @@ bool ScopeIterator::SetModuleVariableValue(Handle<String> variable_name,
 bool ScopeIterator::SetScriptVariableValue(Handle<String> variable_name,
                                            Handle<Object> new_value) {
   Handle<ScriptContextTable> script_contexts(
-      context_->global_object().native_context().script_context_table(),
-      isolate_);
+      context_->native_context().script_context_table(), isolate_);
   VariableLookupResult lookup_result;
   if (script_contexts->Lookup(variable_name, &lookup_result)) {
     Handle<Context> script_context = ScriptContextTable::GetContext(
@@ -1308,7 +1325,6 @@ void ScopeIterator::MaybeCollectAndStoreLocalBlocklists() const {
     return;
   }
 
-  CHECK(v8_flags.experimental_reuse_locals_blocklists);
   DCHECK(isolate_
              ->LocalsBlockListCacheGet(
                  handle(function_->shared().scope_info(), isolate_))

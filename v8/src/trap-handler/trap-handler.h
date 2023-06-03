@@ -23,8 +23,9 @@ namespace trap_handler {
     ((V8_OS_LINUX && !V8_OS_ANDROID) || V8_OS_WIN || V8_OS_DARWIN || \
      V8_OS_FREEBSD)
 #define V8_TRAP_HANDLER_SUPPORTED true
-// Arm64 (non-simulator) on Mac.
-#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && V8_OS_DARWIN
+// Arm64 (non-simulator) on Mac and Linux.
+#elif V8_TARGET_ARCH_ARM64 && V8_HOST_ARCH_ARM64 && \
+    (V8_OS_DARWIN || (V8_OS_LINUX && !V8_OS_ANDROID))
 #define V8_TRAP_HANDLER_SUPPORTED true
 // Arm64 simulator on x64 on Linux, Mac, or Windows.
 //
@@ -139,7 +140,7 @@ inline bool IsTrapHandlerEnabled() {
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100641
 extern __thread int g_thread_in_wasm_code;
 #else
-extern exlib::fiber_local<int> g_thread_in_wasm_code;
+extern  exlib::fiber_local<int> g_thread_in_wasm_code;
 #endif
 
 // Return the address of the thread-local {g_thread_in_wasm_code} variable. This

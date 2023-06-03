@@ -14,6 +14,7 @@
 #include "src/wasm/jump-table-assembler.h"
 #include "src/wasm/module-decoder.h"
 #include "src/wasm/wasm-code-manager.h"
+#include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-init-expr.h"
 #include "src/wasm/wasm-js.h"
 #include "src/wasm/wasm-module-builder.h"  // For {ZoneBuffer}.
@@ -47,11 +48,11 @@ template void NameMap::FinishInitialization();
 template void IndirectNameMap::FinishInitialization();
 
 WireBytesRef LazilyGeneratedNames::LookupFunctionName(
-    const ModuleWireBytes& wire_bytes, uint32_t function_index) {
+    ModuleWireBytes wire_bytes, uint32_t function_index) {
   base::MutexGuard lock(&mutex_);
   if (!has_functions_) {
     has_functions_ = true;
-    DecodeFunctionNames(wire_bytes.start(), wire_bytes.end(), function_names_);
+    DecodeFunctionNames(wire_bytes.module_bytes(), function_names_);
   }
   const WireBytesRef* result = function_names_.Get(function_index);
   if (!result) return WireBytesRef();
@@ -132,7 +133,7 @@ void LazilyGeneratedNames::AddForTesting(int function_index,
 }
 
 AsmJsOffsetInformation::AsmJsOffsetInformation(
-    base::Vector<const byte> encoded_offsets)
+    base::Vector<const uint8_t> encoded_offsets)
     : encoded_offsets_(base::OwnedVector<const uint8_t>::Of(encoded_offsets)) {}
 
 AsmJsOffsetInformation::~AsmJsOffsetInformation() = default;
@@ -194,14 +195,14 @@ WasmName ModuleWireBytes::GetNameOrNull(WireBytesRef ref) const {
 }
 
 // Get a string stored in the module bytes representing a function name.
-WasmName ModuleWireBytes::GetNameOrNull(const WasmFunction* function,
+WasmName ModuleWireBytes::GetNameOrNull(int func_index,
                                         const WasmModule* module) const {
-  return GetNameOrNull(module->lazily_generated_names.LookupFunctionName(
-      *this, function->func_index));
+  return GetNameOrNull(
+      module->lazily_generated_names.LookupFunctionName(*this, func_index));
 }
 
 std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name) {
-  os << "#" << name.function_->func_index;
+  os << "#" << name.func_index_;
   if (!name.name_.empty()) {
     if (name.name_.begin()) {
       os << ":";
@@ -213,8 +214,9 @@ std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name) {
   return os;
 }
 
-WasmModule::WasmModule(std::unique_ptr<Zone> signature_zone)
-    : signature_zone(std::move(signature_zone)) {}
+WasmModule::WasmModule(ModuleOrigin origin)
+    : signature_zone(GetWasmEngine()->allocator(), "signature zone"),
+      origin(origin) {}
 
 bool IsWasmCodegenAllowed(Isolate* isolate, Handle<Context> context) {
   // TODO(wasm): Once wasm has its own CSP policy, we should introduce a
@@ -295,7 +297,7 @@ Handle<JSObject> GetTypeForGlobal(Isolate* isolate, bool is_mutable,
   Handle<JSFunction> object_function = isolate->object_function();
   Handle<JSObject> object = factory->NewJSObject(object_function);
   Handle<String> mutable_string = factory->InternalizeUtf8String("mutable");
-  Handle<String> value_string = factory->InternalizeUtf8String("value");
+  Handle<String> value_string = factory->value_string();
   JSObject::AddProperty(isolate, object, mutable_string,
                         factory->ToBoolean(is_mutable), NONE);
   JSObject::AddProperty(isolate, object, value_string,
@@ -336,7 +338,7 @@ Handle<JSObject> GetTypeForTable(Isolate* isolate, ValueType type,
 
   Handle<JSFunction> object_function = isolate->object_function();
   Handle<JSObject> object = factory->NewJSObject(object_function);
-  Handle<String> element_string = factory->InternalizeUtf8String("element");
+  Handle<String> element_string = factory->element_string();
   Handle<String> minimum_string = factory->InternalizeUtf8String("minimum");
   Handle<String> maximum_string = factory->InternalizeUtf8String("maximum");
   JSObject::AddProperty(isolate, object, element_string, element, NONE);
@@ -356,14 +358,14 @@ Handle<JSArray> GetImports(Isolate* isolate,
   Factory* factory = isolate->factory();
 
   Handle<String> module_string = factory->InternalizeUtf8String("module");
-  Handle<String> name_string = factory->InternalizeUtf8String("name");
+  Handle<String> name_string = factory->name_string();
   Handle<String> kind_string = factory->InternalizeUtf8String("kind");
   Handle<String> type_string = factory->InternalizeUtf8String("type");
 
-  Handle<String> function_string = factory->InternalizeUtf8String("function");
+  Handle<String> function_string = factory->function_string();
   Handle<String> table_string = factory->InternalizeUtf8String("table");
   Handle<String> memory_string = factory->InternalizeUtf8String("memory");
-  Handle<String> global_string = factory->InternalizeUtf8String("global");
+  Handle<String> global_string = factory->global_string();
   Handle<String> tag_string = factory->InternalizeUtf8String("tag");
 
   // Create the result array.
@@ -456,14 +458,14 @@ Handle<JSArray> GetExports(Isolate* isolate,
   auto enabled_features = i::wasm::WasmFeatures::FromIsolate(isolate);
   Factory* factory = isolate->factory();
 
-  Handle<String> name_string = factory->InternalizeUtf8String("name");
+  Handle<String> name_string = factory->name_string();
   Handle<String> kind_string = factory->InternalizeUtf8String("kind");
   Handle<String> type_string = factory->InternalizeUtf8String("type");
 
-  Handle<String> function_string = factory->InternalizeUtf8String("function");
+  Handle<String> function_string = factory->function_string();
   Handle<String> table_string = factory->InternalizeUtf8String("table");
   Handle<String> memory_string = factory->InternalizeUtf8String("memory");
-  Handle<String> global_string = factory->InternalizeUtf8String("global");
+  Handle<String> global_string = factory->global_string();
   Handle<String> tag_string = factory->InternalizeUtf8String("tag");
 
   // Create the result array.
@@ -555,7 +557,7 @@ Handle<JSArray> GetCustomSections(Isolate* isolate,
   base::Vector<const uint8_t> wire_bytes =
       module_object->native_module()->wire_bytes();
   std::vector<CustomSectionOffset> custom_sections =
-      DecodeCustomSections(wire_bytes.begin(), wire_bytes.end());
+      DecodeCustomSections(wire_bytes);
 
   std::vector<Handle<Object>> matching_sections;
 
@@ -597,8 +599,8 @@ Handle<JSArray> GetCustomSections(Isolate* isolate,
   return array_object;
 }
 
-// Get the source position from a given function index and byte offset,
-// for either asm.js or pure Wasm modules.
+// Get the source position from a given function index and wire bytes offset
+// (relative to the function entry), for either asm.js or pure Wasm modules.
 int GetSourcePosition(const WasmModule* module, uint32_t func_index,
                       uint32_t byte_offset, bool is_at_number_conversion) {
   DCHECK_EQ(is_asmjs_module(module),
@@ -624,9 +626,7 @@ inline size_t VectorSize(const std::vector<T>& vector) {
 
 size_t EstimateStoredSize(const WasmModule* module) {
   return sizeof(WasmModule) + VectorSize(module->globals) +
-         (module->signature_zone ? module->signature_zone->allocation_size()
-                                 : 0) +
-         VectorSize(module->types) +
+         module->signature_zone.allocation_size() + VectorSize(module->types) +
          VectorSize(module->isorecursive_canonical_type_ids) +
          VectorSize(module->functions) + VectorSize(module->data_segments) +
          VectorSize(module->tables) + VectorSize(module->import_table) +
@@ -666,10 +666,8 @@ size_t GetWireBytesHash(base::Vector<const uint8_t> wire_bytes) {
 }
 
 int NumFeedbackSlots(const WasmModule* module, int func_index) {
-  if (!v8_flags.wasm_speculative_inlining) return 0;
-  // TODO(clemensb): Avoid the mutex once this ships, or at least switch to a
-  // shared mutex.
-  base::MutexGuard type_feedback_guard{&module->type_feedback.mutex};
+  base::SharedMutexGuard<base::kShared> type_feedback_guard{
+      &module->type_feedback.mutex};
   auto it = module->type_feedback.feedback_for_function.find(func_index);
   if (it == module->type_feedback.feedback_for_function.end()) return 0;
   // The number of call instructions is capped by max function size.

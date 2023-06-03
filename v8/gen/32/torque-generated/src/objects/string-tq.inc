@@ -27,9 +27,9 @@ class TorqueGeneratedString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=19&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
   inline int32_t length() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=19&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
   inline void set_length(int32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=7&c=1
@@ -44,7 +44,7 @@ class TorqueGeneratedString : public P {
   V8_EXPORT_PRIVATE void StringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=19&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
   static constexpr int kLengthOffset = P::kHeaderSize;
   static constexpr int kLengthOffsetEnd = kLengthOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kLengthOffsetEnd + 1;
@@ -64,16 +64,13 @@ class TorqueGeneratedString : public P {
 
  protected:
   inline explicit TorqueGeneratedString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsConsString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
 V8_EXPORT_PRIVATE bool IsConsString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
 template <class D, class P>
 class TorqueGeneratedConsString : public P {
   static_assert(
@@ -87,23 +84,23 @@ class TorqueGeneratedConsString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedConsString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
   inline String first() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
   inline String first(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
   inline void set_first(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
   inline String second() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
   inline String second(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
   inline void set_second(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -111,15 +108,15 @@ class TorqueGeneratedConsString : public P {
   DECL_PRINTER(ConsString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
   V8_EXPORT_PRIVATE void ConsStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
   static constexpr int kFirstOffset = P::kHeaderSize;
   static constexpr int kFirstOffsetEnd = kFirstOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
   static constexpr int kSecondOffset = kFirstOffsetEnd + 1;
   static constexpr int kSecondOffsetEnd = kSecondOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kSecondOffsetEnd + 1;
@@ -128,14 +125,14 @@ class TorqueGeneratedConsString : public P {
   static constexpr int kHeaderSize = kSecondOffsetEnd + 1;
   static constexpr int kSize = kSecondOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 20);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -151,16 +148,13 @@ class TorqueGeneratedConsString : public P {
 
  protected:
   inline explicit TorqueGeneratedConsString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedConsString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsExternalString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
 V8_EXPORT_PRIVATE bool IsExternalString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
 template <class D, class P>
 class TorqueGeneratedExternalString : public P {
   static_assert(
@@ -174,22 +168,22 @@ class TorqueGeneratedExternalString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedExternalString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
   V8_EXPORT_PRIVATE void ExternalStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=57&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=92&c=3
   static constexpr int kResourceOffset = P::kHeaderSize;
   static constexpr int kResourceOffsetEnd = kResourceOffset + kExternalPointerSlotSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=59&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=94&c=3
   static constexpr int kResourceDataOffset = kResourceOffsetEnd + 1;
   static constexpr int kResourceDataOffsetEnd = kResourceDataOffset + kExternalPointerSlotSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kResourceDataOffsetEnd + 1;
@@ -209,16 +203,13 @@ class TorqueGeneratedExternalString : public P {
 
  protected:
   inline explicit TorqueGeneratedExternalString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedExternalString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsExternalOneByteString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
 V8_EXPORT_PRIVATE bool IsExternalOneByteString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
 template <class D, class P>
 class TorqueGeneratedExternalOneByteString : public P {
   static_assert(
@@ -232,9 +223,9 @@ class TorqueGeneratedExternalOneByteString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedExternalOneByteString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -242,7 +233,7 @@ class TorqueGeneratedExternalOneByteString : public P {
   DECL_PRINTER(ExternalOneByteString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
   V8_EXPORT_PRIVATE void ExternalOneByteStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -253,14 +244,14 @@ class TorqueGeneratedExternalOneByteString : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 20);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -276,16 +267,13 @@ class TorqueGeneratedExternalOneByteString : public P {
 
  protected:
   inline explicit TorqueGeneratedExternalOneByteString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedExternalOneByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsExternalTwoByteString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
 V8_EXPORT_PRIVATE bool IsExternalTwoByteString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
 template <class D, class P>
 class TorqueGeneratedExternalTwoByteString : public P {
   static_assert(
@@ -299,9 +287,9 @@ class TorqueGeneratedExternalTwoByteString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedExternalTwoByteString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -309,7 +297,7 @@ class TorqueGeneratedExternalTwoByteString : public P {
   DECL_PRINTER(ExternalTwoByteString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
   V8_EXPORT_PRIVATE void ExternalTwoByteStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -320,14 +308,14 @@ class TorqueGeneratedExternalTwoByteString : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 20);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -343,16 +331,13 @@ class TorqueGeneratedExternalTwoByteString : public P {
 
  protected:
   inline explicit TorqueGeneratedExternalTwoByteString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedExternalTwoByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsInternalizedString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
 V8_EXPORT_PRIVATE bool IsInternalizedString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
 template <class D, class P>
 class TorqueGeneratedInternalizedString : public P {
   static_assert(
@@ -366,9 +351,9 @@ class TorqueGeneratedInternalizedString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedInternalizedString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -376,7 +361,7 @@ class TorqueGeneratedInternalizedString : public P {
   DECL_PRINTER(InternalizedString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
   V8_EXPORT_PRIVATE void InternalizedStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -387,14 +372,14 @@ class TorqueGeneratedInternalizedString : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -410,16 +395,13 @@ class TorqueGeneratedInternalizedString : public P {
 
  protected:
   inline explicit TorqueGeneratedInternalizedString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedInternalizedString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSeqString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
 V8_EXPORT_PRIVATE bool IsSeqString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
 template <class D, class P>
 class TorqueGeneratedSeqString : public P {
   static_assert(
@@ -433,15 +415,15 @@ class TorqueGeneratedSeqString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedSeqString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
   V8_EXPORT_PRIVATE void SeqStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -462,16 +444,13 @@ class TorqueGeneratedSeqString : public P {
 
  protected:
   inline explicit TorqueGeneratedSeqString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSeqString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSeqOneByteString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
 V8_EXPORT_PRIVATE bool IsSeqOneByteString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
 template <class D, class P>
 class TorqueGeneratedSeqOneByteString : public P {
   static_assert(
@@ -485,14 +464,14 @@ class TorqueGeneratedSeqOneByteString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedSeqOneByteString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
   inline char chars(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
   inline void set_chars(int i, char value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -500,12 +479,12 @@ class TorqueGeneratedSeqOneByteString : public P {
   DECL_PRINTER(SeqOneByteString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
   V8_EXPORT_PRIVATE void SeqOneByteStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kHeaderSize = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
   static constexpr int kCharsOffset = P::kHeaderSize;
   static constexpr int kCharsOffsetEnd = kCharsOffset + 0 - 1;
   static constexpr int kStartOfWeakFieldsOffset = kCharsOffsetEnd + 1;
@@ -513,7 +492,7 @@ class TorqueGeneratedSeqOneByteString : public P {
   static constexpr int kStartOfStrongFieldsOffset = kCharsOffsetEnd + 1;
   static constexpr int kEndOfStrongFieldsOffset = kCharsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
   V8_INLINE static constexpr int32_t SizeFor(int length) {
     int32_t size = kHeaderSize;
     size += length * 1;
@@ -521,7 +500,7 @@ class TorqueGeneratedSeqOneByteString : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->length());
   }
@@ -537,16 +516,13 @@ class TorqueGeneratedSeqOneByteString : public P {
 
  protected:
   inline explicit TorqueGeneratedSeqOneByteString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSeqOneByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSeqTwoByteString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
 V8_EXPORT_PRIVATE bool IsSeqTwoByteString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
 template <class D, class P>
 class TorqueGeneratedSeqTwoByteString : public P {
   static_assert(
@@ -560,14 +536,14 @@ class TorqueGeneratedSeqTwoByteString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedSeqTwoByteString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
   inline char16_t chars(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
   inline void set_chars(int i, char16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -575,12 +551,12 @@ class TorqueGeneratedSeqTwoByteString : public P {
   DECL_PRINTER(SeqTwoByteString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
   V8_EXPORT_PRIVATE void SeqTwoByteStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kHeaderSize = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
   static constexpr int kCharsOffset = P::kHeaderSize;
   static constexpr int kCharsOffsetEnd = kCharsOffset + 0 - 1;
   static constexpr int kStartOfWeakFieldsOffset = kCharsOffsetEnd + 1;
@@ -588,7 +564,7 @@ class TorqueGeneratedSeqTwoByteString : public P {
   static constexpr int kStartOfStrongFieldsOffset = kCharsOffsetEnd + 1;
   static constexpr int kEndOfStrongFieldsOffset = kCharsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
   V8_INLINE static constexpr int32_t SizeFor(int length) {
     int32_t size = kHeaderSize;
     size += length * 2;
@@ -596,7 +572,7 @@ class TorqueGeneratedSeqTwoByteString : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->length());
   }
@@ -612,16 +588,13 @@ class TorqueGeneratedSeqTwoByteString : public P {
 
  protected:
   inline explicit TorqueGeneratedSeqTwoByteString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSeqTwoByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSlicedString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
 V8_EXPORT_PRIVATE bool IsSlicedString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
 template <class D, class P>
 class TorqueGeneratedSlicedString : public P {
   static_assert(
@@ -635,21 +608,21 @@ class TorqueGeneratedSlicedString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedSlicedString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
   inline String parent() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
   inline String parent(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
   inline void set_parent(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
   inline int offset() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
   inline void set_offset(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -657,15 +630,15 @@ class TorqueGeneratedSlicedString : public P {
   DECL_PRINTER(SlicedString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
   V8_EXPORT_PRIVATE void SlicedStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
   static constexpr int kParentOffset = P::kHeaderSize;
   static constexpr int kParentOffsetEnd = kParentOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
   static constexpr int kOffsetOffset = kParentOffsetEnd + 1;
   static constexpr int kOffsetOffsetEnd = kOffsetOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kOffsetOffsetEnd + 1;
@@ -674,14 +647,14 @@ class TorqueGeneratedSlicedString : public P {
   static constexpr int kHeaderSize = kOffsetOffsetEnd + 1;
   static constexpr int kSize = kOffsetOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 20);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -697,16 +670,13 @@ class TorqueGeneratedSlicedString : public P {
 
  protected:
   inline explicit TorqueGeneratedSlicedString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSlicedString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsThinString() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
 V8_EXPORT_PRIVATE bool IsThinString_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
 template <class D, class P>
 class TorqueGeneratedThinString : public P {
   static_assert(
@@ -720,16 +690,16 @@ class TorqueGeneratedThinString : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedThinString<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
   inline String actual() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
   inline String actual(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
   inline void set_actual(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -737,12 +707,12 @@ class TorqueGeneratedThinString : public P {
   DECL_PRINTER(ThinString)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
   V8_EXPORT_PRIVATE void ThinStringVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
   static constexpr int kActualOffset = P::kHeaderSize;
   static constexpr int kActualOffsetEnd = kActualOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kActualOffsetEnd + 1;
@@ -751,14 +721,14 @@ class TorqueGeneratedThinString : public P {
   static constexpr int kHeaderSize = kActualOffsetEnd + 1;
   static constexpr int kSize = kActualOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -774,8 +744,5 @@ class TorqueGeneratedThinString : public P {
 
  protected:
   inline explicit TorqueGeneratedThinString(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedThinString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

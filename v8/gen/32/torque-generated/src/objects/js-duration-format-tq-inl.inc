@@ -85,8 +85,3 @@ inline TorqueGeneratedJSDurationFormat<D, P>::TorqueGeneratedJSDurationFormat(Ad
     : P(ptr) {
   SLOW_DCHECK(IsJSDurationFormat_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSDurationFormat<D, P>::TorqueGeneratedJSDurationFormat(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSDurationFormat_NonInline(*this));
-}

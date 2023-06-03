@@ -66,6 +66,15 @@ class StatsCollector;
 
 enum class HeapObjectNameForUnnamedObject : uint8_t;
 
+class MoveListener {
+ public:
+  // This function may be called simultaneously on multiple threads.
+  // Implementations must not attempt to allocate or do any other actions
+  // which could trigger reentrant GC.
+  virtual void OnMove(Address from, Address to,
+                      size_t size_including_header) = 0;
+};
+
 // Base class for heap implementations.
 class V8_EXPORT_PRIVATE HeapBase : public cppgc::HeapHandle {
  public:
@@ -183,11 +192,6 @@ class V8_EXPORT_PRIVATE HeapBase : public cppgc::HeapHandle {
     stack_state_of_prev_gc_ = stack_state;
   }
 
-  uintptr_t stack_end_of_current_gc() const { return stack_end_of_current_gc_; }
-  void SetStackEndOfCurrentGC(uintptr_t stack_end) {
-    stack_end_of_current_gc_ = stack_end;
-  }
-
   void SetInAtomicPauseForTesting(bool value) { in_atomic_pause_ = value; }
 
   virtual void StartIncrementalGarbageCollectionForTesting() = 0;
@@ -202,6 +206,10 @@ class V8_EXPORT_PRIVATE HeapBase : public cppgc::HeapHandle {
 
   MarkingType marking_support() const { return marking_support_; }
   SweepingType sweeping_support() const { return sweeping_support_; }
+
+  bool incremental_marking_supported() const {
+    return marking_support_ != MarkingType::kAtomic;
+  }
 
   bool generational_gc_supported() const {
     const bool supported = is_young_generation_enabled();
@@ -220,8 +228,22 @@ class V8_EXPORT_PRIVATE HeapBase : public cppgc::HeapHandle {
     name_for_unnamed_object_ = value;
   }
 
+  // Callback support so that other components can listen to when objects are
+  // moved.
+  bool HasMoveListeners() const { return !move_listeners_.empty(); }
+  void CallMoveListeners(Address from, Address to,
+                         size_t size_including_header);
+  void RegisterMoveListener(MoveListener* listener);
+  void UnregisterMoveListener(MoveListener* listener);
+
   void set_incremental_marking_in_progress(bool value) {
     is_incremental_marking_in_progress_ = value;
+  }
+
+  void EnterNoGCScope() { ++no_gc_scope_; }
+  void LeaveNoGCScope() {
+    DCHECK_GT(no_gc_scope_, 0);
+    --no_gc_scope_;
   }
 
   using HeapHandle::is_incremental_marking_in_progress;
@@ -289,10 +311,6 @@ class V8_EXPORT_PRIVATE HeapBase : public cppgc::HeapHandle {
       EmbedderStackState::kNoHeapPointers;
   std::unique_ptr<EmbedderStackState> override_stack_state_;
 
-  // Marker that signals end of the interesting stack region in which on-heap
-  // pointers can be found.
-  uintptr_t stack_end_of_current_gc_ = 0;
-
   bool in_atomic_pause_ = false;
 
   int creation_thread_id_ = v8::base::OS::GetCurrentThreadId();
@@ -303,9 +321,10 @@ class V8_EXPORT_PRIVATE HeapBase : public cppgc::HeapHandle {
   HeapObjectNameForUnnamedObject name_for_unnamed_object_ =
       HeapObjectNameForUnnamedObject::kUseHiddenName;
 
+  std::vector<MoveListener*> move_listeners_;
+
   friend class MarkerBase::IncrementalMarkingTask;
   friend class cppgc::subtle::DisallowGarbageCollectionScope;
-  friend class cppgc::subtle::NoGarbageCollectionScope;
   friend class cppgc::testing::Heap;
   friend class cppgc::testing::OverrideEmbedderStackStateScope;
 };

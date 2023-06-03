@@ -71,8 +71,3 @@ inline TorqueGeneratedJSRegExpStringIterator<D, P>::TorqueGeneratedJSRegExpStrin
     : P(ptr) {
   SLOW_DCHECK(IsJSRegExpStringIterator_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSRegExpStringIterator<D, P>::TorqueGeneratedJSRegExpStringIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSRegExpStringIterator_NonInline(*this));
-}

@@ -18,17 +18,14 @@ namespace internal {
 namespace {
 
 // During serialization, puts the native context into a state understood by the
-// serializer (e.g. by clearing lists of Code objects).  After serialization,
-// the original state is restored.
+// serializer (e.g. by clearing lists of InstructionStream objects).  After
+// serialization, the original state is restored.
 class V8_NODISCARD SanitizeNativeContextScope final {
  public:
   SanitizeNativeContextScope(Isolate* isolate, NativeContext native_context,
                              bool allow_active_isolate_for_testing,
                              const DisallowGarbageCollection& no_gc)
-      : native_context_(native_context),
-        optimized_code_list_(native_context.OptimizedCodeListHead()),
-        deoptimized_code_list_(native_context.DeoptimizedCodeListHead()),
-        no_gc_(no_gc) {
+      : native_context_(native_context), no_gc_(no_gc) {
 #ifdef DEBUG
     if (!allow_active_isolate_for_testing) {
       // Microtasks.
@@ -37,24 +34,16 @@ class V8_NODISCARD SanitizeNativeContextScope final {
       DCHECK(!microtask_queue->HasMicrotasksSuppressions());
       DCHECK_EQ(0, microtask_queue->GetMicrotasksScopeDepth());
       DCHECK(microtask_queue->DebugMicrotasksScopeDepthIsZero());
-      // Code lists.
-      DCHECK(optimized_code_list_.IsUndefined(isolate));
-      DCHECK(deoptimized_code_list_.IsUndefined(isolate));
     }
 #endif
     microtask_queue_external_pointer_ =
         native_context
             .RawExternalPointerField(NativeContext::kMicrotaskQueueOffset)
             .GetAndClearContentForSerialization(no_gc);
-    Object undefined = ReadOnlyRoots(isolate).undefined_value();
-    native_context.SetOptimizedCodeListHead(undefined);
-    native_context.SetDeoptimizedCodeListHead(undefined);
   }
 
   ~SanitizeNativeContextScope() {
     // Restore saved fields.
-    native_context_.SetOptimizedCodeListHead(optimized_code_list_);
-    native_context_.SetDeoptimizedCodeListHead(deoptimized_code_list_);
     native_context_
         .RawExternalPointerField(NativeContext::kMicrotaskQueueOffset)
         .RestoreContentAfterSerialization(microtask_queue_external_pointer_,
@@ -64,8 +53,6 @@ class V8_NODISCARD SanitizeNativeContextScope final {
  private:
   NativeContext native_context_;
   ExternalPointerSlot::RawContent microtask_queue_external_pointer_;
-  const Object optimized_code_list_;
-  const Object deoptimized_code_list_;
   const DisallowGarbageCollection& no_gc_;
 };
 
@@ -126,7 +113,8 @@ void ContextSerializer::Serialize(Context* o,
   Pad();
 }
 
-void ContextSerializer::SerializeObjectImpl(Handle<HeapObject> obj) {
+void ContextSerializer::SerializeObjectImpl(Handle<HeapObject> obj,
+                                            SlotType slot_type) {
   DCHECK(!ObjectIsBytecodeHandler(*obj));  // Only referenced in dispatch table.
 
   if (!allow_active_isolate_for_testing()) {
@@ -173,9 +161,6 @@ void ContextSerializer::SerializeObjectImpl(Handle<HeapObject> obj) {
   if (InstanceTypeChecker::IsFeedbackVector(instance_type)) {
     // Clear literal boilerplates and feedback.
     Handle<FeedbackVector>::cast(obj)->ClearSlots(isolate());
-  } else if (InstanceTypeChecker::IsFeedbackCell(instance_type)) {
-    // Clear InterruptBudget when serializing FeedbackCell.
-    Handle<FeedbackCell>::cast(obj)->SetInitialInterruptBudget();
   } else if (InstanceTypeChecker::IsJSObject(instance_type)) {
     if (SerializeJSObjectWithEmbedderFields(Handle<JSObject>::cast(obj))) {
       return;
@@ -185,12 +170,15 @@ void ContextSerializer::SerializeObjectImpl(Handle<HeapObject> obj) {
       // Unconditionally reset the JSFunction to its SFI's code, since we can't
       // serialize optimized code anyway.
       JSFunction closure = JSFunction::cast(*obj);
+      if (closure.shared().HasBytecodeArray()) {
+        closure.SetInterruptBudget(isolate());
+      }
       closure.ResetIfCodeFlushed();
       if (closure.is_compiled()) {
         if (closure.shared().HasBaselineCode()) {
           closure.shared().FlushBaselineCode();
         }
-        closure.set_code(closure.shared().GetCode(), kReleaseStore);
+        closure.set_code(closure.shared().GetCode(isolate()), kReleaseStore);
       }
     }
   }
@@ -199,7 +187,7 @@ void ContextSerializer::SerializeObjectImpl(Handle<HeapObject> obj) {
 
   // Object has not yet been serialized.  Serialize it here.
   ObjectSerializer serializer(this, obj, &sink_);
-  serializer.Serialize();
+  serializer.Serialize(slot_type);
 }
 
 bool ContextSerializer::ShouldBeInTheStartupObjectCache(HeapObject o) {
@@ -207,10 +195,9 @@ bool ContextSerializer::ShouldBeInTheStartupObjectCache(HeapObject o) {
   // contain a unique ID, and deserializing several context snapshots containing
   // script would cause dupes.
   return o.IsName() || o.IsScript() || o.IsSharedFunctionInfo() ||
-         o.IsHeapNumber() ||
-         (V8_EXTERNAL_CODE_SPACE_BOOL && o.IsCodeDataContainer()) ||
-         o.IsCode() || o.IsScopeInfo() || o.IsAccessorInfo() ||
-         o.IsTemplateInfo() || o.IsClassPositions() ||
+         o.IsHeapNumber() || o.IsCode() || o.IsInstructionStream() ||
+         o.IsScopeInfo() || o.IsAccessorInfo() || o.IsTemplateInfo() ||
+         o.IsClassPositions() ||
          o.map() == ReadOnlyRoots(isolate()).fixed_cow_array_map();
 }
 
@@ -283,7 +270,7 @@ bool ContextSerializer::SerializeJSObjectWithEmbedderFields(
   //    smis are serialized regularly.
   {
     AllowGarbageCollection allow_gc;
-    ObjectSerializer(this, obj, &sink_).Serialize();
+    ObjectSerializer(this, obj, &sink_).Serialize(SlotType::kAnySlot);
     // Reload raw pointer.
     js_obj = *obj;
   }
@@ -306,7 +293,7 @@ bool ContextSerializer::SerializeJSObjectWithEmbedderFields(
     embedder_fields_sink_.PutInt(reference->back_ref_index(), "BackRefIndex");
     embedder_fields_sink_.PutInt(i, "embedder field index");
     embedder_fields_sink_.PutInt(data.raw_size, "embedder fields data size");
-    embedder_fields_sink_.PutRaw(reinterpret_cast<const byte*>(data.data),
+    embedder_fields_sink_.PutRaw(reinterpret_cast<const uint8_t*>(data.data),
                                  data.raw_size, "embedder fields data");
     delete[] data.data;
   }

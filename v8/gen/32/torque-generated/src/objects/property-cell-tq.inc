@@ -101,8 +101,5 @@ class TorqueGeneratedPropertyCell : public P {
 
  protected:
   inline explicit TorqueGeneratedPropertyCell(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPropertyCell(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

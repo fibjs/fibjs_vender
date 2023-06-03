@@ -97,9 +97,6 @@ class TorqueGeneratedPromiseCapability : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseCapability(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseCapability(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsPromiseReaction() that avoids inlining.
@@ -218,9 +215,6 @@ class TorqueGeneratedPromiseReaction : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseReaction(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseReaction(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsPromiseReactionJobTask() that avoids inlining.
@@ -322,9 +316,6 @@ class TorqueGeneratedPromiseReactionJobTask : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseReactionJobTask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseReactionJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsPromiseFulfillReactionJobTask() that avoids inlining.
@@ -389,9 +380,6 @@ class TorqueGeneratedPromiseFulfillReactionJobTask : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseFulfillReactionJobTask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseFulfillReactionJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsPromiseRejectReactionJobTask() that avoids inlining.
@@ -456,9 +444,6 @@ class TorqueGeneratedPromiseRejectReactionJobTask : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseRejectReactionJobTask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseRejectReactionJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsPromiseResolveThenableJobTask() that avoids inlining.
@@ -563,8 +548,5 @@ class TorqueGeneratedPromiseResolveThenableJobTask : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseResolveThenableJobTask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseResolveThenableJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

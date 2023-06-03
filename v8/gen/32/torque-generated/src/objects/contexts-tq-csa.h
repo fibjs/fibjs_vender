@@ -78,6 +78,27 @@ TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_OBJECT_FUNCTION_INDEX_0(compi
 TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_RESULT_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_FILTER_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_TAKE_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_DROP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_FLAT_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_VALID_ITERATOR_WRAPPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
@@ -195,6 +216,12 @@ TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_RAB_GSAB_BIGUINT64_ARRAY_MAP_
 TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_RAB_GSAB_BIGINT64_ARRAY_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_DATA_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_PROMISE_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
@@ -253,6 +280,20 @@ TNode<IntPtrT> ARRAY_JOIN_STACK_INDEX_0(compiler::CodeAssemblerState* state_);
 TNode<IntPtrT> OBJECT_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> ITERATOR_RESULT_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_FILTER_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_TAKE_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_DROP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_FLAT_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> VALID_ITERATOR_WRAPPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
@@ -332,6 +373,10 @@ TNode<IntPtrT> RAB_GSAB_BIGUINT64_ARRAY_MAP_INDEX_0(compiler::CodeAssemblerState
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> RAB_GSAB_BIGINT64_ARRAY_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> DATA_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> PROMISE_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> PROMISE_THEN_INDEX_0(compiler::CodeAssemblerState* state_);
@@ -355,25 +400,25 @@ TNode<IntPtrT> BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX_0(compiler::CodeAssembl
 TNode<IntPtrT> BOUND_FUNCTION_WITHOUT_CONSTRUCTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> WRAPPED_FUNCTION_MAP_INDEX_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=167&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=177&c=1
 TNode<Object> LoadContextElement_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<IntPtrT> p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=172&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=182&c=1
 TNode<Object> LoadContextElement_1(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<Smi> p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=187&c=1
 TNode<Object> LoadContextElement_2(compiler::CodeAssemblerState* state_, TNode<Context> p_c, int32_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=182&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=192&c=1
 void StoreContextElement_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<IntPtrT> p_i, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=187&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=197&c=1
 void StoreContextElement_1(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<Smi> p_i, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=192&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=202&c=1
 void StoreContextElement_2(compiler::CodeAssemblerState* state_, TNode<Context> p_c, int32_t p_i, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=201&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=211&c=1
 TNode<Smi> kNoContext_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=13&c=9
 TNode<Smi> LoadContextLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_o);
@@ -449,9 +494,6 @@ TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_1(compiler::Code
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=87&c=10
 TorqueStructReference_Constructor_0 NativeContextSlot_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=87&c=10
-TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=87&c=10
 TorqueStructReference_Callable_0 NativeContextSlot_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);

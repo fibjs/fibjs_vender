@@ -9,7 +9,7 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=99&c=1
 TNode<Smi> kStoreSucceded_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=100&c=1
-TNode<Smi> kStoreFailureArrayDetached_0(compiler::CodeAssemblerState* state_);
+TNode<Smi> kStoreFailureArrayDetachedOrOutOfBounds_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=140&c=1
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_elementsKindParam);
 

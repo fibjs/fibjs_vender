@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-match-all-tq-csa.h"
@@ -153,15 +156,15 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
     RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<Object>{tmp13}, TNode<Object>{tmp12});
     tmp14 = CodeStubAssembler(state_).StringConstant("g");
     tmp15 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp16 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), p_context, tmp9, tmp14, tmp15);
+    tmp16 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), TNode<Object>(), tmp9, tmp14, tmp15);
     tmp17 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp18 = CodeStubAssembler(state_).SmiNotEqual(TNode<Smi>{tmp16}, TNode<Smi>{tmp17});
     tmp19 = CodeStubAssembler(state_).StringConstant("u");
     tmp20 = CodeStubAssembler(state_).StringConstant("v");
     tmp21 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp22 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), p_context, tmp9, tmp19, tmp21);
+    tmp22 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), TNode<Object>(), tmp9, tmp19, tmp21);
     tmp23 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp24 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), p_context, tmp9, tmp20, tmp23);
+    tmp24 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), TNode<Object>(), tmp9, tmp20, tmp23);
     tmp25 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp26 = CodeStubAssembler(state_).SmiNotEqual(TNode<Smi>{tmp22}, TNode<Smi>{tmp25});
     ca_.Branch(tmp26, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});

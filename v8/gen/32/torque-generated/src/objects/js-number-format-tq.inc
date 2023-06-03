@@ -79,8 +79,5 @@ class TorqueGeneratedJSNumberFormat : public P {
 
  protected:
   inline explicit TorqueGeneratedJSNumberFormat(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSNumberFormat(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

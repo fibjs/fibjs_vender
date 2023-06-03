@@ -81,11 +81,6 @@ inline TorqueGeneratedPromiseCapability<D, P>::TorqueGeneratedPromiseCapability(
     : P(ptr) {
   SLOW_DCHECK(IsPromiseCapability_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedPromiseCapability<D, P>::TorqueGeneratedPromiseCapability(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseCapability_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=28&c=3
 template<class D, class P>
 Object TorqueGeneratedPromiseReaction<D, P>::next() const {
@@ -216,11 +211,6 @@ template<class D, class P>
 inline TorqueGeneratedPromiseReaction<D, P>::TorqueGeneratedPromiseReaction(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsPromiseReaction_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedPromiseReaction<D, P>::TorqueGeneratedPromiseReaction(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseReaction_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=51&c=3
 template<class D, class P>
@@ -353,11 +343,6 @@ inline TorqueGeneratedPromiseReactionJobTask<D, P>::TorqueGeneratedPromiseReacti
     : P(ptr) {
   SLOW_DCHECK(IsPromiseReactionJobTask_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedPromiseReactionJobTask<D, P>::TorqueGeneratedPromiseReactionJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseReactionJobTask_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=60&c=1
 template<class D, class P>
 D TorqueGeneratedPromiseFulfillReactionJobTask<D, P>::cast(Object object) {
@@ -369,11 +354,6 @@ inline TorqueGeneratedPromiseFulfillReactionJobTask<D, P>::TorqueGeneratedPromis
     : P(ptr) {
   SLOW_DCHECK(IsPromiseFulfillReactionJobTask_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedPromiseFulfillReactionJobTask<D, P>::TorqueGeneratedPromiseFulfillReactionJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseFulfillReactionJobTask_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=62&c=1
 template<class D, class P>
 D TorqueGeneratedPromiseRejectReactionJobTask<D, P>::cast(Object object) {
@@ -384,11 +364,6 @@ template<class D, class P>
 inline TorqueGeneratedPromiseRejectReactionJobTask<D, P>::TorqueGeneratedPromiseRejectReactionJobTask(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsPromiseRejectReactionJobTask_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedPromiseRejectReactionJobTask<D, P>::TorqueGeneratedPromiseRejectReactionJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseRejectReactionJobTask_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=65&c=3
 template<class D, class P>
@@ -496,9 +471,4 @@ template<class D, class P>
 inline TorqueGeneratedPromiseResolveThenableJobTask<D, P>::TorqueGeneratedPromiseResolveThenableJobTask(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsPromiseResolveThenableJobTask_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedPromiseResolveThenableJobTask<D, P>::TorqueGeneratedPromiseResolveThenableJobTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseResolveThenableJobTask_NonInline(*this));
 }

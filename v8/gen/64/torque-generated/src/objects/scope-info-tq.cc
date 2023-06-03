@@ -6,7 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=110&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
 bool IsScopeInfo_NonInline(HeapObject o) {
   return o.IsScopeInfo();
 }

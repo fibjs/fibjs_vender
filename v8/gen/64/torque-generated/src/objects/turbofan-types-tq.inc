@@ -53,9 +53,6 @@ class TorqueGeneratedTurbofanType : public P {
 
  protected:
   inline explicit TorqueGeneratedTurbofanType(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTurbofanType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class TurbofanType : public TorqueGeneratedTurbofanType<TurbofanType, HeapObject> {
@@ -141,9 +138,6 @@ class TorqueGeneratedTurbofanBitsetType : public P {
 
  protected:
   inline explicit TorqueGeneratedTurbofanBitsetType(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTurbofanBitsetType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class TurbofanBitsetType : public TorqueGeneratedTurbofanBitsetType<TurbofanBitsetType, TurbofanType> {
@@ -234,9 +228,6 @@ class TorqueGeneratedTurbofanUnionType : public P {
 
  protected:
   inline explicit TorqueGeneratedTurbofanUnionType(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTurbofanUnionType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class TurbofanUnionType : public TorqueGeneratedTurbofanUnionType<TurbofanUnionType, TurbofanType> {
@@ -323,9 +314,6 @@ class TorqueGeneratedTurbofanRangeType : public P {
 
  protected:
   inline explicit TorqueGeneratedTurbofanRangeType(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTurbofanRangeType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class TurbofanRangeType : public TorqueGeneratedTurbofanRangeType<TurbofanRangeType, TurbofanType> {
@@ -406,9 +394,6 @@ class TorqueGeneratedTurbofanHeapConstantType : public P {
 
  protected:
   inline explicit TorqueGeneratedTurbofanHeapConstantType(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTurbofanHeapConstantType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class TurbofanHeapConstantType : public TorqueGeneratedTurbofanHeapConstantType<TurbofanHeapConstantType, TurbofanType> {
@@ -487,9 +472,6 @@ class TorqueGeneratedTurbofanOtherNumberConstantType : public P {
 
  protected:
   inline explicit TorqueGeneratedTurbofanOtherNumberConstantType(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTurbofanOtherNumberConstantType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class TurbofanOtherNumberConstantType : public TorqueGeneratedTurbofanOtherNumberConstantType<TurbofanOtherNumberConstantType, TurbofanType> {

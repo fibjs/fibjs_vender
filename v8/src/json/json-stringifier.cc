@@ -126,7 +126,6 @@ class JsonStringifier {
 
   Isolate* isolate_;
   IncrementalStringBuilder builder_;
-  Handle<String> tojson_string_;
   Handle<FixedArray> property_list_;
   Handle<JSReceiver> replacer_function_;
   base::uc16* gap_;
@@ -218,21 +217,24 @@ JsonStringifier::JsonStringifier(Isolate* isolate)
       builder_(isolate),
       gap_(nullptr),
       indent_(0),
-      stack_() {
-  tojson_string_ = factory()->toJSON_string();
-}
+      stack_() {}
 
 MaybeHandle<Object> JsonStringifier::Stringify(Handle<Object> object,
                                                Handle<Object> replacer,
                                                Handle<Object> gap) {
-  if (!InitializeReplacer(replacer)) return MaybeHandle<Object>();
+  if (!InitializeReplacer(replacer)) {
+    CHECK(isolate_->has_pending_exception());
+    return MaybeHandle<Object>();
+  }
   if (!gap->IsUndefined(isolate_) && !InitializeGap(gap)) {
+    CHECK(isolate_->has_pending_exception());
     return MaybeHandle<Object>();
   }
   Result result = SerializeObject(object);
   if (result == UNCHANGED) return factory()->undefined_value();
   if (result == SUCCESS) return builder_.Finish();
   DCHECK(result == EXCEPTION);
+  CHECK(isolate_->has_pending_exception());
   return MaybeHandle<Object>();
 }
 
@@ -274,6 +276,7 @@ bool JsonStringifier::InitializeReplacer(Handle<Object> replacer) {
       MaybeHandle<OrderedHashSet> set_candidate =
           OrderedHashSet::Add(isolate_, set, key);
       if (!set_candidate.ToHandle(&set)) {
+        CHECK(isolate_->has_pending_exception());
         return false;
       }
     }
@@ -334,7 +337,7 @@ MaybeHandle<Object> JsonStringifier::ApplyToJsonFunction(Handle<Object> object,
   // Retrieve toJSON function. The LookupIterator automatically handles
   // the ToObject() equivalent ("GetRoot") if {object} is a BigInt.
   Handle<Object> fun;
-  LookupIterator it(isolate_, object, tojson_string_,
+  LookupIterator it(isolate_, object, factory()->toJSON_string(),
                     LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
   ASSIGN_RETURN_ON_EXCEPTION(isolate_, fun, Object::GetProperty(&it), Object);
   if (!fun->IsCallable()) return object;
@@ -515,6 +518,14 @@ Handle<String> JsonStringifier::ConstructCircularStructureErrorMessage(
   return result;
 }
 
+bool MayHaveInterestingSymbol(Isolate* isolate, JSReceiver object) {
+  for (PrototypeIterator iter(isolate, object, kStartAtReceiver);
+       !iter.IsAtEnd(); iter.Advance()) {
+    if (iter.GetCurrent().map().may_have_interesting_properties()) return true;
+  }
+  return false;
+}
+
 template <bool deferred_string_key>
 JsonStringifier::Result JsonStringifier::Serialize_(Handle<Object> object,
                                                     bool comma,
@@ -530,7 +541,8 @@ JsonStringifier::Result JsonStringifier::Serialize_(Handle<Object> object,
   if (!object->IsSmi()) {
     InstanceType instance_type =
         HeapObject::cast(*object).map(cage_base).instance_type();
-    if (InstanceTypeChecker::IsJSReceiver(instance_type) ||
+    if ((InstanceTypeChecker::IsJSReceiver(instance_type) &&
+         MayHaveInterestingSymbol(isolate_, JSReceiver::cast(*object))) ||
         InstanceTypeChecker::IsBigInt(instance_type)) {
       ASSIGN_RETURN_ON_EXCEPTION_VALUE(
           isolate_, object, ApplyToJsonFunction(object, key), EXCEPTION);
@@ -586,11 +598,34 @@ JsonStringifier::Result JsonStringifier::Serialize_(Handle<Object> object,
     case JS_RAW_JSON_TYPE:
       DCHECK(v8_flags.harmony_json_parse_with_source);
       if (deferred_string_key) SerializeDeferredKey(comma, key);
-      builder_.AppendString(Handle<String>::cast(
-          handle(Handle<JSRawJson>::cast(object)->InObjectPropertyAt(
-                     JSRawJson::kRawJsonIndex),
-                 isolate_)));
+      {
+        Handle<JSRawJson> raw_json_obj = Handle<JSRawJson>::cast(object);
+        Handle<String> raw_json;
+        if (raw_json_obj->HasInitialLayout(isolate_)) {
+          // Fast path: the object returned by JSON.rawJSON has its initial map
+          // intact.
+          raw_json = Handle<String>::cast(handle(
+              raw_json_obj->InObjectPropertyAt(JSRawJson::kRawJsonInitialIndex),
+              isolate_));
+        } else {
+          // Slow path: perform a property get for "rawJSON". Because raw JSON
+          // objects are created frozen, it is still guaranteed that there will
+          // be a property named "rawJSON" that is a String. Their initial maps
+          // only change due to VM-internal operations like being optimized for
+          // being used as a prototype.
+          raw_json = Handle<String>::cast(
+              JSObject::GetProperty(isolate_, raw_json_obj,
+                                    isolate_->factory()->raw_json_string())
+                  .ToHandleChecked());
+        }
+        builder_.AppendString(raw_json);
+      }
       return SUCCESS;
+#if V8_ENABLE_WEBASSEMBLY
+    case WASM_STRUCT_TYPE:
+    case WASM_ARRAY_TYPE:
+      return UNCHANGED;
+#endif
     default:
       if (InstanceTypeChecker::IsString(instance_type)) {
         if (deferred_string_key) SerializeDeferredKey(comma, key);
@@ -783,7 +818,10 @@ JsonStringifier::Result JsonStringifier::SerializeArrayLikeSlow(
     if (result == SUCCESS) continue;
     if (result == UNCHANGED) {
       // Detect overflow sooner for large sparse arrays.
-      if (builder_.HasOverflowed()) return EXCEPTION;
+      if (builder_.HasOverflowed()) {
+        isolate_->Throw(*isolate_->factory()->NewInvalidStringLengthError());
+        return EXCEPTION;
+      }
       builder_.AppendCStringLiteral("null");
     } else {
       return result;
@@ -852,7 +890,7 @@ JsonStringifier::Result JsonStringifier::SerializeJSObject(
     if (details.location() == PropertyLocation::kField &&
         *map == object->map(cage_base)) {
       DCHECK_EQ(PropertyKind::kData, details.kind());
-      FieldIndex field_index = FieldIndex::ForDescriptor(*map, i);
+      FieldIndex field_index = FieldIndex::ForDetails(*map, details);
       property = JSObject::FastPropertyAt(
           isolate_, object, details.representation(), field_index);
     } else {

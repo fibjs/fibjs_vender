@@ -13,10 +13,10 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceByteArrayBytes(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceWeakArrayListObjects(WeakArrayList p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=296&c=1
 inline intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -34,7 +34,7 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_o
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=29&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint8_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceFixedArrayObjects
@@ -180,7 +180,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceWeakArrayListObjects(W
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -198,7 +198,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=296&c=1
 intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -314,7 +314,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint8_0(Object p
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -353,11 +353,6 @@ template<class D, class P>
 inline TorqueGeneratedFixedArrayBase<D, P>::TorqueGeneratedFixedArrayBase(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsFixedArrayBase_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedFixedArrayBase<D, P>::TorqueGeneratedFixedArrayBase(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFixedArrayBase_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
 template<class D, class P>
@@ -399,11 +394,6 @@ template<class D, class P>
 inline TorqueGeneratedFixedArray<D, P>::TorqueGeneratedFixedArray(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsFixedArray_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedFixedArray<D, P>::TorqueGeneratedFixedArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFixedArray_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=24&c=9
 template<class D, class P>
@@ -460,11 +450,6 @@ inline TorqueGeneratedWeakFixedArray<D, P>::TorqueGeneratedWeakFixedArray(Addres
     : P(ptr) {
   SLOW_DCHECK(IsWeakFixedArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedWeakFixedArray<D, P>::TorqueGeneratedWeakFixedArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsWeakFixedArray_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
 template<class D, class P>
 D TorqueGeneratedFixedDoubleArray<D, P>::cast(Object object) {
@@ -475,11 +460,6 @@ template<class D, class P>
 inline TorqueGeneratedFixedDoubleArray<D, P>::TorqueGeneratedFixedDoubleArray(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsFixedDoubleArray_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedFixedDoubleArray<D, P>::TorqueGeneratedFixedDoubleArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFixedDoubleArray_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=29&c=3
 template<class D, class P>
@@ -512,11 +492,6 @@ inline TorqueGeneratedByteArray<D, P>::TorqueGeneratedByteArray(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsByteArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedByteArray<D, P>::TorqueGeneratedByteArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsByteArray_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
 template<class D, class P>
 D TorqueGeneratedArrayList<D, P>::cast(Object object) {
@@ -528,11 +503,6 @@ inline TorqueGeneratedArrayList<D, P>::TorqueGeneratedArrayList(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsArrayList_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedArrayList<D, P>::TorqueGeneratedArrayList(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsArrayList_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
 template<class D, class P>
 D TorqueGeneratedTemplateList<D, P>::cast(Object object) {
@@ -543,11 +513,6 @@ template<class D, class P>
 inline TorqueGeneratedTemplateList<D, P>::TorqueGeneratedTemplateList(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsTemplateList_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedTemplateList<D, P>::TorqueGeneratedTemplateList(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTemplateList_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=44&c=9
 template<class D, class P>
@@ -617,9 +582,4 @@ template<class D, class P>
 inline TorqueGeneratedWeakArrayList<D, P>::TorqueGeneratedWeakArrayList(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsWeakArrayList_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedWeakArrayList<D, P>::TorqueGeneratedWeakArrayList(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsWeakArrayList_NonInline(*this));
 }

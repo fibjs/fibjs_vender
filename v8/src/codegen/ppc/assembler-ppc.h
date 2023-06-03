@@ -621,7 +621,7 @@ class Assembler : public AssemblerBase {
 
   RegList* GetScratchRegisterList() { return &scratch_register_list_; }
   // ---------------------------------------------------------------------------
-  // Code generation
+  // InstructionStream generation
 
   // Insert the smallest number of nop instructions
   // possible to align the pc offset to a multiple
@@ -1245,9 +1245,9 @@ class Assembler : public AssemblerBase {
   // Writes a single byte or word of data in the code stream.  Used
   // for inline tables, e.g., jump-tables.
   void db(uint8_t data);
-  void dd(uint32_t data, RelocInfo::Mode rmode = RelocInfo::NO_INFO);
-  void dq(uint64_t data, RelocInfo::Mode rmode = RelocInfo::NO_INFO);
-  void dp(uintptr_t data, RelocInfo::Mode rmode = RelocInfo::NO_INFO);
+  void dd(uint32_t data);
+  void dq(uint64_t data);
+  void dp(uintptr_t data);
 
   // Read/patch instructions
   Instr instr_at(int pos) {
@@ -1383,7 +1383,7 @@ class Assembler : public AssemblerBase {
 
   bool is_trampoline_emitted() const { return trampoline_emitted_; }
 
-  // Code generation
+  // InstructionStream generation
   // The relocation writer's position is at least kGap bytes below the end of
   // the generated instructions. This is so that multi-instruction sequences do
   // not have to check for overflow. The same is true for writes of large
@@ -1551,17 +1551,24 @@ class EnsureSpace {
 
 class PatchingAssembler : public Assembler {
  public:
-  PatchingAssembler(const AssemblerOptions& options, byte* address,
+  PatchingAssembler(const AssemblerOptions& options, uint8_t* address,
                     int instructions);
   ~PatchingAssembler();
 };
 
 class V8_EXPORT_PRIVATE V8_NODISCARD UseScratchRegisterScope {
  public:
-  explicit UseScratchRegisterScope(Assembler* assembler);
-  ~UseScratchRegisterScope();
+  explicit UseScratchRegisterScope(Assembler* assembler)
+      : assembler_(assembler),
+        old_available_(*assembler->GetScratchRegisterList()) {}
 
-  Register Acquire();
+  ~UseScratchRegisterScope() {
+    *assembler_->GetScratchRegisterList() = old_available_;
+  }
+
+  Register Acquire() {
+    return assembler_->GetScratchRegisterList()->PopFirst();
+  }
 
   // Check if we have registers available to acquire.
   bool CanAcquire() const {
@@ -1570,7 +1577,7 @@ class V8_EXPORT_PRIVATE V8_NODISCARD UseScratchRegisterScope {
 
  private:
   friend class Assembler;
-  friend class TurboAssembler;
+  friend class MacroAssembler;
 
   Assembler* assembler_;
   RegList old_available_;

@@ -151,9 +151,6 @@ class TorqueGeneratedWeakCell : public P {
 
  protected:
   inline explicit TorqueGeneratedWeakCell(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedWeakCell(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSFinalizationRegistry() that avoids inlining.
@@ -277,9 +274,6 @@ class TorqueGeneratedJSFinalizationRegistry : public P {
 
  protected:
   inline explicit TorqueGeneratedJSFinalizationRegistry(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSFinalizationRegistry(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSWeakRef() that avoids inlining.
@@ -342,8 +336,5 @@ class TorqueGeneratedJSWeakRef : public P {
 
  protected:
   inline explicit TorqueGeneratedJSWeakRef(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSWeakRef(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

@@ -201,11 +201,6 @@ inline TorqueGeneratedWeakCell<D, P>::TorqueGeneratedWeakCell(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsWeakCell_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedWeakCell<D, P>::TorqueGeneratedWeakCell(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsWeakCell_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=10&c=3
 template<class D, class P>
 NativeContext TorqueGeneratedJSFinalizationRegistry<D, P>::native_context() const {
@@ -375,11 +370,6 @@ inline TorqueGeneratedJSFinalizationRegistry<D, P>::TorqueGeneratedJSFinalizatio
     : P(ptr) {
   SLOW_DCHECK(IsJSFinalizationRegistry_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSFinalizationRegistry<D, P>::TorqueGeneratedJSFinalizationRegistry(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSFinalizationRegistry_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=43&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedJSWeakRef<D, P>::target() const {
@@ -414,9 +404,4 @@ template<class D, class P>
 inline TorqueGeneratedJSWeakRef<D, P>::TorqueGeneratedJSWeakRef(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSWeakRef_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSWeakRef<D, P>::TorqueGeneratedJSWeakRef(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSWeakRef_NonInline(*this));
 }

@@ -143,8 +143,3 @@ inline TorqueGeneratedJSDateTimeFormat<D, P>::TorqueGeneratedJSDateTimeFormat(Ad
     : P(ptr) {
   SLOW_DCHECK(IsJSDateTimeFormat_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSDateTimeFormat<D, P>::TorqueGeneratedJSDateTimeFormat(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSDateTimeFormat_NonInline(*this));
-}

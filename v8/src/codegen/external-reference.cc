@@ -6,6 +6,7 @@
 
 #include "include/v8-fast-api-calls.h"
 #include "src/api/api-inl.h"
+#include "src/base/bits.h"
 #include "src/base/ieee754.h"
 #include "src/codegen/cpu-features.h"
 #include "src/common/globals.h"
@@ -36,6 +37,7 @@
 #include "src/regexp/regexp-macro-assembler-arch.h"
 #include "src/regexp/regexp-stack.h"
 #include "src/strings/string-search.h"
+#include "src/strings/unicode-inl.h"
 
 #if V8_ENABLE_WEBASSEMBLY
 #include "src/wasm/wasm-external-refs.h"
@@ -338,6 +340,9 @@ struct IsValidExternalReferenceType<Result (Class::*)(Args...)> {
 FUNCTION_REFERENCE(write_barrier_marking_from_code_function,
                    WriteBarrier::MarkingFromCode)
 
+FUNCTION_REFERENCE(write_barrier_shared_marking_from_code_function,
+                   WriteBarrier::SharedMarkingFromCode)
+
 FUNCTION_REFERENCE(shared_barrier_from_code_function,
                    WriteBarrier::SharedFromCode)
 
@@ -349,6 +354,19 @@ FUNCTION_REFERENCE(delete_handle_scope_extensions,
 
 FUNCTION_REFERENCE(ephemeron_key_write_barrier_function,
                    Heap::EphemeronKeyWriteBarrierFromCode)
+
+ExternalPointerHandle AllocateAndInitializeExternalPointerTableEntry(
+    Isolate* isolate, Address pointer) {
+#ifdef V8_ENABLE_SANDBOX
+  return isolate->external_pointer_table().AllocateAndInitializeEntry(
+      isolate, pointer, kExternalObjectValueTag);
+#else
+  return 0;
+#endif  // V8_ENABLE_SANDBOX
+}
+
+FUNCTION_REFERENCE(allocate_and_initialize_external_pointer_table_entry,
+                   AllocateAndInitializeExternalPointerTableEntry)
 
 FUNCTION_REFERENCE(get_date_field_function, JSDate::GetField)
 
@@ -455,8 +473,9 @@ IF_WASM(FUNCTION_REFERENCE, wasm_float64_pow, wasm::float64_pow_wrapper)
 IF_WASM(FUNCTION_REFERENCE, wasm_call_trap_callback_for_testing,
         wasm::call_trap_callback_for_testing)
 IF_WASM(FUNCTION_REFERENCE, wasm_array_copy, wasm::array_copy_wrapper)
-IF_WASM(FUNCTION_REFERENCE, wasm_array_fill_with_number_or_null,
-        wasm::array_fill_with_number_or_null_wrapper)
+IF_WASM(FUNCTION_REFERENCE, wasm_array_fill, wasm::array_fill_wrapper)
+IF_WASM(FUNCTION_REFERENCE_WITH_TYPE, wasm_string_to_f64,
+        wasm::flat_string_to_f64, BUILTIN_FP_POINTER_CALL)
 
 static void f64_acos_wrapper(Address data) {
   double input = ReadUnalignedValue<double>(data);
@@ -512,6 +531,18 @@ ExternalReference ExternalReference::heap_is_marking_flag_address(
 ExternalReference ExternalReference::heap_is_minor_marking_flag_address(
     Isolate* isolate) {
   return ExternalReference(isolate->heap()->IsMinorMarkingFlagAddress());
+}
+
+ExternalReference ExternalReference::is_shared_space_isolate_flag_address(
+    Isolate* isolate) {
+  return ExternalReference(
+      isolate->isolate_data()->is_shared_space_isolate_flag_address());
+}
+
+ExternalReference ExternalReference::uses_shared_heap_flag_address(
+    Isolate* isolate) {
+  return ExternalReference(
+      isolate->isolate_data()->uses_shared_heap_flag_address());
 }
 
 ExternalReference ExternalReference::new_space_allocation_top_address(
@@ -584,11 +615,6 @@ ExternalReference::address_of_FLAG_harmony_regexp_unicode_sets() {
 // called address_of_FLAG_foo (easier grep-ability).
 ExternalReference ExternalReference::address_of_log_or_trace_osr() {
   return ExternalReference(&v8_flags.log_or_trace_osr);
-}
-
-ExternalReference
-ExternalReference::address_of_FLAG_harmony_symbol_as_weakmap_key() {
-  return ExternalReference(&v8_flags.harmony_symbol_as_weakmap_key);
 }
 
 ExternalReference ExternalReference::address_of_builtin_subclassing_flag() {
@@ -750,14 +776,14 @@ ExternalReference ExternalReference::thread_in_wasm_flag_address_address(
 
 ExternalReference ExternalReference::invoke_function_callback() {
   Address thunk_address = FUNCTION_ADDR(&InvokeFunctionCallback);
-  ExternalReference::Type thunk_type = ExternalReference::PROFILING_API_CALL;
+  ExternalReference::Type thunk_type = ExternalReference::DIRECT_API_CALL;
   ApiFunction thunk_fun(thunk_address);
   return ExternalReference::Create(&thunk_fun, thunk_type);
 }
 
 ExternalReference ExternalReference::invoke_accessor_getter_callback() {
   Address thunk_address = FUNCTION_ADDR(&InvokeAccessorGetterCallback);
-  ExternalReference::Type thunk_type = ExternalReference::PROFILING_GETTER_CALL;
+  ExternalReference::Type thunk_type = ExternalReference::DIRECT_GETTER_CALL;
   ApiFunction thunk_fun(thunk_address);
   return ExternalReference::Create(&thunk_fun, thunk_type);
 }
@@ -852,8 +878,6 @@ FUNCTION_REFERENCE_WITH_TYPE(ieee754_atan2_function, base::ieee754::atan2,
                              BUILTIN_FP_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_cbrt_function, base::ieee754::cbrt,
                              BUILTIN_FP_CALL)
-FUNCTION_REFERENCE_WITH_TYPE(ieee754_cos_function, base::ieee754::cos,
-                             BUILTIN_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_cosh_function, base::ieee754::cosh,
                              BUILTIN_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_exp_function, base::ieee754::exp,
@@ -868,8 +892,6 @@ FUNCTION_REFERENCE_WITH_TYPE(ieee754_log10_function, base::ieee754::log10,
                              BUILTIN_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_log2_function, base::ieee754::log2,
                              BUILTIN_FP_CALL)
-FUNCTION_REFERENCE_WITH_TYPE(ieee754_sin_function, base::ieee754::sin,
-                             BUILTIN_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_sinh_function, base::ieee754::sinh,
                              BUILTIN_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_tan_function, base::ieee754::tan,
@@ -878,6 +900,32 @@ FUNCTION_REFERENCE_WITH_TYPE(ieee754_tanh_function, base::ieee754::tanh,
                              BUILTIN_FP_CALL)
 FUNCTION_REFERENCE_WITH_TYPE(ieee754_pow_function, base::ieee754::pow,
                              BUILTIN_FP_FP_CALL)
+
+#if defined(V8_USE_LIBM_TRIG_FUNCTIONS)
+ExternalReference ExternalReference::ieee754_sin_function() {
+  static_assert(
+      IsValidExternalReferenceType<decltype(&base::ieee754::libm_sin)>::value);
+  static_assert(IsValidExternalReferenceType<
+                decltype(&base::ieee754::fdlibm_sin)>::value);
+  auto* f = v8_flags.use_libm_trig_functions ? base::ieee754::libm_sin
+                                             : base::ieee754::fdlibm_sin;
+  return ExternalReference(Redirect(FUNCTION_ADDR(f), BUILTIN_FP_CALL));
+}
+ExternalReference ExternalReference::ieee754_cos_function() {
+  static_assert(
+      IsValidExternalReferenceType<decltype(&base::ieee754::libm_cos)>::value);
+  static_assert(IsValidExternalReferenceType<
+                decltype(&base::ieee754::fdlibm_cos)>::value);
+  auto* f = v8_flags.use_libm_trig_functions ? base::ieee754::libm_cos
+                                             : base::ieee754::fdlibm_cos;
+  return ExternalReference(Redirect(FUNCTION_ADDR(f), BUILTIN_FP_CALL));
+}
+#else
+FUNCTION_REFERENCE_WITH_TYPE(ieee754_sin_function, base::ieee754::sin,
+                             BUILTIN_FP_CALL)
+FUNCTION_REFERENCE_WITH_TYPE(ieee754_cos_function, base::ieee754::cos,
+                             BUILTIN_FP_CALL)
+#endif
 
 void* libc_memchr(void* string, int character, size_t search_length) {
   return memchr(string, character, search_length);
@@ -898,7 +946,7 @@ void* libc_memmove(void* dest, const void* src, size_t n) {
 FUNCTION_REFERENCE(libc_memmove_function, libc_memmove)
 
 void* libc_memset(void* dest, int value, size_t n) {
-  DCHECK_EQ(static_cast<byte>(value), value);
+  DCHECK_EQ(static_cast<uint8_t>(value), value);
   return memset(dest, value, n);
 }
 
@@ -1010,6 +1058,22 @@ FUNCTION_REFERENCE(external_one_byte_string_get_chars,
 FUNCTION_REFERENCE(external_two_byte_string_get_chars,
                    ExternalTwoByteStringGetChars)
 
+// See:
+// https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
+static constexpr uint64_t kLog10OffsetTable[] = {
+    0x100000000, 0x1fffffff6, 0x1fffffff6, 0x1fffffff6, 0x2ffffff9c,
+    0x2ffffff9c, 0x2ffffff9c, 0x3fffffc18, 0x3fffffc18, 0x3fffffc18,
+    0x4ffffd8f0, 0x4ffffd8f0, 0x4ffffd8f0, 0x4ffffd8f0, 0x5fffe7960,
+    0x5fffe7960, 0x5fffe7960, 0x6fff0bdc0, 0x6fff0bdc0, 0x6fff0bdc0,
+    0x7ff676980, 0x7ff676980, 0x7ff676980, 0x7ff676980, 0x8fa0a1f00,
+    0x8fa0a1f00, 0x8fa0a1f00, 0x9c4653600, 0x9c4653600, 0x9c4653600,
+    0xa00000000, 0xa00000000,
+};
+
+ExternalReference ExternalReference::address_of_log10_offset_table() {
+  return ExternalReference(reinterpret_cast<Address>(&kLog10OffsetTable[0]));
+}
+
 FUNCTION_REFERENCE(orderedhashmap_gethash_raw, OrderedHashMap::GetHash)
 
 Address GetOrCreateHash(Isolate* isolate, Address raw_key) {
@@ -1103,6 +1167,24 @@ static Address LexicographicCompareWrapper(Isolate* isolate, Address smi_x,
 FUNCTION_REFERENCE(smi_lexicographic_compare_function,
                    LexicographicCompareWrapper)
 
+uint32_t HasUnpairedSurrogate(const uint16_t* code_units, size_t length) {
+  // Use uint32_t to avoid complexity around bool return types.
+  static constexpr uint32_t kTrue = 1;
+  static constexpr uint32_t kFalse = 0;
+  return unibrow::Utf16::HasUnpairedSurrogate(code_units, length) ? kTrue
+                                                                  : kFalse;
+}
+
+FUNCTION_REFERENCE(has_unpaired_surrogate, HasUnpairedSurrogate)
+
+void ReplaceUnpairedSurrogates(const uint16_t* source_code_units,
+                               uint16_t* dest_code_units, size_t length) {
+  return unibrow::Utf16::ReplaceUnpairedSurrogates(source_code_units,
+                                                   dest_code_units, length);
+}
+
+FUNCTION_REFERENCE(replace_unpaired_surrogates, ReplaceUnpairedSurrogates)
+
 FUNCTION_REFERENCE(mutable_big_int_absolute_add_and_canonicalize_function,
                    MutableBigInt_AbsoluteAddAndCanonicalize)
 
@@ -1129,6 +1211,33 @@ FUNCTION_REFERENCE(mutable_big_int_bitwise_and_nn_and_canonicalize_function,
 
 FUNCTION_REFERENCE(mutable_big_int_bitwise_and_pn_and_canonicalize_function,
                    MutableBigInt_BitwiseAndPosNegAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_bitwise_or_pp_and_canonicalize_function,
+                   MutableBigInt_BitwiseOrPosPosAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_bitwise_or_nn_and_canonicalize_function,
+                   MutableBigInt_BitwiseOrNegNegAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_bitwise_or_pn_and_canonicalize_function,
+                   MutableBigInt_BitwiseOrPosNegAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_bitwise_xor_pp_and_canonicalize_function,
+                   MutableBigInt_BitwiseXorPosPosAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_bitwise_xor_nn_and_canonicalize_function,
+                   MutableBigInt_BitwiseXorNegNegAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_bitwise_xor_pn_and_canonicalize_function,
+                   MutableBigInt_BitwiseXorPosNegAndCanonicalize)
+
+FUNCTION_REFERENCE(mutable_big_int_left_shift_and_canonicalize_function,
+                   MutableBigInt_LeftShiftAndCanonicalize)
+
+FUNCTION_REFERENCE(big_int_right_shift_result_length_function,
+                   RightShiftResultLength)
+
+FUNCTION_REFERENCE(mutable_big_int_right_shift_and_canonicalize_function,
+                   MutableBigInt_RightShiftAndCanonicalize)
 
 FUNCTION_REFERENCE(check_object_type, CheckObjectType)
 
@@ -1191,11 +1300,6 @@ ExternalReference ExternalReference::async_event_delegate_address(
   return ExternalReference(isolate->async_event_delegate_address());
 }
 
-ExternalReference ExternalReference::debug_execution_mode_address(
-    Isolate* isolate) {
-  return ExternalReference(isolate->debug_execution_mode_address());
-}
-
 ExternalReference ExternalReference::debug_is_active_address(Isolate* isolate) {
   return ExternalReference(isolate->debug()->is_active_address());
 }
@@ -1247,18 +1351,29 @@ ExternalReference ExternalReference::fast_api_call_target_address(
       isolate->isolate_data()->fast_api_call_target_address());
 }
 
+ExternalReference ExternalReference::api_callback_thunk_argument_address(
+    Isolate* isolate) {
+  return ExternalReference(
+      isolate->isolate_data()->api_callback_thunk_argument_address());
+}
+
 ExternalReference ExternalReference::stack_is_iterable_address(
     Isolate* isolate) {
   return ExternalReference(
       isolate->isolate_data()->stack_is_iterable_address());
 }
 
-ExternalReference ExternalReference::is_profiling_address(Isolate* isolate) {
-  return ExternalReference(isolate->isolate_data()->is_profiling_address());
+ExternalReference ExternalReference::execution_mode_address(Isolate* isolate) {
+  return ExternalReference(isolate->isolate_data()->execution_mode_address());
 }
 
 FUNCTION_REFERENCE(call_enqueue_microtask_function,
                    MicrotaskQueue::CallEnqueueMicrotask)
+
+ExternalReference ExternalReference::int64_mul_high_function() {
+  return ExternalReference(
+      Redirect(FUNCTION_ADDR(base::bits::SignedMulHigh64)));
+}
 
 static int64_t atomic_pair_load(intptr_t address) {
   return std::atomic_load(reinterpret_cast<std::atomic<int64_t>*>(address));

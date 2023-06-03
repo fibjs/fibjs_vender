@@ -9,8 +9,11 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=100&c=1
 TNode<Object> GetLazyReceiver_0(compiler::CodeAssemblerState* state_, TNode<Object> p_receiver);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=120&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=122&c=1
 void IteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_iterator);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=144&c=1
+void IteratorClose_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_iterator);
 
 } // namespace internal
 } // namespace v8

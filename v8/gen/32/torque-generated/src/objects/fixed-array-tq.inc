@@ -61,9 +61,6 @@ class TorqueGeneratedFixedArrayBase : public P {
 
  protected:
   inline explicit TorqueGeneratedFixedArrayBase(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedFixedArrayBase(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsFixedArray() that avoids inlining.
@@ -137,9 +134,6 @@ class TorqueGeneratedFixedArray : public P {
 
  protected:
   inline explicit TorqueGeneratedFixedArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedFixedArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsWeakFixedArray() that avoids inlining.
@@ -222,9 +216,6 @@ class TorqueGeneratedWeakFixedArray : public P {
 
  protected:
   inline explicit TorqueGeneratedWeakFixedArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedWeakFixedArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsFixedDoubleArray() that avoids inlining.
@@ -291,9 +282,6 @@ class TorqueGeneratedFixedDoubleArray : public P {
 
  protected:
   inline explicit TorqueGeneratedFixedDoubleArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedFixedDoubleArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsByteArray() that avoids inlining.
@@ -366,9 +354,6 @@ class TorqueGeneratedByteArray : public P {
 
  protected:
   inline explicit TorqueGeneratedByteArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedByteArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsArrayList() that avoids inlining.
@@ -432,9 +417,6 @@ class TorqueGeneratedArrayList : public P {
 
  protected:
   inline explicit TorqueGeneratedArrayList(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedArrayList(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsTemplateList() that avoids inlining.
@@ -498,9 +480,6 @@ class TorqueGeneratedTemplateList : public P {
 
  protected:
   inline explicit TorqueGeneratedTemplateList(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTemplateList(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsWeakArrayList() that avoids inlining.
@@ -591,8 +570,5 @@ class TorqueGeneratedWeakArrayList : public P {
 
  protected:
   inline explicit TorqueGeneratedWeakArrayList(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedWeakArrayList(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

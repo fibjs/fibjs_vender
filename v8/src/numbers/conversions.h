@@ -170,6 +170,7 @@ inline uint64_t PositiveNumberToUint64(Object number);
 
 double StringToDouble(Isolate* isolate, Handle<String> string, int flags,
                       double empty_string_val = 0.0);
+double FlatStringToDouble(String string, int flags, double empty_string_val);
 
 // String to double helper without heap allocation.
 // Returns base::nullopt if the string is longer than
@@ -178,6 +179,11 @@ double StringToDouble(Isolate* isolate, Handle<String> string, int flags,
 V8_EXPORT_PRIVATE base::Optional<double> TryStringToDouble(
     LocalIsolate* isolate, Handle<String> object,
     int max_length_for_conversion = 23);
+
+// Return base::nullopt if the string is longer than 20.
+V8_EXPORT_PRIVATE base::Optional<double> TryStringToInt(LocalIsolate* isolate,
+                                                        Handle<String> object,
+                                                        int radix);
 
 inline bool TryNumberToSize(Object number, size_t* result);
 

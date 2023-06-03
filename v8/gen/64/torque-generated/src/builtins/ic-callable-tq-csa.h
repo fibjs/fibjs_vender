@@ -42,7 +42,7 @@ TNode<BoolT> BothTaggedEqualArrayFunction_0(compiler::CodeAssemblerState* state_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=211&c=1
 TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_maybeFeedbackVector, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_Fallback);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=225&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=227&c=1
 void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_target, TNode<Object> p_newTarget, TNode<HeapObject> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_ConstructGeneric, compiler::CodeAssemblerLabel* label_ConstructArray, compiler::TypedCodeAssemblerVariable<AllocationSite>* label_ConstructArray_parameter_0);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=26&c=10
@@ -63,10 +63,10 @@ TNode<BoolT> Is_FeedbackVector_Undefined_OR_FeedbackVector_0(compiler::CodeAssem
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=216&c=12
 TNode<FeedbackVector> UnsafeCast_FeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=252&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=254&c=11
 TNode<BoolT> Is_AllocationSite_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=254&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=256&c=31
 TNode<AllocationSite> UnsafeCast_AllocationSite_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 } // namespace internal

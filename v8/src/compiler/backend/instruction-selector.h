@@ -15,6 +15,7 @@
 #include "src/compiler/linkage.h"
 #include "src/compiler/machine-operator.h"
 #include "src/compiler/node.h"
+#include "src/utils/bit-vector.h"
 #include "src/zone/zone-containers.h"
 
 #if V8_ENABLE_WEBASSEMBLY
@@ -77,8 +78,9 @@ class FlagsContinuation final {
   }
 
   // Creates a new flags continuation for a wasm trap.
-  static FlagsContinuation ForTrap(FlagsCondition condition, TrapId trap_id) {
-    return FlagsContinuation(condition, trap_id);
+  static FlagsContinuation ForTrap(FlagsCondition condition, TrapId trap_id,
+                                   NodeId node_id, Node* frame_state) {
+    return FlagsContinuation(condition, trap_id, node_id, frame_state);
   }
 
   static FlagsContinuation ForSelect(FlagsCondition condition, Node* result,
@@ -101,7 +103,7 @@ class FlagsContinuation final {
     return reason_;
   }
   NodeId node_id() const {
-    DCHECK(IsDeoptimize());
+    DCHECK(IsDeoptimize() || IsTrap());
     return node_id_;
   }
   FeedbackSource const& feedback() const {
@@ -109,7 +111,7 @@ class FlagsContinuation final {
     return feedback_;
   }
   Node* frame_state() const {
-    DCHECK(IsDeoptimize());
+    DCHECK(IsDeoptimize() || IsTrap());
     return frame_state_or_result_;
   }
   Node* result() const {
@@ -216,8 +218,13 @@ class FlagsContinuation final {
     DCHECK_NOT_NULL(result);
   }
 
-  FlagsContinuation(FlagsCondition condition, TrapId trap_id)
-      : mode_(kFlags_trap), condition_(condition), trap_id_(trap_id) {}
+  FlagsContinuation(FlagsCondition condition, TrapId trap_id, NodeId node_id,
+                    Node* frame_state)
+      : mode_(kFlags_trap),
+        condition_(condition),
+        node_id_(node_id),
+        frame_state_or_result_(frame_state),
+        trap_id_(trap_id) {}
 
   FlagsContinuation(FlagsCondition condition, Node* result, Node* true_value,
                     Node* false_value)
@@ -477,7 +484,8 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   void AppendDeoptimizeArguments(InstructionOperandVector* args,
                                  DeoptimizeReason reason, NodeId node_id,
                                  FeedbackSource const& feedback,
-                                 FrameState frame_state);
+                                 FrameState frame_state,
+                                 DeoptimizeKind kind = DeoptimizeKind::kEager);
 
   void EmitTableSwitch(const SwitchInfo& sw,
                        InstructionOperand const& index_operand);
@@ -517,6 +525,9 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   }
   void MarkAsSimd128(Node* node) {
     MarkAsRepresentation(MachineRepresentation::kSimd128, node);
+  }
+  void MarkAsSimd256(Node* node) {
+    MarkAsRepresentation(MachineRepresentation::kSimd256, node);
   }
   void MarkAsTagged(Node* node) {
     MarkAsRepresentation(MachineRepresentation::kTagged, node);
@@ -588,7 +599,8 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
 
 #define DECLARE_GENERATOR(x) void Visit##x(Node* node);
   MACHINE_OP_LIST(DECLARE_GENERATOR)
-  MACHINE_SIMD_OP_LIST(DECLARE_GENERATOR)
+  MACHINE_SIMD128_OP_LIST(DECLARE_GENERATOR)
+  MACHINE_SIMD256_OP_LIST(DECLARE_GENERATOR)
 #undef DECLARE_GENERATOR
 
   // Visit the load node with a value and opcode to replace with.
@@ -620,6 +632,8 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   void VisitUnreachable(Node* node);
   void VisitStaticAssert(Node* node);
   void VisitDeadValue(Node* node);
+
+  void TryPrepareScheduleFirstProjection(Node* maybe_projection);
 
   void VisitStackPointerGreaterThan(Node* node, FlagsContinuation* cont);
 
@@ -736,8 +750,8 @@ class V8_EXPORT_PRIVATE InstructionSelector final {
   InstructionOperandVector continuation_inputs_;
   InstructionOperandVector continuation_outputs_;
   InstructionOperandVector continuation_temps_;
-  BoolVector defined_;
-  BoolVector used_;
+  BitVector defined_;
+  BitVector used_;
   IntVector effect_level_;
   int current_effect_level_;
   IntVector virtual_registers_;

@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -191,7 +194,7 @@ TF_BUILTIN(LoadJoinElement_FastSmiOrObjectElements_0, CodeStubAssembler) {
   TNode<Object> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<Object> tmp15;
-  TNode<Oddball> tmp16;
+  TNode<HeapObject> tmp16;
   TNode<BoolT> tmp17;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -320,12 +323,6 @@ TF_BUILTIN(ConvertToLocaleString, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<BoolT> tmp0;
@@ -363,57 +360,17 @@ TF_BUILTIN(ConvertToLocaleString, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp3});
   }
 
-  TNode<BoolT> tmp6;
+  TNode<Object> tmp6;
+  TNode<String> tmp7;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp6 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{parameter2});
-    ca_.Branch(tmp6, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
-  }
-
-  TNode<Object> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp7 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1});
-    ca_.Goto(&block9, tmp7);
-  }
-
-  TNode<BoolT> tmp8;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp8 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{parameter3});
-    ca_.Branch(tmp8, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
-  }
-
-  TNode<Object> tmp9;
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1}, TNode<Object>{parameter2});
-    ca_.Goto(&block12, tmp9);
-  }
-
-  TNode<Object> tmp10;
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
-    ca_.Goto(&block12, tmp10);
-  }
-
-  TNode<Object> phi_bb12_6;
-  if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_6);
-    ca_.Goto(&block9, phi_bb12_6);
-  }
-
-  TNode<Object> phi_bb9_6;
-  TNode<String> tmp11;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_6);
-    tmp11 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{phi_bb9_6});
-    CodeStubAssembler(state_).Return(tmp11);
+    tmp6 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
+    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp6});
+    CodeStubAssembler(state_).Return(tmp7);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=91&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=101&c=1
 TNode<BoolT> CannotUseSameArrayAccessor_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BuiltinPtr> p_loadFn, TNode<JSReceiver> p_receiver, TNode<Map> p_originalMap, TNode<Number> p_originalLen) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -514,7 +471,7 @@ TNode<BoolT> CannotUseSameArrayAccessor_JSArray_0(compiler::CodeAssemblerState* 
   return TNode<BoolT>{phi_bb10_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=103&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=113&c=1
 TNode<BoolT> CannotUseSameArrayAccessor_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BuiltinPtr> p__loadFn, TNode<JSReceiver> p_receiver, TNode<Map> p__initialMap, TNode<Number> p__initialLen) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -579,7 +536,7 @@ TNode<BoolT> CannotUseSameArrayAccessor_JSTypedArray_0(compiler::CodeAssemblerSt
   return TNode<BoolT>{phi_bb6_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=125&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=135&c=1
 TNode<IntPtrT> AddStringLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_lenA, TNode<IntPtrT> p_lenB) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -638,7 +595,7 @@ TNode<IntPtrT> AddStringLength_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=223&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=267&c=1
 TorqueStructBuffer_0 NewBuffer_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_len, TNode<String> p_sep) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -676,23 +633,25 @@ TorqueStructBuffer_0 NewBuffer_0(compiler::CodeAssemblerState* state_, TNode<Uin
   TNode<FixedArray> tmp4;
   TNode<Uint16T> tmp5;
   TNode<BoolT> tmp6;
-  TNode<IntPtrT> tmp7;
+  TNode<Oddball> tmp7;
   TNode<IntPtrT> tmp8;
+  TNode<IntPtrT> tmp9;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_2);
     tmp4 = CodeStubAssembler(state_).AllocateZeroedFixedArray(TNode<IntPtrT>{phi_bb4_2});
     tmp5 = CodeStubAssembler(state_).LoadInstanceType(TNode<HeapObject>{p_sep});
     tmp6 = CodeStubAssembler(state_).IsOneByteStringInstanceType(TNode<Uint16T>{tmp5});
-    tmp7 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = Null_0(state_);
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block10);
   }
 
     ca_.Bind(&block10);
-  return TorqueStructBuffer_0{TNode<FixedArray>{tmp4}, TNode<IntPtrT>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<BoolT>{tmp6}};
+  return TorqueStructBuffer_0{TNode<FixedArray>{tmp4}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TNode<BoolT>{tmp6}, TNode<PrimitiveHeapObject>{tmp7}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=236&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=281&c=1
 TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructBuffer_0 p_buffer, TNode<String> p_sep) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -707,11 +666,11 @@ TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   compiler::CodeAssemblerParameterizedLabel<> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -784,11 +743,11 @@ TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Number> tmp20;
+  TNode<Smi> tmp20;
   if (block22.is_used()) {
     ca_.Bind(&block22);
     compiler::CodeAssemblerLabel label21(&ca_);
-    tmp20 = Cast_Number_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp17)}, &label21);
+    tmp20 = Cast_Smi_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp17)}, &label21);
     ca_.Goto(&block25);
     if (label21.is_used()) {
       ca_.Bind(&label21);
@@ -819,43 +778,43 @@ TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block9);
     tmp23 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{p_buffer.totalStringLength});
     tmp24 = Convert_uint32_uintptr_0(state_, TNode<UintPtrT>{tmp23});
-    ca_.Branch(p_buffer.isOneByte, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
+    ca_.Branch(p_buffer.isOneByte, &block31, std::vector<compiler::Node*>{}, &block32, std::vector<compiler::Node*>{});
   }
 
   TNode<String> tmp25;
-  if (block27.is_used()) {
-    ca_.Bind(&block27);
+  if (block31.is_used()) {
+    ca_.Bind(&block31);
     tmp25 = AllocateSeqOneByteString_0(state_, TNode<Uint32T>{tmp24});
-    ca_.Goto(&block29, tmp25);
+    ca_.Goto(&block33, tmp25);
   }
 
   TNode<String> tmp26;
-  if (block28.is_used()) {
-    ca_.Bind(&block28);
+  if (block32.is_used()) {
+    ca_.Bind(&block32);
     tmp26 = AllocateSeqTwoByteString_0(state_, TNode<Uint32T>{tmp24});
-    ca_.Goto(&block29, tmp26);
+    ca_.Goto(&block33, tmp26);
   }
 
-  TNode<String> phi_bb29_7;
+  TNode<String> phi_bb33_8;
   TNode<String> tmp27;
-  if (block29.is_used()) {
-    ca_.Bind(&block29, &phi_bb29_7);
-    tmp27 = ArrayBuiltinsAssembler(state_).CallJSArrayArrayJoinConcatToSequentialString(TNode<FixedArray>{p_buffer.fixedArray}, TNode<IntPtrT>{p_buffer.index}, TNode<String>{p_sep}, TNode<String>{phi_bb29_7});
+  if (block33.is_used()) {
+    ca_.Bind(&block33, &phi_bb33_8);
+    tmp27 = ArrayBuiltinsAssembler(state_).CallJSArrayArrayJoinConcatToSequentialString(TNode<FixedArray>{p_buffer.fixedArray}, TNode<IntPtrT>{p_buffer.index}, TNode<String>{p_sep}, TNode<String>{phi_bb33_8});
     ca_.Goto(&block1, tmp27);
   }
 
-  TNode<String> phi_bb1_6;
+  TNode<String> phi_bb1_7;
   if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_6);
-    ca_.Goto(&block31, phi_bb1_6);
+    ca_.Bind(&block1, &phi_bb1_7);
+    ca_.Goto(&block35, phi_bb1_7);
   }
 
-  TNode<String> phi_bb31_6;
-    ca_.Bind(&block31, &phi_bb31_6);
-  return TNode<String>{phi_bb31_6};
+  TNode<String> phi_bb35_7;
+    ca_.Bind(&block35, &phi_bb35_7);
+  return TNode<String>{phi_bb35_7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=337&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=385&c=1
 TNode<Object> ArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lenNumber, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1094,7 +1053,7 @@ TNode<Object> ArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Object>{phi_bb30_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=383&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=431&c=1
 TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lenNumber, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1632,7 +1591,7 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Object>{tmp48};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=454&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=502&c=1
 TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_IfUninitialized) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1675,7 +1634,7 @@ TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<FixedArray>{ca_.UncheckedCast<FixedArray>(tmp3)};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=466&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=514&c=1
 void SetJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_stack) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1762,7 +1721,7 @@ TF_BUILTIN(JoinStackPush, CodeStubAssembler) {
   TNode<Object> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<Object> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<HeapObject> tmp14;
   TNode<BoolT> tmp15;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_4, &phi_bb9_9, &phi_bb9_10, &phi_bb9_14, &phi_bb9_15);
@@ -1869,7 +1828,7 @@ TF_BUILTIN(JoinStackPush, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=498&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=546&c=1
 TNode<BoolT> JoinStackPushInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1951,7 +1910,7 @@ TNode<BoolT> JoinStackPushInline_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<Object> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<Object> tmp24;
-  TNode<Oddball> tmp25;
+  TNode<HeapObject> tmp25;
   TNode<BoolT> tmp26;
   if (block13.is_used()) {
     ca_.Bind(&block13);
@@ -2232,7 +2191,7 @@ TF_BUILTIN(JoinStackPop, CodeStubAssembler) {
   TNode<IntPtrT> tmp29;
   TNode<Object> tmp30;
   TNode<IntPtrT> tmp31;
-  TNode<Oddball> tmp32;
+  TNode<HeapObject> tmp32;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_4, &phi_bb25_9, &phi_bb25_10, &phi_bb25_14, &phi_bb25_15);
     tmp28 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb25_15});
@@ -2278,7 +2237,7 @@ TF_BUILTIN(JoinStackPop, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=542&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=590&c=1
 void JoinStackPopInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2402,7 +2361,7 @@ void JoinStackPopInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   TNode<IntPtrT> tmp29;
   TNode<Object> tmp30;
   TNode<IntPtrT> tmp31;
-  TNode<Oddball> tmp32;
+  TNode<HeapObject> tmp32;
   if (block26.is_used()) {
     ca_.Bind(&block26);
     tmp28 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp24});
@@ -2774,7 +2733,7 @@ TF_BUILTIN(LoadJoinElement_GenericElementsAccessor_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=106&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=116&c=36
 TNode<JSTypedArray> UnsafeCast_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2793,7 +2752,7 @@ TNode<JSTypedArray> UnsafeCast_JSTypedArray_0(compiler::CodeAssemblerState* stat
   return TNode<JSTypedArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=247&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=292&c=7
 TNode<String> Cast_String_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2854,54 +2813,71 @@ TNode<String> Cast_String_1(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<String>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=379&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=427&c=10
 TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String, BoolT> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block33(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, String, String, String> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, String, String, String> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, BoolT> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block43(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block45(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, BoolT> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block37(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block52(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block61(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block60(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block79(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block55(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, BoolT> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block84(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block88(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block89(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block90(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block92(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -2913,7 +2889,8 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
-  TNode<UintPtrT> tmp9;
+  TNode<PrimitiveHeapObject> tmp9;
+  TNode<UintPtrT> tmp10;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
@@ -2921,9 +2898,9 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
     tmp2 = Convert_uintptr_Number_0(state_, TNode<Number>{p_lengthNumber});
     tmp3 = CodeStubAssembler(state_).LoadStringLengthAsWord(TNode<String>{p_sep});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    std::tie(tmp5, tmp6, tmp7, tmp8) = NewBuffer_0(state_, TNode<UintPtrT>{tmp2}, TNode<String>{p_sep}).Flatten();
-    tmp9 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block4, tmp4, p_initialLoadFn, tmp5, tmp6, tmp7, tmp8, tmp9);
+    std::tie(tmp5, tmp6, tmp7, tmp8, tmp9) = NewBuffer_0(state_, TNode<UintPtrT>{tmp2}, TNode<String>{p_sep}).Flatten();
+    tmp10 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    ca_.Goto(&block4, tmp4, p_initialLoadFn, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10);
   }
 
   TNode<IntPtrT> phi_bb4_10;
@@ -2932,12 +2909,13 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb4_13;
   TNode<IntPtrT> phi_bb4_14;
   TNode<BoolT> phi_bb4_15;
-  TNode<UintPtrT> phi_bb4_16;
-  TNode<BoolT> tmp10;
+  TNode<PrimitiveHeapObject> phi_bb4_16;
+  TNode<UintPtrT> phi_bb4_17;
+  TNode<BoolT> tmp11;
   if (block4.is_used()) {
-    ca_.Bind(&block4, &phi_bb4_10, &phi_bb4_11, &phi_bb4_12, &phi_bb4_13, &phi_bb4_14, &phi_bb4_15, &phi_bb4_16);
-    tmp10 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{phi_bb4_16}, TNode<UintPtrT>{tmp2});
-    ca_.Branch(tmp10, &block2, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16}, &block3, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16});
+    ca_.Bind(&block4, &phi_bb4_10, &phi_bb4_11, &phi_bb4_12, &phi_bb4_13, &phi_bb4_14, &phi_bb4_15, &phi_bb4_16, &phi_bb4_17);
+    tmp11 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{phi_bb4_17}, TNode<UintPtrT>{tmp2});
+    ca_.Branch(tmp11, &block2, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16, phi_bb4_17}, &block3, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16, phi_bb4_17});
   }
 
   TNode<IntPtrT> phi_bb2_10;
@@ -2946,12 +2924,13 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb2_13;
   TNode<IntPtrT> phi_bb2_14;
   TNode<BoolT> phi_bb2_15;
-  TNode<UintPtrT> phi_bb2_16;
-  TNode<BoolT> tmp11;
+  TNode<PrimitiveHeapObject> phi_bb2_16;
+  TNode<UintPtrT> phi_bb2_17;
+  TNode<BoolT> tmp12;
   if (block2.is_used()) {
-    ca_.Bind(&block2, &phi_bb2_10, &phi_bb2_11, &phi_bb2_12, &phi_bb2_13, &phi_bb2_14, &phi_bb2_15, &phi_bb2_16);
-    tmp11 = CannotUseSameArrayAccessor_JSArray_0(state_, TNode<Context>{p_context}, TNode<BuiltinPtr>{phi_bb2_11}, TNode<JSReceiver>{p_receiver}, TNode<Map>{tmp1}, TNode<Number>{p_lengthNumber});
-    ca_.Branch(tmp11, &block5, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16}, &block6, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16});
+    ca_.Bind(&block2, &phi_bb2_10, &phi_bb2_11, &phi_bb2_12, &phi_bb2_13, &phi_bb2_14, &phi_bb2_15, &phi_bb2_16, &phi_bb2_17);
+    tmp12 = CannotUseSameArrayAccessor_JSArray_0(state_, TNode<Context>{p_context}, TNode<BuiltinPtr>{phi_bb2_11}, TNode<JSReceiver>{p_receiver}, TNode<Map>{tmp1}, TNode<Number>{p_lengthNumber});
+    ca_.Branch(tmp12, &block5, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16, phi_bb2_17}, &block6, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16, phi_bb2_17});
   }
 
   TNode<IntPtrT> phi_bb5_10;
@@ -2960,10 +2939,11 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb5_13;
   TNode<IntPtrT> phi_bb5_14;
   TNode<BoolT> phi_bb5_15;
-  TNode<UintPtrT> phi_bb5_16;
+  TNode<PrimitiveHeapObject> phi_bb5_16;
+  TNode<UintPtrT> phi_bb5_17;
   if (block5.is_used()) {
-    ca_.Bind(&block5, &phi_bb5_10, &phi_bb5_11, &phi_bb5_12, &phi_bb5_13, &phi_bb5_14, &phi_bb5_15, &phi_bb5_16);
-    ca_.Goto(&block6, phi_bb5_10, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinElement_GenericElementsAccessor_0)), phi_bb5_12, phi_bb5_13, phi_bb5_14, phi_bb5_15, phi_bb5_16);
+    ca_.Bind(&block5, &phi_bb5_10, &phi_bb5_11, &phi_bb5_12, &phi_bb5_13, &phi_bb5_14, &phi_bb5_15, &phi_bb5_16, &phi_bb5_17);
+    ca_.Goto(&block6, phi_bb5_10, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinElement_GenericElementsAccessor_0)), phi_bb5_12, phi_bb5_13, phi_bb5_14, phi_bb5_15, phi_bb5_16, phi_bb5_17);
   }
 
   TNode<IntPtrT> phi_bb6_10;
@@ -2972,14 +2952,15 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb6_13;
   TNode<IntPtrT> phi_bb6_14;
   TNode<BoolT> phi_bb6_15;
-  TNode<UintPtrT> phi_bb6_16;
-  TNode<UintPtrT> tmp12;
-  TNode<BoolT> tmp13;
+  TNode<PrimitiveHeapObject> phi_bb6_16;
+  TNode<UintPtrT> phi_bb6_17;
+  TNode<UintPtrT> tmp13;
+  TNode<BoolT> tmp14;
   if (block6.is_used()) {
-    ca_.Bind(&block6, &phi_bb6_10, &phi_bb6_11, &phi_bb6_12, &phi_bb6_13, &phi_bb6_14, &phi_bb6_15, &phi_bb6_16);
-    tmp12 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp13 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{phi_bb6_16}, TNode<UintPtrT>{tmp12});
-    ca_.Branch(tmp13, &block7, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16}, &block8, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16});
+    ca_.Bind(&block6, &phi_bb6_10, &phi_bb6_11, &phi_bb6_12, &phi_bb6_13, &phi_bb6_14, &phi_bb6_15, &phi_bb6_16, &phi_bb6_17);
+    tmp13 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp14 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{phi_bb6_17}, TNode<UintPtrT>{tmp13});
+    ca_.Branch(tmp14, &block7, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16, phi_bb6_17}, &block8, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16, phi_bb6_17});
   }
 
   TNode<IntPtrT> phi_bb7_10;
@@ -2987,14 +2968,15 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb7_13;
   TNode<IntPtrT> phi_bb7_14;
   TNode<BoolT> phi_bb7_15;
-  TNode<UintPtrT> phi_bb7_16;
-  TNode<IntPtrT> tmp14;
+  TNode<PrimitiveHeapObject> phi_bb7_16;
+  TNode<UintPtrT> phi_bb7_17;
   TNode<IntPtrT> tmp15;
+  TNode<IntPtrT> tmp16;
   if (block7.is_used()) {
-    ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_12, &phi_bb7_13, &phi_bb7_14, &phi_bb7_15, &phi_bb7_16);
-    tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb7_10}, TNode<IntPtrT>{tmp14});
-    ca_.Goto(&block8, tmp15, phi_bb7_12, phi_bb7_13, phi_bb7_14, phi_bb7_15, phi_bb7_16);
+    ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_12, &phi_bb7_13, &phi_bb7_14, &phi_bb7_15, &phi_bb7_16, &phi_bb7_17);
+    tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp16 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb7_10}, TNode<IntPtrT>{tmp15});
+    ca_.Goto(&block8, tmp16, phi_bb7_12, phi_bb7_13, phi_bb7_14, phi_bb7_15, phi_bb7_16, phi_bb7_17);
   }
 
   TNode<IntPtrT> phi_bb8_10;
@@ -3002,19 +2984,20 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb8_13;
   TNode<IntPtrT> phi_bb8_14;
   TNode<BoolT> phi_bb8_15;
-  TNode<UintPtrT> phi_bb8_16;
-  TNode<UintPtrT> tmp16;
+  TNode<PrimitiveHeapObject> phi_bb8_16;
+  TNode<UintPtrT> phi_bb8_17;
   TNode<UintPtrT> tmp17;
-  TNode<Object> tmp18;
+  TNode<UintPtrT> tmp18;
+  TNode<Object> tmp19;
   if (block8.is_used()) {
-    ca_.Bind(&block8, &phi_bb8_10, &phi_bb8_12, &phi_bb8_13, &phi_bb8_14, &phi_bb8_15, &phi_bb8_16);
-    tmp16 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
-    tmp17 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb8_16}, TNode<UintPtrT>{tmp16});
-tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(0)).descriptor(), phi_bb6_11, p_context, p_receiver, phi_bb8_16);
+    ca_.Bind(&block8, &phi_bb8_10, &phi_bb8_12, &phi_bb8_13, &phi_bb8_14, &phi_bb8_15, &phi_bb8_16, &phi_bb8_17);
+    tmp17 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
+    tmp18 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb8_17}, TNode<UintPtrT>{tmp17});
+tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(0)).descriptor(), phi_bb6_11, p_context, p_receiver, phi_bb8_17);
     if ((p_useToLocaleString)) {
-      ca_.Goto(&block9, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15);
+      ca_.Goto(&block9, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15, phi_bb8_16);
     } else {
-      ca_.Goto(&block10, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15);
+      ca_.Goto(&block10, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15, phi_bb8_16);
     }
   }
 
@@ -3022,48 +3005,52 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb9_13;
   TNode<IntPtrT> phi_bb9_14;
   TNode<BoolT> phi_bb9_15;
-  TNode<String> tmp19;
+  TNode<PrimitiveHeapObject> phi_bb9_16;
   TNode<String> tmp20;
-  TNode<BoolT> tmp21;
+  TNode<String> tmp21;
+  TNode<BoolT> tmp22;
   if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13, &phi_bb9_14, &phi_bb9_15);
-    tmp19 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kConvertToLocaleString), p_context, tmp18, p_locales, p_options);
-    tmp20 = kEmptyString_0(state_);
-    tmp21 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp19}, TNode<HeapObject>{tmp20});
-    ca_.Branch(tmp21, &block12, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15}, &block13, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15});
+    ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13, &phi_bb9_14, &phi_bb9_15, &phi_bb9_16);
+    tmp20 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kConvertToLocaleString), p_context, tmp19, p_locales, p_options);
+    tmp21 = kEmptyString_0(state_);
+    tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp20}, TNode<HeapObject>{tmp21});
+    ca_.Branch(tmp22, &block12, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16}, &block13, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16});
   }
 
   TNode<FixedArray> phi_bb12_12;
   TNode<IntPtrT> phi_bb12_13;
   TNode<IntPtrT> phi_bb12_14;
   TNode<BoolT> phi_bb12_15;
+  TNode<PrimitiveHeapObject> phi_bb12_16;
   if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_12, &phi_bb12_13, &phi_bb12_14, &phi_bb12_15);
-    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb12_12, phi_bb12_13, phi_bb12_14, phi_bb12_15, tmp17);
+    ca_.Bind(&block12, &phi_bb12_12, &phi_bb12_13, &phi_bb12_14, &phi_bb12_15, &phi_bb12_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb12_12, phi_bb12_13, phi_bb12_14, phi_bb12_15, phi_bb12_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb13_12;
   TNode<IntPtrT> phi_bb13_13;
   TNode<IntPtrT> phi_bb13_14;
   TNode<BoolT> phi_bb13_15;
+  TNode<PrimitiveHeapObject> phi_bb13_16;
   if (block13.is_used()) {
-    ca_.Bind(&block13, &phi_bb13_12, &phi_bb13_13, &phi_bb13_14, &phi_bb13_15);
-    ca_.Goto(&block11, phi_bb13_12, phi_bb13_13, phi_bb13_14, phi_bb13_15, tmp19);
+    ca_.Bind(&block13, &phi_bb13_12, &phi_bb13_13, &phi_bb13_14, &phi_bb13_15, &phi_bb13_16);
+    ca_.Goto(&block11, phi_bb13_12, phi_bb13_13, phi_bb13_14, phi_bb13_15, phi_bb13_16, tmp20);
   }
 
   TNode<FixedArray> phi_bb10_12;
   TNode<IntPtrT> phi_bb10_13;
   TNode<IntPtrT> phi_bb10_14;
   TNode<BoolT> phi_bb10_15;
-  TNode<String> tmp22;
+  TNode<PrimitiveHeapObject> phi_bb10_16;
+  TNode<String> tmp23;
   if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_12, &phi_bb10_13, &phi_bb10_14, &phi_bb10_15);
-    compiler::CodeAssemblerLabel label23(&ca_);
-    tmp22 = Cast_String_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp18}, &label23);
-    ca_.Goto(&block16, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15);
-    if (label23.is_used()) {
-      ca_.Bind(&label23);
-      ca_.Goto(&block17, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15);
+    ca_.Bind(&block10, &phi_bb10_12, &phi_bb10_13, &phi_bb10_14, &phi_bb10_15, &phi_bb10_16);
+    compiler::CodeAssemblerLabel label24(&ca_);
+    tmp23 = Cast_String_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp19}, &label24);
+    ca_.Goto(&block16, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15, phi_bb10_16);
+    if (label24.is_used()) {
+      ca_.Bind(&label24);
+      ca_.Goto(&block17, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15, phi_bb10_16);
     }
   }
 
@@ -3071,15 +3058,16 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb17_13;
   TNode<IntPtrT> phi_bb17_14;
   TNode<BoolT> phi_bb17_15;
-  TNode<Number> tmp24;
+  TNode<PrimitiveHeapObject> phi_bb17_16;
+  TNode<Number> tmp25;
   if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_12, &phi_bb17_13, &phi_bb17_14, &phi_bb17_15);
-    compiler::CodeAssemblerLabel label25(&ca_);
-    tmp24 = Cast_Number_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp18)}, &label25);
-    ca_.Goto(&block22, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15);
-    if (label25.is_used()) {
-      ca_.Bind(&label25);
-      ca_.Goto(&block23, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15);
+    ca_.Bind(&block17, &phi_bb17_12, &phi_bb17_13, &phi_bb17_14, &phi_bb17_15, &phi_bb17_16);
+    compiler::CodeAssemblerLabel label26(&ca_);
+    tmp25 = Cast_Number_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp19)}, &label26);
+    ca_.Goto(&block22, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15, phi_bb17_16);
+    if (label26.is_used()) {
+      ca_.Bind(&label26);
+      ca_.Goto(&block23, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15, phi_bb17_16);
     }
   }
 
@@ -3087,277 +3075,587 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb16_13;
   TNode<IntPtrT> phi_bb16_14;
   TNode<BoolT> phi_bb16_15;
-  TNode<String> tmp26;
-  TNode<BoolT> tmp27;
+  TNode<PrimitiveHeapObject> phi_bb16_16;
+  TNode<String> tmp27;
+  TNode<BoolT> tmp28;
   if (block16.is_used()) {
-    ca_.Bind(&block16, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14, &phi_bb16_15);
-    tmp26 = kEmptyString_0(state_);
-    tmp27 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp22}, TNode<HeapObject>{tmp26});
-    ca_.Branch(tmp27, &block18, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15}, &block19, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15});
+    ca_.Bind(&block16, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14, &phi_bb16_15, &phi_bb16_16);
+    tmp27 = kEmptyString_0(state_);
+    tmp28 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp23}, TNode<HeapObject>{tmp27});
+    ca_.Branch(tmp28, &block18, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15, phi_bb16_16}, &block19, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15, phi_bb16_16});
   }
 
   TNode<FixedArray> phi_bb18_12;
   TNode<IntPtrT> phi_bb18_13;
   TNode<IntPtrT> phi_bb18_14;
   TNode<BoolT> phi_bb18_15;
+  TNode<PrimitiveHeapObject> phi_bb18_16;
   if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_12, &phi_bb18_13, &phi_bb18_14, &phi_bb18_15);
-    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, phi_bb18_15, tmp17);
+    ca_.Bind(&block18, &phi_bb18_12, &phi_bb18_13, &phi_bb18_14, &phi_bb18_15, &phi_bb18_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, phi_bb18_15, phi_bb18_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb19_12;
   TNode<IntPtrT> phi_bb19_13;
   TNode<IntPtrT> phi_bb19_14;
   TNode<BoolT> phi_bb19_15;
+  TNode<PrimitiveHeapObject> phi_bb19_16;
   if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_12, &phi_bb19_13, &phi_bb19_14, &phi_bb19_15);
-    ca_.Goto(&block14, phi_bb19_12, phi_bb19_13, phi_bb19_14, phi_bb19_15, tmp22);
+    ca_.Bind(&block19, &phi_bb19_12, &phi_bb19_13, &phi_bb19_14, &phi_bb19_15, &phi_bb19_16);
+    ca_.Goto(&block14, phi_bb19_12, phi_bb19_13, phi_bb19_14, phi_bb19_15, phi_bb19_16, tmp23);
   }
 
   TNode<FixedArray> phi_bb23_12;
   TNode<IntPtrT> phi_bb23_13;
   TNode<IntPtrT> phi_bb23_14;
   TNode<BoolT> phi_bb23_15;
-  TNode<BoolT> tmp28;
+  TNode<PrimitiveHeapObject> phi_bb23_16;
+  TNode<BoolT> tmp29;
   if (block23.is_used()) {
-    ca_.Bind(&block23, &phi_bb23_12, &phi_bb23_13, &phi_bb23_14, &phi_bb23_15);
-    tmp28 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{ca_.UncheckedCast<HeapObject>(tmp18)});
-    ca_.Branch(tmp28, &block24, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15}, &block25, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15});
+    ca_.Bind(&block23, &phi_bb23_12, &phi_bb23_13, &phi_bb23_14, &phi_bb23_15, &phi_bb23_16);
+    tmp29 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{ca_.UncheckedCast<HeapObject>(tmp19)});
+    ca_.Branch(tmp29, &block24, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15, phi_bb23_16}, &block25, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15, phi_bb23_16});
   }
 
   TNode<FixedArray> phi_bb22_12;
   TNode<IntPtrT> phi_bb22_13;
   TNode<IntPtrT> phi_bb22_14;
   TNode<BoolT> phi_bb22_15;
-  TNode<String> tmp29;
+  TNode<PrimitiveHeapObject> phi_bb22_16;
+  TNode<String> tmp30;
   if (block22.is_used()) {
-    ca_.Bind(&block22, &phi_bb22_12, &phi_bb22_13, &phi_bb22_14, &phi_bb22_15);
-    tmp29 = CodeStubAssembler(state_).NumberToString(TNode<Number>{tmp24});
-    ca_.Goto(&block20, phi_bb22_12, phi_bb22_13, phi_bb22_14, phi_bb22_15, tmp29);
+    ca_.Bind(&block22, &phi_bb22_12, &phi_bb22_13, &phi_bb22_14, &phi_bb22_15, &phi_bb22_16);
+    tmp30 = CodeStubAssembler(state_).NumberToString(TNode<Number>{tmp25});
+    ca_.Goto(&block20, phi_bb22_12, phi_bb22_13, phi_bb22_14, phi_bb22_15, phi_bb22_16, tmp30);
   }
 
   TNode<FixedArray> phi_bb24_12;
   TNode<IntPtrT> phi_bb24_13;
   TNode<IntPtrT> phi_bb24_14;
   TNode<BoolT> phi_bb24_15;
+  TNode<PrimitiveHeapObject> phi_bb24_16;
   if (block24.is_used()) {
-    ca_.Bind(&block24, &phi_bb24_12, &phi_bb24_13, &phi_bb24_14, &phi_bb24_15);
-    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb24_12, phi_bb24_13, phi_bb24_14, phi_bb24_15, tmp17);
+    ca_.Bind(&block24, &phi_bb24_12, &phi_bb24_13, &phi_bb24_14, &phi_bb24_15, &phi_bb24_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb24_12, phi_bb24_13, phi_bb24_14, phi_bb24_15, phi_bb24_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb25_12;
   TNode<IntPtrT> phi_bb25_13;
   TNode<IntPtrT> phi_bb25_14;
   TNode<BoolT> phi_bb25_15;
-  TNode<String> tmp30;
+  TNode<PrimitiveHeapObject> phi_bb25_16;
+  TNode<String> tmp31;
+  TNode<String> tmp32;
+  TNode<BoolT> tmp33;
   if (block25.is_used()) {
-    ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_13, &phi_bb25_14, &phi_bb25_15);
-    tmp30 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kToString), p_context, ca_.UncheckedCast<HeapObject>(tmp18));
-    ca_.Goto(&block20, phi_bb25_12, phi_bb25_13, phi_bb25_14, phi_bb25_15, tmp30);
+    ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_13, &phi_bb25_14, &phi_bb25_15, &phi_bb25_16);
+    tmp31 = ToString_Inline_0(state_, TNode<Context>{p_context}, TNode<Object>{ca_.UncheckedCast<HeapObject>(tmp19)});
+    tmp32 = kEmptyString_0(state_);
+    tmp33 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp31}, TNode<HeapObject>{tmp32});
+    ca_.Branch(tmp33, &block26, std::vector<compiler::Node*>{phi_bb25_12, phi_bb25_13, phi_bb25_14, phi_bb25_15, phi_bb25_16}, &block27, std::vector<compiler::Node*>{phi_bb25_12, phi_bb25_13, phi_bb25_14, phi_bb25_15, phi_bb25_16});
   }
 
-  TNode<FixedArray> phi_bb20_12;
-  TNode<IntPtrT> phi_bb20_13;
-  TNode<IntPtrT> phi_bb20_14;
-  TNode<BoolT> phi_bb20_15;
-  TNode<String> phi_bb20_18;
-  if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_12, &phi_bb20_13, &phi_bb20_14, &phi_bb20_15, &phi_bb20_18);
-    ca_.Goto(&block14, phi_bb20_12, phi_bb20_13, phi_bb20_14, phi_bb20_15, phi_bb20_18);
-  }
-
-  TNode<FixedArray> phi_bb14_12;
-  TNode<IntPtrT> phi_bb14_13;
-  TNode<IntPtrT> phi_bb14_14;
-  TNode<BoolT> phi_bb14_15;
-  TNode<String> phi_bb14_18;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_12, &phi_bb14_13, &phi_bb14_14, &phi_bb14_15, &phi_bb14_18);
-    ca_.Goto(&block11, phi_bb14_12, phi_bb14_13, phi_bb14_14, phi_bb14_15, phi_bb14_18);
-  }
-
-  TNode<FixedArray> phi_bb11_12;
-  TNode<IntPtrT> phi_bb11_13;
-  TNode<IntPtrT> phi_bb11_14;
-  TNode<BoolT> phi_bb11_15;
-  TNode<String> phi_bb11_18;
-  TNode<IntPtrT> tmp31;
-  TNode<BoolT> tmp32;
-  TNode<IntPtrT> tmp33;
-  TNode<BoolT> tmp34;
-  TNode<BoolT> tmp35;
-  TNode<IntPtrT> tmp36;
-  TNode<BoolT> tmp37;
-  if (block11.is_used()) {
-    ca_.Bind(&block11, &phi_bb11_12, &phi_bb11_13, &phi_bb11_14, &phi_bb11_15, &phi_bb11_18);
-    tmp31 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp32 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb11_13}, TNode<IntPtrT>{tmp31});
-    tmp33 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp34 = CodeStubAssembler(state_).IntPtrGreaterThan(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp33});
-    tmp35 = CodeStubAssembler(state_).Word32Or(TNode<BoolT>{tmp32}, TNode<BoolT>{tmp34});
-    tmp36 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp37 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp36});
-    ca_.Branch(tmp37, &block30, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_18, phi_bb11_18, phi_bb11_18}, &block31, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_18, phi_bb11_18, phi_bb11_18});
-  }
-
-  TNode<FixedArray> phi_bb30_12;
-  TNode<IntPtrT> phi_bb30_13;
-  TNode<IntPtrT> phi_bb30_14;
-  TNode<BoolT> phi_bb30_15;
-  TNode<String> phi_bb30_18;
-  TNode<String> phi_bb30_19;
-  TNode<String> phi_bb30_24;
-  TNode<BoolT> tmp38;
-  if (block30.is_used()) {
-    ca_.Bind(&block30, &phi_bb30_12, &phi_bb30_13, &phi_bb30_14, &phi_bb30_15, &phi_bb30_18, &phi_bb30_19, &phi_bb30_24);
-    tmp38 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block32, phi_bb30_12, phi_bb30_13, phi_bb30_14, phi_bb30_15, phi_bb30_18, phi_bb30_19, phi_bb30_24, tmp38);
-  }
-
-  TNode<FixedArray> phi_bb31_12;
-  TNode<IntPtrT> phi_bb31_13;
-  TNode<IntPtrT> phi_bb31_14;
-  TNode<BoolT> phi_bb31_15;
-  TNode<String> phi_bb31_18;
-  TNode<String> phi_bb31_19;
-  TNode<String> phi_bb31_24;
-  TNode<IntPtrT> tmp39;
-  TNode<BoolT> tmp40;
-  if (block31.is_used()) {
-    ca_.Bind(&block31, &phi_bb31_12, &phi_bb31_13, &phi_bb31_14, &phi_bb31_15, &phi_bb31_18, &phi_bb31_19, &phi_bb31_24);
-    tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp40 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp39});
-    ca_.Goto(&block32, phi_bb31_12, phi_bb31_13, phi_bb31_14, phi_bb31_15, phi_bb31_18, phi_bb31_19, phi_bb31_24, tmp40);
-  }
-
-  TNode<FixedArray> phi_bb32_12;
-  TNode<IntPtrT> phi_bb32_13;
-  TNode<IntPtrT> phi_bb32_14;
-  TNode<BoolT> phi_bb32_15;
-  TNode<String> phi_bb32_18;
-  TNode<String> phi_bb32_19;
-  TNode<String> phi_bb32_24;
-  TNode<BoolT> phi_bb32_37;
-  if (block32.is_used()) {
-    ca_.Bind(&block32, &phi_bb32_12, &phi_bb32_13, &phi_bb32_14, &phi_bb32_15, &phi_bb32_18, &phi_bb32_19, &phi_bb32_24, &phi_bb32_37);
-    ca_.Branch(phi_bb32_37, &block28, std::vector<compiler::Node*>{phi_bb32_12, phi_bb32_13, phi_bb32_14, phi_bb32_15, phi_bb32_18, phi_bb32_19, phi_bb32_24}, &block29, std::vector<compiler::Node*>{phi_bb32_12, phi_bb32_13, phi_bb32_14, phi_bb32_15, phi_bb32_18, phi_bb32_19, phi_bb32_24});
-  }
-
-  TNode<FixedArray> phi_bb28_12;
-  TNode<IntPtrT> phi_bb28_13;
-  TNode<IntPtrT> phi_bb28_14;
-  TNode<BoolT> phi_bb28_15;
-  TNode<String> phi_bb28_18;
-  TNode<String> phi_bb28_19;
-  TNode<String> phi_bb28_24;
-  if (block28.is_used()) {
-    ca_.Bind(&block28, &phi_bb28_12, &phi_bb28_13, &phi_bb28_14, &phi_bb28_15, &phi_bb28_18, &phi_bb28_19, &phi_bb28_24);
-    ca_.Goto(&block27, phi_bb28_12, phi_bb28_13, phi_bb28_14, phi_bb28_15, phi_bb28_18, phi_bb28_19, phi_bb28_24);
-  }
-
-  TNode<FixedArray> phi_bb29_12;
-  TNode<IntPtrT> phi_bb29_13;
-  TNode<IntPtrT> phi_bb29_14;
-  TNode<BoolT> phi_bb29_15;
-  TNode<String> phi_bb29_18;
-  TNode<String> phi_bb29_19;
-  TNode<String> phi_bb29_24;
-  TNode<IntPtrT> tmp41;
-  TNode<IntPtrT> tmp42;
-  TNode<BoolT> tmp43;
-  if (block29.is_used()) {
-    ca_.Bind(&block29, &phi_bb29_12, &phi_bb29_13, &phi_bb29_14, &phi_bb29_15, &phi_bb29_18, &phi_bb29_19, &phi_bb29_24);
-    tmp41 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb8_10});
-    tmp42 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp41}, TNode<IntPtrT>{tmp3});
-    tmp43 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp42}, TNode<IntPtrT>{phi_bb8_10});
-    ca_.Branch(tmp43, &block33, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_14, phi_bb29_15, phi_bb29_18, phi_bb29_19, phi_bb29_24}, &block34, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_14, phi_bb29_15, phi_bb29_18, phi_bb29_19, phi_bb29_24});
-  }
-
-  TNode<FixedArray> phi_bb33_12;
-  TNode<IntPtrT> phi_bb33_13;
-  TNode<IntPtrT> phi_bb33_14;
-  TNode<BoolT> phi_bb33_15;
-  TNode<String> phi_bb33_18;
-  TNode<String> phi_bb33_19;
-  TNode<String> phi_bb33_24;
-  if (block33.is_used()) {
-    ca_.Bind(&block33, &phi_bb33_12, &phi_bb33_13, &phi_bb33_14, &phi_bb33_15, &phi_bb33_18, &phi_bb33_19, &phi_bb33_24);
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, p_context);
-    CodeStubAssembler(state_).Unreachable();
-  }
-
-  TNode<FixedArray> phi_bb34_12;
-  TNode<IntPtrT> phi_bb34_13;
-  TNode<IntPtrT> phi_bb34_14;
-  TNode<BoolT> phi_bb34_15;
-  TNode<String> phi_bb34_18;
-  TNode<String> phi_bb34_19;
-  TNode<String> phi_bb34_24;
-  TNode<IntPtrT> tmp44;
-  if (block34.is_used()) {
-    ca_.Bind(&block34, &phi_bb34_12, &phi_bb34_13, &phi_bb34_14, &phi_bb34_15, &phi_bb34_18, &phi_bb34_19, &phi_bb34_24);
-    tmp44 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb34_14}, TNode<IntPtrT>{tmp41});
-    ca_.Branch(tmp35, &block35, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_15, phi_bb34_18, phi_bb34_19, phi_bb34_24}, &block36, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_15, phi_bb34_18, phi_bb34_19, phi_bb34_24});
-  }
-
-  TNode<FixedArray> phi_bb35_12;
-  TNode<IntPtrT> phi_bb35_13;
-  TNode<BoolT> phi_bb35_15;
-  TNode<String> phi_bb35_18;
-  TNode<String> phi_bb35_19;
-  TNode<String> phi_bb35_24;
-  TNode<IntPtrT> tmp45;
-  TNode<IntPtrT> tmp46;
-  TNode<Smi> tmp47;
-  TNode<FixedArray> tmp48;
-  if (block35.is_used()) {
-    ca_.Bind(&block35, &phi_bb35_12, &phi_bb35_13, &phi_bb35_15, &phi_bb35_18, &phi_bb35_19, &phi_bb35_24);
-    tmp45 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp46 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb35_13}, TNode<IntPtrT>{tmp45});
-    tmp47 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb8_10});
-    tmp48 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb35_12}, TNode<IntPtrT>{phi_bb35_13}, TNode<Smi>{tmp47});
-    ca_.Goto(&block36, tmp48, tmp46, phi_bb35_15, phi_bb35_18, phi_bb35_19, phi_bb35_24);
-  }
-
-  TNode<FixedArray> phi_bb36_12;
-  TNode<IntPtrT> phi_bb36_13;
-  TNode<BoolT> phi_bb36_15;
-  TNode<String> phi_bb36_18;
-  TNode<String> phi_bb36_19;
-  TNode<String> phi_bb36_24;
-  if (block36.is_used()) {
-    ca_.Bind(&block36, &phi_bb36_12, &phi_bb36_13, &phi_bb36_15, &phi_bb36_18, &phi_bb36_19, &phi_bb36_24);
-    ca_.Goto(&block27, phi_bb36_12, phi_bb36_13, tmp44, phi_bb36_15, phi_bb36_18, phi_bb36_19, phi_bb36_24);
+  TNode<FixedArray> phi_bb26_12;
+  TNode<IntPtrT> phi_bb26_13;
+  TNode<IntPtrT> phi_bb26_14;
+  TNode<BoolT> phi_bb26_15;
+  TNode<PrimitiveHeapObject> phi_bb26_16;
+  if (block26.is_used()) {
+    ca_.Bind(&block26, &phi_bb26_12, &phi_bb26_13, &phi_bb26_14, &phi_bb26_15, &phi_bb26_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb26_12, phi_bb26_13, phi_bb26_14, phi_bb26_15, phi_bb26_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb27_12;
   TNode<IntPtrT> phi_bb27_13;
   TNode<IntPtrT> phi_bb27_14;
   TNode<BoolT> phi_bb27_15;
-  TNode<String> phi_bb27_18;
-  TNode<String> phi_bb27_19;
-  TNode<String> phi_bb27_24;
-  TNode<IntPtrT> tmp49;
-  TNode<IntPtrT> tmp50;
-  TNode<IntPtrT> tmp51;
-  TNode<IntPtrT> tmp52;
-  TNode<FixedArray> tmp53;
-  TNode<Uint16T> tmp54;
-  TNode<BoolT> tmp55;
-  TNode<BoolT> tmp56;
-  TNode<IntPtrT> tmp57;
+  TNode<PrimitiveHeapObject> phi_bb27_16;
   if (block27.is_used()) {
-    ca_.Bind(&block27, &phi_bb27_12, &phi_bb27_13, &phi_bb27_14, &phi_bb27_15, &phi_bb27_18, &phi_bb27_19, &phi_bb27_24);
-    tmp49 = CodeStubAssembler(state_).LoadStringLengthAsWord(TNode<String>{phi_bb27_24});
-    tmp50 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb27_14}, TNode<IntPtrT>{tmp49});
-    tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp52 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb27_13}, TNode<IntPtrT>{tmp51});
-    tmp53 = StoreAndGrowFixedArray_String_0(state_, TNode<FixedArray>{phi_bb27_12}, TNode<IntPtrT>{phi_bb27_13}, TNode<String>{phi_bb27_24});
-    tmp54 = CodeStubAssembler(state_).LoadInstanceType(TNode<HeapObject>{phi_bb27_24});
-    tmp55 = CodeStubAssembler(state_).IsOneByteStringInstanceType(TNode<Uint16T>{tmp54});
-    tmp56 = CodeStubAssembler(state_).Word32And(TNode<BoolT>{tmp55}, TNode<BoolT>{phi_bb27_15});
-    tmp57 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block4, tmp57, phi_bb6_11, tmp53, tmp52, tmp50, tmp56, tmp17);
+    ca_.Bind(&block27, &phi_bb27_12, &phi_bb27_13, &phi_bb27_14, &phi_bb27_15, &phi_bb27_16);
+    ca_.Goto(&block20, phi_bb27_12, phi_bb27_13, phi_bb27_14, phi_bb27_15, phi_bb27_16, tmp31);
+  }
+
+  TNode<FixedArray> phi_bb20_12;
+  TNode<IntPtrT> phi_bb20_13;
+  TNode<IntPtrT> phi_bb20_14;
+  TNode<BoolT> phi_bb20_15;
+  TNode<PrimitiveHeapObject> phi_bb20_16;
+  TNode<String> phi_bb20_19;
+  if (block20.is_used()) {
+    ca_.Bind(&block20, &phi_bb20_12, &phi_bb20_13, &phi_bb20_14, &phi_bb20_15, &phi_bb20_16, &phi_bb20_19);
+    ca_.Goto(&block14, phi_bb20_12, phi_bb20_13, phi_bb20_14, phi_bb20_15, phi_bb20_16, phi_bb20_19);
+  }
+
+  TNode<FixedArray> phi_bb14_12;
+  TNode<IntPtrT> phi_bb14_13;
+  TNode<IntPtrT> phi_bb14_14;
+  TNode<BoolT> phi_bb14_15;
+  TNode<PrimitiveHeapObject> phi_bb14_16;
+  TNode<String> phi_bb14_19;
+  if (block14.is_used()) {
+    ca_.Bind(&block14, &phi_bb14_12, &phi_bb14_13, &phi_bb14_14, &phi_bb14_15, &phi_bb14_16, &phi_bb14_19);
+    ca_.Goto(&block11, phi_bb14_12, phi_bb14_13, phi_bb14_14, phi_bb14_15, phi_bb14_16, phi_bb14_19);
+  }
+
+  TNode<FixedArray> phi_bb11_12;
+  TNode<IntPtrT> phi_bb11_13;
+  TNode<IntPtrT> phi_bb11_14;
+  TNode<BoolT> phi_bb11_15;
+  TNode<PrimitiveHeapObject> phi_bb11_16;
+  TNode<String> phi_bb11_19;
+  TNode<IntPtrT> tmp34;
+  TNode<BoolT> tmp35;
+  TNode<IntPtrT> tmp36;
+  TNode<BoolT> tmp37;
+  TNode<BoolT> tmp38;
+  TNode<IntPtrT> tmp39;
+  TNode<BoolT> tmp40;
+  if (block11.is_used()) {
+    ca_.Bind(&block11, &phi_bb11_12, &phi_bb11_13, &phi_bb11_14, &phi_bb11_15, &phi_bb11_16, &phi_bb11_19);
+    tmp34 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp35 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb11_13}, TNode<IntPtrT>{tmp34});
+    tmp36 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp37 = CodeStubAssembler(state_).IntPtrGreaterThan(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp36});
+    tmp38 = CodeStubAssembler(state_).Word32Or(TNode<BoolT>{tmp35}, TNode<BoolT>{tmp37});
+    tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp40 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp39});
+    ca_.Branch(tmp40, &block32, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_16, phi_bb11_19, phi_bb11_19, phi_bb11_19}, &block33, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_16, phi_bb11_19, phi_bb11_19, phi_bb11_19});
+  }
+
+  TNode<FixedArray> phi_bb32_12;
+  TNode<IntPtrT> phi_bb32_13;
+  TNode<IntPtrT> phi_bb32_14;
+  TNode<BoolT> phi_bb32_15;
+  TNode<PrimitiveHeapObject> phi_bb32_16;
+  TNode<String> phi_bb32_19;
+  TNode<String> phi_bb32_20;
+  TNode<String> phi_bb32_25;
+  TNode<BoolT> tmp41;
+  if (block32.is_used()) {
+    ca_.Bind(&block32, &phi_bb32_12, &phi_bb32_13, &phi_bb32_14, &phi_bb32_15, &phi_bb32_16, &phi_bb32_19, &phi_bb32_20, &phi_bb32_25);
+    tmp41 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block34, phi_bb32_12, phi_bb32_13, phi_bb32_14, phi_bb32_15, phi_bb32_16, phi_bb32_19, phi_bb32_20, phi_bb32_25, tmp41);
+  }
+
+  TNode<FixedArray> phi_bb33_12;
+  TNode<IntPtrT> phi_bb33_13;
+  TNode<IntPtrT> phi_bb33_14;
+  TNode<BoolT> phi_bb33_15;
+  TNode<PrimitiveHeapObject> phi_bb33_16;
+  TNode<String> phi_bb33_19;
+  TNode<String> phi_bb33_20;
+  TNode<String> phi_bb33_25;
+  TNode<IntPtrT> tmp42;
+  TNode<BoolT> tmp43;
+  if (block33.is_used()) {
+    ca_.Bind(&block33, &phi_bb33_12, &phi_bb33_13, &phi_bb33_14, &phi_bb33_15, &phi_bb33_16, &phi_bb33_19, &phi_bb33_20, &phi_bb33_25);
+    tmp42 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp43 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp42});
+    ca_.Goto(&block34, phi_bb33_12, phi_bb33_13, phi_bb33_14, phi_bb33_15, phi_bb33_16, phi_bb33_19, phi_bb33_20, phi_bb33_25, tmp43);
+  }
+
+  TNode<FixedArray> phi_bb34_12;
+  TNode<IntPtrT> phi_bb34_13;
+  TNode<IntPtrT> phi_bb34_14;
+  TNode<BoolT> phi_bb34_15;
+  TNode<PrimitiveHeapObject> phi_bb34_16;
+  TNode<String> phi_bb34_19;
+  TNode<String> phi_bb34_20;
+  TNode<String> phi_bb34_25;
+  TNode<BoolT> phi_bb34_38;
+  if (block34.is_used()) {
+    ca_.Bind(&block34, &phi_bb34_12, &phi_bb34_13, &phi_bb34_14, &phi_bb34_15, &phi_bb34_16, &phi_bb34_19, &phi_bb34_20, &phi_bb34_25, &phi_bb34_38);
+    ca_.Branch(phi_bb34_38, &block30, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_14, phi_bb34_15, phi_bb34_16, phi_bb34_19, phi_bb34_20, phi_bb34_25}, &block31, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_14, phi_bb34_15, phi_bb34_16, phi_bb34_19, phi_bb34_20, phi_bb34_25});
+  }
+
+  TNode<FixedArray> phi_bb30_12;
+  TNode<IntPtrT> phi_bb30_13;
+  TNode<IntPtrT> phi_bb30_14;
+  TNode<BoolT> phi_bb30_15;
+  TNode<PrimitiveHeapObject> phi_bb30_16;
+  TNode<String> phi_bb30_19;
+  TNode<String> phi_bb30_20;
+  TNode<String> phi_bb30_25;
+  if (block30.is_used()) {
+    ca_.Bind(&block30, &phi_bb30_12, &phi_bb30_13, &phi_bb30_14, &phi_bb30_15, &phi_bb30_16, &phi_bb30_19, &phi_bb30_20, &phi_bb30_25);
+    ca_.Goto(&block29, phi_bb30_12, phi_bb30_13, phi_bb30_14, phi_bb30_15, phi_bb30_16, phi_bb30_19, phi_bb30_20, phi_bb30_25);
+  }
+
+  TNode<FixedArray> phi_bb31_12;
+  TNode<IntPtrT> phi_bb31_13;
+  TNode<IntPtrT> phi_bb31_14;
+  TNode<BoolT> phi_bb31_15;
+  TNode<PrimitiveHeapObject> phi_bb31_16;
+  TNode<String> phi_bb31_19;
+  TNode<String> phi_bb31_20;
+  TNode<String> phi_bb31_25;
+  TNode<IntPtrT> tmp44;
+  TNode<IntPtrT> tmp45;
+  TNode<BoolT> tmp46;
+  if (block31.is_used()) {
+    ca_.Bind(&block31, &phi_bb31_12, &phi_bb31_13, &phi_bb31_14, &phi_bb31_15, &phi_bb31_16, &phi_bb31_19, &phi_bb31_20, &phi_bb31_25);
+    tmp44 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb8_10});
+    tmp45 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp44}, TNode<IntPtrT>{tmp3});
+    tmp46 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp45}, TNode<IntPtrT>{phi_bb8_10});
+    ca_.Branch(tmp46, &block35, std::vector<compiler::Node*>{phi_bb31_12, phi_bb31_13, phi_bb31_14, phi_bb31_15, phi_bb31_16, phi_bb31_19, phi_bb31_20, phi_bb31_25}, &block36, std::vector<compiler::Node*>{phi_bb31_12, phi_bb31_13, phi_bb31_14, phi_bb31_15, phi_bb31_16, phi_bb31_19, phi_bb31_20, phi_bb31_25});
+  }
+
+  TNode<FixedArray> phi_bb35_12;
+  TNode<IntPtrT> phi_bb35_13;
+  TNode<IntPtrT> phi_bb35_14;
+  TNode<BoolT> phi_bb35_15;
+  TNode<PrimitiveHeapObject> phi_bb35_16;
+  TNode<String> phi_bb35_19;
+  TNode<String> phi_bb35_20;
+  TNode<String> phi_bb35_25;
+  if (block35.is_used()) {
+    ca_.Bind(&block35, &phi_bb35_12, &phi_bb35_13, &phi_bb35_14, &phi_bb35_15, &phi_bb35_16, &phi_bb35_19, &phi_bb35_20, &phi_bb35_25);
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, p_context);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb36_12;
+  TNode<IntPtrT> phi_bb36_13;
+  TNode<IntPtrT> phi_bb36_14;
+  TNode<BoolT> phi_bb36_15;
+  TNode<PrimitiveHeapObject> phi_bb36_16;
+  TNode<String> phi_bb36_19;
+  TNode<String> phi_bb36_20;
+  TNode<String> phi_bb36_25;
+  TNode<IntPtrT> tmp47;
+  if (block36.is_used()) {
+    ca_.Bind(&block36, &phi_bb36_12, &phi_bb36_13, &phi_bb36_14, &phi_bb36_15, &phi_bb36_16, &phi_bb36_19, &phi_bb36_20, &phi_bb36_25);
+    tmp47 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb36_14}, TNode<IntPtrT>{tmp44});
+    ca_.Branch(tmp38, &block37, std::vector<compiler::Node*>{phi_bb36_12, phi_bb36_13, phi_bb36_15, phi_bb36_16, phi_bb36_19, phi_bb36_20, phi_bb36_25}, &block38, std::vector<compiler::Node*>{phi_bb36_12, phi_bb36_13, phi_bb36_15, phi_bb36_16, phi_bb36_19, phi_bb36_20, phi_bb36_25});
+  }
+
+  TNode<FixedArray> phi_bb37_12;
+  TNode<IntPtrT> phi_bb37_13;
+  TNode<BoolT> phi_bb37_15;
+  TNode<PrimitiveHeapObject> phi_bb37_16;
+  TNode<String> phi_bb37_19;
+  TNode<String> phi_bb37_20;
+  TNode<String> phi_bb37_25;
+  TNode<IntPtrT> tmp48;
+  TNode<IntPtrT> tmp49;
+  TNode<Smi> tmp50;
+  TNode<FixedArray> tmp51;
+  TNode<Oddball> tmp52;
+  if (block37.is_used()) {
+    ca_.Bind(&block37, &phi_bb37_12, &phi_bb37_13, &phi_bb37_15, &phi_bb37_16, &phi_bb37_19, &phi_bb37_20, &phi_bb37_25);
+    tmp48 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp49 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb37_13}, TNode<IntPtrT>{tmp48});
+    tmp50 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb8_10});
+    tmp51 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb37_12}, TNode<IntPtrT>{phi_bb37_13}, TNode<Smi>{tmp50});
+    tmp52 = Null_0(state_);
+    ca_.Goto(&block38, tmp51, tmp49, phi_bb37_15, tmp52, phi_bb37_19, phi_bb37_20, phi_bb37_25);
+  }
+
+  TNode<FixedArray> phi_bb38_12;
+  TNode<IntPtrT> phi_bb38_13;
+  TNode<BoolT> phi_bb38_15;
+  TNode<PrimitiveHeapObject> phi_bb38_16;
+  TNode<String> phi_bb38_19;
+  TNode<String> phi_bb38_20;
+  TNode<String> phi_bb38_25;
+  if (block38.is_used()) {
+    ca_.Bind(&block38, &phi_bb38_12, &phi_bb38_13, &phi_bb38_15, &phi_bb38_16, &phi_bb38_19, &phi_bb38_20, &phi_bb38_25);
+    ca_.Goto(&block29, phi_bb38_12, phi_bb38_13, tmp47, phi_bb38_15, phi_bb38_16, phi_bb38_19, phi_bb38_20, phi_bb38_25);
+  }
+
+  TNode<FixedArray> phi_bb29_12;
+  TNode<IntPtrT> phi_bb29_13;
+  TNode<IntPtrT> phi_bb29_14;
+  TNode<BoolT> phi_bb29_15;
+  TNode<PrimitiveHeapObject> phi_bb29_16;
+  TNode<String> phi_bb29_19;
+  TNode<String> phi_bb29_20;
+  TNode<String> phi_bb29_25;
+  TNode<IntPtrT> tmp53;
+  TNode<IntPtrT> tmp54;
+  TNode<BoolT> tmp55;
+  if (block29.is_used()) {
+    ca_.Bind(&block29, &phi_bb29_12, &phi_bb29_13, &phi_bb29_14, &phi_bb29_15, &phi_bb29_16, &phi_bb29_19, &phi_bb29_20, &phi_bb29_25);
+    tmp53 = CodeStubAssembler(state_).LoadStringLengthAsWord(TNode<String>{phi_bb29_25});
+    tmp54 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb29_14}, TNode<IntPtrT>{tmp53});
+    tmp55 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{phi_bb29_25}, TNode<MaybeObject>{phi_bb29_16});
+    ca_.Branch(tmp55, &block39, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_15, phi_bb29_16, phi_bb29_19, phi_bb29_20, phi_bb29_25}, &block40, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_15, phi_bb29_16, phi_bb29_19, phi_bb29_20, phi_bb29_25});
+  }
+
+  TNode<FixedArray> phi_bb39_12;
+  TNode<IntPtrT> phi_bb39_13;
+  TNode<BoolT> phi_bb39_15;
+  TNode<PrimitiveHeapObject> phi_bb39_16;
+  TNode<String> phi_bb39_19;
+  TNode<String> phi_bb39_20;
+  TNode<String> phi_bb39_25;
+  TNode<Object> tmp56;
+  TNode<IntPtrT> tmp57;
+  TNode<IntPtrT> tmp58;
+  TNode<IntPtrT> tmp59;
+  TNode<IntPtrT> tmp60;
+  TNode<UintPtrT> tmp61;
+  TNode<UintPtrT> tmp62;
+  TNode<BoolT> tmp63;
+  if (block39.is_used()) {
+    ca_.Bind(&block39, &phi_bb39_12, &phi_bb39_13, &phi_bb39_15, &phi_bb39_16, &phi_bb39_19, &phi_bb39_20, &phi_bb39_25);
+    std::tie(tmp56, tmp57, tmp58) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb39_12}).Flatten();
+    tmp59 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp60 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{phi_bb39_13}, TNode<IntPtrT>{tmp59});
+    tmp61 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp60});
+    tmp62 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp58});
+    tmp63 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp61}, TNode<UintPtrT>{tmp62});
+    ca_.Branch(tmp63, &block51, std::vector<compiler::Node*>{phi_bb39_12, phi_bb39_13, phi_bb39_15, phi_bb39_16, phi_bb39_19, phi_bb39_20, phi_bb39_25, phi_bb39_12}, &block52, std::vector<compiler::Node*>{phi_bb39_12, phi_bb39_13, phi_bb39_15, phi_bb39_16, phi_bb39_19, phi_bb39_20, phi_bb39_25, phi_bb39_12});
+  }
+
+  TNode<FixedArray> phi_bb51_12;
+  TNode<IntPtrT> phi_bb51_13;
+  TNode<BoolT> phi_bb51_15;
+  TNode<PrimitiveHeapObject> phi_bb51_16;
+  TNode<String> phi_bb51_19;
+  TNode<String> phi_bb51_20;
+  TNode<String> phi_bb51_25;
+  TNode<FixedArray> phi_bb51_29;
+  TNode<IntPtrT> tmp64;
+  TNode<IntPtrT> tmp65;
+  TNode<Object> tmp66;
+  TNode<IntPtrT> tmp67;
+  TNode<Object> tmp68;
+  TNode<HeapObject> tmp69;
+  if (block51.is_used()) {
+    ca_.Bind(&block51, &phi_bb51_12, &phi_bb51_13, &phi_bb51_15, &phi_bb51_16, &phi_bb51_19, &phi_bb51_20, &phi_bb51_25, &phi_bb51_29);
+    tmp64 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp60});
+    tmp65 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp57}, TNode<IntPtrT>{tmp64});
+    std::tie(tmp66, tmp67) = NewReference_Object_0(state_, TNode<Object>{tmp56}, TNode<IntPtrT>{tmp65}).Flatten();
+    tmp68 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp66, tmp67});
+    compiler::CodeAssemblerLabel label70(&ca_);
+    tmp69 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{tmp68}, &label70);
+    ca_.Goto(&block58, phi_bb51_12, phi_bb51_13, phi_bb51_15, phi_bb51_16, phi_bb51_19, phi_bb51_20, phi_bb51_25);
+    if (label70.is_used()) {
+      ca_.Bind(&label70);
+      ca_.Goto(&block59, phi_bb51_12, phi_bb51_13, phi_bb51_15, phi_bb51_16, phi_bb51_19, phi_bb51_20, phi_bb51_25);
+    }
+  }
+
+  TNode<FixedArray> phi_bb52_12;
+  TNode<IntPtrT> phi_bb52_13;
+  TNode<BoolT> phi_bb52_15;
+  TNode<PrimitiveHeapObject> phi_bb52_16;
+  TNode<String> phi_bb52_19;
+  TNode<String> phi_bb52_20;
+  TNode<String> phi_bb52_25;
+  TNode<FixedArray> phi_bb52_29;
+  if (block52.is_used()) {
+    ca_.Bind(&block52, &phi_bb52_12, &phi_bb52_13, &phi_bb52_15, &phi_bb52_16, &phi_bb52_19, &phi_bb52_20, &phi_bb52_25, &phi_bb52_29);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb59_12;
+  TNode<IntPtrT> phi_bb59_13;
+  TNode<BoolT> phi_bb59_15;
+  TNode<PrimitiveHeapObject> phi_bb59_16;
+  TNode<String> phi_bb59_19;
+  TNode<String> phi_bb59_20;
+  TNode<String> phi_bb59_25;
+  if (block59.is_used()) {
+    ca_.Bind(&block59, &phi_bb59_12, &phi_bb59_13, &phi_bb59_15, &phi_bb59_16, &phi_bb59_19, &phi_bb59_20, &phi_bb59_25);
+    ca_.Goto(&block56, phi_bb59_12, phi_bb59_13, phi_bb59_15, phi_bb59_16, phi_bb59_19, phi_bb59_20, phi_bb59_25);
+  }
+
+  TNode<FixedArray> phi_bb58_12;
+  TNode<IntPtrT> phi_bb58_13;
+  TNode<BoolT> phi_bb58_15;
+  TNode<PrimitiveHeapObject> phi_bb58_16;
+  TNode<String> phi_bb58_19;
+  TNode<String> phi_bb58_20;
+  TNode<String> phi_bb58_25;
+  TNode<String> tmp71;
+  if (block58.is_used()) {
+    ca_.Bind(&block58, &phi_bb58_12, &phi_bb58_13, &phi_bb58_15, &phi_bb58_16, &phi_bb58_19, &phi_bb58_20, &phi_bb58_25);
+    compiler::CodeAssemblerLabel label72(&ca_);
+    tmp71 = Cast_String_0(state_, TNode<HeapObject>{tmp69}, &label72);
+    ca_.Goto(&block60, phi_bb58_12, phi_bb58_13, phi_bb58_15, phi_bb58_16, phi_bb58_19, phi_bb58_20, phi_bb58_25);
+    if (label72.is_used()) {
+      ca_.Bind(&label72);
+      ca_.Goto(&block61, phi_bb58_12, phi_bb58_13, phi_bb58_15, phi_bb58_16, phi_bb58_19, phi_bb58_20, phi_bb58_25);
+    }
+  }
+
+  TNode<FixedArray> phi_bb61_12;
+  TNode<IntPtrT> phi_bb61_13;
+  TNode<BoolT> phi_bb61_15;
+  TNode<PrimitiveHeapObject> phi_bb61_16;
+  TNode<String> phi_bb61_19;
+  TNode<String> phi_bb61_20;
+  TNode<String> phi_bb61_25;
+  if (block61.is_used()) {
+    ca_.Bind(&block61, &phi_bb61_12, &phi_bb61_13, &phi_bb61_15, &phi_bb61_16, &phi_bb61_19, &phi_bb61_20, &phi_bb61_25);
+    ca_.Goto(&block56, phi_bb61_12, phi_bb61_13, phi_bb61_15, phi_bb61_16, phi_bb61_19, phi_bb61_20, phi_bb61_25);
+  }
+
+  TNode<FixedArray> phi_bb60_12;
+  TNode<IntPtrT> phi_bb60_13;
+  TNode<BoolT> phi_bb60_15;
+  TNode<PrimitiveHeapObject> phi_bb60_16;
+  TNode<String> phi_bb60_19;
+  TNode<String> phi_bb60_20;
+  TNode<String> phi_bb60_25;
+  TNode<IntPtrT> tmp73;
+  TNode<IntPtrT> tmp74;
+  TNode<Smi> tmp75;
+  TNode<FixedArray> tmp76;
+  if (block60.is_used()) {
+    ca_.Bind(&block60, &phi_bb60_12, &phi_bb60_13, &phi_bb60_15, &phi_bb60_16, &phi_bb60_19, &phi_bb60_20, &phi_bb60_25);
+    tmp73 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp74 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb60_13}, TNode<IntPtrT>{tmp73});
+    tmp75 = SmiConstant_0(state_, IntegerLiteral(true, 0x1ull));
+    tmp76 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb60_12}, TNode<IntPtrT>{phi_bb60_13}, TNode<Smi>{tmp75});
+    ca_.Goto(&block55, tmp76, tmp74, phi_bb60_15, phi_bb60_16, phi_bb60_19, phi_bb60_20, phi_bb60_25);
+  }
+
+  TNode<FixedArray> phi_bb56_12;
+  TNode<IntPtrT> phi_bb56_13;
+  TNode<BoolT> phi_bb56_15;
+  TNode<PrimitiveHeapObject> phi_bb56_16;
+  TNode<String> phi_bb56_19;
+  TNode<String> phi_bb56_20;
+  TNode<String> phi_bb56_25;
+  TNode<Smi> tmp77;
+  if (block56.is_used()) {
+    ca_.Bind(&block56, &phi_bb56_12, &phi_bb56_13, &phi_bb56_15, &phi_bb56_16, &phi_bb56_19, &phi_bb56_20, &phi_bb56_25);
+    compiler::CodeAssemblerLabel label78(&ca_);
+    tmp77 = Cast_Smi_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp68)}, &label78);
+    ca_.Goto(&block64, phi_bb56_12, phi_bb56_13, phi_bb56_15, phi_bb56_16, phi_bb56_19, phi_bb56_20, phi_bb56_25);
+    if (label78.is_used()) {
+      ca_.Bind(&label78);
+      ca_.Goto(&block65, phi_bb56_12, phi_bb56_13, phi_bb56_15, phi_bb56_16, phi_bb56_19, phi_bb56_20, phi_bb56_25);
+    }
+  }
+
+  TNode<FixedArray> phi_bb65_12;
+  TNode<IntPtrT> phi_bb65_13;
+  TNode<BoolT> phi_bb65_15;
+  TNode<PrimitiveHeapObject> phi_bb65_16;
+  TNode<String> phi_bb65_19;
+  TNode<String> phi_bb65_20;
+  TNode<String> phi_bb65_25;
+  if (block65.is_used()) {
+    ca_.Bind(&block65, &phi_bb65_12, &phi_bb65_13, &phi_bb65_15, &phi_bb65_16, &phi_bb65_19, &phi_bb65_20, &phi_bb65_25);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb64_12;
+  TNode<IntPtrT> phi_bb64_13;
+  TNode<BoolT> phi_bb64_15;
+  TNode<PrimitiveHeapObject> phi_bb64_16;
+  TNode<String> phi_bb64_19;
+  TNode<String> phi_bb64_20;
+  TNode<String> phi_bb64_25;
+  TNode<Object> tmp79;
+  TNode<IntPtrT> tmp80;
+  TNode<IntPtrT> tmp81;
+  TNode<IntPtrT> tmp82;
+  TNode<IntPtrT> tmp83;
+  TNode<UintPtrT> tmp84;
+  TNode<UintPtrT> tmp85;
+  TNode<BoolT> tmp86;
+  if (block64.is_used()) {
+    ca_.Bind(&block64, &phi_bb64_12, &phi_bb64_13, &phi_bb64_15, &phi_bb64_16, &phi_bb64_19, &phi_bb64_20, &phi_bb64_25);
+    std::tie(tmp79, tmp80, tmp81) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb64_12}).Flatten();
+    tmp82 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp83 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{phi_bb64_13}, TNode<IntPtrT>{tmp82});
+    tmp84 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp83});
+    tmp85 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp81});
+    tmp86 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp84}, TNode<UintPtrT>{tmp85});
+    ca_.Branch(tmp86, &block78, std::vector<compiler::Node*>{phi_bb64_12, phi_bb64_13, phi_bb64_15, phi_bb64_16, phi_bb64_19, phi_bb64_20, phi_bb64_25, phi_bb64_12}, &block79, std::vector<compiler::Node*>{phi_bb64_12, phi_bb64_13, phi_bb64_15, phi_bb64_16, phi_bb64_19, phi_bb64_20, phi_bb64_25, phi_bb64_12});
+  }
+
+  TNode<FixedArray> phi_bb78_12;
+  TNode<IntPtrT> phi_bb78_13;
+  TNode<BoolT> phi_bb78_15;
+  TNode<PrimitiveHeapObject> phi_bb78_16;
+  TNode<String> phi_bb78_19;
+  TNode<String> phi_bb78_20;
+  TNode<String> phi_bb78_25;
+  TNode<FixedArray> phi_bb78_31;
+  TNode<IntPtrT> tmp87;
+  TNode<IntPtrT> tmp88;
+  TNode<Object> tmp89;
+  TNode<IntPtrT> tmp90;
+  TNode<Smi> tmp91;
+  TNode<Smi> tmp92;
+  if (block78.is_used()) {
+    ca_.Bind(&block78, &phi_bb78_12, &phi_bb78_13, &phi_bb78_15, &phi_bb78_16, &phi_bb78_19, &phi_bb78_20, &phi_bb78_25, &phi_bb78_31);
+    tmp87 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp83});
+    tmp88 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp80}, TNode<IntPtrT>{tmp87});
+    std::tie(tmp89, tmp90) = NewReference_Object_0(state_, TNode<Object>{tmp79}, TNode<IntPtrT>{tmp88}).Flatten();
+    tmp91 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp92 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp77}, TNode<Smi>{tmp91});
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp89, tmp90}, tmp92);
+    ca_.Goto(&block55, phi_bb78_12, phi_bb78_13, phi_bb78_15, phi_bb78_16, phi_bb78_19, phi_bb78_20, phi_bb78_25);
+  }
+
+  TNode<FixedArray> phi_bb79_12;
+  TNode<IntPtrT> phi_bb79_13;
+  TNode<BoolT> phi_bb79_15;
+  TNode<PrimitiveHeapObject> phi_bb79_16;
+  TNode<String> phi_bb79_19;
+  TNode<String> phi_bb79_20;
+  TNode<String> phi_bb79_25;
+  TNode<FixedArray> phi_bb79_31;
+  if (block79.is_used()) {
+    ca_.Bind(&block79, &phi_bb79_12, &phi_bb79_13, &phi_bb79_15, &phi_bb79_16, &phi_bb79_19, &phi_bb79_20, &phi_bb79_25, &phi_bb79_31);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb55_12;
+  TNode<IntPtrT> phi_bb55_13;
+  TNode<BoolT> phi_bb55_15;
+  TNode<PrimitiveHeapObject> phi_bb55_16;
+  TNode<String> phi_bb55_19;
+  TNode<String> phi_bb55_20;
+  TNode<String> phi_bb55_25;
+  if (block55.is_used()) {
+    ca_.Bind(&block55, &phi_bb55_12, &phi_bb55_13, &phi_bb55_15, &phi_bb55_16, &phi_bb55_19, &phi_bb55_20, &phi_bb55_25);
+    ca_.Goto(&block41, phi_bb55_12, phi_bb55_13, phi_bb55_15, phi_bb55_16, phi_bb55_19, phi_bb55_20, phi_bb55_25);
+  }
+
+  TNode<FixedArray> phi_bb40_12;
+  TNode<IntPtrT> phi_bb40_13;
+  TNode<BoolT> phi_bb40_15;
+  TNode<PrimitiveHeapObject> phi_bb40_16;
+  TNode<String> phi_bb40_19;
+  TNode<String> phi_bb40_20;
+  TNode<String> phi_bb40_25;
+  TNode<IntPtrT> tmp93;
+  TNode<IntPtrT> tmp94;
+  TNode<FixedArray> tmp95;
+  if (block40.is_used()) {
+    ca_.Bind(&block40, &phi_bb40_12, &phi_bb40_13, &phi_bb40_15, &phi_bb40_16, &phi_bb40_19, &phi_bb40_20, &phi_bb40_25);
+    tmp93 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp94 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb40_13}, TNode<IntPtrT>{tmp93});
+    tmp95 = StoreAndGrowFixedArray_String_0(state_, TNode<FixedArray>{phi_bb40_12}, TNode<IntPtrT>{phi_bb40_13}, TNode<String>{phi_bb40_25});
+    ca_.Goto(&block41, tmp95, tmp94, phi_bb40_15, phi_bb40_25, phi_bb40_19, phi_bb40_20, phi_bb40_25);
+  }
+
+  TNode<FixedArray> phi_bb41_12;
+  TNode<IntPtrT> phi_bb41_13;
+  TNode<BoolT> phi_bb41_15;
+  TNode<PrimitiveHeapObject> phi_bb41_16;
+  TNode<String> phi_bb41_19;
+  TNode<String> phi_bb41_20;
+  TNode<String> phi_bb41_25;
+  TNode<Uint16T> tmp96;
+  TNode<BoolT> tmp97;
+  TNode<BoolT> tmp98;
+  TNode<IntPtrT> tmp99;
+  if (block41.is_used()) {
+    ca_.Bind(&block41, &phi_bb41_12, &phi_bb41_13, &phi_bb41_15, &phi_bb41_16, &phi_bb41_19, &phi_bb41_20, &phi_bb41_25);
+    tmp96 = CodeStubAssembler(state_).LoadInstanceType(TNode<HeapObject>{phi_bb41_25});
+    tmp97 = CodeStubAssembler(state_).IsOneByteStringInstanceType(TNode<Uint16T>{tmp96});
+    tmp98 = CodeStubAssembler(state_).Word32And(TNode<BoolT>{tmp97}, TNode<BoolT>{phi_bb41_15});
+    tmp99 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    ca_.Goto(&block4, tmp99, phi_bb6_11, phi_bb41_12, phi_bb41_13, tmp54, tmp98, phi_bb41_16, tmp18);
   }
 
   TNode<IntPtrT> phi_bb3_10;
@@ -3366,188 +3664,201 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb3_13;
   TNode<IntPtrT> phi_bb3_14;
   TNode<BoolT> phi_bb3_15;
-  TNode<UintPtrT> phi_bb3_16;
-  TNode<BoolT> tmp58;
-  TNode<IntPtrT> tmp59;
-  TNode<BoolT> tmp60;
+  TNode<PrimitiveHeapObject> phi_bb3_16;
+  TNode<UintPtrT> phi_bb3_17;
+  TNode<BoolT> tmp100;
+  TNode<IntPtrT> tmp101;
+  TNode<BoolT> tmp102;
   if (block3.is_used()) {
-    ca_.Bind(&block3, &phi_bb3_10, &phi_bb3_11, &phi_bb3_12, &phi_bb3_13, &phi_bb3_14, &phi_bb3_15, &phi_bb3_16);
-    tmp58 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    tmp59 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp60 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_10}, TNode<IntPtrT>{tmp59});
-    ca_.Branch(tmp60, &block40, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_10, phi_bb3_10}, &block41, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_10, phi_bb3_10});
+    ca_.Bind(&block3, &phi_bb3_10, &phi_bb3_11, &phi_bb3_12, &phi_bb3_13, &phi_bb3_14, &phi_bb3_15, &phi_bb3_16, &phi_bb3_17);
+    tmp100 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp101 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp102 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_10}, TNode<IntPtrT>{tmp101});
+    ca_.Branch(tmp102, &block85, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_17, phi_bb3_10, phi_bb3_10}, &block86, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_17, phi_bb3_10, phi_bb3_10});
   }
 
-  TNode<IntPtrT> phi_bb40_10;
-  TNode<BuiltinPtr> phi_bb40_11;
-  TNode<FixedArray> phi_bb40_12;
-  TNode<IntPtrT> phi_bb40_13;
-  TNode<IntPtrT> phi_bb40_14;
-  TNode<BoolT> phi_bb40_15;
-  TNode<UintPtrT> phi_bb40_16;
-  TNode<IntPtrT> phi_bb40_17;
-  TNode<IntPtrT> phi_bb40_21;
-  TNode<BoolT> tmp61;
-  if (block40.is_used()) {
-    ca_.Bind(&block40, &phi_bb40_10, &phi_bb40_11, &phi_bb40_12, &phi_bb40_13, &phi_bb40_14, &phi_bb40_15, &phi_bb40_16, &phi_bb40_17, &phi_bb40_21);
-    tmp61 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block42, phi_bb40_10, phi_bb40_11, phi_bb40_12, phi_bb40_13, phi_bb40_14, phi_bb40_15, phi_bb40_16, phi_bb40_17, phi_bb40_21, tmp61);
+  TNode<IntPtrT> phi_bb85_10;
+  TNode<BuiltinPtr> phi_bb85_11;
+  TNode<FixedArray> phi_bb85_12;
+  TNode<IntPtrT> phi_bb85_13;
+  TNode<IntPtrT> phi_bb85_14;
+  TNode<BoolT> phi_bb85_15;
+  TNode<PrimitiveHeapObject> phi_bb85_16;
+  TNode<UintPtrT> phi_bb85_17;
+  TNode<IntPtrT> phi_bb85_18;
+  TNode<IntPtrT> phi_bb85_22;
+  TNode<BoolT> tmp103;
+  if (block85.is_used()) {
+    ca_.Bind(&block85, &phi_bb85_10, &phi_bb85_11, &phi_bb85_12, &phi_bb85_13, &phi_bb85_14, &phi_bb85_15, &phi_bb85_16, &phi_bb85_17, &phi_bb85_18, &phi_bb85_22);
+    tmp103 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block87, phi_bb85_10, phi_bb85_11, phi_bb85_12, phi_bb85_13, phi_bb85_14, phi_bb85_15, phi_bb85_16, phi_bb85_17, phi_bb85_18, phi_bb85_22, tmp103);
   }
 
-  TNode<IntPtrT> phi_bb41_10;
-  TNode<BuiltinPtr> phi_bb41_11;
-  TNode<FixedArray> phi_bb41_12;
-  TNode<IntPtrT> phi_bb41_13;
-  TNode<IntPtrT> phi_bb41_14;
-  TNode<BoolT> phi_bb41_15;
-  TNode<UintPtrT> phi_bb41_16;
-  TNode<IntPtrT> phi_bb41_17;
-  TNode<IntPtrT> phi_bb41_21;
-  TNode<IntPtrT> tmp62;
-  TNode<BoolT> tmp63;
-  if (block41.is_used()) {
-    ca_.Bind(&block41, &phi_bb41_10, &phi_bb41_11, &phi_bb41_12, &phi_bb41_13, &phi_bb41_14, &phi_bb41_15, &phi_bb41_16, &phi_bb41_17, &phi_bb41_21);
-    tmp62 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp63 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp62});
-    ca_.Goto(&block42, phi_bb41_10, phi_bb41_11, phi_bb41_12, phi_bb41_13, phi_bb41_14, phi_bb41_15, phi_bb41_16, phi_bb41_17, phi_bb41_21, tmp63);
+  TNode<IntPtrT> phi_bb86_10;
+  TNode<BuiltinPtr> phi_bb86_11;
+  TNode<FixedArray> phi_bb86_12;
+  TNode<IntPtrT> phi_bb86_13;
+  TNode<IntPtrT> phi_bb86_14;
+  TNode<BoolT> phi_bb86_15;
+  TNode<PrimitiveHeapObject> phi_bb86_16;
+  TNode<UintPtrT> phi_bb86_17;
+  TNode<IntPtrT> phi_bb86_18;
+  TNode<IntPtrT> phi_bb86_22;
+  TNode<IntPtrT> tmp104;
+  TNode<BoolT> tmp105;
+  if (block86.is_used()) {
+    ca_.Bind(&block86, &phi_bb86_10, &phi_bb86_11, &phi_bb86_12, &phi_bb86_13, &phi_bb86_14, &phi_bb86_15, &phi_bb86_16, &phi_bb86_17, &phi_bb86_18, &phi_bb86_22);
+    tmp104 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp105 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp104});
+    ca_.Goto(&block87, phi_bb86_10, phi_bb86_11, phi_bb86_12, phi_bb86_13, phi_bb86_14, phi_bb86_15, phi_bb86_16, phi_bb86_17, phi_bb86_18, phi_bb86_22, tmp105);
   }
 
-  TNode<IntPtrT> phi_bb42_10;
-  TNode<BuiltinPtr> phi_bb42_11;
-  TNode<FixedArray> phi_bb42_12;
-  TNode<IntPtrT> phi_bb42_13;
-  TNode<IntPtrT> phi_bb42_14;
-  TNode<BoolT> phi_bb42_15;
-  TNode<UintPtrT> phi_bb42_16;
-  TNode<IntPtrT> phi_bb42_17;
-  TNode<IntPtrT> phi_bb42_21;
-  TNode<BoolT> phi_bb42_25;
-  if (block42.is_used()) {
-    ca_.Bind(&block42, &phi_bb42_10, &phi_bb42_11, &phi_bb42_12, &phi_bb42_13, &phi_bb42_14, &phi_bb42_15, &phi_bb42_16, &phi_bb42_17, &phi_bb42_21, &phi_bb42_25);
-    ca_.Branch(phi_bb42_25, &block38, std::vector<compiler::Node*>{phi_bb42_10, phi_bb42_11, phi_bb42_12, phi_bb42_13, phi_bb42_14, phi_bb42_15, phi_bb42_16, phi_bb42_17, phi_bb42_21}, &block39, std::vector<compiler::Node*>{phi_bb42_10, phi_bb42_11, phi_bb42_12, phi_bb42_13, phi_bb42_14, phi_bb42_15, phi_bb42_16, phi_bb42_17, phi_bb42_21});
+  TNode<IntPtrT> phi_bb87_10;
+  TNode<BuiltinPtr> phi_bb87_11;
+  TNode<FixedArray> phi_bb87_12;
+  TNode<IntPtrT> phi_bb87_13;
+  TNode<IntPtrT> phi_bb87_14;
+  TNode<BoolT> phi_bb87_15;
+  TNode<PrimitiveHeapObject> phi_bb87_16;
+  TNode<UintPtrT> phi_bb87_17;
+  TNode<IntPtrT> phi_bb87_18;
+  TNode<IntPtrT> phi_bb87_22;
+  TNode<BoolT> phi_bb87_26;
+  if (block87.is_used()) {
+    ca_.Bind(&block87, &phi_bb87_10, &phi_bb87_11, &phi_bb87_12, &phi_bb87_13, &phi_bb87_14, &phi_bb87_15, &phi_bb87_16, &phi_bb87_17, &phi_bb87_18, &phi_bb87_22, &phi_bb87_26);
+    ca_.Branch(phi_bb87_26, &block83, std::vector<compiler::Node*>{phi_bb87_10, phi_bb87_11, phi_bb87_12, phi_bb87_13, phi_bb87_14, phi_bb87_15, phi_bb87_16, phi_bb87_17, phi_bb87_18, phi_bb87_22}, &block84, std::vector<compiler::Node*>{phi_bb87_10, phi_bb87_11, phi_bb87_12, phi_bb87_13, phi_bb87_14, phi_bb87_15, phi_bb87_16, phi_bb87_17, phi_bb87_18, phi_bb87_22});
   }
 
-  TNode<IntPtrT> phi_bb38_10;
-  TNode<BuiltinPtr> phi_bb38_11;
-  TNode<FixedArray> phi_bb38_12;
-  TNode<IntPtrT> phi_bb38_13;
-  TNode<IntPtrT> phi_bb38_14;
-  TNode<BoolT> phi_bb38_15;
-  TNode<UintPtrT> phi_bb38_16;
-  TNode<IntPtrT> phi_bb38_17;
-  TNode<IntPtrT> phi_bb38_21;
-  if (block38.is_used()) {
-    ca_.Bind(&block38, &phi_bb38_10, &phi_bb38_11, &phi_bb38_12, &phi_bb38_13, &phi_bb38_14, &phi_bb38_15, &phi_bb38_16, &phi_bb38_17, &phi_bb38_21);
-    ca_.Goto(&block37, phi_bb38_10, phi_bb38_11, phi_bb38_12, phi_bb38_13, phi_bb38_14, phi_bb38_15, phi_bb38_16, phi_bb38_17, phi_bb38_21);
+  TNode<IntPtrT> phi_bb83_10;
+  TNode<BuiltinPtr> phi_bb83_11;
+  TNode<FixedArray> phi_bb83_12;
+  TNode<IntPtrT> phi_bb83_13;
+  TNode<IntPtrT> phi_bb83_14;
+  TNode<BoolT> phi_bb83_15;
+  TNode<PrimitiveHeapObject> phi_bb83_16;
+  TNode<UintPtrT> phi_bb83_17;
+  TNode<IntPtrT> phi_bb83_18;
+  TNode<IntPtrT> phi_bb83_22;
+  if (block83.is_used()) {
+    ca_.Bind(&block83, &phi_bb83_10, &phi_bb83_11, &phi_bb83_12, &phi_bb83_13, &phi_bb83_14, &phi_bb83_15, &phi_bb83_16, &phi_bb83_17, &phi_bb83_18, &phi_bb83_22);
+    ca_.Goto(&block82, phi_bb83_10, phi_bb83_11, phi_bb83_12, phi_bb83_13, phi_bb83_14, phi_bb83_15, phi_bb83_16, phi_bb83_17, phi_bb83_18, phi_bb83_22);
   }
 
-  TNode<IntPtrT> phi_bb39_10;
-  TNode<BuiltinPtr> phi_bb39_11;
-  TNode<FixedArray> phi_bb39_12;
-  TNode<IntPtrT> phi_bb39_13;
-  TNode<IntPtrT> phi_bb39_14;
-  TNode<BoolT> phi_bb39_15;
-  TNode<UintPtrT> phi_bb39_16;
-  TNode<IntPtrT> phi_bb39_17;
-  TNode<IntPtrT> phi_bb39_21;
-  TNode<IntPtrT> tmp64;
-  TNode<IntPtrT> tmp65;
-  TNode<BoolT> tmp66;
-  if (block39.is_used()) {
-    ca_.Bind(&block39, &phi_bb39_10, &phi_bb39_11, &phi_bb39_12, &phi_bb39_13, &phi_bb39_14, &phi_bb39_15, &phi_bb39_16, &phi_bb39_17, &phi_bb39_21);
-    tmp64 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb39_21});
-    tmp65 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp64}, TNode<IntPtrT>{tmp3});
-    tmp66 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp65}, TNode<IntPtrT>{phi_bb39_21});
-    ca_.Branch(tmp66, &block43, std::vector<compiler::Node*>{phi_bb39_10, phi_bb39_11, phi_bb39_12, phi_bb39_13, phi_bb39_14, phi_bb39_15, phi_bb39_16, phi_bb39_17, phi_bb39_21, phi_bb39_21}, &block44, std::vector<compiler::Node*>{phi_bb39_10, phi_bb39_11, phi_bb39_12, phi_bb39_13, phi_bb39_14, phi_bb39_15, phi_bb39_16, phi_bb39_17, phi_bb39_21, phi_bb39_21});
+  TNode<IntPtrT> phi_bb84_10;
+  TNode<BuiltinPtr> phi_bb84_11;
+  TNode<FixedArray> phi_bb84_12;
+  TNode<IntPtrT> phi_bb84_13;
+  TNode<IntPtrT> phi_bb84_14;
+  TNode<BoolT> phi_bb84_15;
+  TNode<PrimitiveHeapObject> phi_bb84_16;
+  TNode<UintPtrT> phi_bb84_17;
+  TNode<IntPtrT> phi_bb84_18;
+  TNode<IntPtrT> phi_bb84_22;
+  TNode<IntPtrT> tmp106;
+  TNode<IntPtrT> tmp107;
+  TNode<BoolT> tmp108;
+  if (block84.is_used()) {
+    ca_.Bind(&block84, &phi_bb84_10, &phi_bb84_11, &phi_bb84_12, &phi_bb84_13, &phi_bb84_14, &phi_bb84_15, &phi_bb84_16, &phi_bb84_17, &phi_bb84_18, &phi_bb84_22);
+    tmp106 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb84_22});
+    tmp107 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp106}, TNode<IntPtrT>{tmp3});
+    tmp108 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp107}, TNode<IntPtrT>{phi_bb84_22});
+    ca_.Branch(tmp108, &block88, std::vector<compiler::Node*>{phi_bb84_10, phi_bb84_11, phi_bb84_12, phi_bb84_13, phi_bb84_14, phi_bb84_15, phi_bb84_16, phi_bb84_17, phi_bb84_18, phi_bb84_22, phi_bb84_22}, &block89, std::vector<compiler::Node*>{phi_bb84_10, phi_bb84_11, phi_bb84_12, phi_bb84_13, phi_bb84_14, phi_bb84_15, phi_bb84_16, phi_bb84_17, phi_bb84_18, phi_bb84_22, phi_bb84_22});
   }
 
-  TNode<IntPtrT> phi_bb43_10;
-  TNode<BuiltinPtr> phi_bb43_11;
-  TNode<FixedArray> phi_bb43_12;
-  TNode<IntPtrT> phi_bb43_13;
-  TNode<IntPtrT> phi_bb43_14;
-  TNode<BoolT> phi_bb43_15;
-  TNode<UintPtrT> phi_bb43_16;
-  TNode<IntPtrT> phi_bb43_17;
-  TNode<IntPtrT> phi_bb43_21;
-  TNode<IntPtrT> phi_bb43_24;
-  if (block43.is_used()) {
-    ca_.Bind(&block43, &phi_bb43_10, &phi_bb43_11, &phi_bb43_12, &phi_bb43_13, &phi_bb43_14, &phi_bb43_15, &phi_bb43_16, &phi_bb43_17, &phi_bb43_21, &phi_bb43_24);
+  TNode<IntPtrT> phi_bb88_10;
+  TNode<BuiltinPtr> phi_bb88_11;
+  TNode<FixedArray> phi_bb88_12;
+  TNode<IntPtrT> phi_bb88_13;
+  TNode<IntPtrT> phi_bb88_14;
+  TNode<BoolT> phi_bb88_15;
+  TNode<PrimitiveHeapObject> phi_bb88_16;
+  TNode<UintPtrT> phi_bb88_17;
+  TNode<IntPtrT> phi_bb88_18;
+  TNode<IntPtrT> phi_bb88_22;
+  TNode<IntPtrT> phi_bb88_25;
+  if (block88.is_used()) {
+    ca_.Bind(&block88, &phi_bb88_10, &phi_bb88_11, &phi_bb88_12, &phi_bb88_13, &phi_bb88_14, &phi_bb88_15, &phi_bb88_16, &phi_bb88_17, &phi_bb88_18, &phi_bb88_22, &phi_bb88_25);
     CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, p_context);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<IntPtrT> phi_bb44_10;
-  TNode<BuiltinPtr> phi_bb44_11;
-  TNode<FixedArray> phi_bb44_12;
-  TNode<IntPtrT> phi_bb44_13;
-  TNode<IntPtrT> phi_bb44_14;
-  TNode<BoolT> phi_bb44_15;
-  TNode<UintPtrT> phi_bb44_16;
-  TNode<IntPtrT> phi_bb44_17;
-  TNode<IntPtrT> phi_bb44_21;
-  TNode<IntPtrT> phi_bb44_24;
-  TNode<IntPtrT> tmp67;
-  if (block44.is_used()) {
-    ca_.Bind(&block44, &phi_bb44_10, &phi_bb44_11, &phi_bb44_12, &phi_bb44_13, &phi_bb44_14, &phi_bb44_15, &phi_bb44_16, &phi_bb44_17, &phi_bb44_21, &phi_bb44_24);
-    tmp67 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb44_14}, TNode<IntPtrT>{tmp64});
-    ca_.Branch(tmp58, &block45, std::vector<compiler::Node*>{phi_bb44_10, phi_bb44_11, phi_bb44_12, phi_bb44_13, phi_bb44_15, phi_bb44_16, phi_bb44_17, phi_bb44_21, phi_bb44_24}, &block46, std::vector<compiler::Node*>{phi_bb44_10, phi_bb44_11, phi_bb44_12, phi_bb44_13, phi_bb44_15, phi_bb44_16, phi_bb44_17, phi_bb44_21, phi_bb44_24});
+  TNode<IntPtrT> phi_bb89_10;
+  TNode<BuiltinPtr> phi_bb89_11;
+  TNode<FixedArray> phi_bb89_12;
+  TNode<IntPtrT> phi_bb89_13;
+  TNode<IntPtrT> phi_bb89_14;
+  TNode<BoolT> phi_bb89_15;
+  TNode<PrimitiveHeapObject> phi_bb89_16;
+  TNode<UintPtrT> phi_bb89_17;
+  TNode<IntPtrT> phi_bb89_18;
+  TNode<IntPtrT> phi_bb89_22;
+  TNode<IntPtrT> phi_bb89_25;
+  TNode<IntPtrT> tmp109;
+  if (block89.is_used()) {
+    ca_.Bind(&block89, &phi_bb89_10, &phi_bb89_11, &phi_bb89_12, &phi_bb89_13, &phi_bb89_14, &phi_bb89_15, &phi_bb89_16, &phi_bb89_17, &phi_bb89_18, &phi_bb89_22, &phi_bb89_25);
+    tmp109 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb89_14}, TNode<IntPtrT>{tmp106});
+    ca_.Branch(tmp100, &block90, std::vector<compiler::Node*>{phi_bb89_10, phi_bb89_11, phi_bb89_12, phi_bb89_13, phi_bb89_15, phi_bb89_16, phi_bb89_17, phi_bb89_18, phi_bb89_22, phi_bb89_25}, &block91, std::vector<compiler::Node*>{phi_bb89_10, phi_bb89_11, phi_bb89_12, phi_bb89_13, phi_bb89_15, phi_bb89_16, phi_bb89_17, phi_bb89_18, phi_bb89_22, phi_bb89_25});
   }
 
-  TNode<IntPtrT> phi_bb45_10;
-  TNode<BuiltinPtr> phi_bb45_11;
-  TNode<FixedArray> phi_bb45_12;
-  TNode<IntPtrT> phi_bb45_13;
-  TNode<BoolT> phi_bb45_15;
-  TNode<UintPtrT> phi_bb45_16;
-  TNode<IntPtrT> phi_bb45_17;
-  TNode<IntPtrT> phi_bb45_21;
-  TNode<IntPtrT> phi_bb45_24;
-  TNode<IntPtrT> tmp68;
-  TNode<IntPtrT> tmp69;
-  TNode<Smi> tmp70;
-  TNode<FixedArray> tmp71;
-  if (block45.is_used()) {
-    ca_.Bind(&block45, &phi_bb45_10, &phi_bb45_11, &phi_bb45_12, &phi_bb45_13, &phi_bb45_15, &phi_bb45_16, &phi_bb45_17, &phi_bb45_21, &phi_bb45_24);
-    tmp68 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp69 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb45_13}, TNode<IntPtrT>{tmp68});
-    tmp70 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb45_24});
-    tmp71 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb45_12}, TNode<IntPtrT>{phi_bb45_13}, TNode<Smi>{tmp70});
-    ca_.Goto(&block46, phi_bb45_10, phi_bb45_11, tmp71, tmp69, phi_bb45_15, phi_bb45_16, phi_bb45_17, phi_bb45_21, phi_bb45_24);
+  TNode<IntPtrT> phi_bb90_10;
+  TNode<BuiltinPtr> phi_bb90_11;
+  TNode<FixedArray> phi_bb90_12;
+  TNode<IntPtrT> phi_bb90_13;
+  TNode<BoolT> phi_bb90_15;
+  TNode<PrimitiveHeapObject> phi_bb90_16;
+  TNode<UintPtrT> phi_bb90_17;
+  TNode<IntPtrT> phi_bb90_18;
+  TNode<IntPtrT> phi_bb90_22;
+  TNode<IntPtrT> phi_bb90_25;
+  TNode<IntPtrT> tmp110;
+  TNode<IntPtrT> tmp111;
+  TNode<Smi> tmp112;
+  TNode<FixedArray> tmp113;
+  TNode<Oddball> tmp114;
+  if (block90.is_used()) {
+    ca_.Bind(&block90, &phi_bb90_10, &phi_bb90_11, &phi_bb90_12, &phi_bb90_13, &phi_bb90_15, &phi_bb90_16, &phi_bb90_17, &phi_bb90_18, &phi_bb90_22, &phi_bb90_25);
+    tmp110 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp111 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb90_13}, TNode<IntPtrT>{tmp110});
+    tmp112 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb90_25});
+    tmp113 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb90_12}, TNode<IntPtrT>{phi_bb90_13}, TNode<Smi>{tmp112});
+    tmp114 = Null_0(state_);
+    ca_.Goto(&block91, phi_bb90_10, phi_bb90_11, tmp113, tmp111, phi_bb90_15, tmp114, phi_bb90_17, phi_bb90_18, phi_bb90_22, phi_bb90_25);
   }
 
-  TNode<IntPtrT> phi_bb46_10;
-  TNode<BuiltinPtr> phi_bb46_11;
-  TNode<FixedArray> phi_bb46_12;
-  TNode<IntPtrT> phi_bb46_13;
-  TNode<BoolT> phi_bb46_15;
-  TNode<UintPtrT> phi_bb46_16;
-  TNode<IntPtrT> phi_bb46_17;
-  TNode<IntPtrT> phi_bb46_21;
-  TNode<IntPtrT> phi_bb46_24;
-  if (block46.is_used()) {
-    ca_.Bind(&block46, &phi_bb46_10, &phi_bb46_11, &phi_bb46_12, &phi_bb46_13, &phi_bb46_15, &phi_bb46_16, &phi_bb46_17, &phi_bb46_21, &phi_bb46_24);
-    ca_.Goto(&block37, phi_bb46_10, phi_bb46_11, phi_bb46_12, phi_bb46_13, tmp67, phi_bb46_15, phi_bb46_16, phi_bb46_17, phi_bb46_21);
+  TNode<IntPtrT> phi_bb91_10;
+  TNode<BuiltinPtr> phi_bb91_11;
+  TNode<FixedArray> phi_bb91_12;
+  TNode<IntPtrT> phi_bb91_13;
+  TNode<BoolT> phi_bb91_15;
+  TNode<PrimitiveHeapObject> phi_bb91_16;
+  TNode<UintPtrT> phi_bb91_17;
+  TNode<IntPtrT> phi_bb91_18;
+  TNode<IntPtrT> phi_bb91_22;
+  TNode<IntPtrT> phi_bb91_25;
+  if (block91.is_used()) {
+    ca_.Bind(&block91, &phi_bb91_10, &phi_bb91_11, &phi_bb91_12, &phi_bb91_13, &phi_bb91_15, &phi_bb91_16, &phi_bb91_17, &phi_bb91_18, &phi_bb91_22, &phi_bb91_25);
+    ca_.Goto(&block82, phi_bb91_10, phi_bb91_11, phi_bb91_12, phi_bb91_13, tmp109, phi_bb91_15, phi_bb91_16, phi_bb91_17, phi_bb91_18, phi_bb91_22);
   }
 
-  TNode<IntPtrT> phi_bb37_10;
-  TNode<BuiltinPtr> phi_bb37_11;
-  TNode<FixedArray> phi_bb37_12;
-  TNode<IntPtrT> phi_bb37_13;
-  TNode<IntPtrT> phi_bb37_14;
-  TNode<BoolT> phi_bb37_15;
-  TNode<UintPtrT> phi_bb37_16;
-  TNode<IntPtrT> phi_bb37_17;
-  TNode<IntPtrT> phi_bb37_21;
-  TNode<String> tmp72;
-  if (block37.is_used()) {
-    ca_.Bind(&block37, &phi_bb37_10, &phi_bb37_11, &phi_bb37_12, &phi_bb37_13, &phi_bb37_14, &phi_bb37_15, &phi_bb37_16, &phi_bb37_17, &phi_bb37_21);
-    tmp72 = BufferJoin_0(state_, TNode<Context>{p_context}, TorqueStructBuffer_0{TNode<FixedArray>{phi_bb37_12}, TNode<IntPtrT>{phi_bb37_13}, TNode<IntPtrT>{phi_bb37_14}, TNode<BoolT>{phi_bb37_15}}, TNode<String>{p_sep});
-    ca_.Goto(&block47);
+  TNode<IntPtrT> phi_bb82_10;
+  TNode<BuiltinPtr> phi_bb82_11;
+  TNode<FixedArray> phi_bb82_12;
+  TNode<IntPtrT> phi_bb82_13;
+  TNode<IntPtrT> phi_bb82_14;
+  TNode<BoolT> phi_bb82_15;
+  TNode<PrimitiveHeapObject> phi_bb82_16;
+  TNode<UintPtrT> phi_bb82_17;
+  TNode<IntPtrT> phi_bb82_18;
+  TNode<IntPtrT> phi_bb82_22;
+  TNode<String> tmp115;
+  if (block82.is_used()) {
+    ca_.Bind(&block82, &phi_bb82_10, &phi_bb82_11, &phi_bb82_12, &phi_bb82_13, &phi_bb82_14, &phi_bb82_15, &phi_bb82_16, &phi_bb82_17, &phi_bb82_18, &phi_bb82_22);
+    tmp115 = BufferJoin_0(state_, TNode<Context>{p_context}, TorqueStructBuffer_0{TNode<FixedArray>{phi_bb82_12}, TNode<IntPtrT>{phi_bb82_13}, TNode<IntPtrT>{phi_bb82_14}, TNode<BoolT>{phi_bb82_15}, TNode<PrimitiveHeapObject>{phi_bb82_16}}, TNode<String>{p_sep});
+    ca_.Goto(&block92);
   }
 
-    ca_.Bind(&block47);
-  return TNode<String>{tmp72};
+    ca_.Bind(&block92);
+  return TNode<String>{tmp115};
 }
 
 TF_BUILTIN(LoadJoinTypedElement_Int32Elements_0, CodeStubAssembler) {
@@ -3803,54 +4114,71 @@ TF_BUILTIN(LoadJoinTypedElement_Uint32Elements_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=443&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=491&c=10
 TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String, BoolT> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block33(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, String, String, String> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, String, String, String> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, String, String, String> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, BoolT> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block43(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block45(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, UintPtrT, IntPtrT, IntPtrT> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, BoolT> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block37(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block52(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block61(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block60(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String, FixedArray> block79(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block55(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, String, String, String> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, BoolT> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block84(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block88(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block89(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block90(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT, IntPtrT> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT, BuiltinPtr, FixedArray, IntPtrT, IntPtrT, BoolT, PrimitiveHeapObject, UintPtrT, IntPtrT, IntPtrT> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block92(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -3862,7 +4190,8 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
-  TNode<UintPtrT> tmp9;
+  TNode<PrimitiveHeapObject> tmp9;
+  TNode<UintPtrT> tmp10;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
@@ -3870,9 +4199,9 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
     tmp2 = Convert_uintptr_Number_0(state_, TNode<Number>{p_lengthNumber});
     tmp3 = CodeStubAssembler(state_).LoadStringLengthAsWord(TNode<String>{p_sep});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    std::tie(tmp5, tmp6, tmp7, tmp8) = NewBuffer_0(state_, TNode<UintPtrT>{tmp2}, TNode<String>{p_sep}).Flatten();
-    tmp9 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block4, tmp4, p_initialLoadFn, tmp5, tmp6, tmp7, tmp8, tmp9);
+    std::tie(tmp5, tmp6, tmp7, tmp8, tmp9) = NewBuffer_0(state_, TNode<UintPtrT>{tmp2}, TNode<String>{p_sep}).Flatten();
+    tmp10 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    ca_.Goto(&block4, tmp4, p_initialLoadFn, tmp5, tmp6, tmp7, tmp8, tmp9, tmp10);
   }
 
   TNode<IntPtrT> phi_bb4_10;
@@ -3881,12 +4210,13 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> phi_bb4_13;
   TNode<IntPtrT> phi_bb4_14;
   TNode<BoolT> phi_bb4_15;
-  TNode<UintPtrT> phi_bb4_16;
-  TNode<BoolT> tmp10;
+  TNode<PrimitiveHeapObject> phi_bb4_16;
+  TNode<UintPtrT> phi_bb4_17;
+  TNode<BoolT> tmp11;
   if (block4.is_used()) {
-    ca_.Bind(&block4, &phi_bb4_10, &phi_bb4_11, &phi_bb4_12, &phi_bb4_13, &phi_bb4_14, &phi_bb4_15, &phi_bb4_16);
-    tmp10 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{phi_bb4_16}, TNode<UintPtrT>{tmp2});
-    ca_.Branch(tmp10, &block2, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16}, &block3, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16});
+    ca_.Bind(&block4, &phi_bb4_10, &phi_bb4_11, &phi_bb4_12, &phi_bb4_13, &phi_bb4_14, &phi_bb4_15, &phi_bb4_16, &phi_bb4_17);
+    tmp11 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{phi_bb4_17}, TNode<UintPtrT>{tmp2});
+    ca_.Branch(tmp11, &block2, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16, phi_bb4_17}, &block3, std::vector<compiler::Node*>{phi_bb4_10, phi_bb4_11, phi_bb4_12, phi_bb4_13, phi_bb4_14, phi_bb4_15, phi_bb4_16, phi_bb4_17});
   }
 
   TNode<IntPtrT> phi_bb2_10;
@@ -3895,12 +4225,13 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> phi_bb2_13;
   TNode<IntPtrT> phi_bb2_14;
   TNode<BoolT> phi_bb2_15;
-  TNode<UintPtrT> phi_bb2_16;
-  TNode<BoolT> tmp11;
+  TNode<PrimitiveHeapObject> phi_bb2_16;
+  TNode<UintPtrT> phi_bb2_17;
+  TNode<BoolT> tmp12;
   if (block2.is_used()) {
-    ca_.Bind(&block2, &phi_bb2_10, &phi_bb2_11, &phi_bb2_12, &phi_bb2_13, &phi_bb2_14, &phi_bb2_15, &phi_bb2_16);
-    tmp11 = CannotUseSameArrayAccessor_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<BuiltinPtr>{phi_bb2_11}, TNode<JSReceiver>{p_receiver}, TNode<Map>{tmp1}, TNode<Number>{p_lengthNumber});
-    ca_.Branch(tmp11, &block5, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16}, &block6, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16});
+    ca_.Bind(&block2, &phi_bb2_10, &phi_bb2_11, &phi_bb2_12, &phi_bb2_13, &phi_bb2_14, &phi_bb2_15, &phi_bb2_16, &phi_bb2_17);
+    tmp12 = CannotUseSameArrayAccessor_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<BuiltinPtr>{phi_bb2_11}, TNode<JSReceiver>{p_receiver}, TNode<Map>{tmp1}, TNode<Number>{p_lengthNumber});
+    ca_.Branch(tmp12, &block5, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16, phi_bb2_17}, &block6, std::vector<compiler::Node*>{phi_bb2_10, phi_bb2_11, phi_bb2_12, phi_bb2_13, phi_bb2_14, phi_bb2_15, phi_bb2_16, phi_bb2_17});
   }
 
   TNode<IntPtrT> phi_bb5_10;
@@ -3909,10 +4240,11 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> phi_bb5_13;
   TNode<IntPtrT> phi_bb5_14;
   TNode<BoolT> phi_bb5_15;
-  TNode<UintPtrT> phi_bb5_16;
+  TNode<PrimitiveHeapObject> phi_bb5_16;
+  TNode<UintPtrT> phi_bb5_17;
   if (block5.is_used()) {
-    ca_.Bind(&block5, &phi_bb5_10, &phi_bb5_11, &phi_bb5_12, &phi_bb5_13, &phi_bb5_14, &phi_bb5_15, &phi_bb5_16);
-    ca_.Goto(&block6, phi_bb5_10, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinElement_GenericElementsAccessor_0)), phi_bb5_12, phi_bb5_13, phi_bb5_14, phi_bb5_15, phi_bb5_16);
+    ca_.Bind(&block5, &phi_bb5_10, &phi_bb5_11, &phi_bb5_12, &phi_bb5_13, &phi_bb5_14, &phi_bb5_15, &phi_bb5_16, &phi_bb5_17);
+    ca_.Goto(&block6, phi_bb5_10, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinElement_GenericElementsAccessor_0)), phi_bb5_12, phi_bb5_13, phi_bb5_14, phi_bb5_15, phi_bb5_16, phi_bb5_17);
   }
 
   TNode<IntPtrT> phi_bb6_10;
@@ -3921,14 +4253,15 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> phi_bb6_13;
   TNode<IntPtrT> phi_bb6_14;
   TNode<BoolT> phi_bb6_15;
-  TNode<UintPtrT> phi_bb6_16;
-  TNode<UintPtrT> tmp12;
-  TNode<BoolT> tmp13;
+  TNode<PrimitiveHeapObject> phi_bb6_16;
+  TNode<UintPtrT> phi_bb6_17;
+  TNode<UintPtrT> tmp13;
+  TNode<BoolT> tmp14;
   if (block6.is_used()) {
-    ca_.Bind(&block6, &phi_bb6_10, &phi_bb6_11, &phi_bb6_12, &phi_bb6_13, &phi_bb6_14, &phi_bb6_15, &phi_bb6_16);
-    tmp12 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp13 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{phi_bb6_16}, TNode<UintPtrT>{tmp12});
-    ca_.Branch(tmp13, &block7, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16}, &block8, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16});
+    ca_.Bind(&block6, &phi_bb6_10, &phi_bb6_11, &phi_bb6_12, &phi_bb6_13, &phi_bb6_14, &phi_bb6_15, &phi_bb6_16, &phi_bb6_17);
+    tmp13 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp14 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{phi_bb6_17}, TNode<UintPtrT>{tmp13});
+    ca_.Branch(tmp14, &block7, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16, phi_bb6_17}, &block8, std::vector<compiler::Node*>{phi_bb6_10, phi_bb6_12, phi_bb6_13, phi_bb6_14, phi_bb6_15, phi_bb6_16, phi_bb6_17});
   }
 
   TNode<IntPtrT> phi_bb7_10;
@@ -3936,14 +4269,15 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> phi_bb7_13;
   TNode<IntPtrT> phi_bb7_14;
   TNode<BoolT> phi_bb7_15;
-  TNode<UintPtrT> phi_bb7_16;
-  TNode<IntPtrT> tmp14;
+  TNode<PrimitiveHeapObject> phi_bb7_16;
+  TNode<UintPtrT> phi_bb7_17;
   TNode<IntPtrT> tmp15;
+  TNode<IntPtrT> tmp16;
   if (block7.is_used()) {
-    ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_12, &phi_bb7_13, &phi_bb7_14, &phi_bb7_15, &phi_bb7_16);
-    tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb7_10}, TNode<IntPtrT>{tmp14});
-    ca_.Goto(&block8, tmp15, phi_bb7_12, phi_bb7_13, phi_bb7_14, phi_bb7_15, phi_bb7_16);
+    ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_12, &phi_bb7_13, &phi_bb7_14, &phi_bb7_15, &phi_bb7_16, &phi_bb7_17);
+    tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp16 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb7_10}, TNode<IntPtrT>{tmp15});
+    ca_.Goto(&block8, tmp16, phi_bb7_12, phi_bb7_13, phi_bb7_14, phi_bb7_15, phi_bb7_16, phi_bb7_17);
   }
 
   TNode<IntPtrT> phi_bb8_10;
@@ -3951,19 +4285,20 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> phi_bb8_13;
   TNode<IntPtrT> phi_bb8_14;
   TNode<BoolT> phi_bb8_15;
-  TNode<UintPtrT> phi_bb8_16;
-  TNode<UintPtrT> tmp16;
+  TNode<PrimitiveHeapObject> phi_bb8_16;
+  TNode<UintPtrT> phi_bb8_17;
   TNode<UintPtrT> tmp17;
-  TNode<Object> tmp18;
+  TNode<UintPtrT> tmp18;
+  TNode<Object> tmp19;
   if (block8.is_used()) {
-    ca_.Bind(&block8, &phi_bb8_10, &phi_bb8_12, &phi_bb8_13, &phi_bb8_14, &phi_bb8_15, &phi_bb8_16);
-    tmp16 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
-    tmp17 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb8_16}, TNode<UintPtrT>{tmp16});
-tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(0)).descriptor(), phi_bb6_11, p_context, p_receiver, phi_bb8_16);
+    ca_.Bind(&block8, &phi_bb8_10, &phi_bb8_12, &phi_bb8_13, &phi_bb8_14, &phi_bb8_15, &phi_bb8_16, &phi_bb8_17);
+    tmp17 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
+    tmp18 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb8_17}, TNode<UintPtrT>{tmp17});
+tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(0)).descriptor(), phi_bb6_11, p_context, p_receiver, phi_bb8_17);
     if ((p_useToLocaleString)) {
-      ca_.Goto(&block9, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15);
+      ca_.Goto(&block9, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15, phi_bb8_16);
     } else {
-      ca_.Goto(&block10, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15);
+      ca_.Goto(&block10, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15, phi_bb8_16);
     }
   }
 
@@ -3971,48 +4306,52 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb9_13;
   TNode<IntPtrT> phi_bb9_14;
   TNode<BoolT> phi_bb9_15;
-  TNode<String> tmp19;
+  TNode<PrimitiveHeapObject> phi_bb9_16;
   TNode<String> tmp20;
-  TNode<BoolT> tmp21;
+  TNode<String> tmp21;
+  TNode<BoolT> tmp22;
   if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13, &phi_bb9_14, &phi_bb9_15);
-    tmp19 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kConvertToLocaleString), p_context, tmp18, p_locales, p_options);
-    tmp20 = kEmptyString_0(state_);
-    tmp21 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp19}, TNode<HeapObject>{tmp20});
-    ca_.Branch(tmp21, &block12, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15}, &block13, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15});
+    ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13, &phi_bb9_14, &phi_bb9_15, &phi_bb9_16);
+    tmp20 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kConvertToLocaleString), p_context, tmp19, p_locales, p_options);
+    tmp21 = kEmptyString_0(state_);
+    tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp20}, TNode<HeapObject>{tmp21});
+    ca_.Branch(tmp22, &block12, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16}, &block13, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16});
   }
 
   TNode<FixedArray> phi_bb12_12;
   TNode<IntPtrT> phi_bb12_13;
   TNode<IntPtrT> phi_bb12_14;
   TNode<BoolT> phi_bb12_15;
+  TNode<PrimitiveHeapObject> phi_bb12_16;
   if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_12, &phi_bb12_13, &phi_bb12_14, &phi_bb12_15);
-    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb12_12, phi_bb12_13, phi_bb12_14, phi_bb12_15, tmp17);
+    ca_.Bind(&block12, &phi_bb12_12, &phi_bb12_13, &phi_bb12_14, &phi_bb12_15, &phi_bb12_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb12_12, phi_bb12_13, phi_bb12_14, phi_bb12_15, phi_bb12_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb13_12;
   TNode<IntPtrT> phi_bb13_13;
   TNode<IntPtrT> phi_bb13_14;
   TNode<BoolT> phi_bb13_15;
+  TNode<PrimitiveHeapObject> phi_bb13_16;
   if (block13.is_used()) {
-    ca_.Bind(&block13, &phi_bb13_12, &phi_bb13_13, &phi_bb13_14, &phi_bb13_15);
-    ca_.Goto(&block11, phi_bb13_12, phi_bb13_13, phi_bb13_14, phi_bb13_15, tmp19);
+    ca_.Bind(&block13, &phi_bb13_12, &phi_bb13_13, &phi_bb13_14, &phi_bb13_15, &phi_bb13_16);
+    ca_.Goto(&block11, phi_bb13_12, phi_bb13_13, phi_bb13_14, phi_bb13_15, phi_bb13_16, tmp20);
   }
 
   TNode<FixedArray> phi_bb10_12;
   TNode<IntPtrT> phi_bb10_13;
   TNode<IntPtrT> phi_bb10_14;
   TNode<BoolT> phi_bb10_15;
-  TNode<String> tmp22;
+  TNode<PrimitiveHeapObject> phi_bb10_16;
+  TNode<String> tmp23;
   if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_12, &phi_bb10_13, &phi_bb10_14, &phi_bb10_15);
-    compiler::CodeAssemblerLabel label23(&ca_);
-    tmp22 = Cast_String_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp18}, &label23);
-    ca_.Goto(&block16, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15);
-    if (label23.is_used()) {
-      ca_.Bind(&label23);
-      ca_.Goto(&block17, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15);
+    ca_.Bind(&block10, &phi_bb10_12, &phi_bb10_13, &phi_bb10_14, &phi_bb10_15, &phi_bb10_16);
+    compiler::CodeAssemblerLabel label24(&ca_);
+    tmp23 = Cast_String_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp19}, &label24);
+    ca_.Goto(&block16, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15, phi_bb10_16);
+    if (label24.is_used()) {
+      ca_.Bind(&label24);
+      ca_.Goto(&block17, phi_bb10_12, phi_bb10_13, phi_bb10_14, phi_bb10_15, phi_bb10_16);
     }
   }
 
@@ -4020,15 +4359,16 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb17_13;
   TNode<IntPtrT> phi_bb17_14;
   TNode<BoolT> phi_bb17_15;
-  TNode<Number> tmp24;
+  TNode<PrimitiveHeapObject> phi_bb17_16;
+  TNode<Number> tmp25;
   if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_12, &phi_bb17_13, &phi_bb17_14, &phi_bb17_15);
-    compiler::CodeAssemblerLabel label25(&ca_);
-    tmp24 = Cast_Number_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp18)}, &label25);
-    ca_.Goto(&block22, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15);
-    if (label25.is_used()) {
-      ca_.Bind(&label25);
-      ca_.Goto(&block23, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15);
+    ca_.Bind(&block17, &phi_bb17_12, &phi_bb17_13, &phi_bb17_14, &phi_bb17_15, &phi_bb17_16);
+    compiler::CodeAssemblerLabel label26(&ca_);
+    tmp25 = Cast_Number_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp19)}, &label26);
+    ca_.Goto(&block22, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15, phi_bb17_16);
+    if (label26.is_used()) {
+      ca_.Bind(&label26);
+      ca_.Goto(&block23, phi_bb17_12, phi_bb17_13, phi_bb17_14, phi_bb17_15, phi_bb17_16);
     }
   }
 
@@ -4036,277 +4376,587 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb16_13;
   TNode<IntPtrT> phi_bb16_14;
   TNode<BoolT> phi_bb16_15;
-  TNode<String> tmp26;
-  TNode<BoolT> tmp27;
+  TNode<PrimitiveHeapObject> phi_bb16_16;
+  TNode<String> tmp27;
+  TNode<BoolT> tmp28;
   if (block16.is_used()) {
-    ca_.Bind(&block16, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14, &phi_bb16_15);
-    tmp26 = kEmptyString_0(state_);
-    tmp27 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp22}, TNode<HeapObject>{tmp26});
-    ca_.Branch(tmp27, &block18, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15}, &block19, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15});
+    ca_.Bind(&block16, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14, &phi_bb16_15, &phi_bb16_16);
+    tmp27 = kEmptyString_0(state_);
+    tmp28 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp23}, TNode<HeapObject>{tmp27});
+    ca_.Branch(tmp28, &block18, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15, phi_bb16_16}, &block19, std::vector<compiler::Node*>{phi_bb16_12, phi_bb16_13, phi_bb16_14, phi_bb16_15, phi_bb16_16});
   }
 
   TNode<FixedArray> phi_bb18_12;
   TNode<IntPtrT> phi_bb18_13;
   TNode<IntPtrT> phi_bb18_14;
   TNode<BoolT> phi_bb18_15;
+  TNode<PrimitiveHeapObject> phi_bb18_16;
   if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_12, &phi_bb18_13, &phi_bb18_14, &phi_bb18_15);
-    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, phi_bb18_15, tmp17);
+    ca_.Bind(&block18, &phi_bb18_12, &phi_bb18_13, &phi_bb18_14, &phi_bb18_15, &phi_bb18_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, phi_bb18_15, phi_bb18_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb19_12;
   TNode<IntPtrT> phi_bb19_13;
   TNode<IntPtrT> phi_bb19_14;
   TNode<BoolT> phi_bb19_15;
+  TNode<PrimitiveHeapObject> phi_bb19_16;
   if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_12, &phi_bb19_13, &phi_bb19_14, &phi_bb19_15);
-    ca_.Goto(&block14, phi_bb19_12, phi_bb19_13, phi_bb19_14, phi_bb19_15, tmp22);
+    ca_.Bind(&block19, &phi_bb19_12, &phi_bb19_13, &phi_bb19_14, &phi_bb19_15, &phi_bb19_16);
+    ca_.Goto(&block14, phi_bb19_12, phi_bb19_13, phi_bb19_14, phi_bb19_15, phi_bb19_16, tmp23);
   }
 
   TNode<FixedArray> phi_bb23_12;
   TNode<IntPtrT> phi_bb23_13;
   TNode<IntPtrT> phi_bb23_14;
   TNode<BoolT> phi_bb23_15;
-  TNode<BoolT> tmp28;
+  TNode<PrimitiveHeapObject> phi_bb23_16;
+  TNode<BoolT> tmp29;
   if (block23.is_used()) {
-    ca_.Bind(&block23, &phi_bb23_12, &phi_bb23_13, &phi_bb23_14, &phi_bb23_15);
-    tmp28 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{ca_.UncheckedCast<HeapObject>(tmp18)});
-    ca_.Branch(tmp28, &block24, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15}, &block25, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15});
+    ca_.Bind(&block23, &phi_bb23_12, &phi_bb23_13, &phi_bb23_14, &phi_bb23_15, &phi_bb23_16);
+    tmp29 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{ca_.UncheckedCast<HeapObject>(tmp19)});
+    ca_.Branch(tmp29, &block24, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15, phi_bb23_16}, &block25, std::vector<compiler::Node*>{phi_bb23_12, phi_bb23_13, phi_bb23_14, phi_bb23_15, phi_bb23_16});
   }
 
   TNode<FixedArray> phi_bb22_12;
   TNode<IntPtrT> phi_bb22_13;
   TNode<IntPtrT> phi_bb22_14;
   TNode<BoolT> phi_bb22_15;
-  TNode<String> tmp29;
+  TNode<PrimitiveHeapObject> phi_bb22_16;
+  TNode<String> tmp30;
   if (block22.is_used()) {
-    ca_.Bind(&block22, &phi_bb22_12, &phi_bb22_13, &phi_bb22_14, &phi_bb22_15);
-    tmp29 = CodeStubAssembler(state_).NumberToString(TNode<Number>{tmp24});
-    ca_.Goto(&block20, phi_bb22_12, phi_bb22_13, phi_bb22_14, phi_bb22_15, tmp29);
+    ca_.Bind(&block22, &phi_bb22_12, &phi_bb22_13, &phi_bb22_14, &phi_bb22_15, &phi_bb22_16);
+    tmp30 = CodeStubAssembler(state_).NumberToString(TNode<Number>{tmp25});
+    ca_.Goto(&block20, phi_bb22_12, phi_bb22_13, phi_bb22_14, phi_bb22_15, phi_bb22_16, tmp30);
   }
 
   TNode<FixedArray> phi_bb24_12;
   TNode<IntPtrT> phi_bb24_13;
   TNode<IntPtrT> phi_bb24_14;
   TNode<BoolT> phi_bb24_15;
+  TNode<PrimitiveHeapObject> phi_bb24_16;
   if (block24.is_used()) {
-    ca_.Bind(&block24, &phi_bb24_12, &phi_bb24_13, &phi_bb24_14, &phi_bb24_15);
-    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb24_12, phi_bb24_13, phi_bb24_14, phi_bb24_15, tmp17);
+    ca_.Bind(&block24, &phi_bb24_12, &phi_bb24_13, &phi_bb24_14, &phi_bb24_15, &phi_bb24_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb24_12, phi_bb24_13, phi_bb24_14, phi_bb24_15, phi_bb24_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb25_12;
   TNode<IntPtrT> phi_bb25_13;
   TNode<IntPtrT> phi_bb25_14;
   TNode<BoolT> phi_bb25_15;
-  TNode<String> tmp30;
+  TNode<PrimitiveHeapObject> phi_bb25_16;
+  TNode<String> tmp31;
+  TNode<String> tmp32;
+  TNode<BoolT> tmp33;
   if (block25.is_used()) {
-    ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_13, &phi_bb25_14, &phi_bb25_15);
-    tmp30 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kToString), p_context, ca_.UncheckedCast<HeapObject>(tmp18));
-    ca_.Goto(&block20, phi_bb25_12, phi_bb25_13, phi_bb25_14, phi_bb25_15, tmp30);
+    ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_13, &phi_bb25_14, &phi_bb25_15, &phi_bb25_16);
+    tmp31 = ToString_Inline_0(state_, TNode<Context>{p_context}, TNode<Object>{ca_.UncheckedCast<HeapObject>(tmp19)});
+    tmp32 = kEmptyString_0(state_);
+    tmp33 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp31}, TNode<HeapObject>{tmp32});
+    ca_.Branch(tmp33, &block26, std::vector<compiler::Node*>{phi_bb25_12, phi_bb25_13, phi_bb25_14, phi_bb25_15, phi_bb25_16}, &block27, std::vector<compiler::Node*>{phi_bb25_12, phi_bb25_13, phi_bb25_14, phi_bb25_15, phi_bb25_16});
   }
 
-  TNode<FixedArray> phi_bb20_12;
-  TNode<IntPtrT> phi_bb20_13;
-  TNode<IntPtrT> phi_bb20_14;
-  TNode<BoolT> phi_bb20_15;
-  TNode<String> phi_bb20_18;
-  if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_12, &phi_bb20_13, &phi_bb20_14, &phi_bb20_15, &phi_bb20_18);
-    ca_.Goto(&block14, phi_bb20_12, phi_bb20_13, phi_bb20_14, phi_bb20_15, phi_bb20_18);
-  }
-
-  TNode<FixedArray> phi_bb14_12;
-  TNode<IntPtrT> phi_bb14_13;
-  TNode<IntPtrT> phi_bb14_14;
-  TNode<BoolT> phi_bb14_15;
-  TNode<String> phi_bb14_18;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_12, &phi_bb14_13, &phi_bb14_14, &phi_bb14_15, &phi_bb14_18);
-    ca_.Goto(&block11, phi_bb14_12, phi_bb14_13, phi_bb14_14, phi_bb14_15, phi_bb14_18);
-  }
-
-  TNode<FixedArray> phi_bb11_12;
-  TNode<IntPtrT> phi_bb11_13;
-  TNode<IntPtrT> phi_bb11_14;
-  TNode<BoolT> phi_bb11_15;
-  TNode<String> phi_bb11_18;
-  TNode<IntPtrT> tmp31;
-  TNode<BoolT> tmp32;
-  TNode<IntPtrT> tmp33;
-  TNode<BoolT> tmp34;
-  TNode<BoolT> tmp35;
-  TNode<IntPtrT> tmp36;
-  TNode<BoolT> tmp37;
-  if (block11.is_used()) {
-    ca_.Bind(&block11, &phi_bb11_12, &phi_bb11_13, &phi_bb11_14, &phi_bb11_15, &phi_bb11_18);
-    tmp31 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp32 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb11_13}, TNode<IntPtrT>{tmp31});
-    tmp33 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp34 = CodeStubAssembler(state_).IntPtrGreaterThan(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp33});
-    tmp35 = CodeStubAssembler(state_).Word32Or(TNode<BoolT>{tmp32}, TNode<BoolT>{tmp34});
-    tmp36 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp37 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp36});
-    ca_.Branch(tmp37, &block30, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_18, phi_bb11_18, phi_bb11_18}, &block31, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_18, phi_bb11_18, phi_bb11_18});
-  }
-
-  TNode<FixedArray> phi_bb30_12;
-  TNode<IntPtrT> phi_bb30_13;
-  TNode<IntPtrT> phi_bb30_14;
-  TNode<BoolT> phi_bb30_15;
-  TNode<String> phi_bb30_18;
-  TNode<String> phi_bb30_19;
-  TNode<String> phi_bb30_24;
-  TNode<BoolT> tmp38;
-  if (block30.is_used()) {
-    ca_.Bind(&block30, &phi_bb30_12, &phi_bb30_13, &phi_bb30_14, &phi_bb30_15, &phi_bb30_18, &phi_bb30_19, &phi_bb30_24);
-    tmp38 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block32, phi_bb30_12, phi_bb30_13, phi_bb30_14, phi_bb30_15, phi_bb30_18, phi_bb30_19, phi_bb30_24, tmp38);
-  }
-
-  TNode<FixedArray> phi_bb31_12;
-  TNode<IntPtrT> phi_bb31_13;
-  TNode<IntPtrT> phi_bb31_14;
-  TNode<BoolT> phi_bb31_15;
-  TNode<String> phi_bb31_18;
-  TNode<String> phi_bb31_19;
-  TNode<String> phi_bb31_24;
-  TNode<IntPtrT> tmp39;
-  TNode<BoolT> tmp40;
-  if (block31.is_used()) {
-    ca_.Bind(&block31, &phi_bb31_12, &phi_bb31_13, &phi_bb31_14, &phi_bb31_15, &phi_bb31_18, &phi_bb31_19, &phi_bb31_24);
-    tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp40 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp39});
-    ca_.Goto(&block32, phi_bb31_12, phi_bb31_13, phi_bb31_14, phi_bb31_15, phi_bb31_18, phi_bb31_19, phi_bb31_24, tmp40);
-  }
-
-  TNode<FixedArray> phi_bb32_12;
-  TNode<IntPtrT> phi_bb32_13;
-  TNode<IntPtrT> phi_bb32_14;
-  TNode<BoolT> phi_bb32_15;
-  TNode<String> phi_bb32_18;
-  TNode<String> phi_bb32_19;
-  TNode<String> phi_bb32_24;
-  TNode<BoolT> phi_bb32_37;
-  if (block32.is_used()) {
-    ca_.Bind(&block32, &phi_bb32_12, &phi_bb32_13, &phi_bb32_14, &phi_bb32_15, &phi_bb32_18, &phi_bb32_19, &phi_bb32_24, &phi_bb32_37);
-    ca_.Branch(phi_bb32_37, &block28, std::vector<compiler::Node*>{phi_bb32_12, phi_bb32_13, phi_bb32_14, phi_bb32_15, phi_bb32_18, phi_bb32_19, phi_bb32_24}, &block29, std::vector<compiler::Node*>{phi_bb32_12, phi_bb32_13, phi_bb32_14, phi_bb32_15, phi_bb32_18, phi_bb32_19, phi_bb32_24});
-  }
-
-  TNode<FixedArray> phi_bb28_12;
-  TNode<IntPtrT> phi_bb28_13;
-  TNode<IntPtrT> phi_bb28_14;
-  TNode<BoolT> phi_bb28_15;
-  TNode<String> phi_bb28_18;
-  TNode<String> phi_bb28_19;
-  TNode<String> phi_bb28_24;
-  if (block28.is_used()) {
-    ca_.Bind(&block28, &phi_bb28_12, &phi_bb28_13, &phi_bb28_14, &phi_bb28_15, &phi_bb28_18, &phi_bb28_19, &phi_bb28_24);
-    ca_.Goto(&block27, phi_bb28_12, phi_bb28_13, phi_bb28_14, phi_bb28_15, phi_bb28_18, phi_bb28_19, phi_bb28_24);
-  }
-
-  TNode<FixedArray> phi_bb29_12;
-  TNode<IntPtrT> phi_bb29_13;
-  TNode<IntPtrT> phi_bb29_14;
-  TNode<BoolT> phi_bb29_15;
-  TNode<String> phi_bb29_18;
-  TNode<String> phi_bb29_19;
-  TNode<String> phi_bb29_24;
-  TNode<IntPtrT> tmp41;
-  TNode<IntPtrT> tmp42;
-  TNode<BoolT> tmp43;
-  if (block29.is_used()) {
-    ca_.Bind(&block29, &phi_bb29_12, &phi_bb29_13, &phi_bb29_14, &phi_bb29_15, &phi_bb29_18, &phi_bb29_19, &phi_bb29_24);
-    tmp41 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb8_10});
-    tmp42 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp41}, TNode<IntPtrT>{tmp3});
-    tmp43 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp42}, TNode<IntPtrT>{phi_bb8_10});
-    ca_.Branch(tmp43, &block33, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_14, phi_bb29_15, phi_bb29_18, phi_bb29_19, phi_bb29_24}, &block34, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_14, phi_bb29_15, phi_bb29_18, phi_bb29_19, phi_bb29_24});
-  }
-
-  TNode<FixedArray> phi_bb33_12;
-  TNode<IntPtrT> phi_bb33_13;
-  TNode<IntPtrT> phi_bb33_14;
-  TNode<BoolT> phi_bb33_15;
-  TNode<String> phi_bb33_18;
-  TNode<String> phi_bb33_19;
-  TNode<String> phi_bb33_24;
-  if (block33.is_used()) {
-    ca_.Bind(&block33, &phi_bb33_12, &phi_bb33_13, &phi_bb33_14, &phi_bb33_15, &phi_bb33_18, &phi_bb33_19, &phi_bb33_24);
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, p_context);
-    CodeStubAssembler(state_).Unreachable();
-  }
-
-  TNode<FixedArray> phi_bb34_12;
-  TNode<IntPtrT> phi_bb34_13;
-  TNode<IntPtrT> phi_bb34_14;
-  TNode<BoolT> phi_bb34_15;
-  TNode<String> phi_bb34_18;
-  TNode<String> phi_bb34_19;
-  TNode<String> phi_bb34_24;
-  TNode<IntPtrT> tmp44;
-  if (block34.is_used()) {
-    ca_.Bind(&block34, &phi_bb34_12, &phi_bb34_13, &phi_bb34_14, &phi_bb34_15, &phi_bb34_18, &phi_bb34_19, &phi_bb34_24);
-    tmp44 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb34_14}, TNode<IntPtrT>{tmp41});
-    ca_.Branch(tmp35, &block35, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_15, phi_bb34_18, phi_bb34_19, phi_bb34_24}, &block36, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_15, phi_bb34_18, phi_bb34_19, phi_bb34_24});
-  }
-
-  TNode<FixedArray> phi_bb35_12;
-  TNode<IntPtrT> phi_bb35_13;
-  TNode<BoolT> phi_bb35_15;
-  TNode<String> phi_bb35_18;
-  TNode<String> phi_bb35_19;
-  TNode<String> phi_bb35_24;
-  TNode<IntPtrT> tmp45;
-  TNode<IntPtrT> tmp46;
-  TNode<Smi> tmp47;
-  TNode<FixedArray> tmp48;
-  if (block35.is_used()) {
-    ca_.Bind(&block35, &phi_bb35_12, &phi_bb35_13, &phi_bb35_15, &phi_bb35_18, &phi_bb35_19, &phi_bb35_24);
-    tmp45 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp46 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb35_13}, TNode<IntPtrT>{tmp45});
-    tmp47 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb8_10});
-    tmp48 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb35_12}, TNode<IntPtrT>{phi_bb35_13}, TNode<Smi>{tmp47});
-    ca_.Goto(&block36, tmp48, tmp46, phi_bb35_15, phi_bb35_18, phi_bb35_19, phi_bb35_24);
-  }
-
-  TNode<FixedArray> phi_bb36_12;
-  TNode<IntPtrT> phi_bb36_13;
-  TNode<BoolT> phi_bb36_15;
-  TNode<String> phi_bb36_18;
-  TNode<String> phi_bb36_19;
-  TNode<String> phi_bb36_24;
-  if (block36.is_used()) {
-    ca_.Bind(&block36, &phi_bb36_12, &phi_bb36_13, &phi_bb36_15, &phi_bb36_18, &phi_bb36_19, &phi_bb36_24);
-    ca_.Goto(&block27, phi_bb36_12, phi_bb36_13, tmp44, phi_bb36_15, phi_bb36_18, phi_bb36_19, phi_bb36_24);
+  TNode<FixedArray> phi_bb26_12;
+  TNode<IntPtrT> phi_bb26_13;
+  TNode<IntPtrT> phi_bb26_14;
+  TNode<BoolT> phi_bb26_15;
+  TNode<PrimitiveHeapObject> phi_bb26_16;
+  if (block26.is_used()) {
+    ca_.Bind(&block26, &phi_bb26_12, &phi_bb26_13, &phi_bb26_14, &phi_bb26_15, &phi_bb26_16);
+    ca_.Goto(&block4, phi_bb8_10, phi_bb6_11, phi_bb26_12, phi_bb26_13, phi_bb26_14, phi_bb26_15, phi_bb26_16, tmp18);
   }
 
   TNode<FixedArray> phi_bb27_12;
   TNode<IntPtrT> phi_bb27_13;
   TNode<IntPtrT> phi_bb27_14;
   TNode<BoolT> phi_bb27_15;
-  TNode<String> phi_bb27_18;
-  TNode<String> phi_bb27_19;
-  TNode<String> phi_bb27_24;
-  TNode<IntPtrT> tmp49;
-  TNode<IntPtrT> tmp50;
-  TNode<IntPtrT> tmp51;
-  TNode<IntPtrT> tmp52;
-  TNode<FixedArray> tmp53;
-  TNode<Uint16T> tmp54;
-  TNode<BoolT> tmp55;
-  TNode<BoolT> tmp56;
-  TNode<IntPtrT> tmp57;
+  TNode<PrimitiveHeapObject> phi_bb27_16;
   if (block27.is_used()) {
-    ca_.Bind(&block27, &phi_bb27_12, &phi_bb27_13, &phi_bb27_14, &phi_bb27_15, &phi_bb27_18, &phi_bb27_19, &phi_bb27_24);
-    tmp49 = CodeStubAssembler(state_).LoadStringLengthAsWord(TNode<String>{phi_bb27_24});
-    tmp50 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb27_14}, TNode<IntPtrT>{tmp49});
-    tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp52 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb27_13}, TNode<IntPtrT>{tmp51});
-    tmp53 = StoreAndGrowFixedArray_String_0(state_, TNode<FixedArray>{phi_bb27_12}, TNode<IntPtrT>{phi_bb27_13}, TNode<String>{phi_bb27_24});
-    tmp54 = CodeStubAssembler(state_).LoadInstanceType(TNode<HeapObject>{phi_bb27_24});
-    tmp55 = CodeStubAssembler(state_).IsOneByteStringInstanceType(TNode<Uint16T>{tmp54});
-    tmp56 = CodeStubAssembler(state_).Word32And(TNode<BoolT>{tmp55}, TNode<BoolT>{phi_bb27_15});
-    tmp57 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block4, tmp57, phi_bb6_11, tmp53, tmp52, tmp50, tmp56, tmp17);
+    ca_.Bind(&block27, &phi_bb27_12, &phi_bb27_13, &phi_bb27_14, &phi_bb27_15, &phi_bb27_16);
+    ca_.Goto(&block20, phi_bb27_12, phi_bb27_13, phi_bb27_14, phi_bb27_15, phi_bb27_16, tmp31);
+  }
+
+  TNode<FixedArray> phi_bb20_12;
+  TNode<IntPtrT> phi_bb20_13;
+  TNode<IntPtrT> phi_bb20_14;
+  TNode<BoolT> phi_bb20_15;
+  TNode<PrimitiveHeapObject> phi_bb20_16;
+  TNode<String> phi_bb20_19;
+  if (block20.is_used()) {
+    ca_.Bind(&block20, &phi_bb20_12, &phi_bb20_13, &phi_bb20_14, &phi_bb20_15, &phi_bb20_16, &phi_bb20_19);
+    ca_.Goto(&block14, phi_bb20_12, phi_bb20_13, phi_bb20_14, phi_bb20_15, phi_bb20_16, phi_bb20_19);
+  }
+
+  TNode<FixedArray> phi_bb14_12;
+  TNode<IntPtrT> phi_bb14_13;
+  TNode<IntPtrT> phi_bb14_14;
+  TNode<BoolT> phi_bb14_15;
+  TNode<PrimitiveHeapObject> phi_bb14_16;
+  TNode<String> phi_bb14_19;
+  if (block14.is_used()) {
+    ca_.Bind(&block14, &phi_bb14_12, &phi_bb14_13, &phi_bb14_14, &phi_bb14_15, &phi_bb14_16, &phi_bb14_19);
+    ca_.Goto(&block11, phi_bb14_12, phi_bb14_13, phi_bb14_14, phi_bb14_15, phi_bb14_16, phi_bb14_19);
+  }
+
+  TNode<FixedArray> phi_bb11_12;
+  TNode<IntPtrT> phi_bb11_13;
+  TNode<IntPtrT> phi_bb11_14;
+  TNode<BoolT> phi_bb11_15;
+  TNode<PrimitiveHeapObject> phi_bb11_16;
+  TNode<String> phi_bb11_19;
+  TNode<IntPtrT> tmp34;
+  TNode<BoolT> tmp35;
+  TNode<IntPtrT> tmp36;
+  TNode<BoolT> tmp37;
+  TNode<BoolT> tmp38;
+  TNode<IntPtrT> tmp39;
+  TNode<BoolT> tmp40;
+  if (block11.is_used()) {
+    ca_.Bind(&block11, &phi_bb11_12, &phi_bb11_13, &phi_bb11_14, &phi_bb11_15, &phi_bb11_16, &phi_bb11_19);
+    tmp34 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp35 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb11_13}, TNode<IntPtrT>{tmp34});
+    tmp36 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp37 = CodeStubAssembler(state_).IntPtrGreaterThan(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp36});
+    tmp38 = CodeStubAssembler(state_).Word32Or(TNode<BoolT>{tmp35}, TNode<BoolT>{tmp37});
+    tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp40 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb8_10}, TNode<IntPtrT>{tmp39});
+    ca_.Branch(tmp40, &block32, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_16, phi_bb11_19, phi_bb11_19, phi_bb11_19}, &block33, std::vector<compiler::Node*>{phi_bb11_12, phi_bb11_13, phi_bb11_14, phi_bb11_15, phi_bb11_16, phi_bb11_19, phi_bb11_19, phi_bb11_19});
+  }
+
+  TNode<FixedArray> phi_bb32_12;
+  TNode<IntPtrT> phi_bb32_13;
+  TNode<IntPtrT> phi_bb32_14;
+  TNode<BoolT> phi_bb32_15;
+  TNode<PrimitiveHeapObject> phi_bb32_16;
+  TNode<String> phi_bb32_19;
+  TNode<String> phi_bb32_20;
+  TNode<String> phi_bb32_25;
+  TNode<BoolT> tmp41;
+  if (block32.is_used()) {
+    ca_.Bind(&block32, &phi_bb32_12, &phi_bb32_13, &phi_bb32_14, &phi_bb32_15, &phi_bb32_16, &phi_bb32_19, &phi_bb32_20, &phi_bb32_25);
+    tmp41 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block34, phi_bb32_12, phi_bb32_13, phi_bb32_14, phi_bb32_15, phi_bb32_16, phi_bb32_19, phi_bb32_20, phi_bb32_25, tmp41);
+  }
+
+  TNode<FixedArray> phi_bb33_12;
+  TNode<IntPtrT> phi_bb33_13;
+  TNode<IntPtrT> phi_bb33_14;
+  TNode<BoolT> phi_bb33_15;
+  TNode<PrimitiveHeapObject> phi_bb33_16;
+  TNode<String> phi_bb33_19;
+  TNode<String> phi_bb33_20;
+  TNode<String> phi_bb33_25;
+  TNode<IntPtrT> tmp42;
+  TNode<BoolT> tmp43;
+  if (block33.is_used()) {
+    ca_.Bind(&block33, &phi_bb33_12, &phi_bb33_13, &phi_bb33_14, &phi_bb33_15, &phi_bb33_16, &phi_bb33_19, &phi_bb33_20, &phi_bb33_25);
+    tmp42 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp43 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp42});
+    ca_.Goto(&block34, phi_bb33_12, phi_bb33_13, phi_bb33_14, phi_bb33_15, phi_bb33_16, phi_bb33_19, phi_bb33_20, phi_bb33_25, tmp43);
+  }
+
+  TNode<FixedArray> phi_bb34_12;
+  TNode<IntPtrT> phi_bb34_13;
+  TNode<IntPtrT> phi_bb34_14;
+  TNode<BoolT> phi_bb34_15;
+  TNode<PrimitiveHeapObject> phi_bb34_16;
+  TNode<String> phi_bb34_19;
+  TNode<String> phi_bb34_20;
+  TNode<String> phi_bb34_25;
+  TNode<BoolT> phi_bb34_38;
+  if (block34.is_used()) {
+    ca_.Bind(&block34, &phi_bb34_12, &phi_bb34_13, &phi_bb34_14, &phi_bb34_15, &phi_bb34_16, &phi_bb34_19, &phi_bb34_20, &phi_bb34_25, &phi_bb34_38);
+    ca_.Branch(phi_bb34_38, &block30, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_14, phi_bb34_15, phi_bb34_16, phi_bb34_19, phi_bb34_20, phi_bb34_25}, &block31, std::vector<compiler::Node*>{phi_bb34_12, phi_bb34_13, phi_bb34_14, phi_bb34_15, phi_bb34_16, phi_bb34_19, phi_bb34_20, phi_bb34_25});
+  }
+
+  TNode<FixedArray> phi_bb30_12;
+  TNode<IntPtrT> phi_bb30_13;
+  TNode<IntPtrT> phi_bb30_14;
+  TNode<BoolT> phi_bb30_15;
+  TNode<PrimitiveHeapObject> phi_bb30_16;
+  TNode<String> phi_bb30_19;
+  TNode<String> phi_bb30_20;
+  TNode<String> phi_bb30_25;
+  if (block30.is_used()) {
+    ca_.Bind(&block30, &phi_bb30_12, &phi_bb30_13, &phi_bb30_14, &phi_bb30_15, &phi_bb30_16, &phi_bb30_19, &phi_bb30_20, &phi_bb30_25);
+    ca_.Goto(&block29, phi_bb30_12, phi_bb30_13, phi_bb30_14, phi_bb30_15, phi_bb30_16, phi_bb30_19, phi_bb30_20, phi_bb30_25);
+  }
+
+  TNode<FixedArray> phi_bb31_12;
+  TNode<IntPtrT> phi_bb31_13;
+  TNode<IntPtrT> phi_bb31_14;
+  TNode<BoolT> phi_bb31_15;
+  TNode<PrimitiveHeapObject> phi_bb31_16;
+  TNode<String> phi_bb31_19;
+  TNode<String> phi_bb31_20;
+  TNode<String> phi_bb31_25;
+  TNode<IntPtrT> tmp44;
+  TNode<IntPtrT> tmp45;
+  TNode<BoolT> tmp46;
+  if (block31.is_used()) {
+    ca_.Bind(&block31, &phi_bb31_12, &phi_bb31_13, &phi_bb31_14, &phi_bb31_15, &phi_bb31_16, &phi_bb31_19, &phi_bb31_20, &phi_bb31_25);
+    tmp44 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb8_10});
+    tmp45 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp44}, TNode<IntPtrT>{tmp3});
+    tmp46 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp45}, TNode<IntPtrT>{phi_bb8_10});
+    ca_.Branch(tmp46, &block35, std::vector<compiler::Node*>{phi_bb31_12, phi_bb31_13, phi_bb31_14, phi_bb31_15, phi_bb31_16, phi_bb31_19, phi_bb31_20, phi_bb31_25}, &block36, std::vector<compiler::Node*>{phi_bb31_12, phi_bb31_13, phi_bb31_14, phi_bb31_15, phi_bb31_16, phi_bb31_19, phi_bb31_20, phi_bb31_25});
+  }
+
+  TNode<FixedArray> phi_bb35_12;
+  TNode<IntPtrT> phi_bb35_13;
+  TNode<IntPtrT> phi_bb35_14;
+  TNode<BoolT> phi_bb35_15;
+  TNode<PrimitiveHeapObject> phi_bb35_16;
+  TNode<String> phi_bb35_19;
+  TNode<String> phi_bb35_20;
+  TNode<String> phi_bb35_25;
+  if (block35.is_used()) {
+    ca_.Bind(&block35, &phi_bb35_12, &phi_bb35_13, &phi_bb35_14, &phi_bb35_15, &phi_bb35_16, &phi_bb35_19, &phi_bb35_20, &phi_bb35_25);
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, p_context);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb36_12;
+  TNode<IntPtrT> phi_bb36_13;
+  TNode<IntPtrT> phi_bb36_14;
+  TNode<BoolT> phi_bb36_15;
+  TNode<PrimitiveHeapObject> phi_bb36_16;
+  TNode<String> phi_bb36_19;
+  TNode<String> phi_bb36_20;
+  TNode<String> phi_bb36_25;
+  TNode<IntPtrT> tmp47;
+  if (block36.is_used()) {
+    ca_.Bind(&block36, &phi_bb36_12, &phi_bb36_13, &phi_bb36_14, &phi_bb36_15, &phi_bb36_16, &phi_bb36_19, &phi_bb36_20, &phi_bb36_25);
+    tmp47 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb36_14}, TNode<IntPtrT>{tmp44});
+    ca_.Branch(tmp38, &block37, std::vector<compiler::Node*>{phi_bb36_12, phi_bb36_13, phi_bb36_15, phi_bb36_16, phi_bb36_19, phi_bb36_20, phi_bb36_25}, &block38, std::vector<compiler::Node*>{phi_bb36_12, phi_bb36_13, phi_bb36_15, phi_bb36_16, phi_bb36_19, phi_bb36_20, phi_bb36_25});
+  }
+
+  TNode<FixedArray> phi_bb37_12;
+  TNode<IntPtrT> phi_bb37_13;
+  TNode<BoolT> phi_bb37_15;
+  TNode<PrimitiveHeapObject> phi_bb37_16;
+  TNode<String> phi_bb37_19;
+  TNode<String> phi_bb37_20;
+  TNode<String> phi_bb37_25;
+  TNode<IntPtrT> tmp48;
+  TNode<IntPtrT> tmp49;
+  TNode<Smi> tmp50;
+  TNode<FixedArray> tmp51;
+  TNode<Oddball> tmp52;
+  if (block37.is_used()) {
+    ca_.Bind(&block37, &phi_bb37_12, &phi_bb37_13, &phi_bb37_15, &phi_bb37_16, &phi_bb37_19, &phi_bb37_20, &phi_bb37_25);
+    tmp48 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp49 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb37_13}, TNode<IntPtrT>{tmp48});
+    tmp50 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb8_10});
+    tmp51 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb37_12}, TNode<IntPtrT>{phi_bb37_13}, TNode<Smi>{tmp50});
+    tmp52 = Null_0(state_);
+    ca_.Goto(&block38, tmp51, tmp49, phi_bb37_15, tmp52, phi_bb37_19, phi_bb37_20, phi_bb37_25);
+  }
+
+  TNode<FixedArray> phi_bb38_12;
+  TNode<IntPtrT> phi_bb38_13;
+  TNode<BoolT> phi_bb38_15;
+  TNode<PrimitiveHeapObject> phi_bb38_16;
+  TNode<String> phi_bb38_19;
+  TNode<String> phi_bb38_20;
+  TNode<String> phi_bb38_25;
+  if (block38.is_used()) {
+    ca_.Bind(&block38, &phi_bb38_12, &phi_bb38_13, &phi_bb38_15, &phi_bb38_16, &phi_bb38_19, &phi_bb38_20, &phi_bb38_25);
+    ca_.Goto(&block29, phi_bb38_12, phi_bb38_13, tmp47, phi_bb38_15, phi_bb38_16, phi_bb38_19, phi_bb38_20, phi_bb38_25);
+  }
+
+  TNode<FixedArray> phi_bb29_12;
+  TNode<IntPtrT> phi_bb29_13;
+  TNode<IntPtrT> phi_bb29_14;
+  TNode<BoolT> phi_bb29_15;
+  TNode<PrimitiveHeapObject> phi_bb29_16;
+  TNode<String> phi_bb29_19;
+  TNode<String> phi_bb29_20;
+  TNode<String> phi_bb29_25;
+  TNode<IntPtrT> tmp53;
+  TNode<IntPtrT> tmp54;
+  TNode<BoolT> tmp55;
+  if (block29.is_used()) {
+    ca_.Bind(&block29, &phi_bb29_12, &phi_bb29_13, &phi_bb29_14, &phi_bb29_15, &phi_bb29_16, &phi_bb29_19, &phi_bb29_20, &phi_bb29_25);
+    tmp53 = CodeStubAssembler(state_).LoadStringLengthAsWord(TNode<String>{phi_bb29_25});
+    tmp54 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb29_14}, TNode<IntPtrT>{tmp53});
+    tmp55 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{phi_bb29_25}, TNode<MaybeObject>{phi_bb29_16});
+    ca_.Branch(tmp55, &block39, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_15, phi_bb29_16, phi_bb29_19, phi_bb29_20, phi_bb29_25}, &block40, std::vector<compiler::Node*>{phi_bb29_12, phi_bb29_13, phi_bb29_15, phi_bb29_16, phi_bb29_19, phi_bb29_20, phi_bb29_25});
+  }
+
+  TNode<FixedArray> phi_bb39_12;
+  TNode<IntPtrT> phi_bb39_13;
+  TNode<BoolT> phi_bb39_15;
+  TNode<PrimitiveHeapObject> phi_bb39_16;
+  TNode<String> phi_bb39_19;
+  TNode<String> phi_bb39_20;
+  TNode<String> phi_bb39_25;
+  TNode<Object> tmp56;
+  TNode<IntPtrT> tmp57;
+  TNode<IntPtrT> tmp58;
+  TNode<IntPtrT> tmp59;
+  TNode<IntPtrT> tmp60;
+  TNode<UintPtrT> tmp61;
+  TNode<UintPtrT> tmp62;
+  TNode<BoolT> tmp63;
+  if (block39.is_used()) {
+    ca_.Bind(&block39, &phi_bb39_12, &phi_bb39_13, &phi_bb39_15, &phi_bb39_16, &phi_bb39_19, &phi_bb39_20, &phi_bb39_25);
+    std::tie(tmp56, tmp57, tmp58) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb39_12}).Flatten();
+    tmp59 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp60 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{phi_bb39_13}, TNode<IntPtrT>{tmp59});
+    tmp61 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp60});
+    tmp62 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp58});
+    tmp63 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp61}, TNode<UintPtrT>{tmp62});
+    ca_.Branch(tmp63, &block51, std::vector<compiler::Node*>{phi_bb39_12, phi_bb39_13, phi_bb39_15, phi_bb39_16, phi_bb39_19, phi_bb39_20, phi_bb39_25, phi_bb39_12}, &block52, std::vector<compiler::Node*>{phi_bb39_12, phi_bb39_13, phi_bb39_15, phi_bb39_16, phi_bb39_19, phi_bb39_20, phi_bb39_25, phi_bb39_12});
+  }
+
+  TNode<FixedArray> phi_bb51_12;
+  TNode<IntPtrT> phi_bb51_13;
+  TNode<BoolT> phi_bb51_15;
+  TNode<PrimitiveHeapObject> phi_bb51_16;
+  TNode<String> phi_bb51_19;
+  TNode<String> phi_bb51_20;
+  TNode<String> phi_bb51_25;
+  TNode<FixedArray> phi_bb51_29;
+  TNode<IntPtrT> tmp64;
+  TNode<IntPtrT> tmp65;
+  TNode<Object> tmp66;
+  TNode<IntPtrT> tmp67;
+  TNode<Object> tmp68;
+  TNode<HeapObject> tmp69;
+  if (block51.is_used()) {
+    ca_.Bind(&block51, &phi_bb51_12, &phi_bb51_13, &phi_bb51_15, &phi_bb51_16, &phi_bb51_19, &phi_bb51_20, &phi_bb51_25, &phi_bb51_29);
+    tmp64 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp60});
+    tmp65 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp57}, TNode<IntPtrT>{tmp64});
+    std::tie(tmp66, tmp67) = NewReference_Object_0(state_, TNode<Object>{tmp56}, TNode<IntPtrT>{tmp65}).Flatten();
+    tmp68 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp66, tmp67});
+    compiler::CodeAssemblerLabel label70(&ca_);
+    tmp69 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{tmp68}, &label70);
+    ca_.Goto(&block58, phi_bb51_12, phi_bb51_13, phi_bb51_15, phi_bb51_16, phi_bb51_19, phi_bb51_20, phi_bb51_25);
+    if (label70.is_used()) {
+      ca_.Bind(&label70);
+      ca_.Goto(&block59, phi_bb51_12, phi_bb51_13, phi_bb51_15, phi_bb51_16, phi_bb51_19, phi_bb51_20, phi_bb51_25);
+    }
+  }
+
+  TNode<FixedArray> phi_bb52_12;
+  TNode<IntPtrT> phi_bb52_13;
+  TNode<BoolT> phi_bb52_15;
+  TNode<PrimitiveHeapObject> phi_bb52_16;
+  TNode<String> phi_bb52_19;
+  TNode<String> phi_bb52_20;
+  TNode<String> phi_bb52_25;
+  TNode<FixedArray> phi_bb52_29;
+  if (block52.is_used()) {
+    ca_.Bind(&block52, &phi_bb52_12, &phi_bb52_13, &phi_bb52_15, &phi_bb52_16, &phi_bb52_19, &phi_bb52_20, &phi_bb52_25, &phi_bb52_29);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb59_12;
+  TNode<IntPtrT> phi_bb59_13;
+  TNode<BoolT> phi_bb59_15;
+  TNode<PrimitiveHeapObject> phi_bb59_16;
+  TNode<String> phi_bb59_19;
+  TNode<String> phi_bb59_20;
+  TNode<String> phi_bb59_25;
+  if (block59.is_used()) {
+    ca_.Bind(&block59, &phi_bb59_12, &phi_bb59_13, &phi_bb59_15, &phi_bb59_16, &phi_bb59_19, &phi_bb59_20, &phi_bb59_25);
+    ca_.Goto(&block56, phi_bb59_12, phi_bb59_13, phi_bb59_15, phi_bb59_16, phi_bb59_19, phi_bb59_20, phi_bb59_25);
+  }
+
+  TNode<FixedArray> phi_bb58_12;
+  TNode<IntPtrT> phi_bb58_13;
+  TNode<BoolT> phi_bb58_15;
+  TNode<PrimitiveHeapObject> phi_bb58_16;
+  TNode<String> phi_bb58_19;
+  TNode<String> phi_bb58_20;
+  TNode<String> phi_bb58_25;
+  TNode<String> tmp71;
+  if (block58.is_used()) {
+    ca_.Bind(&block58, &phi_bb58_12, &phi_bb58_13, &phi_bb58_15, &phi_bb58_16, &phi_bb58_19, &phi_bb58_20, &phi_bb58_25);
+    compiler::CodeAssemblerLabel label72(&ca_);
+    tmp71 = Cast_String_0(state_, TNode<HeapObject>{tmp69}, &label72);
+    ca_.Goto(&block60, phi_bb58_12, phi_bb58_13, phi_bb58_15, phi_bb58_16, phi_bb58_19, phi_bb58_20, phi_bb58_25);
+    if (label72.is_used()) {
+      ca_.Bind(&label72);
+      ca_.Goto(&block61, phi_bb58_12, phi_bb58_13, phi_bb58_15, phi_bb58_16, phi_bb58_19, phi_bb58_20, phi_bb58_25);
+    }
+  }
+
+  TNode<FixedArray> phi_bb61_12;
+  TNode<IntPtrT> phi_bb61_13;
+  TNode<BoolT> phi_bb61_15;
+  TNode<PrimitiveHeapObject> phi_bb61_16;
+  TNode<String> phi_bb61_19;
+  TNode<String> phi_bb61_20;
+  TNode<String> phi_bb61_25;
+  if (block61.is_used()) {
+    ca_.Bind(&block61, &phi_bb61_12, &phi_bb61_13, &phi_bb61_15, &phi_bb61_16, &phi_bb61_19, &phi_bb61_20, &phi_bb61_25);
+    ca_.Goto(&block56, phi_bb61_12, phi_bb61_13, phi_bb61_15, phi_bb61_16, phi_bb61_19, phi_bb61_20, phi_bb61_25);
+  }
+
+  TNode<FixedArray> phi_bb60_12;
+  TNode<IntPtrT> phi_bb60_13;
+  TNode<BoolT> phi_bb60_15;
+  TNode<PrimitiveHeapObject> phi_bb60_16;
+  TNode<String> phi_bb60_19;
+  TNode<String> phi_bb60_20;
+  TNode<String> phi_bb60_25;
+  TNode<IntPtrT> tmp73;
+  TNode<IntPtrT> tmp74;
+  TNode<Smi> tmp75;
+  TNode<FixedArray> tmp76;
+  if (block60.is_used()) {
+    ca_.Bind(&block60, &phi_bb60_12, &phi_bb60_13, &phi_bb60_15, &phi_bb60_16, &phi_bb60_19, &phi_bb60_20, &phi_bb60_25);
+    tmp73 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp74 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb60_13}, TNode<IntPtrT>{tmp73});
+    tmp75 = SmiConstant_0(state_, IntegerLiteral(true, 0x1ull));
+    tmp76 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb60_12}, TNode<IntPtrT>{phi_bb60_13}, TNode<Smi>{tmp75});
+    ca_.Goto(&block55, tmp76, tmp74, phi_bb60_15, phi_bb60_16, phi_bb60_19, phi_bb60_20, phi_bb60_25);
+  }
+
+  TNode<FixedArray> phi_bb56_12;
+  TNode<IntPtrT> phi_bb56_13;
+  TNode<BoolT> phi_bb56_15;
+  TNode<PrimitiveHeapObject> phi_bb56_16;
+  TNode<String> phi_bb56_19;
+  TNode<String> phi_bb56_20;
+  TNode<String> phi_bb56_25;
+  TNode<Smi> tmp77;
+  if (block56.is_used()) {
+    ca_.Bind(&block56, &phi_bb56_12, &phi_bb56_13, &phi_bb56_15, &phi_bb56_16, &phi_bb56_19, &phi_bb56_20, &phi_bb56_25);
+    compiler::CodeAssemblerLabel label78(&ca_);
+    tmp77 = Cast_Smi_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp68)}, &label78);
+    ca_.Goto(&block64, phi_bb56_12, phi_bb56_13, phi_bb56_15, phi_bb56_16, phi_bb56_19, phi_bb56_20, phi_bb56_25);
+    if (label78.is_used()) {
+      ca_.Bind(&label78);
+      ca_.Goto(&block65, phi_bb56_12, phi_bb56_13, phi_bb56_15, phi_bb56_16, phi_bb56_19, phi_bb56_20, phi_bb56_25);
+    }
+  }
+
+  TNode<FixedArray> phi_bb65_12;
+  TNode<IntPtrT> phi_bb65_13;
+  TNode<BoolT> phi_bb65_15;
+  TNode<PrimitiveHeapObject> phi_bb65_16;
+  TNode<String> phi_bb65_19;
+  TNode<String> phi_bb65_20;
+  TNode<String> phi_bb65_25;
+  if (block65.is_used()) {
+    ca_.Bind(&block65, &phi_bb65_12, &phi_bb65_13, &phi_bb65_15, &phi_bb65_16, &phi_bb65_19, &phi_bb65_20, &phi_bb65_25);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb64_12;
+  TNode<IntPtrT> phi_bb64_13;
+  TNode<BoolT> phi_bb64_15;
+  TNode<PrimitiveHeapObject> phi_bb64_16;
+  TNode<String> phi_bb64_19;
+  TNode<String> phi_bb64_20;
+  TNode<String> phi_bb64_25;
+  TNode<Object> tmp79;
+  TNode<IntPtrT> tmp80;
+  TNode<IntPtrT> tmp81;
+  TNode<IntPtrT> tmp82;
+  TNode<IntPtrT> tmp83;
+  TNode<UintPtrT> tmp84;
+  TNode<UintPtrT> tmp85;
+  TNode<BoolT> tmp86;
+  if (block64.is_used()) {
+    ca_.Bind(&block64, &phi_bb64_12, &phi_bb64_13, &phi_bb64_15, &phi_bb64_16, &phi_bb64_19, &phi_bb64_20, &phi_bb64_25);
+    std::tie(tmp79, tmp80, tmp81) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb64_12}).Flatten();
+    tmp82 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp83 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{phi_bb64_13}, TNode<IntPtrT>{tmp82});
+    tmp84 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp83});
+    tmp85 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp81});
+    tmp86 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp84}, TNode<UintPtrT>{tmp85});
+    ca_.Branch(tmp86, &block78, std::vector<compiler::Node*>{phi_bb64_12, phi_bb64_13, phi_bb64_15, phi_bb64_16, phi_bb64_19, phi_bb64_20, phi_bb64_25, phi_bb64_12}, &block79, std::vector<compiler::Node*>{phi_bb64_12, phi_bb64_13, phi_bb64_15, phi_bb64_16, phi_bb64_19, phi_bb64_20, phi_bb64_25, phi_bb64_12});
+  }
+
+  TNode<FixedArray> phi_bb78_12;
+  TNode<IntPtrT> phi_bb78_13;
+  TNode<BoolT> phi_bb78_15;
+  TNode<PrimitiveHeapObject> phi_bb78_16;
+  TNode<String> phi_bb78_19;
+  TNode<String> phi_bb78_20;
+  TNode<String> phi_bb78_25;
+  TNode<FixedArray> phi_bb78_31;
+  TNode<IntPtrT> tmp87;
+  TNode<IntPtrT> tmp88;
+  TNode<Object> tmp89;
+  TNode<IntPtrT> tmp90;
+  TNode<Smi> tmp91;
+  TNode<Smi> tmp92;
+  if (block78.is_used()) {
+    ca_.Bind(&block78, &phi_bb78_12, &phi_bb78_13, &phi_bb78_15, &phi_bb78_16, &phi_bb78_19, &phi_bb78_20, &phi_bb78_25, &phi_bb78_31);
+    tmp87 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp83});
+    tmp88 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp80}, TNode<IntPtrT>{tmp87});
+    std::tie(tmp89, tmp90) = NewReference_Object_0(state_, TNode<Object>{tmp79}, TNode<IntPtrT>{tmp88}).Flatten();
+    tmp91 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp92 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp77}, TNode<Smi>{tmp91});
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp89, tmp90}, tmp92);
+    ca_.Goto(&block55, phi_bb78_12, phi_bb78_13, phi_bb78_15, phi_bb78_16, phi_bb78_19, phi_bb78_20, phi_bb78_25);
+  }
+
+  TNode<FixedArray> phi_bb79_12;
+  TNode<IntPtrT> phi_bb79_13;
+  TNode<BoolT> phi_bb79_15;
+  TNode<PrimitiveHeapObject> phi_bb79_16;
+  TNode<String> phi_bb79_19;
+  TNode<String> phi_bb79_20;
+  TNode<String> phi_bb79_25;
+  TNode<FixedArray> phi_bb79_31;
+  if (block79.is_used()) {
+    ca_.Bind(&block79, &phi_bb79_12, &phi_bb79_13, &phi_bb79_15, &phi_bb79_16, &phi_bb79_19, &phi_bb79_20, &phi_bb79_25, &phi_bb79_31);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<FixedArray> phi_bb55_12;
+  TNode<IntPtrT> phi_bb55_13;
+  TNode<BoolT> phi_bb55_15;
+  TNode<PrimitiveHeapObject> phi_bb55_16;
+  TNode<String> phi_bb55_19;
+  TNode<String> phi_bb55_20;
+  TNode<String> phi_bb55_25;
+  if (block55.is_used()) {
+    ca_.Bind(&block55, &phi_bb55_12, &phi_bb55_13, &phi_bb55_15, &phi_bb55_16, &phi_bb55_19, &phi_bb55_20, &phi_bb55_25);
+    ca_.Goto(&block41, phi_bb55_12, phi_bb55_13, phi_bb55_15, phi_bb55_16, phi_bb55_19, phi_bb55_20, phi_bb55_25);
+  }
+
+  TNode<FixedArray> phi_bb40_12;
+  TNode<IntPtrT> phi_bb40_13;
+  TNode<BoolT> phi_bb40_15;
+  TNode<PrimitiveHeapObject> phi_bb40_16;
+  TNode<String> phi_bb40_19;
+  TNode<String> phi_bb40_20;
+  TNode<String> phi_bb40_25;
+  TNode<IntPtrT> tmp93;
+  TNode<IntPtrT> tmp94;
+  TNode<FixedArray> tmp95;
+  if (block40.is_used()) {
+    ca_.Bind(&block40, &phi_bb40_12, &phi_bb40_13, &phi_bb40_15, &phi_bb40_16, &phi_bb40_19, &phi_bb40_20, &phi_bb40_25);
+    tmp93 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp94 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb40_13}, TNode<IntPtrT>{tmp93});
+    tmp95 = StoreAndGrowFixedArray_String_0(state_, TNode<FixedArray>{phi_bb40_12}, TNode<IntPtrT>{phi_bb40_13}, TNode<String>{phi_bb40_25});
+    ca_.Goto(&block41, tmp95, tmp94, phi_bb40_15, phi_bb40_25, phi_bb40_19, phi_bb40_20, phi_bb40_25);
+  }
+
+  TNode<FixedArray> phi_bb41_12;
+  TNode<IntPtrT> phi_bb41_13;
+  TNode<BoolT> phi_bb41_15;
+  TNode<PrimitiveHeapObject> phi_bb41_16;
+  TNode<String> phi_bb41_19;
+  TNode<String> phi_bb41_20;
+  TNode<String> phi_bb41_25;
+  TNode<Uint16T> tmp96;
+  TNode<BoolT> tmp97;
+  TNode<BoolT> tmp98;
+  TNode<IntPtrT> tmp99;
+  if (block41.is_used()) {
+    ca_.Bind(&block41, &phi_bb41_12, &phi_bb41_13, &phi_bb41_15, &phi_bb41_16, &phi_bb41_19, &phi_bb41_20, &phi_bb41_25);
+    tmp96 = CodeStubAssembler(state_).LoadInstanceType(TNode<HeapObject>{phi_bb41_25});
+    tmp97 = CodeStubAssembler(state_).IsOneByteStringInstanceType(TNode<Uint16T>{tmp96});
+    tmp98 = CodeStubAssembler(state_).Word32And(TNode<BoolT>{tmp97}, TNode<BoolT>{phi_bb41_15});
+    tmp99 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    ca_.Goto(&block4, tmp99, phi_bb6_11, phi_bb41_12, phi_bb41_13, tmp54, tmp98, phi_bb41_16, tmp18);
   }
 
   TNode<IntPtrT> phi_bb3_10;
@@ -4315,191 +4965,204 @@ tmp18 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<IntPtrT> phi_bb3_13;
   TNode<IntPtrT> phi_bb3_14;
   TNode<BoolT> phi_bb3_15;
-  TNode<UintPtrT> phi_bb3_16;
-  TNode<BoolT> tmp58;
-  TNode<IntPtrT> tmp59;
-  TNode<BoolT> tmp60;
+  TNode<PrimitiveHeapObject> phi_bb3_16;
+  TNode<UintPtrT> phi_bb3_17;
+  TNode<BoolT> tmp100;
+  TNode<IntPtrT> tmp101;
+  TNode<BoolT> tmp102;
   if (block3.is_used()) {
-    ca_.Bind(&block3, &phi_bb3_10, &phi_bb3_11, &phi_bb3_12, &phi_bb3_13, &phi_bb3_14, &phi_bb3_15, &phi_bb3_16);
-    tmp58 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    tmp59 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp60 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_10}, TNode<IntPtrT>{tmp59});
-    ca_.Branch(tmp60, &block40, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_10, phi_bb3_10}, &block41, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_10, phi_bb3_10});
+    ca_.Bind(&block3, &phi_bb3_10, &phi_bb3_11, &phi_bb3_12, &phi_bb3_13, &phi_bb3_14, &phi_bb3_15, &phi_bb3_16, &phi_bb3_17);
+    tmp100 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp101 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp102 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_10}, TNode<IntPtrT>{tmp101});
+    ca_.Branch(tmp102, &block85, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_17, phi_bb3_10, phi_bb3_10}, &block86, std::vector<compiler::Node*>{phi_bb3_10, phi_bb3_11, phi_bb3_12, phi_bb3_13, phi_bb3_14, phi_bb3_15, phi_bb3_16, phi_bb3_17, phi_bb3_10, phi_bb3_10});
   }
 
-  TNode<IntPtrT> phi_bb40_10;
-  TNode<BuiltinPtr> phi_bb40_11;
-  TNode<FixedArray> phi_bb40_12;
-  TNode<IntPtrT> phi_bb40_13;
-  TNode<IntPtrT> phi_bb40_14;
-  TNode<BoolT> phi_bb40_15;
-  TNode<UintPtrT> phi_bb40_16;
-  TNode<IntPtrT> phi_bb40_17;
-  TNode<IntPtrT> phi_bb40_21;
-  TNode<BoolT> tmp61;
-  if (block40.is_used()) {
-    ca_.Bind(&block40, &phi_bb40_10, &phi_bb40_11, &phi_bb40_12, &phi_bb40_13, &phi_bb40_14, &phi_bb40_15, &phi_bb40_16, &phi_bb40_17, &phi_bb40_21);
-    tmp61 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block42, phi_bb40_10, phi_bb40_11, phi_bb40_12, phi_bb40_13, phi_bb40_14, phi_bb40_15, phi_bb40_16, phi_bb40_17, phi_bb40_21, tmp61);
+  TNode<IntPtrT> phi_bb85_10;
+  TNode<BuiltinPtr> phi_bb85_11;
+  TNode<FixedArray> phi_bb85_12;
+  TNode<IntPtrT> phi_bb85_13;
+  TNode<IntPtrT> phi_bb85_14;
+  TNode<BoolT> phi_bb85_15;
+  TNode<PrimitiveHeapObject> phi_bb85_16;
+  TNode<UintPtrT> phi_bb85_17;
+  TNode<IntPtrT> phi_bb85_18;
+  TNode<IntPtrT> phi_bb85_22;
+  TNode<BoolT> tmp103;
+  if (block85.is_used()) {
+    ca_.Bind(&block85, &phi_bb85_10, &phi_bb85_11, &phi_bb85_12, &phi_bb85_13, &phi_bb85_14, &phi_bb85_15, &phi_bb85_16, &phi_bb85_17, &phi_bb85_18, &phi_bb85_22);
+    tmp103 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block87, phi_bb85_10, phi_bb85_11, phi_bb85_12, phi_bb85_13, phi_bb85_14, phi_bb85_15, phi_bb85_16, phi_bb85_17, phi_bb85_18, phi_bb85_22, tmp103);
   }
 
-  TNode<IntPtrT> phi_bb41_10;
-  TNode<BuiltinPtr> phi_bb41_11;
-  TNode<FixedArray> phi_bb41_12;
-  TNode<IntPtrT> phi_bb41_13;
-  TNode<IntPtrT> phi_bb41_14;
-  TNode<BoolT> phi_bb41_15;
-  TNode<UintPtrT> phi_bb41_16;
-  TNode<IntPtrT> phi_bb41_17;
-  TNode<IntPtrT> phi_bb41_21;
-  TNode<IntPtrT> tmp62;
-  TNode<BoolT> tmp63;
-  if (block41.is_used()) {
-    ca_.Bind(&block41, &phi_bb41_10, &phi_bb41_11, &phi_bb41_12, &phi_bb41_13, &phi_bb41_14, &phi_bb41_15, &phi_bb41_16, &phi_bb41_17, &phi_bb41_21);
-    tmp62 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp63 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp62});
-    ca_.Goto(&block42, phi_bb41_10, phi_bb41_11, phi_bb41_12, phi_bb41_13, phi_bb41_14, phi_bb41_15, phi_bb41_16, phi_bb41_17, phi_bb41_21, tmp63);
+  TNode<IntPtrT> phi_bb86_10;
+  TNode<BuiltinPtr> phi_bb86_11;
+  TNode<FixedArray> phi_bb86_12;
+  TNode<IntPtrT> phi_bb86_13;
+  TNode<IntPtrT> phi_bb86_14;
+  TNode<BoolT> phi_bb86_15;
+  TNode<PrimitiveHeapObject> phi_bb86_16;
+  TNode<UintPtrT> phi_bb86_17;
+  TNode<IntPtrT> phi_bb86_18;
+  TNode<IntPtrT> phi_bb86_22;
+  TNode<IntPtrT> tmp104;
+  TNode<BoolT> tmp105;
+  if (block86.is_used()) {
+    ca_.Bind(&block86, &phi_bb86_10, &phi_bb86_11, &phi_bb86_12, &phi_bb86_13, &phi_bb86_14, &phi_bb86_15, &phi_bb86_16, &phi_bb86_17, &phi_bb86_18, &phi_bb86_22);
+    tmp104 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp105 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp104});
+    ca_.Goto(&block87, phi_bb86_10, phi_bb86_11, phi_bb86_12, phi_bb86_13, phi_bb86_14, phi_bb86_15, phi_bb86_16, phi_bb86_17, phi_bb86_18, phi_bb86_22, tmp105);
   }
 
-  TNode<IntPtrT> phi_bb42_10;
-  TNode<BuiltinPtr> phi_bb42_11;
-  TNode<FixedArray> phi_bb42_12;
-  TNode<IntPtrT> phi_bb42_13;
-  TNode<IntPtrT> phi_bb42_14;
-  TNode<BoolT> phi_bb42_15;
-  TNode<UintPtrT> phi_bb42_16;
-  TNode<IntPtrT> phi_bb42_17;
-  TNode<IntPtrT> phi_bb42_21;
-  TNode<BoolT> phi_bb42_25;
-  if (block42.is_used()) {
-    ca_.Bind(&block42, &phi_bb42_10, &phi_bb42_11, &phi_bb42_12, &phi_bb42_13, &phi_bb42_14, &phi_bb42_15, &phi_bb42_16, &phi_bb42_17, &phi_bb42_21, &phi_bb42_25);
-    ca_.Branch(phi_bb42_25, &block38, std::vector<compiler::Node*>{phi_bb42_10, phi_bb42_11, phi_bb42_12, phi_bb42_13, phi_bb42_14, phi_bb42_15, phi_bb42_16, phi_bb42_17, phi_bb42_21}, &block39, std::vector<compiler::Node*>{phi_bb42_10, phi_bb42_11, phi_bb42_12, phi_bb42_13, phi_bb42_14, phi_bb42_15, phi_bb42_16, phi_bb42_17, phi_bb42_21});
+  TNode<IntPtrT> phi_bb87_10;
+  TNode<BuiltinPtr> phi_bb87_11;
+  TNode<FixedArray> phi_bb87_12;
+  TNode<IntPtrT> phi_bb87_13;
+  TNode<IntPtrT> phi_bb87_14;
+  TNode<BoolT> phi_bb87_15;
+  TNode<PrimitiveHeapObject> phi_bb87_16;
+  TNode<UintPtrT> phi_bb87_17;
+  TNode<IntPtrT> phi_bb87_18;
+  TNode<IntPtrT> phi_bb87_22;
+  TNode<BoolT> phi_bb87_26;
+  if (block87.is_used()) {
+    ca_.Bind(&block87, &phi_bb87_10, &phi_bb87_11, &phi_bb87_12, &phi_bb87_13, &phi_bb87_14, &phi_bb87_15, &phi_bb87_16, &phi_bb87_17, &phi_bb87_18, &phi_bb87_22, &phi_bb87_26);
+    ca_.Branch(phi_bb87_26, &block83, std::vector<compiler::Node*>{phi_bb87_10, phi_bb87_11, phi_bb87_12, phi_bb87_13, phi_bb87_14, phi_bb87_15, phi_bb87_16, phi_bb87_17, phi_bb87_18, phi_bb87_22}, &block84, std::vector<compiler::Node*>{phi_bb87_10, phi_bb87_11, phi_bb87_12, phi_bb87_13, phi_bb87_14, phi_bb87_15, phi_bb87_16, phi_bb87_17, phi_bb87_18, phi_bb87_22});
   }
 
-  TNode<IntPtrT> phi_bb38_10;
-  TNode<BuiltinPtr> phi_bb38_11;
-  TNode<FixedArray> phi_bb38_12;
-  TNode<IntPtrT> phi_bb38_13;
-  TNode<IntPtrT> phi_bb38_14;
-  TNode<BoolT> phi_bb38_15;
-  TNode<UintPtrT> phi_bb38_16;
-  TNode<IntPtrT> phi_bb38_17;
-  TNode<IntPtrT> phi_bb38_21;
-  if (block38.is_used()) {
-    ca_.Bind(&block38, &phi_bb38_10, &phi_bb38_11, &phi_bb38_12, &phi_bb38_13, &phi_bb38_14, &phi_bb38_15, &phi_bb38_16, &phi_bb38_17, &phi_bb38_21);
-    ca_.Goto(&block37, phi_bb38_10, phi_bb38_11, phi_bb38_12, phi_bb38_13, phi_bb38_14, phi_bb38_15, phi_bb38_16, phi_bb38_17, phi_bb38_21);
+  TNode<IntPtrT> phi_bb83_10;
+  TNode<BuiltinPtr> phi_bb83_11;
+  TNode<FixedArray> phi_bb83_12;
+  TNode<IntPtrT> phi_bb83_13;
+  TNode<IntPtrT> phi_bb83_14;
+  TNode<BoolT> phi_bb83_15;
+  TNode<PrimitiveHeapObject> phi_bb83_16;
+  TNode<UintPtrT> phi_bb83_17;
+  TNode<IntPtrT> phi_bb83_18;
+  TNode<IntPtrT> phi_bb83_22;
+  if (block83.is_used()) {
+    ca_.Bind(&block83, &phi_bb83_10, &phi_bb83_11, &phi_bb83_12, &phi_bb83_13, &phi_bb83_14, &phi_bb83_15, &phi_bb83_16, &phi_bb83_17, &phi_bb83_18, &phi_bb83_22);
+    ca_.Goto(&block82, phi_bb83_10, phi_bb83_11, phi_bb83_12, phi_bb83_13, phi_bb83_14, phi_bb83_15, phi_bb83_16, phi_bb83_17, phi_bb83_18, phi_bb83_22);
   }
 
-  TNode<IntPtrT> phi_bb39_10;
-  TNode<BuiltinPtr> phi_bb39_11;
-  TNode<FixedArray> phi_bb39_12;
-  TNode<IntPtrT> phi_bb39_13;
-  TNode<IntPtrT> phi_bb39_14;
-  TNode<BoolT> phi_bb39_15;
-  TNode<UintPtrT> phi_bb39_16;
-  TNode<IntPtrT> phi_bb39_17;
-  TNode<IntPtrT> phi_bb39_21;
-  TNode<IntPtrT> tmp64;
-  TNode<IntPtrT> tmp65;
-  TNode<BoolT> tmp66;
-  if (block39.is_used()) {
-    ca_.Bind(&block39, &phi_bb39_10, &phi_bb39_11, &phi_bb39_12, &phi_bb39_13, &phi_bb39_14, &phi_bb39_15, &phi_bb39_16, &phi_bb39_17, &phi_bb39_21);
-    tmp64 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb39_21});
-    tmp65 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp64}, TNode<IntPtrT>{tmp3});
-    tmp66 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp65}, TNode<IntPtrT>{phi_bb39_21});
-    ca_.Branch(tmp66, &block43, std::vector<compiler::Node*>{phi_bb39_10, phi_bb39_11, phi_bb39_12, phi_bb39_13, phi_bb39_14, phi_bb39_15, phi_bb39_16, phi_bb39_17, phi_bb39_21, phi_bb39_21}, &block44, std::vector<compiler::Node*>{phi_bb39_10, phi_bb39_11, phi_bb39_12, phi_bb39_13, phi_bb39_14, phi_bb39_15, phi_bb39_16, phi_bb39_17, phi_bb39_21, phi_bb39_21});
+  TNode<IntPtrT> phi_bb84_10;
+  TNode<BuiltinPtr> phi_bb84_11;
+  TNode<FixedArray> phi_bb84_12;
+  TNode<IntPtrT> phi_bb84_13;
+  TNode<IntPtrT> phi_bb84_14;
+  TNode<BoolT> phi_bb84_15;
+  TNode<PrimitiveHeapObject> phi_bb84_16;
+  TNode<UintPtrT> phi_bb84_17;
+  TNode<IntPtrT> phi_bb84_18;
+  TNode<IntPtrT> phi_bb84_22;
+  TNode<IntPtrT> tmp106;
+  TNode<IntPtrT> tmp107;
+  TNode<BoolT> tmp108;
+  if (block84.is_used()) {
+    ca_.Bind(&block84, &phi_bb84_10, &phi_bb84_11, &phi_bb84_12, &phi_bb84_13, &phi_bb84_14, &phi_bb84_15, &phi_bb84_16, &phi_bb84_17, &phi_bb84_18, &phi_bb84_22);
+    tmp106 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{phi_bb84_22});
+    tmp107 = CodeStubAssembler(state_).IntPtrDiv(TNode<IntPtrT>{tmp106}, TNode<IntPtrT>{tmp3});
+    tmp108 = CodeStubAssembler(state_).WordNotEqual(TNode<IntPtrT>{tmp107}, TNode<IntPtrT>{phi_bb84_22});
+    ca_.Branch(tmp108, &block88, std::vector<compiler::Node*>{phi_bb84_10, phi_bb84_11, phi_bb84_12, phi_bb84_13, phi_bb84_14, phi_bb84_15, phi_bb84_16, phi_bb84_17, phi_bb84_18, phi_bb84_22, phi_bb84_22}, &block89, std::vector<compiler::Node*>{phi_bb84_10, phi_bb84_11, phi_bb84_12, phi_bb84_13, phi_bb84_14, phi_bb84_15, phi_bb84_16, phi_bb84_17, phi_bb84_18, phi_bb84_22, phi_bb84_22});
   }
 
-  TNode<IntPtrT> phi_bb43_10;
-  TNode<BuiltinPtr> phi_bb43_11;
-  TNode<FixedArray> phi_bb43_12;
-  TNode<IntPtrT> phi_bb43_13;
-  TNode<IntPtrT> phi_bb43_14;
-  TNode<BoolT> phi_bb43_15;
-  TNode<UintPtrT> phi_bb43_16;
-  TNode<IntPtrT> phi_bb43_17;
-  TNode<IntPtrT> phi_bb43_21;
-  TNode<IntPtrT> phi_bb43_24;
-  if (block43.is_used()) {
-    ca_.Bind(&block43, &phi_bb43_10, &phi_bb43_11, &phi_bb43_12, &phi_bb43_13, &phi_bb43_14, &phi_bb43_15, &phi_bb43_16, &phi_bb43_17, &phi_bb43_21, &phi_bb43_24);
+  TNode<IntPtrT> phi_bb88_10;
+  TNode<BuiltinPtr> phi_bb88_11;
+  TNode<FixedArray> phi_bb88_12;
+  TNode<IntPtrT> phi_bb88_13;
+  TNode<IntPtrT> phi_bb88_14;
+  TNode<BoolT> phi_bb88_15;
+  TNode<PrimitiveHeapObject> phi_bb88_16;
+  TNode<UintPtrT> phi_bb88_17;
+  TNode<IntPtrT> phi_bb88_18;
+  TNode<IntPtrT> phi_bb88_22;
+  TNode<IntPtrT> phi_bb88_25;
+  if (block88.is_used()) {
+    ca_.Bind(&block88, &phi_bb88_10, &phi_bb88_11, &phi_bb88_12, &phi_bb88_13, &phi_bb88_14, &phi_bb88_15, &phi_bb88_16, &phi_bb88_17, &phi_bb88_18, &phi_bb88_22, &phi_bb88_25);
     CodeStubAssembler(state_).CallRuntime(Runtime::kThrowInvalidStringLength, p_context);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<IntPtrT> phi_bb44_10;
-  TNode<BuiltinPtr> phi_bb44_11;
-  TNode<FixedArray> phi_bb44_12;
-  TNode<IntPtrT> phi_bb44_13;
-  TNode<IntPtrT> phi_bb44_14;
-  TNode<BoolT> phi_bb44_15;
-  TNode<UintPtrT> phi_bb44_16;
-  TNode<IntPtrT> phi_bb44_17;
-  TNode<IntPtrT> phi_bb44_21;
-  TNode<IntPtrT> phi_bb44_24;
-  TNode<IntPtrT> tmp67;
-  if (block44.is_used()) {
-    ca_.Bind(&block44, &phi_bb44_10, &phi_bb44_11, &phi_bb44_12, &phi_bb44_13, &phi_bb44_14, &phi_bb44_15, &phi_bb44_16, &phi_bb44_17, &phi_bb44_21, &phi_bb44_24);
-    tmp67 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb44_14}, TNode<IntPtrT>{tmp64});
-    ca_.Branch(tmp58, &block45, std::vector<compiler::Node*>{phi_bb44_10, phi_bb44_11, phi_bb44_12, phi_bb44_13, phi_bb44_15, phi_bb44_16, phi_bb44_17, phi_bb44_21, phi_bb44_24}, &block46, std::vector<compiler::Node*>{phi_bb44_10, phi_bb44_11, phi_bb44_12, phi_bb44_13, phi_bb44_15, phi_bb44_16, phi_bb44_17, phi_bb44_21, phi_bb44_24});
+  TNode<IntPtrT> phi_bb89_10;
+  TNode<BuiltinPtr> phi_bb89_11;
+  TNode<FixedArray> phi_bb89_12;
+  TNode<IntPtrT> phi_bb89_13;
+  TNode<IntPtrT> phi_bb89_14;
+  TNode<BoolT> phi_bb89_15;
+  TNode<PrimitiveHeapObject> phi_bb89_16;
+  TNode<UintPtrT> phi_bb89_17;
+  TNode<IntPtrT> phi_bb89_18;
+  TNode<IntPtrT> phi_bb89_22;
+  TNode<IntPtrT> phi_bb89_25;
+  TNode<IntPtrT> tmp109;
+  if (block89.is_used()) {
+    ca_.Bind(&block89, &phi_bb89_10, &phi_bb89_11, &phi_bb89_12, &phi_bb89_13, &phi_bb89_14, &phi_bb89_15, &phi_bb89_16, &phi_bb89_17, &phi_bb89_18, &phi_bb89_22, &phi_bb89_25);
+    tmp109 = AddStringLength_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{phi_bb89_14}, TNode<IntPtrT>{tmp106});
+    ca_.Branch(tmp100, &block90, std::vector<compiler::Node*>{phi_bb89_10, phi_bb89_11, phi_bb89_12, phi_bb89_13, phi_bb89_15, phi_bb89_16, phi_bb89_17, phi_bb89_18, phi_bb89_22, phi_bb89_25}, &block91, std::vector<compiler::Node*>{phi_bb89_10, phi_bb89_11, phi_bb89_12, phi_bb89_13, phi_bb89_15, phi_bb89_16, phi_bb89_17, phi_bb89_18, phi_bb89_22, phi_bb89_25});
   }
 
-  TNode<IntPtrT> phi_bb45_10;
-  TNode<BuiltinPtr> phi_bb45_11;
-  TNode<FixedArray> phi_bb45_12;
-  TNode<IntPtrT> phi_bb45_13;
-  TNode<BoolT> phi_bb45_15;
-  TNode<UintPtrT> phi_bb45_16;
-  TNode<IntPtrT> phi_bb45_17;
-  TNode<IntPtrT> phi_bb45_21;
-  TNode<IntPtrT> phi_bb45_24;
-  TNode<IntPtrT> tmp68;
-  TNode<IntPtrT> tmp69;
-  TNode<Smi> tmp70;
-  TNode<FixedArray> tmp71;
-  if (block45.is_used()) {
-    ca_.Bind(&block45, &phi_bb45_10, &phi_bb45_11, &phi_bb45_12, &phi_bb45_13, &phi_bb45_15, &phi_bb45_16, &phi_bb45_17, &phi_bb45_21, &phi_bb45_24);
-    tmp68 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp69 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb45_13}, TNode<IntPtrT>{tmp68});
-    tmp70 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb45_24});
-    tmp71 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb45_12}, TNode<IntPtrT>{phi_bb45_13}, TNode<Smi>{tmp70});
-    ca_.Goto(&block46, phi_bb45_10, phi_bb45_11, tmp71, tmp69, phi_bb45_15, phi_bb45_16, phi_bb45_17, phi_bb45_21, phi_bb45_24);
+  TNode<IntPtrT> phi_bb90_10;
+  TNode<BuiltinPtr> phi_bb90_11;
+  TNode<FixedArray> phi_bb90_12;
+  TNode<IntPtrT> phi_bb90_13;
+  TNode<BoolT> phi_bb90_15;
+  TNode<PrimitiveHeapObject> phi_bb90_16;
+  TNode<UintPtrT> phi_bb90_17;
+  TNode<IntPtrT> phi_bb90_18;
+  TNode<IntPtrT> phi_bb90_22;
+  TNode<IntPtrT> phi_bb90_25;
+  TNode<IntPtrT> tmp110;
+  TNode<IntPtrT> tmp111;
+  TNode<Smi> tmp112;
+  TNode<FixedArray> tmp113;
+  TNode<Oddball> tmp114;
+  if (block90.is_used()) {
+    ca_.Bind(&block90, &phi_bb90_10, &phi_bb90_11, &phi_bb90_12, &phi_bb90_13, &phi_bb90_15, &phi_bb90_16, &phi_bb90_17, &phi_bb90_18, &phi_bb90_22, &phi_bb90_25);
+    tmp110 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp111 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb90_13}, TNode<IntPtrT>{tmp110});
+    tmp112 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb90_25});
+    tmp113 = StoreAndGrowFixedArray_Smi_0(state_, TNode<FixedArray>{phi_bb90_12}, TNode<IntPtrT>{phi_bb90_13}, TNode<Smi>{tmp112});
+    tmp114 = Null_0(state_);
+    ca_.Goto(&block91, phi_bb90_10, phi_bb90_11, tmp113, tmp111, phi_bb90_15, tmp114, phi_bb90_17, phi_bb90_18, phi_bb90_22, phi_bb90_25);
   }
 
-  TNode<IntPtrT> phi_bb46_10;
-  TNode<BuiltinPtr> phi_bb46_11;
-  TNode<FixedArray> phi_bb46_12;
-  TNode<IntPtrT> phi_bb46_13;
-  TNode<BoolT> phi_bb46_15;
-  TNode<UintPtrT> phi_bb46_16;
-  TNode<IntPtrT> phi_bb46_17;
-  TNode<IntPtrT> phi_bb46_21;
-  TNode<IntPtrT> phi_bb46_24;
-  if (block46.is_used()) {
-    ca_.Bind(&block46, &phi_bb46_10, &phi_bb46_11, &phi_bb46_12, &phi_bb46_13, &phi_bb46_15, &phi_bb46_16, &phi_bb46_17, &phi_bb46_21, &phi_bb46_24);
-    ca_.Goto(&block37, phi_bb46_10, phi_bb46_11, phi_bb46_12, phi_bb46_13, tmp67, phi_bb46_15, phi_bb46_16, phi_bb46_17, phi_bb46_21);
+  TNode<IntPtrT> phi_bb91_10;
+  TNode<BuiltinPtr> phi_bb91_11;
+  TNode<FixedArray> phi_bb91_12;
+  TNode<IntPtrT> phi_bb91_13;
+  TNode<BoolT> phi_bb91_15;
+  TNode<PrimitiveHeapObject> phi_bb91_16;
+  TNode<UintPtrT> phi_bb91_17;
+  TNode<IntPtrT> phi_bb91_18;
+  TNode<IntPtrT> phi_bb91_22;
+  TNode<IntPtrT> phi_bb91_25;
+  if (block91.is_used()) {
+    ca_.Bind(&block91, &phi_bb91_10, &phi_bb91_11, &phi_bb91_12, &phi_bb91_13, &phi_bb91_15, &phi_bb91_16, &phi_bb91_17, &phi_bb91_18, &phi_bb91_22, &phi_bb91_25);
+    ca_.Goto(&block82, phi_bb91_10, phi_bb91_11, phi_bb91_12, phi_bb91_13, tmp109, phi_bb91_15, phi_bb91_16, phi_bb91_17, phi_bb91_18, phi_bb91_22);
   }
 
-  TNode<IntPtrT> phi_bb37_10;
-  TNode<BuiltinPtr> phi_bb37_11;
-  TNode<FixedArray> phi_bb37_12;
-  TNode<IntPtrT> phi_bb37_13;
-  TNode<IntPtrT> phi_bb37_14;
-  TNode<BoolT> phi_bb37_15;
-  TNode<UintPtrT> phi_bb37_16;
-  TNode<IntPtrT> phi_bb37_17;
-  TNode<IntPtrT> phi_bb37_21;
-  TNode<String> tmp72;
-  if (block37.is_used()) {
-    ca_.Bind(&block37, &phi_bb37_10, &phi_bb37_11, &phi_bb37_12, &phi_bb37_13, &phi_bb37_14, &phi_bb37_15, &phi_bb37_16, &phi_bb37_17, &phi_bb37_21);
-    tmp72 = BufferJoin_0(state_, TNode<Context>{p_context}, TorqueStructBuffer_0{TNode<FixedArray>{phi_bb37_12}, TNode<IntPtrT>{phi_bb37_13}, TNode<IntPtrT>{phi_bb37_14}, TNode<BoolT>{phi_bb37_15}}, TNode<String>{p_sep});
-    ca_.Goto(&block47);
+  TNode<IntPtrT> phi_bb82_10;
+  TNode<BuiltinPtr> phi_bb82_11;
+  TNode<FixedArray> phi_bb82_12;
+  TNode<IntPtrT> phi_bb82_13;
+  TNode<IntPtrT> phi_bb82_14;
+  TNode<BoolT> phi_bb82_15;
+  TNode<PrimitiveHeapObject> phi_bb82_16;
+  TNode<UintPtrT> phi_bb82_17;
+  TNode<IntPtrT> phi_bb82_18;
+  TNode<IntPtrT> phi_bb82_22;
+  TNode<String> tmp115;
+  if (block82.is_used()) {
+    ca_.Bind(&block82, &phi_bb82_10, &phi_bb82_11, &phi_bb82_12, &phi_bb82_13, &phi_bb82_14, &phi_bb82_15, &phi_bb82_16, &phi_bb82_17, &phi_bb82_18, &phi_bb82_22);
+    tmp115 = BufferJoin_0(state_, TNode<Context>{p_context}, TorqueStructBuffer_0{TNode<FixedArray>{phi_bb82_12}, TNode<IntPtrT>{phi_bb82_13}, TNode<IntPtrT>{phi_bb82_14}, TNode<BoolT>{phi_bb82_15}, TNode<PrimitiveHeapObject>{phi_bb82_16}}, TNode<String>{p_sep});
+    ca_.Goto(&block92);
   }
 
-    ca_.Bind(&block47);
-  return TNode<String>{tmp72};
+    ca_.Bind(&block92);
+  return TNode<String>{tmp115};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=456&c=16
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=504&c=16
 TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4519,7 +5182,7 @@ TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefi
   return TorqueStructReference_Undefined_OR_FixedArray_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=491&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=539&c=7
 TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<JSReceiver> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4625,7 +5288,7 @@ TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerSta
   return TNode<FixedArray>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=602&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=650&c=10
 TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4768,7 +5431,7 @@ TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* st
   return TNode<Object>{phi_bb1_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=658&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=706&c=10
 TNode<Object> CycleProtectedArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4911,7 +5574,7 @@ TNode<Object> CycleProtectedArrayJoin_JSTypedArray_0(compiler::CodeAssemblerStat
   return TNode<Object>{phi_bb1_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=190&c=27
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=207&c=27
 TNode<FixedArray> StoreAndGrowFixedArray_Smi_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<Smi> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5017,7 +5680,7 @@ TNode<FixedArray> StoreAndGrowFixedArray_Smi_0(compiler::CodeAssemblerState* sta
   return TNode<FixedArray>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=171&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=186&c=11
 TNode<FixedArray> StoreAndGrowFixedArray_String_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<String> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

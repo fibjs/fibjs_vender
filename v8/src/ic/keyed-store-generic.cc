@@ -300,7 +300,7 @@ void KeyedStoreGenericAssembler::TryRewriteElements(
   BIND(&perform_transition);
   {
     if (IsDoubleElementsKind(from_kind) != IsDoubleElementsKind(to_kind)) {
-      TNode<IntPtrT> capacity = SmiUntag(LoadFixedArrayBaseLength(elements));
+      TNode<IntPtrT> capacity = LoadAndUntagFixedArrayBaseLength(elements);
       GrowElementsCapacity(receiver, elements, from_kind, to_kind, capacity,
                            capacity, bailout);
     }
@@ -591,14 +591,15 @@ void KeyedStoreGenericAssembler::EmitGenericElementStore(
   Label if_array(this);
   GotoIf(IsJSArrayInstanceType(instance_type), &if_array);
   {
-    TNode<IntPtrT> capacity = SmiUntag(LoadFixedArrayBaseLength(elements));
+    TNode<IntPtrT> capacity = LoadAndUntagFixedArrayBaseLength(elements);
     Branch(UintPtrLessThan(index, capacity), &if_in_bounds, &if_grow);
   }
   BIND(&if_array);
   {
-    TNode<IntPtrT> length = SmiUntag(LoadFastJSArrayLength(CAST(receiver)));
+    TNode<IntPtrT> length =
+        PositiveSmiUntag(LoadFastJSArrayLength(CAST(receiver)));
     GotoIf(UintPtrLessThan(index, length), &if_in_bounds);
-    TNode<IntPtrT> capacity = SmiUntag(LoadFixedArrayBaseLength(elements));
+    TNode<IntPtrT> capacity = LoadAndUntagFixedArrayBaseLength(elements);
     GotoIf(UintPtrGreaterThanOrEqual(index, capacity), &if_grow);
     Branch(WordEqual(index, length), &if_increment_length_by_one,
            &if_bump_length_with_gap);
@@ -969,8 +970,7 @@ void KeyedStoreGenericAssembler::EmitGenericPropertyStore(
             TNode<Object> prev_value =
                 LoadValueByKeyIndex(properties, var_name_index.value());
 
-            BranchIfSameValue(prev_value, p->value(), &done, slow,
-                              SameValueMode::kNumbersOnly);
+            Branch(TaggedEqual(prev_value, p->value()), &done, slow);
           } else {
             Goto(&overwrite);
           }
@@ -1018,6 +1018,7 @@ void KeyedStoreGenericAssembler::EmitGenericPropertyStore(
       }
       Label add_dictionary_property_slow(this);
       InvalidateValidityCellIfPrototype(receiver_map, bitfield3);
+      UpdateMayHaveInterestingSymbol(properties, name);
       Add<PropertyDictionary>(properties, name, p->value(),
                               &add_dictionary_property_slow);
       exit_point->Return(p->value());
@@ -1120,8 +1121,9 @@ void KeyedStoreGenericAssembler::KeyedStoreGeneric(
   BIND(&if_unique_name);
   {
     Comment("key is unique name");
-    StoreICParameters p(context, receiver, var_unique.value(), value, {},
-                        UndefinedConstant(), StoreICMode::kDefault);
+    StoreICParameters p(context, receiver, var_unique.value(), value,
+                        base::nullopt, {}, UndefinedConstant(),
+                        StoreICMode::kDefault);
     ExitPoint direct_exit(this);
     EmitGenericPropertyStore(CAST(receiver), receiver_map, instance_type, &p,
                              &direct_exit, &slow, language_mode);
@@ -1150,8 +1152,12 @@ void KeyedStoreGenericAssembler::KeyedStoreGeneric(
                       value);
     } else {
       DCHECK(IsDefineKeyedOwnInLiteral());
-      TailCallRuntime(Runtime::kDefineKeyedOwnPropertyInLiteral_Simple, context,
-                      receiver, key, value);
+      TNode<Smi> flags =
+          SmiConstant(DefineKeyedOwnPropertyInLiteralFlag::kNoFlags);
+      // TODO(v8:10047): Use TaggedIndexConstant here once TurboFan supports it.
+      TNode<Smi> slot = SmiConstant(FeedbackSlot::Invalid().ToInt());
+      TailCallRuntime(Runtime::kDefineKeyedOwnPropertyInLiteral, context,
+                      receiver, key, value, flags, UndefinedConstant(), slot);
     }
   }
 }
@@ -1196,7 +1202,7 @@ void KeyedStoreGenericAssembler::StoreIC_NoFeedback() {
     // checks, strings and string wrappers, proxies) are handled in the runtime.
     GotoIf(IsSpecialReceiverInstanceType(instance_type), &miss);
     {
-      StoreICParameters p(context, receiver, name, value, slot,
+      StoreICParameters p(context, receiver, name, value, base::nullopt, slot,
                           UndefinedConstant(),
                           IsDefineNamedOwn() ? StoreICMode::kDefineNamedOwn
                                              : StoreICMode::kDefault);
@@ -1220,7 +1226,7 @@ void KeyedStoreGenericAssembler::StoreProperty(TNode<Context> context,
                                                TNode<Name> unique_name,
                                                TNode<Object> value,
                                                LanguageMode language_mode) {
-  StoreICParameters p(context, receiver, unique_name, value, {},
+  StoreICParameters p(context, receiver, unique_name, value, base::nullopt, {},
                       UndefinedConstant(), StoreICMode::kDefault);
 
   Label done(this), slow(this, Label::kDeferred);
@@ -1238,8 +1244,12 @@ void KeyedStoreGenericAssembler::StoreProperty(TNode<Context> context,
   BIND(&slow);
   {
     if (IsDefineKeyedOwnInLiteral()) {
-      CallRuntime(Runtime::kDefineKeyedOwnPropertyInLiteral_Simple, context,
-                  receiver, unique_name, value);
+      TNode<Smi> flags =
+          SmiConstant(DefineKeyedOwnPropertyInLiteralFlag::kNoFlags);
+      // TODO(v8:10047): Use TaggedIndexConstant here once TurboFan supports it.
+      TNode<Smi> slot = SmiConstant(FeedbackSlot::Invalid().ToInt());
+      CallRuntime(Runtime::kDefineKeyedOwnPropertyInLiteral, context, receiver,
+                  unique_name, value, flags, p.vector(), slot);
     } else {
       CallRuntime(Runtime::kSetKeyedProperty, context, receiver, unique_name,
                   value);

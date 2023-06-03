@@ -84,9 +84,6 @@ class TorqueGeneratedJSRegExp : public P {
 
  protected:
   inline explicit TorqueGeneratedJSRegExp(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSRegExp(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=44&c=1
@@ -192,9 +189,6 @@ class TorqueGeneratedJSRegExpResult : public P {
 
  protected:
   inline explicit TorqueGeneratedJSRegExpResult(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSRegExpResult(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=57&c=1
@@ -249,9 +243,6 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
 
  protected:
   inline explicit TorqueGeneratedJSRegExpResultWithIndices(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSRegExpResultWithIndices(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=61&c=1
@@ -306,8 +297,5 @@ class TorqueGeneratedJSRegExpResultIndices : public P {
 
  protected:
   inline explicit TorqueGeneratedJSRegExpResultIndices(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSRegExpResultIndices(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

@@ -76,8 +76,5 @@ class TorqueGeneratedJSRegExpStringIterator : public P {
 
  protected:
   inline explicit TorqueGeneratedJSRegExpStringIterator(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSRegExpStringIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

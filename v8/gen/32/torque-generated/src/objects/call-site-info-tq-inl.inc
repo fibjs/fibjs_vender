@@ -1,11 +1,11 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 template<class D, class P>
 Object TorqueGeneratedCallSiteInfo<D, P>::receiver_or_instance() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedCallSiteInfo::receiver_or_instance(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 template<class D, class P>
 Object TorqueGeneratedCallSiteInfo<D, P>::receiver_or_instance(PtrComprCageBase cage_base) const {
   Object value;
@@ -14,7 +14,7 @@ Object TorqueGeneratedCallSiteInfo<D, P>::receiver_or_instance(PtrComprCageBase 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_receiver_or_instance(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
@@ -22,14 +22,14 @@ void TorqueGeneratedCallSiteInfo<D, P>::set_receiver_or_instance(Object value, W
   CONDITIONAL_WRITE_BARRIER(*this, kReceiverOrInstanceOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 template<class D, class P>
 Object TorqueGeneratedCallSiteInfo<D, P>::function() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedCallSiteInfo::function(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 template<class D, class P>
 Object TorqueGeneratedCallSiteInfo<D, P>::function(PtrComprCageBase cage_base) const {
   Object value;
@@ -38,7 +38,7 @@ Object TorqueGeneratedCallSiteInfo<D, P>::function(PtrComprCageBase cage_base) c
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_function(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsSmi() || value.IsJSFunction());
@@ -46,14 +46,14 @@ void TorqueGeneratedCallSiteInfo<D, P>::set_function(Object value, WriteBarrierM
   CONDITIONAL_WRITE_BARRIER(*this, kFunctionOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedCallSiteInfo<D, P>::code_object() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedCallSiteInfo::code_object(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedCallSiteInfo<D, P>::code_object(PtrComprCageBase cage_base) const {
   HeapObject value;
@@ -62,7 +62,7 @@ HeapObject TorqueGeneratedCallSiteInfo<D, P>::code_object(PtrComprCageBase cage_
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_code_object(HeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsHeapObject());
@@ -70,7 +70,7 @@ void TorqueGeneratedCallSiteInfo<D, P>::set_code_object(HeapObject value, WriteB
   CONDITIONAL_WRITE_BARRIER(*this, kCodeObjectOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
 template<class D, class P>
 int TorqueGeneratedCallSiteInfo<D, P>::code_offset_or_source_position() const {
   int value;
@@ -78,13 +78,13 @@ int TorqueGeneratedCallSiteInfo<D, P>::code_offset_or_source_position() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_code_offset_or_source_position(int value) {
   WRITE_FIELD(*this, kCodeOffsetOrSourcePositionOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 template<class D, class P>
 int TorqueGeneratedCallSiteInfo<D, P>::flags() const {
   int value;
@@ -92,20 +92,20 @@ int TorqueGeneratedCallSiteInfo<D, P>::flags() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedCallSiteInfo<D, P>::parameters() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedCallSiteInfo::parameters(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedCallSiteInfo<D, P>::parameters(PtrComprCageBase cage_base) const {
   FixedArray value;
@@ -114,7 +114,7 @@ FixedArray TorqueGeneratedCallSiteInfo<D, P>::parameters(PtrComprCageBase cage_b
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_parameters(FixedArray value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsFixedArray());
@@ -122,7 +122,7 @@ void TorqueGeneratedCallSiteInfo<D, P>::set_parameters(FixedArray value, WriteBa
   CONDITIONAL_WRITE_BARRIER(*this, kParametersOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
 template<class D, class P>
 D TorqueGeneratedCallSiteInfo<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -132,9 +132,4 @@ template<class D, class P>
 inline TorqueGeneratedCallSiteInfo<D, P>::TorqueGeneratedCallSiteInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsCallSiteInfo_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedCallSiteInfo<D, P>::TorqueGeneratedCallSiteInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsCallSiteInfo_NonInline(*this));
 }

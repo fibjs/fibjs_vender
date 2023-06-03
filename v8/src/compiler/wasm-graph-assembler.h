@@ -159,7 +159,11 @@ class WasmGraphAssembler : public GraphAssembler {
                                        value);
   }
 
-  Node* IsI31(Node* object);
+  Node* BuildLoadExternalPointerFromObject(Node* object, int offset,
+                                           ExternalPointerTag tag,
+                                           Node* isolate_root);
+
+  Node* IsSmi(Node* object);
 
   // Maps and their contents.
 
@@ -196,6 +200,9 @@ class WasmGraphAssembler : public GraphAssembler {
     return LoadFixedArrayElement(array, index, MachineType::AnyTagged());
   }
 
+  Node* LoadByteArrayElement(Node* byte_array, Node* index_intptr,
+                             MachineType type);
+
   Node* StoreFixedArrayElement(Node* array, int index, Node* value,
                                ObjectAccess access);
 
@@ -210,6 +217,9 @@ class WasmGraphAssembler : public GraphAssembler {
         array, index, value,
         ObjectAccess(MachineType::AnyTagged(), kFullWriteBarrier));
   }
+
+  Node* LoadWeakArrayListElement(Node* fixed_array, Node* index_intptr,
+                                 MachineType type = MachineType::AnyTagged());
 
   // Functions, SharedFunctionInfos, FunctionData.
 
@@ -231,11 +241,7 @@ class WasmGraphAssembler : public GraphAssembler {
 
   Node* FieldOffset(const wasm::StructType* type, uint32_t field_index);
 
-  Node* StoreStructField(Node* struct_object, const wasm::StructType* type,
-                         uint32_t field_index, Node* value);
   Node* WasmArrayElementOffset(Node* index, wasm::ValueType element_type);
-
-  Node* LoadWasmArrayLength(Node* array);
 
   Node* IsDataRefMap(Node* map);
 
@@ -243,30 +249,62 @@ class WasmGraphAssembler : public GraphAssembler {
 
   Node* WasmTypeCast(Node* object, Node* rtt, WasmTypeCheckConfig config);
 
-  Node* Null();
+  Node* Null(wasm::ValueType type);
 
-  Node* IsNull(Node* object);
+  Node* IsNull(Node* object, wasm::ValueType type);
 
-  Node* IsNotNull(Node* object);
+  Node* IsNotNull(Node* object, wasm::ValueType type);
 
-  Node* AssertNotNull(Node* object);
+  Node* AssertNotNull(Node* object, wasm::ValueType type, TrapId trap_id);
 
   Node* WasmExternInternalize(Node* object);
 
   Node* WasmExternExternalize(Node* object);
+
+  Node* StructGet(Node* object, const wasm::StructType* type, int field_index,
+                  bool is_signed, CheckForNull null_check);
+
+  void StructSet(Node* object, Node* value, const wasm::StructType* type,
+                 int field_index, CheckForNull null_check);
+
+  Node* ArrayGet(Node* array, Node* index, const wasm::ArrayType* type,
+                 bool is_signed);
+
+  void ArraySet(Node* array, Node* index, Node* value,
+                const wasm::ArrayType* type);
+
+  Node* ArrayLength(Node* array, CheckForNull null_check);
+
+  void ArrayInitializeLength(Node* array, Node* length);
+
+  Node* LoadStringLength(Node* string);
+
+  Node* StringAsWtf16(Node* string);
+
+  Node* StringPrepareForGetCodeunit(Node* string);
 
   // Generic helpers.
 
   Node* HasInstanceType(Node* heap_object, InstanceType type);
 
   void TrapIf(Node* condition, TrapId reason) {
-    AddNode(graph()->NewNode(mcgraph()->common()->TrapIf(reason), condition,
-                             effect(), control()));
+    // Initially wasm traps don't have a FrameState.
+    const bool has_frame_state = false;
+    AddNode(
+        graph()->NewNode(mcgraph()->common()->TrapIf(reason, has_frame_state),
+                         condition, effect(), control()));
   }
 
   void TrapUnless(Node* condition, TrapId reason) {
-    AddNode(graph()->NewNode(mcgraph()->common()->TrapUnless(reason), condition,
-                             effect(), control()));
+    // Initially wasm traps don't have a FrameState.
+    const bool has_frame_state = false;
+    AddNode(graph()->NewNode(
+        mcgraph()->common()->TrapUnless(reason, has_frame_state), condition,
+        effect(), control()));
+  }
+
+  Node* LoadRootRegister() {
+    return AddNode(graph()->NewNode(mcgraph()->machine()->LoadRootRegister()));
   }
 
   SimplifiedOperatorBuilder* simplified() override { return &simplified_; }

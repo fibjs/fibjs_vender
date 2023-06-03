@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/ordered-hash-table-tq-csa.h"
@@ -172,8 +175,8 @@ TNode<SmallOrderedHashSet> AllocateSmallOrderedHashSet_0(compiler::CodeAssembler
   TNode<Uint8T> tmp3;
   TNode<Uint8T> tmp4;
   TNode<Uint8T> tmp5;
-  TNode<Oddball> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<HeapObject> tmp6;
+  TNode<HeapObject> tmp7;
   TNode<Uint8T> tmp8;
   TNode<Uint8T> tmp9;
   TNode<Uint8T> tmp10;
@@ -196,16 +199,17 @@ TNode<SmallOrderedHashSet> AllocateSmallOrderedHashSet_0(compiler::CodeAssembler
   TNode<IntPtrT> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<BoolT> tmp29;
-  TNode<HeapObject> tmp30;
-  TNode<IntPtrT> tmp31;
+  TNode<BoolT> tmp30;
+  TNode<HeapObject> tmp31;
   TNode<IntPtrT> tmp32;
-  TNode<Uint8T> tmp33;
-  TNode<IntPtrT> tmp34;
-  TNode<Uint8T> tmp35;
-  TNode<IntPtrT> tmp36;
+  TNode<IntPtrT> tmp33;
+  TNode<Uint8T> tmp34;
+  TNode<IntPtrT> tmp35;
+  TNode<Uint8T> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<IntPtrT> tmp38;
-  TNode<SmallOrderedHashSet> tmp39;
+  TNode<IntPtrT> tmp39;
+  TNode<SmallOrderedHashSet> tmp40;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kLoadFactor);
@@ -215,7 +219,7 @@ TNode<SmallOrderedHashSet> AllocateSmallOrderedHashSet_0(compiler::CodeAssembler
     tmp4 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     std::tie(tmp5) = ConstantIterator_uint8_0(state_, TNode<Uint8T>{tmp4}).Flatten();
     tmp6 = TheHole_0(state_);
-    std::tie(tmp7) = ConstantIterator_TheHole_0(state_, TNode<Oddball>{tmp6}).Flatten();
+    std::tie(tmp7) = ConstantIterator_TheHole_0(state_, TNode<HeapObject>{tmp6}).Flatten();
     tmp8 = FromConstexpr_uint8_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kNotFound);
     std::tie(tmp9) = ConstantIterator_uint8_0(state_, TNode<Uint8T>{tmp8}).Flatten();
     tmp10 = FromConstexpr_uint8_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kNotFound);
@@ -238,29 +242,30 @@ TNode<SmallOrderedHashSet> AllocateSmallOrderedHashSet_0(compiler::CodeAssembler
     tmp27 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp26}, kUInt8Size);
     tmp28 = AlignTagged_0(state_, TNode<IntPtrT>{tmp27});
     tmp29 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp30 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp28}, TNode<Map>{tmp2}, TNode<BoolT>{tmp29});
-    tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp30, tmp31}, tmp2);
-    tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    tmp33 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp30, tmp32}, tmp33);
-    tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 5);
-    tmp35 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp30, tmp34}, tmp35);
-    tmp36 = FromConstexpr_intptr_constexpr_int31_0(state_, 6);
-    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp30, tmp36}, tmp3);
-    tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 7);
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp30}, TNode<IntPtrT>{tmp37}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
-    tmp38 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    InitializeFieldsFromIterator_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_ConstantIterator_TheHole_0(state_, TorqueStructSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_MutableReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0{TNode<Object>{tmp30}, TNode<IntPtrT>{tmp38}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Oddball>{tmp7}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp30}, TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp21}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp9}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp30}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp26}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
-    tmp39 = TORQUE_CAST(TNode<HeapObject>{tmp30});
+    tmp30 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp31 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp28}, TNode<Map>{tmp2}, TNode<BoolT>{tmp29}, TNode<BoolT>{tmp30});
+    tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp31, tmp32}, tmp2);
+    tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
+    tmp34 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp31, tmp33}, tmp34);
+    tmp35 = FromConstexpr_intptr_constexpr_int31_0(state_, 5);
+    tmp36 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp31, tmp35}, tmp36);
+    tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 6);
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp31, tmp37}, tmp3);
+    tmp38 = FromConstexpr_intptr_constexpr_int31_0(state_, 7);
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp38}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
+    tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    InitializeFieldsFromIterator_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_ConstantIterator_TheHole_0(state_, TorqueStructSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_MutableReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp39}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<HeapObject>{tmp7}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp21}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp9}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp26}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
+    tmp40 = TORQUE_CAST(TNode<HeapObject>{tmp31});
     ca_.Goto(&block9);
   }
 
     ca_.Bind(&block9);
-  return TNode<SmallOrderedHashSet>{tmp39};
+  return TNode<SmallOrderedHashSet>{tmp40};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=63&c=1
@@ -324,8 +329,8 @@ TNode<SmallOrderedHashMap> AllocateSmallOrderedHashMap_0(compiler::CodeAssembler
   TNode<Uint8T> tmp3;
   TNode<Uint8T> tmp4;
   TNode<Uint8T> tmp5;
-  TNode<Oddball> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<HeapObject> tmp6;
+  TNode<HeapObject> tmp7;
   TNode<Object> tmp8;
   TNode<Object> tmp9;
   TNode<Uint8T> tmp10;
@@ -350,16 +355,17 @@ TNode<SmallOrderedHashMap> AllocateSmallOrderedHashMap_0(compiler::CodeAssembler
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
   TNode<BoolT> tmp31;
-  TNode<HeapObject> tmp32;
-  TNode<IntPtrT> tmp33;
+  TNode<BoolT> tmp32;
+  TNode<HeapObject> tmp33;
   TNode<IntPtrT> tmp34;
-  TNode<Uint8T> tmp35;
-  TNode<IntPtrT> tmp36;
-  TNode<Uint8T> tmp37;
-  TNode<IntPtrT> tmp38;
+  TNode<IntPtrT> tmp35;
+  TNode<Uint8T> tmp36;
+  TNode<IntPtrT> tmp37;
+  TNode<Uint8T> tmp38;
   TNode<IntPtrT> tmp39;
   TNode<IntPtrT> tmp40;
-  TNode<SmallOrderedHashMap> tmp41;
+  TNode<IntPtrT> tmp41;
+  TNode<SmallOrderedHashMap> tmp42;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kLoadFactor);
@@ -393,29 +399,30 @@ TNode<SmallOrderedHashMap> AllocateSmallOrderedHashMap_0(compiler::CodeAssembler
     tmp29 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp24}, TNode<IntPtrT>{tmp28}, kUInt8Size);
     tmp30 = AlignTagged_0(state_, TNode<IntPtrT>{tmp29});
     tmp31 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp32 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp30}, TNode<Map>{tmp2}, TNode<BoolT>{tmp31});
-    tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp32, tmp33}, tmp2);
-    tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    tmp35 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp32, tmp34}, tmp35);
-    tmp36 = FromConstexpr_intptr_constexpr_int31_0(state_, 5);
-    tmp37 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp32, tmp36}, tmp37);
-    tmp38 = FromConstexpr_intptr_constexpr_int31_0(state_, 6);
-    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp32, tmp38}, tmp3);
-    tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 7);
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp32}, TNode<IntPtrT>{tmp39}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
-    tmp40 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    InitializeFieldsFromIterator_HashMapEntry_ConstantIterator_HashMapEntry_0(state_, TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Object>{tmp32}, TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_HashMapEntry_0{TorqueStructHashMapEntry_0{TNode<Object>{tmp8}, TNode<Object>{tmp9}}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp32}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp23}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp32}, TNode<IntPtrT>{tmp24}, TNode<IntPtrT>{tmp28}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp13}});
-    tmp41 = TORQUE_CAST(TNode<HeapObject>{tmp32});
+    tmp32 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp33 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp30}, TNode<Map>{tmp2}, TNode<BoolT>{tmp31}, TNode<BoolT>{tmp32});
+    tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp33, tmp34}, tmp2);
+    tmp35 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
+    tmp36 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp33, tmp35}, tmp36);
+    tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 5);
+    tmp38 = FromConstexpr_uint8_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp33, tmp37}, tmp38);
+    tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 6);
+    CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp33, tmp39}, tmp3);
+    tmp40 = FromConstexpr_intptr_constexpr_int31_0(state_, 7);
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
+    tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    InitializeFieldsFromIterator_HashMapEntry_ConstantIterator_HashMapEntry_0(state_, TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp41}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_HashMapEntry_0{TorqueStructHashMapEntry_0{TNode<Object>{tmp8}, TNode<Object>{tmp9}}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp23}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp24}, TNode<IntPtrT>{tmp28}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp13}});
+    tmp42 = TORQUE_CAST(TNode<HeapObject>{tmp33});
     ca_.Goto(&block9);
   }
 
     ca_.Bind(&block9);
-  return TNode<SmallOrderedHashMap>{tmp41};
+  return TNode<SmallOrderedHashMap>{tmp42};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=102&c=1
@@ -2178,7 +2185,7 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(222), static_cast<InstanceType>(224))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(231), static_cast<InstanceType>(233))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2221,7 +2228,7 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(222));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(231));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2255,12 +2262,12 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(224), static_cast<InstanceType>(222))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(233), static_cast<InstanceType>(231))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(222));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(231));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2323,7 +2330,7 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(223), static_cast<InstanceType>(223))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(232), static_cast<InstanceType>(232))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2366,7 +2373,7 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(223));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(232));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2400,12 +2407,12 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(223), static_cast<InstanceType>(223))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(232), static_cast<InstanceType>(232))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(223));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(232));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2619,7 +2626,7 @@ TNode<SmallOrderedHashMap> DownCastForTorqueClass_SmallOrderedHashMap_0(compiler
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(222), static_cast<InstanceType>(222))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(231), static_cast<InstanceType>(231))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2662,7 +2669,7 @@ TNode<SmallOrderedHashMap> DownCastForTorqueClass_SmallOrderedHashMap_0(compiler
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(222));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(231));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2696,12 +2703,12 @@ TNode<SmallOrderedHashMap> DownCastForTorqueClass_SmallOrderedHashMap_0(compiler
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(222), static_cast<InstanceType>(222))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(231), static_cast<InstanceType>(231))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(222));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(231));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2853,7 +2860,7 @@ TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDiction
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(224), static_cast<InstanceType>(224))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(233), static_cast<InstanceType>(233))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2896,7 +2903,7 @@ TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDiction
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(224));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(233));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2930,12 +2937,12 @@ TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDiction
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(224), static_cast<InstanceType>(224))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(233), static_cast<InstanceType>(233))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(224));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(233));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});

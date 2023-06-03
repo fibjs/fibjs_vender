@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
@@ -69,7 +72,6 @@
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
-#include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
 #include "torque-generated/src/builtins/promise-all-tq-csa.h"
@@ -304,7 +306,7 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=88&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=89&c=1
 TNode<String> kThenString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -344,11 +346,9 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Object> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -412,7 +412,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     tmp7 = UnsafeCast_HeapObject_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
     tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp9 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp7, tmp8});
-    tmp10 = CodeStubAssembler(state_).IsJSReceiverMap(TNode<Map>{tmp9});
+    tmp10 = CodeStubAssembler(state_).JSAnyIsNotPrimitiveMap(TNode<Map>{tmp9});
     tmp11 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp10});
     ca_.Branch(tmp11, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
   }
@@ -467,7 +467,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp18 = ITERATOR_RESULT_MAP_INDEX_0(state_);
-    std::tie(tmp19, tmp20) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp18}).Flatten();
+    std::tie(tmp19, tmp20) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp18}).Flatten();
     tmp21 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp19, tmp20});
     tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp9}, TNode<HeapObject>{tmp21});
     ca_.Branch(tmp22, &block28, std::vector<compiler::Node*>{}, &block29, std::vector<compiler::Node*>{});
@@ -516,7 +516,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     tmp34 = CodeStubAssembler(state_).LoadReference<JSFunction>(CodeStubAssembler::Reference{tmp32, tmp33});
     tmp35 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{parameter0});
     tmp36 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp15}, TNode<HeapObject>{tmp35});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp36}, "static_assert(nativeContext == LoadNativeContext(context)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=159&c=7");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp36}, "static_assert(nativeContext == LoadNativeContext(context)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=160&c=7");
     ca_.Goto(&block7, tmp34);
   }
 
@@ -525,131 +525,70 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     ca_.Goto(&block9);
   }
 
-  TNode<BoolT> tmp37;
+  TNode<String> tmp37;
+  TNode<Object> tmp38;
+      TNode<Object> tmp40;
+  TNode<BoolT> tmp41;
+  TNode<BoolT> tmp42;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp37 = Is_WasmObject_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    ca_.Branch(tmp37, &block33, std::vector<compiler::Node*>{}, &block34, std::vector<compiler::Node*>{});
-  }
-
-  TNode<Oddball> tmp38;
-  if (block33.is_used()) {
-    ca_.Bind(&block33);
-    tmp38 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kFulfillPromise), parameter0, parameter1, parameter2);
-    CodeStubAssembler(state_).Return(tmp38);
-  }
-
-  TNode<String> tmp39;
-  TNode<Object> tmp40;
-      TNode<Object> tmp42;
-  TNode<BoolT> tmp43;
-  TNode<BoolT> tmp44;
-  if (block34.is_used()) {
-    ca_.Bind(&block34);
-    tmp39 = kThenString_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch41__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch41__label);
-    tmp40 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{tmp39});
+    tmp37 = kThenString_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch39__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch39__label);
+    tmp38 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{tmp37});
     }
-    if (catch41__label.is_used()) {
-      compiler::CodeAssemblerLabel catch41_skip(&ca_);
-      ca_.Goto(&catch41_skip);
-      ca_.Bind(&catch41__label, &tmp42);
-      ca_.Goto(&block37);
-      ca_.Bind(&catch41_skip);
+    if (catch39__label.is_used()) {
+      compiler::CodeAssemblerLabel catch39_skip(&ca_);
+      ca_.Goto(&catch39_skip);
+      ca_.Bind(&catch39__label, &tmp40);
+      ca_.Goto(&block35);
+      ca_.Bind(&catch39_skip);
     }
-    tmp43 = Is_Callable_Object_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp40});
-    tmp44 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp43});
-    ca_.Branch(tmp44, &block38, std::vector<compiler::Node*>{}, &block39, std::vector<compiler::Node*>{});
+    tmp41 = Is_Callable_Object_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp38});
+    tmp42 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp41});
+    ca_.Branch(tmp42, &block36, std::vector<compiler::Node*>{}, &block37, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp45;
+  TNode<HeapObject> tmp43;
+  TNode<Oddball> tmp44;
+  TNode<Object> tmp45;
+  if (block35.is_used()) {
+    ca_.Bind(&block35);
+    tmp43 = GetAndResetPendingMessage_0(state_);
+    tmp44 = False_0(state_);
+    tmp45 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kRejectPromise), parameter0, parameter1, tmp40, tmp44);
+    CodeStubAssembler(state_).Return(tmp45);
+  }
+
   TNode<Oddball> tmp46;
-  TNode<Object> tmp47;
+  if (block36.is_used()) {
+    ca_.Bind(&block36);
+    tmp46 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kFulfillPromise), parameter0, parameter1, parameter2);
+    CodeStubAssembler(state_).Return(tmp46);
+  }
+
   if (block37.is_used()) {
     ca_.Bind(&block37);
-    tmp45 = GetAndResetPendingMessage_0(state_);
-    tmp46 = False_0(state_);
-    tmp47 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kRejectPromise), parameter0, parameter1, tmp42, tmp46);
-    CodeStubAssembler(state_).Return(tmp47);
-  }
-
-  TNode<Oddball> tmp48;
-  if (block38.is_used()) {
-    ca_.Bind(&block38);
-    tmp48 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kFulfillPromise), parameter0, parameter1, parameter2);
-    CodeStubAssembler(state_).Return(tmp48);
-  }
-
-  if (block39.is_used()) {
-    ca_.Bind(&block39);
-    ca_.Goto(&block7, tmp40);
+    ca_.Goto(&block7, tmp38);
   }
 
   TNode<Object> phi_bb7_3;
-  TNode<JSReceiver> tmp49;
-  TNode<JSReceiver> tmp50;
-  TNode<PromiseResolveThenableJobTask> tmp51;
-  TNode<IntPtrT> tmp52;
-  TNode<Context> tmp53;
-  TNode<Oddball> tmp54;
+  TNode<JSReceiver> tmp47;
+  TNode<JSReceiver> tmp48;
+  TNode<PromiseResolveThenableJobTask> tmp49;
+  TNode<IntPtrT> tmp50;
+  TNode<Context> tmp51;
+  TNode<Oddball> tmp52;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_3);
-    tmp49 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    tmp50 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb7_3});
-    tmp51 = NewPromiseResolveThenableJobTask_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<JSReceiver>{tmp49}, TNode<JSReceiver>{tmp50});
-    tmp52 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp53 = CodeStubAssembler(state_).LoadReference<Context>(CodeStubAssembler::Reference{tmp51, tmp52});
-    tmp54 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), tmp53, tmp51);
-    CodeStubAssembler(state_).Return(tmp54);
+    tmp47 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp48 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb7_3});
+    tmp49 = NewPromiseResolveThenableJobTask_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<JSReceiver>{tmp47}, TNode<JSReceiver>{tmp48});
+    tmp50 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp51 = CodeStubAssembler(state_).LoadReference<Context>(CodeStubAssembler::Reference{tmp49, tmp50});
+    tmp52 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), tmp51, tmp49);
+    CodeStubAssembler(state_).Return(tmp52);
   }
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=166&c=9
-TNode<BoolT> Is_WasmObject_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<WasmObject> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_WasmObject_1(state_, TNode<Context>{p_context}, TNode<Object>{p_o}, &label1);
-    ca_.Goto(&block4);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block5);
-    }
-  }
-
-  TNode<BoolT> tmp2;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block1, tmp2);
-  }
-
-  TNode<BoolT> tmp3;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block1, tmp3);
-  }
-
-  TNode<BoolT> phi_bb1_2;
-  if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_2);
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<BoolT>{phi_bb1_2};
 }
 
 } // namespace internal

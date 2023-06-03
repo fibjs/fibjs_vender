@@ -99,11 +99,6 @@ inline TorqueGeneratedTemplateInfo<D, P>::TorqueGeneratedTemplateInfo(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsTemplateInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedTemplateInfo<D, P>::TorqueGeneratedTemplateInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTemplateInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=16&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedFunctionTemplateRareData<D, P>::prototype_template() const {
@@ -331,11 +326,6 @@ inline TorqueGeneratedFunctionTemplateRareData<D, P>::TorqueGeneratedFunctionTem
     : P(ptr) {
   SLOW_DCHECK(IsFunctionTemplateRareData_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedFunctionTemplateRareData<D, P>::TorqueGeneratedFunctionTemplateRareData(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFunctionTemplateRareData_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=44&c=36
 template<class D, class P>
 HeapObject TorqueGeneratedFunctionTemplateInfo<D, P>::call_code(AcquireLoadTag) const {
@@ -533,11 +523,6 @@ inline TorqueGeneratedFunctionTemplateInfo<D, P>::TorqueGeneratedFunctionTemplat
     : P(ptr) {
   SLOW_DCHECK(IsFunctionTemplateInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedFunctionTemplateInfo<D, P>::TorqueGeneratedFunctionTemplateInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFunctionTemplateInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=78&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedObjectTemplateInfo<D, P>::constructor() const {
@@ -586,9 +571,4 @@ template<class D, class P>
 inline TorqueGeneratedObjectTemplateInfo<D, P>::TorqueGeneratedObjectTemplateInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsObjectTemplateInfo_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedObjectTemplateInfo<D, P>::TorqueGeneratedObjectTemplateInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsObjectTemplateInfo_NonInline(*this));
 }

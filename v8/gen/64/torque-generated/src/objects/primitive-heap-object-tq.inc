@@ -46,8 +46,5 @@ class TorqueGeneratedPrimitiveHeapObject : public P {
 
  protected:
   inline explicit TorqueGeneratedPrimitiveHeapObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPrimitiveHeapObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

@@ -81,11 +81,6 @@ inline TorqueGeneratedJSRegExp<D, P>::TorqueGeneratedJSRegExp(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSRegExp_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSRegExp<D, P>::TorqueGeneratedJSRegExp(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSRegExp_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
 template<class D, class P>
 Object TorqueGeneratedJSRegExpResult<D, P>::index() const {
@@ -231,11 +226,6 @@ inline TorqueGeneratedJSRegExpResult<D, P>::TorqueGeneratedJSRegExpResult(Addres
     : P(ptr) {
   SLOW_DCHECK(IsJSArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSRegExpResult<D, P>::TorqueGeneratedJSRegExpResult(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArray_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
 template<class D, class P>
 Object TorqueGeneratedJSRegExpResultWithIndices<D, P>::indices() const {
@@ -271,11 +261,6 @@ inline TorqueGeneratedJSRegExpResultWithIndices<D, P>::TorqueGeneratedJSRegExpRe
     : P(ptr) {
   SLOW_DCHECK(IsJSArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSRegExpResultWithIndices<D, P>::TorqueGeneratedJSRegExpResultWithIndices(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArray_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
 template<class D, class P>
 Object TorqueGeneratedJSRegExpResultIndices<D, P>::groups() const {
@@ -310,9 +295,4 @@ template<class D, class P>
 inline TorqueGeneratedJSRegExpResultIndices<D, P>::TorqueGeneratedJSRegExpResultIndices(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSArray_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSRegExpResultIndices<D, P>::TorqueGeneratedJSRegExpResultIndices(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArray_NonInline(*this));
 }

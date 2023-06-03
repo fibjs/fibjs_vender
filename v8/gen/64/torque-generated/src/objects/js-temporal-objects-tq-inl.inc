@@ -23,11 +23,6 @@ inline TorqueGeneratedJSTemporalCalendar<D, P>::TorqueGeneratedJSTemporalCalenda
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalCalendar_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSTemporalCalendar<D, P>::TorqueGeneratedJSTemporalCalendar(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalCalendar_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
 template<class D, class P>
 Object TorqueGeneratedJSTemporalDuration<D, P>::years() const {
@@ -279,11 +274,6 @@ inline TorqueGeneratedJSTemporalDuration<D, P>::TorqueGeneratedJSTemporalDuratio
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalDuration_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSTemporalDuration<D, P>::TorqueGeneratedJSTemporalDuration(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalDuration_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
 template<class D, class P>
 BigInt TorqueGeneratedJSTemporalInstant<D, P>::nanoseconds() const {
@@ -318,11 +308,6 @@ template<class D, class P>
 inline TorqueGeneratedJSTemporalInstant<D, P>::TorqueGeneratedJSTemporalInstant(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalInstant_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSTemporalInstant<D, P>::TorqueGeneratedJSTemporalInstant(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalInstant_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=59&c=3
 template<class D, class P>
@@ -401,11 +386,6 @@ inline TorqueGeneratedJSTemporalPlainDateTime<D, P>::TorqueGeneratedJSTemporalPl
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalPlainDateTime_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSTemporalPlainDateTime<D, P>::TorqueGeneratedJSTemporalPlainDateTime(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalPlainDateTime_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=66&c=3
 template<class D, class P>
 int TorqueGeneratedJSTemporalPlainDate<D, P>::year_month_day() const {
@@ -455,11 +435,6 @@ inline TorqueGeneratedJSTemporalPlainDate<D, P>::TorqueGeneratedJSTemporalPlainD
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalPlainDate_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSTemporalPlainDate<D, P>::TorqueGeneratedJSTemporalPlainDate(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalPlainDate_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=71&c=3
 template<class D, class P>
 int TorqueGeneratedJSTemporalPlainMonthDay<D, P>::year_month_day() const {
@@ -508,11 +483,6 @@ template<class D, class P>
 inline TorqueGeneratedJSTemporalPlainMonthDay<D, P>::TorqueGeneratedJSTemporalPlainMonthDay(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalPlainMonthDay_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSTemporalPlainMonthDay<D, P>::TorqueGeneratedJSTemporalPlainMonthDay(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalPlainMonthDay_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=76&c=3
 template<class D, class P>
@@ -577,11 +547,6 @@ inline TorqueGeneratedJSTemporalPlainTime<D, P>::TorqueGeneratedJSTemporalPlainT
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalPlainTime_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSTemporalPlainTime<D, P>::TorqueGeneratedJSTemporalPlainTime(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalPlainTime_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=82&c=3
 template<class D, class P>
 int TorqueGeneratedJSTemporalPlainYearMonth<D, P>::year_month_day() const {
@@ -631,11 +596,6 @@ inline TorqueGeneratedJSTemporalPlainYearMonth<D, P>::TorqueGeneratedJSTemporalP
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalPlainYearMonth_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSTemporalPlainYearMonth<D, P>::TorqueGeneratedJSTemporalPlainYearMonth(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalPlainYearMonth_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=87&c=3
 template<class D, class P>
 int TorqueGeneratedJSTemporalTimeZone<D, P>::flags() const {
@@ -674,11 +634,6 @@ template<class D, class P>
 inline TorqueGeneratedJSTemporalTimeZone<D, P>::TorqueGeneratedJSTemporalTimeZone(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalTimeZone_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSTemporalTimeZone<D, P>::TorqueGeneratedJSTemporalTimeZone(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalTimeZone_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
 template<class D, class P>
@@ -762,9 +717,4 @@ template<class D, class P>
 inline TorqueGeneratedJSTemporalZonedDateTime<D, P>::TorqueGeneratedJSTemporalZonedDateTime(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSTemporalZonedDateTime_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSTemporalZonedDateTime<D, P>::TorqueGeneratedJSTemporalZonedDateTime(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSTemporalZonedDateTime_NonInline(*this));
 }

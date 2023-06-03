@@ -14,10 +14,11 @@
 #include "src/base/logging.h"
 #include "src/execution/isolate.h"
 #include "src/heap/cppgc-js/cpp-heap.h"
+#include "src/heap/cppgc-js/wrappable-info-inl.h"
+#include "src/heap/cppgc-js/wrappable-info.h"
 #include "src/heap/cppgc/heap-object-header.h"
 #include "src/heap/cppgc/heap-visitor.h"
 #include "src/heap/cppgc/visitor.h"
-#include "src/heap/embedder-tracing.h"
 #include "src/heap/mark-compact.h"
 #include "src/objects/js-objects.h"
 #include "src/profiler/heap-profiler.h"
@@ -36,8 +37,9 @@ using cppgc::internal::HeapObjectHeader;
 // Node representing a C++ object on the heap.
 class EmbedderNode : public v8::EmbedderGraph::Node {
  public:
-  EmbedderNode(cppgc::internal::HeapObjectName name, size_t size)
-      : name_(name), size_(size) {
+  EmbedderNode(const HeapObjectHeader* header_address,
+               cppgc::internal::HeapObjectName name, size_t size)
+      : header_address_(header_address), name_(name), size_(size) {
     USE(size_);
   }
   ~EmbedderNode() override = default;
@@ -74,7 +76,10 @@ class EmbedderNode : public v8::EmbedderGraph::Node {
     return named_edge_str;
   }
 
+  const void* GetAddress() override { return header_address_; }
+
  private:
+  const void* header_address_;
   cppgc::internal::HeapObjectName name_;
   size_t size_;
   Node* wrapper_node_ = nullptr;
@@ -82,11 +87,13 @@ class EmbedderNode : public v8::EmbedderGraph::Node {
   std::vector<std::unique_ptr<char[]>> named_edges_;
 };
 
+constexpr HeapObjectHeader* kNoNativeAddress = nullptr;
+
 // Node representing an artificial root group, e.g., set of Persistent handles.
 class EmbedderRootNode final : public EmbedderNode {
  public:
   explicit EmbedderRootNode(const char* name)
-      : EmbedderNode({name, false}, 0) {}
+      : EmbedderNode(kNoNativeAddress, {name, false}, 0) {}
   ~EmbedderRootNode() final = default;
 
   bool IsRootNode() final { return true; }
@@ -352,10 +359,8 @@ class StateStorage final {
   size_t state_count_ = 0;
 };
 
-void* ExtractEmbedderDataBackref(Isolate* isolate,
+void* ExtractEmbedderDataBackref(Isolate* isolate, CppHeap& cpp_heap,
                                  v8::Local<v8::Value> v8_value) {
-  // See LocalEmbedderHeapTracer::VerboseWrapperTypeInfo for details on how
-  // wrapper objects are set up.
   if (!v8_value->IsObject()) return nullptr;
 
   Handle<Object> v8_object = Utils::OpenHandle(*v8_value);
@@ -364,10 +369,10 @@ void* ExtractEmbedderDataBackref(Isolate* isolate,
     return nullptr;
 
   JSObject js_object = JSObject::cast(*v8_object);
-  return LocalEmbedderHeapTracer::VerboseWrapperInfo(
-             isolate->heap()->local_embedder_heap_tracer()->ExtractWrapperInfo(
-                 isolate, js_object))
-      .instance();
+
+  const auto maybe_info =
+      WrappableInfo::From(isolate, js_object, cpp_heap.wrapper_descriptor());
+  return maybe_info.has_value() ? maybe_info->instance : nullptr;
 }
 
 // The following implements a snapshotting algorithm for C++ objects that also
@@ -434,9 +439,9 @@ class CppGraphBuilderImpl final {
   }
 
   EmbedderNode* AddNode(const HeapObjectHeader& header) {
-    return static_cast<EmbedderNode*>(
-        graph_.AddNode(std::unique_ptr<v8::EmbedderGraph::Node>{
-            new EmbedderNode(header.GetName(), header.AllocatedSize())}));
+    return static_cast<EmbedderNode*>(graph_.AddNode(
+        std::unique_ptr<v8::EmbedderGraph::Node>{new EmbedderNode(
+            &header, header.GetName(), header.AllocatedSize())}));
   }
 
   void AddEdge(State& parent, const HeapObjectHeader& header,
@@ -488,7 +493,7 @@ class CppGraphBuilderImpl final {
 
       void* back_reference_object = ExtractEmbedderDataBackref(
           reinterpret_cast<v8::internal::Isolate*>(cpp_heap_.isolate()),
-          v8_value);
+          cpp_heap_, v8_value);
       if (back_reference_object) {
         auto& back_header = HeapObjectHeader::FromObject(back_reference_object);
         auto& back_state = states_.GetExistingState(back_header);

@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/call-site-info-tq-csa.h"
@@ -73,7 +76,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
 TNode<CallSiteInfo> Cast_CallSiteInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -109,7 +112,7 @@ TNode<CallSiteInfo> Cast_CallSiteInfo_0(compiler::CodeAssemblerState* state_, TN
   return TNode<CallSiteInfo>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 TNode<Object> LoadCallSiteInfoReceiverOrInstance_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -130,7 +133,7 @@ TNode<Object> LoadCallSiteInfoReceiverOrInstance_0(compiler::CodeAssemblerState*
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 void StoreCallSiteInfoReceiverOrInstance_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -149,7 +152,7 @@ void StoreCallSiteInfoReceiverOrInstance_0(compiler::CodeAssemblerState* state_,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 TNode<Object> LoadCallSiteInfoFunction_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -170,7 +173,7 @@ TNode<Object> LoadCallSiteInfoFunction_0(compiler::CodeAssemblerState* state_, T
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 void StoreCallSiteInfoFunction_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -189,7 +192,7 @@ void StoreCallSiteInfoFunction_0(compiler::CodeAssemblerState* state_, TNode<Cal
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 TNode<HeapObject> LoadCallSiteInfoCodeObject_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -210,7 +213,7 @@ TNode<HeapObject> LoadCallSiteInfoCodeObject_0(compiler::CodeAssemblerState* sta
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 void StoreCallSiteInfoCodeObject_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -229,7 +232,7 @@ void StoreCallSiteInfoCodeObject_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
 TNode<Smi> LoadCallSiteInfoCodeOffsetOrSourcePosition_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -250,7 +253,7 @@ TNode<Smi> LoadCallSiteInfoCodeOffsetOrSourcePosition_0(compiler::CodeAssemblerS
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
 void StoreCallSiteInfoCodeOffsetOrSourcePosition_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -269,7 +272,7 @@ void StoreCallSiteInfoCodeOffsetOrSourcePosition_0(compiler::CodeAssemblerState*
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 TNode<Smi> LoadCallSiteInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -290,7 +293,7 @@ TNode<Smi> LoadCallSiteInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 void StoreCallSiteInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -309,7 +312,7 @@ void StoreCallSiteInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<CallSi
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 TNode<FixedArray> LoadCallSiteInfoParameters_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -330,7 +333,7 @@ TNode<FixedArray> LoadCallSiteInfoParameters_0(compiler::CodeAssemblerState* sta
   return TNode<FixedArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 void StoreCallSiteInfoParameters_0(compiler::CodeAssemblerState* state_, TNode<CallSiteInfo> p_o, TNode<FixedArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -349,7 +352,7 @@ void StoreCallSiteInfoParameters_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
 TNode<CallSiteInfo> DownCastForTorqueClass_CallSiteInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

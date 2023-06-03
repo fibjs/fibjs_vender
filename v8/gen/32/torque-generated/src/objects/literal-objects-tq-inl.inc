@@ -47,11 +47,6 @@ inline TorqueGeneratedArrayBoilerplateDescription<D, P>::TorqueGeneratedArrayBoi
     : P(ptr) {
   SLOW_DCHECK(IsArrayBoilerplateDescription_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedArrayBoilerplateDescription<D, P>::TorqueGeneratedArrayBoilerplateDescription(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsArrayBoilerplateDescription_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=11&c=3
 template<class D, class P>
 FixedArray TorqueGeneratedRegExpBoilerplateDescription<D, P>::data() const {
@@ -124,9 +119,4 @@ template<class D, class P>
 inline TorqueGeneratedRegExpBoilerplateDescription<D, P>::TorqueGeneratedRegExpBoilerplateDescription(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsRegExpBoilerplateDescription_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedRegExpBoilerplateDescription<D, P>::TorqueGeneratedRegExpBoilerplateDescription(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsRegExpBoilerplateDescription_NonInline(*this));
 }

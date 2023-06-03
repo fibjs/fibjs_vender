@@ -57,8 +57,3 @@ inline TorqueGeneratedMegaDomHandler<D, P>::TorqueGeneratedMegaDomHandler(Addres
     : P(ptr) {
   SLOW_DCHECK(IsMegaDomHandler_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedMegaDomHandler<D, P>::TorqueGeneratedMegaDomHandler(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsMegaDomHandler_NonInline(*this));
-}

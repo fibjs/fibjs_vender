@@ -1,10 +1,10 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=68&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceCoverageInfoSlots(CoverageInfo p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
 inline intptr_t TqRuntimeConvert_intptr_int32_0(int32_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -13,7 +13,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(Integer
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=68&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_CoverageInfoSlot_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceCoverageInfoSlots
@@ -47,7 +47,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceCoverageInfoSlots(Cove
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -65,7 +65,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_int32_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_int32_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
 intptr_t TqRuntimeConvert_intptr_int32_0(int32_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -121,7 +121,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_CoverageInfoSlot
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -185,11 +185,6 @@ inline TorqueGeneratedBreakPoint<D, P>::TorqueGeneratedBreakPoint(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsBreakPoint_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedBreakPoint<D, P>::TorqueGeneratedBreakPoint(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsBreakPoint_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=12&c=3
 template<class D, class P>
 int TorqueGeneratedBreakPointInfo<D, P>::source_position() const {
@@ -238,11 +233,6 @@ template<class D, class P>
 inline TorqueGeneratedBreakPointInfo<D, P>::TorqueGeneratedBreakPointInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsBreakPointInfo_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedBreakPointInfo<D, P>::TorqueGeneratedBreakPointInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsBreakPointInfo_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=34&c=3
 template<class D, class P>
@@ -427,11 +417,6 @@ inline TorqueGeneratedDebugInfo<D, P>::TorqueGeneratedDebugInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsDebugInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedDebugInfo<D, P>::TorqueGeneratedDebugInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsDebugInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=67&c=9
 template<class D, class P>
 int32_t TorqueGeneratedCoverageInfo<D, P>::slot_count() const {
@@ -537,11 +522,6 @@ inline TorqueGeneratedCoverageInfo<D, P>::TorqueGeneratedCoverageInfo(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsCoverageInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedCoverageInfo<D, P>::TorqueGeneratedCoverageInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsCoverageInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=83&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedStackFrameInfo<D, P>::shared_or_script() const {
@@ -615,11 +595,6 @@ inline TorqueGeneratedStackFrameInfo<D, P>::TorqueGeneratedStackFrameInfo(Addres
     : P(ptr) {
   SLOW_DCHECK(IsStackFrameInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedStackFrameInfo<D, P>::TorqueGeneratedStackFrameInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsStackFrameInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=121&c=3
 template<class D, class P>
 Object TorqueGeneratedErrorStackData<D, P>::call_site_infos_or_formatted_stack() const {
@@ -679,11 +654,6 @@ inline TorqueGeneratedErrorStackData<D, P>::TorqueGeneratedErrorStackData(Addres
     : P(ptr) {
   SLOW_DCHECK(IsErrorStackData_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedErrorStackData<D, P>::TorqueGeneratedErrorStackData(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsErrorStackData_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=132&c=3
 template<class D, class P>
 Object TorqueGeneratedPromiseOnStack<D, P>::prev() const {
@@ -742,9 +712,4 @@ template<class D, class P>
 inline TorqueGeneratedPromiseOnStack<D, P>::TorqueGeneratedPromiseOnStack(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsPromiseOnStack_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedPromiseOnStack<D, P>::TorqueGeneratedPromiseOnStack(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPromiseOnStack_NonInline(*this));
 }

@@ -69,8 +69,5 @@ class TorqueGeneratedEmbedderDataArray : public P {
 
  protected:
   inline explicit TorqueGeneratedEmbedderDataArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedEmbedderDataArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

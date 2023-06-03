@@ -4,6 +4,7 @@
 
 #include "src/objects/string.h"
 
+#include "src/base/small-vector.h"
 #include "src/common/assert-scope.h"
 #include "src/common/globals.h"
 #include "src/execution/isolate-utils.h"
@@ -172,17 +173,6 @@ void MigrateExternalString(Isolate* isolate, String string,
   }
 }
 
-template <typename IsolateT>
-Map ComputeThinStringMap(IsolateT* isolate, StringShape from_string_shape,
-                         bool one_byte) {
-  ReadOnlyRoots roots(isolate);
-  if (from_string_shape.IsShared()) {
-    return one_byte ? roots.shared_thin_one_byte_string_map()
-                    : roots.shared_thin_string_map();
-  }
-  return one_byte ? roots.thin_one_byte_string_map() : roots.thin_string_map();
-}
-
 void InitExternalPointerFieldsDuringExternalization(String string, Map new_map,
                                                     Isolate* isolate) {
   string.InitExternalPointerField<kExternalStringResourceTag>(
@@ -198,9 +188,7 @@ void InitExternalPointerFieldsDuringExternalization(String string, Map new_map,
 }  // namespace
 
 template <typename IsolateT>
-void String::MakeThin(
-    IsolateT* isolate, String internalized,
-    UpdateInvalidatedObjectSize update_invalidated_object_size) {
+void String::MakeThin(IsolateT* isolate, String internalized) {
   DisallowGarbageCollection no_gc;
   DCHECK_NE(*this, internalized);
   DCHECK(internalized.IsInternalizedString());
@@ -222,8 +210,7 @@ void String::MakeThin(
 
   bool may_contain_recorded_slots = initial_shape.IsIndirect();
   int old_size = SizeFromMap(initial_map);
-  Map target_map = ComputeThinStringMap(isolate, initial_shape,
-                                        internalized.IsOneByteRepresentation());
+  Map target_map = ReadOnlyRoots(isolate).thin_string_map();
   if (initial_shape.IsExternal()) {
     // Notify GC about the layout change before the transition to avoid
     // concurrent marking from observing any in-between state (e.g.
@@ -234,12 +221,6 @@ void String::MakeThin(
     isolate->AsIsolate()->heap()->NotifyObjectLayoutChange(
         *this, no_gc, InvalidateRecordedSlots::kYes, ThinString::kSize);
     MigrateExternalString(isolate->AsIsolate(), *this, internalized);
-
-    // Conservatively assume ExternalStrings may have recorded slots, because
-    // they could have been transitioned from ConsStrings without having had the
-    // recorded slots cleared.
-    // TODO(v8:13374): Fix this more uniformly.
-    may_contain_recorded_slots = true;
   }
 
   // Update actual first and then do release store on the map word. This ensures
@@ -247,11 +228,6 @@ void String::MakeThin(
   // ThinString.
   ThinString thin = ThinString::unchecked_cast(*this);
   thin.set_actual(internalized);
-  if (initial_shape.IsExternal()) {
-    set_map(target_map, kReleaseStore);
-  } else {
-    set_map_safe_transition(target_map, kReleaseStore);
-  }
 
   DCHECK_GE(old_size, ThinString::kSize);
   int size_delta = old_size - ThinString::kSize;
@@ -260,8 +236,7 @@ void String::MakeThin(
       isolate->heap()->NotifyObjectSizeChange(thin, old_size, ThinString::kSize,
                                               may_contain_recorded_slots
                                                   ? ClearRecordedSlots::kYes
-                                                  : ClearRecordedSlots::kNo,
-                                              update_invalidated_object_size);
+                                                  : ClearRecordedSlots::kNo);
     } else {
       // We don't need special handling for the combination IsLargeObject &&
       // may_contain_recorded_slots, because indirect strings never get that
@@ -269,14 +244,18 @@ void String::MakeThin(
       DCHECK(!may_contain_recorded_slots);
     }
   }
+
+  if (initial_shape.IsExternal()) {
+    set_map(target_map, kReleaseStore);
+  } else {
+    set_map_safe_transition(target_map, kReleaseStore);
+  }
 }
 
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::MakeThin(
-    Isolate* isolate, String internalized,
-    UpdateInvalidatedObjectSize update_invalidated_object_size);
+    Isolate* isolate, String internalized);
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::MakeThin(
-    LocalIsolate* isolate, String internalized,
-    UpdateInvalidatedObjectSize update_invalidated_object_size);
+    LocalIsolate* isolate, String internalized);
 
 template <typename T>
 bool String::MarkForExternalizationDuringGC(Isolate* isolate, T* resource) {
@@ -377,12 +356,13 @@ void String::MakeExternalDuringGC(Isolate* isolate, T* resource) {
   // Byte size of the external String object.
   int new_size = this->SizeFromMap(new_map);
 
-  // Shared strings are never indirect or large.
-  DCHECK(!isolate->heap()->IsLargeObject(*this));
+  // Shared strings are never indirect.
   DCHECK(!StringShape(*this).IsIndirect());
 
-  isolate->heap()->NotifyObjectSizeChange(*this, size, new_size,
-                                          ClearRecordedSlots::kNo);
+  if (!isolate->heap()->IsLargeObject(*this)) {
+    isolate->heap()->NotifyObjectSizeChange(*this, size, new_size,
+                                            ClearRecordedSlots::kNo);
+  }
 
   // The external pointer slots must be initialized before the new map is
   // installed. Otherwise, a GC marking thread may see the new map before the
@@ -417,7 +397,8 @@ bool String::MakeExternal(v8::String::ExternalStringResource* resource) {
 
   // Externalizing twice leaks the external resource, so it's
   // prohibited by the API.
-  DCHECK(this->SupportsExternalization());
+  DCHECK(
+      this->SupportsExternalization(v8::String::Encoding::TWO_BYTE_ENCODING));
   DCHECK(resource->IsCacheable());
 #ifdef ENABLE_SLOW_DCHECKS
   if (v8_flags.enable_slow_asserts) {
@@ -496,7 +477,8 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
 
   // Externalizing twice leaks the external resource, so it's
   // prohibited by the API.
-  DCHECK(this->SupportsExternalization());
+  DCHECK(
+      this->SupportsExternalization(v8::String::Encoding::ONE_BYTE_ENCODING));
   DCHECK(resource->IsCacheable());
 #ifdef ENABLE_SLOW_DCHECKS
   if (v8_flags.enable_slow_asserts) {
@@ -542,10 +524,10 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
     int new_size = this->SizeFromMap(new_map);
 
     if (has_pointers) {
+      DCHECK(!InWritableSharedSpace());
       isolate->heap()->NotifyObjectLayoutChange(
           *this, no_gc, InvalidateRecordedSlots::kYes, new_size);
     }
-
     isolate->heap()->NotifyObjectSizeChange(
         *this, size, new_size,
         has_pointers ? ClearRecordedSlots::kYes : ClearRecordedSlots::kNo);
@@ -574,18 +556,14 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
   return true;
 }
 
-bool String::SupportsExternalization() {
+bool String::SupportsExternalization(v8::String::Encoding encoding) {
   if (this->IsThinString()) {
-    return i::ThinString::cast(*this).actual().SupportsExternalization();
+    return i::ThinString::cast(*this).actual().SupportsExternalization(
+        encoding);
   }
 
   // RO_SPACE strings cannot be externalized.
   if (IsReadOnlyHeapObject(*this)) {
-    return false;
-  }
-
-  // Already an external string.
-  if (StringShape(*this).IsExternal()) {
     return false;
   }
 
@@ -596,8 +574,18 @@ bool String::SupportsExternalization() {
   DCHECK_LE(ExternalString::kUncachedSize, this->Size());
 #endif
 
-  Isolate* isolate = GetIsolateFromWritableObject(*this);
-  return !isolate->heap()->IsInGCPostProcessing();
+  StringShape shape(*this);
+
+  // Already an external string.
+  if (shape.IsExternal()) {
+    return false;
+  }
+
+  // Encoding changes are not supported.
+  static_assert(kStringEncodingMask == 1 << 3);
+  static_assert(v8::String::Encoding::ONE_BYTE_ENCODING == 1 << 3);
+  static_assert(v8::String::Encoding::TWO_BYTE_ENCODING == 0);
+  return shape.encoding_tag() == static_cast<uint32_t>(encoding);
 }
 
 const char* String::PrefixForDebugPrint() const {
@@ -979,8 +967,7 @@ void String::WriteToFlat(String source, sinkchar* sink, int start, int length,
         start += offset;
         continue;
       }
-      case kOneByteStringTag | kThinStringTag:
-      case kTwoByteStringTag | kThinStringTag:
+      case kThinStringTag:
         source = ThinString::cast(source).actual(cage_base);
         continue;
     }
@@ -989,10 +976,14 @@ void String::WriteToFlat(String source, sinkchar* sink, int start, int length,
   UNREACHABLE();
 }
 
+namespace {
+static int constexpr kInlineLineEndsSize = 32;
+}
+
 template <typename SourceChar>
-static void CalculateLineEndsImpl(std::vector<int>* line_ends,
-                                  base::Vector<const SourceChar> src,
-                                  bool include_ending_line) {
+static void CalculateLineEndsImpl(
+    base::SmallVector<int32_t, kInlineLineEndsSize>* line_ends,
+    base::Vector<const SourceChar> src, bool include_ending_line) {
   const int src_len = src.length();
   for (int i = 0; i < src_len - 1; i++) {
     SourceChar current = src[i];
@@ -1016,12 +1007,12 @@ Handle<FixedArray> String::CalculateLineEnds(IsolateT* isolate,
                                              bool include_ending_line) {
   src = Flatten(isolate, src);
   // Rough estimate of line count based on a roughly estimated average
-  // length of (unpacked) code.
-  int line_count_estimate = src->length() >> 4;
-  std::vector<int> line_ends;
-  line_ends.reserve(line_count_estimate);
+  // length of packed code. Most scripts have < 32 lines.
+  int line_count_estimate = (src->length() >> 6) + 16;
+  base::SmallVector<int32_t, kInlineLineEndsSize> line_ends;
+  line_ends.reserve_no_init(line_count_estimate);
   {
-    DisallowGarbageCollection no_gc;  // ensure vectors stay valid.
+    DisallowGarbageCollection no_gc;
     // Dispatch on type of strings.
     String::FlatContent content = src->GetFlatContent(no_gc);
     DCHECK(content.IsFlat());
@@ -1036,8 +1027,12 @@ Handle<FixedArray> String::CalculateLineEnds(IsolateT* isolate,
   int line_count = static_cast<int>(line_ends.size());
   Handle<FixedArray> array =
       isolate->factory()->NewFixedArray(line_count, AllocationType::kOld);
-  for (int i = 0; i < line_count; i++) {
-    array->set(i, Smi::FromInt(line_ends[i]));
+  {
+    DisallowGarbageCollection no_gc;
+    auto raw_array = *array;
+    for (int i = 0; i < line_count; i++) {
+      raw_array.set(i, Smi::FromInt(line_ends[i]));
+    }
   }
   return array;
 }
@@ -1607,7 +1602,7 @@ bool String::HasOneBytePrefix(base::Vector<const char> str) {
 namespace {
 
 template <typename Char>
-bool IsIdentifierVector(const base::Vector<Char>& vec) {
+bool IsIdentifierVector(base::Vector<Char> vec) {
   if (vec.empty()) {
     return false;
   }
@@ -1656,7 +1651,8 @@ uint32_t HashString(String string, size_t start, int length, uint64_t seed,
                         access_guard);
     chars = buffer.get();
   } else {
-    chars = string.GetChars<Char>(cage_base, no_gc, access_guard) + start;
+    chars = string.GetDirectStringChars<Char>(cage_base, no_gc, access_guard) +
+            start;
   }
 
   return StringHasher::HashSequentialString<Char>(chars, length, seed);
@@ -1681,7 +1677,7 @@ uint32_t String::ComputeAndSetRawHash(
   DCHECK_IMPLIES(!v8_flags.shared_string_table, !HasHashCode());
 
   // Store the hash code in the object.
-  uint64_t seed = HashSeed(GetReadOnlyRoots());
+  uint64_t seed = HashSeed(EarlyGetReadOnlyRoots());
   size_t start = 0;
   String string = *this;
   PtrComprCageBase cage_base = GetPtrComprCageBase(string);
@@ -1764,7 +1760,8 @@ void String::PrintOn(std::ostream& ostream) {
   }
 }
 
-Handle<String> SeqString::Truncate(Handle<SeqString> string, int new_length) {
+Handle<String> SeqString::Truncate(Isolate* isolate, Handle<SeqString> string,
+                                   int new_length) {
   if (new_length == 0) return string->GetReadOnlyRoots().empty_string_handle();
 
   int new_size, old_size;
@@ -1786,16 +1783,19 @@ Handle<String> SeqString::Truncate(Handle<SeqString> string, int new_length) {
   DCHECK(IsAligned(start_of_string + new_size, kObjectAlignment));
 #endif
 
-  Heap* heap = Heap::FromWritableHeapObject(*string);
+  Heap* heap = isolate->heap();
   if (!heap->IsLargeObject(*string)) {
     // Sizes are pointer size aligned, so that we can use filler objects
     // that are a multiple of pointer size.
+    // No slot invalidation needed since this method is only used on freshly
+    // allocated strings.
     heap->NotifyObjectSizeChange(*string, old_size, new_size,
                                  ClearRecordedSlots::kNo);
   }
   // We are storing the new length using release store after creating a filler
   // for the left-over space to avoid races with the sweeper thread.
   string->set_length(new_length, kReleaseStore);
+  string->ClearPadding();
 
   return string;
 }
@@ -1819,6 +1819,25 @@ SeqString::DataAndPaddingSizes SeqTwoByteString::GetDataAndPaddingSizes()
   int data_size = SeqString::kHeaderSize + length() * base::kUC16Size;
   int padding_size = SizeFor(length()) - data_size;
   return DataAndPaddingSizes{data_size, padding_size};
+}
+
+#ifdef VERIFY_HEAP
+V8_EXPORT_PRIVATE void SeqString::SeqStringVerify(Isolate* isolate) {
+  TorqueGeneratedSeqString<SeqString, String>::SeqStringVerify(isolate);
+  DataAndPaddingSizes sz = GetDataAndPaddingSizes();
+  auto padding = reinterpret_cast<char*>(address() + sz.data_size);
+  CHECK(sz.padding_size <= kTaggedSize);
+  for (int i = 0; i < sz.padding_size; ++i) {
+    CHECK_EQ(padding[i], 0);
+  }
+}
+#endif  // VERIFY_HEAP
+
+void SeqString::ClearPadding() {
+  DataAndPaddingSizes sz = GetDataAndPaddingSizes();
+  DCHECK_EQ(address() + sz.data_size + sz.padding_size, address() + Size());
+  if (sz.padding_size == 0) return;
+  memset(reinterpret_cast<void*>(address() + sz.data_size), 0, sz.padding_size);
 }
 
 uint16_t ConsString::Get(
@@ -2024,7 +2043,7 @@ String ConsStringIterator::NextLeaf(bool* blew_stack) {
   UNREACHABLE();
 }
 
-const byte* String::AddressOfCharacterAt(
+const uint8_t* String::AddressOfCharacterAt(
     int start_index, const DisallowGarbageCollection& no_gc) {
   DCHECK(IsFlat());
   String subject = *this;
@@ -2046,17 +2065,17 @@ const byte* String::AddressOfCharacterAt(
   CHECK_LE(start_index, subject.length());
   switch (shape.representation_and_encoding_tag()) {
     case kOneByteStringTag | kSeqStringTag:
-      return reinterpret_cast<const byte*>(
+      return reinterpret_cast<const uint8_t*>(
           SeqOneByteString::cast(subject).GetChars(no_gc) + start_index);
     case kTwoByteStringTag | kSeqStringTag:
-      return reinterpret_cast<const byte*>(
+      return reinterpret_cast<const uint8_t*>(
           SeqTwoByteString::cast(subject).GetChars(no_gc) + start_index);
     case kOneByteStringTag | kExternalStringTag:
-      return reinterpret_cast<const byte*>(
+      return reinterpret_cast<const uint8_t*>(
           ExternalOneByteString::cast(subject).GetChars(cage_base) +
           start_index);
     case kTwoByteStringTag | kExternalStringTag:
-      return reinterpret_cast<const byte*>(
+      return reinterpret_cast<const uint8_t*>(
           ExternalTwoByteString::cast(subject).GetChars(cage_base) +
           start_index);
     default:

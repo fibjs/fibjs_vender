@@ -23,8 +23,3 @@ inline TorqueGeneratedPropertyArray<D, P>::TorqueGeneratedPropertyArray(Address 
     : P(ptr) {
   SLOW_DCHECK(IsPropertyArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedPropertyArray<D, P>::TorqueGeneratedPropertyArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPropertyArray_NonInline(*this));
-}

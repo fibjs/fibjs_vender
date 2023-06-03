@@ -1,11 +1,11 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
 template<class D, class P>
 Object TorqueGeneratedDataHandler<D, P>::smi_handler() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDataHandler::smi_handler(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
 template<class D, class P>
 Object TorqueGeneratedDataHandler<D, P>::smi_handler(PtrComprCageBase cage_base) const {
   Object value;
@@ -14,7 +14,7 @@ Object TorqueGeneratedDataHandler<D, P>::smi_handler(PtrComprCageBase cage_base)
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedDataHandler<D, P>::set_smi_handler(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsSmi() || value.IsCode());
@@ -22,14 +22,14 @@ void TorqueGeneratedDataHandler<D, P>::set_smi_handler(Object value, WriteBarrie
   CONDITIONAL_WRITE_BARRIER(*this, kSmiHandlerOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
 template<class D, class P>
 Object TorqueGeneratedDataHandler<D, P>::validity_cell() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDataHandler::validity_cell(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
 template<class D, class P>
 Object TorqueGeneratedDataHandler<D, P>::validity_cell(PtrComprCageBase cage_base) const {
   Object value;
@@ -38,7 +38,7 @@ Object TorqueGeneratedDataHandler<D, P>::validity_cell(PtrComprCageBase cage_bas
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
 template<class D, class P>
 void TorqueGeneratedDataHandler<D, P>::set_validity_cell(Object value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsSmi() || value.IsCell());
@@ -46,14 +46,14 @@ void TorqueGeneratedDataHandler<D, P>::set_validity_cell(Object value, WriteBarr
   CONDITIONAL_WRITE_BARRIER(*this, kValidityCellOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDataHandler<D, P>::data1() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDataHandler::data1(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDataHandler<D, P>::data1(PtrComprCageBase cage_base) const {
   MaybeObject value;
@@ -62,7 +62,7 @@ MaybeObject TorqueGeneratedDataHandler<D, P>::data1(PtrComprCageBase cage_base) 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
 template<class D, class P>
 void TorqueGeneratedDataHandler<D, P>::set_data1(MaybeObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
@@ -70,14 +70,14 @@ void TorqueGeneratedDataHandler<D, P>::set_data1(MaybeObject value, WriteBarrier
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kData1Offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDataHandler<D, P>::data2() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDataHandler::data2(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDataHandler<D, P>::data2(PtrComprCageBase cage_base) const {
   MaybeObject value;
@@ -86,7 +86,7 @@ MaybeObject TorqueGeneratedDataHandler<D, P>::data2(PtrComprCageBase cage_base) 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedDataHandler<D, P>::set_data2(MaybeObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
@@ -94,14 +94,14 @@ void TorqueGeneratedDataHandler<D, P>::set_data2(MaybeObject value, WriteBarrier
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kData2Offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDataHandler<D, P>::data3() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDataHandler::data3(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDataHandler<D, P>::data3(PtrComprCageBase cage_base) const {
   MaybeObject value;
@@ -110,7 +110,7 @@ MaybeObject TorqueGeneratedDataHandler<D, P>::data3(PtrComprCageBase cage_base) 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedDataHandler<D, P>::set_data3(MaybeObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
@@ -128,9 +128,4 @@ template<class D, class P>
 inline TorqueGeneratedDataHandler<D, P>::TorqueGeneratedDataHandler(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsDataHandler_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedDataHandler<D, P>::TorqueGeneratedDataHandler(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsDataHandler_NonInline(*this));
 }

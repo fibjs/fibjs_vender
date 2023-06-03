@@ -11,7 +11,6 @@ V(STRONG_DESCRIPTOR_ARRAY_TYPE,StrongDescriptorArray)\
 V(FEEDBACK_VECTOR_TYPE,FeedbackVector)\
 V(WEAK_ARRAY_LIST_TYPE,WeakArrayList)\
 V(MEGA_DOM_HANDLER_TYPE,MegaDomHandler)\
-V(SHARED_FUNCTION_INFO_TYPE,SharedFunctionInfo)\
 V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE,UncompiledDataWithoutPreparseData)\
 V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE,UncompiledDataWithPreparseData)\
 V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_WITH_JOB_TYPE,UncompiledDataWithoutPreparseDataWithJob)\
@@ -22,6 +21,15 @@ V(TURBOFAN_UNION_TYPE_TYPE,TurbofanUnionType)\
 V(TURBOFAN_RANGE_TYPE_TYPE,TurbofanRangeType)\
 V(TURBOFAN_HEAP_CONSTANT_TYPE_TYPE,TurbofanHeapConstantType)\
 V(TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE,TurbofanOtherNumberConstantType)\
+V(TURBOSHAFT_WORD32_TYPE_TYPE,TurboshaftWord32Type)\
+V(TURBOSHAFT_WORD32_RANGE_TYPE_TYPE,TurboshaftWord32RangeType)\
+V(TURBOSHAFT_WORD32_SET_TYPE_TYPE,TurboshaftWord32SetType)\
+V(TURBOSHAFT_WORD64_TYPE_TYPE,TurboshaftWord64Type)\
+V(TURBOSHAFT_WORD64_RANGE_TYPE_TYPE,TurboshaftWord64RangeType)\
+V(TURBOSHAFT_WORD64_SET_TYPE_TYPE,TurboshaftWord64SetType)\
+V(TURBOSHAFT_FLOAT64_TYPE_TYPE,TurboshaftFloat64Type)\
+V(TURBOSHAFT_FLOAT64_RANGE_TYPE_TYPE,TurboshaftFloat64RangeType)\
+V(TURBOSHAFT_FLOAT64_SET_TYPE_TYPE,TurboshaftFloat64SetType)\
 V(INTERNAL_CLASS_TYPE,InternalClass)\
 V(SMI_PAIR_TYPE,SmiPair)\
 V(SMI_BOX_TYPE,SmiBox)\
@@ -36,6 +44,22 @@ V(SORT_STATE_TYPE,SortState)\
 V(WASM_STRING_VIEW_ITER_TYPE,WasmStringViewIter)\
 
 #define TORQUE_DATA_ONLY_VISITOR_ID_LIST(V)\
+V(SeqOneByteString)\
+V(SeqTwoByteString)\
+V(TurbofanBitsetType)\
+V(TurbofanRangeType)\
+V(TurbofanOtherNumberConstantType)\
+V(TurboshaftWord32Type)\
+V(TurboshaftWord32RangeType)\
+V(TurboshaftWord32SetType)\
+V(TurboshaftWord64Type)\
+V(TurboshaftWord64RangeType)\
+V(TurboshaftWord64SetType)\
+V(TurboshaftFloat64Type)\
+V(TurboshaftFloat64RangeType)\
+V(TurboshaftFloat64SetType)\
+V(AbstractInternalClassSubclass1)\
+V(AbstractInternalClassSubclass2)\
 
 #define TORQUE_POINTER_VISITOR_ID_LIST(V)\
 V(Context)\
@@ -48,29 +72,21 @@ V(StrongDescriptorArray)\
 V(FeedbackVector)\
 V(WeakArrayList)\
 V(MegaDomHandler)\
-V(SharedFunctionInfo)\
 V(UncompiledDataWithoutPreparseData)\
 V(UncompiledDataWithPreparseData)\
 V(UncompiledDataWithoutPreparseDataWithJob)\
 V(UncompiledDataWithPreparseDataAndJob)\
 V(OnHeapBasicBlockProfilerData)\
 V(ConsString)\
-V(SeqOneByteString)\
-V(SeqTwoByteString)\
 V(SlicedString)\
 V(ThinString)\
-V(TurbofanBitsetType)\
 V(TurbofanUnionType)\
-V(TurbofanRangeType)\
 V(TurbofanHeapConstantType)\
-V(TurbofanOtherNumberConstantType)\
 V(InternalClass)\
 V(SmiPair)\
 V(SmiBox)\
 V(ExportedSubClassBase)\
 V(ExportedSubClass)\
-V(AbstractInternalClassSubclass1)\
-V(AbstractInternalClassSubclass2)\
 V(InternalClassWithSmiElements)\
 V(InternalClassWithStructElements)\
 V(ExportedSubClass2)\

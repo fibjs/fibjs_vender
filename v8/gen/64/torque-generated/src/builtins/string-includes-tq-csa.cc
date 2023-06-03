@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-includes-tq-csa.h"
@@ -151,7 +154,7 @@ TF_BUILTIN(StringPrototypeIncludes, CodeStubAssembler) {
   TNode<BoolT> tmp17;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_10);
-    tmp15 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), parameter0, tmp5, tmp7, phi_bb4_10);
+    tmp15 = ca_.CallStub<Smi>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringIndexOf), TNode<Object>(), tmp5, tmp7, phi_bb4_10);
     tmp16 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp17 = CodeStubAssembler(state_).SmiNotEqual(TNode<Smi>{tmp15}, TNode<Smi>{tmp16});
     ca_.Branch(tmp17, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});

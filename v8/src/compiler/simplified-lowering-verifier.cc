@@ -408,7 +408,6 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
           default:
             UNREACHABLE();
         }
-        CheckType(node, output_type);
       }
 
       if (p.override_output_type()) {
@@ -493,7 +492,6 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
       CASE(Projection)
       CASE(Retain)
       CASE(MapGuard)
-      CASE(FoldConstant)
       CASE(Unreachable)
       CASE(Dead)
       CASE(Plug)
@@ -610,6 +608,7 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
       CASE(Load)
       CASE(LoadImmutable)
       CASE(Store)
+      CASE(StorePair)
       CASE(StackSlot)
       CASE(Word32Popcnt)
       CASE(Word64Popcnt)
@@ -668,6 +667,7 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
       CASE(LoadStackCheckOffset)
       CASE(LoadFramePointer)
       CASE(LoadParentFramePointer)
+      CASE(LoadRootRegister)
       CASE(UnalignedLoad)
       CASE(UnalignedStore)
       CASE(Int32PairAdd)
@@ -678,6 +678,8 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
       CASE(Word32PairSar)
       CASE(ProtectedLoad)
       CASE(ProtectedStore)
+      CASE(LoadTrapOnNull)
+      CASE(StoreTrapOnNull)
       CASE(MemoryBarrier)
       CASE(SignExtendWord8ToInt32)
       CASE(SignExtendWord16ToInt32)
@@ -720,7 +722,8 @@ void SimplifiedLoweringVerifier::VisitNode(Node* node,
         // TODO(nicohartmann@): These operators might need to be supported.
         break;
       }
-      MACHINE_SIMD_OP_LIST(CASE)
+      MACHINE_SIMD128_OP_LIST(CASE)
+      MACHINE_SIMD256_OP_LIST(CASE)
       IF_WASM(SIMPLIFIED_WASM_OP_LIST, CASE) {
         // SIMD operators should not be in the graph, yet.
         UNREACHABLE();

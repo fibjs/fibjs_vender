@@ -50,18 +50,18 @@ public:
     {
     }
 
-    void saveStackGuard()
+    void save_stack_start()
     {
-        assert(m_stackguard == 0);
+        assert(m_stack_start == 0);
 
         intptr_t stack_value;
-        m_stackguard = (intptr_t)&stack_value + sizeof(stack_value) * 6;
+        m_stack_start = (intptr_t)&stack_value + sizeof(stack_value) * 6;
     }
 
-    intptr_t stackguard()
+    intptr_t stack_start()
     {
-        assert(m_stackguard != 0);
-        return m_stackguard;
+        assert(m_stack_start != 0);
+        return m_stack_start;
     }
 
     static Thread_base* current();
@@ -87,7 +87,7 @@ public:
     void* m_tls[TLS_SIZE];
 
 private:
-    intptr_t m_stackguard;
+    intptr_t m_stack_start;
     atomic refs_;
 };
 

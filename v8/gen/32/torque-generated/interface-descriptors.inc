@@ -243,6 +243,97 @@ class BigIntBitwiseAndDescriptor : public StaticCallInterfaceDescriptor<BigIntBi
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseAndDescriptor)
 };
 
+class BigIntBitwiseOrNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseOrNoThrowDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseOrNoThrowDescriptor)
+};
+
+class BigIntBitwiseOrDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseOrDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseOrDescriptor)
+};
+
+class BigIntBitwiseXorNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseXorNoThrowDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseXorNoThrowDescriptor)
+};
+
+class BigIntBitwiseXorDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseXorDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseXorDescriptor)
+};
+
+class BigIntShiftLeftNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftLeftNoThrowDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftLeftNoThrowDescriptor)
+};
+
+class BigIntShiftLeftDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftLeftDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftLeftDescriptor)
+};
+
+class BigIntShiftRightNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftRightNoThrowDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftRightNoThrowDescriptor)
+};
+
+class BigIntShiftRightDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftRightDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftRightDescriptor)
+};
+
+class BigIntEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntEqualDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntEqualDescriptor)
+};
+
+class BigIntLessThanDescriptor : public StaticCallInterfaceDescriptor<BigIntLessThanDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntLessThanDescriptor)
+};
+
+class BigIntGreaterThanDescriptor : public StaticCallInterfaceDescriptor<BigIntGreaterThanDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntGreaterThanDescriptor)
+};
+
+class BigIntLessThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntLessThanOrEqualDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntLessThanOrEqualDescriptor)
+};
+
+class BigIntGreaterThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntGreaterThanOrEqualDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(BigIntGreaterThanOrEqualDescriptor)
+};
+
 class BigIntUnaryMinusDescriptor : public StaticCallInterfaceDescriptor<BigIntUnaryMinusDescriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS(1, kBigint)
@@ -343,7 +434,7 @@ class CreateEmptyLiteralObjectDescriptor : public StaticCallInterfaceDescriptor<
 
 class StringToNumberDescriptor : public StaticCallInterfaceDescriptor<StringToNumberDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kInput)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(StringToNumberDescriptor)
 };
@@ -371,7 +462,7 @@ class ToNumericDescriptor : public StaticCallInterfaceDescriptor<ToNumericDescri
 
 class NumberToStringDescriptor : public StaticCallInterfaceDescriptor<NumberToStringDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kInput)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(NumberToStringDescriptor)
 };
@@ -439,6 +530,13 @@ class OrdinaryToPrimitive_NumberDescriptor : public StaticCallInterfaceDescripto
   DECLARE_DEFAULT_DESCRIPTOR(OrdinaryToPrimitive_NumberDescriptor)
 };
 
+class OrdinaryToPrimitive_Number_InlineDescriptor : public StaticCallInterfaceDescriptor<OrdinaryToPrimitive_Number_InlineDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kInput)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(OrdinaryToPrimitive_Number_InlineDescriptor)
+};
+
 class OrdinaryToPrimitive_StringDescriptor : public StaticCallInterfaceDescriptor<OrdinaryToPrimitive_StringDescriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
@@ -500,6 +598,41 @@ class CallIteratorWithFeedbackDescriptor : public StaticCallInterfaceDescriptor<
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kIteratorMethod, kCallSlot, kFeedback)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(CallIteratorWithFeedbackDescriptor)
+};
+
+class IteratorMapHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorMapHelperNextDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(IteratorMapHelperNextDescriptor)
+};
+
+class IteratorFilterHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorFilterHelperNextDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(IteratorFilterHelperNextDescriptor)
+};
+
+class IteratorTakeHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorTakeHelperNextDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(IteratorTakeHelperNextDescriptor)
+};
+
+class IteratorDropHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorDropHelperNextDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(IteratorDropHelperNextDescriptor)
+};
+
+class IteratorFlatMapHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorFlatMapHelperNextDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(IteratorFlatMapHelperNextDescriptor)
 };
 
 class ParseIntDescriptor : public StaticCallInterfaceDescriptor<ParseIntDescriptor> {
@@ -910,7 +1043,7 @@ class StringSlowFlattenDescriptor : public StaticCallInterfaceDescriptor<StringS
 
 class StringIndexOfDescriptor : public StaticCallInterfaceDescriptor<StringIndexOfDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kS, kSearchString, kStart)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kS, kSearchString, kStart)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(StringIndexOfDescriptor)
 };
@@ -927,6 +1060,20 @@ class CheckTurbofanTypeDescriptor : public StaticCallInterfaceDescriptor<CheckTu
   DEFINE_RESULT_AND_PARAMETERS(1, kValue, kExpectedType, kNodeId)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CheckTurbofanTypeDescriptor)
+};
+
+class CheckTurboshaftWord32TypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurboshaftWord32TypeDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kValue, kExpectedType, kNodeId)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(CheckTurboshaftWord32TypeDescriptor)
+};
+
+class CheckTurboshaftWord64TypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurboshaftWord64TypeDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kValueHigh, kValueLow, kExpectedType, kNodeId)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(CheckTurboshaftWord64TypeDescriptor)
 };
 
 class GenericBuiltinTest_JSAny_0Descriptor : public StaticCallInterfaceDescriptor<GenericBuiltinTest_JSAny_0Descriptor> {
@@ -962,6 +1109,20 @@ class ReturnTwoValuesDescriptor : public StaticCallInterfaceDescriptor<ReturnTwo
   DEFINE_RESULT_AND_PARAMETERS(2, kValue, kObj)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ReturnTwoValuesDescriptor)
+};
+
+class ThrowAsBuiltinDescriptor : public StaticCallInterfaceDescriptor<ThrowAsBuiltinDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(0, kStr)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowAsBuiltinDescriptor)
+};
+
+class TestCallNeverDescriptor : public StaticCallInterfaceDescriptor<TestCallNeverDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kA)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(TestCallNeverDescriptor)
 };
 
 class Load_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<Load_FastSmiElements_0Descriptor> {
@@ -1099,7 +1260,7 @@ class WasmInt32ToHeapNumberDescriptor : public StaticCallInterfaceDescriptor<Was
 
 class WasmFuncRefToJSDescriptor : public StaticCallInterfaceDescriptor<WasmFuncRefToJSDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kVal)
+  DEFINE_RESULT_AND_PARAMETERS(1, kVal)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmFuncRefToJSDescriptor)
 };
@@ -1186,6 +1347,13 @@ class WasmRefFuncDescriptor : public StaticCallInterfaceDescriptor<WasmRefFuncDe
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmRefFuncDescriptor)
+};
+
+class WasmInternalFunctionCreateExternalDescriptor : public StaticCallInterfaceDescriptor<WasmInternalFunctionCreateExternalDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS(1, kFunc)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmInternalFunctionCreateExternalDescriptor)
 };
 
 class WasmAllocateFixedArrayDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateFixedArrayDescriptor> {
@@ -1281,9 +1449,16 @@ class WasmAllocateArray_UninitializedDescriptor : public StaticCallInterfaceDesc
 
 class WasmArrayNewSegmentDescriptor : public StaticCallInterfaceDescriptor<WasmArrayNewSegmentDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kDataSegment, kOffset, kLength, kRtt)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSegmentIndex, kOffset, kLength, kRtt)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmArrayNewSegmentDescriptor)
+};
+
+class WasmArrayInitSegmentDescriptor : public StaticCallInterfaceDescriptor<WasmArrayInitSegmentDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArrayIndex, kSegmentOffset, kLength, kSegmentIndex, kArrayRaw)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmArrayInitSegmentDescriptor)
 };
 
 class WasmArrayCopyWithChecksDescriptor : public StaticCallInterfaceDescriptor<WasmArrayCopyWithChecksDescriptor> {
@@ -1295,8 +1470,8 @@ class WasmArrayCopyWithChecksDescriptor : public StaticCallInterfaceDescriptor<W
 
 class WasmArrayCopyDescriptor : public StaticCallInterfaceDescriptor<WasmArrayCopyDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kDstIndex, kSrcIndex, kLength, kDstArray, kSrcArray)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kDstIndex, kSrcIndex, kLength, kDstObject, kSrcObject)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmArrayCopyDescriptor)
 };
 
@@ -1489,6 +1664,13 @@ class ThrowWasmTrapArrayTooLargeDescriptor : public StaticCallInterfaceDescripto
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapArrayTooLargeDescriptor)
 };
 
+class ThrowWasmTrapStringOffsetOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapStringOffsetOutOfBoundsDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapStringOffsetOutOfBoundsDescriptor)
+};
+
 class WasmStringNewWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringNewWtf8Descriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kOffset, kSize, kMemory, kUtf8Variant)
@@ -1515,6 +1697,13 @@ class WasmStringNewWtf16ArrayDescriptor : public StaticCallInterfaceDescriptor<W
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kStart, kEnd)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringNewWtf16ArrayDescriptor)
+};
+
+class WasmStringAsWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmStringAsWtf16Descriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStr)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmStringAsWtf16Descriptor)
 };
 
 class WasmStringConstDescriptor : public StaticCallInterfaceDescriptor<WasmStringConstDescriptor> {
@@ -1564,6 +1753,20 @@ class WasmStringEncodeWtf16ArrayDescriptor : public StaticCallInterfaceDescripto
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kArray, kStart)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringEncodeWtf16ArrayDescriptor)
+};
+
+class ThrowToLowerCaseCalledOnNullDescriptor : public StaticCallInterfaceDescriptor<ThrowToLowerCaseCalledOnNullDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowToLowerCaseCalledOnNullDescriptor)
+};
+
+class ThrowIndexOfCalledOnNullDescriptor : public StaticCallInterfaceDescriptor<ThrowIndexOfCalledOnNullDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowIndexOfCalledOnNullDescriptor)
 };
 
 class WasmStringConcatDescriptor : public StaticCallInterfaceDescriptor<WasmStringConcatDescriptor> {
@@ -1671,18 +1874,39 @@ class WasmStringViewIterSliceDescriptor : public StaticCallInterfaceDescriptor<W
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewIterSliceDescriptor)
 };
 
-class WasmExternInternalizeDescriptor : public StaticCallInterfaceDescriptor<WasmExternInternalizeDescriptor> {
+class WasmIntToStringDescriptor : public StaticCallInterfaceDescriptor<WasmIntToStringDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kExternObject)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(WasmExternInternalizeDescriptor)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kX, kRadix)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineTypeOf<Int32T>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmIntToStringDescriptor)
 };
 
-class WasmExternExternalizeDescriptor : public StaticCallInterfaceDescriptor<WasmExternExternalizeDescriptor> {
+class WasmStringToDoubleDescriptor : public StaticCallInterfaceDescriptor<WasmStringToDoubleDescriptor> {
  public:
-  DEFINE_RESULT_AND_PARAMETERS(1, kAnyObject)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kS)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Float64T>::value, MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmStringToDoubleDescriptor)
+};
+
+class WasmStringFromCodePointDescriptor : public StaticCallInterfaceDescriptor<WasmStringFromCodePointDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kCodePoint)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmStringFromCodePointDescriptor)
+};
+
+class WasmStringHashDescriptor : public StaticCallInterfaceDescriptor<WasmStringHashDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmStringHashDescriptor)
+};
+
+class WasmExternInternalizeDescriptor : public StaticCallInterfaceDescriptor<WasmExternInternalizeDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kExternObject)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(WasmExternExternalizeDescriptor)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmExternInternalizeDescriptor)
 };
 
 class LoadJoinElement_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinElement_GenericElementsAccessor_0Descriptor> {

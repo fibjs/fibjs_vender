@@ -9,6 +9,7 @@
 #include "src/base/small-vector.h"
 #include "src/base/template-utils.h"
 #include "src/base/vector.h"
+#include "src/codegen/callable.h"
 #include "src/codegen/machine-type.h"
 #include "src/common/globals.h"
 #include "src/compiler/backend/instruction-selector.h"
@@ -16,6 +17,7 @@
 #include "src/compiler/compiler-source-position-table.h"
 #include "src/compiler/feedback-source.h"
 #include "src/compiler/graph.h"
+#include "src/compiler/js-heap-broker.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/machine-operator.h"
 #include "src/compiler/node-origin-table.h"
@@ -25,6 +27,8 @@
 #include "src/compiler/turboshaft/deopt-data.h"
 #include "src/compiler/turboshaft/graph.h"
 #include "src/compiler/turboshaft/operations.h"
+#include "src/compiler/turboshaft/phase.h"
+#include "src/compiler/turboshaft/representations.h"
 #include "src/compiler/write-barrier-kind.h"
 #include "src/utils/utils.h"
 #include "src/zone/zone-containers.h"
@@ -34,13 +38,15 @@ namespace v8::internal::compiler::turboshaft {
 namespace {
 
 struct ScheduleBuilder {
-  const Graph& input_graph;
   CallDescriptor* call_descriptor;
-  Zone* graph_zone;
   Zone* phase_zone;
-  SourcePositionTable* source_positions;
-  NodeOriginTable* origins;
 
+  const Graph& input_graph = PipelineData::Get().graph();
+  JSHeapBroker* broker = PipelineData::Get().broker();
+  Zone* graph_zone = PipelineData::Get().graph_zone();
+  SourcePositionTable* source_positions =
+      PipelineData::Get().source_positions();
+  NodeOriginTable* origins = PipelineData::Get().node_origins();
   const size_t node_count_estimate =
       static_cast<size_t>(1.1 * input_graph.op_id_count());
   Schedule* const schedule =
@@ -133,7 +139,6 @@ RecreateScheduleResult ScheduleBuilder::Run() {
   for (const Block& block : input_graph.blocks()) {
     current_input_block = &block;
     current_block = GetBlock(block);
-    current_block->set_deferred(current_input_block->IsDeferred());
     for (OpIndex op : input_graph.OperationIndices(block)) {
       DCHECK_NOT_NULL(current_block);
       ProcessOperation(input_graph.Get(op));
@@ -146,6 +151,10 @@ RecreateScheduleResult ScheduleBuilder::Run() {
 
   DCHECK(schedule->rpo_order()->empty());
   Scheduler::ComputeSpecialRPO(phase_zone, schedule);
+  // Note that Scheduler::GenerateDominatorTree also infers which blocks are
+  // deferred, so we only need to set branch targets as deferred based on the
+  // hints, and we let Scheduler::GenerateDominatorTree propagate this
+  // information to other blocks.
   Scheduler::GenerateDominatorTree(schedule);
   return {tf_graph, schedule};
 }
@@ -171,6 +180,69 @@ void ScheduleBuilder::ProcessOperation(const Operation& op) {
     origins->SetNodeOrigin(node->id(), index.id());
   }
 }
+
+#define SHOULD_HAVE_BEEN_LOWERED(op) \
+  Node* ScheduleBuilder::ProcessOperation(const op##Op&) { UNREACHABLE(); }
+// These operations should have been lowered in previous reducers already.
+SHOULD_HAVE_BEEN_LOWERED(Allocate)
+SHOULD_HAVE_BEEN_LOWERED(ArgumentsLength)
+SHOULD_HAVE_BEEN_LOWERED(BigIntBinop)
+SHOULD_HAVE_BEEN_LOWERED(BigIntComparison)
+SHOULD_HAVE_BEEN_LOWERED(BigIntEqual)
+SHOULD_HAVE_BEEN_LOWERED(BigIntUnary)
+SHOULD_HAVE_BEEN_LOWERED(ChangeOrDeopt)
+SHOULD_HAVE_BEEN_LOWERED(CheckedClosure)
+SHOULD_HAVE_BEEN_LOWERED(CheckEqualsInternalizedString)
+SHOULD_HAVE_BEEN_LOWERED(CheckMaps)
+SHOULD_HAVE_BEEN_LOWERED(CompareMaps)
+SHOULD_HAVE_BEEN_LOWERED(Convert)
+SHOULD_HAVE_BEEN_LOWERED(ConvertObjectToPrimitive)
+SHOULD_HAVE_BEEN_LOWERED(ConvertObjectToPrimitiveOrDeopt)
+SHOULD_HAVE_BEEN_LOWERED(ConvertOrDeopt)
+SHOULD_HAVE_BEEN_LOWERED(ConvertPrimitiveToObject)
+SHOULD_HAVE_BEEN_LOWERED(ConvertPrimitiveToObjectOrDeopt)
+SHOULD_HAVE_BEEN_LOWERED(ConvertReceiver)
+SHOULD_HAVE_BEEN_LOWERED(DecodeExternalPointer)
+SHOULD_HAVE_BEEN_LOWERED(DoubleArrayMinMax)
+SHOULD_HAVE_BEEN_LOWERED(EnsureWritableFastElements)
+SHOULD_HAVE_BEEN_LOWERED(FastApiCall)
+SHOULD_HAVE_BEEN_LOWERED(FindOrderedHashEntry)
+SHOULD_HAVE_BEEN_LOWERED(FloatIs)
+SHOULD_HAVE_BEEN_LOWERED(Float64SameValue)
+SHOULD_HAVE_BEEN_LOWERED(LoadDataViewElement)
+SHOULD_HAVE_BEEN_LOWERED(LoadFieldByIndex)
+SHOULD_HAVE_BEEN_LOWERED(LoadMessage)
+SHOULD_HAVE_BEEN_LOWERED(LoadStackArgument)
+SHOULD_HAVE_BEEN_LOWERED(LoadTypedElement)
+SHOULD_HAVE_BEEN_LOWERED(MaybeGrowFastElements)
+SHOULD_HAVE_BEEN_LOWERED(NewArgumentsElements)
+SHOULD_HAVE_BEEN_LOWERED(NewArray)
+SHOULD_HAVE_BEEN_LOWERED(NewConsString)
+SHOULD_HAVE_BEEN_LOWERED(ObjectIs)
+SHOULD_HAVE_BEEN_LOWERED(ObjectIsNumericValue)
+SHOULD_HAVE_BEEN_LOWERED(RuntimeAbort)
+SHOULD_HAVE_BEEN_LOWERED(SameValue)
+SHOULD_HAVE_BEEN_LOWERED(StoreDataViewElement)
+SHOULD_HAVE_BEEN_LOWERED(StoreMessage)
+SHOULD_HAVE_BEEN_LOWERED(StoreTypedElement)
+SHOULD_HAVE_BEEN_LOWERED(StringAt)
+SHOULD_HAVE_BEEN_LOWERED(StringComparison)
+SHOULD_HAVE_BEEN_LOWERED(StringConcat)
+SHOULD_HAVE_BEEN_LOWERED(StringEqual)
+SHOULD_HAVE_BEEN_LOWERED(StringFromCodePointAt)
+SHOULD_HAVE_BEEN_LOWERED(StringIndexOf)
+SHOULD_HAVE_BEEN_LOWERED(StringLength)
+SHOULD_HAVE_BEEN_LOWERED(StringSubstring)
+#ifdef V8_INTL_SUPPORT
+SHOULD_HAVE_BEEN_LOWERED(StringToCaseIntl)
+#endif  // V8_INTL_SUPPORT
+SHOULD_HAVE_BEEN_LOWERED(Tag)
+SHOULD_HAVE_BEEN_LOWERED(TransitionAndStoreArrayElement)
+SHOULD_HAVE_BEEN_LOWERED(TransitionElementsKind)
+SHOULD_HAVE_BEEN_LOWERED(TruncateObjectToPrimitive)
+SHOULD_HAVE_BEEN_LOWERED(TruncateObjectToPrimitiveOrDeopt)
+SHOULD_HAVE_BEEN_LOWERED(Untag)
+#undef SHOULD_HAVE_BEEN_LOWERED
 
 Node* ScheduleBuilder::ProcessOperation(const WordBinopOp& op) {
   using Kind = WordBinopOp::Kind;
@@ -390,6 +462,7 @@ Node* ScheduleBuilder::ProcessOperation(const WordUnaryOp& op) {
   return AddNode(o, {GetNode(op.input())});
 }
 Node* ScheduleBuilder::ProcessOperation(const FloatUnaryOp& op) {
+  DCHECK(FloatUnaryOp::IsSupported(op.kind, op.rep));
   bool float64 = op.rep == FloatRepresentation::Float64();
   const Operator* o;
   switch (op.kind) {
@@ -543,6 +616,9 @@ Node* ScheduleBuilder::ProcessOperation(const EqualOp& op) {
       break;
     case RegisterRepresentation::Float64():
       o = machine.Float64Equal();
+      break;
+    case RegisterRepresentation::Tagged():
+      o = machine.TaggedEqual();
       break;
     default:
       UNREACHABLE();
@@ -830,6 +906,9 @@ Node* ScheduleBuilder::ProcessOperation(const TaggedBitcastOp& op) {
   } else if (op.from == RegisterRepresentation::PointerSized() &&
              op.to == RegisterRepresentation::Tagged()) {
     o = machine.BitcastWordToTagged();
+  } else if (op.from == RegisterRepresentation::Compressed() &&
+             op.to == RegisterRepresentation::Word32()) {
+    o = machine.BitcastTaggedToWord();
   } else {
     UNIMPLEMENTED();
   }
@@ -920,7 +999,12 @@ Node* ScheduleBuilder::ProcessOperation(const LoadOp& op) {
   const Operator* o;
   if (op.kind.maybe_unaligned) {
     DCHECK(!op.kind.with_trap_handler);
-    o = machine.UnalignedLoad(loaded_rep);
+    if (loaded_rep.representation() == MachineRepresentation::kWord8 ||
+        machine.UnalignedLoadSupported(loaded_rep.representation())) {
+      o = machine.Load(loaded_rep);
+    } else {
+      o = machine.UnalignedLoad(loaded_rep);
+    }
   } else if (op.kind.with_trap_handler) {
     DCHECK(!op.kind.maybe_unaligned);
     o = machine.ProtectedLoad(loaded_rep);
@@ -955,7 +1039,16 @@ Node* ScheduleBuilder::ProcessOperation(const StoreOp& op) {
   if (op.kind.maybe_unaligned) {
     DCHECK(!op.kind.with_trap_handler);
     DCHECK_EQ(op.write_barrier, WriteBarrierKind::kNoWriteBarrier);
-    o = machine.UnalignedStore(op.stored_rep.ToMachineType().representation());
+    if (op.stored_rep.ToMachineType().representation() ==
+            MachineRepresentation::kWord8 ||
+        machine.UnalignedStoreSupported(
+            op.stored_rep.ToMachineType().representation())) {
+      o = machine.Store(StoreRepresentation(
+          op.stored_rep.ToMachineType().representation(), op.write_barrier));
+    } else {
+      o = machine.UnalignedStore(
+          op.stored_rep.ToMachineType().representation());
+    }
   } else if (op.kind.with_trap_handler) {
     DCHECK(!op.kind.maybe_unaligned);
     DCHECK_EQ(op.write_barrier, WriteBarrierKind::kNoWriteBarrier);
@@ -1016,12 +1109,6 @@ Node* ScheduleBuilder::ProcessOperation(const FrameConstantOp& op) {
       return AddNode(machine.LoadParentFramePointer(), {});
   }
 }
-Node* ScheduleBuilder::ProcessOperation(const CheckLazyDeoptOp& op) {
-  Node* call = GetNode(op.call());
-  Node* frame_state = GetNode(op.frame_state());
-  call->AppendInput(graph_zone, frame_state);
-  return nullptr;
-}
 Node* ScheduleBuilder::ProcessOperation(const DeoptimizeIfOp& op) {
   Node* condition = GetNode(op.condition());
   Node* frame_state = GetNode(op.frame_state());
@@ -1034,9 +1121,13 @@ Node* ScheduleBuilder::ProcessOperation(const DeoptimizeIfOp& op) {
 }
 Node* ScheduleBuilder::ProcessOperation(const TrapIfOp& op) {
   Node* condition = GetNode(op.condition());
-  const Operator* o =
-      op.negated ? common.TrapUnless(op.trap_id) : common.TrapIf(op.trap_id);
-  return AddNode(o, {condition});
+  bool has_frame_state = op.frame_state().valid();
+  Node* frame_state = has_frame_state ? GetNode(op.frame_state()) : nullptr;
+  const Operator* o = op.negated
+                          ? common.TrapUnless(op.trap_id, has_frame_state)
+                          : common.TrapIf(op.trap_id, has_frame_state);
+  return has_frame_state ? AddNode(o, {condition, frame_state})
+                         : AddNode(o, {condition});
 }
 Node* ScheduleBuilder::ProcessOperation(const DeoptimizeOp& op) {
   Node* frame_state = GetNode(op.frame_state());
@@ -1069,6 +1160,24 @@ Node* ScheduleBuilder::ProcessOperation(const PhiOp& op) {
 Node* ScheduleBuilder::ProcessOperation(const ProjectionOp& op) {
   return AddNode(common.Projection(op.index), {GetNode(op.input())});
 }
+Node* ScheduleBuilder::ProcessOperation(const StaticAssertOp& op) {
+  // Static asserts should be (statically asserted and) removed by turboshaft.
+  UnparkedScopeIfNeeded scope(broker);
+  AllowHandleDereference allow_handle_dereference;
+  std::cout << input_graph.Get(op.condition());
+  FATAL(
+      "Expected Turbofan static assert to hold, but got non-true input:\n  %s",
+      op.source);
+}
+Node* ScheduleBuilder::ProcessOperation(const CheckTurboshaftTypeOfOp& op) {
+  if (op.successful) return GetNode(op.input());
+
+  UnparkedScopeIfNeeded scope(broker);
+  AllowHandleDereference allow_handle_dereference;
+  FATAL("Checking type %s of operation %d:%s failed!",
+        op.type.ToString().c_str(), op.input().id(),
+        input_graph.Get(op.input()).ToString().c_str());
+}
 
 std::pair<Node*, MachineType> ScheduleBuilder::BuildDeoptInput(
     FrameStateData::Iterator* it) {
@@ -1078,6 +1187,15 @@ std::pair<Node*, MachineType> ScheduleBuilder::BuildDeoptInput(
       MachineType type;
       OpIndex input;
       it->ConsumeInput(&type, &input);
+      const Operation& op = input_graph.Get(input);
+      if (op.outputs_rep()[0] == RegisterRepresentation::Word64() &&
+          type.representation() == MachineRepresentation::kWord32) {
+        // 64 to 32-bit conversion is implicit in turboshaft, but explicit in
+        // turbofan, so we insert this conversion.
+        Node* conversion =
+            AddNode(machine.TruncateInt64ToInt32(), {GetNode(input)});
+        return {conversion, type};
+      }
       return {GetNode(input), type};
     }
     case Instr::kDematerializedObject: {
@@ -1196,7 +1314,45 @@ Node* ScheduleBuilder::ProcessOperation(const CallOp& op) {
   for (OpIndex i : op.arguments()) {
     inputs.push_back(GetNode(i));
   }
-  return AddNode(common.Call(op.descriptor), base::VectorOf(inputs));
+  if (op.HasFrameState()) {
+    DCHECK(op.frame_state().valid());
+    inputs.push_back(GetNode(op.frame_state()));
+  }
+  return AddNode(common.Call(op.descriptor->descriptor),
+                 base::VectorOf(inputs));
+}
+Node* ScheduleBuilder::ProcessOperation(const CallAndCatchExceptionOp& op) {
+  // Re-building the call
+  base::SmallVector<Node*, 16> inputs;
+  inputs.push_back(GetNode(op.callee()));
+  for (OpIndex i : op.arguments()) {
+    inputs.push_back(GetNode(i));
+  }
+  if (op.HasFrameState()) {
+    DCHECK(op.frame_state().valid());
+    inputs.push_back(GetNode(op.frame_state()));
+  }
+  Node* call =
+      AddNode(common.Call(op.descriptor->descriptor), base::VectorOf(inputs));
+
+  // Re-building the IfSuccess/IfException mechanism.
+  BasicBlock* success_block = GetBlock(*op.if_success);
+  BasicBlock* exception_block = GetBlock(*op.if_exception);
+  schedule->AddCall(current_block, call, success_block, exception_block);
+  // Pass `call` as the control input of `IfSuccess` and as both the effect and
+  // control input of `IfException`.
+  Node* if_success = MakeNode(common.IfSuccess(), {call});
+  Node* if_exception = MakeNode(common.IfException(), {call, call});
+  schedule->AddNode(success_block, if_success);
+  schedule->AddNode(exception_block, if_exception);
+  current_block = nullptr;
+  return call;
+}
+Node* ScheduleBuilder::ProcessOperation(const LoadExceptionOp& op) {
+  Node* if_exception = current_block->NodeAt(0);
+  DCHECK(if_exception != nullptr &&
+         if_exception->opcode() == IrOpcode::kIfException);
+  return if_exception;
 }
 Node* ScheduleBuilder::ProcessOperation(const TailCallOp& op) {
   base::SmallVector<Node*, 16> inputs;
@@ -1204,13 +1360,15 @@ Node* ScheduleBuilder::ProcessOperation(const TailCallOp& op) {
   for (OpIndex i : op.arguments()) {
     inputs.push_back(GetNode(i));
   }
-  Node* call = MakeNode(common.TailCall(op.descriptor), base::VectorOf(inputs));
+  Node* call = MakeNode(common.TailCall(op.descriptor->descriptor),
+                        base::VectorOf(inputs));
   schedule->AddTailCall(current_block, call);
   current_block = nullptr;
   return nullptr;
 }
 Node* ScheduleBuilder::ProcessOperation(const UnreachableOp& op) {
   Node* node = MakeNode(common.Throw(), {});
+  schedule->AddNode(current_block, MakeNode(common.Unreachable(), {}));
   schedule->AddThrow(current_block, node);
   current_block = nullptr;
   return nullptr;
@@ -1228,28 +1386,24 @@ Node* ScheduleBuilder::ProcessOperation(const ReturnOp& op) {
   return nullptr;
 }
 Node* ScheduleBuilder::ProcessOperation(const BranchOp& op) {
-  Node* branch =
-      MakeNode(common.Branch(BranchHint::kNone), {GetNode(op.condition())});
+  Node* branch = MakeNode(common.Branch(op.hint), {GetNode(op.condition())});
   BasicBlock* true_block = GetBlock(*op.if_true);
   BasicBlock* false_block = GetBlock(*op.if_false);
   schedule->AddBranch(current_block, branch, true_block, false_block);
   schedule->AddNode(true_block, MakeNode(common.IfTrue(), {branch}));
   schedule->AddNode(false_block, MakeNode(common.IfFalse(), {branch}));
+  switch (op.hint) {
+    case BranchHint::kNone:
+      break;
+    case BranchHint::kTrue:
+      false_block->set_deferred(true);
+      break;
+    case BranchHint::kFalse:
+      true_block->set_deferred(true);
+      break;
+  }
   current_block = nullptr;
   return nullptr;
-}
-Node* ScheduleBuilder::ProcessOperation(const CatchExceptionOp& op) {
-  Node* call = GetNode(op.call());
-  BasicBlock* success_block = GetBlock(*op.if_success);
-  BasicBlock* exception_block = GetBlock(*op.if_exception);
-  schedule->AddCall(current_block, call, success_block, exception_block);
-  Node* if_success = MakeNode(common.IfSuccess(), {call});
-  Node* if_exception = MakeNode(common.IfException(), {call, call});
-  schedule->AddNode(success_block, if_success);
-  // Pass `call` as both the effect and control input of `IfException`.
-  schedule->AddNode(exception_block, if_exception);
-  current_block = nullptr;
-  return if_exception;
 }
 Node* ScheduleBuilder::ProcessOperation(const SwitchOp& op) {
   size_t succ_count = op.cases.size() + 1;
@@ -1260,12 +1414,20 @@ Node* ScheduleBuilder::ProcessOperation(const SwitchOp& op) {
   for (SwitchOp::Case c : op.cases) {
     BasicBlock* case_block = GetBlock(*c.destination);
     successors.push_back(case_block);
-    Node* case_node = MakeNode(common.IfValue(c.value), {switch_node});
+    Node* case_node =
+        MakeNode(common.IfValue(c.value, 0, c.hint), {switch_node});
     schedule->AddNode(case_block, case_node);
+    if (c.hint == BranchHint::kFalse) {
+      case_block->set_deferred(true);
+    }
   }
   BasicBlock* default_block = GetBlock(*op.default_case);
   successors.push_back(default_block);
-  schedule->AddNode(default_block, MakeNode(common.IfDefault(), {switch_node}));
+  schedule->AddNode(default_block,
+                    MakeNode(common.IfDefault(op.default_hint), {switch_node}));
+  if (op.default_hint == BranchHint::kFalse) {
+    default_block->set_deferred(true);
+  }
 
   schedule->AddSwitch(current_block, switch_node, successors.data(),
                       successors.size());
@@ -1273,15 +1435,40 @@ Node* ScheduleBuilder::ProcessOperation(const SwitchOp& op) {
   return nullptr;
 }
 
+Node* ScheduleBuilder::ProcessOperation(const DebugBreakOp& op) {
+  return AddNode(machine.DebugBreak(), {});
+}
+
+Node* ScheduleBuilder::ProcessOperation(const DebugPrintOp& op) {
+  // TODO(nicohartmann@): Support other representations.
+  DCHECK_EQ(op.rep, RegisterRepresentation::PointerSized());
+  Node* input = GetNode(op.input());
+
+  const Callable callable = Builtins::CallableFor(PipelineData::Get().isolate(),
+                                                  Builtin::kDebugPrintWordPtr);
+
+  const CallDescriptor* call_descriptor = Linkage::GetStubCallDescriptor(
+      graph_zone, callable.descriptor(),
+      callable.descriptor().GetStackParameterCount(), CallDescriptor::kNoFlags,
+      Operator::kNoThrow | Operator::kNoDeopt);
+
+  base::SmallVector<Node*, 8> inputs;
+  inputs.push_back(AddNode(common.HeapConstant(callable.code()), {}));
+  inputs.push_back(input);
+  inputs.push_back(AddNode(common.Int32Constant(Context::kNoContext), {}));
+
+  return AddNode(common.Call(call_descriptor), base::VectorOf(inputs));
+}
+
+Node* ScheduleBuilder::ProcessOperation(const LoadRootRegisterOp& op) {
+  return AddNode(machine.LoadRootRegister(), {});
+}
+
 }  // namespace
 
-RecreateScheduleResult RecreateSchedule(const Graph& graph,
-                                        CallDescriptor* call_descriptor,
-                                        Zone* graph_zone, Zone* phase_zone,
-                                        SourcePositionTable* source_positions,
-                                        NodeOriginTable* origins) {
-  ScheduleBuilder builder{graph,      call_descriptor,  graph_zone,
-                          phase_zone, source_positions, origins};
+RecreateScheduleResult RecreateSchedule(CallDescriptor* call_descriptor,
+                                        Zone* phase_zone) {
+  ScheduleBuilder builder{call_descriptor, phase_zone};
   return builder.Run();
 }
 

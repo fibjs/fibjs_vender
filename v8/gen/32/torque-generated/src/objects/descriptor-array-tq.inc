@@ -82,9 +82,6 @@ class TorqueGeneratedEnumCache : public P {
 
  protected:
   inline explicit TorqueGeneratedEnumCache(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedEnumCache(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsDescriptorArray() that avoids inlining.
@@ -115,45 +112,40 @@ class TorqueGeneratedDescriptorArray : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=21&c=3
   inline void set_number_of_descriptors(uint16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
-  inline uint16_t raw_number_of_marked_descriptors() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
-  inline void set_raw_number_of_marked_descriptors(uint16_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-  inline uint16_t filler16_bits() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-  inline void set_filler16_bits(uint16_t value);
-
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+  inline uint32_t raw_gc_state() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+  inline void set_raw_gc_state(uint32_t value);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
   inline EnumCache enum_cache() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
   inline EnumCache enum_cache(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
   inline void set_enum_cache(EnumCache value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Name | Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline PrimitiveHeapObject descriptors_key(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline PrimitiveHeapObject descriptors_key(PtrComprCageBase cage_base, int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline void set_descriptors_key(int i, PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline Object descriptors_details(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline Object descriptors_details(PtrComprCageBase cage_base, int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline void set_descriptors_details(int i, Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | True | False | Null | Undefined | class AccessorInfo | Weak<class Map> | class AccessorPair | class ClassPositions)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline MaybeObject descriptors_value(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline MaybeObject descriptors_value(PtrComprCageBase cage_base, int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline void set_descriptors_value(int i, MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
@@ -176,20 +168,17 @@ class TorqueGeneratedDescriptorArray : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=21&c=3
   static constexpr int kNumberOfDescriptorsOffset = kNumberOfAllDescriptorsOffsetEnd + 1;
   static constexpr int kNumberOfDescriptorsOffsetEnd = kNumberOfDescriptorsOffset + kUInt16Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
-  static constexpr int kRawNumberOfMarkedDescriptorsOffset = kNumberOfDescriptorsOffsetEnd + 1;
-  static constexpr int kRawNumberOfMarkedDescriptorsOffsetEnd = kRawNumberOfMarkedDescriptorsOffset + kUInt16Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-  static constexpr int kFiller16BitsOffset = kRawNumberOfMarkedDescriptorsOffsetEnd + 1;
-  static constexpr int kFiller16BitsOffsetEnd = kFiller16BitsOffset + kUInt16Size - 1;
-  static constexpr int kStartOfStrongFieldsOffset = kFiller16BitsOffsetEnd + 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
-  static constexpr int kEnumCacheOffset = kFiller16BitsOffsetEnd + 1;
+  static constexpr int kRawGcStateOffset = kNumberOfDescriptorsOffsetEnd + 1;
+  static constexpr int kRawGcStateOffsetEnd = kRawGcStateOffset + kInt32Size - 1;
+  static constexpr int kStartOfStrongFieldsOffset = kRawGcStateOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  static constexpr int kEnumCacheOffset = kRawGcStateOffsetEnd + 1;
   static constexpr int kEnumCacheOffsetEnd = kEnumCacheOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kEnumCacheOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kEnumCacheOffsetEnd + 1;
   static constexpr int kHeaderSize = kEnumCacheOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   static constexpr int kDescriptorsOffset = kEnumCacheOffsetEnd + 1;
   static constexpr int kDescriptorsOffsetEnd = kDescriptorsOffset + 0 - 1;
   static constexpr int kEndOfWeakFieldsOffset = kDescriptorsOffsetEnd + 1;
@@ -217,9 +206,6 @@ class TorqueGeneratedDescriptorArray : public P {
 
  protected:
   inline explicit TorqueGeneratedDescriptorArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedDescriptorArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 struct TorqueGeneratedDescriptorEntryOffsets {

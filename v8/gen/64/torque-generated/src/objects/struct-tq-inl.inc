@@ -9,11 +9,6 @@ inline TorqueGeneratedStruct<D, P>::TorqueGeneratedStruct(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsStruct_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedStruct<D, P>::TorqueGeneratedStruct(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsStruct_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=20&c=3
 template<class D, class P>
 Object TorqueGeneratedAccessorPair<D, P>::getter() const {
@@ -73,11 +68,6 @@ inline TorqueGeneratedAccessorPair<D, P>::TorqueGeneratedAccessorPair(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsAccessorPair_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedAccessorPair<D, P>::TorqueGeneratedAccessorPair(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAccessorPair_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=15&c=3
 template<class D, class P>
 int TorqueGeneratedClassPositions<D, P>::start() const {
@@ -116,11 +106,6 @@ template<class D, class P>
 inline TorqueGeneratedClassPositions<D, P>::TorqueGeneratedClassPositions(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsClassPositions_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedClassPositions<D, P>::TorqueGeneratedClassPositions(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsClassPositions_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=10&c=3
 template<class D, class P>
@@ -180,9 +165,4 @@ template<class D, class P>
 inline TorqueGeneratedTuple2<D, P>::TorqueGeneratedTuple2(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsTuple2_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedTuple2<D, P>::TorqueGeneratedTuple2(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTuple2_NonInline(*this));
 }

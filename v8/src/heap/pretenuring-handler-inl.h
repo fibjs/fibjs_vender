@@ -16,15 +16,13 @@
 namespace v8 {
 namespace internal {
 
-void PretenturingHandler::UpdateAllocationSite(
+void PretenuringHandler::UpdateAllocationSite(
     Map map, HeapObject object, PretenuringFeedbackMap* pretenuring_feedback) {
   DCHECK_NE(pretenuring_feedback, &global_pretenuring_feedback_);
 #ifdef DEBUG
   BasicMemoryChunk* chunk = BasicMemoryChunk::FromHeapObject(object);
-  DCHECK_IMPLIES(chunk->IsToPage(),
-                 v8_flags.minor_mc ||
-                     chunk->IsFlagSet(MemoryChunk::PAGE_NEW_NEW_PROMOTION));
-  DCHECK_IMPLIES(!chunk->InYoungGeneration(),
+  DCHECK_IMPLIES(chunk->IsToPage(), v8_flags.minor_mc);
+  DCHECK_IMPLIES(!v8_flags.minor_mc && !chunk->InYoungGeneration(),
                  chunk->IsFlagSet(MemoryChunk::PAGE_NEW_OLD_PROMOTION));
 #endif
   if (!v8_flags.allocation_site_pretenuring ||
@@ -34,6 +32,7 @@ void PretenturingHandler::UpdateAllocationSite(
   AllocationMemento memento_candidate =
       FindAllocationMemento<kForGC>(map, object);
   if (memento_candidate.is_null()) return;
+  DCHECK(map.IsJSObjectMap());
 
   // Entering cached feedback is used in the parallel case. We are not allowed
   // to dereference the allocation site and rather have to postpone all checks
@@ -42,9 +41,9 @@ void PretenturingHandler::UpdateAllocationSite(
   (*pretenuring_feedback)[AllocationSite::unchecked_cast(Object(key))]++;
 }
 
-template <PretenturingHandler::FindMementoMode mode>
-AllocationMemento PretenturingHandler::FindAllocationMemento(
-    Map map, HeapObject object) {
+template <PretenuringHandler::FindMementoMode mode>
+AllocationMemento PretenuringHandler::FindAllocationMemento(Map map,
+                                                            HeapObject object) {
   Address object_address = object.address();
   Address memento_address =
       object_address + ALIGN_TO_ALLOCATION_ALIGNMENT(object.SizeFromMap(map));
@@ -66,7 +65,7 @@ AllocationMemento PretenturingHandler::FindAllocationMemento(
   // below (memento_address == top) ensures that this is safe. Mark the word as
   // initialized to silence MemorySanitizer warnings.
   MSAN_MEMORY_IS_INITIALIZED(candidate_map_slot.address(), kTaggedSize);
-  if (!candidate_map_slot.contains_map_value(
+  if (!candidate_map_slot.Relaxed_ContainsMapValue(
           ReadOnlyRoots(heap_).allocation_memento_map().ptr())) {
     return AllocationMemento();
   }

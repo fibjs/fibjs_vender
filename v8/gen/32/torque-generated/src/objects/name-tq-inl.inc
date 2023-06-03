@@ -23,11 +23,6 @@ inline TorqueGeneratedName<D, P>::TorqueGeneratedName(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsName_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedName<D, P>::TorqueGeneratedName(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsName_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=30&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedSymbol<D, P>::flags() const {
@@ -76,9 +71,4 @@ template<class D, class P>
 inline TorqueGeneratedSymbol<D, P>::TorqueGeneratedSymbol(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSymbol_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedSymbol<D, P>::TorqueGeneratedSymbol(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSymbol_NonInline(*this));
 }

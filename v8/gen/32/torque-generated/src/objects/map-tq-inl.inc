@@ -265,8 +265,3 @@ inline TorqueGeneratedMap<D, P>::TorqueGeneratedMap(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsMap_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedMap<D, P>::TorqueGeneratedMap(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsMap_NonInline(*this));
-}

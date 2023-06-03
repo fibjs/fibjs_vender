@@ -314,7 +314,10 @@ class MachineType {
         return MachineType::Float32();
       case CTypeInfo::Type::kFloat64:
         return MachineType::Float64();
+      case CTypeInfo::Type::kPointer:
+        return MachineType::Pointer();
       case CTypeInfo::Type::kV8Value:
+      case CTypeInfo::Type::kSeqOneByteString:
       case CTypeInfo::Type::kApiObject:
         return MachineType::AnyTagged();
     }
@@ -324,7 +327,7 @@ class MachineType {
     return ElementSizeLog2Of(this->representation()) <= kSystemPointerSizeLog2;
   }
 
-  constexpr byte MemSize() const {
+  constexpr uint8_t MemSize() const {
     return 1 << i::ElementSizeLog2Of(this->representation());
   }
 

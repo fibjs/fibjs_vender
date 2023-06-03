@@ -9,7 +9,7 @@ namespace v8 {
 namespace internal {
 
 #if V8_HAS_PTHREAD_JIT_WRITE_PROTECT || V8_HAS_PKU_JIT_WRITE_PROTECT
-exlib::fiber_local<int> RwxMemoryWriteScope::code_space_write_nesting_level_(0);
+exlib::fiber_local<int> RwxMemoryWriteScope::code_space_write_nesting_level_;
 #endif  // V8_HAS_PTHREAD_JIT_WRITE_PROTECT || V8_HAS_PKU_JIT_WRITE_PROTECT
 
 #if V8_HAS_PKU_JIT_WRITE_PROTECT
@@ -17,7 +17,7 @@ int RwxMemoryWriteScope::memory_protection_key_ =
     base::MemoryProtectionKey::kNoMemoryProtectionKey;
 
 #if DEBUG
-exlib::fiber_local<bool> RwxMemoryWriteScope::is_key_permissions_initialized_for_current_thread_(false);
+exlib::fiber_local<bool> RwxMemoryWriteScope::is_key_permissions_initialized_for_current_thread_;
 bool RwxMemoryWriteScope::pkey_initialized = false;
 
 bool RwxMemoryWriteScope::is_key_permissions_initialized_for_current_thread() {
@@ -38,25 +38,6 @@ bool RwxMemoryWriteScope::IsPKUWritable() {
   DCHECK(pkey_initialized);
   return base::MemoryProtectionKey::GetKeyPermission(memory_protection_key_) ==
          base::MemoryProtectionKey::kNoRestrictions;
-}
-
-ResetPKUPermissionsForThreadSpawning::ResetPKUPermissionsForThreadSpawning() {
-  if (!RwxMemoryWriteScope::IsSupported()) return;
-  was_writable_ = RwxMemoryWriteScope::IsPKUWritable();
-  if (was_writable_) {
-    base::MemoryProtectionKey::SetPermissionsForKey(
-        RwxMemoryWriteScope::memory_protection_key(),
-        base::MemoryProtectionKey::kDisableWrite);
-  }
-}
-
-ResetPKUPermissionsForThreadSpawning::~ResetPKUPermissionsForThreadSpawning() {
-  if (!RwxMemoryWriteScope::IsSupported()) return;
-  if (was_writable_) {
-    base::MemoryProtectionKey::SetPermissionsForKey(
-        RwxMemoryWriteScope::memory_protection_key(),
-        base::MemoryProtectionKey::kNoRestrictions);
-  }
 }
 
 void RwxMemoryWriteScope::SetDefaultPermissionsForNewThread() {

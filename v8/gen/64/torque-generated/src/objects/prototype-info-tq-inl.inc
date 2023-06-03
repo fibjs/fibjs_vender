@@ -133,8 +133,3 @@ inline TorqueGeneratedPrototypeInfo<D, P>::TorqueGeneratedPrototypeInfo(Address 
     : P(ptr) {
   SLOW_DCHECK(IsPrototypeInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedPrototypeInfo<D, P>::TorqueGeneratedPrototypeInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPrototypeInfo_NonInline(*this));
-}

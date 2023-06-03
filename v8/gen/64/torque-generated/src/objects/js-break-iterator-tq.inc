@@ -133,8 +133,5 @@ class TorqueGeneratedJSV8BreakIterator : public P {
 
  protected:
   inline explicit TorqueGeneratedJSV8BreakIterator(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSV8BreakIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

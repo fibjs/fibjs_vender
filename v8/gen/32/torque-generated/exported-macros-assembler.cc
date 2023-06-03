@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 #include "torque-generated/exported-macros-assembler.h"
 #include "torque-generated/src/builtins/aggregate-error-tq-csa.h"
@@ -115,6 +118,8 @@
 #include "torque-generated/src/builtins/internal-coverage-tq-csa.h"
 #include "torque-generated/src/builtins/internal-tq-csa.h"
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
+#include "torque-generated/src/builtins/iterator-from-tq-csa.h"
+#include "torque-generated/src/builtins/iterator-helpers-tq-csa.h"
 #include "torque-generated/src/builtins/math-tq-csa.h"
 #include "torque-generated/src/builtins/number-tq-csa.h"
 #include "torque-generated/src/builtins/object-fromentries-tq-csa.h"
@@ -158,6 +163,7 @@
 #include "torque-generated/src/builtins/string-html-tq-csa.h"
 #include "torque-generated/src/builtins/string-includes-tq-csa.h"
 #include "torque-generated/src/builtins/string-indexof-tq-csa.h"
+#include "torque-generated/src/builtins/string-iswellformed-tq-csa.h"
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
 #include "torque-generated/src/builtins/string-match-search-tq-csa.h"
 #include "torque-generated/src/builtins/string-pad-tq-csa.h"
@@ -167,6 +173,7 @@
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
 #include "torque-generated/src/builtins/string-substr-tq-csa.h"
 #include "torque-generated/src/builtins/string-substring-tq-csa.h"
+#include "torque-generated/src/builtins/string-towellformed-tq-csa.h"
 #include "torque-generated/src/builtins/string-trim-tq-csa.h"
 #include "torque-generated/src/builtins/symbol-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
@@ -203,7 +210,7 @@
 #include "torque-generated/src/objects/bigint-tq-csa.h"
 #include "torque-generated/src/objects/call-site-info-tq-csa.h"
 #include "torque-generated/src/objects/cell-tq-csa.h"
-#include "torque-generated/src/objects/code-tq-csa.h"
+#include "torque-generated/src/objects/bytecode-array-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/data-handler-tq-csa.h"
 #include "torque-generated/src/objects/debug-objects-tq-csa.h"
@@ -223,6 +230,7 @@
 #include "torque-generated/src/objects/js-collection-tq-csa.h"
 #include "torque-generated/src/objects/js-function-tq-csa.h"
 #include "torque-generated/src/objects/js-generator-tq-csa.h"
+#include "torque-generated/src/objects/js-iterator-helpers-tq-csa.h"
 #include "torque-generated/src/objects/js-objects-tq-csa.h"
 #include "torque-generated/src/objects/js-promise-tq-csa.h"
 #include "torque-generated/src/objects/js-proxy-tq-csa.h"
@@ -241,6 +249,7 @@
 #include "torque-generated/src/objects/module-tq-csa.h"
 #include "torque-generated/src/objects/name-tq-csa.h"
 #include "torque-generated/src/objects/oddball-tq-csa.h"
+#include "torque-generated/src/objects/hole-tq-csa.h"
 #include "torque-generated/src/objects/ordered-hash-table-tq-csa.h"
 #include "torque-generated/src/objects/primitive-heap-object-tq-csa.h"
 #include "torque-generated/src/objects/promise-tq-csa.h"
@@ -262,6 +271,7 @@
 #include "torque-generated/src/objects/templates-tq-csa.h"
 #include "torque-generated/src/objects/torque-defined-classes-tq-csa.h"
 #include "torque-generated/src/objects/turbofan-types-tq-csa.h"
+#include "torque-generated/src/objects/turboshaft-types-tq-csa.h"
 #include "torque-generated/test/torque/test-torque-tq-csa.h"
 #include "torque-generated/third_party/v8/builtins/array-sort-tq-csa.h"
 #include "torque-generated/src/objects/intl-objects-tq-csa.h"
@@ -287,59 +297,59 @@ namespace internal {
 void TorqueGeneratedExportedMacrosAssembler::EnsureArrayLengthWritable(TNode<Context> p_context, TNode<Map> p_map, compiler::CodeAssemblerLabel* label_Bailout) {
 return EnsureArrayLengthWritable_0(state_, p_context, p_map, label_Bailout);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=646&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=667&c=1
 TNode<Number> TorqueGeneratedExportedMacrosAssembler::ToInteger_Inline(TNode<Context> p_context, TNode<Object> p_input) {
 return ToInteger_Inline_0(state_, p_context, p_input);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1465&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1500&c=1
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::RequireObjectCoercible(TNode<Context> p_context, TNode<Object> p_value, const char* p_name) {
 return RequireObjectCoercible_0(state_, p_context, p_value, p_name);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1560&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1612&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ChangeUintPtrNumberToUintPtr(TNode<Number> p_value) {
 return ChangeUintPtrNumberToUintPtr_0(state_, p_value);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1570&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1622&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ChangeSafeIntegerNumberToUintPtr(TNode<Number> p_value, compiler::CodeAssemblerLabel* label_IfUIntPtrOverflow) {
 return ChangeSafeIntegerNumberToUintPtr_0(state_, p_value, label_IfUIntPtrOverflow);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1594&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1646&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ToIndex(TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_IfRangeError) {
 return ToIndex_0(state_, p_context, p_value, label_IfRangeError);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1665&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1717&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ConvertAndClampRelativeIndex(TNode<Context> p_context, TNode<Object> p_index, TNode<UintPtrT> p_length) {
 return ConvertAndClampRelativeIndex_1(state_, p_context, p_index, p_length);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1674&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1726&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ConvertAndClampRelativeIndex(TNode<Number> p_indexNumber, TNode<UintPtrT> p_length) {
 return ConvertAndClampRelativeIndex_2(state_, p_indexNumber, p_length);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1733&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1785&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ClampToIndexRange(TNode<Context> p_context, TNode<Object> p_index, TNode<UintPtrT> p_limit) {
 return ClampToIndexRange_0(state_, p_context, p_index, p_limit);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1742&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1794&c=1
 TNode<UintPtrT> TorqueGeneratedExportedMacrosAssembler::ClampToIndexRange(TNode<Number> p_indexNumber, TNode<UintPtrT> p_limit) {
 return ClampToIndexRange_1(state_, p_indexNumber, p_limit);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1779&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1831&c=1
 TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsFastJSArray(TNode<Object> p_o, TNode<Context> p_context) {
 return IsFastJSArray_0(state_, p_o, p_context);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1787&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1839&c=1
 void TorqueGeneratedExportedMacrosAssembler::BranchIfFastJSArray(TNode<Object> p_o, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_True, compiler::CodeAssemblerLabel* label_False) {
 return BranchIfFastJSArray_0(state_, p_o, p_context, label_True, label_False);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1797&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1849&c=1
 void TorqueGeneratedExportedMacrosAssembler::BranchIfFastJSArrayForRead(TNode<Object> p_o, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_True, compiler::CodeAssemblerLabel* label_False) {
 return BranchIfFastJSArrayForRead_0(state_, p_o, p_context, label_True, label_False);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1810&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1862&c=1
 TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsFastJSArrayWithNoCustomIteration(TNode<Context> p_context, TNode<Object> p_o) {
 return IsFastJSArrayWithNoCustomIteration_0(state_, p_context, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1815&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1867&c=1
 TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsFastJSArrayForReadWithNoCustomIteration(TNode<Context> p_context, TNode<Object> p_o) {
 return IsFastJSArrayForReadWithNoCustomIteration_0(state_, p_context, p_o);}
 
@@ -364,12 +374,12 @@ TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsCell(TNode<HeapObject> p_
 return IsCell_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=32&c=1
-TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsCode(TNode<HeapObject> p_o) {
-return IsCode_0(state_, p_o);}
+TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsInstructionStream(TNode<HeapObject> p_o) {
+return IsInstructionStream_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=37&c=1
-TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsCodeDataContainer(TNode<HeapObject> p_o) {
-return IsCodeDataContainer_0(state_, p_o);}
+TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsCode(TNode<HeapObject> p_o) {
+return IsCode_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=42&c=1
 TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsContext(TNode<HeapObject> p_o) {
@@ -463,17 +473,29 @@ return CollectConstructFeedback_1(state_, p_context, p_target, p_newTarget, p_ma
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::ForInNextSlow(TNode<Context> p_context, TNode<UintPtrT> p_slot, TNode<HeapObject> p_receiver, TNode<Object> p_key, TNode<Object> p_cacheType, TNode<HeapObject> p_maybeFeedbackVector, UpdateFeedbackMode p_guaranteedFeedback) {
 return ForInNextSlow_0(state_, p_context, p_slot, p_receiver, p_key, p_cacheType, p_maybeFeedbackVector, p_guaranteedFeedback);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=120&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=122&c=1
 void TorqueGeneratedExportedMacrosAssembler::IteratorCloseOnException(TNode<Context> p_context, TorqueStructIteratorRecord p_iterator) {
 return IteratorCloseOnException_0(state_, p_context, p_iterator);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=144&c=1
+void TorqueGeneratedExportedMacrosAssembler::IteratorClose(TNode<Context> p_context, TorqueStructIteratorRecord p_iterator) {
+return IteratorClose_0(state_, p_context, p_iterator);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=118&c=1
 TNode<Number> TorqueGeneratedExportedMacrosAssembler::MathPowImpl(TNode<Context> p_context, TNode<Object> p_base, TNode<Object> p_exponent) {
 return MathPowImpl_0(state_, p_context, p_base, p_exponent);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=71&c=1
-TNode<String> TorqueGeneratedExportedMacrosAssembler::NumberToStringSmi(TNode<Int32T> p_x, TNode<Int32T> p_radix, compiler::CodeAssemblerLabel* label_Slow) {
-return NumberToStringSmi_0(state_, p_x, p_radix, label_Slow);}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=104&c=1
+TNode<String> TorqueGeneratedExportedMacrosAssembler::IntToDecimalString(TNode<Int32T> p_x) {
+return IntToDecimalString_0(state_, p_x);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object.tq?l=326&c=1
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::ToPropertyDescriptor(TNode<Context> p_context, TNode<Object> p_object) {
+return ToPropertyDescriptor_1(state_, p_context, p_object);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object.tq?l=345&c=1
+TNode<Object> TorqueGeneratedExportedMacrosAssembler::FromPropertyDescriptor(TNode<Context> p_context, TNode<Object> p_object) {
+return FromPropertyDescriptor_0(state_, p_context, p_object);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=283&c=1
 TNode<Context> TorqueGeneratedExportedMacrosAssembler::CreatePromiseCapabilitiesExecutorContext(TNode<NativeContext> p_nativeContext, TNode<PromiseCapability> p_capability) {
@@ -591,11 +613,11 @@ return RegExpCreate_1(state_, p_context, p_initialMap, p_maybeString, p_flags);}
 TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsWhiteSpaceOrLineTerminator(TNode<Uint16T> p_charCode) {
 return IsWhiteSpaceOrLineTerminator_0(state_, p_charCode);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=321&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=332&c=1
 TNode<JSTypedArray> TorqueGeneratedExportedMacrosAssembler::TypedArrayCreateByLength(TNode<Context> p_context, TNode<JSReceiver> p_constructor, TNode<Number> p_length, const char* p_methodName) {
 return TypedArrayCreateByLength_0(state_, p_context, p_constructor, p_length, p_methodName);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=471&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-createtypedarray.tq?l=482&c=1
 TNode<JSTypedArray> TorqueGeneratedExportedMacrosAssembler::TypedArraySpeciesCreateByLength(TNode<Context> p_context, const char* p_methodName, TNode<JSTypedArray> p_exemplar, TNode<UintPtrT> p_length) {
 return TypedArraySpeciesCreateByLength_0(state_, p_context, p_methodName, p_exemplar, p_length);}
 
@@ -635,27 +657,27 @@ return SloppyArgumentsStore_0(state_, p_receiver, p_keyObject, p_value, label_Ba
 TNode<Context> TorqueGeneratedExportedMacrosAssembler::AllocateSyntheticFunctionContext(TNode<NativeContext> p_nativeContext, int31_t p_slots) {
 return AllocateSyntheticFunctionContext_0(state_, p_nativeContext, p_slots);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=167&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=177&c=1
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadContextElement(TNode<Context> p_c, TNode<IntPtrT> p_i) {
 return LoadContextElement_0(state_, p_c, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=172&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=182&c=1
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadContextElement(TNode<Context> p_c, TNode<Smi> p_i) {
 return LoadContextElement_1(state_, p_c, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=187&c=1
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadContextElement(TNode<Context> p_c, int32_t p_i) {
 return LoadContextElement_2(state_, p_c, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=182&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=192&c=1
 void TorqueGeneratedExportedMacrosAssembler::StoreContextElement(TNode<Context> p_c, TNode<IntPtrT> p_i, TNode<Object> p_o) {
 return StoreContextElement_0(state_, p_c, p_i, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=187&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=197&c=1
 void TorqueGeneratedExportedMacrosAssembler::StoreContextElement(TNode<Context> p_c, TNode<Smi> p_i, TNode<Object> p_o) {
 return StoreContextElement_1(state_, p_c, p_i, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=192&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=202&c=1
 void TorqueGeneratedExportedMacrosAssembler::StoreContextElement(TNode<Context> p_c, int32_t p_i, TNode<Object> p_o) {
 return StoreContextElement_2(state_, p_c, p_i, p_o);}
 
@@ -684,8 +706,12 @@ TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsOnHeapTypedArray(TNode<JS
 return IsOnHeapTypedArray_0(state_, p_array);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=39&c=1
+TNode<JSArrayIterator> TorqueGeneratedExportedMacrosAssembler::CreateArrayIterator(TNode<NativeContext> p_context, TNode<JSReceiver> p_array, IterationKind p_kind, TNode<Number> p_nextIndex) {
+return CreateArrayIterator_0(state_, p_context, p_array, p_kind, p_nextIndex);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=54&c=1
 TNode<JSArrayIterator> TorqueGeneratedExportedMacrosAssembler::CreateArrayIterator(TNode<NativeContext> p_context, TNode<JSReceiver> p_array, IterationKind p_kind) {
-return CreateArrayIterator_0(state_, p_context, p_array, p_kind);}
+return CreateArrayIterator_1(state_, p_context, p_array, p_kind);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=80&c=1
 TNode<PrototypeInfo> TorqueGeneratedExportedMacrosAssembler::LoadMapPrototypeInfo(TNode<Map> p_m, compiler::CodeAssemblerLabel* label_HasNoPrototypeInfo) {
@@ -703,27 +729,35 @@ return AllocateSmallOrderedHashSet_0(state_, p_capacity);}
 TNode<SmallOrderedHashMap> TorqueGeneratedExportedMacrosAssembler::AllocateSmallOrderedHashMap(TNode<IntPtrT> p_capacity) {
 return AllocateSmallOrderedHashMap_0(state_, p_capacity);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=198&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=114&c=1
+TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsCompatiblePropertyDescriptor(TNode<BoolT> p_extensible, TNode<HeapObject> p_newDesc, TNode<HeapObject> p_current) {
+return IsCompatiblePropertyDescriptor_2(state_, p_extensible, p_newDesc, p_current);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=131&c=1
+void TorqueGeneratedExportedMacrosAssembler::CompletePropertyDescriptor(TNode<PropertyDescriptorObject> p_desc) {
+return CompletePropertyDescriptor_0(state_, p_desc);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=200&c=1
 TNode<IntPtrT> TorqueGeneratedExportedMacrosAssembler::IndexOfLocalName(TNode<ScopeInfo> p_scopeInfo, TNode<Name> p_name, compiler::CodeAssemblerLabel* label_NotFound) {
 return IndexOfLocalName_0(state_, p_scopeInfo, p_name, label_NotFound);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=89&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=90&c=1
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFormalParameterCountWithoutReceiver(TNode<SharedFunctionInfo> p_sfi) {
 return LoadSharedFunctionInfoFormalParameterCountWithoutReceiver_0(state_, p_sfi);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=100&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=101&c=1
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFormalParameterCountWithReceiver(TNode<SharedFunctionInfo> p_sfi) {
 return LoadSharedFunctionInfoFormalParameterCountWithReceiver_0(state_, p_sfi);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=106&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=107&c=1
 TNode<BoolT> TorqueGeneratedExportedMacrosAssembler::IsSharedFunctionInfoDontAdaptArguments(TNode<SharedFunctionInfo> p_sfi) {
 return IsSharedFunctionInfoDontAdaptArguments_0(state_, p_sfi);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=175&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=210&c=1
 TNode<String> TorqueGeneratedExportedMacrosAssembler::AllocateSeqOneByteString(TNode<Uint32T> p_length) {
 return AllocateSeqOneByteString_0(state_, p_length);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=180&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=215&c=1
 TNode<String> TorqueGeneratedExportedMacrosAssembler::AllocateSeqTwoByteString(TNode<Uint32T> p_length) {
 return AllocateSeqTwoByteString_0(state_, p_length);}
 
@@ -1135,7 +1169,7 @@ return LoadNameRawHashField_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreNameRawHashField(TNode<Name> p_o, TNode<Uint32T> p_v) {
 return StoreNameRawHashField_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=19&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadStringLength(TNode<String> p_o) {
 return LoadStringLength_0(state_, p_o);}
 
@@ -1283,19 +1317,19 @@ return LoadJSFunctionFeedbackCell_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreJSFunctionFeedbackCell(TNode<JSFunction> p_o, TNode<FeedbackCell> p_v) {
 return StoreJSFunctionFeedbackCell_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
 TNode<Code> TorqueGeneratedExportedMacrosAssembler::LoadJSFunctionCode(TNode<JSFunction> p_o) {
 return LoadJSFunctionCode_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreJSFunctionCode(TNode<JSFunction> p_o, TNode<Code> p_v) {
 return StoreJSFunctionCode_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSFunctionPrototypeOrInitialMap(TNode<JSFunction> p_o) {
 return LoadJSFunctionPrototypeOrInitialMap_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreJSFunctionPrototypeOrInitialMap(TNode<JSFunction> p_o, TNode<HeapObject> p_v) {
 return StoreJSFunctionPrototypeOrInitialMap_0(state_, p_o, p_v);}
 
@@ -1515,29 +1549,37 @@ return LoadWeakCellKeyListNext_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreWeakCellKeyListNext(TNode<WeakCell> p_o, TNode<HeapObject> p_v) {
 return StoreWeakCellKeyListNext_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=38&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmInternalFunctionRef(TNode<WasmInternalFunction> p_o) {
 return LoadWasmInternalFunctionRef_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=38&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmInternalFunctionRef(TNode<WasmInternalFunction> p_o, TNode<HeapObject> p_v) {
 return StoreWasmInternalFunctionRef_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=40&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmInternalFunctionExternal(TNode<WasmInternalFunction> p_o) {
 return LoadWasmInternalFunctionExternal_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=40&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmInternalFunctionExternal(TNode<WasmInternalFunction> p_o, TNode<HeapObject> p_v) {
 return StoreWasmInternalFunctionExternal_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=44&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=42&c=3
 TNode<Code> TorqueGeneratedExportedMacrosAssembler::LoadWasmInternalFunctionCode(TNode<WasmInternalFunction> p_o) {
 return LoadWasmInternalFunctionCode_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=44&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=42&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmInternalFunctionCode(TNode<WasmInternalFunction> p_o, TNode<Code> p_v) {
 return StoreWasmInternalFunctionCode_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=44&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmInternalFunctionFunctionIndex(TNode<WasmInternalFunction> p_o) {
+return LoadWasmInternalFunctionFunctionIndex_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=44&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmInternalFunctionFunctionIndex(TNode<WasmInternalFunction> p_o, TNode<Smi> p_v) {
+return StoreWasmInternalFunctionFunctionIndex_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=46&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadWasmInternalFunctionCallTarget(TNode<WasmInternalFunction> p_o) {
@@ -1643,43 +1685,43 @@ return LoadJSTypedArrayBasePointer_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreJSTypedArrayBasePointer(TNode<JSTypedArray> p_o, TNode<Object> p_v) {
 return StoreJSTypedArrayBasePointer_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadDataHandlerSmiHandler(TNode<DataHandler> p_o) {
 return LoadDataHandlerSmiHandler_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreDataHandlerSmiHandler(TNode<DataHandler> p_o, TNode<Object> p_v) {
 return StoreDataHandlerSmiHandler_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadDataHandlerValidityCell(TNode<DataHandler> p_o) {
 return LoadDataHandlerValidityCell_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreDataHandlerValidityCell(TNode<DataHandler> p_o, TNode<Object> p_v) {
 return StoreDataHandlerValidityCell_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
 TNode<MaybeObject> TorqueGeneratedExportedMacrosAssembler::LoadDataHandlerData1(TNode<DataHandler> p_o) {
 return LoadDataHandlerData1_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreDataHandlerData1(TNode<DataHandler> p_o, TNode<MaybeObject> p_v) {
 return StoreDataHandlerData1_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 TNode<MaybeObject> TorqueGeneratedExportedMacrosAssembler::LoadDataHandlerData2(TNode<DataHandler> p_o) {
 return LoadDataHandlerData2_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreDataHandlerData2(TNode<DataHandler> p_o, TNode<MaybeObject> p_v) {
 return StoreDataHandlerData2_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 TNode<MaybeObject> TorqueGeneratedExportedMacrosAssembler::LoadDataHandlerData3(TNode<DataHandler> p_o) {
 return LoadDataHandlerData3_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreDataHandlerData3(TNode<DataHandler> p_o, TNode<MaybeObject> p_v) {
 return StoreDataHandlerData3_0(state_, p_o, p_v);}
 
@@ -1911,51 +1953,51 @@ return LoadAliasedArgumentsEntryAliasedContextSlot_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreAliasedArgumentsEntryAliasedContextSlot(TNode<AliasedArgumentsEntry> p_o, TNode<Smi> p_v) {
 return StoreAliasedArgumentsEntryAliasedContextSlot_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadCallSiteInfoReceiverOrInstance(TNode<CallSiteInfo> p_o) {
 return LoadCallSiteInfoReceiverOrInstance_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreCallSiteInfoReceiverOrInstance(TNode<CallSiteInfo> p_o, TNode<Object> p_v) {
 return StoreCallSiteInfoReceiverOrInstance_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadCallSiteInfoFunction(TNode<CallSiteInfo> p_o) {
 return LoadCallSiteInfoFunction_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreCallSiteInfoFunction(TNode<CallSiteInfo> p_o, TNode<Object> p_v) {
 return StoreCallSiteInfoFunction_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadCallSiteInfoCodeObject(TNode<CallSiteInfo> p_o) {
 return LoadCallSiteInfoCodeObject_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreCallSiteInfoCodeObject(TNode<CallSiteInfo> p_o, TNode<HeapObject> p_v) {
 return StoreCallSiteInfoCodeObject_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadCallSiteInfoCodeOffsetOrSourcePosition(TNode<CallSiteInfo> p_o) {
 return LoadCallSiteInfoCodeOffsetOrSourcePosition_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreCallSiteInfoCodeOffsetOrSourcePosition(TNode<CallSiteInfo> p_o, TNode<Smi> p_v) {
 return StoreCallSiteInfoCodeOffsetOrSourcePosition_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadCallSiteInfoFlags(TNode<CallSiteInfo> p_o) {
 return LoadCallSiteInfoFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreCallSiteInfoFlags(TNode<CallSiteInfo> p_o, TNode<Smi> p_v) {
 return StoreCallSiteInfoFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadCallSiteInfoParameters(TNode<CallSiteInfo> p_o) {
 return LoadCallSiteInfoParameters_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreCallSiteInfoParameters(TNode<CallSiteInfo> p_o, TNode<FixedArray> p_v) {
 return StoreCallSiteInfoParameters_0(state_, p_o, p_v);}
 
@@ -1967,191 +2009,191 @@ return LoadCellValue_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreCellValue(TNode<Cell> p_o, TNode<Object> p_v) {
 return StoreCellValue_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=9&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=9&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArrayConstantPool(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArrayConstantPool_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=9&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=9&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArrayConstantPool(TNode<BytecodeArray> p_o, TNode<FixedArray> p_v) {
 return StoreBytecodeArrayConstantPool_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=11&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=11&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArrayHandlerTable(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArrayHandlerTable_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=11&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=11&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArrayHandlerTable(TNode<BytecodeArray> p_o, TNode<ByteArray> p_v) {
 return StoreBytecodeArrayHandlerTable_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=21&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArraySourcePositionTable(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArraySourcePositionTable_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=21&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArraySourcePositionTable(TNode<BytecodeArray> p_o, TNode<HeapObject> p_v) {
 return StoreBytecodeArraySourcePositionTable_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=22&c=3
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArrayFrameSize(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArrayFrameSize_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=22&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArrayFrameSize(TNode<BytecodeArray> p_o, TNode<Int32T> p_v) {
 return StoreBytecodeArrayFrameSize_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=23&c=3
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArrayParameterSize(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArrayParameterSize_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=23&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArrayParameterSize(TNode<BytecodeArray> p_o, TNode<Int32T> p_v) {
 return StoreBytecodeArrayParameterSize_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=24&c=3
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArrayIncomingNewTargetOrGeneratorRegister(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArrayIncomingNewTargetOrGeneratorRegister_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=24&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArrayIncomingNewTargetOrGeneratorRegister(TNode<BytecodeArray> p_o, TNode<Int32T> p_v) {
 return StoreBytecodeArrayIncomingNewTargetOrGeneratorRegister_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=25&c=3
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadBytecodeArrayBytecodeAge(TNode<BytecodeArray> p_o) {
 return LoadBytecodeArrayBytecodeAge_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/code.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=25&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreBytecodeArrayBytecodeAge(TNode<BytecodeArray> p_o, TNode<Uint16T> p_v) {
 return StoreBytecodeArrayBytecodeAge_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=112&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=113&c=9
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoFlags(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoParameterCount(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoParameterCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoParameterCount(TNode<ScopeInfo> p_o, TNode<Smi> p_v) {
 return StoreScopeInfoParameterCount_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=119&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=120&c=9
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoContextLocalCount(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoContextLocalCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 TorqueStructSlice_String_MutableReference_String_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoContextLocalNames(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoContextLocalNames_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoContextLocalNames(TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i) {
 return LoadScopeInfoContextLocalNames_0(state_, p_o, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=124&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoContextLocalNames(TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i, TNode<String> p_v) {
 return StoreScopeInfoContextLocalNames_0(state_, p_o, p_i, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
 TorqueStructSlice_NameToIndexHashTable_MutableReference_NameToIndexHashTable_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoContextLocalNamesHashtable(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoContextLocalNamesHashtable_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
 TNode<NameToIndexHashTable> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoContextLocalNamesHashtable(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoContextLocalNamesHashtable_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoContextLocalNamesHashtable(TNode<ScopeInfo> p_o, TNode<NameToIndexHashTable> p_v) {
 return StoreScopeInfoContextLocalNamesHashtable_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
 TorqueStructSlice_SmiTagged_VariableProperties_MutableReference_SmiTagged_VariableProperties_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoContextLocalInfos(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoContextLocalInfos_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoContextLocalInfos(TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i) {
 return LoadScopeInfoContextLocalInfos_0(state_, p_o, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=135&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoContextLocalInfos(TNode<ScopeInfo> p_o, TNode<IntPtrT> p_i, TNode<Smi> p_v) {
 return StoreScopeInfoContextLocalInfos_0(state_, p_o, p_i, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
 TorqueStructSlice_Smi_MutableReference_Smi_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoSavedClassVariableInfo(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoSavedClassVariableInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoSavedClassVariableInfo(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoSavedClassVariableInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=141&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoSavedClassVariableInfo(TNode<ScopeInfo> p_o, TNode<Smi> p_v) {
 return StoreScopeInfoSavedClassVariableInfo_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=147&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
 TorqueStructSlice_FunctionVariableInfo_MutableReference_FunctionVariableInfo_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoFunctionVariableInfo(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoFunctionVariableInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
 TorqueStructSlice_String_OR_Undefined_MutableReference_String_OR_Undefined_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoInferredFunctionName(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoInferredFunctionName_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
 TNode<PrimitiveHeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoInferredFunctionName(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoInferredFunctionName_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=152&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoInferredFunctionName(TNode<ScopeInfo> p_o, TNode<PrimitiveHeapObject> p_v) {
 return StoreScopeInfoInferredFunctionName_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
 TorqueStructSlice_PositionInfo_MutableReference_PositionInfo_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoPositionInfo(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoPositionInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
 TorqueStructSlice_TheHole_OR_ScopeInfo_MutableReference_TheHole_OR_ScopeInfo_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoOuterScopeInfo(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoOuterScopeInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoOuterScopeInfo(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoOuterScopeInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoOuterScopeInfo(TNode<ScopeInfo> p_o, TNode<HeapObject> p_v) {
 return StoreScopeInfoOuterScopeInfo_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
 TorqueStructSlice_HashTable_MutableReference_HashTable_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoLocalsBlockList(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoLocalsBlockList_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoLocalsBlockList(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoLocalsBlockList_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoLocalsBlockList(TNode<ScopeInfo> p_o, TNode<FixedArray> p_v) {
 return StoreScopeInfoLocalsBlockList_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
 TorqueStructSlice_SourceTextModuleInfo_MutableReference_SourceTextModuleInfo_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoModuleInfo(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoModuleInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoModuleInfo(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoModuleInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScopeInfoModuleInfo(TNode<ScopeInfo> p_o, TNode<FixedArray> p_v) {
 return StoreScopeInfoModuleInfo_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
 TorqueStructSlice_Smi_ConstReference_Smi_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoModuleVariableCount(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoModuleVariableCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScopeInfoModuleVariableCount(TNode<ScopeInfo> p_o) {
 return LoadScopeInfoModuleVariableCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 TorqueStructSlice_ModuleVariable_MutableReference_ModuleVariable_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceScopeInfoModuleVariables(TNode<ScopeInfo> p_o) {
 return FieldSliceScopeInfoModuleVariables_0(state_, p_o);}
 
@@ -2379,31 +2421,23 @@ return LoadDescriptorArrayNumberOfDescriptors_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreDescriptorArrayNumberOfDescriptors(TNode<DescriptorArray> p_o, TNode<Uint16T> p_v) {
 return StoreDescriptorArrayNumberOfDescriptors_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
-TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadDescriptorArrayRawNumberOfMarkedDescriptors(TNode<DescriptorArray> p_o) {
-return LoadDescriptorArrayRawNumberOfMarkedDescriptors_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreDescriptorArrayRawNumberOfMarkedDescriptors(TNode<DescriptorArray> p_o, TNode<Uint16T> p_v) {
-return StoreDescriptorArrayRawNumberOfMarkedDescriptors_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadDescriptorArrayFiller16Bits(TNode<DescriptorArray> p_o) {
-return LoadDescriptorArrayFiller16Bits_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreDescriptorArrayFiller16Bits(TNode<DescriptorArray> p_o, TNode<Uint16T> p_v) {
-return StoreDescriptorArrayFiller16Bits_0(state_, p_o, p_v);}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadDescriptorArrayRawGcState(TNode<DescriptorArray> p_o) {
+return LoadDescriptorArrayRawGcState_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreDescriptorArrayRawGcState(TNode<DescriptorArray> p_o, TNode<Uint32T> p_v) {
+return StoreDescriptorArrayRawGcState_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 TNode<EnumCache> TorqueGeneratedExportedMacrosAssembler::LoadDescriptorArrayEnumCache(TNode<DescriptorArray> p_o) {
 return LoadDescriptorArrayEnumCache_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreDescriptorArrayEnumCache(TNode<DescriptorArray> p_o, TNode<EnumCache> p_v) {
 return StoreDescriptorArrayEnumCache_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 TorqueStructSlice_DescriptorEntry_MutableReference_DescriptorEntry_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceDescriptorArrayDescriptors(TNode<DescriptorArray> p_o) {
 return FieldSliceDescriptorArrayDescriptors_0(state_, p_o);}
 
@@ -2444,70 +2478,70 @@ void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorInvocationCount(
 return StoreFeedbackVectorInvocationCount_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
-TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorProfilerTicks(TNode<FeedbackVector> p_o) {
-return LoadFeedbackVectorProfilerTicks_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorProfilerTicks(TNode<FeedbackVector> p_o, TNode<Int32T> p_v) {
-return StoreFeedbackVectorProfilerTicks_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
 TNode<Uint8T> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorPlaceholder0(TNode<FeedbackVector> p_o) {
 return LoadFeedbackVectorPlaceholder0_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorPlaceholder0(TNode<FeedbackVector> p_o, TNode<Uint8T> p_v) {
 return StoreFeedbackVectorPlaceholder0_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
 TNode<Uint8T> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorOsrState(TNode<FeedbackVector> p_o) {
 return LoadFeedbackVectorOsrState_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorOsrState(TNode<FeedbackVector> p_o, TNode<Uint8T> p_v) {
 return StoreFeedbackVectorOsrState_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorFlags(TNode<FeedbackVector> p_o) {
 return LoadFeedbackVectorFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorFlags(TNode<FeedbackVector> p_o, TNode<Uint16T> p_v) {
 return StoreFeedbackVectorFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
 TNode<SharedFunctionInfo> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorSharedFunctionInfo(TNode<FeedbackVector> p_o) {
 return LoadFeedbackVectorSharedFunctionInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorSharedFunctionInfo(TNode<FeedbackVector> p_o, TNode<SharedFunctionInfo> p_v) {
 return StoreFeedbackVectorSharedFunctionInfo_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
 TNode<ClosureFeedbackCellArray> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorClosureFeedbackCellArray(TNode<FeedbackVector> p_o) {
 return LoadFeedbackVectorClosureFeedbackCellArray_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorClosureFeedbackCellArray(TNode<FeedbackVector> p_o, TNode<ClosureFeedbackCellArray> p_v) {
 return StoreFeedbackVectorClosureFeedbackCellArray_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+TNode<FeedbackCell> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorParentFeedbackCell(TNode<FeedbackVector> p_o) {
+return LoadFeedbackVectorParentFeedbackCell_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorParentFeedbackCell(TNode<FeedbackVector> p_o, TNode<FeedbackCell> p_v) {
+return StoreFeedbackVectorParentFeedbackCell_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
 TNode<MaybeObject> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorMaybeOptimizedCode(TNode<FeedbackVector> p_o) {
 return LoadFeedbackVectorMaybeOptimizedCode_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorMaybeOptimizedCode(TNode<FeedbackVector> p_o, TNode<MaybeObject> p_v) {
 return StoreFeedbackVectorMaybeOptimizedCode_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=49&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
 TorqueStructSlice_MaybeObject_MutableReference_MaybeObject_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceFeedbackVectorRawFeedbackSlots(TNode<FeedbackVector> p_o) {
 return FieldSliceFeedbackVectorRawFeedbackSlots_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=49&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
 TNode<MaybeObject> TorqueGeneratedExportedMacrosAssembler::LoadFeedbackVectorRawFeedbackSlots(TNode<FeedbackVector> p_o, TNode<IntPtrT> p_i) {
 return LoadFeedbackVectorRawFeedbackSlots_0(state_, p_o, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=49&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
 void TorqueGeneratedExportedMacrosAssembler::StoreFeedbackVectorRawFeedbackSlots(TNode<FeedbackVector> p_o, TNode<IntPtrT> p_i, TNode<MaybeObject> p_v) {
 return StoreFeedbackVectorRawFeedbackSlots_0(state_, p_o, p_i, p_v);}
 
@@ -2596,11 +2630,11 @@ void TorqueGeneratedExportedMacrosAssembler::StoreJSArrayBufferBackingStore(TNod
 return StoreJSArrayBufferBackingStore_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=22&c=3
-TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadJSArrayBufferExtension(TNode<JSArrayBuffer> p_o) {
+TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadJSArrayBufferExtension(TNode<JSArrayBuffer> p_o) {
 return LoadJSArrayBufferExtension_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=22&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreJSArrayBufferExtension(TNode<JSArrayBuffer> p_o, TNode<RawPtrT> p_v) {
+void TorqueGeneratedExportedMacrosAssembler::StoreJSArrayBufferExtension(TNode<JSArrayBuffer> p_o, TNode<ExternalPointerT> p_v) {
 return StoreJSArrayBufferExtension_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=23&c=3
@@ -2611,13 +2645,13 @@ return LoadJSArrayBufferBitField_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreJSArrayBufferBitField(TNode<JSArrayBuffer> p_o, TNode<Uint32T> p_v) {
 return StoreJSArrayBufferBitField_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=3
-TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadJSDataViewDataPointer(TNode<JSDataView> p_o) {
-return LoadJSDataViewDataPointer_0(state_, p_o);}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
+TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadJSDataViewOrRabGsabDataViewDataPointer(TNode<JSDataViewOrRabGsabDataView> p_o) {
+return LoadJSDataViewOrRabGsabDataViewDataPointer_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreJSDataViewDataPointer(TNode<JSDataView> p_o, TNode<RawPtrT> p_v) {
-return StoreJSDataViewDataPointer_0(state_, p_o, p_v);}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSDataViewOrRabGsabDataViewDataPointer(TNode<JSDataViewOrRabGsabDataView> p_o, TNode<RawPtrT> p_v) {
+return StoreJSDataViewOrRabGsabDataViewDataPointer_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=8&c=3
 TNode<JSReceiver> TorqueGeneratedExportedMacrosAssembler::LoadJSArrayIteratorIteratedObject(TNode<JSArrayIterator> p_o) {
@@ -2643,35 +2677,35 @@ return LoadJSArrayIteratorKind_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreJSArrayIteratorKind(TNode<JSArrayIterator> p_o, TNode<Smi> p_v) {
 return StoreJSArrayIteratorKind_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
 TNode<Number> TorqueGeneratedExportedMacrosAssembler::LoadJSArrayLength(TNode<JSArray> p_o) {
 return LoadJSArrayLength_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreJSArrayLength(TNode<JSArray> p_o, TNode<Number> p_v) {
 return StoreJSArrayLength_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
 TNode<JSArray> TorqueGeneratedExportedMacrosAssembler::LoadTemplateLiteralObjectRaw(TNode<TemplateLiteralObject> p_o) {
 return LoadTemplateLiteralObjectRaw_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreTemplateLiteralObjectRaw(TNode<TemplateLiteralObject> p_o, TNode<JSArray> p_v) {
 return StoreTemplateLiteralObjectRaw_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadTemplateLiteralObjectFunctionLiteralId(TNode<TemplateLiteralObject> p_o) {
 return LoadTemplateLiteralObjectFunctionLiteralId_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreTemplateLiteralObjectFunctionLiteralId(TNode<TemplateLiteralObject> p_o, TNode<Smi> p_v) {
 return StoreTemplateLiteralObjectFunctionLiteralId_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadTemplateLiteralObjectSlotId(TNode<TemplateLiteralObject> p_o) {
 return LoadTemplateLiteralObjectSlotId_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreTemplateLiteralObjectSlotId(TNode<TemplateLiteralObject> p_o, TNode<Smi> p_v) {
 return StoreTemplateLiteralObjectSlotId_0(state_, p_o, p_v);}
 
@@ -2835,6 +2869,94 @@ return LoadAsyncGeneratorRequestPromise_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreAsyncGeneratorRequestPromise(TNode<AsyncGeneratorRequest> p_o, TNode<JSPromise> p_v) {
 return StoreAsyncGeneratorRequestPromise_0(state_, p_o, p_v);}
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
+TorqueStructIteratorRecord TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorHelperUnderlying(TNode<JSIteratorHelper> p_o) {
+return LoadJSIteratorHelperUnderlying_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorHelperUnderlying(TNode<JSIteratorHelper> p_o, TorqueStructIteratorRecord p_v) {
+return StoreJSIteratorHelperUnderlying_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
+TNode<JSReceiver> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorMapHelperMapper(TNode<JSIteratorMapHelper> p_o) {
+return LoadJSIteratorMapHelperMapper_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorMapHelperMapper(TNode<JSIteratorMapHelper> p_o, TNode<JSReceiver> p_v) {
+return StoreJSIteratorMapHelperMapper_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
+TNode<Number> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorMapHelperCounter(TNode<JSIteratorMapHelper> p_o) {
+return LoadJSIteratorMapHelperCounter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorMapHelperCounter(TNode<JSIteratorMapHelper> p_o, TNode<Number> p_v) {
+return StoreJSIteratorMapHelperCounter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
+TNode<JSReceiver> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorFilterHelperPredicate(TNode<JSIteratorFilterHelper> p_o) {
+return LoadJSIteratorFilterHelperPredicate_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorFilterHelperPredicate(TNode<JSIteratorFilterHelper> p_o, TNode<JSReceiver> p_v) {
+return StoreJSIteratorFilterHelperPredicate_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
+TNode<Number> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorFilterHelperCounter(TNode<JSIteratorFilterHelper> p_o) {
+return LoadJSIteratorFilterHelperCounter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorFilterHelperCounter(TNode<JSIteratorFilterHelper> p_o, TNode<Number> p_v) {
+return StoreJSIteratorFilterHelperCounter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
+TNode<Number> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorTakeHelperRemaining(TNode<JSIteratorTakeHelper> p_o) {
+return LoadJSIteratorTakeHelperRemaining_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorTakeHelperRemaining(TNode<JSIteratorTakeHelper> p_o, TNode<Number> p_v) {
+return StoreJSIteratorTakeHelperRemaining_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
+TNode<Number> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorDropHelperRemaining(TNode<JSIteratorDropHelper> p_o) {
+return LoadJSIteratorDropHelperRemaining_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorDropHelperRemaining(TNode<JSIteratorDropHelper> p_o, TNode<Number> p_v) {
+return StoreJSIteratorDropHelperRemaining_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
+TNode<JSReceiver> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorFlatMapHelperMapper(TNode<JSIteratorFlatMapHelper> p_o) {
+return LoadJSIteratorFlatMapHelperMapper_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorFlatMapHelperMapper(TNode<JSIteratorFlatMapHelper> p_o, TNode<JSReceiver> p_v) {
+return StoreJSIteratorFlatMapHelperMapper_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
+TNode<Number> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorFlatMapHelperCounter(TNode<JSIteratorFlatMapHelper> p_o) {
+return LoadJSIteratorFlatMapHelperCounter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorFlatMapHelperCounter(TNode<JSIteratorFlatMapHelper> p_o, TNode<Number> p_v) {
+return StoreJSIteratorFlatMapHelperCounter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
+TorqueStructIteratorRecord TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorFlatMapHelperInnerIterator(TNode<JSIteratorFlatMapHelper> p_o) {
+return LoadJSIteratorFlatMapHelperInnerIterator_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorFlatMapHelperInnerIterator(TNode<JSIteratorFlatMapHelper> p_o, TorqueStructIteratorRecord p_v) {
+return StoreJSIteratorFlatMapHelperInnerIterator_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
+TNode<Oddball> TorqueGeneratedExportedMacrosAssembler::LoadJSIteratorFlatMapHelperInnerAlive(TNode<JSIteratorFlatMapHelper> p_o) {
+return LoadJSIteratorFlatMapHelperInnerAlive_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSIteratorFlatMapHelperInnerAlive(TNode<JSIteratorFlatMapHelper> p_o, TNode<Oddball> p_v) {
+return StoreJSIteratorFlatMapHelperInnerAlive_0(state_, p_o, p_v);}
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=44&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadJSExternalObjectValue(TNode<JSExternalObject> p_o) {
 return LoadJSExternalObjectValue_0(state_, p_o);}
@@ -2908,11 +3030,11 @@ void TorqueGeneratedExportedMacrosAssembler::StoreJSMessageObjectStackFrames(TNo
 return StoreJSMessageObjectStackFrames_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
-TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadJSMessageObjectSharedInfo(TNode<JSMessageObject> p_o) {
+TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadJSMessageObjectSharedInfo(TNode<JSMessageObject> p_o) {
 return LoadJSMessageObjectSharedInfo_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreJSMessageObjectSharedInfo(TNode<JSMessageObject> p_o, TNode<HeapObject> p_v) {
+void TorqueGeneratedExportedMacrosAssembler::StoreJSMessageObjectSharedInfo(TNode<JSMessageObject> p_o, TNode<Object> p_v) {
 return StoreJSMessageObjectSharedInfo_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=136&c=3
@@ -3050,6 +3172,14 @@ return LoadJSStringIteratorIndex_0(state_, p_o);}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=173&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreJSStringIteratorIndex(TNode<JSStringIterator> p_o, TNode<Smi> p_v) {
 return StoreJSStringIteratorIndex_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+TorqueStructIteratorRecord TorqueGeneratedExportedMacrosAssembler::LoadJSValidIteratorWrapperUnderlying(TNode<JSValidIteratorWrapper> p_o) {
+return LoadJSValidIteratorWrapperUnderlying_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreJSValidIteratorWrapperUnderlying(TNode<JSValidIteratorWrapper> p_o, TorqueStructIteratorRecord p_v) {
+return StoreJSValidIteratorWrapperUnderlying_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadJSProxyRevocableResultProxy(TNode<JSObject> p_o) {
@@ -3651,6 +3781,22 @@ return LoadScriptOrModuleHostDefinedOptions_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptOrModuleHostDefinedOptions(TNode<ScriptOrModule> p_o, TNode<FixedArray> p_v) {
 return StoreScriptOrModuleHostDefinedOptions_0(state_, p_o, p_v);}
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=7&c=3
+TNode<Float64T> TorqueGeneratedExportedMacrosAssembler::LoadHoleRawNumericValue(TNode<Hole> p_o) {
+return LoadHoleRawNumericValue_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=7&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreHoleRawNumericValue(TNode<Hole> p_o, TNode<Float64T> p_v) {
+return StoreHoleRawNumericValue_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=8&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadHoleKind(TNode<Hole> p_o) {
+return LoadHoleKind_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=8&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreHoleKind(TNode<Hole> p_o, TNode<Smi> p_v) {
+return StoreHoleKind_0(state_, p_o, p_v);}
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=28&c=3
 TNode<Uint8T> TorqueGeneratedExportedMacrosAssembler::LoadSmallOrderedHashSetNumberOfElements(TNode<SmallOrderedHashSet> p_o) {
 return LoadSmallOrderedHashSetNumberOfElements_0(state_, p_o);}
@@ -3999,35 +4145,35 @@ return LoadPropertyCellDependentCode_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StorePropertyCellDependentCode(TNode<PropertyCell> p_o, TNode<WeakFixedArray> p_v) {
 return StorePropertyCellDependentCode_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadPropertyDescriptorObjectFlags(TNode<PropertyDescriptorObject> p_o) {
 return LoadPropertyDescriptorObjectFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
 void TorqueGeneratedExportedMacrosAssembler::StorePropertyDescriptorObjectFlags(TNode<PropertyDescriptorObject> p_o, TNode<Smi> p_v) {
 return StorePropertyDescriptorObjectFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadPropertyDescriptorObjectValue(TNode<PropertyDescriptorObject> p_o) {
 return LoadPropertyDescriptorObjectValue_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
 void TorqueGeneratedExportedMacrosAssembler::StorePropertyDescriptorObjectValue(TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v) {
 return StorePropertyDescriptorObjectValue_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadPropertyDescriptorObjectGet(TNode<PropertyDescriptorObject> p_o) {
 return LoadPropertyDescriptorObjectGet_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
 void TorqueGeneratedExportedMacrosAssembler::StorePropertyDescriptorObjectGet(TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v) {
 return StorePropertyDescriptorObjectGet_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadPropertyDescriptorObjectSet(TNode<PropertyDescriptorObject> p_o) {
 return LoadPropertyDescriptorObjectSet_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
 void TorqueGeneratedExportedMacrosAssembler::StorePropertyDescriptorObjectSet(TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v) {
 return StorePropertyDescriptorObjectSet_0(state_, p_o, p_v);}
 
@@ -4079,77 +4225,77 @@ return LoadPrototypeInfoObjectCreateMap_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StorePrototypeInfoObjectCreateMap(TNode<PrototypeInfo> p_o, TNode<MaybeObject> p_v) {
 return StorePrototypeInfoObjectCreateMap_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
 TNode<PrimitiveHeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptSource(TNode<Script> p_o) {
 return LoadScriptSource_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptSource(TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
 return StoreScriptSource_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadScriptName(TNode<Script> p_o) {
 return LoadScriptName_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptName(TNode<Script> p_o, TNode<Object> p_v) {
 return StoreScriptName_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScriptLineOffset(TNode<Script> p_o) {
 return LoadScriptLineOffset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptLineOffset(TNode<Script> p_o, TNode<Smi> p_v) {
 return StoreScriptLineOffset_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=29&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScriptColumnOffset(TNode<Script> p_o) {
 return LoadScriptColumnOffset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=29&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptColumnOffset(TNode<Script> p_o, TNode<Smi> p_v) {
 return StoreScriptColumnOffset_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadScriptContextData(TNode<Script> p_o) {
 return LoadScriptContextData_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptContextData(TNode<Script> p_o, TNode<Object> p_v) {
 return StoreScriptContextData_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScriptScriptType(TNode<Script> p_o) {
 return LoadScriptScriptType_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptScriptType(TNode<Script> p_o, TNode<Smi> p_v) {
 return StoreScriptScriptType_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
-TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptLineEnds(TNode<Script> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
+TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadScriptLineEnds(TNode<Script> p_o) {
 return LoadScriptLineEnds_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=37&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreScriptLineEnds(TNode<Script> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreScriptLineEnds(TNode<Script> p_o, TNode<Object> p_v) {
 return StoreScriptLineEnds_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScriptId(TNode<Script> p_o) {
 return LoadScriptId_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptId(TNode<Script> p_o, TNode<Smi> p_v) {
 return StoreScriptId_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptEvalFromSharedOrWrappedArgumentsOrSfiTable(TNode<Script> p_o) {
-return LoadScriptEvalFromSharedOrWrappedArgumentsOrSfiTable_0(state_, p_o);}
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptEvalFromSharedOrWrappedArguments(TNode<Script> p_o) {
+return LoadScriptEvalFromSharedOrWrappedArguments_0(state_, p_o);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreScriptEvalFromSharedOrWrappedArgumentsOrSfiTable(TNode<Script> p_o, TNode<HeapObject> p_v) {
-return StoreScriptEvalFromSharedOrWrappedArgumentsOrSfiTable_0(state_, p_o, p_v);}
+void TorqueGeneratedExportedMacrosAssembler::StoreScriptEvalFromSharedOrWrappedArguments(TNode<Script> p_o, TNode<HeapObject> p_v) {
+return StoreScriptEvalFromSharedOrWrappedArguments_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadScriptEvalFromPosition(TNode<Script> p_o) {
@@ -4167,43 +4313,51 @@ return LoadScriptSharedFunctionInfos_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptSharedFunctionInfos(TNode<Script> p_o, TNode<HeapObject> p_v) {
 return StoreScriptSharedFunctionInfos_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=52&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptCompiledLazyFunctionPositions(TNode<Script> p_o) {
+return LoadScriptCompiledLazyFunctionPositions_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreScriptCompiledLazyFunctionPositions(TNode<Script> p_o, TNode<HeapObject> p_v) {
+return StoreScriptCompiledLazyFunctionPositions_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadScriptFlags(TNode<Script> p_o) {
 return LoadScriptFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=52&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptFlags(TNode<Script> p_o, TNode<Smi> p_v) {
 return StoreScriptFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
 TNode<PrimitiveHeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptSourceUrl(TNode<Script> p_o) {
 return LoadScriptSourceUrl_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=55&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptSourceUrl(TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
 return StoreScriptSourceUrl_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadScriptSourceMappingUrl(TNode<Script> p_o) {
 return LoadScriptSourceMappingUrl_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptSourceMappingUrl(TNode<Script> p_o, TNode<Object> p_v) {
 return StoreScriptSourceMappingUrl_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadScriptHostDefinedOptions(TNode<Script> p_o) {
 return LoadScriptHostDefinedOptions_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptHostDefinedOptions(TNode<Script> p_o, TNode<FixedArray> p_v) {
 return StoreScriptHostDefinedOptions_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
 TNode<PrimitiveHeapObject> TorqueGeneratedExportedMacrosAssembler::LoadScriptSourceHash(TNode<Script> p_o) {
 return LoadScriptSourceHash_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreScriptSourceHash(TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
 return StoreScriptSourceHash_0(state_, p_o, p_v);}
 
@@ -4231,203 +4385,203 @@ return LoadInterpreterDataBytecodeArray_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreInterpreterDataBytecodeArray(TNode<InterpreterData> p_o, TNode<BytecodeArray> p_v) {
 return StoreInterpreterDataBytecodeArray_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
 TNode<Code> TorqueGeneratedExportedMacrosAssembler::LoadInterpreterDataInterpreterTrampoline(TNode<InterpreterData> p_o) {
 return LoadInterpreterDataInterpreterTrampoline_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=14&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreInterpreterDataInterpreterTrampoline(TNode<InterpreterData> p_o, TNode<Code> p_v) {
 return StoreInterpreterDataInterpreterTrampoline_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFunctionData(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoFunctionData_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoFunctionData(TNode<SharedFunctionInfo> p_o, TNode<Object> p_v) {
 return StoreSharedFunctionInfoFunctionData_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoNameOrScopeInfo(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoNameOrScopeInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoNameOrScopeInfo(TNode<SharedFunctionInfo> p_o, TNode<Object> p_v) {
 return StoreSharedFunctionInfoNameOrScopeInfo_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoOuterScopeInfoOrFeedbackMetadata(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoOuterScopeInfoOrFeedbackMetadata_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoOuterScopeInfoOrFeedbackMetadata(TNode<SharedFunctionInfo> p_o, TNode<HeapObject> p_v) {
 return StoreSharedFunctionInfoOuterScopeInfoOrFeedbackMetadata_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoScriptOrDebugInfo(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoScriptOrDebugInfo_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoScriptOrDebugInfo(TNode<SharedFunctionInfo> p_o, TNode<HeapObject> p_v) {
 return StoreSharedFunctionInfoScriptOrDebugInfo_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=65&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=63&c=3
 TNode<Int16T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoLength(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoLength_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=65&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=63&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoLength(TNode<SharedFunctionInfo> p_o, TNode<Int16T> p_v) {
 return StoreSharedFunctionInfoLength_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=68&c=3
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFormalParameterCount(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoFormalParameterCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=68&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoFormalParameterCount(TNode<SharedFunctionInfo> p_o, TNode<Uint16T> p_v) {
 return StoreSharedFunctionInfoFormalParameterCount_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=71&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=69&c=3
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFunctionTokenOffset(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoFunctionTokenOffset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=71&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=69&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoFunctionTokenOffset(TNode<SharedFunctionInfo> p_o, TNode<Uint16T> p_v) {
 return StoreSharedFunctionInfoFunctionTokenOffset_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=72&c=3
 TNode<Uint8T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoExpectedNofProperties(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoExpectedNofProperties_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=72&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoExpectedNofProperties(TNode<SharedFunctionInfo> p_o, TNode<Uint8T> p_v) {
 return StoreSharedFunctionInfoExpectedNofProperties_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=73&c=3
 TNode<Uint8T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFlags2(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoFlags2_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=73&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoFlags2(TNode<SharedFunctionInfo> p_o, TNode<Uint8T> p_v) {
 return StoreSharedFunctionInfoFlags2_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
 TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFlags(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoFlags(TNode<SharedFunctionInfo> p_o, TNode<Uint32T> p_v) {
 return StoreSharedFunctionInfoFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=80&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadSharedFunctionInfoFunctionLiteralId(TNode<SharedFunctionInfo> p_o) {
 return LoadSharedFunctionInfoFunctionLiteralId_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=80&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSharedFunctionInfoFunctionLiteralId(TNode<SharedFunctionInfo> p_o, TNode<Int32T> p_v) {
 return StoreSharedFunctionInfoFunctionLiteralId_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadUncompiledDataInferredName(TNode<UncompiledData> p_o) {
 return LoadUncompiledDataInferredName_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreUncompiledDataInferredName(TNode<UncompiledData> p_o, TNode<String> p_v) {
 return StoreUncompiledDataInferredName_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadUncompiledDataStartPosition(TNode<UncompiledData> p_o) {
 return LoadUncompiledDataStartPosition_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreUncompiledDataStartPosition(TNode<UncompiledData> p_o, TNode<Int32T> p_v) {
 return StoreUncompiledDataStartPosition_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
 TNode<Int32T> TorqueGeneratedExportedMacrosAssembler::LoadUncompiledDataEndPosition(TNode<UncompiledData> p_o) {
 return LoadUncompiledDataEndPosition_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreUncompiledDataEndPosition(TNode<UncompiledData> p_o, TNode<Int32T> p_v) {
 return StoreUncompiledDataEndPosition_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
 TNode<PreparseData> TorqueGeneratedExportedMacrosAssembler::LoadUncompiledDataWithPreparseDataPreparseData(TNode<UncompiledDataWithPreparseData> p_o) {
 return LoadUncompiledDataWithPreparseDataPreparseData_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreUncompiledDataWithPreparseDataPreparseData(TNode<UncompiledDataWithPreparseData> p_o, TNode<PreparseData> p_v) {
 return StoreUncompiledDataWithPreparseDataPreparseData_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=138&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
 TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadUncompiledDataWithoutPreparseDataWithJobJob(TNode<UncompiledDataWithoutPreparseDataWithJob> p_o) {
 return LoadUncompiledDataWithoutPreparseDataWithJobJob_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=138&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreUncompiledDataWithoutPreparseDataWithJobJob(TNode<UncompiledDataWithoutPreparseDataWithJob> p_o, TNode<RawPtrT> p_v) {
 return StoreUncompiledDataWithoutPreparseDataWithJobJob_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=147&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
 TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadUncompiledDataWithPreparseDataAndJobJob(TNode<UncompiledDataWithPreparseDataAndJob> p_o) {
 return LoadUncompiledDataWithPreparseDataAndJobJob_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=147&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreUncompiledDataWithPreparseDataAndJobJob(TNode<UncompiledDataWithPreparseDataAndJob> p_o, TNode<RawPtrT> p_v) {
 return StoreUncompiledDataWithPreparseDataAndJobJob_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataBlockIds(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataBlockIds_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataBlockIds(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<ByteArray> p_v) {
 return StoreOnHeapBasicBlockProfilerDataBlockIds_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataCounts(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataCounts_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataCounts(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<ByteArray> p_v) {
 return StoreOnHeapBasicBlockProfilerDataCounts_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataBranches(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataBranches_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataBranches(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<ByteArray> p_v) {
 return StoreOnHeapBasicBlockProfilerDataBranches_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataName(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataName_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataName(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<String> p_v) {
 return StoreOnHeapBasicBlockProfilerDataName_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataSchedule(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataSchedule_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataSchedule(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<String> p_v) {
 return StoreOnHeapBasicBlockProfilerDataSchedule_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataCode(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataCode_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataCode(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<String> p_v) {
 return StoreOnHeapBasicBlockProfilerDataCode_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadOnHeapBasicBlockProfilerDataHash(TNode<OnHeapBasicBlockProfilerData> p_o) {
 return LoadOnHeapBasicBlockProfilerDataHash_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreOnHeapBasicBlockProfilerDataHash(TNode<OnHeapBasicBlockProfilerData> p_o, TNode<Smi> p_v) {
 return StoreOnHeapBasicBlockProfilerDataHash_0(state_, p_o, p_v);}
 
@@ -4599,75 +4753,75 @@ return LoadSourceTextModuleInfoEntryEndPos_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreSourceTextModuleInfoEntryEndPos(TNode<SourceTextModuleInfoEntry> p_o, TNode<Smi> p_v) {
 return StoreSourceTextModuleInfoEntryEndPos_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadConsStringFirst(TNode<ConsString> p_o) {
 return LoadConsStringFirst_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreConsStringFirst(TNode<ConsString> p_o, TNode<String> p_v) {
 return StoreConsStringFirst_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadConsStringSecond(TNode<ConsString> p_o) {
 return LoadConsStringSecond_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreConsStringSecond(TNode<ConsString> p_o, TNode<String> p_v) {
 return StoreConsStringSecond_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=57&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=92&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadExternalStringResource(TNode<ExternalString> p_o) {
 return LoadExternalStringResource_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=57&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=92&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreExternalStringResource(TNode<ExternalString> p_o, TNode<ExternalPointerT> p_v) {
 return StoreExternalStringResource_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=94&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadExternalStringResourceData(TNode<ExternalString> p_o) {
 return LoadExternalStringResourceData_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=94&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreExternalStringResourceData(TNode<ExternalString> p_o, TNode<ExternalPointerT> p_v) {
 return StoreExternalStringResourceData_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 TorqueStructSlice_char8_ConstReference_char8_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceSeqOneByteStringChars(TNode<SeqOneByteString> p_o) {
 return FieldSliceSeqOneByteStringChars_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 TNode<Uint8T> TorqueGeneratedExportedMacrosAssembler::LoadSeqOneByteStringChars(TNode<SeqOneByteString> p_o, TNode<IntPtrT> p_i) {
 return LoadSeqOneByteStringChars_0(state_, p_o, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
 TorqueStructSlice_char16_ConstReference_char16_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceSeqTwoByteStringChars(TNode<SeqTwoByteString> p_o) {
 return FieldSliceSeqTwoByteStringChars_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
 TNode<Uint16T> TorqueGeneratedExportedMacrosAssembler::LoadSeqTwoByteStringChars(TNode<SeqTwoByteString> p_o, TNode<IntPtrT> p_i) {
 return LoadSeqTwoByteStringChars_0(state_, p_o, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadSlicedStringParent(TNode<SlicedString> p_o) {
 return LoadSlicedStringParent_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSlicedStringParent(TNode<SlicedString> p_o, TNode<String> p_v) {
 return StoreSlicedStringParent_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadSlicedStringOffset(TNode<SlicedString> p_o) {
 return LoadSlicedStringOffset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreSlicedStringOffset(TNode<SlicedString> p_o, TNode<Smi> p_v) {
 return StoreSlicedStringOffset_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadThinStringActual(TNode<ThinString> p_o) {
 return LoadThinStringActual_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreThinStringActual(TNode<ThinString> p_o, TNode<String> p_v) {
 return StoreThinStringActual_0(state_, p_o, p_v);}
 
@@ -5046,6 +5200,146 @@ return LoadTurbofanOtherNumberConstantTypeConstant_0(state_, p_o);}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreTurbofanOtherNumberConstantTypeConstant(TNode<TurbofanOtherNumberConstantType> p_o, TNode<Float64T> p_v) {
 return StoreTurbofanOtherNumberConstantTypeConstant_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord32RangeTypeFrom(TNode<TurboshaftWord32RangeType> p_o) {
+return LoadTurboshaftWord32RangeTypeFrom_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord32RangeTypeFrom(TNode<TurboshaftWord32RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord32RangeTypeFrom_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord32RangeTypeTo(TNode<TurboshaftWord32RangeType> p_o) {
+return LoadTurboshaftWord32RangeTypeTo_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord32RangeTypeTo(TNode<TurboshaftWord32RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord32RangeTypeTo_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=35&c=9
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord32SetTypeSetSize(TNode<TurboshaftWord32SetType> p_o) {
+return LoadTurboshaftWord32SetTypeSetSize_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+TorqueStructSlice_uint32_MutableReference_uint32_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceTurboshaftWord32SetTypeElements(TNode<TurboshaftWord32SetType> p_o) {
+return FieldSliceTurboshaftWord32SetTypeElements_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord32SetTypeElements(TNode<TurboshaftWord32SetType> p_o, TNode<IntPtrT> p_i) {
+return LoadTurboshaftWord32SetTypeElements_0(state_, p_o, p_i);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord32SetTypeElements(TNode<TurboshaftWord32SetType> p_o, TNode<IntPtrT> p_i, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord32SetTypeElements_0(state_, p_o, p_i, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64RangeTypeFromHigh(TNode<TurboshaftWord64RangeType> p_o) {
+return LoadTurboshaftWord64RangeTypeFromHigh_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord64RangeTypeFromHigh(TNode<TurboshaftWord64RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord64RangeTypeFromHigh_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64RangeTypeFromLow(TNode<TurboshaftWord64RangeType> p_o) {
+return LoadTurboshaftWord64RangeTypeFromLow_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord64RangeTypeFromLow(TNode<TurboshaftWord64RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord64RangeTypeFromLow_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64RangeTypeToHigh(TNode<TurboshaftWord64RangeType> p_o) {
+return LoadTurboshaftWord64RangeTypeToHigh_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord64RangeTypeToHigh(TNode<TurboshaftWord64RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord64RangeTypeToHigh_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64RangeTypeToLow(TNode<TurboshaftWord64RangeType> p_o) {
+return LoadTurboshaftWord64RangeTypeToLow_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord64RangeTypeToLow(TNode<TurboshaftWord64RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord64RangeTypeToLow_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=59&c=9
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64SetTypeSetSize(TNode<TurboshaftWord64SetType> p_o) {
+return LoadTurboshaftWord64SetTypeSetSize_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+TorqueStructSlice_uint32_MutableReference_uint32_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceTurboshaftWord64SetTypeElementsHigh(TNode<TurboshaftWord64SetType> p_o) {
+return FieldSliceTurboshaftWord64SetTypeElementsHigh_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64SetTypeElementsHigh(TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i) {
+return LoadTurboshaftWord64SetTypeElementsHigh_0(state_, p_o, p_i);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord64SetTypeElementsHigh(TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord64SetTypeElementsHigh_0(state_, p_o, p_i, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+TorqueStructSlice_uint32_MutableReference_uint32_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceTurboshaftWord64SetTypeElementsLow(TNode<TurboshaftWord64SetType> p_o) {
+return FieldSliceTurboshaftWord64SetTypeElementsLow_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftWord64SetTypeElementsLow(TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i) {
+return LoadTurboshaftWord64SetTypeElementsLow_0(state_, p_o, p_i);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftWord64SetTypeElementsLow(TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i, TNode<Uint32T> p_v) {
+return StoreTurboshaftWord64SetTypeElementsLow_0(state_, p_o, p_i, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftFloat64TypeSpecialValues(TNode<TurboshaftFloat64Type> p_o) {
+return LoadTurboshaftFloat64TypeSpecialValues_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftFloat64TypeSpecialValues(TNode<TurboshaftFloat64Type> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftFloat64TypeSpecialValues_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftFloat64RangeTypePadding(TNode<TurboshaftFloat64RangeType> p_o) {
+return LoadTurboshaftFloat64RangeTypePadding_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftFloat64RangeTypePadding(TNode<TurboshaftFloat64RangeType> p_o, TNode<Uint32T> p_v) {
+return StoreTurboshaftFloat64RangeTypePadding_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+TNode<Float64T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftFloat64RangeTypeMin(TNode<TurboshaftFloat64RangeType> p_o) {
+return LoadTurboshaftFloat64RangeTypeMin_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftFloat64RangeTypeMin(TNode<TurboshaftFloat64RangeType> p_o, TNode<Float64T> p_v) {
+return StoreTurboshaftFloat64RangeTypeMin_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+TNode<Float64T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftFloat64RangeTypeMax(TNode<TurboshaftFloat64RangeType> p_o) {
+return LoadTurboshaftFloat64RangeTypeMax_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftFloat64RangeTypeMax(TNode<TurboshaftFloat64RangeType> p_o, TNode<Float64T> p_v) {
+return StoreTurboshaftFloat64RangeTypeMax_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=84&c=9
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftFloat64SetTypeSetSize(TNode<TurboshaftFloat64SetType> p_o) {
+return LoadTurboshaftFloat64SetTypeSetSize_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+TorqueStructSlice_float64_MutableReference_float64_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceTurboshaftFloat64SetTypeElements(TNode<TurboshaftFloat64SetType> p_o) {
+return FieldSliceTurboshaftFloat64SetTypeElements_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+TNode<Float64T> TorqueGeneratedExportedMacrosAssembler::LoadTurboshaftFloat64SetTypeElements(TNode<TurboshaftFloat64SetType> p_o, TNode<IntPtrT> p_i) {
+return LoadTurboshaftFloat64SetTypeElements_0(state_, p_o, p_i);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreTurboshaftFloat64SetTypeElements(TNode<TurboshaftFloat64SetType> p_o, TNode<IntPtrT> p_i, TNode<Float64T> p_v) {
+return StoreTurboshaftFloat64SetTypeElements_0(state_, p_o, p_i, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=765&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadInternalClassA(TNode<InternalClass> p_o) {
@@ -5743,43 +6037,43 @@ return LoadJSSegmentsFlags_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreJSSegmentsFlags(TNode<JSSegments> p_o, TNode<Smi> p_v) {
 return StoreJSSegmentsFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
-TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadWasmApiFunctionRefIsolateRoot(TNode<WasmApiFunctionRef> p_o) {
-return LoadWasmApiFunctionRefIsolateRoot_0(state_, p_o);}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadWasmArrayLength(TNode<WasmArray> p_o) {
+return LoadWasmArrayLength_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmArrayLength(TNode<WasmArray> p_o, TNode<Uint32T> p_v) {
+return StoreWasmArrayLength_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreWasmApiFunctionRefIsolateRoot(TNode<WasmApiFunctionRef> p_o, TNode<RawPtrT> p_v) {
-return StoreWasmApiFunctionRefIsolateRoot_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
 TNode<NativeContext> TorqueGeneratedExportedMacrosAssembler::LoadWasmApiFunctionRefNativeContext(TNode<WasmApiFunctionRef> p_o) {
 return LoadWasmApiFunctionRefNativeContext_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmApiFunctionRefNativeContext(TNode<WasmApiFunctionRef> p_o, TNode<NativeContext> p_v) {
 return StoreWasmApiFunctionRefNativeContext_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmApiFunctionRefCallable(TNode<WasmApiFunctionRef> p_o) {
 return LoadWasmApiFunctionRefCallable_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmApiFunctionRefCallable(TNode<WasmApiFunctionRef> p_o, TNode<HeapObject> p_v) {
 return StoreWasmApiFunctionRefCallable_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=25&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmApiFunctionRefInstance(TNode<WasmApiFunctionRef> p_o) {
 return LoadWasmApiFunctionRefInstance_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=25&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmApiFunctionRefInstance(TNode<WasmApiFunctionRef> p_o, TNode<HeapObject> p_v) {
 return StoreWasmApiFunctionRefInstance_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=26&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmApiFunctionRefSuspend(TNode<WasmApiFunctionRef> p_o) {
 return LoadWasmApiFunctionRefSuspend_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=26&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmApiFunctionRefSuspend(TNode<WasmApiFunctionRef> p_o, TNode<Smi> p_v) {
 return StoreWasmApiFunctionRefSuspend_0(state_, p_o, p_v);}
 
@@ -5791,125 +6085,157 @@ return LoadWasmFunctionDataInternal_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmFunctionDataInternal(TNode<WasmFunctionData> p_o, TNode<WasmInternalFunction> p_v) {
 return StoreWasmFunctionDataInternal_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=57&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=3
 TNode<Code> TorqueGeneratedExportedMacrosAssembler::LoadWasmFunctionDataWrapperCode(TNode<WasmFunctionData> p_o) {
 return LoadWasmFunctionDataWrapperCode_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=57&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmFunctionDataWrapperCode(TNode<WasmFunctionData> p_o, TNode<Code> p_v) {
 return StoreWasmFunctionDataWrapperCode_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=58&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmFunctionDataJsPromiseFlags(TNode<WasmFunctionData> p_o) {
 return LoadWasmFunctionDataJsPromiseFlags_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=58&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmFunctionDataJsPromiseFlags(TNode<WasmFunctionData> p_o, TNode<Smi> p_v) {
 return StoreWasmFunctionDataJsPromiseFlags_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=3
 TNode<WasmInstanceObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataInstance(TNode<WasmExportedFunctionData> p_o) {
 return LoadWasmExportedFunctionDataInstance_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataInstance(TNode<WasmExportedFunctionData> p_o, TNode<WasmInstanceObject> p_v) {
 return StoreWasmExportedFunctionDataInstance_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=67&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=66&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataFunctionIndex(TNode<WasmExportedFunctionData> p_o) {
 return LoadWasmExportedFunctionDataFunctionIndex_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=67&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=66&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataFunctionIndex(TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
 return StoreWasmExportedFunctionDataFunctionIndex_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=67&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataWrapperBudget(TNode<WasmExportedFunctionData> p_o) {
 return LoadWasmExportedFunctionDataWrapperBudget_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=67&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataWrapperBudget(TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
 return StoreWasmExportedFunctionDataWrapperBudget_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=72&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=70&c=3
 TNode<Code> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataCWrapperCode(TNode<WasmExportedFunctionData> p_o) {
 return LoadWasmExportedFunctionDataCWrapperCode_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=72&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=70&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataCWrapperCode(TNode<WasmExportedFunctionData> p_o, TNode<Code> p_v) {
 return StoreWasmExportedFunctionDataCWrapperCode_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=73&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=71&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataPackedArgsSize(TNode<WasmExportedFunctionData> p_o) {
 return LoadWasmExportedFunctionDataPackedArgsSize_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=73&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=71&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataPackedArgsSize(TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
 return StoreWasmExportedFunctionDataPackedArgsSize_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=72&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataCanonicalTypeIndex(TNode<WasmExportedFunctionData> p_o) {
+return LoadWasmExportedFunctionDataCanonicalTypeIndex_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=72&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataCanonicalTypeIndex(TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
+return StoreWasmExportedFunctionDataCanonicalTypeIndex_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=73&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadWasmExportedFunctionDataSig(TNode<WasmExportedFunctionData> p_o) {
 return LoadWasmExportedFunctionDataSig_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=73&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExportedFunctionDataSig(TNode<WasmExportedFunctionData> p_o, TNode<ExternalPointerT> p_v) {
 return StoreWasmExportedFunctionDataSig_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=78&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=77&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmJSFunctionDataSerializedReturnCount(TNode<WasmJSFunctionData> p_o) {
 return LoadWasmJSFunctionDataSerializedReturnCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=78&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=77&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmJSFunctionDataSerializedReturnCount(TNode<WasmJSFunctionData> p_o, TNode<Smi> p_v) {
 return StoreWasmJSFunctionDataSerializedReturnCount_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=79&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=78&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmJSFunctionDataSerializedParameterCount(TNode<WasmJSFunctionData> p_o) {
 return LoadWasmJSFunctionDataSerializedParameterCount_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=79&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=78&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmJSFunctionDataSerializedParameterCount(TNode<WasmJSFunctionData> p_o, TNode<Smi> p_v) {
 return StoreWasmJSFunctionDataSerializedParameterCount_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=81&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=79&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmJSFunctionDataSerializedSignature(TNode<WasmJSFunctionData> p_o) {
 return LoadWasmJSFunctionDataSerializedSignature_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=81&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=79&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmJSFunctionDataSerializedSignature(TNode<WasmJSFunctionData> p_o, TNode<ByteArray> p_v) {
 return StoreWasmJSFunctionDataSerializedSignature_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=3
 TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadWasmCapiFunctionDataEmbedderData(TNode<WasmCapiFunctionData> p_o) {
 return LoadWasmCapiFunctionDataEmbedderData_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmCapiFunctionDataEmbedderData(TNode<WasmCapiFunctionData> p_o, TNode<Foreign> p_v) {
 return StoreWasmCapiFunctionDataEmbedderData_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=84&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmCapiFunctionDataSerializedSignature(TNode<WasmCapiFunctionData> p_o) {
 return LoadWasmCapiFunctionDataSerializedSignature_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=84&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmCapiFunctionDataSerializedSignature(TNode<WasmCapiFunctionData> p_o, TNode<ByteArray> p_v) {
 return StoreWasmCapiFunctionDataSerializedSignature_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=91&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=88&c=3
 TNode<WasmSuspenderObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmResumeDataSuspender(TNode<WasmResumeData> p_o) {
 return LoadWasmResumeDataSuspender_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=91&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=88&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmResumeDataSuspender(TNode<WasmResumeData> p_o, TNode<WasmSuspenderObject> p_v) {
 return StoreWasmResumeDataSuspender_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=89&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmResumeDataOnResume(TNode<WasmResumeData> p_o) {
 return LoadWasmResumeDataOnResume_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=89&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmResumeDataOnResume(TNode<WasmResumeData> p_o, TNode<Smi> p_v) {
 return StoreWasmResumeDataOnResume_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=93&c=3
+TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableSigIds(TNode<WasmIndirectFunctionTable> p_o) {
+return LoadWasmIndirectFunctionTableSigIds_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=93&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableSigIds(TNode<WasmIndirectFunctionTable> p_o, TNode<ByteArray> p_v) {
+return StoreWasmIndirectFunctionTableSigIds_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=94&c=3
+TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableTargets(TNode<WasmIndirectFunctionTable> p_o) {
+return LoadWasmIndirectFunctionTableTargets_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=94&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableTargets(TNode<WasmIndirectFunctionTable> p_o, TNode<ByteArray> p_v) {
+return StoreWasmIndirectFunctionTableTargets_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=95&c=3
+TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableRefs(TNode<WasmIndirectFunctionTable> p_o) {
+return LoadWasmIndirectFunctionTableRefs_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=95&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableRefs(TNode<WasmIndirectFunctionTable> p_o, TNode<FixedArray> p_v) {
+return StoreWasmIndirectFunctionTableRefs_0(state_, p_o, p_v);}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=96&c=3
 TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableSize(TNode<WasmIndirectFunctionTable> p_o) {
@@ -5919,347 +6245,323 @@ return LoadWasmIndirectFunctionTableSize_0(state_, p_o);}
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableSize(TNode<WasmIndirectFunctionTable> p_o, TNode<Uint32T> p_v) {
 return StoreWasmIndirectFunctionTableSize_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=99&c=3
-TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableSigIds(TNode<WasmIndirectFunctionTable> p_o) {
-return LoadWasmIndirectFunctionTableSigIds_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=99&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableSigIds(TNode<WasmIndirectFunctionTable> p_o, TNode<RawPtrT> p_v) {
-return StoreWasmIndirectFunctionTableSigIds_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=100&c=3
-TNode<RawPtrT> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableTargets(TNode<WasmIndirectFunctionTable> p_o) {
-return LoadWasmIndirectFunctionTableTargets_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=100&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableTargets(TNode<WasmIndirectFunctionTable> p_o, TNode<RawPtrT> p_v) {
-return StoreWasmIndirectFunctionTableTargets_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=101&c=3
-TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableManagedNativeAllocations(TNode<WasmIndirectFunctionTable> p_o) {
-return LoadWasmIndirectFunctionTableManagedNativeAllocations_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=101&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableManagedNativeAllocations(TNode<WasmIndirectFunctionTable> p_o, TNode<HeapObject> p_v) {
-return StoreWasmIndirectFunctionTableManagedNativeAllocations_0(state_, p_o, p_v);}
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=3
-TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmIndirectFunctionTableRefs(TNode<WasmIndirectFunctionTable> p_o) {
-return LoadWasmIndirectFunctionTableRefs_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreWasmIndirectFunctionTableRefs(TNode<WasmIndirectFunctionTable> p_o, TNode<FixedArray> p_v) {
-return StoreWasmIndirectFunctionTableRefs_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=3
 TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadWasmContinuationObjectStack(TNode<WasmContinuationObject> p_o) {
 return LoadWasmContinuationObjectStack_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmContinuationObjectStack(TNode<WasmContinuationObject> p_o, TNode<Foreign> p_v) {
 return StoreWasmContinuationObjectStack_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=107&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=103&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmContinuationObjectParent(TNode<WasmContinuationObject> p_o) {
 return LoadWasmContinuationObjectParent_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=107&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=103&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmContinuationObjectParent(TNode<WasmContinuationObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmContinuationObjectParent_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=104&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadWasmContinuationObjectJmpbuf(TNode<WasmContinuationObject> p_o) {
 return LoadWasmContinuationObjectJmpbuf_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=104&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmContinuationObjectJmpbuf(TNode<WasmContinuationObject> p_o, TNode<ExternalPointerT> p_v) {
 return StoreWasmContinuationObjectJmpbuf_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmSuspenderObjectContinuation(TNode<WasmSuspenderObject> p_o) {
 return LoadWasmSuspenderObjectContinuation_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmSuspenderObjectContinuation(TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmSuspenderObjectContinuation_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=113&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=109&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmSuspenderObjectParent(TNode<WasmSuspenderObject> p_o) {
 return LoadWasmSuspenderObjectParent_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=113&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=109&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmSuspenderObjectParent(TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmSuspenderObjectParent_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=110&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmSuspenderObjectResume(TNode<WasmSuspenderObject> p_o) {
 return LoadWasmSuspenderObjectResume_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=110&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmSuspenderObjectResume(TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmSuspenderObjectResume_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=111&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmSuspenderObjectReject(TNode<WasmSuspenderObject> p_o) {
 return LoadWasmSuspenderObjectReject_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=111&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmSuspenderObjectReject(TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmSuspenderObjectReject_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmSuspenderObjectState(TNode<WasmSuspenderObject> p_o) {
 return LoadWasmSuspenderObjectState_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmSuspenderObjectState(TNode<WasmSuspenderObject> p_o, TNode<Smi> p_v) {
 return StoreWasmSuspenderObjectState_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=123&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadWasmSuspenderObjectWasmToJsCounter(TNode<WasmSuspenderObject> p_o) {
+return LoadWasmSuspenderObjectWasmToJsCounter_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmSuspenderObjectWasmToJsCounter(TNode<WasmSuspenderObject> p_o, TNode<Uint32T> p_v) {
+return StoreWasmSuspenderObjectWasmToJsCounter_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=125&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmExceptionTagIndex(TNode<WasmExceptionTag> p_o) {
 return LoadWasmExceptionTagIndex_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=123&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=125&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmExceptionTagIndex(TNode<WasmExceptionTag> p_o, TNode<Smi> p_v) {
 return StoreWasmExceptionTagIndex_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=131&c=3
 TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadWasmModuleObjectManagedNativeModule(TNode<WasmModuleObject> p_o) {
 return LoadWasmModuleObjectManagedNativeModule_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=129&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=131&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmModuleObjectManagedNativeModule(TNode<WasmModuleObject> p_o, TNode<Foreign> p_v) {
 return StoreWasmModuleObjectManagedNativeModule_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=132&c=3
 TNode<Script> TorqueGeneratedExportedMacrosAssembler::LoadWasmModuleObjectScript(TNode<WasmModuleObject> p_o) {
 return LoadWasmModuleObjectScript_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=132&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmModuleObjectScript(TNode<WasmModuleObject> p_o, TNode<Script> p_v) {
 return StoreWasmModuleObjectScript_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=138&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=140&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmTableObjectInstance(TNode<WasmTableObject> p_o) {
 return LoadWasmTableObjectInstance_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=138&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=140&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTableObjectInstance(TNode<WasmTableObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmTableObjectInstance_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=143&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmTableObjectEntries(TNode<WasmTableObject> p_o) {
 return LoadWasmTableObjectEntries_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=143&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTableObjectEntries(TNode<WasmTableObject> p_o, TNode<FixedArray> p_v) {
 return StoreWasmTableObjectEntries_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=144&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmTableObjectCurrentLength(TNode<WasmTableObject> p_o) {
 return LoadWasmTableObjectCurrentLength_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=142&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=144&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTableObjectCurrentLength(TNode<WasmTableObject> p_o, TNode<Smi> p_v) {
 return StoreWasmTableObjectCurrentLength_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=143&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=145&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadWasmTableObjectMaximumLength(TNode<WasmTableObject> p_o) {
 return LoadWasmTableObjectMaximumLength_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=143&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=145&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTableObjectMaximumLength(TNode<WasmTableObject> p_o, TNode<Object> p_v) {
 return StoreWasmTableObjectMaximumLength_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=144&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=146&c=3
 TNode<FixedArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmTableObjectDispatchTables(TNode<WasmTableObject> p_o) {
 return LoadWasmTableObjectDispatchTables_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=144&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=146&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTableObjectDispatchTables(TNode<WasmTableObject> p_o, TNode<FixedArray> p_v) {
 return StoreWasmTableObjectDispatchTables_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=145&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=147&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmTableObjectRawType(TNode<WasmTableObject> p_o) {
 return LoadWasmTableObjectRawType_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=145&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=147&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTableObjectRawType(TNode<WasmTableObject> p_o, TNode<Smi> p_v) {
 return StoreWasmTableObjectRawType_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=149&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=3
 TNode<JSArrayBuffer> TorqueGeneratedExportedMacrosAssembler::LoadWasmMemoryObjectArrayBuffer(TNode<WasmMemoryObject> p_o) {
 return LoadWasmMemoryObjectArrayBuffer_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=149&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmMemoryObjectArrayBuffer(TNode<WasmMemoryObject> p_o, TNode<JSArrayBuffer> p_v) {
 return StoreWasmMemoryObjectArrayBuffer_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=150&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmMemoryObjectMaximumPages(TNode<WasmMemoryObject> p_o) {
 return LoadWasmMemoryObjectMaximumPages_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=150&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmMemoryObjectMaximumPages(TNode<WasmMemoryObject> p_o, TNode<Smi> p_v) {
 return StoreWasmMemoryObjectMaximumPages_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=153&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmMemoryObjectIsMemory64(TNode<WasmMemoryObject> p_o) {
 return LoadWasmMemoryObjectIsMemory64_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=153&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmMemoryObjectIsMemory64(TNode<WasmMemoryObject> p_o, TNode<Smi> p_v) {
 return StoreWasmMemoryObjectIsMemory64_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=154&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmMemoryObjectInstances(TNode<WasmMemoryObject> p_o) {
 return LoadWasmMemoryObjectInstances_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=154&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmMemoryObjectInstances(TNode<WasmMemoryObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmMemoryObjectInstances_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=160&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=162&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmGlobalObjectInstance(TNode<WasmGlobalObject> p_o) {
 return LoadWasmGlobalObjectInstance_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=160&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=162&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmGlobalObjectInstance(TNode<WasmGlobalObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmGlobalObjectInstance_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=161&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmGlobalObjectUntaggedBuffer(TNode<WasmGlobalObject> p_o) {
 return LoadWasmGlobalObjectUntaggedBuffer_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=161&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmGlobalObjectUntaggedBuffer(TNode<WasmGlobalObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmGlobalObjectUntaggedBuffer_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=164&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmGlobalObjectTaggedBuffer(TNode<WasmGlobalObject> p_o) {
 return LoadWasmGlobalObjectTaggedBuffer_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=164&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmGlobalObjectTaggedBuffer(TNode<WasmGlobalObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmGlobalObjectTaggedBuffer_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=165&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmGlobalObjectOffset(TNode<WasmGlobalObject> p_o) {
 return LoadWasmGlobalObjectOffset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=165&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmGlobalObjectOffset(TNode<WasmGlobalObject> p_o, TNode<Smi> p_v) {
 return StoreWasmGlobalObjectOffset_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=166&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmGlobalObjectRawType(TNode<WasmGlobalObject> p_o) {
 return LoadWasmGlobalObjectRawType_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=166&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmGlobalObjectRawType(TNode<WasmGlobalObject> p_o, TNode<Smi> p_v) {
 return StoreWasmGlobalObjectRawType_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=169&c=3
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmGlobalObjectIsMutable(TNode<WasmGlobalObject> p_o) {
 return LoadWasmGlobalObjectIsMutable_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=169&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmGlobalObjectIsMutable(TNode<WasmGlobalObject> p_o, TNode<Smi> p_v) {
 return StoreWasmGlobalObjectIsMutable_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=173&c=3
 TNode<ByteArray> TorqueGeneratedExportedMacrosAssembler::LoadWasmTagObjectSerializedSignature(TNode<WasmTagObject> p_o) {
 return LoadWasmTagObjectSerializedSignature_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=173&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTagObjectSerializedSignature(TNode<WasmTagObject> p_o, TNode<ByteArray> p_v) {
 return StoreWasmTagObjectSerializedSignature_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=172&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=174&c=3
 TNode<HeapObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmTagObjectTag(TNode<WasmTagObject> p_o) {
 return LoadWasmTagObjectTag_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=172&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=174&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTagObjectTag(TNode<WasmTagObject> p_o, TNode<HeapObject> p_v) {
 return StoreWasmTagObjectTag_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=175&c=3
+TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmTagObjectCanonicalTypeIndex(TNode<WasmTagObject> p_o) {
+return LoadWasmTagObjectCanonicalTypeIndex_0(state_, p_o);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=175&c=3
+void TorqueGeneratedExportedMacrosAssembler::StoreWasmTagObjectCanonicalTypeIndex(TNode<WasmTagObject> p_o, TNode<Smi> p_v) {
+return StoreWasmTagObjectCanonicalTypeIndex_0(state_, p_o, p_v);}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=181&c=3
 TNode<Foreign> TorqueGeneratedExportedMacrosAssembler::LoadAsmWasmDataManagedNativeModule(TNode<AsmWasmData> p_o) {
 return LoadAsmWasmDataManagedNativeModule_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=181&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreAsmWasmDataManagedNativeModule(TNode<AsmWasmData> p_o, TNode<Foreign> p_v) {
 return StoreAsmWasmDataManagedNativeModule_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=179&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=182&c=3
 TNode<HeapNumber> TorqueGeneratedExportedMacrosAssembler::LoadAsmWasmDataUsesBitset(TNode<AsmWasmData> p_o) {
 return LoadAsmWasmDataUsesBitset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=179&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=182&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreAsmWasmDataUsesBitset(TNode<AsmWasmData> p_o, TNode<HeapNumber> p_v) {
 return StoreAsmWasmDataUsesBitset_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=194&c=3
 TNode<ExternalPointerT> TorqueGeneratedExportedMacrosAssembler::LoadWasmTypeInfoNativeType(TNode<WasmTypeInfo> p_o) {
 return LoadWasmTypeInfoNativeType_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=194&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTypeInfoNativeType(TNode<WasmTypeInfo> p_o, TNode<ExternalPointerT> p_v) {
 return StoreWasmTypeInfoNativeType_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=192&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=195&c=3
 TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadWasmTypeInfoTypeIndex(TNode<WasmTypeInfo> p_o) {
 return LoadWasmTypeInfoTypeIndex_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=192&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=195&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTypeInfoTypeIndex(TNode<WasmTypeInfo> p_o, TNode<Uint32T> p_v) {
 return StoreWasmTypeInfoTypeIndex_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=195&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=198&c=3
 TNode<WasmInstanceObject> TorqueGeneratedExportedMacrosAssembler::LoadWasmTypeInfoInstance(TNode<WasmTypeInfo> p_o) {
 return LoadWasmTypeInfoInstance_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=195&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=198&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTypeInfoInstance(TNode<WasmTypeInfo> p_o, TNode<WasmInstanceObject> p_v) {
 return StoreWasmTypeInfoInstance_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=196&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=199&c=9
 TNode<Smi> TorqueGeneratedExportedMacrosAssembler::LoadWasmTypeInfoSupertypesLength(TNode<WasmTypeInfo> p_o) {
 return LoadWasmTypeInfoSupertypesLength_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=197&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
 TorqueStructSlice_Object_MutableReference_Object_0 TorqueGeneratedExportedMacrosAssembler::FieldSliceWasmTypeInfoSupertypes(TNode<WasmTypeInfo> p_o) {
 return FieldSliceWasmTypeInfoSupertypes_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=197&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
 TNode<Object> TorqueGeneratedExportedMacrosAssembler::LoadWasmTypeInfoSupertypes(TNode<WasmTypeInfo> p_o, TNode<IntPtrT> p_i) {
 return LoadWasmTypeInfoSupertypes_0(state_, p_o, p_i);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=197&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmTypeInfoSupertypes(TNode<WasmTypeInfo> p_o, TNode<IntPtrT> p_i, TNode<Object> p_v) {
 return StoreWasmTypeInfoSupertypes_0(state_, p_o, p_i, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=3
-TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadWasmArrayLength(TNode<WasmArray> p_o) {
-return LoadWasmArrayLength_0(state_, p_o);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=3
-void TorqueGeneratedExportedMacrosAssembler::StoreWasmArrayLength(TNode<WasmArray> p_o, TNode<Uint32T> p_v) {
-return StoreWasmArrayLength_0(state_, p_o, p_v);}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
 TNode<String> TorqueGeneratedExportedMacrosAssembler::LoadWasmStringViewIterString(TNode<WasmStringViewIter> p_o) {
 return LoadWasmStringViewIterString_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmStringViewIterString(TNode<WasmStringViewIter> p_o, TNode<String> p_v) {
 return StoreWasmStringViewIterString_0(state_, p_o, p_v);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
 TNode<Uint32T> TorqueGeneratedExportedMacrosAssembler::LoadWasmStringViewIterOffset(TNode<WasmStringViewIter> p_o) {
 return LoadWasmStringViewIterOffset_0(state_, p_o);}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
 void TorqueGeneratedExportedMacrosAssembler::StoreWasmStringViewIterOffset(TNode<WasmStringViewIter> p_o, TNode<Uint32T> p_v) {
 return StoreWasmStringViewIterOffset_0(state_, p_o, p_v);}
 

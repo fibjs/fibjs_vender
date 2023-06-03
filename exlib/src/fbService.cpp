@@ -28,7 +28,7 @@ void Service::init(int32_t workers)
 {
     if (!s_service) {
         s_service = new Service(workers);
-        s_service->m_main.saveStackGuard();
+        s_service->m_main.save_stack_start();
         s_service->bindCurrent();
     }
 }
@@ -96,7 +96,7 @@ static void _fiber_proc(void* param)
         Fiber* m_fb;
     } _cb(fb);
 
-    fb->saveStackGuard();
+    fb->save_stack_start();
     fb->m_func(fb->m_data);
 
     Service* now = fb->m_pService;

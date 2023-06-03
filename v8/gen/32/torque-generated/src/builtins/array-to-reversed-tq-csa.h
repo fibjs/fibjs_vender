@@ -6,17 +6,20 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=38&c=1
-TNode<JSArray> TryFastPackedArrayToReversed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=7&c=1
+TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=46&c=12
-TNode<JSArray> FastPackedArrayToReversed_FastPackedSmiElements_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=81&c=1
+TNode<JSArray> TryFastArrayToReversed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=50&c=12
-TNode<JSArray> FastPackedArrayToReversed_FastPackedObjectElements_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=89&c=12
+TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedArray> p_elements, TNode<Smi> p_length, bool p_initializeArray);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=54&c=12
-TNode<JSArray> FastPackedArrayToReversed_FastPackedDoubleElements_float64_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=109&c=14
+TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_length, bool p_initializeArray);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=52&c=12
+TNode<BoolT> Is_FixedArray_FixedArrayBase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_o);
 
 } // namespace internal
 } // namespace v8

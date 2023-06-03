@@ -189,11 +189,11 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
   void OptimizedStoreField(MachineRepresentation rep, Node* object, int offset,
                            Node* value, WriteBarrierKind write_barrier) {
     DCHECK(!IsMapOffsetConstantMinusTag(offset));
-    AddNode(simplified()->StoreField(FieldAccess(
-                BaseTaggedness::kTaggedBase, offset, MaybeHandle<Name>(),
-                MaybeHandle<Map>(), Type::Any(),
-                MachineType::TypeForRepresentation(rep), write_barrier,
-                "OptimizedStoreField")),
+    AddNode(simplified()->StoreField(
+                FieldAccess(BaseTaggedness::kTaggedBase, offset,
+                            MaybeHandle<Name>(), OptionalMapRef(), Type::Any(),
+                            MachineType::TypeForRepresentation(rep),
+                            write_barrier, "OptimizedStoreField")),
             object, value);
   }
   void OptimizedStoreMap(Node* object, Node* value,
@@ -876,19 +876,19 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->Float32RoundDown().op(), a);
   }
   Node* Float64RoundDown(Node* a) {
-    return AddNode(machine()->Float64RoundDown().op(), a);
+    return AddNode(machine()->Float64RoundDown().placeholder(), a);
   }
   Node* Float32RoundUp(Node* a) {
     return AddNode(machine()->Float32RoundUp().op(), a);
   }
   Node* Float64RoundUp(Node* a) {
-    return AddNode(machine()->Float64RoundUp().op(), a);
+    return AddNode(machine()->Float64RoundUp().placeholder(), a);
   }
   Node* Float32RoundTruncate(Node* a) {
     return AddNode(machine()->Float32RoundTruncate().op(), a);
   }
   Node* Float64RoundTruncate(Node* a) {
-    return AddNode(machine()->Float64RoundTruncate().op(), a);
+    return AddNode(machine()->Float64RoundTruncate().placeholder(), a);
   }
   Node* Float64RoundTiesAway(Node* a) {
     return AddNode(machine()->Float64RoundTiesAway().op(), a);
@@ -897,7 +897,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
     return AddNode(machine()->Float32RoundTiesEven().op(), a);
   }
   Node* Float64RoundTiesEven(Node* a) {
-    return AddNode(machine()->Float64RoundTiesEven().op(), a);
+    return AddNode(machine()->Float64RoundTiesEven().placeholder(), a);
   }
   Node* Word32ReverseBytes(Node* a) {
     return AddNode(machine()->Word32ReverseBytes(), a);

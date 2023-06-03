@@ -23,8 +23,3 @@ inline TorqueGeneratedHeapNumber<D, P>::TorqueGeneratedHeapNumber(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsHeapNumber_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedHeapNumber<D, P>::TorqueGeneratedHeapNumber(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsHeapNumber_NonInline(*this));
-}

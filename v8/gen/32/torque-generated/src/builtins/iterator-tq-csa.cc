@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,17 +63,20 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
+#include "torque-generated/src/builtins/boolean-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/ic-callable-tq-csa.h"
 #include "torque-generated/src/builtins/ic-tq-csa.h"
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
+#include "torque-generated/src/objects/js-objects-tq-csa.h"
 
 namespace v8 {
 namespace internal {
@@ -249,7 +254,7 @@ TF_BUILTIN(CallIteratorWithFeedback, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=120&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=122&c=1
 void IteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_iterator) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -425,6 +430,149 @@ void IteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Cont
   }
 
     ca_.Bind(&block14);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator.tq?l=144&c=1
+void IteratorClose_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_iterator) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BoolT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<String> tmp0;
+  TNode<Object> tmp1;
+  TNode<Oddball> tmp2;
+  TNode<BoolT> tmp3;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = kReturnString_0(state_);
+    tmp1 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_iterator.object}, TNode<Object>{tmp0});
+    tmp2 = Undefined_0(state_);
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
+  }
+
+  TNode<BoolT> tmp4;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp4 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block6, tmp4);
+  }
+
+  TNode<Oddball> tmp5;
+  TNode<BoolT> tmp6;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp5 = Null_0(state_);
+    tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp1}, TNode<HeapObject>{tmp5});
+    ca_.Goto(&block6, tmp6);
+  }
+
+  TNode<BoolT> phi_bb6_5;
+  if (block6.is_used()) {
+    ca_.Bind(&block6, &phi_bb6_5);
+    ca_.Branch(phi_bb6_5, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+  }
+
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    ca_.Goto(&block1);
+  }
+
+  TNode<Object> tmp7;
+  TNode<JSReceiver> tmp8;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp7 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp1}, TNode<Object>{p_iterator.object});
+    compiler::CodeAssemblerLabel label9(&ca_);
+    tmp8 = Cast_JSReceiver_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp7}, &label9);
+    ca_.Goto(&block9);
+    if (label9.is_used()) {
+      ca_.Bind(&label9);
+      ca_.Goto(&block10);
+    }
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kCalledOnNonObject, "return");
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(&block11);
+  }
+
+    ca_.Bind(&block11);
+}
+
+TF_BUILTIN(IteratorConstructor, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  USE(parameter1);
+  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
+USE(parameter2);
+  TNode<JSFunction> parameter3 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
+USE(parameter3);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Oddball> tmp0;
+  TNode<BoolT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = Undefined_0(state_);
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp0});
+    ca_.Branch(tmp1, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kConstructorNotFunction, "Iterator");
+  }
+
+  TNode<BoolT> tmp2;
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{parameter3});
+    ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kConstructAbstractClass, "Iterator");
+  }
+
+  TNode<JSReceiver> tmp3;
+  TNode<Map> tmp4;
+  TNode<JSObject> tmp5;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp3 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp4 = GetDerivedMap_0(state_, TNode<Context>{parameter0}, TNode<JSFunction>{parameter3}, TNode<JSReceiver>{tmp3});
+    tmp5 = AllocateFastOrSlowJSObjectFromMap_0(state_, TNode<Context>{parameter0}, TNode<Map>{tmp4});
+    CodeStubAssembler(state_).Return(tmp5);
+  }
 }
 
 } // namespace internal

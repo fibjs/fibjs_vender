@@ -84,9 +84,6 @@ class TorqueGeneratedJSProxy : public P {
 
  protected:
   inline explicit TorqueGeneratedJSProxy(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSProxy(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=10&c=1
@@ -152,8 +149,5 @@ class TorqueGeneratedJSProxyRevocableResult : public P {
 
  protected:
   inline explicit TorqueGeneratedJSProxyRevocableResult(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSProxyRevocableResult(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

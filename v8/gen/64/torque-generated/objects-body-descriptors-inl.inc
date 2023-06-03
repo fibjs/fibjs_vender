@@ -68,24 +68,6 @@ class MegaDomHandler::BodyDescriptor final : public SuffixRangeWeakBodyDescripto
   }
 
 };
-class SharedFunctionInfo::BodyDescriptor final : public BodyDescriptorBase {
- public:
-  static bool IsValidSlot(Map map, HeapObject obj, int offset) {
-      bool valid_slots[] = {1,1,1,1,1,0,0,};
-      return valid_slots[static_cast<unsigned int>(offset)/kTaggedSize];
-  }
-
-  template <typename ObjectVisitor>
-  static inline void IterateBody(Map map, HeapObject obj, int object_size, ObjectVisitor* v) {
-    IterateCustomWeakPointer(obj, 8, v);
-    IteratePointers(obj, 16, 40, v);
-  }
-
-  static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 56;
-  }
-
-};
 class UncompiledDataWithoutPreparseData::BodyDescriptor final : public FixedRangeBodyDescriptor<8, 16> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
@@ -213,6 +195,69 @@ class TurbofanOtherNumberConstantType::BodyDescriptor final : public DataOnlyBod
   }
 
 };
+class TurboshaftWord32Type::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return 8;
+  }
+
+};
+class TurboshaftWord32RangeType::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return 16;
+  }
+
+};
+class TurboshaftWord32SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return TurboshaftWord32SetType::unchecked_cast(raw_object).AllocatedSize();
+  }
+
+};
+class TurboshaftWord64Type::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return 8;
+  }
+
+};
+class TurboshaftWord64RangeType::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return 24;
+  }
+
+};
+class TurboshaftWord64SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return TurboshaftWord64SetType::unchecked_cast(raw_object).AllocatedSize();
+  }
+
+};
+class TurboshaftFloat64Type::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return 12;
+  }
+
+};
+class TurboshaftFloat64RangeType::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return 32;
+  }
+
+};
+class TurboshaftFloat64SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
+ public:
+  static inline int SizeOf(Map map, HeapObject raw_object) {
+    return TurboshaftFloat64SetType::unchecked_cast(raw_object).AllocatedSize();
+  }
+
+};
 class InternalClass::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
@@ -315,7 +360,7 @@ class SortState::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
 class WasmStringViewIter::BodyDescriptor final : public FixedRangeBodyDescriptor<8, 16> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return 20;
+    return 24;
   }
 
 };

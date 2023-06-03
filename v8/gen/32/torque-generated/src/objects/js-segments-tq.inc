@@ -76,8 +76,5 @@ class TorqueGeneratedJSSegments : public P {
 
  protected:
   inline explicit TorqueGeneratedJSSegments(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSSegments(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

@@ -82,6 +82,7 @@ TFJ(ArrayPrototypeWith, JSParameterCount(2), kReceiver, kIndex, kValue) \
 TFJ(ArrayBufferPrototypeGetByteLength, JSParameterCount(0), kReceiver) \
 TFJ(ArrayBufferPrototypeGetMaxByteLength, JSParameterCount(0), kReceiver) \
 TFJ(ArrayBufferPrototypeGetResizable, JSParameterCount(0), kReceiver) \
+TFJ(ArrayBufferPrototypeGetDetached, JSParameterCount(0), kReceiver) \
 TFJ(SharedArrayBufferPrototypeGetMaxByteLength, JSParameterCount(0), kReceiver) \
 TFJ(SharedArrayBufferPrototypeGetGrowable, JSParameterCount(0), kReceiver) \
 TFJ(ArrayBufferIsView, JSParameterCount(1), kReceiver, kArg) \
@@ -103,6 +104,19 @@ TFC(BigIntModulusNoThrow, BigIntModulusNoThrow) \
 TFC(BigIntModulus, BigIntModulus) \
 TFC(BigIntBitwiseAndNoThrow, BigIntBitwiseAndNoThrow) \
 TFC(BigIntBitwiseAnd, BigIntBitwiseAnd) \
+TFC(BigIntBitwiseOrNoThrow, BigIntBitwiseOrNoThrow) \
+TFC(BigIntBitwiseOr, BigIntBitwiseOr) \
+TFC(BigIntBitwiseXorNoThrow, BigIntBitwiseXorNoThrow) \
+TFC(BigIntBitwiseXor, BigIntBitwiseXor) \
+TFC(BigIntShiftLeftNoThrow, BigIntShiftLeftNoThrow) \
+TFC(BigIntShiftLeft, BigIntShiftLeft) \
+TFC(BigIntShiftRightNoThrow, BigIntShiftRightNoThrow) \
+TFC(BigIntShiftRight, BigIntShiftRight) \
+TFC(BigIntEqual, BigIntEqual) \
+TFC(BigIntLessThan, BigIntLessThan) \
+TFC(BigIntGreaterThan, BigIntGreaterThan) \
+TFC(BigIntLessThanOrEqual, BigIntLessThanOrEqual) \
+TFC(BigIntGreaterThanOrEqual, BigIntGreaterThanOrEqual) \
 TFC(BigIntUnaryMinus, BigIntUnaryMinus) \
 TFC(ToString, ToString) \
 TFJ(StringPrototypeToString, JSParameterCount(0), kReceiver) \
@@ -141,6 +155,7 @@ TFC(NonPrimitiveToPrimitive_Default, NonPrimitiveToPrimitive_Default) \
 TFC(NonPrimitiveToPrimitive_Number, NonPrimitiveToPrimitive_Number) \
 TFC(NonPrimitiveToPrimitive_String, NonPrimitiveToPrimitive_String) \
 TFC(OrdinaryToPrimitive_Number, OrdinaryToPrimitive_Number) \
+TFC(OrdinaryToPrimitive_Number_Inline, OrdinaryToPrimitive_Number_Inline) \
 TFC(OrdinaryToPrimitive_String, OrdinaryToPrimitive_String) \
 TFJ(FastConsoleAssert, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetBuffer, kDontAdaptArgumentsSentinel) \
@@ -179,6 +194,28 @@ TFC(GetIteratorWithFeedback, GetIteratorWithFeedback) \
 TFC(GetIteratorBaseline, GetIteratorBaseline) \
 TFC(CreateAsyncFromSyncIteratorBaseline, CreateAsyncFromSyncIteratorBaseline) \
 TFC(CallIteratorWithFeedback, CallIteratorWithFeedback) \
+TFJ(IteratorConstructor, JSParameterCount(0), kReceiver) \
+TFJ(IteratorFrom, JSParameterCount(1), kReceiver, kObjArg) \
+TFJ(WrapForValidIteratorPrototypeNext, JSParameterCount(0), kReceiver) \
+TFJ(WrapForValidIteratorPrototypeReturn, JSParameterCount(0), kReceiver) \
+TFJ(IteratorHelperPrototypeNext, JSParameterCount(0), kReceiver) \
+TFJ(IteratorHelperPrototypeReturn, JSParameterCount(0), kReceiver) \
+TFJ(IteratorPrototypeMap, JSParameterCount(1), kReceiver, kMapper) \
+TFC(IteratorMapHelperNext, IteratorMapHelperNext) \
+TFJ(IteratorPrototypeFilter, JSParameterCount(1), kReceiver, kPredicate) \
+TFC(IteratorFilterHelperNext, IteratorFilterHelperNext) \
+TFJ(IteratorPrototypeTake, JSParameterCount(1), kReceiver, kLimit) \
+TFC(IteratorTakeHelperNext, IteratorTakeHelperNext) \
+TFJ(IteratorPrototypeDrop, JSParameterCount(1), kReceiver, kLimit) \
+TFC(IteratorDropHelperNext, IteratorDropHelperNext) \
+TFJ(IteratorPrototypeFlatMap, JSParameterCount(1), kReceiver, kMapper) \
+TFC(IteratorFlatMapHelperNext, IteratorFlatMapHelperNext) \
+TFJ(IteratorPrototypeReduce, kDontAdaptArgumentsSentinel) \
+TFJ(IteratorPrototypeToArray, JSParameterCount(0), kReceiver) \
+TFJ(IteratorPrototypeForEach, JSParameterCount(1), kReceiver, kFn) \
+TFJ(IteratorPrototypeSome, JSParameterCount(1), kReceiver, kPredicate) \
+TFJ(IteratorPrototypeEvery, JSParameterCount(1), kReceiver, kPredicate) \
+TFJ(IteratorPrototypeFind, JSParameterCount(1), kReceiver, kPredicate) \
 TFJ(MathAbs, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathCeil, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathFloor, JSParameterCount(1), kReceiver, kX) \
@@ -303,6 +340,7 @@ TFJ(ReflectSetPrototypeOf, JSParameterCount(2), kReceiver, kObject, kProto) \
 TFJ(ReflectGet, kDontAdaptArgumentsSentinel) \
 TFJ(ReflectDeleteProperty, JSParameterCount(2), kReceiver, kObject, kKey) \
 TFJ(ReflectHas, JSParameterCount(2), kReceiver, kObject, kKey) \
+TFJ(ReflectGetOwnPropertyDescriptor, JSParameterCount(2), kReceiver, kTarget, kPropertyKey) \
 TFC(RegExpPrototypeExecSlow, RegExpPrototypeExecSlow) \
 TFJ(RegExpPrototypeExec, JSParameterCount(1), kReceiver, kString) \
 TFJ(RegExpPrototypeMatchAll, JSParameterCount(1), kReceiver, kString) \
@@ -346,6 +384,7 @@ TFJ(StringPrototypeSub, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeSup, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeIncludes, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeIndexOf, kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeIsWellFormed, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeIterator, JSParameterCount(0), kReceiver) \
 TFJ(StringIteratorPrototypeNext, JSParameterCount(0), kReceiver) \
 TFJ(StringPrototypeMatch, JSParameterCount(1), kReceiver, kRegexp) \
@@ -359,6 +398,7 @@ TFJ(StringPrototypeSlice, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeStartsWith, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeSubstr, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeSubstring, kDontAdaptArgumentsSentinel) \
+TFJ(StringPrototypeToWellFormed, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeTrim, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeTrimStart, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeTrimEnd, kDontAdaptArgumentsSentinel) \
@@ -403,11 +443,18 @@ TFC(StringSlowFlatten, StringSlowFlatten) \
 TFC(StringIndexOf, StringIndexOf) \
 TFC(TestTurbofanType, TestTurbofanType) \
 TFC(CheckTurbofanType, CheckTurbofanType) \
+TFC(CheckTurboshaftWord32Type, CheckTurboshaftWord32Type) \
+TFC(CheckTurboshaftWord64Type, CheckTurboshaftWord64Type) \
+TFC(CheckTurboshaftFloat32Type, CheckTurboshaftFloat32Type) \
+TFC(CheckTurboshaftFloat64Type, CheckTurboshaftFloat64Type) \
+TFC(DebugPrintWordPtr, DebugPrintWordPtr) \
 TFC(GenericBuiltinTest_JSAny_0, GenericBuiltinTest_JSAny_0) \
 TFC(TestHelperPlus1, TestHelperPlus1) \
 TFC(TestHelperPlus2, TestHelperPlus2) \
 TFC(NewSmiBox, NewSmiBox) \
 TFC(ReturnTwoValues, ReturnTwoValues) \
+TFC(ThrowAsBuiltin, ThrowAsBuiltin) \
+TFC(TestCallNever, TestCallNever) \
 TFC(Load_FastSmiElements_0, Load_FastSmiElements_0) \
 TFC(Load_FastObjectElements_0, Load_FastObjectElements_0) \
 TFC(Load_FastDoubleElements_0, Load_FastDoubleElements_0) \
@@ -441,6 +488,7 @@ TFC(WasmTableSet, WasmTableSet) \
 TFC(WasmTableGetFuncRef, WasmTableGetFuncRef) \
 TFC(WasmTableSetFuncRef, WasmTableSetFuncRef) \
 TFC(WasmRefFunc, WasmRefFunc) \
+TFC(WasmInternalFunctionCreateExternal, WasmInternalFunctionCreateExternal) \
 TFC(WasmAllocateFixedArray, WasmAllocateFixedArray) \
 TFC(WasmThrow, WasmThrow) \
 TFC(WasmRethrow, WasmRethrow) \
@@ -455,6 +503,7 @@ TFC(WasmAllocateJSArray, WasmAllocateJSArray) \
 TFC(WasmAllocateStructWithRtt, WasmAllocateStructWithRtt) \
 TFC(WasmAllocateArray_Uninitialized, WasmAllocateArray_Uninitialized) \
 TFC(WasmArrayNewSegment, WasmArrayNewSegment) \
+TFC(WasmArrayInitSegment, WasmArrayInitSegment) \
 TFC(WasmArrayCopyWithChecks, WasmArrayCopyWithChecks) \
 TFC(WasmArrayCopy, WasmArrayCopy) \
 TFC(WasmAllocateObjectWrapper, WasmAllocateObjectWrapper) \
@@ -484,12 +533,14 @@ TFC(ThrowWasmTrapNullDereference, ThrowWasmTrapNullDereference) \
 TFC(ThrowWasmTrapIllegalCast, ThrowWasmTrapIllegalCast) \
 TFC(ThrowWasmTrapArrayOutOfBounds, ThrowWasmTrapArrayOutOfBounds) \
 TFC(ThrowWasmTrapArrayTooLarge, ThrowWasmTrapArrayTooLarge) \
+TFC(ThrowWasmTrapStringOffsetOutOfBounds, ThrowWasmTrapStringOffsetOutOfBounds) \
 TFJ(ExperimentalWasmConvertArrayToString, kDontAdaptArgumentsSentinel) \
 TFJ(ExperimentalWasmConvertStringToArray, kDontAdaptArgumentsSentinel) \
 TFC(WasmStringNewWtf8, WasmStringNewWtf8) \
 TFC(WasmStringNewWtf8Array, WasmStringNewWtf8Array) \
 TFC(WasmStringNewWtf16, WasmStringNewWtf16) \
 TFC(WasmStringNewWtf16Array, WasmStringNewWtf16Array) \
+TFC(WasmStringAsWtf16, WasmStringAsWtf16) \
 TFC(WasmStringConst, WasmStringConst) \
 TFC(WasmStringMeasureUtf8, WasmStringMeasureUtf8) \
 TFC(WasmStringMeasureWtf8, WasmStringMeasureWtf8) \
@@ -497,6 +548,8 @@ TFC(WasmStringEncodeWtf8, WasmStringEncodeWtf8) \
 TFC(WasmStringEncodeWtf8Array, WasmStringEncodeWtf8Array) \
 TFC(WasmStringEncodeWtf16, WasmStringEncodeWtf16) \
 TFC(WasmStringEncodeWtf16Array, WasmStringEncodeWtf16Array) \
+TFC(ThrowToLowerCaseCalledOnNull, ThrowToLowerCaseCalledOnNull) \
+TFC(ThrowIndexOfCalledOnNull, ThrowIndexOfCalledOnNull) \
 TFC(WasmStringConcat, WasmStringConcat) \
 TFC(WasmStringEqual, WasmStringEqual) \
 TFC(WasmStringIsUSVSequence, WasmStringIsUSVSequence) \
@@ -512,8 +565,11 @@ TFC(WasmStringViewIterNext, WasmStringViewIterNext) \
 TFC(WasmStringViewIterAdvance, WasmStringViewIterAdvance) \
 TFC(WasmStringViewIterRewind, WasmStringViewIterRewind) \
 TFC(WasmStringViewIterSlice, WasmStringViewIterSlice) \
+TFC(WasmIntToString, WasmIntToString) \
+TFC(WasmStringToDouble, WasmStringToDouble) \
+TFC(WasmStringFromCodePoint, WasmStringFromCodePoint) \
+TFC(WasmStringHash, WasmStringHash) \
 TFC(WasmExternInternalize, WasmExternInternalize) \
-TFC(WasmExternExternalize, WasmExternExternalize) \
 TFC(LoadJoinElement_GenericElementsAccessor_0, LoadJoinElement_GenericElementsAccessor_0) \
 TFC(LoadJoinTypedElement_Int32Elements_0, LoadJoinTypedElement_Int32Elements_0) \
 TFC(LoadJoinTypedElement_Float32Elements_0, LoadJoinTypedElement_Float32Elements_0) \

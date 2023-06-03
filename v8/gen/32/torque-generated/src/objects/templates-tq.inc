@@ -95,9 +95,6 @@ class TorqueGeneratedTemplateInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedTemplateInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTemplateInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsFunctionTemplateRareData() that avoids inlining.
@@ -260,9 +257,6 @@ class TorqueGeneratedFunctionTemplateRareData : public P {
 
  protected:
   inline explicit TorqueGeneratedFunctionTemplateRareData(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedFunctionTemplateRareData(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsFunctionTemplateInfo() that avoids inlining.
@@ -416,9 +410,6 @@ class TorqueGeneratedFunctionTemplateInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedFunctionTemplateInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedFunctionTemplateInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsObjectTemplateInfo() that avoids inlining.
@@ -502,8 +493,5 @@ class TorqueGeneratedObjectTemplateInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedObjectTemplateInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedObjectTemplateInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

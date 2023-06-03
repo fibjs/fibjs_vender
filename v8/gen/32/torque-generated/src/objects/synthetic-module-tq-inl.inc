@@ -81,8 +81,3 @@ inline TorqueGeneratedSyntheticModule<D, P>::TorqueGeneratedSyntheticModule(Addr
     : P(ptr) {
   SLOW_DCHECK(IsSyntheticModule_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSyntheticModule<D, P>::TorqueGeneratedSyntheticModule(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSyntheticModule_NonInline(*this));
-}

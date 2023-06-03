@@ -26,9 +26,16 @@ V8_BASE_EXPORT V8_NOINLINE void V8_Dcheck(const char* file, int line,
     void V8_Fatal(const char* file, int line, const char* format, ...);
 #define FATAL(...) V8_Fatal(__FILE__, __LINE__, __VA_ARGS__)
 
+// The following can be used instead of FATAL() to prevent calling
+// IMMEDIATE_CRASH in official mode. Please only use if needed for testing.
+// See v8:13945
+#define GRACEFUL_FATAL(...) FATAL(__VA_ARGS__)
+
 #else
 [[noreturn]] PRINTF_FORMAT(1, 2) V8_BASE_EXPORT V8_NOINLINE
     void V8_Fatal(const char* format, ...);
+#define GRACEFUL_FATAL(...) V8_Fatal(__VA_ARGS__)
+
 #if !defined(OFFICIAL_BUILD)
 // In non-official release, include full error message, but drop file & line
 // numbers. It saves binary size to drop the |file| & |line| as opposed to just
@@ -46,8 +53,14 @@ V8_BASE_EXPORT V8_NOINLINE void V8_Dcheck(const char* file, int line,
 #endif  // !defined(OFFICIAL_BUILD)
 #endif  // DEBUG
 
-#define UNIMPLEMENTED() FATAL("unimplemented code")
-#define UNREACHABLE() FATAL("unreachable code")
+namespace v8::base {
+// These string constants are pattern-matched by fuzzers.
+constexpr const char* kUnimplementedCodeMessage = "unimplemented code";
+constexpr const char* kUnreachableCodeMessage = "unreachable code";
+}  // namespace v8::base
+
+#define UNIMPLEMENTED() FATAL(::v8::base::kUnimplementedCodeMessage)
+#define UNREACHABLE() FATAL(::v8::base::kUnreachableCodeMessage)
 // g++ versions <= 8 cannot use UNREACHABLE() in a constexpr function.
 // TODO(miladfarca): Remove once all compilers handle this properly.
 #if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ <= 8)

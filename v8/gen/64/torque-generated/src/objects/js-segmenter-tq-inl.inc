@@ -71,8 +71,3 @@ inline TorqueGeneratedJSSegmenter<D, P>::TorqueGeneratedJSSegmenter(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSSegmenter_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSSegmenter<D, P>::TorqueGeneratedJSSegmenter(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSSegmenter_NonInline(*this));
-}

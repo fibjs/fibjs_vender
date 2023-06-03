@@ -28,9 +28,9 @@ namespace {
 // thread. If this thread has only one held shared mutex (common case), we use
 // {single_held_shared_mutex}. If it has more than one we allocate a set for it.
 // Said set has to manually be constructed and destroyed.
-exlib::fiber_local<base::SharedMutex*> single_held_shared_mutex(nullptr);
+exlib::fiber_local<base::SharedMutex*> single_held_shared_mutex;
 using TSet = std::unordered_set<base::SharedMutex*>;
-exlib::fiber_local<TSet*> held_shared_mutexes(nullptr);
+exlib::fiber_local<TSet*> held_shared_mutexes;
 
 // Returns true iff {shared_mutex} is not a held mutex.
 bool SharedMutexNotHeld(SharedMutex* shared_mutex) {

@@ -95,8 +95,3 @@ inline TorqueGeneratedJSPluralRules<D, P>::TorqueGeneratedJSPluralRules(Address 
     : P(ptr) {
   SLOW_DCHECK(IsJSPluralRules_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSPluralRules<D, P>::TorqueGeneratedJSPluralRules(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSPluralRules_NonInline(*this));
-}

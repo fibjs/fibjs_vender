@@ -45,49 +45,6 @@ TNode<IntPtrT> RegExpBuiltinsAssembler::IntPtrZero() {
   return IntPtrConstant(0);
 }
 
-// If code is a builtin, return the address to the (possibly embedded) builtin
-// code entry, otherwise return the entry of the code object itself.
-TNode<RawPtrT> RegExpBuiltinsAssembler::LoadCodeObjectEntry(TNode<CodeT> code) {
-  if (V8_EXTERNAL_CODE_SPACE_BOOL) {
-    // When external code space is enabled we can load the entry point directly
-    // from the CodeT object.
-    return GetCodeEntry(code);
-  }
-
-  TVARIABLE(RawPtrT, var_result);
-
-  Label if_code_is_off_heap(this), out(this);
-  TNode<Int32T> builtin_index =
-      LoadObjectField<Int32T>(code, Code::kBuiltinIndexOffset);
-  {
-    GotoIfNot(
-        Word32Equal(builtin_index,
-                    Int32Constant(static_cast<int>(Builtin::kNoBuiltinId))),
-        &if_code_is_off_heap);
-    var_result = ReinterpretCast<RawPtrT>(
-        IntPtrAdd(BitcastTaggedToWord(code),
-                  IntPtrConstant(Code::kHeaderSize - kHeapObjectTag)));
-    Goto(&out);
-  }
-
-  BIND(&if_code_is_off_heap);
-  {
-    TNode<IntPtrT> builtin_entry_offset_from_isolate_root =
-        IntPtrAdd(IntPtrConstant(IsolateData::builtin_entry_table_offset()),
-                  ChangeInt32ToIntPtr(Word32Shl(
-                      builtin_index, Int32Constant(kSystemPointerSizeLog2))));
-
-    var_result = ReinterpretCast<RawPtrT>(
-        Load(MachineType::Pointer(),
-             ExternalConstant(ExternalReference::isolate_root(isolate())),
-             builtin_entry_offset_from_isolate_root));
-    Goto(&out);
-  }
-
-  BIND(&out);
-  return var_result.value();
-}
-
 // -----------------------------------------------------------------------------
 // ES6 section 21.2 RegExp Objects
 
@@ -104,7 +61,7 @@ TNode<JSRegExpResult> RegExpBuiltinsAssembler::AllocateRegExpResult(
   Label result_has_indices(this), allocated(this);
   const ElementsKind elements_kind = PACKED_ELEMENTS;
   base::Optional<TNode<AllocationSite>> no_gc_site = base::nullopt;
-  TNode<IntPtrT> length_intptr = SmiUntag(length);
+  TNode<IntPtrT> length_intptr = PositiveSmiUntag(length);
   // Note: The returned `var_elements` may be in young large object space, but
   // `var_array` is guaranteed to be in new space so we could skip write
   // barriers below.
@@ -224,8 +181,9 @@ TNode<JSRegExpResult> RegExpBuiltinsAssembler::ConstructNewResultFromMatchInfo(
     TNode<Number> last_index) {
   Label named_captures(this), maybe_build_indices(this), out(this);
 
-  TNode<IntPtrT> num_indices = SmiUntag(CAST(UnsafeLoadFixedArrayElement(
-      match_info, RegExpMatchInfo::kNumberOfCapturesIndex)));
+  TNode<IntPtrT> num_indices =
+      PositiveSmiUntag(CAST(UnsafeLoadFixedArrayElement(
+          match_info, RegExpMatchInfo::kNumberOfCapturesIndex)));
   TNode<Smi> num_results = SmiTag(WordShr(num_indices, 1));
   TNode<Smi> start = CAST(UnsafeLoadFixedArrayElement(
       match_info, RegExpMatchInfo::kFirstCaptureIndex));
@@ -559,7 +517,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
 #endif
 
   GotoIf(TaggedIsSmi(var_code.value()), &runtime);
-  TNode<CodeT> code = CAST(var_code.value());
+  TNode<Code> code = CAST(var_code.value());
 
   Label if_success(this), if_exception(this, Label::kDeferred);
   {
@@ -623,7 +581,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
     MachineType arg8_type = type_tagged;
     TNode<JSRegExp> arg8 = regexp;
 
-    TNode<RawPtrT> code_entry = LoadCodeObjectEntry(code);
+    TNode<RawPtrT> code_entry = LoadCodeInstructionStart(code);
 
     // AIX uses function descriptors on CFunction calls. code_entry in this case
     // may also point to a Regex interpreter entry trampoline which does not
@@ -712,7 +670,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
                                 var_to_offset.value(), smi_value);
             Increment(&var_to_offset, kTaggedSize);
           },
-          kInt32Size, IndexAdvanceMode::kPost);
+          kInt32Size, LoopUnrollingMode::kYes, IndexAdvanceMode::kPost);
     }
 
     var_result = match_info;
@@ -779,10 +737,8 @@ TNode<BoolT> RegExpBuiltinsAssembler::IsFastRegExpNoPrototype(
   Label out(this);
   TVARIABLE(BoolT, var_result);
 
-#ifdef V8_ENABLE_FORCE_SLOW_PATH
   var_result = Int32FalseConstant();
   GotoIfForceSlowPath(&out);
-#endif
 
   const TNode<NativeContext> native_context = LoadNativeContext(context);
   const TNode<HeapObject> regexp_fun =
@@ -1068,13 +1024,13 @@ TNode<String> RegExpBuiltinsAssembler::FlagsGetter(TNode<Context> context,
     BIND(&next);                                                           \
   } while (false)
 
+    CASE_FOR_FLAG("hasIndices", JSRegExp::kHasIndices);
     CASE_FOR_FLAG("global", JSRegExp::kGlobal);
     CASE_FOR_FLAG("ignoreCase", JSRegExp::kIgnoreCase);
     CASE_FOR_FLAG("multiline", JSRegExp::kMultiline);
     CASE_FOR_FLAG("dotAll", JSRegExp::kDotAll);
     CASE_FOR_FLAG("unicode", JSRegExp::kUnicode);
     CASE_FOR_FLAG("sticky", JSRegExp::kSticky);
-    CASE_FOR_FLAG("hasIndices", JSRegExp::kHasIndices);
 #undef CASE_FOR_FLAG
 
 #define CASE_FOR_FLAG(NAME, V8_FLAG_EXTERN_REF, FLAG)                      \
@@ -1132,7 +1088,6 @@ TNode<String> RegExpBuiltinsAssembler::FlagsGetter(TNode<Context> context,
 #undef CASE_FOR_FLAG
 
     if (is_fastpath) {
-#ifdef V8_ENABLE_FORCE_SLOW_PATH
       result = string;
       Goto(&done);
 
@@ -1145,9 +1100,6 @@ TNode<String> RegExpBuiltinsAssembler::FlagsGetter(TNode<Context> context,
 
       BIND(&done);
       return result.value();
-#else
-      return string;
-#endif
     } else {
       return string;
     }
@@ -1639,7 +1591,8 @@ TNode<JSArray> RegExpBuiltinsAssembler::RegExpPrototypeSplitBody(
       GotoIfNot(SmiEqual(match_to, last_matched_until), &next);
 
       const TNode<BoolT> is_unicode =
-          FastFlagGetter(regexp, JSRegExp::kUnicode);
+          Word32Or(FastFlagGetter(regexp, JSRegExp::kUnicode),
+                   FastFlagGetter(regexp, JSRegExp::kUnicodeSets));
       const TNode<Number> new_next_search_from =
           AdvanceStringIndex(string, next_search_from, is_unicode, true);
       var_next_search_from = CAST(new_next_search_from);
@@ -1660,7 +1613,7 @@ TNode<JSArray> RegExpBuiltinsAssembler::RegExpPrototypeSplitBody(
     {
       const TNode<Smi> num_registers = CAST(LoadFixedArrayElement(
           match_indices, RegExpMatchInfo::kNumberOfCapturesIndex));
-      const TNode<IntPtrT> int_num_registers = SmiUntag(num_registers);
+      const TNode<IntPtrT> int_num_registers = PositiveSmiUntag(num_registers);
 
       TVARIABLE(IntPtrT, var_reg, IntPtrConstant(2));
 

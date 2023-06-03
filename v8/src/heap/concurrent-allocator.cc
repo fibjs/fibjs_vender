@@ -80,18 +80,20 @@ void StressConcurrentAllocatorTask::Schedule(Isolate* isolate) {
 }
 
 ConcurrentAllocator::ConcurrentAllocator(LocalHeap* local_heap,
-                                         PagedSpace* space)
-    : local_heap_(local_heap), space_(space), owning_heap_(space_->heap()) {}
+                                         PagedSpace* space, Context context)
+    : local_heap_(local_heap),
+      space_(space),
+      owning_heap_(space_->heap()),
+      context_(context) {
+  DCHECK_IMPLIES(!local_heap_, context_ == Context::kGC);
+}
 
 void ConcurrentAllocator::FreeLinearAllocationArea() {
-  // The code page of the linear allocation area needs to be unprotected
-  // because we are going to write a filler into that memory area below.
-  base::Optional<CodePageMemoryModificationScope> optional_scope;
-  if (IsLabValid() && space_->identity() == CODE_SPACE) {
-    optional_scope.emplace(MemoryChunk::FromAddress(lab_.top()));
-  }
-  if (lab_.top() != lab_.limit() &&
-      owning_heap()->incremental_marking()->black_allocation()) {
+  if (lab_.top() != lab_.limit() && IsBlackAllocationEnabled()) {
+    base::Optional<CodePageHeaderModificationScope> optional_scope;
+    if (space_->identity() == CODE_SPACE) {
+      optional_scope.emplace("Clears marking bitmap in the page header.");
+    }
     Page::FromAddress(lab_.top())
         ->DestroyBlackAreaBackground(lab_.top(), lab_.limit());
   }
@@ -101,12 +103,6 @@ void ConcurrentAllocator::FreeLinearAllocationArea() {
 }
 
 void ConcurrentAllocator::MakeLinearAllocationAreaIterable() {
-  // The code page of the linear allocation area needs to be unprotected
-  // because we are going to write a filler into that memory area below.
-  base::Optional<CodePageMemoryModificationScope> optional_scope;
-  if (IsLabValid() && space_->identity() == CODE_SPACE) {
-    optional_scope.emplace(MemoryChunk::FromAddress(lab_.top()));
-  }
   MakeLabIterable();
 }
 
@@ -118,7 +114,8 @@ void ConcurrentAllocator::MarkLinearAllocationAreaBlack() {
     base::Optional<CodePageHeaderModificationScope> optional_rwx_write_scope;
     if (space_->identity() == CODE_SPACE) {
       optional_rwx_write_scope.emplace(
-          "Marking Code objects requires write access to the Code page header");
+          "Marking InstructionStream objects requires write access to the "
+          "Code page header");
     }
     Page::FromAllocationAreaAddress(top)->CreateBlackAreaBackground(top, limit);
   }
@@ -132,7 +129,8 @@ void ConcurrentAllocator::UnmarkLinearAllocationArea() {
     base::Optional<CodePageHeaderModificationScope> optional_rwx_write_scope;
     if (space_->identity() == CODE_SPACE) {
       optional_rwx_write_scope.emplace(
-          "Marking Code objects requires write access to the Code page header");
+          "Marking InstructionStream objects requires write access to the "
+          "Code page header");
     }
     Page::FromAllocationAreaAddress(top)->DestroyBlackAreaBackground(top,
                                                                      limit);
@@ -189,7 +187,7 @@ ConcurrentAllocator::AllocateFromSpaceFreeList(size_t min_size_in_bytes,
   if (result) return result;
 
   // Sweeping is still in progress.
-  if (owning_heap()->sweeping_in_progress()) {
+  if (owning_heap()->major_sweeping_in_progress()) {
     // First try to refill the free-list, concurrent sweeper threads
     // may have freed some objects in the meantime.
     {
@@ -225,14 +223,15 @@ ConcurrentAllocator::AllocateFromSpaceFreeList(size_t min_size_in_bytes,
     }
   }
 
-  if (owning_heap()->ShouldExpandOldGenerationOnSlowAllocation(local_heap_) &&
+  if (owning_heap()->ShouldExpandOldGenerationOnSlowAllocation(local_heap_,
+                                                               origin) &&
       owning_heap()->CanExpandOldGenerationBackground(local_heap_,
                                                       space_->AreaSize())) {
     result = space_->TryExpandBackground(max_size_in_bytes);
     if (result) return result;
   }
 
-  if (owning_heap()->sweeping_in_progress()) {
+  if (owning_heap()->major_sweeping_in_progress()) {
     // Complete sweeping for this space.
     TRACE_GC_EPOCH(owning_heap()->tracer(),
                    GCTracer::Scope::MC_BACKGROUND_SWEEPING,
@@ -265,7 +264,7 @@ AllocationResult ConcurrentAllocator::AllocateOutsideLab(
 
   HeapObject object = HeapObject::FromAddress(result->first);
   if (requested_filler_size > 0) {
-    object = owning_heap()->AlignWithFiller(
+    object = owning_heap()->AlignWithFillerBackground(
         object, size_in_bytes, static_cast<int>(result->second), alignment);
   }
 
@@ -277,7 +276,8 @@ AllocationResult ConcurrentAllocator::AllocateOutsideLab(
 }
 
 bool ConcurrentAllocator::IsBlackAllocationEnabled() const {
-  return owning_heap()->incremental_marking()->black_allocation();
+  return context_ == Context::kNotGC &&
+         owning_heap()->incremental_marking()->black_allocation();
 }
 
 void ConcurrentAllocator::MakeLabIterable() {

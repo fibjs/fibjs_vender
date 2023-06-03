@@ -95,8 +95,3 @@ inline TorqueGeneratedPropertyCell<D, P>::TorqueGeneratedPropertyCell(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsPropertyCell_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedPropertyCell<D, P>::TorqueGeneratedPropertyCell(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsPropertyCell_NonInline(*this));
-}

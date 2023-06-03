@@ -62,6 +62,7 @@ constexpr uint8_t kWasmFunctionTypeCode = 0x60;
 constexpr uint8_t kWasmStructTypeCode = 0x5f;
 constexpr uint8_t kWasmArrayTypeCode = 0x5e;
 constexpr uint8_t kWasmSubtypeCode = 0x50;
+constexpr uint8_t kWasmSubtypeFinalCode = 0x4e;
 constexpr uint8_t kWasmRecursiveTypeGroupCode = 0x4f;
 
 // Binary encoding of import/export kinds.
@@ -182,6 +183,10 @@ constexpr uint32_t kMinimumSupertypeArraySize = 3;
 
 // Maximum number of call targets tracked per call.
 constexpr int kMaxPolymorphism = 4;
+
+// A struct field beyond this limit needs an explicit null check (trapping null
+// access not guaranteed to behave properly).
+constexpr int kMaxStructFieldIndexForImplicitNullCheck = 4000;
 
 #if V8_TARGET_ARCH_X64
 constexpr int32_t kOSRTargetOffset = 4 * kSystemPointerSize;

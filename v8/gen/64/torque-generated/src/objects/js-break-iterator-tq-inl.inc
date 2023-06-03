@@ -201,8 +201,3 @@ inline TorqueGeneratedJSV8BreakIterator<D, P>::TorqueGeneratedJSV8BreakIterator(
     : P(ptr) {
   SLOW_DCHECK(IsJSV8BreakIterator_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSV8BreakIterator<D, P>::TorqueGeneratedJSV8BreakIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSV8BreakIterator_NonInline(*this));
-}

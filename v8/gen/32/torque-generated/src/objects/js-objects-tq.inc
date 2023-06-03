@@ -11,6 +11,7 @@ class JSMessageObject;
 class JSDate;
 class JSAsyncFromSyncIterator;
 class JSStringIterator;
+class JSValidIteratorWrapper;
 // Alias for HeapObject::IsJSReceiver() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=6&c=1
 V8_EXPORT_PRIVATE bool IsJSReceiver_NonInline(HeapObject o);
@@ -69,9 +70,6 @@ class TorqueGeneratedJSReceiver : public P {
 
  protected:
   inline explicit TorqueGeneratedJSReceiver(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSReceiver(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSObject() that avoids inlining.
@@ -133,9 +131,6 @@ class TorqueGeneratedJSObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSObjectWithEmbedderSlots() that avoids inlining.
@@ -185,9 +180,6 @@ class TorqueGeneratedJSObjectWithEmbedderSlots : public P {
 
  protected:
   inline explicit TorqueGeneratedJSObjectWithEmbedderSlots(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSObjectWithEmbedderSlots(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSCustomElementsObject() that avoids inlining.
@@ -237,9 +229,6 @@ class TorqueGeneratedJSCustomElementsObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSCustomElementsObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSCustomElementsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSSpecialObject() that avoids inlining.
@@ -289,9 +278,6 @@ class TorqueGeneratedJSSpecialObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSSpecialObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSSpecialObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSExternalObject() that avoids inlining.
@@ -346,9 +332,6 @@ class TorqueGeneratedJSExternalObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSExternalObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSExternalObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSGlobalProxy() that avoids inlining.
@@ -410,9 +393,6 @@ class TorqueGeneratedJSGlobalProxy : public P {
 
  protected:
   inline explicit TorqueGeneratedJSGlobalProxy(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSGlobalProxy(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSGlobalObject() that avoids inlining.
@@ -484,9 +464,6 @@ class TorqueGeneratedJSGlobalObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSGlobalObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSGlobalObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSPrimitiveWrapper() that avoids inlining.
@@ -549,9 +526,6 @@ class TorqueGeneratedJSPrimitiveWrapper : public P {
 
  protected:
   inline explicit TorqueGeneratedJSPrimitiveWrapper(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSPrimitiveWrapper(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSMessageObject() that avoids inlining.
@@ -598,13 +572,13 @@ class TorqueGeneratedJSMessageObject : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=131&c=3
   inline void set_stack_frames(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class SharedFunctionInfo)
+  // Torque type: (Smi | class SharedFunctionInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
-  inline HeapObject shared_info() const;
+  inline Object shared_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
-  inline HeapObject shared_info(PtrComprCageBase cage_base) const;
+  inline Object shared_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
-  inline void set_shared_info(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_shared_info(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=136&c=3
   inline int bytecode_offset() const;
@@ -684,9 +658,6 @@ class TorqueGeneratedJSMessageObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSMessageObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSMessageObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSDate() that avoids inlining.
@@ -837,9 +808,6 @@ class TorqueGeneratedJSDate : public P {
 
  protected:
   inline explicit TorqueGeneratedJSDate(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSDate(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSAsyncFromSyncIterator() that avoids inlining.
@@ -911,9 +879,6 @@ class TorqueGeneratedJSAsyncFromSyncIterator : public P {
 
  protected:
   inline explicit TorqueGeneratedJSAsyncFromSyncIterator(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSAsyncFromSyncIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSStringIterator() that avoids inlining.
@@ -983,8 +948,74 @@ class TorqueGeneratedJSStringIterator : public P {
 
  protected:
   inline explicit TorqueGeneratedJSStringIterator(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSStringIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
+};
+
+// Alias for HeapObject::IsJSValidIteratorWrapper() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+V8_EXPORT_PRIVATE bool IsJSValidIteratorWrapper_NonInline(HeapObject o);
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+template <class D, class P>
+class TorqueGeneratedJSValidIteratorWrapper : public P {
+  static_assert(
+      std::is_same<JSValidIteratorWrapper, D>::value,
+      "Use this class as direct base for JSValidIteratorWrapper.");
+  static_assert(
+      std::is_same<JSObject, P>::value,
+      "Pass in JSObject as second template parameter for TorqueGeneratedJSValidIteratorWrapper.");
+
+ public: 
+  using Super = P;
+  using TorqueGeneratedClass = TorqueGeneratedJSValidIteratorWrapper<D,P>;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  inline JSReceiver underlying_object() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  inline JSReceiver underlying_object(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  inline void set_underlying_object(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // Torque type: JSAny
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  inline Object underlying_next() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  inline Object underlying_next(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  inline void set_underlying_next(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+  V8_INLINE static D cast(Object object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+  V8_INLINE static D unchecked_cast(Object object) {
+    return base::bit_cast<D>(object);
+  }
+
+  DECL_PRINTER(JSValidIteratorWrapper)
+
+#ifdef VERIFY_HEAP
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+  V8_EXPORT_PRIVATE void JSValidIteratorWrapperVerify(Isolate* isolate);
+#endif  // VERIFY_HEAP
+
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+  static constexpr int kUnderlyingOffset = P::kHeaderSize;
+  static constexpr int kUnderlyingOffsetEnd = kUnderlyingOffset + 8 - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kUnderlyingOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kUnderlyingOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kUnderlyingOffsetEnd + 1;
+  static constexpr int kHeaderSize = kUnderlyingOffsetEnd + 1;
+
+  friend class Factory;
+
+  template <class DAlias = D>
+  constexpr TorqueGeneratedJSValidIteratorWrapper() : P() {
+    static_assert(
+        std::is_base_of<TorqueGeneratedJSValidIteratorWrapper, DAlias>::value,
+        "class TorqueGeneratedJSValidIteratorWrapper should be used as direct base for JSValidIteratorWrapper.");
+  }
+
+ protected:
+  inline explicit TorqueGeneratedJSValidIteratorWrapper(Address ptr);
 };
 

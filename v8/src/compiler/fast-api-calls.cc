@@ -29,7 +29,9 @@ ElementsKind GetTypedArrayElementsKind(CTypeInfo::Type type) {
     case CTypeInfo::Type::kFloat64:
       return FLOAT64_ELEMENTS;
     case CTypeInfo::Type::kVoid:
+    case CTypeInfo::Type::kSeqOneByteString:
     case CTypeInfo::Type::kBool:
+    case CTypeInfo::Type::kPointer:
     case CTypeInfo::Type::kV8Value:
     case CTypeInfo::Type::kApiObject:
     case CTypeInfo::Type::kAny:
@@ -38,8 +40,7 @@ ElementsKind GetTypedArrayElementsKind(CTypeInfo::Type type) {
 }
 
 OverloadsResolutionResult ResolveOverloads(
-    Zone* zone, const FastApiCallFunctionVector& candidates,
-    unsigned int arg_count) {
+    const FastApiCallFunctionVector& candidates, unsigned int arg_count) {
   DCHECK_GT(arg_count, 0);
 
   static constexpr int kReceiver = 1;
@@ -184,7 +185,7 @@ Node* FastApiCallBuilder::WrapFastCall(const CallDescriptor* call_descriptor,
       ExternalReference::fast_api_call_target_address(isolate()));
   __ Store(StoreRepresentation(MachineType::PointerRepresentation(),
                                kNoWriteBarrier),
-           target_address, 0, target);
+           target_address, 0, __ BitcastTaggedToWord(target));
 
   // Disable JS execution
   Node* javascript_execution_assert = __ ExternalConstant(
@@ -198,7 +199,7 @@ Node* FastApiCallBuilder::WrapFastCall(const CallDescriptor* call_descriptor,
     __ GotoIf(__ Word32Equal(old_scope_value, __ Int32Constant(1)), &do_store);
 
     // We expect that JS execution is enabled, otherwise assert.
-    __ Unreachable(&do_store);
+    __ Unreachable();
     __ Bind(&do_store);
   }
   __ Store(StoreRepresentation(MachineRepresentation::kWord8, kNoWriteBarrier),
@@ -247,8 +248,7 @@ Node* FastApiCallBuilder::Build(const FastApiCallFunctionVector& c_functions,
     generate_fast_call = true;
   } else {
     DCHECK_EQ(c_functions.size(), 2);
-    overloads_resolution_result =
-        ResolveOverloads(graph()->zone(), c_functions, c_arg_count);
+    overloads_resolution_result = ResolveOverloads(c_functions, c_arg_count);
     if (overloads_resolution_result.is_valid()) {
       generate_fast_call = true;
     }
@@ -327,10 +327,9 @@ Node* FastApiCallBuilder::Build(const FastApiCallFunctionVector& c_functions,
         __ Int32Constant(0));
 
     Node* data_stack_slot = __ StackSlot(sizeof(uintptr_t), alignof(uintptr_t));
-    __ Store(
-        StoreRepresentation(MachineType::PointerRepresentation(),
-                            kNoWriteBarrier),
-        data_stack_slot, 0, data_argument);
+    __ Store(StoreRepresentation(MachineType::PointerRepresentation(),
+                                 kNoWriteBarrier),
+             data_stack_slot, 0, __ BitcastTaggedToWord(data_argument));
 
     __ Store(StoreRepresentation(MachineType::PointerRepresentation(),
                                  kNoWriteBarrier),

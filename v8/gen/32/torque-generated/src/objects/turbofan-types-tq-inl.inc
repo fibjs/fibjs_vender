@@ -9,11 +9,6 @@ inline TorqueGeneratedTurbofanType<D, P>::TorqueGeneratedTurbofanType(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsTurbofanType_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedTurbofanType<D, P>::TorqueGeneratedTurbofanType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTurbofanType_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(TurbofanType)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=62&c=3
 template<class D, class P>
@@ -53,11 +48,6 @@ template<class D, class P>
 inline TorqueGeneratedTurbofanBitsetType<D, P>::TorqueGeneratedTurbofanBitsetType(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsTurbofanBitsetType_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedTurbofanBitsetType<D, P>::TorqueGeneratedTurbofanBitsetType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTurbofanBitsetType_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(TurbofanBitsetType)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
@@ -119,11 +109,6 @@ inline TorqueGeneratedTurbofanUnionType<D, P>::TorqueGeneratedTurbofanUnionType(
     : P(ptr) {
   SLOW_DCHECK(IsTurbofanUnionType_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedTurbofanUnionType<D, P>::TorqueGeneratedTurbofanUnionType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTurbofanUnionType_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(TurbofanUnionType)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=74&c=3
 template<class D, class P>
@@ -164,11 +149,6 @@ inline TorqueGeneratedTurbofanRangeType<D, P>::TorqueGeneratedTurbofanRangeType(
     : P(ptr) {
   SLOW_DCHECK(IsTurbofanRangeType_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedTurbofanRangeType<D, P>::TorqueGeneratedTurbofanRangeType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTurbofanRangeType_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(TurbofanRangeType)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
 template<class D, class P>
@@ -205,11 +185,6 @@ inline TorqueGeneratedTurbofanHeapConstantType<D, P>::TorqueGeneratedTurbofanHea
     : P(ptr) {
   SLOW_DCHECK(IsTurbofanHeapConstantType_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedTurbofanHeapConstantType<D, P>::TorqueGeneratedTurbofanHeapConstantType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTurbofanHeapConstantType_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(TurbofanHeapConstantType)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
 template<class D, class P>
@@ -235,10 +210,5 @@ template<class D, class P>
 inline TorqueGeneratedTurbofanOtherNumberConstantType<D, P>::TorqueGeneratedTurbofanOtherNumberConstantType(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsTurbofanOtherNumberConstantType_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedTurbofanOtherNumberConstantType<D, P>::TorqueGeneratedTurbofanOtherNumberConstantType(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTurbofanOtherNumberConstantType_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(TurbofanOtherNumberConstantType)

@@ -47,8 +47,3 @@ inline TorqueGeneratedFeedbackCell<D, P>::TorqueGeneratedFeedbackCell(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsFeedbackCell_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedFeedbackCell<D, P>::TorqueGeneratedFeedbackCell(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFeedbackCell_NonInline(*this));
-}

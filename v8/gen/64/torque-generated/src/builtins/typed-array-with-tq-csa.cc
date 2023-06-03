@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-with-tq-csa.h"
@@ -330,7 +333,7 @@ TF_BUILTIN(TypedArrayPrototypeWith, CodeStubAssembler) {
     tmp33 = CodeStubAssembler(state_).LoadElementsKind(TNode<JSTypedArray>{tmp17});
     std::tie(tmp34, tmp35, tmp36) = GetTypedArrayAccessor_0(state_, TNode<Int32T>{tmp33}).Flatten();
 tmp37 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(3)).descriptor(), tmp36, parameter0, tmp17, tmp10, phi_bb13_8));
-    tmp38 = kStoreFailureArrayDetached_0(state_);
+    tmp38 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     tmp39 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp37}, TNode<Smi>{tmp38});
     ca_.Branch(tmp39, &block34, std::vector<compiler::Node*>{}, &block35, std::vector<compiler::Node*>{});
   }
@@ -364,7 +367,7 @@ tmp37 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
     ca_.Bind(&block40, &phi_bb40_20);
     tmp42 = Undefined_0(state_);
 tmp43 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(3)).descriptor(), tmp36, parameter0, tmp17, phi_bb40_20, tmp42));
-    tmp44 = kStoreFailureArrayDetached_0(state_);
+    tmp44 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     tmp45 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp43}, TNode<Smi>{tmp44});
     ca_.Branch(tmp45, &block46, std::vector<compiler::Node*>{phi_bb40_20, phi_bb40_20, phi_bb40_20}, &block47, std::vector<compiler::Node*>{phi_bb40_20, phi_bb40_20, phi_bb40_20});
   }

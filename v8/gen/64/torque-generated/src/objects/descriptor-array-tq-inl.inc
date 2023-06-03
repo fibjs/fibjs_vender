@@ -1,25 +1,25 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceDescriptorArrayDescriptors(DescriptorArray p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=227&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=237&c=1
 inline intptr_t TqRuntimeConvert_intptr_uint16_0(uint16_t p_ui);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_DescriptorEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceDescriptorArrayDescriptors
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceDescriptorArrayDescriptors
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceDescriptorArrayDescriptors(DescriptorArray p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -47,7 +47,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceDescriptorArrayDescrip
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -65,7 +65,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint16_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint16_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=227&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=237&c=1
 intptr_t TqRuntimeConvert_intptr_uint16_0(uint16_t p_ui) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
@@ -103,7 +103,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_DescriptorEntry_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_DescriptorEntry_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_DescriptorEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -123,7 +123,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_DescriptorEntry_
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -197,11 +197,6 @@ inline TorqueGeneratedEnumCache<D, P>::TorqueGeneratedEnumCache(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsEnumCache_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedEnumCache<D, P>::TorqueGeneratedEnumCache(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsEnumCache_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=20&c=9
 template<class D, class P>
 uint16_t TorqueGeneratedDescriptorArray<D, P>::number_of_all_descriptors() const {
@@ -230,42 +225,28 @@ void TorqueGeneratedDescriptorArray<D, P>::set_number_of_descriptors(uint16_t va
   this->template WriteField<uint16_t>(kNumberOfDescriptorsOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
 template<class D, class P>
-uint16_t TorqueGeneratedDescriptorArray<D, P>::raw_number_of_marked_descriptors() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kRawNumberOfMarkedDescriptorsOffset);
+uint32_t TorqueGeneratedDescriptorArray<D, P>::raw_gc_state() const {
+  uint32_t value;
+  value = this->template ReadField<uint32_t>(kRawGcStateOffset);
   return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=22&c=3
-template<class D, class P>
-void TorqueGeneratedDescriptorArray<D, P>::set_raw_number_of_marked_descriptors(uint16_t value) {
-  this->template WriteField<uint16_t>(kRawNumberOfMarkedDescriptorsOffset, value);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-template<class D, class P>
-uint16_t TorqueGeneratedDescriptorArray<D, P>::filler16_bits() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kFiller16BitsOffset);
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=23&c=3
-template<class D, class P>
-void TorqueGeneratedDescriptorArray<D, P>::set_filler16_bits(uint16_t value) {
-  this->template WriteField<uint16_t>(kFiller16BitsOffset, value);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+template<class D, class P>
+void TorqueGeneratedDescriptorArray<D, P>::set_raw_gc_state(uint32_t value) {
+  this->template WriteField<uint32_t>(kRawGcStateOffset, value);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 template<class D, class P>
 EnumCache TorqueGeneratedDescriptorArray<D, P>::enum_cache() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::enum_cache(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 template<class D, class P>
 EnumCache TorqueGeneratedDescriptorArray<D, P>::enum_cache(PtrComprCageBase cage_base) const {
   EnumCache value;
@@ -274,7 +255,7 @@ EnumCache TorqueGeneratedDescriptorArray<D, P>::enum_cache(PtrComprCageBase cage
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 template<class D, class P>
 void TorqueGeneratedDescriptorArray<D, P>::set_enum_cache(EnumCache value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsEnumCache());
@@ -282,14 +263,14 @@ void TorqueGeneratedDescriptorArray<D, P>::set_enum_cache(EnumCache value, Write
   CONDITIONAL_WRITE_BARRIER(*this, kEnumCacheOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedDescriptorArray<D, P>::descriptors_key(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::descriptors_key(cage_base, i);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 PrimitiveHeapObject TorqueGeneratedDescriptorArray<D, P>::descriptors_key(PtrComprCageBase cage_base, int i) const {
   PrimitiveHeapObject value;
@@ -301,7 +282,7 @@ PrimitiveHeapObject TorqueGeneratedDescriptorArray<D, P>::descriptors_key(PtrCom
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_key(int i, PrimitiveHeapObject value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
@@ -312,14 +293,14 @@ void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_key(int i, PrimitiveH
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 Object TorqueGeneratedDescriptorArray<D, P>::descriptors_details(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::descriptors_details(cage_base, i);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 Object TorqueGeneratedDescriptorArray<D, P>::descriptors_details(PtrComprCageBase cage_base, int i) const {
   Object value;
@@ -331,7 +312,7 @@ Object TorqueGeneratedDescriptorArray<D, P>::descriptors_details(PtrComprCageBas
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_details(int i, Object value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
@@ -342,14 +323,14 @@ void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_details(int i, Object
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDescriptorArray<D, P>::descriptors_value(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::descriptors_value(cage_base, i);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDescriptorArray<D, P>::descriptors_value(PtrComprCageBase cage_base, int i) const {
   MaybeObject value;
@@ -361,7 +342,7 @@ MaybeObject TorqueGeneratedDescriptorArray<D, P>::descriptors_value(PtrComprCage
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_value(int i, MaybeObject value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
@@ -382,9 +363,4 @@ template<class D, class P>
 inline TorqueGeneratedDescriptorArray<D, P>::TorqueGeneratedDescriptorArray(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsDescriptorArray_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedDescriptorArray<D, P>::TorqueGeneratedDescriptorArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsDescriptorArray_NonInline(*this));
 }

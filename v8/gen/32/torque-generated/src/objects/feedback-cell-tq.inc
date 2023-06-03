@@ -80,8 +80,5 @@ class TorqueGeneratedFeedbackCell : public P {
 
  protected:
   inline explicit TorqueGeneratedFeedbackCell(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedFeedbackCell(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

@@ -118,9 +118,6 @@ class TorqueGeneratedJSGeneratorObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSGeneratorObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSGeneratorObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSAsyncFunctionObject() that avoids inlining.
@@ -182,9 +179,6 @@ class TorqueGeneratedJSAsyncFunctionObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSAsyncFunctionObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSAsyncFunctionObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSAsyncGeneratorObject() that avoids inlining.
@@ -254,9 +248,6 @@ class TorqueGeneratedJSAsyncGeneratorObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSAsyncGeneratorObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSAsyncGeneratorObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsAsyncGeneratorRequest() that avoids inlining.
@@ -360,8 +351,5 @@ class TorqueGeneratedAsyncGeneratorRequest : public P {
 
  protected:
   inline explicit TorqueGeneratedAsyncGeneratorRequest(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAsyncGeneratorRequest(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

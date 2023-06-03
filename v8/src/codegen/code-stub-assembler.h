@@ -21,6 +21,7 @@
 #include "src/objects/cell.h"
 #include "src/objects/feedback-vector.h"
 #include "src/objects/heap-number.h"
+#include "src/objects/hole.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-promise.h"
 #include "src/objects/js-proxy.h"
@@ -82,6 +83,9 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(NoElementsProtector, no_elements_protector, NoElementsProtector)           \
   V(MegaDOMProtector, mega_dom_protector, MegaDOMProtector)                    \
   V(NumberStringCache, number_string_cache, NumberStringCache)                 \
+  V(NumberStringNotRegexpLikeProtector,                                        \
+    number_string_not_regexp_like_protector,                                   \
+    NumberStringNotRegexpLikeProtector)                                        \
   V(PromiseAllResolveElementSharedFun, promise_all_resolve_element_shared_fun, \
     PromiseAllResolveElementSharedFun)                                         \
   V(PromiseAllSettledRejectElementSharedFun,                                   \
@@ -163,7 +167,6 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(FixedCOWArrayMap, fixed_cow_array_map, FixedCOWArrayMap)                 \
   V(Function_string, function_string, FunctionString)                        \
   V(function_to_string, function_to_string, FunctionToString)                \
-  V(GlobalPropertyCellMap, global_property_cell_map, PropertyCellMap)        \
   V(has_instance_symbol, has_instance_symbol, HasInstanceSymbol)             \
   V(Infinity_string, Infinity_string, InfinityString)                        \
   V(is_concat_spreadable_symbol, is_concat_spreadable_symbol,                \
@@ -184,6 +187,7 @@ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
   V(NoClosuresCellMap, no_closures_cell_map, NoClosuresCellMap)              \
   V(null_to_string, null_to_string, NullToString)                            \
   V(NullValue, null_value, Null)                                             \
+  IF_WASM(V, WasmNull, wasm_null, WasmNull)                                  \
   V(number_string, number_string, NumberString)                              \
   V(number_to_string, number_to_string, NumberToString)                      \
   V(Object_string, Object_string, ObjectString)                              \
@@ -501,6 +505,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // TODO(v8:9708): Define BInt operations once all uses are ported.
   PARAMETER_BINOP(IntPtrOrSmiEqual, WordEqual, SmiEqual)
   PARAMETER_BINOP(IntPtrOrSmiNotEqual, WordNotEqual, SmiNotEqual)
+  PARAMETER_BINOP(IntPtrOrSmiLessThan, IntPtrLessThan, SmiLessThan)
   PARAMETER_BINOP(IntPtrOrSmiLessThanOrEqual, IntPtrLessThanOrEqual,
                   SmiLessThanOrEqual)
   PARAMETER_BINOP(IntPtrOrSmiGreaterThan, IntPtrGreaterThan, SmiGreaterThan)
@@ -594,6 +599,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<Smi> SmiTag(TNode<IntPtrT> value);
   // Untag a Smi value as an IntPtr.
   TNode<IntPtrT> SmiUntag(TNode<Smi> value);
+  // Untag a positive Smi value as an IntPtr, it's slightly better than
+  // SmiUntag() because it doesn't have to do sign extension.
+  TNode<IntPtrT> PositiveSmiUntag(TNode<Smi> value);
 
   // Smi conversions.
   TNode<Float64T> SmiToFloat64(TNode<Smi> value);
@@ -781,6 +789,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // BigInt operations.
   void GotoIfLargeBigInt(TNode<BigInt> bigint, Label* true_label);
 
+  TNode<Word32T> NormalizeShift32OperandIfNecessary(TNode<Word32T> right32);
   TNode<Number> BitwiseOp(TNode<Word32T> left32, TNode<Word32T> right32,
                           Operation bitwise_op);
   TNode<Number> BitwiseSmiOp(TNode<Smi> left32, TNode<Smi> right32,
@@ -832,63 +841,12 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   void FastCheck(TNode<BoolT> condition);
 
-  TNode<BoolT> IsCodeTMap(TNode<Map> map) {
-    return V8_EXTERNAL_CODE_SPACE_BOOL ? IsCodeDataContainerMap(map)
-                                       : IsCodeMap(map);
-  }
-  TNode<BoolT> IsCodeT(TNode<HeapObject> object) {
-    return IsCodeTMap(LoadMap(object));
-  }
-
-  // TODO(v8:11880): remove once Code::bytecode_or_interpreter_data field
-  // is cached in or moved to CodeT.
-  TNode<Code> FromCodeTNonBuiltin(TNode<CodeT> code) {
-#ifdef V8_EXTERNAL_CODE_SPACE
-    // Compute the Code object pointer from the code entry point.
-    TNode<RawPtrT> code_entry = Load<RawPtrT>(
-        code, IntPtrConstant(CodeDataContainer::kCodeEntryPointOffset -
-                             kHeapObjectTag));
-    TNode<Object> o = BitcastWordToTagged(IntPtrSub(
-        code_entry, IntPtrConstant(Code::kHeaderSize - kHeapObjectTag)));
-    return CAST(o);
-#else
-    return code;
-#endif
-  }
-
-  TNode<CodeDataContainer> CodeDataContainerFromCodeT(TNode<CodeT> code) {
-#ifdef V8_EXTERNAL_CODE_SPACE
-    return code;
-#else
-    return LoadObjectField<CodeDataContainer>(code,
-                                              Code::kCodeDataContainerOffset);
-#endif
-  }
-
-  TNode<CodeT> ToCodeT(TNode<Code> code) {
-#ifdef V8_EXTERNAL_CODE_SPACE
-    return LoadObjectField<CodeDataContainer>(code,
-                                              Code::kCodeDataContainerOffset);
-#else
-    return code;
-#endif
-  }
-
-  TNode<CodeT> ToCodeT(TNode<Code> code,
-                       TNode<CodeDataContainer> code_data_container) {
-#ifdef V8_EXTERNAL_CODE_SPACE
-    return code_data_container;
-#else
-    return code;
-#endif
-  }
-
-  TNode<RawPtrT> GetCodeEntry(TNode<CodeT> code);
-  TNode<BoolT> IsMarkedForDeoptimization(TNode<CodeT> codet);
+  TNode<RawPtrT> LoadCodeInstructionStart(TNode<Code> code);
+  TNode<BoolT> IsMarkedForDeoptimization(TNode<Code> code);
 
   // The following Call wrappers call an object according to the semantics that
   // one finds in the EcmaScript spec, operating on an Callable (e.g. a
-  // JSFunction or proxy) rather than a Code object.
+  // JSFunction or proxy) rather than a InstructionStream object.
   template <class... TArgs>
   TNode<Object> Call(TNode<Context> context, TNode<Object> callable,
                      TNode<JSReceiver> receiver, TArgs... args) {
@@ -909,11 +867,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   }
 
   TNode<Object> CallApiCallback(TNode<Object> context, TNode<RawPtrT> callback,
-                                TNode<IntPtrT> argc, TNode<Object> data,
+                                TNode<Int32T> argc, TNode<Object> data,
                                 TNode<Object> holder, TNode<Object> receiver);
 
   TNode<Object> CallApiCallback(TNode<Object> context, TNode<RawPtrT> callback,
-                                TNode<IntPtrT> argc, TNode<Object> data,
+                                TNode<Int32T> argc, TNode<Object> data,
                                 TNode<Object> holder, TNode<Object> receiver,
                                 TNode<Object> value);
 
@@ -1193,6 +1151,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                          kExternalStringResourceDataTag);
   }
 
+  TNode<RawPtr<Uint64T>> Log10OffsetTable() {
+    return ReinterpretCast<RawPtr<Uint64T>>(
+        ExternalConstant(ExternalReference::address_of_log10_offset_table()));
+  }
+
 #if V8_ENABLE_WEBASSEMBLY
   TNode<RawPtrT> LoadWasmInternalFunctionCallTargetPtr(
       TNode<WasmInternalFunction> object) {
@@ -1241,6 +1204,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     return LoadBufferData<IntPtrT>(buffer, offset);
   }
   TNode<Uint8T> LoadUint8Ptr(TNode<RawPtrT> ptr, TNode<IntPtrT> offset);
+  TNode<Uint64T> LoadUint64Ptr(TNode<RawPtrT> ptr, TNode<IntPtrT> index);
 
   // Load a field from an object on the heap.
   template <class T, typename std::enable_if<
@@ -1289,8 +1253,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
         LoadFromObject(MachineTypeOf<T>::value, object,
                        IntPtrSub(offset, IntPtrConstant(kHeapObjectTag))));
   }
-  // Load a SMI field and untag it.
-  TNode<IntPtrT> LoadAndUntagObjectField(TNode<HeapObject> object, int offset);
+  // Load a positive SMI field and untag it.
+  TNode<IntPtrT> LoadAndUntagPositiveSmiObjectField(TNode<HeapObject> object,
+                                                    int offset);
   // Load a SMI field, untag it, and convert to Word32.
   TNode<Int32T> LoadAndUntagToWord32ObjectField(TNode<HeapObject> object,
                                                 int offset);
@@ -1429,6 +1394,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Load the length of a WeakFixedArray.
   TNode<Smi> LoadWeakFixedArrayLength(TNode<WeakFixedArray> array);
   TNode<IntPtrT> LoadAndUntagWeakFixedArrayLength(TNode<WeakFixedArray> array);
+  TNode<Uint32T> LoadAndUntagWeakFixedArrayLengthAsUint32(
+      TNode<WeakFixedArray> array);
   // Load the number of descriptors in DescriptorArray.
   TNode<Int32T> LoadNumberOfDescriptors(TNode<DescriptorArray> array);
   // Load the number of own descriptors of a map.
@@ -1538,7 +1505,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsWeakReferenceToObject(TNode<MaybeObject> maybe_object,
                                        TNode<Object> object);
 
-  TNode<MaybeObject> MakeWeak(TNode<HeapObject> value);
+  TNode<HeapObjectReference> MakeWeak(TNode<HeapObject> value);
   TNode<MaybeObject> ClearedValue();
 
   void FixedArrayBoundsCheck(TNode<FixedArrayBase> array, TNode<Smi> index,
@@ -1864,13 +1831,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void StoreJSSharedStructPropertyArrayElement(TNode<PropertyArray> array,
                                                TNode<IntPtrT> index,
                                                TNode<Object> value) {
-    // JSSharedStructs are allocated in the shared old space, which is currently
-    // collected by stopping the world, so the incremental write barrier is not
-    // needed. They can only store Smis and other HeapObjects in the shared old
-    // space, so the generational write barrier is also not needed.
-    // TODO(v8:12547): Add a safer, shared variant of SKIP_WRITE_BARRIER.
-    StoreFixedArrayOrPropertyArrayElement(array, index, value,
-                                          UNSAFE_SKIP_WRITE_BARRIER);
+    StoreFixedArrayOrPropertyArrayElement(array, index, value);
   }
 
   // EnsureArrayPushable verifies that receiver with this map is:
@@ -2025,14 +1986,14 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       ElementsKind kind, TNode<Map> array_map, TNode<Smi> capacity,
       TNode<Smi> length, base::Optional<TNode<AllocationSite>> allocation_site,
       AllocationFlags allocation_flags = AllocationFlag::kNone) {
-    return AllocateJSArray(kind, array_map, SmiUntag(capacity), length,
+    return AllocateJSArray(kind, array_map, PositiveSmiUntag(capacity), length,
                            allocation_site, allocation_flags);
   }
   TNode<JSArray> AllocateJSArray(
       ElementsKind kind, TNode<Map> array_map, TNode<Smi> capacity,
       TNode<Smi> length,
       AllocationFlags allocation_flags = AllocationFlag::kNone) {
-    return AllocateJSArray(kind, array_map, SmiUntag(capacity), length,
+    return AllocateJSArray(kind, array_map, PositiveSmiUntag(capacity), length,
                            base::nullopt, allocation_flags);
   }
   TNode<JSArray> AllocateJSArray(
@@ -2082,11 +2043,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                         Label* if_bailout);
   TNode<Object> GetConstructor(TNode<Map> map);
 
-  void FindNonDefaultConstructorOrConstruct(TNode<Context> context,
-                                            TNode<JSFunction> this_function,
-                                            TVariable<Object>& constructor,
-                                            Label* found_default_base_ctor,
-                                            Label* found_something_else);
+  void FindNonDefaultConstructor(TNode<JSFunction> this_function,
+                                 TVariable<Object>& constructor,
+                                 Label* found_default_base_ctor,
+                                 Label* found_something_else);
 
   TNode<Map> GetInstanceTypeMap(InstanceType instance_type);
 
@@ -2468,17 +2428,17 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                         TNode<Object> value);
   void TaggedToWord32OrBigInt(TNode<Context> context, TNode<Object> value,
                               Label* if_number, TVariable<Word32T>* var_word32,
-                              Label* if_bigint,
+                              Label* if_bigint, Label* if_bigint64,
                               TVariable<BigInt>* var_maybe_bigint);
   void TaggedToWord32OrBigIntWithFeedback(TNode<Context> context,
                                           TNode<Object> value, Label* if_number,
                                           TVariable<Word32T>* var_word32,
-                                          Label* if_bigint,
+                                          Label* if_bigint, Label* if_bigint64,
                                           TVariable<BigInt>* var_maybe_bigint,
                                           TVariable<Smi>* var_feedback);
   void TaggedPointerToWord32OrBigIntWithFeedback(
       TNode<Context> context, TNode<HeapObject> pointer, Label* if_number,
-      TVariable<Word32T>* var_word32, Label* if_bigint,
+      TVariable<Word32T>* var_word32, Label* if_bigint, Label* if_bigint64,
       TVariable<BigInt>* var_maybe_bigint, TVariable<Smi>* var_feedback);
 
   TNode<Int32T> TruncateNumberToWord32(TNode<Number> value);
@@ -2508,11 +2468,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<Int32T> ChangeBoolToInt32(TNode<BoolT> b);
 
-  void TaggedToNumeric(TNode<Context> context, TNode<Object> value,
-                       TVariable<Numeric>* var_numeric);
-  void TaggedToNumericWithFeedback(TNode<Context> context, TNode<Object> value,
-                                   TVariable<Numeric>* var_numeric,
-                                   TVariable<Smi>* var_feedback);
+  void TaggedToBigInt(TNode<Context> context, TNode<Object> value,
+                      Label* if_not_bigint, Label* if_bigint,
+                      Label* if_bigint64, TVariable<BigInt>* var_bigint,
+                      TVariable<Smi>* var_feedback);
 
   // Ensures that {var_shared_value} is shareable across Isolates, and throws if
   // not.
@@ -2595,6 +2554,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> InstanceTypeEqual(TNode<Int32T> instance_type, int type);
   TNode<BoolT> IsNoElementsProtectorCellInvalid();
   TNode<BoolT> IsMegaDOMProtectorCellInvalid();
+  TNode<BoolT> IsAlwaysSharedSpaceJSObjectInstanceType(
+      TNode<Int32T> instance_type);
   TNode<BoolT> IsArrayIteratorProtectorCellInvalid();
   TNode<BoolT> IsBigIntInstanceType(TNode<Int32T> instance_type);
   TNode<BoolT> IsBigInt(TNode<HeapObject> object);
@@ -2627,6 +2588,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsIndirectStringInstanceType(TNode<Int32T> instance_type);
   TNode<BoolT> IsJSArrayBuffer(TNode<HeapObject> object);
   TNode<BoolT> IsJSDataView(TNode<HeapObject> object);
+  TNode<BoolT> IsJSRabGsabDataView(TNode<HeapObject> object);
   TNode<BoolT> IsJSArrayInstanceType(TNode<Int32T> instance_type);
   TNode<BoolT> IsJSArrayMap(TNode<Map> map);
   TNode<BoolT> IsJSArray(TNode<HeapObject> object);
@@ -2658,6 +2620,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsJSReceiverInstanceType(TNode<Int32T> instance_type);
   TNode<BoolT> IsJSReceiverMap(TNode<Map> map);
   TNode<BoolT> IsJSReceiver(TNode<HeapObject> object);
+  // The following two methods assume that we deal either with a primitive
+  // object or a JS receiver.
+  TNode<BoolT> JSAnyIsNotPrimitiveMap(TNode<Map> map);
+  TNode<BoolT> JSAnyIsNotPrimitive(TNode<HeapObject> object);
   TNode<BoolT> IsJSRegExp(TNode<HeapObject> object);
   TNode<BoolT> IsJSTypedArrayInstanceType(TNode<Int32T> instance_type);
   TNode<BoolT> IsJSTypedArrayMap(TNode<Map> map);
@@ -2730,6 +2696,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsTypedArraySpeciesProtectorCellInvalid();
   TNode<BoolT> IsRegExpSpeciesProtectorCellInvalid();
   TNode<BoolT> IsPromiseSpeciesProtectorCellInvalid();
+  TNode<BoolT> IsNumberStringNotRegexpLikeProtectorCellInvalid();
 
   TNode<IntPtrT> LoadBasicMemoryChunkFlags(TNode<HeapObject> object);
 
@@ -2753,12 +2720,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> HasSharedStringTableFlag() {
     return LoadRuntimeFlag(
         ExternalReference::address_of_shared_string_table_flag());
-  }
-
-  TNode<BoolT> HasHarmonySymbolAsWeakmapKeyFlag() {
-    return LoadRuntimeFlag(
-        ExternalReference::
-            address_of_FLAG_harmony_symbol_as_weakmap_key());
   }
 
   // True iff |object| is a Smi or a HeapNumber or a BigInt.
@@ -2875,11 +2836,20 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Try to convert an object to a BigInt. Throws on failure (e.g. for Numbers).
   // https://tc39.github.io/proposal-bigint/#sec-to-bigint
   TNode<BigInt> ToBigInt(TNode<Context> context, TNode<Object> input);
+  // Try to convert any object to a BigInt, including Numbers.
+  TNode<BigInt> ToBigIntConvertNumber(TNode<Context> context,
+                                      TNode<Object> input);
 
   // Converts |input| to one of 2^32 integer values in the range 0 through
   // 2^32-1, inclusive.
   // ES#sec-touint32
   TNode<Number> ToUint32(TNode<Context> context, TNode<Object> input);
+
+  // No-op on 32-bit, otherwise zero extend.
+  TNode<IntPtrT> ChangePositiveInt32ToIntPtr(TNode<Int32T> input) {
+    CSA_DCHECK(this, Int32GreaterThanOrEqual(input, Int32Constant(0)));
+    return Signed(ChangeUint32ToWord(input));
+  }
 
   // Convert any object to a String.
   TNode<String> ToString_Inline(TNode<Context> context, TNode<Object> input);
@@ -3234,6 +3204,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                            next_enum_index_smi, SKIP_WRITE_BARRIER);
   }
 
+  template <class Dictionary>
+  TNode<Smi> GetNameDictionaryFlags(TNode<Dictionary> dictionary);
+  template <class Dictionary>
+  void SetNameDictionaryFlags(TNode<Dictionary>, TNode<Smi> flags);
+
   // Looks up an entry in a NameDictionaryBase successor. If the entry is found
   // control goes to {if_found} and {var_name_index} contains an index of the
   // key field of the entry found. If the key is not found control goes to
@@ -3296,22 +3271,38 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     // descriptor
     kReturnAccessorPair
   };
+  // Receiver handling mode for TryGetOwnProperty and CallGetterIfAccessor.
+  enum ExpectedReceiverMode {
+    // The receiver is guaranteed to be JSReceiver, no conversion is necessary
+    // in case a function callback template has to be called.
+    kExpectingJSReceiver,
+    // The receiver can be anything, it has to be converted to JSReceiver
+    // in case a function callback template has to be called.
+    kExpectingAnyReceiver,
+  };
   // Tries to get {object}'s own {unique_name} property value. If the property
   // is an accessor then it also calls a getter. If the property is a double
   // field it re-wraps value in an immutable heap number. {unique_name} must be
   // a unique name (Symbol or InternalizedString) that is not an array index.
-  void TryGetOwnProperty(TNode<Context> context, TNode<Object> receiver,
-                         TNode<JSReceiver> object, TNode<Map> map,
-                         TNode<Int32T> instance_type, TNode<Name> unique_name,
-                         Label* if_found_value, TVariable<Object>* var_value,
-                         Label* if_not_found, Label* if_bailout);
-  void TryGetOwnProperty(TNode<Context> context, TNode<Object> receiver,
-                         TNode<JSReceiver> object, TNode<Map> map,
-                         TNode<Int32T> instance_type, TNode<Name> unique_name,
-                         Label* if_found_value, TVariable<Object>* var_value,
-                         TVariable<Uint32T>* var_details,
-                         TVariable<Object>* var_raw_value, Label* if_not_found,
-                         Label* if_bailout, GetOwnPropertyMode mode);
+  void TryGetOwnProperty(
+      TNode<Context> context, TNode<Object> receiver, TNode<JSReceiver> object,
+      TNode<Map> map, TNode<Int32T> instance_type, TNode<Name> unique_name,
+      Label* if_found_value, TVariable<Object>* var_value, Label* if_not_found,
+      Label* if_bailout,
+      ExpectedReceiverMode expected_receiver_mode = kExpectingAnyReceiver);
+  void TryGetOwnProperty(
+      TNode<Context> context, TNode<Object> receiver, TNode<JSReceiver> object,
+      TNode<Map> map, TNode<Int32T> instance_type, TNode<Name> unique_name,
+      Label* if_found_value, TVariable<Object>* var_value,
+      TVariable<Uint32T>* var_details, TVariable<Object>* var_raw_value,
+      Label* if_not_found, Label* if_bailout, GetOwnPropertyMode mode,
+      ExpectedReceiverMode expected_receiver_mode = kExpectingAnyReceiver);
+
+  TNode<PropertyDescriptorObject> AllocatePropertyDescriptorObject(
+      TNode<Context> context);
+  void InitializePropertyDescriptorObject(
+      TNode<PropertyDescriptorObject> descriptor, TNode<Object> value,
+      TNode<Uint32T> details, Label* if_bailout);
 
   TNode<Object> GetProperty(TNode<Context> context, TNode<Object> receiver,
                             Handle<Name> name) {
@@ -3345,6 +3336,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<Object> CreateAsyncFromSyncIterator(TNode<Context> context,
                                             TNode<Object> sync_iterator);
+  TNode<JSObject> CreateAsyncFromSyncIterator(TNode<Context> context,
+                                              TNode<JSReceiver> sync_iterator,
+                                              TNode<Object> next);
 
   template <class... TArgs>
   TNode<Object> CallBuiltin(Builtin id, TNode<Object> context, TArgs... args) {
@@ -3593,23 +3587,50 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<Int32T> LoadElementsKind(TNode<AllocationSite> allocation_site);
 
   enum class IndexAdvanceMode { kPre, kPost };
+  enum class LoopUnrollingMode { kNo, kYes };
 
   template <typename TIndex>
   using FastLoopBody = std::function<void(TNode<TIndex> index)>;
 
   template <typename TIndex>
   TNode<TIndex> BuildFastLoop(
-      const VariableList& var_list, TNode<TIndex> start_index,
-      TNode<TIndex> end_index, const FastLoopBody<TIndex>& body, int increment,
+      const VariableList& vars, TVariable<TIndex>& var_index,
+      TNode<TIndex> start_index, TNode<TIndex> end_index,
+      const FastLoopBody<TIndex>& body, int increment,
+      LoopUnrollingMode unrolling_mode,
       IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre);
+
+  template <typename TIndex>
+  TNode<TIndex> BuildFastLoop(
+      TVariable<TIndex>& var_index, TNode<TIndex> start_index,
+      TNode<TIndex> end_index, const FastLoopBody<TIndex>& body, int increment,
+      LoopUnrollingMode unrolling_mode,
+      IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre) {
+    return BuildFastLoop(VariableList(0, zone()), var_index, start_index,
+                         end_index, body, increment, unrolling_mode,
+                         advance_mode);
+  }
+
+  template <typename TIndex>
+  TNode<TIndex> BuildFastLoop(const VariableList& vars,
+                              TNode<TIndex> start_index,
+                              TNode<TIndex> end_index,
+                              const FastLoopBody<TIndex>& body, int increment,
+                              LoopUnrollingMode unrolling_mode,
+                              IndexAdvanceMode advance_mode) {
+    TVARIABLE(TIndex, var_index);
+    return BuildFastLoop(vars, var_index, start_index, end_index, body,
+                         increment, unrolling_mode, advance_mode);
+  }
 
   template <typename TIndex>
   TNode<TIndex> BuildFastLoop(
       TNode<TIndex> start_index, TNode<TIndex> end_index,
       const FastLoopBody<TIndex>& body, int increment,
+      LoopUnrollingMode unrolling_mode,
       IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre) {
     return BuildFastLoop(VariableList(0, zone()), start_index, end_index, body,
-                         increment, advance_mode);
+                         increment, unrolling_mode, advance_mode);
   }
 
   enum class ForEachDirection { kForward, kReverse };
@@ -3622,6 +3643,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       TNode<UnionT<UnionT<FixedArray, PropertyArray>, HeapObject>> array,
       ElementsKind kind, TNode<TIndex> first_element_inclusive,
       TNode<TIndex> last_element_exclusive, const FastArrayForEachBody& body,
+      LoopUnrollingMode loop_unrolling_mode,
       ForEachDirection direction = ForEachDirection::kReverse);
 
   template <typename TIndex>
@@ -3730,6 +3752,29 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<Oddball> StrictEqual(TNode<Object> lhs, TNode<Object> rhs,
                              TVariable<Smi>* var_type_feedback = nullptr);
+
+  void GotoIfStringEqual(TNode<String> lhs, TNode<IntPtrT> lhs_length,
+                         TNode<String> rhs, Label* if_true) {
+    Label if_false(this);
+    TNode<IntPtrT> rhs_length = LoadStringLengthAsWord(rhs);
+    BranchIfStringEqual(lhs, lhs_length, rhs, rhs_length, if_true, &if_false,
+                        nullptr);
+
+    BIND(&if_false);
+  }
+
+  void BranchIfStringEqual(TNode<String> lhs, TNode<String> rhs, Label* if_true,
+                           Label* if_false,
+                           TVariable<Oddball>* result = nullptr) {
+    return BranchIfStringEqual(lhs, LoadStringLengthAsWord(lhs), rhs,
+                               LoadStringLengthAsWord(rhs), if_true, if_false,
+                               result);
+  }
+
+  void BranchIfStringEqual(TNode<String> lhs, TNode<IntPtrT> lhs_length,
+                           TNode<String> rhs, TNode<IntPtrT> rhs_length,
+                           Label* if_true, Label* if_false,
+                           TVariable<Oddball>* result = nullptr);
 
   // ECMA#sec-samevalue
   // Similar to StrictEqual except that NaNs are treated as equal and minus zero
@@ -3851,7 +3896,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                 ElementsKind kind = HOLEY_ELEMENTS);
 
   // Load a builtin's code from the builtin array in the isolate.
-  TNode<CodeT> LoadBuiltin(TNode<Smi> builtin_id);
+  TNode<Code> LoadBuiltin(TNode<Smi> builtin_id);
 
   // Figure out the SFI's code object using its data field.
   // If |data_type_out| is provided, the instance type of the function data will
@@ -3859,7 +3904,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // data_type_out will be set to 0.
   // If |if_compile_lazy| is provided then the execution will go to the given
   // label in case of an CompileLazy code object.
-  TNode<CodeT> GetSharedFunctionInfoCode(
+  TNode<Code> GetSharedFunctionInfoCode(
       TNode<SharedFunctionInfo> shared_info,
       TVariable<Uint16T>* data_type_out = nullptr,
       Label* if_compile_lazy = nullptr);
@@ -3932,6 +3977,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void Print(TNode<MaybeObject> tagged_value) {
     return Print(nullptr, tagged_value);
   }
+  void Print(const char* prefix, TNode<UintPtrT> value);
   void PrintErr(const char* s);
   void PrintErr(const char* prefix, TNode<MaybeObject> tagged_value);
   void PrintErr(TNode<MaybeObject> tagged_value) {
@@ -3940,6 +3986,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void PrintToStream(const char* s, int stream);
   void PrintToStream(const char* prefix, TNode<MaybeObject> tagged_value,
                      int stream);
+  void PrintToStream(const char* prefix, TNode<UintPtrT> value, int stream);
 
   template <class... TArgs>
   TNode<HeapObject> MakeTypeError(MessageTemplate message,
@@ -3969,6 +4016,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   }
   uint8_t ConstexprIntegerLiteralToUint8(const IntegerLiteral& i) {
     return i.To<uint8_t>();
+  }
+  int64_t ConstexprIntegerLiteralToInt64(const IntegerLiteral& i) {
+    return i.To<int64_t>();
   }
   uint64_t ConstexprIntegerLiteralToUint64(const IntegerLiteral& i) {
     return i.To<uint64_t>();
@@ -4138,7 +4188,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       TNode<Object> value, TNode<HeapObject> holder, TNode<Uint32T> details,
       TNode<Context> context, TNode<Object> receiver, TNode<Object> name,
       Label* if_bailout,
-      GetOwnPropertyMode mode = kCallJSGetterDontUseCachedName);
+      GetOwnPropertyMode mode = kCallJSGetterDontUseCachedName,
+      ExpectedReceiverMode expected_receiver_mode = kExpectingJSReceiver);
 
   TNode<IntPtrT> TryToIntptr(TNode<Object> key, Label* if_not_intptr,
                              TVariable<Int32T>* var_instance_type = nullptr);
@@ -4248,6 +4299,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
  private:
   friend class CodeStubArguments;
 
+  void BigInt64Comparison(Operation op, TNode<Object>& left,
+                          TNode<Object>& right, Label* return_true,
+                          Label* return_false);
+
   void HandleBreakOnNode();
 
   TNode<HeapObject> AllocateRawDoubleAligned(TNode<IntPtrT> size_in_bytes,
@@ -4311,10 +4366,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       TNode<Context> context, TNode<HeapObject> input, Object::Conversion mode,
       BigIntHandling bigint_handling = BigIntHandling::kThrow);
 
-  void TaggedToNumeric(TNode<Context> context, TNode<Object> value,
-                       TVariable<Numeric>* var_numeric,
-                       TVariable<Smi>* var_feedback);
-
   enum IsKnownTaggedPointer { kNo, kYes };
   template <Object::Conversion conversion>
   void TaggedToWord32OrBigIntImpl(TNode<Context> context, TNode<Object> value,
@@ -4322,6 +4373,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                   TVariable<Word32T>* var_word32,
                                   IsKnownTaggedPointer is_known_tagged_pointer,
                                   Label* if_bigint = nullptr,
+                                  Label* if_bigint64 = nullptr,
                                   TVariable<BigInt>* var_maybe_bigint = nullptr,
                                   TVariable<Smi>* var_feedback = nullptr);
 

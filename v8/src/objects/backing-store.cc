@@ -98,11 +98,15 @@ void RecordStatus(Isolate* isolate, AllocationStatus status) {
 }
 
 inline void DebugCheckZero(void* start, size_t byte_length) {
-#if DEBUG
+#ifdef DEBUG
+#ifdef V8_IS_TSAN
+  // TSan in debug mode is particularly slow. Skip this check for buffers >64MB.
+  if (byte_length > 64 * MB) return;
+#endif  // TSan debug build
   // Double check memory is zero-initialized. Despite being DEBUG-only,
   // this function is somewhat optimized for the benefit of test suite
   // execution times (some tests allocate several gigabytes).
-  const byte* bytes = reinterpret_cast<const byte*>(start);
+  const uint8_t* bytes = reinterpret_cast<const uint8_t*>(start);
   const size_t kBaseCase = 32;
   for (size_t i = 0; i < kBaseCase && i < byte_length; i++) {
     DCHECK_EQ(0, bytes[i]);
@@ -347,8 +351,10 @@ std::unique_ptr<BackingStore> BackingStore::TryAllocateAndPartiallyCommitMemory(
       // Collect garbage and retry.
       did_retry = true;
       // TODO(wasm): try Heap::EagerlyFreeExternalMemory() first?
-      isolate->heap()->MemoryPressureNotification(
-          MemoryPressureLevel::kCritical, true);
+      if (isolate != nullptr) {
+        isolate->heap()->MemoryPressureNotification(
+            MemoryPressureLevel::kCritical, true);
+      }
     }
     return false;
   };
@@ -368,7 +374,9 @@ std::unique_ptr<BackingStore> BackingStore::TryAllocateAndPartiallyCommitMemory(
   };
   if (!gc_retry(allocate_pages)) {
     // Page allocator could not reserve enough pages.
-    RecordStatus(isolate, AllocationStatus::kOtherFailure);
+    if (isolate != nullptr) {
+      RecordStatus(isolate, AllocationStatus::kOtherFailure);
+    }
     TRACE_BS("BSw:try   failed to allocate pages\n");
     return {};
   }
@@ -376,11 +384,11 @@ std::unique_ptr<BackingStore> BackingStore::TryAllocateAndPartiallyCommitMemory(
   // Get a pointer to the start of the buffer, skipping negative guard region
   // if necessary.
 #if V8_ENABLE_WEBASSEMBLY
-  byte* buffer_start = reinterpret_cast<byte*>(allocation_base) +
-                       (guards ? kNegativeGuardSize : 0);
+  uint8_t* buffer_start = reinterpret_cast<uint8_t*>(allocation_base) +
+                          (guards ? kNegativeGuardSize : 0);
 #else
   DCHECK(!guards);
-  byte* buffer_start = reinterpret_cast<byte*>(allocation_base);
+  uint8_t* buffer_start = reinterpret_cast<uint8_t*>(allocation_base);
 #endif
 
   //--------------------------------------------------------------------------
@@ -403,8 +411,10 @@ std::unique_ptr<BackingStore> BackingStore::TryAllocateAndPartiallyCommitMemory(
 
   DebugCheckZero(buffer_start, byte_length);  // touch the bytes.
 
-  RecordStatus(isolate, did_retry ? AllocationStatus::kSuccessAfterRetry
-                                  : AllocationStatus::kSuccess);
+  if (isolate != nullptr) {
+    RecordStatus(isolate, did_retry ? AllocationStatus::kSuccessAfterRetry
+                                    : AllocationStatus::kSuccess);
+  }
 
   const bool is_wasm_memory = wasm_memory != WasmMemoryFlag::kNotWasm;
   ResizableFlag resizable =
@@ -614,7 +624,7 @@ BackingStore::ResizeOrGrowResult BackingStore::ResizeInPlace(
     // committed page). In addition, we don't rely on all platforms always
     // zeroing decommitted-then-recommitted memory, but zero the memory
     // explicitly here.
-    memset(reinterpret_cast<byte*>(buffer_start_) + new_byte_length, 0,
+    memset(reinterpret_cast<uint8_t*>(buffer_start_) + new_byte_length, 0,
            byte_length_ - new_byte_length);
 
     // Check if we can un-commit some pages.
@@ -629,7 +639,7 @@ BackingStore::ResizeOrGrowResult BackingStore::ResizeInPlace(
       size_t old_committed_length = old_committed_pages * page_size;
       if (!i::SetPermissions(
               GetPlatformPageAllocator(),
-              reinterpret_cast<byte*>(buffer_start_) + new_committed_length,
+              reinterpret_cast<uint8_t*>(buffer_start_) + new_committed_length,
               old_committed_length - new_committed_length,
               PageAllocator::kNoAccess)) {
         return kFailure;

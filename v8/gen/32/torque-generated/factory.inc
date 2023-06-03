@@ -9,6 +9,15 @@ Handle<TurbofanUnionType> NewTurbofanUnionType(Handle<TurbofanType> type1, Handl
 Handle<TurbofanRangeType> NewTurbofanRangeType(double min, double max, AllocationType allocation_type);
 Handle<TurbofanHeapConstantType> NewTurbofanHeapConstantType(Handle<HeapObject> constant, AllocationType allocation_type);
 Handle<TurbofanOtherNumberConstantType> NewTurbofanOtherNumberConstantType(double constant, AllocationType allocation_type);
+Handle<TurboshaftWord32Type> NewTurboshaftWord32Type(AllocationType allocation_type);
+Handle<TurboshaftWord32RangeType> NewTurboshaftWord32RangeType(uint32_t from, uint32_t to, AllocationType allocation_type);
+Handle<TurboshaftWord32SetType> NewTurboshaftWord32SetType(uint32_t set_size, AllocationType allocation_type);
+Handle<TurboshaftWord64Type> NewTurboshaftWord64Type(AllocationType allocation_type);
+Handle<TurboshaftWord64RangeType> NewTurboshaftWord64RangeType(uint32_t from_high, uint32_t from_low, uint32_t to_high, uint32_t to_low, AllocationType allocation_type);
+Handle<TurboshaftWord64SetType> NewTurboshaftWord64SetType(uint32_t set_size, AllocationType allocation_type);
+Handle<TurboshaftFloat64Type> NewTurboshaftFloat64Type(uint32_t special_values, AllocationType allocation_type);
+Handle<TurboshaftFloat64RangeType> NewTurboshaftFloat64RangeType(uint32_t special_values, uint32_t _padding, double min, double max, AllocationType allocation_type);
+Handle<TurboshaftFloat64SetType> NewTurboshaftFloat64SetType(uint32_t special_values, uint32_t set_size, AllocationType allocation_type);
 Handle<ExportedSubClassBase> NewExportedSubClassBase(Handle<HeapObject> a, Handle<HeapObject> b, AllocationType allocation_type);
 Handle<ExportedSubClass> NewExportedSubClass(Handle<HeapObject> a, Handle<HeapObject> b, int32_t c_field, int32_t d_field, int e_field, AllocationType allocation_type);
 Handle<ExportedSubClass2> NewExportedSubClass2(Handle<HeapObject> a, Handle<HeapObject> b, int32_t x_field, int32_t y_field, int z_field, AllocationType allocation_type);

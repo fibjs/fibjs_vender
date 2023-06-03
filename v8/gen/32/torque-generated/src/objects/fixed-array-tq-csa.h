@@ -109,7 +109,7 @@ TNode<ByteArray> DownCastForTorqueClass_ByteArray_0(compiler::CodeAssemblerState
 TNode<WeakArrayList> DownCastForTorqueClass_WeakArrayList_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=131&c=11
-TorqueStructConstantIterator_TheHole_0 ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Oddball> p_value);
+TorqueStructConstantIterator_TheHole_0 ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_value);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=129&c=7
 TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0 IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TorqueStructSliceIterator_Object_MutableReference_Object_0 p_first, TorqueStructConstantIterator_TheHole_0 p_second);

@@ -71,7 +71,7 @@ AssemblerOptions AssemblerOptions::Default(Isolate* isolate) {
   options.enable_simulator_code = !serializer || v8_flags.target_is_simulator;
 #endif
 
-#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_LOONG64
   options.code_range_base = isolate->heap()->code_range_base();
 #endif
   bool short_builtin_calls =
@@ -86,15 +86,6 @@ AssemblerOptions AssemblerOptions::Default(Isolate* isolate) {
   return options;
 }
 
-AssemblerOptions AssemblerOptions::DefaultForOffHeapTrampoline(
-    Isolate* isolate) {
-  AssemblerOptions options = AssemblerOptions::Default(isolate);
-  // Off-heap trampolines may not contain any metadata since their metadata
-  // offsets refer to the off-heap metadata area.
-  options.emit_code_comments = false;
-  return options;
-}
-
 namespace {
 
 class DefaultAssemblerBuffer : public AssemblerBuffer {
@@ -103,11 +94,11 @@ class DefaultAssemblerBuffer : public AssemblerBuffer {
       : buffer_(base::OwnedVector<uint8_t>::NewForOverwrite(
             std::max(AssemblerBase::kMinimalBufferSize, size))) {
 #ifdef DEBUG
-    ZapCode(reinterpret_cast<Address>(buffer_.start()), buffer_.size());
+    ZapCode(reinterpret_cast<Address>(buffer_.begin()), buffer_.size());
 #endif
   }
 
-  byte* start() const override { return buffer_.start(); }
+  uint8_t* start() const override { return buffer_.begin(); }
 
   int size() const override { return static_cast<int>(buffer_.size()); }
 
@@ -122,10 +113,10 @@ class DefaultAssemblerBuffer : public AssemblerBuffer {
 
 class ExternalAssemblerBufferImpl : public AssemblerBuffer {
  public:
-  ExternalAssemblerBufferImpl(byte* start, int size)
+  ExternalAssemblerBufferImpl(uint8_t* start, int size)
       : start_(start), size_(size) {}
 
-  byte* start() const override { return start_; }
+  uint8_t* start() const override { return start_; }
 
   int size() const override { return size_; }
 
@@ -137,14 +128,12 @@ class ExternalAssemblerBufferImpl : public AssemblerBuffer {
   void operator delete(void* ptr) noexcept;
 
  private:
-  byte* const start_;
+  uint8_t* const start_;
   const int size_;
 };
-
-static exlib::fiber_local<std::aligned_storage_t<sizeof(ExternalAssemblerBufferImpl),
+static  exlib::fiber_local<std::aligned_storage_t<sizeof(ExternalAssemblerBufferImpl),
                                            alignof(ExternalAssemblerBufferImpl)>> tls_singleton_storage;
-
-static exlib::fiber_local<bool> tls_singleton_taken(false);
+static  exlib::fiber_local<bool> tls_singleton_taken;
 
 void* ExternalAssemblerBufferImpl::operator new(std::size_t count) {
   DCHECK_EQ(count, sizeof(ExternalAssemblerBufferImpl));
@@ -169,7 +158,7 @@ void ExternalAssemblerBufferImpl::operator delete(void* ptr) noexcept {
 std::unique_ptr<AssemblerBuffer> ExternalAssemblerBuffer(void* start,
                                                          int size) {
   return std::make_unique<ExternalAssemblerBufferImpl>(
-      reinterpret_cast<byte*>(start), size);
+      reinterpret_cast<uint8_t*>(start), size);
 }
 
 std::unique_ptr<AssemblerBuffer> NewAssemblerBuffer(int size) {
@@ -264,7 +253,7 @@ void AssemblerBase::RequestHeapNumber(HeapNumberRequest request) {
   heap_number_requests_.push_front(request);
 }
 
-int AssemblerBase::AddCodeTarget(Handle<CodeT> target) {
+int AssemblerBase::AddCodeTarget(Handle<Code> target) {
   int current = static_cast<int>(code_targets_.size());
   if (current > 0 && !target.is_null() &&
       code_targets_.back().address() == target.address()) {
@@ -276,7 +265,7 @@ int AssemblerBase::AddCodeTarget(Handle<CodeT> target) {
   }
 }
 
-Handle<CodeT> AssemblerBase::GetCodeTarget(intptr_t code_target_index) const {
+Handle<Code> AssemblerBase::GetCodeTarget(intptr_t code_target_index) const {
   DCHECK_LT(static_cast<size_t>(code_target_index), code_targets_.size());
   return code_targets_[code_target_index];
 }

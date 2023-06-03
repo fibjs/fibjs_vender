@@ -17,12 +17,6 @@
 // The fast_c_api object also supports querying the number of fast/slow calls
 // and resetting these counters.
 
-// Make sure to sync the following with src/compiler/globals.h.
-#if defined(V8_TARGET_ARCH_X64) || defined(V8_TARGET_ARCH_ARM64) || \
-    defined(V8_TARGET_ARCH_MIPS64) || defined(V8_TARGET_ARCH_LOONG64)
-#define V8_ENABLE_FP_PARAMS_IN_C_LINKAGE
-#endif
-
 namespace v8 {
 namespace {
 
@@ -34,7 +28,7 @@ namespace {
 
 #define CHECK_SELF_OR_THROW()                                               \
   if (!self) {                                                              \
-    args.GetIsolate()->ThrowError(                                          \
+    info.GetIsolate()->ThrowError(                                          \
         "This method is not defined on objects inheriting from FastCAPI."); \
     return;                                                                 \
   }
@@ -43,6 +37,69 @@ class FastCApiObject {
  public:
   static FastCApiObject& instance();
 
+#ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+  static AnyCType ThrowFallbackFastCallbackPatch(AnyCType receiver,
+                                                 AnyCType options) {
+    AnyCType ret;
+    ThrowFallbackFastCallback(receiver.object_value, *options.options_value);
+    return ret;
+  }
+
+#endif  //  V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+  static void ThrowFallbackFastCallback(Local<Object> receiver,
+                                        FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    self->fast_call_count_++;
+    options.fallback = true;
+  }
+
+  static void ThrowFallbackSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    info.GetIsolate()->ThrowError("Exception from fallback.");
+  }
+
+#ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+  static AnyCType CopyStringFastCallbackPatch(AnyCType receiver,
+                                              AnyCType should_fallback,
+                                              AnyCType source, AnyCType out,
+                                              AnyCType options) {
+    AnyCType ret;
+    CopyStringFastCallback(receiver.object_value, should_fallback.bool_value,
+                           *source.string_value, *out.uint8_ta_value,
+                           *options.options_value);
+    return ret;
+  }
+
+#endif  //  V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
+  static void CopyStringFastCallback(Local<Object> receiver,
+                                     bool should_fallback,
+                                     const FastOneByteString& source,
+                                     const FastApiTypedArray<uint8_t>& out,
+                                     FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    self->fast_call_count_++;
+
+    if (should_fallback) {
+      options.fallback = true;
+    } else {
+      options.fallback = false;
+    }
+
+    uint8_t* memory = nullptr;
+    CHECK(out.getStorageIfAligned(&memory));
+    memcpy(memory, source.data, source.length);
+  }
+
+  static void CopyStringSlowCallback(const FunctionCallbackInfo<Value>& info) {
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+  }
 #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
   static AnyCType AddAllFastCallbackPatch(AnyCType receiver,
                                           AnyCType should_fallback,
@@ -121,40 +178,40 @@ class FastCApiObject {
            static_cast<double>(arg_f32) + arg_f64;
   }
 
-  static void AddAllSlowCallback(const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+  static void AddAllSlowCallback(const FunctionCallbackInfo<Value>& info) {
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     HandleScope handle_scope(isolate);
 
     double sum = 0;
-    if (args.Length() > 1 && args[1]->IsNumber()) {
-      sum += args[1]->Int32Value(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 1 && info[1]->IsNumber()) {
+      sum += info[1]->Int32Value(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 2 && args[2]->IsNumber()) {
-      sum += args[2]->Uint32Value(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 2 && info[2]->IsNumber()) {
+      sum += info[2]->Uint32Value(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 3 && args[3]->IsNumber()) {
-      sum += args[3]->IntegerValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 3 && info[3]->IsNumber()) {
+      sum += info[3]->IntegerValue(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 4 && args[4]->IsNumber()) {
-      sum += args[4]->IntegerValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 4 && info[4]->IsNumber()) {
+      sum += info[4]->IntegerValue(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 5 && args[5]->IsNumber()) {
-      sum += args[5]->NumberValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 5 && info[5]->IsNumber()) {
+      sum += info[5]->NumberValue(isolate->GetCurrentContext()).FromJust();
     } else {
       sum += std::numeric_limits<double>::quiet_NaN();
     }
-    if (args.Length() > 6 && args[6]->IsNumber()) {
-      sum += args[6]->NumberValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 6 && info[6]->IsNumber()) {
+      sum += info[6]->NumberValue(isolate->GetCurrentContext()).FromJust();
     } else {
       sum += std::numeric_limits<double>::quiet_NaN();
     }
 
-    args.GetReturnValue().Set(Number::New(isolate, sum));
+    info.GetReturnValue().Set(Number::New(isolate, sum));
   }
 
 #ifdef V8_ENABLE_FP_PARAMS_IN_C_LINKAGE
@@ -218,35 +275,36 @@ class FastCApiObject {
     return sum;
   }
   static void AddAllSequenceSlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
 
     HandleScope handle_scope(isolate);
 
-    if (args.Length() < 2) {
+    if (info.Length() < 2) {
       self->slow_call_count_++;
       isolate->ThrowError("This method expects at least 2 arguments.");
       return;
     }
-    if (args[1]->IsTypedArray()) {
-      AddAllTypedArraySlowCallback(args);
+    if (info[1]->IsTypedArray()) {
+      AddAllTypedArraySlowCallback(info);
       return;
     }
     self->slow_call_count_++;
-    if (args[1]->IsUndefined()) {
+    if (info[1]->IsUndefined()) {
       Type dummy_result = 0;
-      args.GetReturnValue().Set(Number::New(isolate, dummy_result));
+      info.GetReturnValue().Set(Number::New(isolate, dummy_result));
       return;
     }
-    if (!args[1]->IsArray()) {
+    if (!info[1]->IsArray()) {
       isolate->ThrowError("This method expects an array as a second argument.");
       return;
     }
 
-    Local<Array> seq_arg = args[1].As<Array>();
+    Local<Array> seq_arg = info[1].As<Array>();
     uint32_t length = seq_arg->Length();
     if (length > 1024) {
       isolate->ThrowError(
@@ -277,45 +335,19 @@ class FastCApiObject {
         return;
       }
     }
-    args.GetReturnValue().Set(Number::New(isolate, sum));
+    info.GetReturnValue().Set(Number::New(isolate, sum));
   }
 #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
   template <typename T>
-  static const FastApiTypedArray<T>* AnyCTypeToTypedArray(AnyCType arg);
-
-  template <>
-  const FastApiTypedArray<uint8_t>* AnyCTypeToTypedArray<uint8_t>(
-      AnyCType arg) {
-    return arg.uint8_ta_value;
-  }
-
-  template <>
-  const FastApiTypedArray<int32_t>* AnyCTypeToTypedArray<int32_t>(
-      AnyCType arg) {
-    return arg.int32_ta_value;
-  }
-  template <>
-  const FastApiTypedArray<uint32_t>* AnyCTypeToTypedArray<uint32_t>(
-      AnyCType arg) {
-    return arg.uint32_ta_value;
-  }
-  template <>
-  const FastApiTypedArray<int64_t>* AnyCTypeToTypedArray<int64_t>(
-      AnyCType arg) {
-    return arg.int64_ta_value;
-  }
-  template <>
-  const FastApiTypedArray<uint64_t>* AnyCTypeToTypedArray<uint64_t>(
-      AnyCType arg) {
-    return arg.uint64_ta_value;
-  }
-  template <>
-  const FastApiTypedArray<float>* AnyCTypeToTypedArray<float>(AnyCType arg) {
-    return arg.float_ta_value;
-  }
-  template <>
-  const FastApiTypedArray<double>* AnyCTypeToTypedArray<double>(AnyCType arg) {
-    return arg.double_ta_value;
+  static const FastApiTypedArray<T>* AnyCTypeToTypedArray(AnyCType arg) {
+    if constexpr (std::is_same_v<T, uint8_t>) return arg.uint8_ta_value;
+    if constexpr (std::is_same_v<T, int32_t>) return arg.int32_ta_value;
+    if constexpr (std::is_same_v<T, uint32_t>) return arg.uint32_ta_value;
+    if constexpr (std::is_same_v<T, int64_t>) return arg.int64_ta_value;
+    if constexpr (std::is_same_v<T, uint64_t>) return arg.uint64_ta_value;
+    if constexpr (std::is_same_v<T, float>) return arg.float_ta_value;
+    if constexpr (std::is_same_v<T, double>) return arg.double_ta_value;
+    UNREACHABLE();
   }
 
   template <typename T>
@@ -356,26 +388,27 @@ class FastCApiObject {
     return static_cast<Type>(sum);
   }
   static void AddAllTypedArraySlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     HandleScope handle_scope(isolate);
 
-    if (args.Length() < 2) {
+    if (info.Length() < 2) {
       isolate->ThrowError("This method expects at least 2 arguments.");
       return;
     }
-    if (!args[1]->IsTypedArray()) {
+    if (!info[1]->IsTypedArray()) {
       isolate->ThrowError(
           "This method expects a TypedArray as a second argument.");
       return;
     }
 
-    Local<TypedArray> typed_array_arg = args[1].As<TypedArray>();
+    Local<TypedArray> typed_array_arg = info[1].As<TypedArray>();
     size_t length = typed_array_arg->Length();
 
     void* data = typed_array_arg->Buffer()->GetBackingStore()->Data();
@@ -397,7 +430,7 @@ class FastCApiObject {
           sum += static_cast<uint64_t*>(data)[i];
         }
       }
-      args.GetReturnValue().Set(Number::New(isolate, sum));
+      info.GetReturnValue().Set(Number::New(isolate, sum));
     } else if (typed_array_arg->IsFloat32Array() ||
                typed_array_arg->IsFloat64Array()) {
       double sum = 0;
@@ -408,7 +441,7 @@ class FastCApiObject {
           sum += static_cast<double*>(data)[i];
         }
       }
-      args.GetReturnValue().Set(Number::New(isolate, sum));
+      info.GetReturnValue().Set(Number::New(isolate, sum));
     } else {
       isolate->ThrowError("TypedArray type is not supported.");
       return;
@@ -451,24 +484,25 @@ class FastCApiObject {
 
     return arg_i32 + arg_u32;
   }
-  static void Add32BitIntSlowCallback(const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+  static void Add32BitIntSlowCallback(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     HandleScope handle_scope(isolate);
 
     double sum = 0;
-    if (args.Length() > 1 && args[1]->IsNumber()) {
-      sum += args[1]->Int32Value(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 1 && info[1]->IsNumber()) {
+      sum += info[1]->Int32Value(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 2 && args[2]->IsNumber()) {
-      sum += args[2]->Uint32Value(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 2 && info[2]->IsNumber()) {
+      sum += info[2]->Uint32Value(isolate->GetCurrentContext()).FromJust();
     }
 
-    args.GetReturnValue().Set(Number::New(isolate, sum));
+    info.GetReturnValue().Set(Number::New(isolate, sum));
   }
 
 #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
@@ -556,10 +590,11 @@ class FastCApiObject {
                                             arg5_u32, 0, options);
   }
   static void AddAll32BitIntSlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
@@ -567,30 +602,30 @@ class FastCApiObject {
 
     Local<Context> context = isolate->GetCurrentContext();
     double sum = 0;
-    if (args.Length() > 1 && args[1]->IsNumber()) {
-      sum += args[1]->Int32Value(context).FromJust();
+    if (info.Length() > 1 && info[1]->IsNumber()) {
+      sum += info[1]->Int32Value(context).FromJust();
     }
-    if (args.Length() > 2 && args[2]->IsNumber()) {
-      sum += args[2]->Int32Value(context).FromJust();
+    if (info.Length() > 2 && info[2]->IsNumber()) {
+      sum += info[2]->Int32Value(context).FromJust();
     }
-    if (args.Length() > 3 && args[3]->IsNumber()) {
-      sum += args[3]->Int32Value(context).FromJust();
+    if (info.Length() > 3 && info[3]->IsNumber()) {
+      sum += info[3]->Int32Value(context).FromJust();
     }
-    if (args.Length() > 4 && args[4]->IsNumber()) {
-      sum += args[4]->Uint32Value(context).FromJust();
+    if (info.Length() > 4 && info[4]->IsNumber()) {
+      sum += info[4]->Uint32Value(context).FromJust();
     }
-    if (args.Length() > 5 && args[5]->IsNumber()) {
-      sum += args[5]->Uint32Value(context).FromJust();
+    if (info.Length() > 5 && info[5]->IsNumber()) {
+      sum += info[5]->Uint32Value(context).FromJust();
     }
-    if (args.Length() > 6 && args[6]->IsNumber()) {
-      sum += args[6]->Uint32Value(context).FromJust();
+    if (info.Length() > 6 && info[6]->IsNumber()) {
+      sum += info[6]->Uint32Value(context).FromJust();
     }
-    if (args.Length() > 7 && args[7]->IsNumber() && args[8]->IsNumber()) {
-      sum += args[7]->Uint32Value(context).FromJust();
-      sum += args[8]->Uint32Value(context).FromJust();
+    if (info.Length() > 7 && info[7]->IsNumber() && info[8]->IsNumber()) {
+      sum += info[7]->Uint32Value(context).FromJust();
+      sum += info[8]->Uint32Value(context).FromJust();
     }
 
-    args.GetReturnValue().Set(Number::New(isolate, sum));
+    info.GetReturnValue().Set(Number::New(isolate, sum));
   }
 
 #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
@@ -627,30 +662,31 @@ class FastCApiObject {
   }
 
   static void AddAllAnnotateSlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     HandleScope handle_scope(isolate);
 
     double sum = 0;
-    if (args.Length() > 1 && args[1]->IsNumber()) {
-      sum += args[1]->Int32Value(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 1 && info[1]->IsNumber()) {
+      sum += info[1]->Int32Value(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 2 && args[2]->IsNumber()) {
-      sum += args[2]->Uint32Value(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 2 && info[2]->IsNumber()) {
+      sum += info[2]->Uint32Value(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 3 && args[3]->IsNumber()) {
-      sum += args[3]->IntegerValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 3 && info[3]->IsNumber()) {
+      sum += info[3]->IntegerValue(isolate->GetCurrentContext()).FromJust();
     }
-    if (args.Length() > 4 && args[4]->IsNumber()) {
-      sum += args[4]->IntegerValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 4 && info[4]->IsNumber()) {
+      sum += info[4]->IntegerValue(isolate->GetCurrentContext()).FromJust();
     }
 
-    args.GetReturnValue().Set(Number::New(isolate, sum));
+    info.GetReturnValue().Set(Number::New(isolate, sum));
   }
 
 #ifdef V8_USE_SIMULATOR_WITH_GENERIC_C_CALLS
@@ -720,38 +756,39 @@ class FastCApiObject {
 
   template <typename IntegerT>
   static void EnforceRangeCompareSlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     HandleScope handle_scope(isolate);
 
     if (i::v8_flags.fuzzing) {
-      args.GetReturnValue().Set(Boolean::New(isolate, false));
+      info.GetReturnValue().Set(false);
       return;
     }
     double real_arg = 0;
-    if (args.Length() > 1 && args[1]->IsNumber()) {
-      real_arg = args[1]->NumberValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 1 && info[1]->IsNumber()) {
+      real_arg = info[1]->NumberValue(isolate->GetCurrentContext()).FromJust();
     }
     bool in_range =
-        args[0]->IsBoolean() && args[0]->BooleanValue(isolate) &&
+        info[0]->IsBoolean() && info[0]->BooleanValue(isolate) &&
         !std::isnan(real_arg) &&
         real_arg <= static_cast<double>(std::numeric_limits<IntegerT>::max()) &&
         real_arg >= static_cast<double>(std::numeric_limits<IntegerT>::min());
     if (in_range) {
       IntegerT checked_arg = std::numeric_limits<IntegerT>::max();
-      if (args.Length() > 2 && args[2]->IsNumber()) {
+      if (info.Length() > 2 && info[2]->IsNumber()) {
         checked_arg =
-            args[2]->NumberValue(isolate->GetCurrentContext()).FromJust();
+            info[2]->NumberValue(isolate->GetCurrentContext()).FromJust();
       }
       CHECK_EQ(static_cast<IntegerT>(real_arg), checked_arg);
-      args.GetReturnValue().Set(Boolean::New(isolate, false));
+      info.GetReturnValue().Set(false);
     } else {
-      args.GetIsolate()->ThrowError("Argument out of range.");
+      info.GetIsolate()->ThrowError("Argument out of range.");
     }
   }
 
@@ -858,22 +895,23 @@ class FastCApiObject {
 
   template <typename IntegerT>
   static void ClampCompareSlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     double real_arg = 0;
-    if (args.Length() > 1 && args[1]->IsNumber()) {
-      real_arg = args[1]->NumberValue(isolate->GetCurrentContext()).FromJust();
+    if (info.Length() > 1 && info[1]->IsNumber()) {
+      real_arg = info[1]->NumberValue(isolate->GetCurrentContext()).FromJust();
     }
     double checked_arg_dbl = std::numeric_limits<double>::max();
-    if (args.Length() > 2 && args[2]->IsNumber()) {
-      checked_arg_dbl = args[2].As<Number>()->Value();
+    if (info.Length() > 2 && info[2]->IsNumber()) {
+      checked_arg_dbl = info[2].As<Number>()->Value();
     }
-    bool in_range = args[0]->IsBoolean() && args[0]->BooleanValue(isolate) &&
+    bool in_range = info[0]->IsBoolean() && info[0]->BooleanValue(isolate) &&
                     IsInRange<IntegerT>(real_arg) &&
                     IsInRange<IntegerT>(checked_arg_dbl);
 
@@ -883,10 +921,10 @@ class FastCApiObject {
         checked_arg = static_cast<IntegerT>(checked_arg_dbl);
       }
       double result = ClampCompareCompute(in_range, real_arg, checked_arg);
-      args.GetReturnValue().Set(Number::New(isolate, result));
+      info.GetReturnValue().Set(Number::New(isolate, result));
     } else {
       IntegerT clamped = std::numeric_limits<IntegerT>::max();
-      if (std::isnan(checked_arg_dbl)) {
+      if (std::isnan(checked_arg_dbl) || std::isnan(real_arg)) {
         clamped = 0;
       } else {
         IntegerT lower_bound = std::numeric_limits<IntegerT>::min();
@@ -901,7 +939,7 @@ class FastCApiObject {
         clamped = std::clamp(real_arg, static_cast<double>(lower_bound),
                              static_cast<double>(upper_bound));
       }
-      args.GetReturnValue().Set(Number::New(isolate, clamped));
+      info.GetReturnValue().Set(Number::New(isolate, clamped));
     }
   }
 
@@ -926,7 +964,7 @@ class FastCApiObject {
 
     internal::Isolate* i_isolate =
         internal::IsolateFromNeverReadOnlySpaceObject(
-            *reinterpret_cast<internal::Address*>(*object));
+            internal::ValueHelper::ValueAsAddress(*object));
     CHECK_NOT_NULL(i_isolate);
     Isolate* isolate = reinterpret_cast<Isolate*>(i_isolate);
     HandleScope handle_scope(isolate);
@@ -936,33 +974,34 @@ class FastCApiObject {
   }
 
   static void IsFastCApiObjectSlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    Isolate* isolate = args.GetIsolate();
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
 
-    FastCApiObject* self = UnwrapObject(args.This());
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
     HandleScope handle_scope(isolate);
 
     bool result = false;
-    if (args.Length() < 2) {
-      args.GetIsolate()->ThrowError(
+    if (info.Length() < 2) {
+      info.GetIsolate()->ThrowError(
           "is_valid_api_object should be called with 2 arguments");
       return;
     }
-    if (args[1]->IsObject()) {
-      Local<Object> object = args[1].As<Object>();
+    if (info[1]->IsObject()) {
+      Local<Object> object = info[1].As<Object>();
       if (!IsValidApiObject(object)) {
         result = false;
       } else {
-        result = PerIsolateData::Get(args.GetIsolate())
+        result = PerIsolateData::Get(info.GetIsolate())
                      ->GetTestApiObjectCtor()
                      ->IsLeafTemplateForApiObject(object);
       }
     }
 
-    args.GetReturnValue().Set(Boolean::New(isolate, result));
+    info.GetReturnValue().Set(result);
   }
 
   static bool TestWasmMemoryFastCallback(Local<Object> receiver,
@@ -985,36 +1024,343 @@ class FastCApiObject {
   }
 
   static void TestWasmMemorySlowCallback(
-      const FunctionCallbackInfo<Value>& args) {
-    FastCApiObject* self = UnwrapObject(args.This());
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->slow_call_count_++;
 
-    args.GetIsolate()->ThrowError("should be unreachable from wasm");
+    info.GetIsolate()->ThrowError("should be unreachable from wasm");
   }
 
-  static void FastCallCount(const FunctionCallbackInfo<Value>& args) {
-    FastCApiObject* self = UnwrapObject(args.This());
+  static void AssertIsExternal(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
-    args.GetReturnValue().Set(
-        Number::New(args.GetIsolate(), self->fast_call_count()));
+
+    Local<Value> value = info[0];
+
+    if (!value->IsExternal()) {
+      info.GetIsolate()->ThrowError("Did not get an external.");
+    }
   }
-  static void SlowCallCount(const FunctionCallbackInfo<Value>& args) {
-    FastCApiObject* self = UnwrapObject(args.This());
+
+  static void* GetPointerFastCallback(Local<Object> receiver,
+                                      FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    CHECK_SELF_OR_FALLBACK(nullptr);
+    self->fast_call_count_++;
+
+    return static_cast<void*>(self);
+  }
+
+  static void GetPointerSlowCallback(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
-    args.GetReturnValue().Set(
-        Number::New(args.GetIsolate(), self->slow_call_count()));
+    self->slow_call_count_++;
+
+    info.GetReturnValue().Set(External::New(isolate, static_cast<void*>(self)));
   }
-  static void ResetCounts(const FunctionCallbackInfo<Value>& args) {
-    FastCApiObject* self = UnwrapObject(args.This());
+
+  static void* GetNullPointerFastCallback(Local<Object> receiver,
+                                          FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    CHECK_SELF_OR_FALLBACK(nullptr);
+    self->fast_call_count_++;
+
+    return nullptr;
+  }
+
+  static void GetNullPointerSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    Isolate* isolate = info.GetIsolate();
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    info.GetReturnValue().Set(v8::Null(isolate));
+  }
+
+  static void* PassPointerFastCallback(Local<Object> receiver, void* pointer,
+                                       FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    CHECK_SELF_OR_FALLBACK(nullptr);
+    self->fast_call_count_++;
+
+    return pointer;
+  }
+
+  static void PassPointerSlowCallback(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    if (info.Length() != 1) {
+      info.GetIsolate()->ThrowError(
+          "Invalid number of arguments, expected one.");
+      return;
+    }
+
+    Local<Value> maybe_external = info[0].As<Value>();
+
+    if (maybe_external->IsNull()) {
+      info.GetReturnValue().Set(maybe_external);
+      return;
+    }
+    if (!maybe_external->IsExternal()) {
+      info.GetIsolate()->ThrowError("Did not get an external.");
+      return;
+    }
+
+    Local<External> external = info[0].As<External>();
+
+    info.GetReturnValue().Set(external);
+  }
+
+  static bool ComparePointersFastCallback(Local<Object> receiver,
+                                          void* pointer_a, void* pointer_b,
+                                          FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    CHECK_SELF_OR_FALLBACK(false);
+    self->fast_call_count_++;
+
+    return pointer_a == pointer_b;
+  }
+
+  static void ComparePointersSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    if (info.Length() != 2) {
+      info.GetIsolate()->ThrowError(
+          "Invalid number of arguments, expected two.");
+      return;
+    }
+
+    Local<Value> value_a = info[0];
+    Local<Value> value_b = info[1];
+
+    void* pointer_a;
+    if (value_a->IsNull()) {
+      pointer_a = nullptr;
+    } else if (value_a->IsExternal()) {
+      pointer_a = value_a.As<External>()->Value();
+    } else {
+      info.GetIsolate()->ThrowError(
+          "Did not get an external as first parameter.");
+      return;
+    }
+
+    void* pointer_b;
+    if (value_b->IsNull()) {
+      pointer_b = nullptr;
+    } else if (value_b->IsExternal()) {
+      pointer_b = value_b.As<External>()->Value();
+    } else {
+      info.GetIsolate()->ThrowError(
+          "Did not get an external as second parameter.");
+      return;
+    }
+
+    info.GetReturnValue().Set(pointer_a == pointer_b);
+  }
+
+  static int64_t sumInt64FastCallback(Local<Object> receiver, int64_t a,
+                                      int64_t b,
+                                      FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    CHECK_SELF_OR_FALLBACK(0);
+    self->fast_call_count_++;
+
+    return a + b;
+  }
+
+  static void sumInt64AsNumberSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    Isolate* isolate = info.GetIsolate();
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    if (info.Length() != 2) {
+      info.GetIsolate()->ThrowError(
+          "Invalid number of arguments, expected two.");
+      return;
+    }
+
+    Local<Value> value_a = info[0];
+    Local<Value> value_b = info[1];
+
+    int64_t a;
+    if (value_a->IsNumber()) {
+      a = static_cast<int64_t>(value_a.As<Number>()->Value());
+    } else {
+      info.GetIsolate()->ThrowError("Did not get a number as first parameter.");
+      return;
+    }
+
+    int64_t b;
+    if (value_b->IsNumber()) {
+      b = static_cast<int64_t>(value_b.As<Number>()->Value());
+    } else {
+      info.GetIsolate()->ThrowError(
+          "Did not get a number as second parameter.");
+      return;
+    }
+
+    info.GetReturnValue().Set(Number::New(isolate, static_cast<double>(a + b)));
+  }
+
+  static void sumInt64AsBigIntSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    Isolate* isolate = info.GetIsolate();
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    if (info.Length() != 2) {
+      info.GetIsolate()->ThrowError(
+          "Invalid number of arguments, expected two.");
+      return;
+    }
+
+    Local<Value> value_a = info[0];
+    Local<Value> value_b = info[1];
+
+    int64_t a;
+    if (value_a->IsBigInt()) {
+      a = static_cast<int64_t>(value_a.As<BigInt>()->Int64Value());
+    } else {
+      info.GetIsolate()->ThrowError("Did not get a BigInt as first parameter.");
+      return;
+    }
+
+    int64_t b;
+    if (value_b->IsBigInt()) {
+      b = static_cast<int64_t>(value_b.As<BigInt>()->Int64Value());
+    } else {
+      info.GetIsolate()->ThrowError(
+          "Did not get a BigInt as second parameter.");
+      return;
+    }
+
+    info.GetReturnValue().Set(BigInt::New(isolate, a + b));
+  }
+
+  static uint64_t sumUint64FastCallback(Local<Object> receiver, uint64_t a,
+                                        uint64_t b,
+                                        FastApiCallbackOptions& options) {
+    FastCApiObject* self = UnwrapObject(receiver);
+    CHECK_SELF_OR_FALLBACK(0);
+    self->fast_call_count_++;
+
+    return a + b;
+  }
+
+  static void sumUint64AsNumberSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    Isolate* isolate = info.GetIsolate();
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    if (info.Length() != 2) {
+      info.GetIsolate()->ThrowError(
+          "Invalid number of arguments, expected two.");
+      return;
+    }
+
+    Local<Value> value_a = info[0];
+    Local<Value> value_b = info[1];
+
+    uint64_t a;
+    if (value_a->IsNumber()) {
+      a = static_cast<uint64_t>(value_a.As<Number>()->Value());
+    } else {
+      info.GetIsolate()->ThrowError("Did not get a number as first parameter.");
+      return;
+    }
+
+    uint64_t b;
+    if (value_b->IsNumber()) {
+      b = static_cast<uint64_t>(value_b.As<Number>()->Value());
+    } else {
+      info.GetIsolate()->ThrowError(
+          "Did not get a number as second parameter.");
+      return;
+    }
+
+    info.GetReturnValue().Set(Number::New(isolate, static_cast<double>(a + b)));
+  }
+
+  static void sumUint64AsBigIntSlowCallback(
+      const FunctionCallbackInfo<Value>& info) {
+    Isolate* isolate = info.GetIsolate();
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    self->slow_call_count_++;
+
+    if (info.Length() != 2) {
+      info.GetIsolate()->ThrowError(
+          "Invalid number of arguments, expected two.");
+      return;
+    }
+
+    Local<Value> value_a = info[0];
+    Local<Value> value_b = info[1];
+
+    uint64_t a;
+    if (value_a->IsBigInt()) {
+      a = static_cast<uint64_t>(value_a.As<BigInt>()->Uint64Value());
+    } else {
+      info.GetIsolate()->ThrowError("Did not get a BigInt as first parameter.");
+      return;
+    }
+
+    uint64_t b;
+    if (value_b->IsBigInt()) {
+      b = static_cast<uint64_t>(value_b.As<BigInt>()->Uint64Value());
+    } else {
+      info.GetIsolate()->ThrowError(
+          "Did not get a BigInt as second parameter.");
+      return;
+    }
+
+    info.GetReturnValue().Set(BigInt::NewFromUnsigned(isolate, a + b));
+  }
+
+  static void FastCallCount(const FunctionCallbackInfo<Value>& info) {
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    info.GetReturnValue().Set(
+        Number::New(info.GetIsolate(), self->fast_call_count()));
+  }
+  static void SlowCallCount(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
+    CHECK_SELF_OR_THROW();
+    info.GetReturnValue().Set(
+        Number::New(info.GetIsolate(), self->slow_call_count()));
+  }
+  static void ResetCounts(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
     self->reset_counts();
-    args.GetReturnValue().Set(Undefined(args.GetIsolate()));
+    info.GetReturnValue().Set(Undefined(info.GetIsolate()));
   }
-  static void SupportsFPParams(const FunctionCallbackInfo<Value>& args) {
-    FastCApiObject* self = UnwrapObject(args.This());
+  static void SupportsFPParams(const FunctionCallbackInfo<Value>& info) {
+    DCHECK(i::ValidateCallbackInfo(info));
+    FastCApiObject* self = UnwrapObject(info.This());
     CHECK_SELF_OR_THROW();
-    args.GetReturnValue().Set(self->supports_fp_params_);
+    info.GetReturnValue().Set(self->supports_fp_params_);
   }
 
   int fast_call_count() const { return fast_call_count_; }
@@ -1028,8 +1374,8 @@ class FastCApiObject {
 
  private:
   static bool IsValidApiObject(Local<Object> object) {
-    i::Address addr = *reinterpret_cast<i::Address*>(*object);
-    auto instance_type = i::Internals::GetInstanceType(addr);
+    auto instance_type = i::Internals::GetInstanceType(
+        internal::ValueHelper::ValueAsAddress(*object));
     return (base::IsInRange(instance_type, i::Internals::kFirstJSApiObjectType,
                             i::Internals::kLastJSApiObjectType) ||
             instance_type == i::Internals::kJSSpecialApiObjectType);
@@ -1063,6 +1409,7 @@ exlib::fiber_local<FastCApiObject> kFastCApiObject;
 FastCApiObject& FastCApiObject::instance() { return kFastCApiObject; }
 
 void CreateFastCAPIObject(const FunctionCallbackInfo<Value>& info) {
+  DCHECK(i::ValidateCallbackInfo(info));
   if (!info.IsConstructCall()) {
     info.GetIsolate()->ThrowError(
         "FastCAPI helper must be constructed with new.");
@@ -1085,6 +1432,26 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
   PerIsolateData::Get(isolate)->SetTestApiObjectCtor(api_obj_ctor);
   Local<Signature> signature = Signature::New(isolate, api_obj_ctor);
   {
+    CFunction throw_fallback_func = CFunction::Make(
+        FastCApiObject::ThrowFallbackFastCallback V8_IF_USE_SIMULATOR(
+            FastCApiObject::ThrowFallbackFastCallbackPatch));
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "throw_fallback",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::ThrowFallbackSlowCallback, Local<Value>(),
+            signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &throw_fallback_func));
+
+    CFunction copy_str_func = CFunction::Make(
+        FastCApiObject::CopyStringFastCallback V8_IF_USE_SIMULATOR(
+            FastCApiObject::CopyStringFastCallbackPatch));
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "copy_string",
+        FunctionTemplate::New(isolate, FastCApiObject::CopyStringSlowCallback,
+                              Local<Value>(), signature, 1,
+                              ConstructorBehavior::kThrow,
+                              SideEffectType::kHasSideEffect, &copy_str_func));
+
     CFunction add_all_c_func =
         CFunction::Make(FastCApiObject::AddAllFastCallback V8_IF_USE_SIMULATOR(
             FastCApiObject::AddAllFastCallbackPatch));
@@ -1417,6 +1784,82 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
             isolate, FastCApiObject::TestWasmMemorySlowCallback, Local<Value>(),
             Local<Signature>(), 1, ConstructorBehavior::kThrow,
             SideEffectType::kHasSideEffect, &test_wasm_memory_c_func));
+
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "assert_is_external",
+        FunctionTemplate::New(isolate, FastCApiObject::AssertIsExternal,
+                              Local<Value>(), signature, 1,
+                              ConstructorBehavior::kThrow,
+                              SideEffectType::kHasSideEffect, nullptr));
+
+    CFunction get_pointer_c_func =
+        CFunction::Make(FastCApiObject::GetPointerFastCallback);
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "get_pointer",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::GetPointerSlowCallback, Local<Value>(),
+            signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &get_pointer_c_func));
+    CFunction get_null_pointer_c_func =
+        CFunction::Make(FastCApiObject::GetNullPointerFastCallback);
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "get_null_pointer",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::GetNullPointerSlowCallback, Local<Value>(),
+            signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &get_null_pointer_c_func));
+    CFunction pass_pointer_c_func =
+        CFunction::Make(FastCApiObject::PassPointerFastCallback);
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "pass_pointer",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::PassPointerSlowCallback, Local<Value>(),
+            signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &pass_pointer_c_func));
+    CFunction compare_pointers_c_func =
+        CFunction::Make(FastCApiObject::ComparePointersFastCallback);
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "compare_pointers",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::ComparePointersSlowCallback,
+            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &compare_pointers_c_func));
+    CFunction sum_int64_as_number_c_func =
+        CFunctionBuilder().Fn(FastCApiObject::sumInt64FastCallback).Build();
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "sum_int64_as_number",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::sumInt64AsNumberSlowCallback,
+            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &sum_int64_as_number_c_func));
+    CFunction sum_int64_as_bigint_c_func =
+        CFunctionBuilder()
+            .Fn(FastCApiObject::sumInt64FastCallback)
+            .Build<CFunctionInfo::Int64Representation::kBigInt>();
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "sum_int64_as_bigint",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::sumInt64AsBigIntSlowCallback,
+            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &sum_int64_as_bigint_c_func));
+    CFunction sum_uint64_as_number_c_func =
+        CFunctionBuilder().Fn(FastCApiObject::sumUint64FastCallback).Build();
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "sum_uint64_as_number",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::sumUint64AsNumberSlowCallback,
+            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &sum_uint64_as_number_c_func));
+    CFunction sum_uint64_as_bigint_c_func =
+        CFunctionBuilder()
+            .Fn(FastCApiObject::sumUint64FastCallback)
+            .Build<CFunctionInfo::Int64Representation::kBigInt>();
+    api_obj_ctor->PrototypeTemplate()->Set(
+        isolate, "sum_uint64_as_bigint",
+        FunctionTemplate::New(
+            isolate, FastCApiObject::sumUint64AsBigIntSlowCallback,
+            Local<Value>(), signature, 1, ConstructorBehavior::kThrow,
+            SideEffectType::kHasSideEffect, &sum_uint64_as_bigint_c_func));
 
     api_obj_ctor->PrototypeTemplate()->Set(
         isolate, "fast_call_count",

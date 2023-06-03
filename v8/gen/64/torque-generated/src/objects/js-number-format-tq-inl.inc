@@ -81,8 +81,3 @@ inline TorqueGeneratedJSNumberFormat<D, P>::TorqueGeneratedJSNumberFormat(Addres
     : P(ptr) {
   SLOW_DCHECK(IsJSNumberFormat_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSNumberFormat<D, P>::TorqueGeneratedJSNumberFormat(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSNumberFormat_NonInline(*this));
-}

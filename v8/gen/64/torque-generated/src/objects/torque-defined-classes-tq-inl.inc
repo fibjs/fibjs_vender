@@ -1,4 +1,4 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
 template<class D, class P>
 D TorqueGeneratedStrongDescriptorArray<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -8,11 +8,6 @@ template<class D, class P>
 inline TorqueGeneratedStrongDescriptorArray<D, P>::TorqueGeneratedStrongDescriptorArray(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsStrongDescriptorArray_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedStrongDescriptorArray<D, P>::TorqueGeneratedStrongDescriptorArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsStrongDescriptorArray_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(StrongDescriptorArray)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=765&c=3
@@ -64,11 +59,6 @@ inline TorqueGeneratedInternalClass<D, P>::TorqueGeneratedInternalClass(Address 
     : P(ptr) {
   SLOW_DCHECK(IsInternalClass_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedInternalClass<D, P>::TorqueGeneratedInternalClass(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsInternalClass_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(InternalClass)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=829&c=3
 template<class D, class P>
@@ -109,11 +99,6 @@ inline TorqueGeneratedSmiPair<D, P>::TorqueGeneratedSmiPair(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSmiPair_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSmiPair<D, P>::TorqueGeneratedSmiPair(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSmiPair_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(SmiPair)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=927&c=3
 template<class D, class P>
@@ -153,11 +138,6 @@ template<class D, class P>
 inline TorqueGeneratedSmiBox<D, P>::TorqueGeneratedSmiBox(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSmiBox_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedSmiBox<D, P>::TorqueGeneratedSmiBox(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSmiBox_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(SmiBox)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1179&c=3
@@ -219,11 +199,6 @@ inline TorqueGeneratedExportedSubClassBase<D, P>::TorqueGeneratedExportedSubClas
     : P(ptr) {
   SLOW_DCHECK(IsExportedSubClassBase_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedExportedSubClassBase<D, P>::TorqueGeneratedExportedSubClassBase(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsExportedSubClassBase_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(ExportedSubClassBase)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1172&c=3
 template<class D, class P>
@@ -278,11 +253,6 @@ inline TorqueGeneratedExportedSubClass<D, P>::TorqueGeneratedExportedSubClass(Ad
     : P(ptr) {
   SLOW_DCHECK(IsExportedSubClass_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedExportedSubClass<D, P>::TorqueGeneratedExportedSubClass(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsExportedSubClass_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(ExportedSubClass)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
 template<class D, class P>
@@ -294,11 +264,6 @@ template<class D, class P>
 inline TorqueGeneratedAbstractInternalClass<D, P>::TorqueGeneratedAbstractInternalClass(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsAbstractInternalClass_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedAbstractInternalClass<D, P>::TorqueGeneratedAbstractInternalClass(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAbstractInternalClass_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(AbstractInternalClass)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
@@ -312,11 +277,6 @@ inline TorqueGeneratedAbstractInternalClassSubclass1<D, P>::TorqueGeneratedAbstr
     : P(ptr) {
   SLOW_DCHECK(IsAbstractInternalClassSubclass1_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedAbstractInternalClassSubclass1<D, P>::TorqueGeneratedAbstractInternalClassSubclass1(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAbstractInternalClassSubclass1_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(AbstractInternalClassSubclass1)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
 template<class D, class P>
@@ -328,11 +288,6 @@ template<class D, class P>
 inline TorqueGeneratedAbstractInternalClassSubclass2<D, P>::TorqueGeneratedAbstractInternalClassSubclass2(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsAbstractInternalClassSubclass2_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedAbstractInternalClassSubclass2<D, P>::TorqueGeneratedAbstractInternalClassSubclass2(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAbstractInternalClassSubclass2_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(AbstractInternalClassSubclass2)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
@@ -403,11 +358,6 @@ template<class D, class P>
 inline TorqueGeneratedInternalClassWithSmiElements<D, P>::TorqueGeneratedInternalClassWithSmiElements(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsInternalClassWithSmiElements_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedInternalClassWithSmiElements<D, P>::TorqueGeneratedInternalClassWithSmiElements(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsInternalClassWithSmiElements_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(InternalClassWithSmiElements)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
@@ -567,11 +517,6 @@ inline TorqueGeneratedInternalClassWithStructElements<D, P>::TorqueGeneratedInte
     : P(ptr) {
   SLOW_DCHECK(IsInternalClassWithStructElements_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedInternalClassWithStructElements<D, P>::TorqueGeneratedInternalClassWithStructElements(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsInternalClassWithStructElements_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(InternalClassWithStructElements)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1284&c=3
 template<class D, class P>
@@ -625,11 +570,6 @@ template<class D, class P>
 inline TorqueGeneratedExportedSubClass2<D, P>::TorqueGeneratedExportedSubClass2(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsExportedSubClass2_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedExportedSubClass2<D, P>::TorqueGeneratedExportedSubClass2(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsExportedSubClass2_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(ExportedSubClass2)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=47&c=3
@@ -937,20 +877,15 @@ inline TorqueGeneratedSortState<D, P>::TorqueGeneratedSortState(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSortState_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSortState<D, P>::TorqueGeneratedSortState(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSortState_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(SortState)
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
 template<class D, class P>
 String TorqueGeneratedWasmStringViewIter<D, P>::string() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedWasmStringViewIter::string(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
 template<class D, class P>
 String TorqueGeneratedWasmStringViewIter<D, P>::string(PtrComprCageBase cage_base) const {
   String value;
@@ -959,7 +894,7 @@ String TorqueGeneratedWasmStringViewIter<D, P>::string(PtrComprCageBase cage_bas
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
 template<class D, class P>
 void TorqueGeneratedWasmStringViewIter<D, P>::set_string(String value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString());
@@ -967,7 +902,7 @@ void TorqueGeneratedWasmStringViewIter<D, P>::set_string(String value, WriteBarr
   CONDITIONAL_WRITE_BARRIER(*this, kStringOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedWasmStringViewIter<D, P>::offset() const {
   uint32_t value;
@@ -975,13 +910,27 @@ uint32_t TorqueGeneratedWasmStringViewIter<D, P>::offset() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
 template<class D, class P>
 void TorqueGeneratedWasmStringViewIter<D, P>::set_offset(uint32_t value) {
   this->template WriteField<uint32_t>(kOffsetOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=227&c=28
+template<class D, class P>
+uint32_t TorqueGeneratedWasmStringViewIter<D, P>::optional_padding() const {
+  uint32_t value;
+  value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=227&c=28
+template<class D, class P>
+void TorqueGeneratedWasmStringViewIter<D, P>::set_optional_padding(uint32_t value) {
+  this->template WriteField<uint32_t>(kOptionalPaddingOffset, value);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
 template<class D, class P>
 D TorqueGeneratedWasmStringViewIter<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -991,10 +940,5 @@ template<class D, class P>
 inline TorqueGeneratedWasmStringViewIter<D, P>::TorqueGeneratedWasmStringViewIter(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsWasmStringViewIter_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedWasmStringViewIter<D, P>::TorqueGeneratedWasmStringViewIter(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsWasmStringViewIter_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmStringViewIter)

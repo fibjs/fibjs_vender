@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,11 +63,11 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
-#include "torque-generated/src/builtins/array-reverse-tq-csa.h"
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/array-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -369,7 +371,7 @@ void StoreArrayHole_1(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_
   TNode<IntPtrT> tmp8;
   TNode<Object> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Oddball> tmp11;
+  TNode<HeapObject> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp7 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp3});

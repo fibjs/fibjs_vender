@@ -107,8 +107,5 @@ class TorqueGeneratedJSDateTimeFormat : public P {
 
  protected:
   inline explicit TorqueGeneratedJSDateTimeFormat(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSDateTimeFormat(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

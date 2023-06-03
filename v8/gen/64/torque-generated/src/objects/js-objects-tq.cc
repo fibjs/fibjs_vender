@@ -188,5 +188,19 @@ void TorqueGeneratedJSStringIterator<JSStringIterator, JSObject>::JSStringIterat
 
 
 #endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+bool IsJSValidIteratorWrapper_NonInline(HeapObject o) {
+  return o.IsJSValidIteratorWrapper();
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedJSValidIteratorWrapper<JSValidIteratorWrapper, JSObject>::JSValidIteratorWrapperVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::JSValidIteratorWrapperVerify(JSValidIteratorWrapper::cast(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
 } // namespace internal
 } // namespace v8

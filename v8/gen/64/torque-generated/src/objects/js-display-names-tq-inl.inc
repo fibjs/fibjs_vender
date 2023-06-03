@@ -47,8 +47,3 @@ inline TorqueGeneratedJSDisplayNames<D, P>::TorqueGeneratedJSDisplayNames(Addres
     : P(ptr) {
   SLOW_DCHECK(IsJSDisplayNames_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSDisplayNames<D, P>::TorqueGeneratedJSDisplayNames(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSDisplayNames_NonInline(*this));
-}

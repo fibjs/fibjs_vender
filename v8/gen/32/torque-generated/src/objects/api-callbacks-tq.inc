@@ -77,9 +77,6 @@ class TorqueGeneratedCallHandlerInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedCallHandlerInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedCallHandlerInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsInterceptorInfo() that avoids inlining.
@@ -239,9 +236,6 @@ class TorqueGeneratedInterceptorInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedInterceptorInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedInterceptorInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsAccessCheckInfo() that avoids inlining.
@@ -349,9 +343,6 @@ class TorqueGeneratedAccessCheckInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedAccessCheckInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAccessCheckInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsAccessorInfo() that avoids inlining.
@@ -453,8 +444,5 @@ class TorqueGeneratedAccessorInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedAccessorInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAccessorInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

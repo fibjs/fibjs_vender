@@ -11,8 +11,7 @@ namespace v8 {
 namespace internal {
 
 namespace {
-
-exlib::fiber_local<int> thread_id(0);
+exlib::fiber_local<int> thread_id;
 
 std::atomic<int> next_thread_id{1};
 

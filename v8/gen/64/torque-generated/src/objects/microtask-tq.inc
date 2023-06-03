@@ -48,9 +48,6 @@ class TorqueGeneratedMicrotask : public P {
 
  protected:
   inline explicit TorqueGeneratedMicrotask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedMicrotask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsCallbackTask() that avoids inlining.
@@ -135,9 +132,6 @@ class TorqueGeneratedCallbackTask : public P {
 
  protected:
   inline explicit TorqueGeneratedCallbackTask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedCallbackTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsCallableTask() that avoids inlining.
@@ -222,8 +216,5 @@ class TorqueGeneratedCallableTask : public P {
 
  protected:
   inline explicit TorqueGeneratedCallableTask(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedCallableTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

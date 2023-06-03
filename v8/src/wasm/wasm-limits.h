@@ -16,9 +16,7 @@
 #include "src/base/macros.h"
 #include "src/wasm/wasm-constants.h"
 
-namespace v8 {
-namespace internal {
-namespace wasm {
+namespace v8::internal::wasm {
 
 // These constants limit the amount of *declared* memory. At runtime, memory can
 // only grow up to kV8MaxWasmMemory{32,64}Pages.
@@ -61,9 +59,9 @@ constexpr size_t kV8MaxWasmTableInitEntries = 10000000;
 constexpr size_t kV8MaxWasmTables = 100000;
 constexpr size_t kV8MaxWasmMemories = 1;
 
-// GC proposal. These limits are not standardized yet.
-constexpr size_t kV8MaxWasmStructFields = 2000;
-constexpr uint32_t kV8MaxRttSubtypingDepth = 31;
+// GC proposal.
+constexpr size_t kV8MaxWasmStructFields = 10000;
+constexpr uint32_t kV8MaxRttSubtypingDepth = 63;
 constexpr size_t kV8MaxWasmArrayNewFixedLength = 10000;
 
 // Stringref proposal. This limit is not standardized yet.
@@ -99,10 +97,8 @@ inline uint64_t max_mem64_bytes() {
 }
 
 V8_EXPORT_PRIVATE uint32_t max_table_init_entries();
-size_t max_module_size();
+V8_EXPORT_PRIVATE size_t max_module_size();
 
-}  // namespace wasm
-}  // namespace internal
-}  // namespace v8
+}  // namespace v8::internal::wasm
 
 #endif  // V8_WASM_WASM_LIMITS_H_

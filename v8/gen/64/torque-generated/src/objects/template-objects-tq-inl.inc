@@ -57,8 +57,3 @@ inline TorqueGeneratedTemplateObjectDescription<D, P>::TorqueGeneratedTemplateOb
     : P(ptr) {
   SLOW_DCHECK(IsTemplateObjectDescription_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedTemplateObjectDescription<D, P>::TorqueGeneratedTemplateObjectDescription(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsTemplateObjectDescription_NonInline(*this));
-}

@@ -57,8 +57,3 @@ inline TorqueGeneratedJSCollectionIterator<D, P>::TorqueGeneratedJSCollectionIte
     : P(ptr) {
   SLOW_DCHECK(IsJSCollectionIterator_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSCollectionIterator<D, P>::TorqueGeneratedJSCollectionIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSCollectionIterator_NonInline(*this));
-}

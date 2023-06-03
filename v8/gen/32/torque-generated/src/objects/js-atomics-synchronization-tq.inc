@@ -12,8 +12,8 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
       std::is_same<JSSynchronizationPrimitive, D>::value,
       "Use this class as direct base for JSSynchronizationPrimitive.");
   static_assert(
-      std::is_same<JSObject, P>::value,
-      "Pass in JSObject as second template parameter for TorqueGeneratedJSSynchronizationPrimitive.");
+      std::is_same<AlwaysSharedSpaceJSObject, P>::value,
+      "Pass in AlwaysSharedSpaceJSObject as second template parameter for TorqueGeneratedJSSynchronizationPrimitive.");
 
  public: 
   using Super = P;
@@ -56,9 +56,6 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
 
  protected:
   inline explicit TorqueGeneratedJSSynchronizationPrimitive(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSSynchronizationPrimitive(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSAtomicsMutex() that avoids inlining.
@@ -121,9 +118,6 @@ class TorqueGeneratedJSAtomicsMutex : public P {
 
  protected:
   inline explicit TorqueGeneratedJSAtomicsMutex(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSAtomicsMutex(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSAtomicsCondition() that avoids inlining.
@@ -175,8 +169,5 @@ class TorqueGeneratedJSAtomicsCondition : public P {
 
  protected:
   inline explicit TorqueGeneratedJSAtomicsCondition(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSAtomicsCondition(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

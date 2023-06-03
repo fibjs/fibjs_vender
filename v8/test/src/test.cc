@@ -1,9 +1,8 @@
 
 
+#define main _main
 #include "src/init/setup-isolate-full.cc"
 #include "src/snapshot/snapshot-empty.cc"
-
-#define main _main
 #include "src/snapshot/mksnapshot.cc"
 #undef main
 

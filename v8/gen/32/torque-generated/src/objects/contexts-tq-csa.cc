@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,13 +63,14 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
-#include "torque-generated/src/builtins/array-reverse-tq-csa.h"
+#include "torque-generated/src/builtins/array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/array-to-sorted-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -510,15 +513,16 @@ TNode<Context> AllocateSyntheticFunctionContext_1(compiler::CodeAssemblerState* 
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<BoolT> tmp12;
-  TNode<HeapObject> tmp13;
-  TNode<IntPtrT> tmp14;
+  TNode<BoolT> tmp13;
+  TNode<HeapObject> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<IntPtrT> tmp16;
-  TNode<Context> tmp17;
-  TNode<IntPtrT> tmp18;
-  TNode<ScopeInfo> tmp19;
-  TNode<IntPtrT> tmp20;
-  TNode<Oddball> tmp21;
+  TNode<IntPtrT> tmp17;
+  TNode<Context> tmp18;
+  TNode<IntPtrT> tmp19;
+  TNode<ScopeInfo> tmp20;
+  TNode<IntPtrT> tmp21;
+  TNode<Oddball> tmp22;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_intptr_0(state_, Context::Field::MIN_CONTEXT_SLOTS);
@@ -534,25 +538,26 @@ TNode<Context> AllocateSyntheticFunctionContext_1(compiler::CodeAssemblerState* 
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp11 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp9}, kTaggedSize);
     tmp12 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp13 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp11}, TNode<Map>{tmp5}, TNode<BoolT>{tmp12});
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp5);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp13, tmp15}, tmp6);
-    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    InitializeFieldsFromIterator_Object_ConstantIterator_Smi_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_Smi_0{TNode<Smi>{tmp8}});
-    tmp17 = TORQUE_CAST(TNode<HeapObject>{tmp13});
-    tmp18 = SCOPE_INFO_INDEX_0(state_);
-    tmp19 = kEmptyScopeInfo_0(state_);
-    InitContextSlot_FunctionContext_Context_ScopeInfo_ScopeInfo_0(state_, TNode<Context>{tmp17}, TNode<IntPtrT>{tmp18}, TNode<ScopeInfo>{tmp19});
-    tmp20 = PREVIOUS_INDEX_0(state_);
-    tmp21 = Undefined_0(state_);
-    InitContextSlot_FunctionContext_Context_Context_OR_Undefined_OR_Zero_Undefined_0(state_, TNode<Context>{tmp17}, TNode<IntPtrT>{tmp20}, TNode<Oddball>{tmp21});
+    tmp13 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp14 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp11}, TNode<Map>{tmp5}, TNode<BoolT>{tmp12}, TNode<BoolT>{tmp13});
+    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp14, tmp15}, tmp5);
+    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp14, tmp16}, tmp6);
+    tmp17 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    InitializeFieldsFromIterator_Object_ConstantIterator_Smi_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp14}, TNode<IntPtrT>{tmp17}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_Smi_0{TNode<Smi>{tmp8}});
+    tmp18 = TORQUE_CAST(TNode<HeapObject>{tmp14});
+    tmp19 = SCOPE_INFO_INDEX_0(state_);
+    tmp20 = kEmptyScopeInfo_0(state_);
+    InitContextSlot_FunctionContext_Context_ScopeInfo_ScopeInfo_0(state_, TNode<Context>{tmp18}, TNode<IntPtrT>{tmp19}, TNode<ScopeInfo>{tmp20});
+    tmp21 = PREVIOUS_INDEX_0(state_);
+    tmp22 = Undefined_0(state_);
+    InitContextSlot_FunctionContext_Context_Context_OR_Undefined_OR_Zero_Undefined_0(state_, TNode<Context>{tmp18}, TNode<IntPtrT>{tmp21}, TNode<Oddball>{tmp22});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Context>{tmp17};
+  return TNode<Context>{tmp18};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=53&c=1
@@ -782,6 +787,153 @@ TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_OBJECT_FUNCTION_INDEX_0(compi
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_RESULT_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_FILTER_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_TAKE_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_DROP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_FLAT_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ITERATOR_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_VALID_ITERATOR_WRAPPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1621,6 +1773,48 @@ TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_RAB_GSAB_BIGINT64_ARRAY_MAP_I
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_DATA_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.IntPtrConstant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> FromConstexpr_ContextSlot_constexpr_PROMISE_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_, Context::Field p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2019,6 +2213,97 @@ TNode<IntPtrT> ITERATOR_RESULT_MAP_INDEX_0(compiler::CodeAssemblerState* state_)
     ca_.Bind(&block0);
   TNode<IntPtrT> tmp0;
     tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_RESULT_MAP_INDEX_0(state_, Context::Field::ITERATOR_RESULT_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_MAP_HELPER_MAP_INDEX_0(state_, Context::Field::ITERATOR_MAP_HELPER_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_FILTER_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_FILTER_HELPER_MAP_INDEX_0(state_, Context::Field::ITERATOR_FILTER_HELPER_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_TAKE_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_TAKE_HELPER_MAP_INDEX_0(state_, Context::Field::ITERATOR_TAKE_HELPER_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_DROP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_DROP_HELPER_MAP_INDEX_0(state_, Context::Field::ITERATOR_DROP_HELPER_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_FLAT_MAP_HELPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_FLAT_MAP_HELPER_MAP_INDEX_0(state_, Context::Field::ITERATOR_FLAT_MAP_HELPER_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ITERATOR_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ITERATOR_FUNCTION_INDEX_0(state_, Context::Field::ITERATOR_FUNCTION_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> VALID_ITERATOR_WRAPPER_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_VALID_ITERATOR_WRAPPER_MAP_INDEX_0(state_, Context::Field::VALID_ITERATOR_WRAPPER_MAP_INDEX);
   TNode<IntPtrT> tmp1;
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
@@ -2531,6 +2816,32 @@ TNode<IntPtrT> RAB_GSAB_BIGINT64_ARRAY_MAP_INDEX_0(compiler::CodeAssemblerState*
   return TNode<IntPtrT>{tmp1};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX_0(state_, Context::Field::ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
+TNode<IntPtrT> DATA_PROPERTY_DESCRIPTOR_MAP_INDEX_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<IntPtrT> tmp0;
+    tmp0 = FromConstexpr_ContextSlot_constexpr_DATA_PROPERTY_DESCRIPTOR_MAP_INDEX_0(state_, Context::Field::DATA_PROPERTY_DESCRIPTOR_MAP_INDEX);
+  TNode<IntPtrT> tmp1;
+    tmp1 = (TNode<IntPtrT>{tmp0});
+  return TNode<IntPtrT>{tmp1};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1
 TNode<IntPtrT> PROMISE_FUNCTION_INDEX_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2686,7 +2997,7 @@ TNode<IntPtrT> WRAPPED_FUNCTION_MAP_INDEX_0(compiler::CodeAssemblerState* state_
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=167&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=177&c=1
 TNode<Object> LoadContextElement_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2734,7 +3045,7 @@ TNode<Object> LoadContextElement_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Object>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=172&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=182&c=1
 TNode<Object> LoadContextElement_1(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<Smi> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2784,7 +3095,7 @@ TNode<Object> LoadContextElement_1(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Object>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=187&c=1
 TNode<Object> LoadContextElement_2(compiler::CodeAssemblerState* state_, TNode<Context> p_c, int32_t p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2834,7 +3145,7 @@ TNode<Object> LoadContextElement_2(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Object>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=182&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=192&c=1
 void StoreContextElement_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<IntPtrT> p_i, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2880,7 +3191,7 @@ void StoreContextElement_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=187&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=197&c=1
 void StoreContextElement_1(compiler::CodeAssemblerState* state_, TNode<Context> p_c, TNode<Smi> p_i, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2928,7 +3239,7 @@ void StoreContextElement_1(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=192&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=202&c=1
 void StoreContextElement_2(compiler::CodeAssemblerState* state_, TNode<Context> p_c, int32_t p_i, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2976,7 +3287,7 @@ void StoreContextElement_2(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=201&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=211&c=1
 TNode<Smi> kNoContext_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5060,28 +5371,6 @@ TorqueStructReference_Constructor_0 NativeContextSlot_Constructor_0(compiler::Co
 
     ca_.Bind(&block2);
   return TorqueStructReference_Constructor_0{TNode<Object>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=87&c=10
-TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<NativeContext> tmp0;
-  TNode<Object> tmp1;
-  TNode<IntPtrT> tmp2;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_context});
-    std::tie(tmp1, tmp2) = ContextSlot_NativeContext_NativeContext_Map_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{p_index}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_Map_0{TNode<Object>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=87&c=10

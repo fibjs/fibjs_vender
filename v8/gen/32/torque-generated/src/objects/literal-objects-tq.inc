@@ -80,9 +80,6 @@ class TorqueGeneratedArrayBoilerplateDescription : public P {
 
  protected:
   inline explicit TorqueGeneratedArrayBoilerplateDescription(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedArrayBoilerplateDescription(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsRegExpBoilerplateDescription() that avoids inlining.
@@ -175,8 +172,5 @@ class TorqueGeneratedRegExpBoilerplateDescription : public P {
 
  protected:
   inline explicit TorqueGeneratedRegExpBoilerplateDescription(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedRegExpBoilerplateDescription(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

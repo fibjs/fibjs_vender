@@ -65,9 +65,6 @@ class TorqueGeneratedJSTemporalCalendar : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalCalendar(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalCalendar(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalDuration() that avoids inlining.
@@ -229,9 +226,6 @@ class TorqueGeneratedJSTemporalDuration : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalDuration(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalDuration(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalInstant() that avoids inlining.
@@ -294,9 +288,6 @@ class TorqueGeneratedJSTemporalInstant : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalInstant(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalInstant(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalPlainDateTime() that avoids inlining.
@@ -382,9 +373,6 @@ class TorqueGeneratedJSTemporalPlainDateTime : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalPlainDateTime(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalPlainDateTime(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalPlainDate() that avoids inlining.
@@ -454,9 +442,6 @@ class TorqueGeneratedJSTemporalPlainDate : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalPlainDate(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalPlainDate(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalPlainMonthDay() that avoids inlining.
@@ -526,9 +511,6 @@ class TorqueGeneratedJSTemporalPlainMonthDay : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalPlainMonthDay(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalPlainMonthDay(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalPlainTime() that avoids inlining.
@@ -606,9 +588,6 @@ class TorqueGeneratedJSTemporalPlainTime : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalPlainTime(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalPlainTime(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalPlainYearMonth() that avoids inlining.
@@ -678,9 +657,6 @@ class TorqueGeneratedJSTemporalPlainYearMonth : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalPlainYearMonth(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalPlainYearMonth(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalTimeZone() that avoids inlining.
@@ -748,9 +724,6 @@ class TorqueGeneratedJSTemporalTimeZone : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalTimeZone(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalTimeZone(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSTemporalZonedDateTime() that avoids inlining.
@@ -833,8 +806,5 @@ class TorqueGeneratedJSTemporalZonedDateTime : public P {
 
  protected:
   inline explicit TorqueGeneratedJSTemporalZonedDateTime(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSTemporalZonedDateTime(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

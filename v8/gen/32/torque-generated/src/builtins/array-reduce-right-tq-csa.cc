@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-reduce-right-tq-csa.h"
@@ -147,7 +150,7 @@ TF_BUILTIN(ArrayReduceRightPreLoopEagerDeoptContinuation, CodeStubAssembler) {
 
   TNode<Number> tmp6;
   TNode<Number> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<HeapObject> tmp8;
   TNode<Object> tmp9;
   if (block11.is_used()) {
     ca_.Bind(&block11);
@@ -422,7 +425,7 @@ TF_BUILTIN(ArrayReduceRightLoopContinuation, CodeStubAssembler) {
   TNode<Object> phi_bb5_7;
   TNode<Number> phi_bb5_8;
   TNode<Object> tmp5;
-  TNode<Oddball> tmp6;
+  TNode<HeapObject> tmp6;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_7, &phi_bb5_8);
     tmp5 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter4}, TNode<Object>{phi_bb5_8});
@@ -478,7 +481,7 @@ TF_BUILTIN(ArrayReduceRightLoopContinuation, CodeStubAssembler) {
 
   TNode<Object> phi_bb2_7;
   TNode<Number> phi_bb2_8;
-  TNode<Oddball> tmp12;
+  TNode<HeapObject> tmp12;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_7, &phi_bb2_8);
     compiler::CodeAssemblerLabel label13(&ca_);
@@ -767,7 +770,7 @@ TNode<Object> FastArrayReduceRight_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Smi> phi_bb27_13;
   TNode<Smi> phi_bb27_16;
   TNode<Object> phi_bb27_17;
-  TNode<Oddball> tmp28;
+  TNode<HeapObject> tmp28;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5, &phi_bb27_12, &phi_bb27_13, &phi_bb27_16, &phi_bb27_17);
     compiler::CodeAssemblerLabel label29(&ca_);
@@ -830,7 +833,7 @@ TNode<Object> FastArrayReduceRight_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Object> phi_bb12_5;
   TNode<JSArray> phi_bb12_9;
   TNode<Smi> phi_bb12_12;
-  TNode<Oddball> tmp34;
+  TNode<HeapObject> tmp34;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_5, &phi_bb12_9, &phi_bb12_12);
     compiler::CodeAssemblerLabel label35(&ca_);
@@ -956,7 +959,7 @@ TF_BUILTIN(ArrayReduceRight, CodeStubAssembler) {
     ca_.Goto(&block9, tmp12);
   }
 
-  TNode<Oddball> tmp13;
+  TNode<HeapObject> tmp13;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp13 = TheHole_0(state_);

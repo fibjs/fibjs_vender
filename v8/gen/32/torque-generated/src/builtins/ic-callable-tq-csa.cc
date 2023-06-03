@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/ic-callable-tq-csa.h"
@@ -959,8 +962,11 @@ TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_,
   compiler::CodeAssemblerParameterizedLabel<> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FeedbackVector> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FeedbackVector> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FeedbackVector> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   if (block0.is_used()) {
@@ -1002,7 +1008,7 @@ TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_,
 
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    ca_.Goto(label_Fallback);
+    ca_.Goto(&block1);
   }
 
   if (block24.is_used()) {
@@ -1012,21 +1018,40 @@ TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_,
 
   if (block20.is_used()) {
     ca_.Bind(&block20);
+    if (((CodeStubAssembler(state_).UpdateFeedbackModeEqual(p_updateFeedbackMode, UpdateFeedbackMode::kNoFeedback)))) {
+      ca_.Goto(&block26);
+    } else {
+      ca_.Goto(&block27);
+    }
+  }
+
+  if (block26.is_used()) {
+    ca_.Bind(&block26);
+    ca_.Goto(&block1);
+  }
+
+  if (block27.is_used()) {
+    ca_.Bind(&block27);
     CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<FeedbackVector> phi_bb2_1;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_1);
-    ca_.Goto(&block26, phi_bb2_1);
+    ca_.Goto(&block29, phi_bb2_1);
   }
 
-  TNode<FeedbackVector> phi_bb26_1;
-    ca_.Bind(&block26, &phi_bb26_1);
-  return TNode<FeedbackVector>{phi_bb26_1};
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_Fallback);
+  }
+
+  TNode<FeedbackVector> phi_bb29_1;
+    ca_.Bind(&block29, &phi_bb29_1);
+  return TNode<FeedbackVector>{phi_bb29_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=225&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=227&c=1
 void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_target, TNode<Object> p_newTarget, TNode<HeapObject> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_ConstructGeneric, compiler::CodeAssemblerLabel* label_ConstructArray, compiler::TypedCodeAssemblerVariable<AllocationSite>* label_ConstructArray_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1469,7 +1494,7 @@ TNode<FeedbackVector> UnsafeCast_FeedbackVector_0(compiler::CodeAssemblerState* 
   return TNode<FeedbackVector>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=252&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=254&c=11
 TNode<BoolT> Is_AllocationSite_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1516,7 +1541,7 @@ TNode<BoolT> Is_AllocationSite_Object_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=254&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=256&c=31
 TNode<AllocationSite> UnsafeCast_AllocationSite_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

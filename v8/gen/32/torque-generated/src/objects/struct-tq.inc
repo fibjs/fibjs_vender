@@ -49,9 +49,6 @@ class TorqueGeneratedStruct : public P {
 
  protected:
   inline explicit TorqueGeneratedStruct(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedStruct(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsAccessorPair() that avoids inlining.
@@ -136,9 +133,6 @@ class TorqueGeneratedAccessorPair : public P {
 
  protected:
   inline explicit TorqueGeneratedAccessorPair(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAccessorPair(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsClassPositions() that avoids inlining.
@@ -219,9 +213,6 @@ class TorqueGeneratedClassPositions : public P {
 
  protected:
   inline explicit TorqueGeneratedClassPositions(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedClassPositions(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsTuple2() that avoids inlining.
@@ -306,8 +297,5 @@ class TorqueGeneratedTuple2 : public P {
 
  protected:
   inline explicit TorqueGeneratedTuple2(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTuple2(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

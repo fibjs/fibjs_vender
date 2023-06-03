@@ -107,9 +107,6 @@ class TorqueGeneratedModule : public P {
 
  protected:
   inline explicit TorqueGeneratedModule(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedModule(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSModuleNamespace() that avoids inlining.
@@ -171,9 +168,6 @@ class TorqueGeneratedJSModuleNamespace : public P {
 
  protected:
   inline explicit TorqueGeneratedJSModuleNamespace(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSModuleNamespace(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsScriptOrModule() that avoids inlining.
@@ -258,8 +252,5 @@ class TorqueGeneratedScriptOrModule : public P {
 
  protected:
   inline explicit TorqueGeneratedScriptOrModule(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedScriptOrModule(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

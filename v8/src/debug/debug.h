@@ -69,6 +69,7 @@ class BreakLocation {
   static BreakLocation Invalid() { return BreakLocation(-1, NOT_DEBUG_BREAK); }
   static BreakLocation FromFrame(Handle<DebugInfo> debug_info,
                                  JavaScriptFrame* frame);
+  static bool IsPausedInJsFunctionEntry(JavaScriptFrame* frame);
 
   static void AllAtCurrentStatement(Handle<DebugInfo> debug_info,
                                     JavaScriptFrame* frame,
@@ -168,7 +169,7 @@ class V8_EXPORT_PRIVATE BreakIterator {
 };
 
 // Linked list holding debug info objects. The debug info objects are kept as
-// weak handles to avoid a debug info object to keep a function alive.
+// global strong handles to prevent losing previously set breakpoints.
 class DebugInfoListNode {
  public:
   DebugInfoListNode(Isolate* isolate, DebugInfo debug_info);
@@ -222,7 +223,7 @@ class V8_EXPORT_PRIVATE Debug {
   // Debug event triggers.
   void OnDebugBreak(Handle<FixedArray> break_points_hit, StepAction stepAction,
                     debug::BreakReasons break_reasons = {});
-  debug::DebugDelegate::PauseAfterInstrumentation OnInstrumentationBreak();
+  debug::DebugDelegate::ActionAfterInstrumentation OnInstrumentationBreak();
 
   base::Optional<Object> OnThrow(Handle<Object> exception)
       V8_WARN_UNUSED_RESULT;
@@ -355,13 +356,21 @@ class V8_EXPORT_PRIVATE Debug {
   void ApplySideEffectChecks(Handle<DebugInfo> debug_info);
   void ClearSideEffectChecks(Handle<DebugInfo> debug_info);
 
+  // Make a one-time exception for a next call to given side-effectful API
+  // function.
+  void IgnoreSideEffectsOnNextCallTo(Handle<CallHandlerInfo> call_handler_info);
+
   bool PerformSideEffectCheck(Handle<JSFunction> function,
                               Handle<Object> receiver);
 
-  enum AccessorKind { kNotAccessor, kGetter, kSetter };
-  bool PerformSideEffectCheckForCallback(Handle<Object> callback_info,
+  bool PerformSideEffectCheckForAccessor(Handle<AccessorInfo> accessor_info,
                                          Handle<Object> receiver,
-                                         AccessorKind accessor_kind);
+                                         AccessorComponent component);
+  bool PerformSideEffectCheckForCallback(
+      Handle<CallHandlerInfo> call_handler_info);
+  bool PerformSideEffectCheckForInterceptor(
+      Handle<InterceptorInfo> interceptor_info);
+
   bool PerformSideEffectCheckAtBytecode(InterpretedFrame* frame);
   bool PerformSideEffectCheckForObject(Handle<Object> object);
 
@@ -576,6 +585,9 @@ class V8_EXPORT_PRIVATE Debug {
     // Source statement position from last step next action.
     int last_statement_position_;
 
+    // Bytecode offset from last step next action.
+    int last_bytecode_offset_;
+
     // Frame pointer from last step next or step frame action.
     int last_frame_count_;
 
@@ -625,6 +637,12 @@ class V8_EXPORT_PRIVATE Debug {
   // This is a global handle, lazily initialized.
   Handle<WeakArrayList> wasm_scripts_with_break_points_;
 #endif  // V8_ENABLE_WEBASSEMBLY
+
+  // This is a part of machinery for allowing to ignore side effects for one
+  // call to this API function. See Function::NewInstanceWithSideEffectType().
+  // Since the call_handler_info is allowlisted right before the call to
+  // constructor there must be never more than one such object at a time.
+  Handle<CallHandlerInfo> ignore_side_effects_for_call_handler_info_;
 
   Isolate* isolate_;
 

@@ -1,31 +1,31 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqOneByteStringChars(SeqOneByteString p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqTwoByteStringChars(SeqTwoByteString p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
 inline intptr_t TqRuntimeConvert_intptr_int32_0(int32_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=753&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=806&c=26
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqOneByteStringChars
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqOneByteStringChars
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqOneByteStringChars(SeqOneByteString p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -53,7 +53,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqOneByteStringChars(
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqTwoByteStringChars
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqTwoByteStringChars
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqTwoByteStringChars(SeqTwoByteString p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -81,7 +81,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqTwoByteStringChars(
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -99,7 +99,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_int32_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_int32_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
 intptr_t TqRuntimeConvert_intptr_int32_0(int32_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -135,7 +135,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char8_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char8_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -155,7 +155,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_o
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char16_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char16_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=753&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=806&c=26
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -175,7 +175,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -190,7 +190,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=19&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
 template<class D, class P>
 int32_t TorqueGeneratedString<D, P>::length() const {
   int32_t value;
@@ -198,7 +198,7 @@ int32_t TorqueGeneratedString<D, P>::length() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=19&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
 template<class D, class P>
 void TorqueGeneratedString<D, P>::set_length(int32_t value) {
   this->template WriteField<int32_t>(kLengthOffset, value);
@@ -215,19 +215,14 @@ inline TorqueGeneratedString<D, P>::TorqueGeneratedString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedString<D, P>::TorqueGeneratedString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
 template<class D, class P>
 String TorqueGeneratedConsString<D, P>::first() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedConsString::first(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
 template<class D, class P>
 String TorqueGeneratedConsString<D, P>::first(PtrComprCageBase cage_base) const {
   String value;
@@ -236,7 +231,7 @@ String TorqueGeneratedConsString<D, P>::first(PtrComprCageBase cage_base) const 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
 template<class D, class P>
 void TorqueGeneratedConsString<D, P>::set_first(String value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString());
@@ -244,14 +239,14 @@ void TorqueGeneratedConsString<D, P>::set_first(String value, WriteBarrierMode m
   CONDITIONAL_WRITE_BARRIER(*this, kFirstOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
 template<class D, class P>
 String TorqueGeneratedConsString<D, P>::second() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedConsString::second(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
 template<class D, class P>
 String TorqueGeneratedConsString<D, P>::second(PtrComprCageBase cage_base) const {
   String value;
@@ -260,7 +255,7 @@ String TorqueGeneratedConsString<D, P>::second(PtrComprCageBase cage_base) const
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
 template<class D, class P>
 void TorqueGeneratedConsString<D, P>::set_second(String value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString());
@@ -268,7 +263,7 @@ void TorqueGeneratedConsString<D, P>::set_second(String value, WriteBarrierMode 
   CONDITIONAL_WRITE_BARRIER(*this, kSecondOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
 template<class D, class P>
 D TorqueGeneratedConsString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -279,12 +274,7 @@ inline TorqueGeneratedConsString<D, P>::TorqueGeneratedConsString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsConsString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedConsString<D, P>::TorqueGeneratedConsString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsConsString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
 template<class D, class P>
 D TorqueGeneratedExternalString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -295,12 +285,7 @@ inline TorqueGeneratedExternalString<D, P>::TorqueGeneratedExternalString(Addres
     : P(ptr) {
   SLOW_DCHECK(IsExternalString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedExternalString<D, P>::TorqueGeneratedExternalString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsExternalString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
 template<class D, class P>
 D TorqueGeneratedExternalOneByteString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -311,12 +296,7 @@ inline TorqueGeneratedExternalOneByteString<D, P>::TorqueGeneratedExternalOneByt
     : P(ptr) {
   SLOW_DCHECK(IsExternalOneByteString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedExternalOneByteString<D, P>::TorqueGeneratedExternalOneByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsExternalOneByteString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
 template<class D, class P>
 D TorqueGeneratedExternalTwoByteString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -327,12 +307,7 @@ inline TorqueGeneratedExternalTwoByteString<D, P>::TorqueGeneratedExternalTwoByt
     : P(ptr) {
   SLOW_DCHECK(IsExternalTwoByteString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedExternalTwoByteString<D, P>::TorqueGeneratedExternalTwoByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsExternalTwoByteString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
 template<class D, class P>
 D TorqueGeneratedInternalizedString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -343,12 +318,7 @@ inline TorqueGeneratedInternalizedString<D, P>::TorqueGeneratedInternalizedStrin
     : P(ptr) {
   SLOW_DCHECK(IsInternalizedString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedInternalizedString<D, P>::TorqueGeneratedInternalizedString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsInternalizedString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
 template<class D, class P>
 D TorqueGeneratedSeqString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -359,12 +329,7 @@ inline TorqueGeneratedSeqString<D, P>::TorqueGeneratedSeqString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSeqString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSeqString<D, P>::TorqueGeneratedSeqString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSeqString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 template<class D, class P>
 char TorqueGeneratedSeqOneByteString<D, P>::chars(int i) const {
   char value;
@@ -375,7 +340,7 @@ char TorqueGeneratedSeqOneByteString<D, P>::chars(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=109&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
 template<class D, class P>
 void TorqueGeneratedSeqOneByteString<D, P>::set_chars(int i, char value) {
   DCHECK_GE(i, 0);
@@ -384,7 +349,7 @@ void TorqueGeneratedSeqOneByteString<D, P>::set_chars(int i, char value) {
   this->template WriteField<char>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
 template<class D, class P>
 D TorqueGeneratedSeqOneByteString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -395,12 +360,7 @@ inline TorqueGeneratedSeqOneByteString<D, P>::TorqueGeneratedSeqOneByteString(Ad
     : P(ptr) {
   SLOW_DCHECK(IsSeqOneByteString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSeqOneByteString<D, P>::TorqueGeneratedSeqOneByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSeqOneByteString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
 template<class D, class P>
 char16_t TorqueGeneratedSeqTwoByteString<D, P>::chars(int i) const {
   char16_t value;
@@ -411,7 +371,7 @@ char16_t TorqueGeneratedSeqTwoByteString<D, P>::chars(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
 template<class D, class P>
 void TorqueGeneratedSeqTwoByteString<D, P>::set_chars(int i, char16_t value) {
   DCHECK_GE(i, 0);
@@ -420,7 +380,7 @@ void TorqueGeneratedSeqTwoByteString<D, P>::set_chars(int i, char16_t value) {
   this->template WriteField<char16_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
 template<class D, class P>
 D TorqueGeneratedSeqTwoByteString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -431,19 +391,14 @@ inline TorqueGeneratedSeqTwoByteString<D, P>::TorqueGeneratedSeqTwoByteString(Ad
     : P(ptr) {
   SLOW_DCHECK(IsSeqTwoByteString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSeqTwoByteString<D, P>::TorqueGeneratedSeqTwoByteString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSeqTwoByteString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
 template<class D, class P>
 String TorqueGeneratedSlicedString<D, P>::parent() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSlicedString::parent(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
 template<class D, class P>
 String TorqueGeneratedSlicedString<D, P>::parent(PtrComprCageBase cage_base) const {
   String value;
@@ -452,7 +407,7 @@ String TorqueGeneratedSlicedString<D, P>::parent(PtrComprCageBase cage_base) con
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=120&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
 template<class D, class P>
 void TorqueGeneratedSlicedString<D, P>::set_parent(String value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString());
@@ -460,7 +415,7 @@ void TorqueGeneratedSlicedString<D, P>::set_parent(String value, WriteBarrierMod
   CONDITIONAL_WRITE_BARRIER(*this, kParentOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
 template<class D, class P>
 int TorqueGeneratedSlicedString<D, P>::offset() const {
   int value;
@@ -468,13 +423,13 @@ int TorqueGeneratedSlicedString<D, P>::offset() const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=121&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
 template<class D, class P>
 void TorqueGeneratedSlicedString<D, P>::set_offset(int value) {
   WRITE_FIELD(*this, kOffsetOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
 template<class D, class P>
 D TorqueGeneratedSlicedString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -485,19 +440,14 @@ inline TorqueGeneratedSlicedString<D, P>::TorqueGeneratedSlicedString(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsSlicedString_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSlicedString<D, P>::TorqueGeneratedSlicedString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSlicedString_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
 template<class D, class P>
 String TorqueGeneratedThinString<D, P>::actual() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedThinString::actual(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
 template<class D, class P>
 String TorqueGeneratedThinString<D, P>::actual(PtrComprCageBase cage_base) const {
   String value;
@@ -506,7 +456,7 @@ String TorqueGeneratedThinString<D, P>::actual(PtrComprCageBase cage_base) const
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=127&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
 template<class D, class P>
 void TorqueGeneratedThinString<D, P>::set_actual(String value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsString());
@@ -514,7 +464,7 @@ void TorqueGeneratedThinString<D, P>::set_actual(String value, WriteBarrierMode 
   CONDITIONAL_WRITE_BARRIER(*this, kActualOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
 template<class D, class P>
 D TorqueGeneratedThinString<D, P>::cast(Object object) {
     return D(object.ptr());
@@ -524,9 +474,4 @@ template<class D, class P>
 inline TorqueGeneratedThinString<D, P>::TorqueGeneratedThinString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsThinString_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedThinString<D, P>::TorqueGeneratedThinString(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsThinString_NonInline(*this));
 }

@@ -76,8 +76,5 @@ class TorqueGeneratedContext : public P {
 
  protected:
   inline explicit TorqueGeneratedContext(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedContext(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

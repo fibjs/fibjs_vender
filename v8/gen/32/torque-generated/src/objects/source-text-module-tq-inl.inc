@@ -233,11 +233,6 @@ inline TorqueGeneratedSourceTextModule<D, P>::TorqueGeneratedSourceTextModule(Ad
     : P(ptr) {
   SLOW_DCHECK(IsSourceTextModule_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSourceTextModule<D, P>::TorqueGeneratedSourceTextModule(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSourceTextModule_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
 template<class D, class P>
 String TorqueGeneratedModuleRequest<D, P>::specifier() const {
@@ -310,11 +305,6 @@ template<class D, class P>
 inline TorqueGeneratedModuleRequest<D, P>::TorqueGeneratedModuleRequest(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsModuleRequest_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedModuleRequest<D, P>::TorqueGeneratedModuleRequest(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsModuleRequest_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
 template<class D, class P>
@@ -454,9 +444,4 @@ template<class D, class P>
 inline TorqueGeneratedSourceTextModuleInfoEntry<D, P>::TorqueGeneratedSourceTextModuleInfoEntry(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSourceTextModuleInfoEntry_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedSourceTextModuleInfoEntry<D, P>::TorqueGeneratedSourceTextModuleInfoEntry(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSourceTextModuleInfoEntry_NonInline(*this));
 }

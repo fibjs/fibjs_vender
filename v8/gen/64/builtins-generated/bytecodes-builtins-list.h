@@ -131,6 +131,7 @@ namespace internal {
   V(ToNumericHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kToNumeric) \
   V(ToObjectHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kToObject) \
   V(ToStringHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kToString) \
+  V(ToBooleanHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kToBoolean) \
   V(CreateRegExpLiteralHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateRegExpLiteral) \
   V(CreateArrayLiteralHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateArrayLiteral) \
   V(CreateArrayFromIterableHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateArrayFromIterable) \
@@ -495,15 +496,15 @@ namespace internal {
   V(IncBlockCounterExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kIncBlockCounter) \
   V(AbortExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kAbort)
 
-constexpr int kNumberOfBytecodeHandlers = 183;
+constexpr int kNumberOfBytecodeHandlers = 184;
 constexpr int kNumberOfWideBytecodeHandlers = 150;
 
 constexpr uint8_t kIllegalBytecodeHandlerEncoding = 255;
 
 // Mapping from Bytecode to a dense form with all the illegal
 // wide Bytecodes removed. Used to index into the builtins table.
-constexpr uint8_t kWideBytecodeToBuiltinsMapping[198] = {    
-255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 255, 7, 255, 255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 255, 255, 255, 255, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 255, 255, 255, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 255, 101, 102, 255, 103, 104, 255, 105, 106, 107, 108, 109, 110, 111, 112, 255, 255, 255, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 255, 255, 255, 255, 142, 255, 255, 143, 144, 145, 146, 147, 255, 148, 149, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, };
+constexpr uint8_t kWideBytecodeToBuiltinsMapping[199] = {    
+255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 255, 7, 255, 255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 255, 255, 255, 255, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 255, 255, 255, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 255, 255, 101, 102, 255, 103, 104, 255, 105, 106, 107, 108, 109, 110, 111, 112, 255, 255, 255, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 255, 255, 255, 255, 142, 255, 255, 143, 144, 145, 146, 147, 255, 148, 149, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, };
 
 }  // namespace internal
 }  // namespace v8

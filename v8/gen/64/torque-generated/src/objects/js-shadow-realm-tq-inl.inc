@@ -33,8 +33,3 @@ inline TorqueGeneratedJSShadowRealm<D, P>::TorqueGeneratedJSShadowRealm(Address 
     : P(ptr) {
   SLOW_DCHECK(IsJSShadowRealm_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSShadowRealm<D, P>::TorqueGeneratedJSShadowRealm(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSShadowRealm_NonInline(*this));
-}

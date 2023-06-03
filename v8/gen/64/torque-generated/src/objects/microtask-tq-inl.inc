@@ -9,11 +9,6 @@ inline TorqueGeneratedMicrotask<D, P>::TorqueGeneratedMicrotask(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsMicrotask_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedMicrotask<D, P>::TorqueGeneratedMicrotask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsMicrotask_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
 template<class D, class P>
 Foreign TorqueGeneratedCallbackTask<D, P>::callback() const {
@@ -73,11 +68,6 @@ inline TorqueGeneratedCallbackTask<D, P>::TorqueGeneratedCallbackTask(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsCallbackTask_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedCallbackTask<D, P>::TorqueGeneratedCallbackTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsCallbackTask_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
 template<class D, class P>
 JSReceiver TorqueGeneratedCallableTask<D, P>::callable() const {
@@ -136,9 +126,4 @@ template<class D, class P>
 inline TorqueGeneratedCallableTask<D, P>::TorqueGeneratedCallableTask(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsCallableTask_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedCallableTask<D, P>::TorqueGeneratedCallableTask(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsCallableTask_NonInline(*this));
 }

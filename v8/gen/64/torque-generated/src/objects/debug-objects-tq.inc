@@ -85,9 +85,6 @@ class TorqueGeneratedBreakPoint : public P {
 
  protected:
   inline explicit TorqueGeneratedBreakPoint(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedBreakPoint(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsBreakPointInfo() that avoids inlining.
@@ -171,9 +168,6 @@ class TorqueGeneratedBreakPointInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedBreakPointInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedBreakPointInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsDebugInfo() that avoids inlining.
@@ -318,9 +312,6 @@ class TorqueGeneratedDebugInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedDebugInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedDebugInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsCoverageInfo() that avoids inlining.
@@ -416,9 +407,6 @@ class TorqueGeneratedCoverageInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedCoverageInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedCoverageInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsStackFrameInfo() that avoids inlining.
@@ -512,9 +500,6 @@ class TorqueGeneratedStackFrameInfo : public P {
 
  protected:
   inline explicit TorqueGeneratedStackFrameInfo(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedStackFrameInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsErrorStackData() that avoids inlining.
@@ -601,9 +586,6 @@ class TorqueGeneratedErrorStackData : public P {
 
  protected:
   inline explicit TorqueGeneratedErrorStackData(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedErrorStackData(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsPromiseOnStack() that avoids inlining.
@@ -690,9 +672,6 @@ class TorqueGeneratedPromiseOnStack : public P {
 
  protected:
   inline explicit TorqueGeneratedPromiseOnStack(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedPromiseOnStack(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 struct TorqueGeneratedCoverageInfoSlotOffsets {

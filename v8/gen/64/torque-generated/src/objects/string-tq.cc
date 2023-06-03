@@ -20,7 +20,7 @@ void TorqueGeneratedString<String, Name>::StringVerify(Isolate* isolate) {
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=38&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
 bool IsConsString_NonInline(HeapObject o) {
   return o.IsConsString();
 }
@@ -34,7 +34,7 @@ void TorqueGeneratedConsString<ConsString, String>::ConsStringVerify(Isolate* is
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
 bool IsExternalString_NonInline(HeapObject o) {
   return o.IsExternalString();
 }
@@ -48,7 +48,7 @@ void TorqueGeneratedExternalString<ExternalString, String>::ExternalStringVerify
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=76&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
 bool IsExternalOneByteString_NonInline(HeapObject o) {
   return o.IsExternalOneByteString();
 }
@@ -62,7 +62,7 @@ void TorqueGeneratedExternalOneByteString<ExternalOneByteString, ExternalString>
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=87&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
 bool IsExternalTwoByteString_NonInline(HeapObject o) {
   return o.IsExternalTwoByteString();
 }
@@ -76,7 +76,7 @@ void TorqueGeneratedExternalTwoByteString<ExternalTwoByteString, ExternalString>
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=98&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
 bool IsInternalizedString_NonInline(HeapObject o) {
   return o.IsInternalizedString();
 }
@@ -90,7 +90,7 @@ void TorqueGeneratedInternalizedString<InternalizedString, String>::Internalized
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=102&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
 bool IsSeqString_NonInline(HeapObject o) {
   return o.IsSeqString();
 }
@@ -104,7 +104,7 @@ void TorqueGeneratedSeqString<SeqString, String>::SeqStringVerify(Isolate* isola
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=106&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
 bool IsSeqOneByteString_NonInline(HeapObject o) {
   return o.IsSeqOneByteString();
 }
@@ -118,7 +118,7 @@ void TorqueGeneratedSeqOneByteString<SeqOneByteString, SeqString>::SeqOneByteStr
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
 bool IsSeqTwoByteString_NonInline(HeapObject o) {
   return o.IsSeqTwoByteString();
 }
@@ -132,7 +132,7 @@ void TorqueGeneratedSeqTwoByteString<SeqTwoByteString, SeqString>::SeqTwoByteStr
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=117&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
 bool IsSlicedString_NonInline(HeapObject o) {
   return o.IsSlicedString();
 }
@@ -146,7 +146,7 @@ void TorqueGeneratedSlicedString<SlicedString, String>::SlicedStringVerify(Isola
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=124&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
 bool IsThinString_NonInline(HeapObject o) {
   return o.IsThinString();
 }

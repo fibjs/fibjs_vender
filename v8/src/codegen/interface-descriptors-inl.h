@@ -56,6 +56,11 @@ constexpr auto StaticJSCallInterfaceDescriptor<DerivedDescriptor>::registers() {
   return CallInterfaceDescriptor::DefaultJSRegisterArray();
 }
 
+// static
+constexpr auto CompareNoContextDescriptor::registers() {
+  return CompareDescriptor::registers();
+}
+
 template <typename DerivedDescriptor>
 void StaticCallInterfaceDescriptor<DerivedDescriptor>::Initialize(
     CallInterfaceDescriptorData* data) {
@@ -329,6 +334,20 @@ constexpr auto StoreGlobalBaselineDescriptor::registers() {
 }
 
 // static
+constexpr auto DefineKeyedOwnDescriptor::registers() {
+  return RegisterArray(StoreDescriptor::ReceiverRegister(),
+                       StoreDescriptor::NameRegister(),
+                       StoreDescriptor::ValueRegister(),
+                       DefineKeyedOwnDescriptor::FlagsRegister(),
+                       StoreDescriptor::SlotRegister());
+}
+
+// static
+constexpr auto DefineKeyedOwnBaselineDescriptor::registers() {
+  return DefineKeyedOwnDescriptor::registers();
+}
+
+// static
 constexpr auto LoadWithReceiverBaselineDescriptor::registers() {
   return RegisterArray(
       LoadDescriptor::ReceiverRegister(),
@@ -372,7 +391,14 @@ constexpr auto BaselineLeaveFrameDescriptor::registers() {
 
 // static
 constexpr auto OnStackReplacementDescriptor::registers() {
+#if V8_TARGET_ARCH_MIPS64
+  return RegisterArray(kReturnRegister0, kJavaScriptCallArgCountRegister,
+                       kJavaScriptCallTargetRegister,
+                       kJavaScriptCallCodeStartRegister,
+                       kJavaScriptCallNewTargetRegister);
+#else
   return DefaultRegisterArray();
+#endif
 }
 
 // static
@@ -524,6 +550,15 @@ constexpr auto StoreWithVectorDescriptor::registers() {
                        StoreDescriptor::NameRegister(),
                        StoreDescriptor::ValueRegister(),
                        StoreDescriptor::SlotRegister(), VectorRegister());
+}
+
+// static
+constexpr auto DefineKeyedOwnWithVectorDescriptor::registers() {
+  return RegisterArray(StoreDescriptor::ReceiverRegister(),
+                       StoreDescriptor::NameRegister(),
+                       StoreDescriptor::ValueRegister(),
+                       DefineKeyedOwnDescriptor::FlagsRegister(),
+                       StoreDescriptor::SlotRegister());
 }
 
 // static

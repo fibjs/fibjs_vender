@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-from-tq-csa.h"
@@ -565,7 +568,7 @@ TF_BUILTIN(TypedArrayFrom, CodeStubAssembler) {
   if (block59.is_used()) {
     ca_.Bind(&block59, &phi_bb59_11, &phi_bb59_12, &phi_bb59_19, &phi_bb59_22);
 tmp68 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(3)).descriptor(), tmp62, parameter0, tmp53, phi_bb59_19, phi_bb59_22));
-    tmp69 = kStoreFailureArrayDetached_0(state_);
+    tmp69 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     tmp70 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp68}, TNode<Smi>{tmp69});
     ca_.Branch(tmp70, &block61, std::vector<compiler::Node*>{phi_bb59_11, phi_bb59_12, phi_bb59_19, phi_bb59_19, phi_bb59_19}, &block62, std::vector<compiler::Node*>{phi_bb59_11, phi_bb59_12, phi_bb59_19, phi_bb59_19, phi_bb59_19});
   }

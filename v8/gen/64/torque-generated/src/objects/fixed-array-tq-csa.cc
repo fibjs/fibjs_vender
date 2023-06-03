@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/objects/fixed-array-tq-csa.h"
@@ -452,7 +455,7 @@ TNode<FixedArray> ExtractFixedArray_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block4);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/torque-internal.tq", 133});
+      pos_stack.push_back({"src/builtins/torque-internal.tq", 138});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Convert<uintptr>(endIndex) <= Convert<uintptr>(this.length) && Convert<uintptr>(startIndex) <= Convert<uintptr>(endIndex)' failed", pos_stack);
     }
   }
@@ -461,12 +464,12 @@ TNode<FixedArray> ExtractFixedArray_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<Oddball> tmp15;
-  TNode<Oddball> tmp16;
+  TNode<HeapObject> tmp15;
+  TNode<HeapObject> tmp16;
   TNode<Object> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
-  TNode<Oddball> tmp20;
+  TNode<HeapObject> tmp20;
   TNode<FixedArray> tmp21;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -475,9 +478,9 @@ TNode<FixedArray> ExtractFixedArray_0(compiler::CodeAssemblerState* state_, TNod
     tmp13 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp3});
     tmp14 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp13});
     tmp15 = TheHole_0(state_);
-    std::tie(tmp16) = ConstantIterator_TheHole_0(state_, TNode<Oddball>{tmp15}).Flatten();
-    std::tie(tmp17, tmp18, tmp19, tmp20) = IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(state_, TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Oddball>{tmp16}}).Flatten();
-    tmp21 = NewFixedArray_IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(state_, TNode<IntPtrT>{p_capacity}, TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0{TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{tmp17}, TNode<IntPtrT>{tmp18}, TNode<IntPtrT>{tmp19}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Oddball>{tmp20}}});
+    std::tie(tmp16) = ConstantIterator_TheHole_0(state_, TNode<HeapObject>{tmp15}).Flatten();
+    std::tie(tmp17, tmp18, tmp19, tmp20) = IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(state_, TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<HeapObject>{tmp16}}).Flatten();
+    tmp21 = NewFixedArray_IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(state_, TNode<IntPtrT>{p_capacity}, TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0{TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{tmp17}, TNode<IntPtrT>{tmp18}, TNode<IntPtrT>{tmp19}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<HeapObject>{tmp20}}});
     ca_.Goto(&block8);
   }
 
@@ -543,7 +546,7 @@ TNode<FixedArrayBase> ExtractFixedDoubleArray_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block4);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/torque-internal.tq", 133});
+      pos_stack.push_back({"src/builtins/torque-internal.tq", 138});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Convert<uintptr>(endIndex) <= Convert<uintptr>(this.length) && Convert<uintptr>(startIndex) <= Convert<uintptr>(endIndex)' failed", pos_stack);
     }
   }
@@ -1665,7 +1668,7 @@ TNode<WeakFixedArray> DownCastForTorqueClass_WeakFixedArray_0(compiler::CodeAsse
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(231), static_cast<InstanceType>(232))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(240), static_cast<InstanceType>(241))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1708,7 +1711,7 @@ TNode<WeakFixedArray> DownCastForTorqueClass_WeakFixedArray_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(231));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(240));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -1742,12 +1745,12 @@ TNode<WeakFixedArray> DownCastForTorqueClass_WeakFixedArray_0(compiler::CodeAsse
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(232), static_cast<InstanceType>(231))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(241), static_cast<InstanceType>(240))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(231));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(240));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -1955,7 +1958,7 @@ TNode<WeakArrayList> DownCastForTorqueClass_WeakArrayList_0(compiler::CodeAssemb
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(264), static_cast<InstanceType>(264))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(275), static_cast<InstanceType>(275))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1998,7 +2001,7 @@ TNode<WeakArrayList> DownCastForTorqueClass_WeakArrayList_0(compiler::CodeAssemb
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(264));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(275));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2032,12 +2035,12 @@ TNode<WeakArrayList> DownCastForTorqueClass_WeakArrayList_0(compiler::CodeAssemb
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(264), static_cast<InstanceType>(264))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(275), static_cast<InstanceType>(275))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(264));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(275));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2074,7 +2077,7 @@ TNode<WeakArrayList> DownCastForTorqueClass_WeakArrayList_0(compiler::CodeAssemb
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=131&c=11
-TorqueStructConstantIterator_TheHole_0 ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Oddball> p_value) {
+TorqueStructConstantIterator_TheHole_0 ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2087,7 +2090,7 @@ TorqueStructConstantIterator_TheHole_0 ConstantIterator_TheHole_0(compiler::Code
   }
 
     ca_.Bind(&block2);
-  return TorqueStructConstantIterator_TheHole_0{TNode<Oddball>{p_value}};
+  return TorqueStructConstantIterator_TheHole_0{TNode<HeapObject>{p_value}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=129&c=7
@@ -2104,7 +2107,7 @@ TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object
   }
 
     ca_.Bind(&block2);
-  return TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0{TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{p_first.object}, TNode<IntPtrT>{p_first.start}, TNode<IntPtrT>{p_first.end}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Oddball>{p_second.value}}};
+  return TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0{TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{p_first.object}, TNode<IntPtrT>{p_first.start}, TNode<IntPtrT>{p_first.end}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<HeapObject>{p_second.value}}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=127&c=10
@@ -2159,11 +2162,12 @@ TNode<FixedArray> NewFixedArray_IteratorSequence_Object_SliceIterator_Object_Mut
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<BoolT> tmp11;
-  TNode<HeapObject> tmp12;
-  TNode<IntPtrT> tmp13;
+  TNode<BoolT> tmp12;
+  TNode<HeapObject> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<FixedArray> tmp16;
+  TNode<IntPtrT> tmp16;
+  TNode<FixedArray> tmp17;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp6 = kFixedArrayMap_0(state_);
@@ -2172,15 +2176,16 @@ TNode<FixedArray> NewFixedArray_IteratorSequence_Object_SliceIterator_Object_Mut
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp10 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp9}, TNode<IntPtrT>{tmp8}, kTaggedSize);
     tmp11 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp12 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp10}, TNode<Map>{tmp6}, TNode<BoolT>{tmp11});
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp12, tmp13}, tmp6);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp12, tmp14}, tmp7);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_Object_IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0{TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{p_it.first.object}, TNode<IntPtrT>{p_it.first.start}, TNode<IntPtrT>{p_it.first.end}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Oddball>{p_it.second.value}}});
-    tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp12});
-    ca_.Goto(&block1, tmp16);
+    tmp12 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp13 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp10}, TNode<Map>{tmp6}, TNode<BoolT>{tmp11}, TNode<BoolT>{tmp12});
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp6);
+    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp13, tmp15}, tmp7);
+    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    InitializeFieldsFromIterator_Object_IteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference_Object_ConstantIterator_TheHole_0{TorqueStructSliceIterator_Object_MutableReference_Object_0{TNode<Object>{p_it.first.object}, TNode<IntPtrT>{p_it.first.start}, TNode<IntPtrT>{p_it.first.end}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<HeapObject>{p_it.second.value}}});
+    tmp17 = TORQUE_CAST(TNode<HeapObject>{tmp13});
+    ca_.Goto(&block1, tmp17);
   }
 
   TNode<FixedArray> phi_bb1_5;
@@ -2280,11 +2285,12 @@ TNode<FixedArrayBase> NewFixedDoubleArray_IteratorSequence_float64_or_hole_Slice
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<BoolT> tmp11;
-  TNode<HeapObject> tmp12;
-  TNode<IntPtrT> tmp13;
+  TNode<BoolT> tmp12;
+  TNode<HeapObject> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<FixedDoubleArray> tmp16;
+  TNode<IntPtrT> tmp16;
+  TNode<FixedDoubleArray> tmp17;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp6 = kFixedDoubleArrayMap_0(state_);
@@ -2293,15 +2299,16 @@ TNode<FixedArrayBase> NewFixedDoubleArray_IteratorSequence_float64_or_hole_Slice
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp10 = AddIndexedFieldSizeToObjectSize_0(state_, TNode<IntPtrT>{tmp9}, TNode<IntPtrT>{tmp8}, kDoubleSize);
     tmp11 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp12 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp10}, TNode<Map>{tmp6}, TNode<BoolT>{tmp11});
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp12, tmp13}, tmp6);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp12, tmp14}, tmp7);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_float64_or_hole_IteratorSequence_float64_or_hole_SliceIterator_float64_or_hole_MutableReference_float64_or_hole_ConstantIterator_float64_or_hole_0(state_, TorqueStructSlice_float64_or_hole_MutableReference_float64_or_hole_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp15}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructIteratorSequence_float64_or_hole_SliceIterator_float64_or_hole_MutableReference_float64_or_hole_ConstantIterator_float64_or_hole_0{TorqueStructSliceIterator_float64_or_hole_MutableReference_float64_or_hole_0{TNode<Object>{p_it.first.object}, TNode<IntPtrT>{p_it.first.start}, TNode<IntPtrT>{p_it.first.end}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_float64_or_hole_0{TorqueStructfloat64_or_hole_0{TNode<BoolT>{p_it.second.value.is_hole}, TNode<Float64T>{p_it.second.value.value}}}});
-    tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp12});
-    ca_.Goto(&block1, tmp16);
+    tmp12 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp13 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp10}, TNode<Map>{tmp6}, TNode<BoolT>{tmp11}, TNode<BoolT>{tmp12});
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp6);
+    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp13, tmp15}, tmp7);
+    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    InitializeFieldsFromIterator_float64_or_hole_IteratorSequence_float64_or_hole_SliceIterator_float64_or_hole_MutableReference_float64_or_hole_ConstantIterator_float64_or_hole_0(state_, TorqueStructSlice_float64_or_hole_MutableReference_float64_or_hole_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructIteratorSequence_float64_or_hole_SliceIterator_float64_or_hole_MutableReference_float64_or_hole_ConstantIterator_float64_or_hole_0{TorqueStructSliceIterator_float64_or_hole_MutableReference_float64_or_hole_0{TNode<Object>{p_it.first.object}, TNode<IntPtrT>{p_it.first.start}, TNode<IntPtrT>{p_it.first.end}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_float64_or_hole_0{TorqueStructfloat64_or_hole_0{TNode<BoolT>{p_it.second.value.is_hole}, TNode<Float64T>{p_it.second.value.value}}}});
+    tmp17 = TORQUE_CAST(TNode<HeapObject>{tmp13});
+    ca_.Goto(&block1, tmp17);
   }
 
   TNode<FixedArrayBase> phi_bb1_6;
@@ -2550,7 +2557,7 @@ void InitializeFieldsFromIterator_Object_ParameterValueIterator_0(compiler::Code
   TNode<IntPtrT> phi_bb16_17;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<HeapObject> tmp12;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_12, &phi_bb16_17);
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);

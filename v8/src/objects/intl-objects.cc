@@ -102,7 +102,7 @@ inline constexpr uint16_t ToLatin1Upper(uint16_t ch) {
 }
 
 template <typename Char>
-bool ToUpperFastASCII(const base::Vector<const Char>& src,
+bool ToUpperFastASCII(base::Vector<const Char> src,
                       Handle<SeqOneByteString> result) {
   // Do a faster loop for the case where all the characters are ASCII.
   uint16_t ored = 0;
@@ -118,7 +118,7 @@ bool ToUpperFastASCII(const base::Vector<const Char>& src,
 const uint16_t sharp_s = 0xDF;
 
 template <typename Char>
-bool ToUpperOneByte(const base::Vector<const Char>& src, uint8_t* dest,
+bool ToUpperOneByte(base::Vector<const Char> src, uint8_t* dest,
                     int* sharp_s_count) {
   // Still pretty-fast path for the input with non-ASCII Latin-1 characters.
 
@@ -144,7 +144,7 @@ bool ToUpperOneByte(const base::Vector<const Char>& src, uint8_t* dest,
 }
 
 template <typename Char>
-void ToUpperWithSharpS(const base::Vector<const Char>& src,
+void ToUpperWithSharpS(base::Vector<const Char> src,
                        Handle<SeqOneByteString> result) {
   int32_t dest_index = 0;
   for (auto it = src.begin(); it != src.end(); ++it) {
@@ -279,7 +279,7 @@ MaybeHandle<String> LocaleConvertCase(Isolate* isolate, Handle<String> s,
     return result;
   }
   DCHECK(dest_length < result->length());
-  return SeqString::Truncate(result, dest_length);
+  return SeqString::Truncate(isolate, result, dest_length);
 }
 
 }  // namespace
@@ -450,8 +450,7 @@ Maybe<icu::Locale> CreateICULocale(const std::string& bcp47_locale) {
   UErrorCode status = U_ZERO_ERROR;
 
   icu::Locale icu_locale = icu::Locale::forLanguageTag(bcp47_locale, status);
-  DCHECK(U_SUCCESS(status));
-  if (icu_locale.isBogus()) {
+  if (U_FAILURE(status) || icu_locale.isBogus()) {
     return Nothing<icu::Locale>();
   }
 
@@ -2790,21 +2789,19 @@ bool Intl::RemoveCollation(const char* collation) {
 
 // See the list in ecma402 #sec-issanctionedsimpleunitidentifier
 std::set<std::string> Intl::SanctionedSimpleUnits() {
-  return std::set<std::string>({"acre",       "bit",        "byte",
-                                "celsius",    "centimeter", "day",
-                                "degree",     "fahrenheit", "fluid-ounce",
-                                "foot",       "gallon",     "gigabit",
-                                "gigabyte",   "gram",       "hectare",
-                                "hour",       "inch",       "kilobit",
-                                "kilobyte",   "kilogram",   "kilometer",
-                                "liter",      "megabit",    "megabyte",
-                                "meter",      "mile",       "mile-scandinavian",
-                                "millimeter", "milliliter", "millisecond",
-                                "minute",     "month",      "ounce",
-                                "percent",    "petabyte",   "pound",
-                                "second",     "stone",      "terabit",
-                                "terabyte",   "week",       "yard",
-                                "year"});
+  return std::set<std::string>(
+      {"acre",        "bit",         "byte",        "celsius",
+       "centimeter",  "day",         "degree",      "fahrenheit",
+       "fluid-ounce", "foot",        "gallon",      "gigabit",
+       "gigabyte",    "gram",        "hectare",     "hour",
+       "inch",        "kilobit",     "kilobyte",    "kilogram",
+       "kilometer",   "liter",       "megabit",     "megabyte",
+       "meter",       "microsecond", "mile",        "mile-scandinavian",
+       "millimeter",  "milliliter",  "millisecond", "minute",
+       "month",       "nanosecond",  "ounce",       "percent",
+       "petabyte",    "pound",       "second",      "stone",
+       "terabit",     "terabyte",    "week",        "yard",
+       "year"});
 }
 
 // ecma-402/#sec-isvalidtimezonename

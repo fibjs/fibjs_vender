@@ -24,7 +24,7 @@ public:
 
     virtual void Run()
     {
-        m_main.saveStackGuard();
+        m_main.save_stack_start();
         m_main.m_ctx = convert_fiber(NULL);
 
         m_master->m_idleWorkers.dec();

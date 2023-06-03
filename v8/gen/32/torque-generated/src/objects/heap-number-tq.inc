@@ -69,8 +69,5 @@ class TorqueGeneratedHeapNumber : public P {
 
  protected:
   inline explicit TorqueGeneratedHeapNumber(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedHeapNumber(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

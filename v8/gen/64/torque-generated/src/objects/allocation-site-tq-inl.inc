@@ -33,8 +33,3 @@ inline TorqueGeneratedAllocationMemento<D, P>::TorqueGeneratedAllocationMemento(
     : P(ptr) {
   SLOW_DCHECK(IsAllocationMemento_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedAllocationMemento<D, P>::TorqueGeneratedAllocationMemento(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAllocationMemento_NonInline(*this));
-}

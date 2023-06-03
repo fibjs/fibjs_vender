@@ -24,14 +24,14 @@ template<class D, class P>
 MaybeObject TorqueGeneratedFreeSpace<D, P>::next(PtrComprCageBase cage_base) const {
   MaybeObject value;
   value = TaggedField<MaybeObject>::load(cage_base, *this, kNextOffset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUninitialized()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsFreeSpace()));
+  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUninitialized()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsFreeSpace()));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
 template<class D, class P>
 void TorqueGeneratedFreeSpace<D, P>::set_next(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUninitialized()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsFreeSpace()));
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUninitialized()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsFreeSpace()));
   RELAXED_WRITE_WEAK_FIELD(*this, kNextOffset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kNextOffset, value, mode);
 }
@@ -46,9 +46,4 @@ template<class D, class P>
 inline TorqueGeneratedFreeSpace<D, P>::TorqueGeneratedFreeSpace(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsFreeSpace_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedFreeSpace<D, P>::TorqueGeneratedFreeSpace(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsFreeSpace_NonInline(*this));
 }

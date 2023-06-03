@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/conversion-tq-csa.h"
@@ -83,17 +86,15 @@ namespace internal {
 
 TF_BUILTIN(StringToNumber, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
-  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  TNode<String> parameter0 = UncheckedParameter<String>(Descriptor::kInput);
   USE(parameter0);
-  TNode<String> parameter1 = UncheckedParameter<String>(Descriptor::kInput);
-  USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Number> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).StringToNumber(TNode<String>{parameter1});
+    tmp0 = CodeStubAssembler(state_).StringToNumber(TNode<String>{parameter0});
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -170,17 +171,15 @@ TF_BUILTIN(ToNumeric, CodeStubAssembler) {
 
 TF_BUILTIN(NumberToString, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
-  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  TNode<Number> parameter0 = UncheckedParameter<Number>(Descriptor::kInput);
   USE(parameter0);
-  TNode<Number> parameter1 = UncheckedParameter<Number>(Descriptor::kInput);
-  USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).NumberToString(TNode<Number>{parameter1});
+    tmp0 = CodeStubAssembler(state_).NumberToString(TNode<Number>{parameter0});
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -772,7 +771,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Default, CodeStubAssembler) {
   TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number), parameter0, parameter1);
+    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number_Inline), parameter0, parameter1);
     CodeStubAssembler(state_).Return(tmp2);
   }
 
@@ -812,7 +811,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Number, CodeStubAssembler) {
   TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number), parameter0, parameter1);
+    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number_Inline), parameter0, parameter1);
     CodeStubAssembler(state_).Return(tmp2);
   }
 
@@ -826,6 +825,55 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Number, CodeStubAssembler) {
   }
 }
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=203&c=1
+TNode<Object> NonPrimitiveToPrimitive_String_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_input) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{p_context}, TNode<Object>{p_input}, &label1);
+    ca_.Goto(&block4);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block5);
+    }
+  }
+
+  TNode<Object> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp2 = OrdinaryToPrimitive_String_Inline_0(state_, TNode<Context>{p_context}, TNode<Object>{p_input});
+    ca_.Goto(&block1, tmp2);
+  }
+
+  TNode<String> tmp3;
+  TNode<Object> tmp4;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp3 = CodeStubAssembler(state_).StringStringConstant();
+    tmp4 = CallExoticToPrimitive_0(state_, TNode<Context>{p_context}, TNode<Object>{p_input}, TNode<Object>{tmp0}, TNode<String>{tmp3});
+    ca_.Goto(&block1, tmp4);
+  }
+
+  TNode<Object> phi_bb1_2;
+  if (block1.is_used()) {
+    ca_.Bind(&block1, &phi_bb1_2);
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<Object>{phi_bb1_2};
+}
+
 TF_BUILTIN(NonPrimitiveToPrimitive_String, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
@@ -833,40 +881,17 @@ TF_BUILTIN(NonPrimitiveToPrimitive_String, CodeStubAssembler) {
   TNode<JSReceiver> parameter1 = UncheckedParameter<JSReceiver>(Descriptor::kInput);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Object> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  TNode<Object> tmp2;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_String), parameter0, parameter1);
-    CodeStubAssembler(state_).Return(tmp2);
-  }
-
-  TNode<String> tmp3;
-  TNode<Object> tmp4;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    tmp3 = CodeStubAssembler(state_).StringStringConstant();
-    tmp4 = CallExoticToPrimitive_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp0}, TNode<String>{tmp3});
-    CodeStubAssembler(state_).Return(tmp4);
+    tmp0 = NonPrimitiveToPrimitive_String_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1});
+    CodeStubAssembler(state_).Return(tmp0);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=213&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=218&c=1
 TNode<Object> TryToPrimitiveMethod_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input, TNode<String> p_name, compiler::CodeAssemblerLabel* label_Continue) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -938,6 +963,23 @@ TF_BUILTIN(OrdinaryToPrimitive_Number, CodeStubAssembler) {
   TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kInput);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number_Inline), parameter0, parameter1);
+    CodeStubAssembler(state_).Return(tmp0);
+  }
+}
+
+TF_BUILTIN(OrdinaryToPrimitive_Number_Inline, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kInput);
+  USE(parameter1);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -995,10 +1037,27 @@ TF_BUILTIN(OrdinaryToPrimitive_String, CodeStubAssembler) {
   TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kInput);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = OrdinaryToPrimitive_String_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    CodeStubAssembler(state_).Return(tmp0);
+  }
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=255&c=1
+TNode<Object> OrdinaryToPrimitive_String_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
@@ -1007,42 +1066,51 @@ TF_BUILTIN(OrdinaryToPrimitive_String, CodeStubAssembler) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).ToStringStringConstant();
     compiler::CodeAssemblerLabel label2(&ca_);
-    tmp1 = TryToPrimitiveMethod_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0}, &label2);
-    ca_.Goto(&block5);
+    tmp1 = TryToPrimitiveMethod_0(state_, TNode<Context>{p_context}, TNode<Object>{p_input}, TNode<String>{tmp0}, &label2);
+    ca_.Goto(&block6);
     if (label2.is_used()) {
       ca_.Bind(&label2);
-      ca_.Goto(&block6);
+      ca_.Goto(&block7);
     }
   }
 
   TNode<String> tmp3;
   TNode<Object> tmp4;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
     tmp3 = CodeStubAssembler(state_).ValueOfStringConstant();
     compiler::CodeAssemblerLabel label5(&ca_);
-    tmp4 = TryToPrimitiveMethod_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp3}, &label5);
-    ca_.Goto(&block7);
+    tmp4 = TryToPrimitiveMethod_0(state_, TNode<Context>{p_context}, TNode<Object>{p_input}, TNode<String>{tmp3}, &label5);
+    ca_.Goto(&block8);
     if (label5.is_used()) {
       ca_.Bind(&label5);
-      ca_.Goto(&block8);
+      ca_.Goto(&block9);
     }
   }
 
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    CodeStubAssembler(state_).Return(tmp1);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block1, tmp1);
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kCannotConvertToPrimitive);
   }
 
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCannotConvertToPrimitive);
+    ca_.Goto(&block1, tmp4);
   }
 
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    CodeStubAssembler(state_).Return(tmp4);
+  TNode<Object> phi_bb1_2;
+  if (block1.is_used()) {
+    ca_.Bind(&block1, &phi_bb1_2);
+    ca_.Goto(&block10);
   }
+
+    ca_.Bind(&block10);
+  return TNode<Object>{phi_bb1_2};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=103&c=7

@@ -1,10 +1,10 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSloppyArgumentsElementsMappedEntries(SloppyArgumentsElements p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=296&c=1
 inline intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -13,7 +13,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(Integer
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_OR_TheHole_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSloppyArgumentsElementsMappedEntries
@@ -47,7 +47,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSloppyArgumentsElement
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -65,7 +65,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=296&c=1
 intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -121,7 +121,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_OR_TheHole_0
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -146,11 +146,6 @@ template<class D, class P>
 inline TorqueGeneratedJSArgumentsObject<D, P>::TorqueGeneratedJSArgumentsObject(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSArgumentsObject_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSArgumentsObject<D, P>::TorqueGeneratedJSArgumentsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArgumentsObject_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
 template<class D, class P>
@@ -211,11 +206,6 @@ inline TorqueGeneratedJSSloppyArgumentsObject<D, P>::TorqueGeneratedJSSloppyArgu
     : P(ptr) {
   SLOW_DCHECK(IsJSArgumentsObject_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSSloppyArgumentsObject<D, P>::TorqueGeneratedJSSloppyArgumentsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArgumentsObject_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
 template<class D, class P>
 Object TorqueGeneratedJSStrictArgumentsObject<D, P>::length() const {
@@ -250,11 +240,6 @@ template<class D, class P>
 inline TorqueGeneratedJSStrictArgumentsObject<D, P>::TorqueGeneratedJSStrictArgumentsObject(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSArgumentsObject_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSStrictArgumentsObject<D, P>::TorqueGeneratedJSStrictArgumentsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSArgumentsObject_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
 template<class D, class P>
@@ -345,11 +330,6 @@ inline TorqueGeneratedSloppyArgumentsElements<D, P>::TorqueGeneratedSloppyArgume
     : P(ptr) {
   SLOW_DCHECK(IsSloppyArgumentsElements_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedSloppyArgumentsElements<D, P>::TorqueGeneratedSloppyArgumentsElements(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsSloppyArgumentsElements_NonInline(*this));
-}
 TQ_OBJECT_CONSTRUCTORS_IMPL(SloppyArgumentsElements)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=92&c=3
 template<class D, class P>
@@ -375,9 +355,4 @@ template<class D, class P>
 inline TorqueGeneratedAliasedArgumentsEntry<D, P>::TorqueGeneratedAliasedArgumentsEntry(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsAliasedArgumentsEntry_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedAliasedArgumentsEntry<D, P>::TorqueGeneratedAliasedArgumentsEntry(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAliasedArgumentsEntry_NonInline(*this));
 }

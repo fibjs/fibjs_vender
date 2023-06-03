@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-tq-csa.h"
@@ -83,7 +86,7 @@ TNode<Smi> kStoreSucceded_0(compiler::CodeAssemblerState* state_) {
   return TNode<Smi>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=100&c=1
-TNode<Smi> kStoreFailureArrayDetached_0(compiler::CodeAssemblerState* state_) {
+TNode<Smi> kStoreFailureArrayDetachedOrOutOfBounds_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -930,7 +933,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int32Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1012,7 +1015,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float32Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1094,7 +1097,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float64Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1176,7 +1179,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint8ClampedElements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1258,7 +1261,7 @@ TF_BUILTIN(StoreTypedElementJSAny_BigUint64Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1340,7 +1343,7 @@ TF_BUILTIN(StoreTypedElementJSAny_BigInt64Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1422,7 +1425,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint8Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1504,7 +1507,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int8Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1586,7 +1589,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint16Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1668,7 +1671,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int16Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 
@@ -1750,7 +1753,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint32Elements_0, CodeStubAssembler) {
   TNode<Smi> tmp1;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp1 = kStoreFailureArrayDetached_0(state_);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
     CodeStubAssembler(state_).Return(tmp1);
   }
 

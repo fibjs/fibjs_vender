@@ -52,9 +52,6 @@ class TorqueGeneratedJSArgumentsObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSArgumentsObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSArgumentsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=17&c=1
@@ -120,9 +117,6 @@ class TorqueGeneratedJSSloppyArgumentsObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSSloppyArgumentsObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSSloppyArgumentsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=23&c=1
@@ -177,9 +171,6 @@ class TorqueGeneratedJSStrictArgumentsObject : public P {
 
  protected:
   inline explicit TorqueGeneratedJSStrictArgumentsObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSStrictArgumentsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSloppyArgumentsElements() that avoids inlining.
@@ -274,9 +265,6 @@ class TorqueGeneratedSloppyArgumentsElements : public P {
 
  protected:
   inline explicit TorqueGeneratedSloppyArgumentsElements(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSloppyArgumentsElements(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class SloppyArgumentsElements : public TorqueGeneratedSloppyArgumentsElements<SloppyArgumentsElements, FixedArrayBase> {
@@ -355,8 +343,5 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
 
  protected:
   inline explicit TorqueGeneratedAliasedArgumentsEntry(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAliasedArgumentsEntry(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

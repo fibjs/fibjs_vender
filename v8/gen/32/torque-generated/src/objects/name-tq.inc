@@ -55,9 +55,6 @@ class TorqueGeneratedName : public P {
 
  protected:
   inline explicit TorqueGeneratedName(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedName(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSymbol() that avoids inlining.
@@ -141,8 +138,5 @@ class TorqueGeneratedSymbol : public P {
 
  protected:
   inline explicit TorqueGeneratedSymbol(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSymbol(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

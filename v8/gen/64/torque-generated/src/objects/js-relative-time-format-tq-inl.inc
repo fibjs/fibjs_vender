@@ -95,8 +95,3 @@ inline TorqueGeneratedJSRelativeTimeFormat<D, P>::TorqueGeneratedJSRelativeTimeF
     : P(ptr) {
   SLOW_DCHECK(IsJSRelativeTimeFormat_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSRelativeTimeFormat<D, P>::TorqueGeneratedJSRelativeTimeFormat(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSRelativeTimeFormat_NonInline(*this));
-}

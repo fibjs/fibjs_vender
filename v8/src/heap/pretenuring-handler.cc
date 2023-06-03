@@ -4,7 +4,9 @@
 
 #include "src/heap/pretenuring-handler.h"
 
+#include "src/common/globals.h"
 #include "src/execution/isolate.h"
+#include "src/flags/flags.h"
 #include "src/handles/global-handles-inl.h"
 #include "src/heap/new-spaces.h"
 #include "src/objects/allocation-site-inl.h"
@@ -12,12 +14,12 @@
 namespace v8 {
 namespace internal {
 
-PretenturingHandler::PretenturingHandler(Heap* heap)
+PretenuringHandler::PretenuringHandler(Heap* heap)
     : heap_(heap), global_pretenuring_feedback_(kInitialFeedbackCapacity) {}
 
-PretenturingHandler::~PretenturingHandler() = default;
+PretenuringHandler::~PretenuringHandler() = default;
 
-void PretenturingHandler::MergeAllocationSitePretenuringFeedback(
+void PretenuringHandler::MergeAllocationSitePretenuringFeedback(
     const PretenuringFeedbackMap& local_pretenuring_feedback) {
   PtrComprCageBase cage_base(heap_->isolate());
   AllocationSite site;
@@ -25,7 +27,7 @@ void PretenturingHandler::MergeAllocationSitePretenuringFeedback(
     site = site_and_count.first;
     MapWord map_word = site.map_word(cage_base, kRelaxedLoad);
     if (map_word.IsForwardingAddress()) {
-      site = AllocationSite::cast(map_word.ToForwardingAddress());
+      site = AllocationSite::cast(map_word.ToForwardingAddress(site));
     }
 
     // We have not validated the allocation site yet, since we have not
@@ -42,11 +44,16 @@ void PretenturingHandler::MergeAllocationSitePretenuringFeedback(
   }
 }
 
+bool PretenuringHandler::DeoptMaybeTenuredAllocationSites() const {
+  return heap_->IsNewSpaceCapacityAbovePretenuringThreshold() &&
+         !heap_->MinorGCAbovePretenuringThreshold();
+}
+
 namespace {
 
 inline bool MakePretenureDecision(
     AllocationSite site, AllocationSite::PretenureDecision current_decision,
-    double ratio, bool maximum_size_scavenge) {
+    double ratio, bool minor_gc_above_pretenuring_threshold) {
   // Here we just allow state transitions from undecided or maybe tenure
   // to don't tenure, maybe tenure, or tenure.
   if ((current_decision == AllocationSite::kUndecided ||
@@ -54,7 +61,7 @@ inline bool MakePretenureDecision(
     if (ratio >= AllocationSite::kPretenureRatio) {
       // We just transition into tenure state when the semi-space was at
       // maximum capacity.
-      if (maximum_size_scavenge) {
+      if (minor_gc_above_pretenuring_threshold) {
         site.set_deopt_dependent_code(true);
         site.set_pretenure_decision(AllocationSite::kTenure);
         // Currently we just need to deopt when we make a state transition to
@@ -75,8 +82,9 @@ inline void ResetPretenuringFeedback(AllocationSite site) {
   site.set_memento_create_count(0);
 }
 
-inline bool DigestPretenuringFeedback(Isolate* isolate, AllocationSite site,
-                                      bool maximum_size_scavenge) {
+inline bool DigestPretenuringFeedback(
+    Isolate* isolate, AllocationSite site,
+    bool minor_gc_above_pretenuring_threshold) {
   bool deopt = false;
   int create_count = site.memento_create_count();
   int found_count = site.memento_found_count();
@@ -91,7 +99,7 @@ inline bool DigestPretenuringFeedback(Isolate* isolate, AllocationSite site,
 
   if (minimum_mementos_created) {
     deopt = MakePretenureDecision(site, current_decision, ratio,
-                                  maximum_size_scavenge);
+                                  minor_gc_above_pretenuring_threshold);
   }
 
   if (v8_flags.trace_pretenuring_statistics) {
@@ -133,12 +141,12 @@ bool PretenureAllocationSiteManually(Isolate* isolate, AllocationSite site) {
 
 }  // namespace
 
-void PretenturingHandler::RemoveAllocationSitePretenuringFeedback(
+void PretenuringHandler::RemoveAllocationSitePretenuringFeedback(
     AllocationSite site) {
   global_pretenuring_feedback_.erase(site);
 }
 
-void PretenturingHandler::ProcessPretenuringFeedback() {
+void PretenuringHandler::ProcessPretenuringFeedback() {
   bool trigger_deoptimization = false;
   if (v8_flags.allocation_site_pretenuring) {
     int tenure_decisions = 0;
@@ -150,7 +158,8 @@ void PretenturingHandler::ProcessPretenuringFeedback() {
     AllocationSite site;
 
     // Step 1: Digest feedback for recorded allocation sites.
-    bool maximum_size_scavenge = heap_->MaximumSizeMinorGC();
+    bool minor_gc_above_pretenuring_threshold =
+        heap_->MinorGCAbovePretenuringThreshold();
     for (auto& site_and_count : global_pretenuring_feedback_) {
       allocation_sites++;
       site = site_and_count.first;
@@ -165,7 +174,7 @@ void PretenturingHandler::ProcessPretenuringFeedback() {
         active_allocation_sites++;
         allocation_mementos_found += found_count;
         if (DigestPretenuringFeedback(heap_->isolate(), site,
-                                      maximum_size_scavenge)) {
+                                      minor_gc_above_pretenuring_threshold)) {
           trigger_deoptimization = true;
         }
         if (site.GetAllocationType() == AllocationType::kOld) {
@@ -187,17 +196,20 @@ void PretenturingHandler::ProcessPretenuringFeedback() {
       allocation_sites_to_pretenure_.reset();
     }
 
-    // Step 3: Deopt maybe tenured allocation sites.
-    heap_->ForeachAllocationSite(
-        heap_->allocation_sites_list(),
-        [&allocation_sites, &trigger_deoptimization](AllocationSite site) {
-          DCHECK(site.IsAllocationSite());
-          allocation_sites++;
-          if (site.IsMaybeTenure()) {
-            site.set_deopt_dependent_code(true);
-            trigger_deoptimization = true;
-          }
-        });
+    // Step 3: Deopt maybe tenured allocation sites if necessary.
+    bool deopt_maybe_tenured = DeoptMaybeTenuredAllocationSites();
+    if (deopt_maybe_tenured) {
+      heap_->ForeachAllocationSite(
+          heap_->allocation_sites_list(),
+          [&allocation_sites, &trigger_deoptimization](AllocationSite site) {
+            DCHECK(site.IsAllocationSite());
+            allocation_sites++;
+            if (site.IsMaybeTenure()) {
+              site.set_deopt_dependent_code(true);
+              trigger_deoptimization = true;
+            }
+          });
+    }
 
     if (trigger_deoptimization) {
       heap_->isolate()->stack_guard()->RequestDeoptMarkedAllocationSites();
@@ -207,12 +219,12 @@ void PretenturingHandler::ProcessPretenuringFeedback() {
         (allocation_mementos_found > 0 || tenure_decisions > 0 ||
          dont_tenure_decisions > 0)) {
       PrintIsolate(heap_->isolate(),
-                   "pretenuring: visited_sites=%d "
+                   "pretenuring: deopt_maybe_tenured=%d visited_sites=%d "
                    "active_sites=%d "
                    "mementos=%d tenured=%d not_tenured=%d\n",
-                   allocation_sites, active_allocation_sites,
-                   allocation_mementos_found, tenure_decisions,
-                   dont_tenure_decisions);
+                   deopt_maybe_tenured ? 1 : 0, allocation_sites,
+                   active_allocation_sites, allocation_mementos_found,
+                   tenure_decisions, dont_tenure_decisions);
     }
 
     global_pretenuring_feedback_.clear();
@@ -220,7 +232,7 @@ void PretenturingHandler::ProcessPretenuringFeedback() {
   }
 }
 
-void PretenturingHandler::PretenureAllocationSiteOnNextCollection(
+void PretenuringHandler::PretenureAllocationSiteOnNextCollection(
     AllocationSite site) {
   if (!allocation_sites_to_pretenure_) {
     allocation_sites_to_pretenure_.reset(
@@ -229,7 +241,7 @@ void PretenturingHandler::PretenureAllocationSiteOnNextCollection(
   allocation_sites_to_pretenure_->Push(site);
 }
 
-void PretenturingHandler::reset() { allocation_sites_to_pretenure_.reset(); }
+void PretenuringHandler::reset() { allocation_sites_to_pretenure_.reset(); }
 
 }  // namespace internal
 }  // namespace v8

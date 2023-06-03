@@ -693,10 +693,11 @@ void CallOrConstructBuiltinsAssembler::CallFunctionTemplate(
     GotoIfNot(IsSetWord32<Map::Bits1::IsAccessCheckNeededBit>(
                   LoadMapBitField(receiver_map)),
               &receiver_done);
-    TNode<IntPtrT> function_template_info_flags = LoadAndUntagObjectField(
-        function_template_info, FunctionTemplateInfo::kFlagOffset);
-    Branch(IsSetWord(function_template_info_flags,
-                     1 << FunctionTemplateInfo::AcceptAnyReceiverBit::kShift),
+    TNode<Int32T> function_template_info_flags =
+        LoadAndUntagToWord32ObjectField(function_template_info,
+                                        FunctionTemplateInfo::kFlagOffset);
+    Branch(IsSetWord32<FunctionTemplateInfo::AcceptAnyReceiverBit>(
+               function_template_info_flags),
            &receiver_done, &receiver_needs_access_check);
 
     BIND(&receiver_needs_access_check);
@@ -737,7 +738,8 @@ void CallOrConstructBuiltinsAssembler::CallFunctionTemplate(
   TNode<Object> call_data =
       LoadObjectField<Object>(call_handler_info, CallHandlerInfo::kDataOffset);
   TailCallStub(CodeFactory::CallApiCallback(isolate()), context, callback,
-               args.GetLengthWithoutReceiver(), call_data, holder);
+               TruncateIntPtrToInt32(args.GetLengthWithoutReceiver()),
+               call_data, holder);
 }
 
 TF_BUILTIN(CallFunctionTemplate_CheckAccess, CallOrConstructBuiltinsAssembler) {

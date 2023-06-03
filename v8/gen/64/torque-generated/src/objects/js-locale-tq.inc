@@ -58,8 +58,5 @@ class TorqueGeneratedJSLocale : public P {
 
  protected:
   inline explicit TorqueGeneratedJSLocale(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSLocale(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

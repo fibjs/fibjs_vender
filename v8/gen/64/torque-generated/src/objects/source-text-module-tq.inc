@@ -168,9 +168,6 @@ class TorqueGeneratedSourceTextModule : public P {
 
  protected:
   inline explicit TorqueGeneratedSourceTextModule(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSourceTextModule(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsModuleRequest() that avoids inlining.
@@ -263,9 +260,6 @@ class TorqueGeneratedModuleRequest : public P {
 
  protected:
   inline explicit TorqueGeneratedModuleRequest(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedModuleRequest(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsSourceTextModuleInfoEntry() that avoids inlining.
@@ -395,8 +389,5 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
 
  protected:
   inline explicit TorqueGeneratedSourceTextModuleInfoEntry(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSourceTextModuleInfoEntry(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

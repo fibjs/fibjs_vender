@@ -57,11 +57,6 @@ inline TorqueGeneratedJSProxy<D, P>::TorqueGeneratedJSProxy(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSProxy_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSProxy<D, P>::TorqueGeneratedJSProxy(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSProxy_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
 template<class D, class P>
 Object TorqueGeneratedJSProxyRevocableResult<D, P>::proxy() const {
@@ -120,9 +115,4 @@ template<class D, class P>
 inline TorqueGeneratedJSProxyRevocableResult<D, P>::TorqueGeneratedJSProxyRevocableResult(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSObject_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSProxyRevocableResult<D, P>::TorqueGeneratedJSProxyRevocableResult(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSObject_NonInline(*this));
 }

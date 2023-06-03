@@ -9,11 +9,6 @@ inline TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<D, P>::TorqueGe
     : P(ptr) {
   SLOW_DCHECK(IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<D, P>::TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=33&c=3
 template<class D, class P>
 SharedFunctionInfo TorqueGeneratedJSFunction<D, P>::shared_function_info() const {
@@ -86,14 +81,14 @@ void TorqueGeneratedJSFunction<D, P>::set_feedback_cell(FeedbackCell value, Writ
   CONDITIONAL_WRITE_BARRIER(*this, kFeedbackCellOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
 template<class D, class P>
 Code TorqueGeneratedJSFunction<D, P>::code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSFunction::code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
 template<class D, class P>
 Code TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
   Code value;
@@ -102,7 +97,7 @@ Code TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=34
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
 template<class D, class P>
 void TorqueGeneratedJSFunction<D, P>::set_code(Code value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsCode());
@@ -110,14 +105,14 @@ void TorqueGeneratedJSFunction<D, P>::set_code(Code value, WriteBarrierMode mode
   CONDITIONAL_WRITE_BARRIER(*this, kCodeOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSFunction::prototype_or_initial_map(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 template<class D, class P>
 HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map(PtrComprCageBase cage_base) const {
   HeapObject value;
@@ -126,7 +121,7 @@ HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map(PtrComprCag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 template<class D, class P>
 void TorqueGeneratedJSFunction<D, P>::set_prototype_or_initial_map(HeapObject value, WriteBarrierMode mode) {
   SLOW_DCHECK(value.IsJSReceiver() || value.IsMap());
@@ -144,11 +139,6 @@ template<class D, class P>
 inline TorqueGeneratedJSFunction<D, P>::TorqueGeneratedJSFunction(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSFunction_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSFunction<D, P>::TorqueGeneratedJSFunction(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSFunction_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=12&c=3
 template<class D, class P>
@@ -233,11 +223,6 @@ inline TorqueGeneratedJSBoundFunction<D, P>::TorqueGeneratedJSBoundFunction(Addr
     : P(ptr) {
   SLOW_DCHECK(IsJSBoundFunction_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSBoundFunction<D, P>::TorqueGeneratedJSBoundFunction(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSBoundFunction_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=24&c=3
 template<class D, class P>
 JSReceiver TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_function() const {
@@ -296,9 +281,4 @@ template<class D, class P>
 inline TorqueGeneratedJSWrappedFunction<D, P>::TorqueGeneratedJSWrappedFunction(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSWrappedFunction_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSWrappedFunction<D, P>::TorqueGeneratedJSWrappedFunction(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSWrappedFunction_NonInline(*this));
 }

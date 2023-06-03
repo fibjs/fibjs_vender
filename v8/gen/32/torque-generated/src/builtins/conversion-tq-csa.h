@@ -12,8 +12,14 @@ TNode<Object> TryGetExoticToPrimitive_0(compiler::CodeAssemblerState* state_, TN
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=169&c=1
 TNode<Object> CallExoticToPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input, TNode<Object> p_exoticToPrimitive, TNode<String> p_hint);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=213&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=203&c=1
+TNode<Object> NonPrimitiveToPrimitive_String_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_input);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=218&c=1
 TNode<Object> TryToPrimitiveMethod_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input, TNode<String> p_name, compiler::CodeAssemblerLabel* label_Continue);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=255&c=1
+TNode<Object> OrdinaryToPrimitive_String_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=103&c=7
 TNode<Name> Cast_Name_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);

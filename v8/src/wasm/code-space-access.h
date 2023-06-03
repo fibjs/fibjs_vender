@@ -1,4 +1,3 @@
-#include <exlib/include/fbTls.h>
 // Copyright 2020 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -42,7 +41,7 @@ class NativeModule;
 // permissions for all code pages.
 class V8_NODISCARD CodeSpaceWriteScope final {
  public:
-  explicit V8_EXPORT_PRIVATE CodeSpaceWriteScope(NativeModule*);
+  explicit V8_EXPORT_PRIVATE CodeSpaceWriteScope();
   V8_EXPORT_PRIVATE ~CodeSpaceWriteScope();
 
   // Disable copy constructor and copy-assignment operator, since this manages
@@ -50,27 +49,9 @@ class V8_NODISCARD CodeSpaceWriteScope final {
   CodeSpaceWriteScope(const CodeSpaceWriteScope&) = delete;
   CodeSpaceWriteScope& operator=(const CodeSpaceWriteScope&) = delete;
 
-  static bool IsInScope() { return current_native_module_ != nullptr; }
-
  private:
-  // The M1 implementation knows implicitly from the {MAP_JIT} flag during
-  // allocation which region to switch permissions for. On non-M1 hardware
-  // without memory protection key support, we need the code space from the
-  // {NativeModule}.
-static exlib::fiber_local<NativeModule*> current_native_module_;
-
-  // {SetWritable} and {SetExecutable} implicitly operate on
-  // {current_native_module_} (for mprotect-based protection).
   static void SetWritable();
   static void SetExecutable();
-
-  // Returns {true} if switching permissions happens on a per-module level, and
-  // not globally (like for MAP_JIT and PKU).
-  static bool SwitchingPerNativeModule();
-
-  // Save the previous module to put it back in {current_native_module_} when
-  // exiting this scope.
-  NativeModule* const previous_native_module_;
 };
 
 }  // namespace v8::internal::wasm

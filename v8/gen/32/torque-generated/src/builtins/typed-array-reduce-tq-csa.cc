@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-reduce-tq-csa.h"
@@ -203,7 +206,7 @@ tmp9 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Callab
   TNode<Object> phi_bb6_8;
   TNode<UintPtrT> phi_bb6_9;
   TNode<Object> phi_bb6_10;
-  TNode<Oddball> tmp11;
+  TNode<HeapObject> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_6, &phi_bb6_8, &phi_bb6_9, &phi_bb6_10);
     compiler::CodeAssemblerLabel label12(&ca_);
@@ -254,7 +257,7 @@ tmp9 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Callab
   TNode<JSTypedArray> phi_bb3_6;
   TNode<Object> phi_bb3_8;
   TNode<UintPtrT> phi_bb3_9;
-  TNode<Oddball> tmp18;
+  TNode<HeapObject> tmp18;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_6, &phi_bb3_8, &phi_bb3_9);
     compiler::CodeAssemblerLabel label19(&ca_);
@@ -389,7 +392,7 @@ TF_BUILTIN(TypedArrayPrototypeReduce, CodeStubAssembler) {
     ca_.Goto(&block15, tmp14);
   }
 
-  TNode<Oddball> tmp15;
+  TNode<HeapObject> tmp15;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp15 = TheHole_0(state_);

@@ -42,7 +42,8 @@ namespace internal {
   using IsConstructorBit = base::BitField<bool, 3, 1, uint32_t>; \
   using IsAsmJsAtNumberConversionBit = base::BitField<bool, 4, 1, uint32_t>; \
   using IsAsyncBit = base::BitField<bool, 5, 1, uint32_t>; \
-  using IsSourcePositionComputedBit = base::BitField<bool, 6, 1, uint32_t>; \
+  using IsBuiltinBit = base::BitField<bool, 6, 1, uint32_t>; \
+  using IsSourcePositionComputedBit = base::BitField<bool, 7, 1, uint32_t>; \
   enum Flag: uint32_t { \
     kNone = 0, \
     kIsWasm = uint32_t{1} << 0, \
@@ -51,10 +52,11 @@ namespace internal {
     kIsConstructor = uint32_t{1} << 3, \
     kIsAsmJsAtNumberConversion = uint32_t{1} << 4, \
     kIsAsync = uint32_t{1} << 5, \
-    kIsSourcePositionComputed = uint32_t{1} << 6, \
+    kIsBuiltin = uint32_t{1} << 6, \
+    kIsSourcePositionComputed = uint32_t{1} << 7, \
   }; \
   using Flags = base::Flags<Flag>; \
-  static constexpr int kFlagCount = 7; \
+  static constexpr int kFlagCount = 8; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=17&c=1
 #define DEFINE_TORQUE_GENERATED_DEBUG_INFO_FLAGS() \
@@ -266,7 +268,7 @@ namespace internal {
   using IsUnstableBit = base::BitField<bool, 25, 1, uint32_t>; \
   using IsMigrationTargetBit = base::BitField<bool, 26, 1, uint32_t>; \
   using IsExtensibleBit = base::BitField<bool, 27, 1, uint32_t>; \
-  using MayHaveInterestingSymbolsBit = base::BitField<bool, 28, 1, uint32_t>; \
+  using MayHaveInterestingPropertiesBit = base::BitField<bool, 28, 1, uint32_t>; \
   using ConstructionCounterBits = base::BitField<int32_t, 29, 3, uint32_t>; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=10&c=1
@@ -331,7 +333,7 @@ namespace internal {
   using Flags = base::Flags<Flag>; \
   static constexpr int kFlagCount = 1; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=54&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=55&c=1
 #define DEFINE_TORQUE_GENERATED_SCOPE_FLAGS() \
   using ScopeTypeBits = base::BitField<ScopeType, 0, 4, uint32_t>; \
   using SloppyEvalCanExtendVarsBit = base::BitField<bool, 4, 1, uint32_t>; \
@@ -355,7 +357,7 @@ namespace internal {
   using HasLocalsBlockListBit = base::BitField<bool, 28, 1, uint32_t>; \
   using IsEmptyBit = base::BitField<bool, 29, 1, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=93&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=94&c=1
 #define DEFINE_TORQUE_GENERATED_VARIABLE_PROPERTIES() \
   using VariableModeBits = base::BitField<VariableMode, 0, 4, uint32_t>; \
   using InitFlagBit = base::BitField<InitializationFlag, 4, 1, uint32_t>; \
@@ -370,8 +372,9 @@ namespace internal {
   using IsReplModeBit = base::BitField<bool, 2, 1, uint32_t>; \
   using OriginOptionsBits = base::BitField<int32_t, 3, 4, uint32_t>; \
   using BreakOnEntryBit = base::BitField<bool, 7, 1, uint32_t>; \
+  using ProduceCompileHintsBit = base::BitField<bool, 8, 1, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=21&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=20&c=1
 #define DEFINE_TORQUE_GENERATED_SHARED_FUNCTION_INFO_FLAGS() \
   using FunctionKindBits = base::BitField<FunctionKind, 0, 5, uint32_t>; \
   using IsNativeBit = base::BitField<bool, 5, 1, uint32_t>; \
@@ -391,7 +394,7 @@ namespace internal {
   using PropertiesAreFinalBit = base::BitField<bool, 28, 1, uint32_t>; \
   using PrivateNameLookupSkipsOuterClassBit = base::BitField<bool, 29, 1, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=42&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=41&c=1
 #define DEFINE_TORQUE_GENERATED_SHARED_FUNCTION_INFO_FLAGS2() \
   using ClassScopeHasPrivateBrandBit = base::BitField<bool, 0, 1, uint8_t>; \
   using HasStaticPrivateMethodsOrAccessorsBit = base::BitField<bool, 1, 1, uint8_t>; \
@@ -414,7 +417,7 @@ namespace internal {
   using AsyncBit = base::BitField<bool, 0, 1, uint32_t>; \
   using AsyncEvaluatingOrdinalBits = base::BitField<uint32_t, 1, 30, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=30&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=65&c=1
 #define DEFINE_TORQUE_GENERATED_STRING_INSTANCE_TYPE() \
   using RepresentationBits = base::BitField<StringRepresentationTag, 0, 3, uint16_t>; \
   using IsOneByteBit = base::BitField<bool, 3, 1, uint16_t>; \
@@ -522,6 +525,12 @@ namespace internal {
   }; \
   using Flags = base::Flags<Flag>; \
   static constexpr int kFlagCount = 2; \
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=7&c=1
+#define DEFINE_TORQUE_GENERATED_TURBOSHAFT_FLOAT_SPECIAL_VALUES() \
+  using NanBit = base::BitField<bool, 0, 1, uint32_t>; \
+  using MinusZeroBit = base::BitField<bool, 1, 1, uint32_t>; \
+  using UnusedBits = base::BitField<uint32_t, 2, 30, uint32_t>; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1051&c=1
 #define DEFINE_TORQUE_GENERATED_TEST_BIT_FIELD_STRUCT() \

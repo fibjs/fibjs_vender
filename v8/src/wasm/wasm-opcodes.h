@@ -24,10 +24,9 @@ namespace wasm {
 class WasmFeatures;
 struct WasmModule;
 
-std::ostream& operator<<(std::ostream& os, const FunctionSig& function);
-bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
-                                               const WasmModule* module,
-                                               const WasmFeatures&);
+V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+                                           const FunctionSig& function);
+V8_EXPORT_PRIVATE bool IsJSCompatibleSignature(const FunctionSig* sig);
 
 // Format of all opcode macros: kExprName, binary, signature, wat name
 
@@ -62,7 +61,6 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
   V(ReturnCallIndirect, 0x13, _, "return_call_indirect")                     \
   V(CallRef, 0x14, _, "call_ref")              /* typed_funcref prototype */ \
   V(ReturnCallRef, 0x15, _, "return_call_ref") /* typed_funcref prototype */ \
-  V(CallRefDeprecated, 0x17, _, "call_ref")    /* temporary, for compat.*/   \
   V(Drop, 0x1a, _, "drop")                                                   \
   V(Select, 0x1b, _, "select")                                               \
   V(SelectWithType, 0x1c, _, "select")                                       \
@@ -695,15 +693,16 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
   V(ArrayGetS, 0xfb14, _, "array.get_s")                                       \
   V(ArrayGetU, 0xfb15, _, "array.get_u")                                       \
   V(ArraySet, 0xfb16, _, "array.set")                                          \
-  V(ArrayLenDeprecated, 0xfb17, _, "array.len")                                \
-  V(ArrayCopy, 0xfb18, _,                                                      \
-    "array.copy") /* not standardized - V8 experimental */                     \
+  V(ArrayCopy, 0xfb18, _, "array.copy")                                        \
   V(ArrayLen, 0xfb19, _, "array.len")                                          \
   V(ArrayNewFixed, 0xfb1a, _, "array.new_fixed")                               \
   V(ArrayNew, 0xfb1b, _, "array.new")                                          \
   V(ArrayNewDefault, 0xfb1c, _, "array.new_default")                           \
   V(ArrayNewData, 0xfb1d, _, "array.new_data")                                 \
   V(ArrayNewElem, 0xfb1f, _, "array.new_elem")                                 \
+  V(ArrayFill, 0xfb0f, _, "array.fill")                                        \
+  V(ArrayInitData, 0xfb54, _, "array.init_data")                               \
+  V(ArrayInitElem, 0xfb55, _, "array.init_elem")                               \
   V(I31New, 0xfb20, _, "i31.new")                                              \
   V(I31GetS, 0xfb21, _, "i31.get_s")                                           \
   V(I31GetU, 0xfb22, _, "i31.get_u")                                           \
@@ -713,8 +712,14 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
   V(RefCast, 0xfb41, _, "ref.cast")                                            \
   V(RefCastNull, 0xfb49, _, "ref.cast null")                                   \
   V(RefCastDeprecated, 0xfb45, _, "ref.cast")                                  \
-  V(BrOnCast, 0xfb46, _, "br_on_cast")                                         \
-  V(BrOnCastFail, 0xfb47, _, "br_on_cast_fail")                                \
+  V(BrOnCast, 0xfb42, _, "br_on_cast")                                         \
+  V(BrOnCastNull, 0xfb4a, _, "br_on_cast null")                                \
+  V(BrOnCastDeprecated, 0xfb46, _, "br_on_cast")                               \
+  V(BrOnCastFail, 0xfb43, _, "br_on_cast_fail")                                \
+  V(BrOnCastFailNull, 0xfb4b, _, "br_on_cast_fail null")                       \
+  V(BrOnCastFailDeprecated, 0xfb47, _, "br_on_cast_fail")                      \
+  V(BrOnCastGeneric, 0xfb4e, _, "br_on_cast")                                  \
+  V(BrOnCastFailGeneric, 0xfb4f, _, "br_on_cast_fail")                         \
   V(RefCastNop, 0xfb4c, _, "ref.cast_nop")                                     \
   V(RefIsStruct, 0xfb51, _, "ref.is_struct")                                   \
   V(RefIsI31, 0xfb52, _, "ref.is_i31")                                         \
@@ -745,6 +750,7 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
   V(StringNewWtf8, 0xfb8c, _, "string.new_wtf8")                               \
   V(StringEncodeLossyUtf8, 0xfb8d, _, "string.encode_lossy_utf8")              \
   V(StringEncodeWtf8, 0xfb8e, _, "string.encode_wtf8")                         \
+  V(StringNewUtf8Try, 0xfb8f, _, "string.new_utf8_try")                        \
   V(StringAsWtf8, 0xfb90, _, "string.as_wtf8")                                 \
   V(StringViewWtf8Advance, 0xfb91, _, "stringview_wtf8.advance")               \
   V(StringViewWtf8EncodeUtf8, 0xfb92, _, "stringview_wtf8.encode_utf8")        \
@@ -762,6 +768,9 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
   V(StringViewIterAdvance, 0xfba2, _, "stringview_iter.advance")               \
   V(StringViewIterRewind, 0xfba3, _, "stringview_iter.rewind")                 \
   V(StringViewIterSlice, 0xfba4, _, "stringview_iter.slice")                   \
+  V(StringCompare, 0xfba8, _, "string.compare")                                \
+  V(StringFromCodePoint, 0xfba9, _, "string.from_code_point")                  \
+  V(StringHash, 0xfbaa, _, "string.hash")                                      \
   V(StringNewUtf8Array, 0xfbb0, _, "string.new_utf8_array")                    \
   V(StringNewWtf16Array, 0xfbb1, _, "string.new_wtf16_array")                  \
   V(StringEncodeUtf8Array, 0xfbb2, _, "string.encode_utf8_array")              \
@@ -769,7 +778,8 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
   V(StringNewLossyUtf8Array, 0xfbb4, _, "string.new_lossy_utf8_array")         \
   V(StringNewWtf8Array, 0xfbb5, _, "string.new_wtf8_array")                    \
   V(StringEncodeLossyUtf8Array, 0xfbb6, _, "string.encode_lossy_utf8_array")   \
-  V(StringEncodeWtf8Array, 0xfbb7, _, "string.encode_wtf8_array")
+  V(StringEncodeWtf8Array, 0xfbb7, _, "string.encode_wtf8_array")              \
+  V(StringNewUtf8ArrayTry, 0xfbb8, _, "string.new_utf8_array_try")
 
 // All opcodes.
 #define FOREACH_OPCODE(V)            \
@@ -790,47 +800,47 @@ bool V8_EXPORT_PRIVATE IsJSCompatibleSignature(const FunctionSig* sig,
 // All signatures.
 #define FOREACH_SIGNATURE(V)                        \
   FOREACH_SIMD_SIGNATURE(V)                         \
-  V(v_v, kWasmVoid)                                 \
-  V(i_ii, kWasmI32, kWasmI32, kWasmI32)             \
-  V(i_i, kWasmI32, kWasmI32)                        \
-  V(i_v, kWasmI32)                                  \
-  V(i_ff, kWasmI32, kWasmF32, kWasmF32)             \
-  V(i_f, kWasmI32, kWasmF32)                        \
-  V(i_dd, kWasmI32, kWasmF64, kWasmF64)             \
-  V(i_d, kWasmI32, kWasmF64)                        \
-  V(i_l, kWasmI32, kWasmI64)                        \
-  V(l_ll, kWasmI64, kWasmI64, kWasmI64)             \
-  V(i_ll, kWasmI32, kWasmI64, kWasmI64)             \
-  V(l_l, kWasmI64, kWasmI64)                        \
-  V(l_i, kWasmI64, kWasmI32)                        \
-  V(l_f, kWasmI64, kWasmF32)                        \
-  V(l_d, kWasmI64, kWasmF64)                        \
-  V(f_ff, kWasmF32, kWasmF32, kWasmF32)             \
-  V(f_f, kWasmF32, kWasmF32)                        \
-  V(f_d, kWasmF32, kWasmF64)                        \
-  V(f_i, kWasmF32, kWasmI32)                        \
-  V(f_l, kWasmF32, kWasmI64)                        \
-  V(d_dd, kWasmF64, kWasmF64, kWasmF64)             \
   V(d_d, kWasmF64, kWasmF64)                        \
+  V(d_dd, kWasmF64, kWasmF64, kWasmF64)             \
   V(d_f, kWasmF64, kWasmF32)                        \
   V(d_i, kWasmF64, kWasmI32)                        \
-  V(d_l, kWasmF64, kWasmI64)                        \
-  V(v_i, kWasmVoid, kWasmI32)                       \
-  V(v_ii, kWasmVoid, kWasmI32, kWasmI32)            \
-  V(v_id, kWasmVoid, kWasmI32, kWasmF64)            \
   V(d_id, kWasmF64, kWasmI32, kWasmF64)             \
-  V(v_if, kWasmVoid, kWasmI32, kWasmF32)            \
+  V(d_l, kWasmF64, kWasmI64)                        \
+  V(f_d, kWasmF32, kWasmF64)                        \
+  V(f_f, kWasmF32, kWasmF32)                        \
+  V(f_ff, kWasmF32, kWasmF32, kWasmF32)             \
+  V(f_i, kWasmF32, kWasmI32)                        \
   V(f_if, kWasmF32, kWasmI32, kWasmF32)             \
-  V(v_il, kWasmVoid, kWasmI32, kWasmI64)            \
-  V(l_il, kWasmI64, kWasmI32, kWasmI64)             \
-  V(v_iii, kWasmVoid, kWasmI32, kWasmI32, kWasmI32) \
-  V(i_iii, kWasmI32, kWasmI32, kWasmI32, kWasmI32)  \
-  V(l_ill, kWasmI64, kWasmI32, kWasmI64, kWasmI64)  \
-  V(i_iil, kWasmI32, kWasmI32, kWasmI32, kWasmI64)  \
-  V(i_ill, kWasmI32, kWasmI32, kWasmI64, kWasmI64)  \
+  V(f_l, kWasmF32, kWasmI64)                        \
   V(i_a, kWasmI32, kWasmAnyRef)                     \
   V(i_ci, kWasmI32, kWasmFuncRef, kWasmI32)         \
-  V(i_qq, kWasmI32, kWasmEqRef, kWasmEqRef)
+  V(i_d, kWasmI32, kWasmF64)                        \
+  V(i_dd, kWasmI32, kWasmF64, kWasmF64)             \
+  V(i_f, kWasmI32, kWasmF32)                        \
+  V(i_ff, kWasmI32, kWasmF32, kWasmF32)             \
+  V(i_i, kWasmI32, kWasmI32)                        \
+  V(i_ii, kWasmI32, kWasmI32, kWasmI32)             \
+  V(i_iii, kWasmI32, kWasmI32, kWasmI32, kWasmI32)  \
+  V(i_iil, kWasmI32, kWasmI32, kWasmI32, kWasmI64)  \
+  V(i_ill, kWasmI32, kWasmI32, kWasmI64, kWasmI64)  \
+  V(i_l, kWasmI32, kWasmI64)                        \
+  V(i_ll, kWasmI32, kWasmI64, kWasmI64)             \
+  V(i_qq, kWasmI32, kWasmEqRef, kWasmEqRef)         \
+  V(i_v, kWasmI32)                                  \
+  V(l_d, kWasmI64, kWasmF64)                        \
+  V(l_f, kWasmI64, kWasmF32)                        \
+  V(l_i, kWasmI64, kWasmI32)                        \
+  V(l_il, kWasmI64, kWasmI32, kWasmI64)             \
+  V(l_ill, kWasmI64, kWasmI32, kWasmI64, kWasmI64)  \
+  V(l_l, kWasmI64, kWasmI64)                        \
+  V(l_ll, kWasmI64, kWasmI64, kWasmI64)             \
+  V(v_id, kWasmVoid, kWasmI32, kWasmF64)            \
+  V(v_if, kWasmVoid, kWasmI32, kWasmF32)            \
+  V(v_i, kWasmVoid, kWasmI32)                       \
+  V(v_ii, kWasmVoid, kWasmI32, kWasmI32)            \
+  V(v_iii, kWasmVoid, kWasmI32, kWasmI32, kWasmI32) \
+  V(v_il, kWasmVoid, kWasmI32, kWasmI64)            \
+  V(v_v, kWasmVoid)
 
 #define FOREACH_SIMD_SIGNATURE(V)                      \
   V(s_s, kWasmS128, kWasmS128)                         \
@@ -905,7 +915,7 @@ class V8_EXPORT_PRIVATE WasmOpcodes {
   static constexpr TrapReason MessageIdToTrapReason(MessageTemplate message);
 
   // Extract the prefix byte (or 0x00) from a {WasmOpcode}.
-  static constexpr byte ExtractPrefix(WasmOpcode);
+  static constexpr uint8_t ExtractPrefix(WasmOpcode);
   static inline const char* TrapReasonMessage(TrapReason);
 };
 

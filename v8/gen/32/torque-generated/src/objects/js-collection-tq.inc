@@ -61,9 +61,6 @@ class TorqueGeneratedJSCollection : public P {
 
  protected:
   inline explicit TorqueGeneratedJSCollection(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSCollection(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSSet() that avoids inlining.
@@ -115,9 +112,6 @@ class TorqueGeneratedJSSet : public P {
 
  protected:
   inline explicit TorqueGeneratedJSSet(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSSet(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSMap() that avoids inlining.
@@ -169,9 +163,6 @@ class TorqueGeneratedJSMap : public P {
 
  protected:
   inline explicit TorqueGeneratedJSMap(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSMap(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSWeakCollection() that avoids inlining.
@@ -231,9 +222,6 @@ class TorqueGeneratedJSWeakCollection : public P {
 
  protected:
   inline explicit TorqueGeneratedJSWeakCollection(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSWeakCollection(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSWeakSet() that avoids inlining.
@@ -285,9 +273,6 @@ class TorqueGeneratedJSWeakSet : public P {
 
  protected:
   inline explicit TorqueGeneratedJSWeakSet(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSWeakSet(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSWeakMap() that avoids inlining.
@@ -339,8 +324,5 @@ class TorqueGeneratedJSWeakMap : public P {
 
  protected:
   inline explicit TorqueGeneratedJSWeakMap(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSWeakMap(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

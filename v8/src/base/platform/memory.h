@@ -23,9 +23,9 @@
 #include <malloc.h>
 #endif  // !V8_OS_DARWIN
 
-#if (V8_OS_POSIX && !V8_OS_AIX) || V8_OS_WIN
+#if (V8_OS_POSIX && !V8_OS_AIX && !V8_OS_SOLARIS) || V8_OS_WIN
 #define V8_HAS_MALLOC_USABLE_SIZE 1
-#endif  // (V8_OS_POSIX && !V8_OS_AIX) || V8_OS_WIN
+#endif  // (V8_OS_POSIX && !V8_OS_AIX && !V8_OS_SOLARIS) || V8_OS_WIN
 
 namespace v8::base {
 
@@ -126,8 +126,8 @@ inline size_t MallocUsableSize(void* ptr) {
 // Mimics C++23 `allocation_result`.
 template <class Pointer>
 struct AllocationResult {
-  Pointer ptr;
-  size_t count;
+  Pointer ptr = nullptr;
+  size_t count = 0;
 };
 
 // Allocates at least `n * sizeof(T)` uninitialized storage but may allocate

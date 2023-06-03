@@ -14,7 +14,7 @@ static char s_tls[TLS_SIZE];
 static void* s_tls_init[TLS_SIZE];
 
 Thread_base::Thread_base()
-    : m_stackguard(0)
+    : m_stack_start(0)
 {
     memcpy(&m_tls, &s_tls_init, sizeof(m_tls));
 }

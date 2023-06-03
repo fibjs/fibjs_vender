@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/arraybuffer-tq-csa.h"
@@ -271,6 +274,76 @@ TF_BUILTIN(ArrayBufferPrototypeGetResizable, CodeStubAssembler) {
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp5 = IsResizableArrayBuffer_0(state_, TNode<JSArrayBuffer>{tmp0});
+    ca_.Branch(tmp5, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
+  }
+
+  TNode<Oddball> tmp6;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp6 = True_0(state_);
+    CodeStubAssembler(state_).Return(tmp6);
+  }
+
+  TNode<Oddball> tmp7;
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    tmp7 = False_0(state_);
+    CodeStubAssembler(state_).Return(tmp7);
+  }
+}
+
+TF_BUILTIN(ArrayBufferPrototypeGetDetached, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  USE(parameter1);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSArrayBuffer> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = Cast_JSArrayBuffer_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  TNode<Object> tmp2;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp2 = FromConstexpr_Object_constexpr_string_0(state_, "get ArrayBuffer.prototype.detached");
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{tmp2}, TNode<Object>{parameter1});
+  }
+
+  TNode<BoolT> tmp3;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp3 = IsSharedArrayBuffer_0(state_, TNode<JSArrayBuffer>{tmp0});
+    ca_.Branch(tmp3, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
+  }
+
+  TNode<Object> tmp4;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp4 = FromConstexpr_Object_constexpr_string_0(state_, "get ArrayBuffer.prototype.detached");
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{tmp4}, TNode<Object>{parameter1});
+  }
+
+  TNode<BoolT> tmp5;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp5 = IsDetachedBuffer_0(state_, TNode<JSArrayBuffer>{tmp0});
     ca_.Branch(tmp5, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
@@ -541,7 +614,7 @@ TNode<JSArrayBuffer> Cast_JSArrayBuffer_1(compiler::CodeAssemblerState* state_, 
   return TNode<JSArrayBuffer>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/arraybuffer.tq?l=129&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/arraybuffer.tq?l=150&c=5
 TNode<JSArrayBufferView> Cast_JSArrayBufferView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

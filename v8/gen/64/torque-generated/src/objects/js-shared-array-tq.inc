@@ -10,8 +10,8 @@ class TorqueGeneratedJSSharedArray : public P {
       std::is_same<JSSharedArray, D>::value,
       "Use this class as direct base for JSSharedArray.");
   static_assert(
-      std::is_same<JSObject, P>::value,
-      "Pass in JSObject as second template parameter for TorqueGeneratedJSSharedArray.");
+      std::is_same<AlwaysSharedSpaceJSObject, P>::value,
+      "Pass in AlwaysSharedSpaceJSObject as second template parameter for TorqueGeneratedJSSharedArray.");
 
  public: 
   using Super = P;
@@ -48,8 +48,5 @@ class TorqueGeneratedJSSharedArray : public P {
 
  protected:
   inline explicit TorqueGeneratedJSSharedArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSSharedArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

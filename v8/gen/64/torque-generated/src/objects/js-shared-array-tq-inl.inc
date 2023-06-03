@@ -9,8 +9,3 @@ inline TorqueGeneratedJSSharedArray<D, P>::TorqueGeneratedJSSharedArray(Address 
     : P(ptr) {
   SLOW_DCHECK(IsJSSharedArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSSharedArray<D, P>::TorqueGeneratedJSSharedArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSSharedArray_NonInline(*this));
-}

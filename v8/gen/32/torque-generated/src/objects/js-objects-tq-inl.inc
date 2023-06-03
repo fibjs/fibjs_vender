@@ -33,11 +33,6 @@ inline TorqueGeneratedJSReceiver<D, P>::TorqueGeneratedJSReceiver(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSReceiver_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSReceiver<D, P>::TorqueGeneratedJSReceiver(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSReceiver_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=33&c=3
 template<class D, class P>
 FixedArrayBase TorqueGeneratedJSObject<D, P>::elements() const {
@@ -73,11 +68,6 @@ inline TorqueGeneratedJSObject<D, P>::TorqueGeneratedJSObject(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSObject_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSObject<D, P>::TorqueGeneratedJSObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSObject_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=48&c=1
 template<class D, class P>
 D TorqueGeneratedJSObjectWithEmbedderSlots<D, P>::cast(Object object) {
@@ -88,11 +78,6 @@ template<class D, class P>
 inline TorqueGeneratedJSObjectWithEmbedderSlots<D, P>::TorqueGeneratedJSObjectWithEmbedderSlots(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSObjectWithEmbedderSlots_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSObjectWithEmbedderSlots<D, P>::TorqueGeneratedJSObjectWithEmbedderSlots(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSObjectWithEmbedderSlots_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=52&c=1
 template<class D, class P>
@@ -105,11 +90,6 @@ inline TorqueGeneratedJSCustomElementsObject<D, P>::TorqueGeneratedJSCustomEleme
     : P(ptr) {
   SLOW_DCHECK(IsJSCustomElementsObject_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSCustomElementsObject<D, P>::TorqueGeneratedJSCustomElementsObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSCustomElementsObject_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=59&c=1
 template<class D, class P>
 D TorqueGeneratedJSSpecialObject<D, P>::cast(Object object) {
@@ -121,11 +101,6 @@ inline TorqueGeneratedJSSpecialObject<D, P>::TorqueGeneratedJSSpecialObject(Addr
     : P(ptr) {
   SLOW_DCHECK(IsJSSpecialObject_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSSpecialObject<D, P>::TorqueGeneratedJSSpecialObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSSpecialObject_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1
 template<class D, class P>
 D TorqueGeneratedJSExternalObject<D, P>::cast(Object object) {
@@ -136,11 +111,6 @@ template<class D, class P>
 inline TorqueGeneratedJSExternalObject<D, P>::TorqueGeneratedJSExternalObject(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSExternalObject_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSExternalObject<D, P>::TorqueGeneratedJSExternalObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSExternalObject_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=108&c=3
 template<class D, class P>
@@ -176,11 +146,6 @@ template<class D, class P>
 inline TorqueGeneratedJSGlobalProxy<D, P>::TorqueGeneratedJSGlobalProxy(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSGlobalProxy_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSGlobalProxy<D, P>::TorqueGeneratedJSGlobalProxy(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSGlobalProxy_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=113&c=3
 template<class D, class P>
@@ -241,11 +206,6 @@ inline TorqueGeneratedJSGlobalObject<D, P>::TorqueGeneratedJSGlobalObject(Addres
     : P(ptr) {
   SLOW_DCHECK(IsJSGlobalObject_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSGlobalObject<D, P>::TorqueGeneratedJSGlobalObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSGlobalObject_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=120&c=3
 template<class D, class P>
 Object TorqueGeneratedJSPrimitiveWrapper<D, P>::value() const {
@@ -280,11 +240,6 @@ template<class D, class P>
 inline TorqueGeneratedJSPrimitiveWrapper<D, P>::TorqueGeneratedJSPrimitiveWrapper(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSPrimitiveWrapper_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSPrimitiveWrapper<D, P>::TorqueGeneratedJSPrimitiveWrapper(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSPrimitiveWrapper_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=125&c=3
 template<class D, class P>
@@ -374,24 +329,24 @@ void TorqueGeneratedJSMessageObject<D, P>::set_stack_frames(Object value, WriteB
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedJSMessageObject<D, P>::shared_info() const {
+Object TorqueGeneratedJSMessageObject<D, P>::shared_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSMessageObject::shared_info(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedJSMessageObject<D, P>::shared_info(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kSharedInfoOffset);
-  DCHECK(value.IsUndefined() || value.IsSharedFunctionInfo());
+Object TorqueGeneratedJSMessageObject<D, P>::shared_info(PtrComprCageBase cage_base) const {
+  Object value;
+  value = TaggedField<Object>::load(cage_base, *this, kSharedInfoOffset);
+  DCHECK(value.IsSmi() || value.IsSharedFunctionInfo());
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=132&c=3
 template<class D, class P>
-void TorqueGeneratedJSMessageObject<D, P>::set_shared_info(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsUndefined() || value.IsSharedFunctionInfo());
+void TorqueGeneratedJSMessageObject<D, P>::set_shared_info(Object value, WriteBarrierMode mode) {
+  SLOW_DCHECK(value.IsSmi() || value.IsSharedFunctionInfo());
   WRITE_FIELD(*this, kSharedInfoOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSharedInfoOffset, value, mode);
 }
@@ -462,11 +417,6 @@ template<class D, class P>
 inline TorqueGeneratedJSMessageObject<D, P>::TorqueGeneratedJSMessageObject(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSMessageObject_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedJSMessageObject<D, P>::TorqueGeneratedJSMessageObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSMessageObject_NonInline(*this));
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=146&c=3
 template<class D, class P>
@@ -695,11 +645,6 @@ inline TorqueGeneratedJSDate<D, P>::TorqueGeneratedJSDate(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSDate_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSDate<D, P>::TorqueGeneratedJSDate(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSDate_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
 template<class D, class P>
 JSReceiver TorqueGeneratedJSAsyncFromSyncIterator<D, P>::sync_iterator() const {
@@ -759,11 +704,6 @@ inline TorqueGeneratedJSAsyncFromSyncIterator<D, P>::TorqueGeneratedJSAsyncFromS
     : P(ptr) {
   SLOW_DCHECK(IsJSAsyncFromSyncIterator_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSAsyncFromSyncIterator<D, P>::TorqueGeneratedJSAsyncFromSyncIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSAsyncFromSyncIterator_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=171&c=3
 template<class D, class P>
 String TorqueGeneratedJSStringIterator<D, P>::string() const {
@@ -813,8 +753,62 @@ inline TorqueGeneratedJSStringIterator<D, P>::TorqueGeneratedJSStringIterator(Ad
     : P(ptr) {
   SLOW_DCHECK(IsJSStringIterator_NonInline(*this));
 }
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
 template<class D, class P>
-inline TorqueGeneratedJSStringIterator<D, P>::TorqueGeneratedJSStringIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSStringIterator_NonInline(*this));
+JSReceiver TorqueGeneratedJSValidIteratorWrapper<D, P>::underlying_object() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSValidIteratorWrapper::underlying_object(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+template<class D, class P>
+JSReceiver TorqueGeneratedJSValidIteratorWrapper<D, P>::underlying_object(PtrComprCageBase cage_base) const {
+  JSReceiver value;
+  value = TaggedField<JSReceiver>::load(cage_base, *this, kUnderlyingOffset + 0);
+  DCHECK(value.IsJSReceiver());
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+template<class D, class P>
+void TorqueGeneratedJSValidIteratorWrapper<D, P>::set_underlying_object(JSReceiver value, WriteBarrierMode mode) {
+  SLOW_DCHECK(value.IsJSReceiver());
+  WRITE_FIELD(*this, kUnderlyingOffset + 0, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingOffset + 0, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+template<class D, class P>
+Object TorqueGeneratedJSValidIteratorWrapper<D, P>::underlying_next() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSValidIteratorWrapper::underlying_next(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+template<class D, class P>
+Object TorqueGeneratedJSValidIteratorWrapper<D, P>::underlying_next(PtrComprCageBase cage_base) const {
+  Object value;
+  value = TaggedField<Object>::load(cage_base, *this, kUnderlyingOffset + 4);
+  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=180&c=3
+template<class D, class P>
+void TorqueGeneratedJSValidIteratorWrapper<D, P>::set_underlying_next(Object value, WriteBarrierMode mode) {
+  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+  WRITE_FIELD(*this, kUnderlyingOffset + 4, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingOffset + 4, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=178&c=1
+template<class D, class P>
+D TorqueGeneratedJSValidIteratorWrapper<D, P>::cast(Object object) {
+    return D(object.ptr());
+}
+
+template<class D, class P>
+inline TorqueGeneratedJSValidIteratorWrapper<D, P>::TorqueGeneratedJSValidIteratorWrapper(Address ptr)
+    : P(ptr) {
+  SLOW_DCHECK(IsJSValidIteratorWrapper_NonInline(*this));
 }

@@ -34,7 +34,7 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNam
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=115&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryChainTable(SmallOrderedNameDictionary p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=557&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=577&c=47
 inline intptr_t TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -43,13 +43,13 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(Integer
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=29&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint8_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=230&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=240&c=1
 inline intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=188&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
 inline intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
@@ -61,7 +61,7 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashMapEn
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameDictionaryEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetPadding
@@ -469,7 +469,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictio
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=557&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=577&c=47
 intptr_t TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -525,7 +525,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint8_0(Object p
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -543,7 +543,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint8_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint8_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=230&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=240&c=1
 intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
@@ -563,7 +563,7 @@ intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=188&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
 intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   goto block0;
@@ -639,7 +639,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameDictionaryEn
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);

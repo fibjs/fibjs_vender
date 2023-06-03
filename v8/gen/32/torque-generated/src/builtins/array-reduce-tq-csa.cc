@@ -5,6 +5,7 @@
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
 #include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
 #include "src/builtins/builtins-promise-gen.h"
 #include "src/builtins/builtins-promise.h"
 #include "src/builtins/builtins-proxy-gen.h"
@@ -33,6 +34,7 @@
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
 #include "src/objects/js-list-format.h"
 #include "src/objects/js-locale.h"
 #include "src/objects/js-number-format.h"
@@ -61,6 +63,7 @@
 #include "src/objects/template-objects.h"
 #include "src/objects/torque-defined-classes.h"
 #include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-reduce-tq-csa.h"
@@ -145,7 +148,7 @@ TF_BUILTIN(ArrayReducePreLoopEagerDeoptContinuation, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Oddball> tmp6;
+  TNode<HeapObject> tmp6;
   TNode<Number> tmp7;
   TNode<Object> tmp8;
   if (block11.is_used()) {
@@ -418,7 +421,7 @@ TF_BUILTIN(ArrayReduceLoopContinuation, CodeStubAssembler) {
   TNode<Object> phi_bb5_7;
   TNode<Number> phi_bb5_8;
   TNode<Object> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<HeapObject> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_7, &phi_bb5_8);
     tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter4}, TNode<Object>{phi_bb5_8});
@@ -474,7 +477,7 @@ TF_BUILTIN(ArrayReduceLoopContinuation, CodeStubAssembler) {
 
   TNode<Object> phi_bb2_7;
   TNode<Number> phi_bb2_8;
-  TNode<Oddball> tmp11;
+  TNode<HeapObject> tmp11;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_7, &phi_bb2_8);
     compiler::CodeAssemblerLabel label12(&ca_);
@@ -755,7 +758,7 @@ TNode<Object> FastArrayReduce_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<Smi> phi_bb27_12;
   TNode<Smi> phi_bb27_15;
   TNode<Object> phi_bb27_16;
-  TNode<Oddball> tmp24;
+  TNode<HeapObject> tmp24;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5, &phi_bb27_11, &phi_bb27_12, &phi_bb27_15, &phi_bb27_16);
     compiler::CodeAssemblerLabel label25(&ca_);
@@ -818,7 +821,7 @@ TNode<Object> FastArrayReduce_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<Object> phi_bb12_5;
   TNode<JSArray> phi_bb12_8;
   TNode<Smi> phi_bb12_11;
-  TNode<Oddball> tmp30;
+  TNode<HeapObject> tmp30;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_5, &phi_bb12_8, &phi_bb12_11);
     compiler::CodeAssemblerLabel label31(&ca_);
@@ -944,7 +947,7 @@ TF_BUILTIN(ArrayReduce, CodeStubAssembler) {
     ca_.Goto(&block9, tmp12);
   }
 
-  TNode<Oddball> tmp13;
+  TNode<HeapObject> tmp13;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp13 = TheHole_0(state_);

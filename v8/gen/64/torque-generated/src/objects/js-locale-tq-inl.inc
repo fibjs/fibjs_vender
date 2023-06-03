@@ -33,8 +33,3 @@ inline TorqueGeneratedJSLocale<D, P>::TorqueGeneratedJSLocale(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSLocale_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedJSLocale<D, P>::TorqueGeneratedJSLocale(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsJSLocale_NonInline(*this));
-}

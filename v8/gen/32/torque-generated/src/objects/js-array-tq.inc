@@ -79,16 +79,13 @@ class TorqueGeneratedJSArrayIterator : public P {
 
  protected:
   inline explicit TorqueGeneratedJSArrayIterator(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSArrayIterator(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsJSArray() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
 V8_EXPORT_PRIVATE bool IsJSArray_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
 template <class D, class P>
 class TorqueGeneratedJSArray : public P {
   static_assert(
@@ -103,16 +100,16 @@ class TorqueGeneratedJSArray : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSArray<D,P>;
 
   // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
   inline Object length() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
   inline Object length(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
   inline void set_length(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -120,12 +117,12 @@ class TorqueGeneratedJSArray : public P {
   DECL_PRINTER(JSArray)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=52&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
   V8_EXPORT_PRIVATE void JSArrayVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=56&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
   static constexpr int kLengthOffset = P::kHeaderSize;
   static constexpr int kLengthOffsetEnd = kLengthOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kLengthOffsetEnd + 1;
@@ -144,16 +141,13 @@ class TorqueGeneratedJSArray : public P {
 
  protected:
   inline explicit TorqueGeneratedJSArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedJSArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 // Alias for HeapObject::IsTemplateLiteralObject() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
 V8_EXPORT_PRIVATE bool IsTemplateLiteralObject_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
 template <class D, class P>
 class TorqueGeneratedTemplateLiteralObject : public P {
   static_assert(
@@ -167,26 +161,26 @@ class TorqueGeneratedTemplateLiteralObject : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTemplateLiteralObject<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
   inline JSArray raw() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
   inline JSArray raw(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
   inline void set_raw(JSArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
   inline int function_literal_id() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
   inline void set_function_literal_id(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
   inline int slot_id() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
   inline void set_slot_id(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -194,18 +188,18 @@ class TorqueGeneratedTemplateLiteralObject : public P {
   DECL_PRINTER(TemplateLiteralObject)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=59&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
   V8_EXPORT_PRIVATE void TemplateLiteralObjectVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
   static constexpr int kRawOffset = P::kHeaderSize;
   static constexpr int kRawOffsetEnd = kRawOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
   static constexpr int kFunctionLiteralIdOffset = kRawOffsetEnd + 1;
   static constexpr int kFunctionLiteralIdOffsetEnd = kFunctionLiteralIdOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
   static constexpr int kSlotIdOffset = kFunctionLiteralIdOffsetEnd + 1;
   static constexpr int kSlotIdOffsetEnd = kSlotIdOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kSlotIdOffsetEnd + 1;
@@ -224,8 +218,5 @@ class TorqueGeneratedTemplateLiteralObject : public P {
 
  protected:
   inline explicit TorqueGeneratedTemplateLiteralObject(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedTemplateLiteralObject(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 

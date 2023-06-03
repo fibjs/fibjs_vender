@@ -23,8 +23,3 @@ inline TorqueGeneratedEmbedderDataArray<D, P>::TorqueGeneratedEmbedderDataArray(
     : P(ptr) {
   SLOW_DCHECK(IsEmbedderDataArray_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedEmbedderDataArray<D, P>::TorqueGeneratedEmbedderDataArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsEmbedderDataArray_NonInline(*this));
-}

@@ -13,10 +13,10 @@ class ExportedSubClass2;
 class SortState;
 class WasmStringViewIter;
 // Alias for HeapObject::IsStrongDescriptorArray() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
 V8_EXPORT_PRIVATE bool IsStrongDescriptorArray_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
 template <class D, class P>
 class TorqueGeneratedStrongDescriptorArray : public P {
   static_assert(
@@ -32,9 +32,9 @@ class TorqueGeneratedStrongDescriptorArray : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -42,7 +42,7 @@ class TorqueGeneratedStrongDescriptorArray : public P {
   DECL_PRINTER(StrongDescriptorArray)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
   V8_EXPORT_PRIVATE void StrongDescriptorArrayVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -52,14 +52,14 @@ class TorqueGeneratedStrongDescriptorArray : public P {
   static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
   static constexpr int kHeaderSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
   V8_INLINE static constexpr int32_t SizeFor(int number_of_all_descriptors) {
     int32_t size = kHeaderSize;
     size += number_of_all_descriptors * 12;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=29&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->number_of_all_descriptors());
   }
@@ -75,9 +75,6 @@ class TorqueGeneratedStrongDescriptorArray : public P {
 
  protected:
   inline explicit TorqueGeneratedStrongDescriptorArray(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedStrongDescriptorArray(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class StrongDescriptorArray : public TorqueGeneratedStrongDescriptorArray<StrongDescriptorArray, DescriptorArray> {
@@ -169,9 +166,6 @@ class TorqueGeneratedInternalClass : public P {
 
  protected:
   inline explicit TorqueGeneratedInternalClass(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedInternalClass(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class InternalClass : public TorqueGeneratedInternalClass<InternalClass, HeapObject> {
@@ -260,9 +254,6 @@ class TorqueGeneratedSmiPair : public P {
 
  protected:
   inline explicit TorqueGeneratedSmiPair(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSmiPair(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class SmiPair : public TorqueGeneratedSmiPair<SmiPair, HeapObject> {
@@ -351,9 +342,6 @@ class TorqueGeneratedSmiBox : public P {
 
  protected:
   inline explicit TorqueGeneratedSmiBox(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSmiBox(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class SmiBox : public TorqueGeneratedSmiBox<SmiBox, HeapObject> {
@@ -444,9 +432,6 @@ class TorqueGeneratedExportedSubClassBase : public P {
 
  protected:
   inline explicit TorqueGeneratedExportedSubClassBase(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedExportedSubClassBase(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class ExportedSubClassBase : public TorqueGeneratedExportedSubClassBase<ExportedSubClassBase, HeapObject> {
@@ -541,9 +526,6 @@ class TorqueGeneratedExportedSubClass : public P {
 
  protected:
   inline explicit TorqueGeneratedExportedSubClass(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedExportedSubClass(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class ExportedSubClass : public TorqueGeneratedExportedSubClass<ExportedSubClass, ExportedSubClassBase> {
@@ -603,9 +585,6 @@ class TorqueGeneratedAbstractInternalClass : public P {
 
  protected:
   inline explicit TorqueGeneratedAbstractInternalClass(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAbstractInternalClass(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class AbstractInternalClass : public TorqueGeneratedAbstractInternalClass<AbstractInternalClass, HeapObject> {
@@ -677,9 +656,6 @@ class TorqueGeneratedAbstractInternalClassSubclass1 : public P {
 
  protected:
   inline explicit TorqueGeneratedAbstractInternalClassSubclass1(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAbstractInternalClassSubclass1(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class AbstractInternalClassSubclass1 : public TorqueGeneratedAbstractInternalClassSubclass1<AbstractInternalClassSubclass1, AbstractInternalClass> {
@@ -752,9 +728,6 @@ class TorqueGeneratedAbstractInternalClassSubclass2 : public P {
 
  protected:
   inline explicit TorqueGeneratedAbstractInternalClassSubclass2(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedAbstractInternalClassSubclass2(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class AbstractInternalClassSubclass2 : public TorqueGeneratedAbstractInternalClassSubclass2<AbstractInternalClassSubclass2, AbstractInternalClass> {
@@ -852,9 +825,6 @@ class TorqueGeneratedInternalClassWithSmiElements : public P {
 
  protected:
   inline explicit TorqueGeneratedInternalClassWithSmiElements(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedInternalClassWithSmiElements(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class InternalClassWithSmiElements : public TorqueGeneratedInternalClassWithSmiElements<InternalClassWithSmiElements, FixedArrayBase> {
@@ -989,9 +959,6 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
 
  protected:
   inline explicit TorqueGeneratedInternalClassWithStructElements(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedInternalClassWithStructElements(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class InternalClassWithStructElements : public TorqueGeneratedInternalClassWithStructElements<InternalClassWithStructElements, HeapObject> {
@@ -1086,9 +1053,6 @@ class TorqueGeneratedExportedSubClass2 : public P {
 
  protected:
   inline explicit TorqueGeneratedExportedSubClass2(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedExportedSubClass2(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class ExportedSubClass2 : public TorqueGeneratedExportedSubClass2<ExportedSubClass2, ExportedSubClassBase> {
@@ -1305,9 +1269,6 @@ class TorqueGeneratedSortState : public P {
 
  protected:
   inline explicit TorqueGeneratedSortState(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedSortState(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class SortState : public TorqueGeneratedSortState<SortState, HeapObject> {
@@ -1317,10 +1278,10 @@ class SortState : public TorqueGeneratedSortState<SortState, HeapObject> {
 };
 
 // Alias for HeapObject::IsWasmStringViewIter() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
 V8_EXPORT_PRIVATE bool IsWasmStringViewIter_NonInline(HeapObject o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
 template <class D, class P>
 class TorqueGeneratedWasmStringViewIter : public P {
   static_assert(
@@ -1335,22 +1296,22 @@ class TorqueGeneratedWasmStringViewIter : public P {
   using TorqueGeneratedClass = TorqueGeneratedWasmStringViewIter<D,P>;
 
  protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
   inline String string() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
   inline String string(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
   inline void set_string(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
   inline uint32_t offset() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
   inline void set_offset(uint32_t value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
   V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
   V8_INLINE static D unchecked_cast(Object object) {
     return base::bit_cast<D>(object);
   }
@@ -1358,31 +1319,34 @@ class TorqueGeneratedWasmStringViewIter : public P {
   DECL_PRINTER(WasmStringViewIter)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
   V8_EXPORT_PRIVATE void WasmStringViewIterVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
   static constexpr int kStringOffset = P::kHeaderSize;
   static constexpr int kStringOffsetEnd = kStringOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kStringOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
   static constexpr int kOffsetOffset = kStringOffsetEnd + 1;
   static constexpr int kOffsetOffsetEnd = kOffsetOffset + kInt32Size - 1;
-  static constexpr int kStartOfWeakFieldsOffset = kOffsetOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kOffsetOffsetEnd + 1;
-  static constexpr int kHeaderSize = kOffsetOffsetEnd + 1;
-  static constexpr int kSize = kOffsetOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=31
+  static constexpr int kOptionalPaddingOffset = kOffsetOffsetEnd + 1;
+  static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + 0 - 1;
+  static constexpr int kStartOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kSize = kOptionalPaddingOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -1398,9 +1362,6 @@ class TorqueGeneratedWasmStringViewIter : public P {
 
  protected:
   inline explicit TorqueGeneratedWasmStringViewIter(Address ptr);
-  // Special-purpose constructor for subclasses that have fast paths where
-  // their ptr() is a Smi.
-  inline explicit TorqueGeneratedWasmStringViewIter(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi);
 };
 
 class WasmStringViewIter : public TorqueGeneratedWasmStringViewIter<WasmStringViewIter, HeapObject> {

@@ -20,7 +20,7 @@ function get_src(folder) {
 var src_list = get_src('src');
 
 src_list.forEach(fname => {
-    const regex = /\n[ \t]*((static|extern)\s+)?thread_local\s+[^;]+;/g;
+    const regex = /\n\s*((\w+\s+)?(static|extern)\s+)?thread_local\s+[^;]+;/g;
     var ms = {};
 
     var f = fs.readTextFile(fname);
@@ -34,25 +34,30 @@ src_list.forEach(fname => {
             var m1 = m.replace('V8_CONSTINIT', '');
             var def;
 
-            var r = /((static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*(=\s+([^;\s]+))\s*;/.exec(m1); // static thread_local int a = 0;
+            var r = /((\w+\s+)?(static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*(=\s+([^;\s]+))\s*;/.exec(m1); // static thread_local int a = 0;
             if (!r)
-                r = /((static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*(\(\s*([^;\s]+)\s*\))\s*;/.exec(m1); // static thread_local int a(0);
+                r = /((\w+\s+)?(static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*(\(\s*([^;\s]+)\s*\))\s*;/.exec(m1); // static thread_local int a(0);
             if (!r)
-                r = /((static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*(\{\s*([^;\s]+)\s*\})\s*;/.exec(m1); // static thread_local int a{0};
+                r = /((\w+\s+)?(static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*(\{\s*([^;\s]+)\s*\})\s*;/.exec(m1); // static thread_local int a{0};
             if (!r)
-                r = /((static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*;/.exec(m1); // static thread_local int a;
+                r = /((\w+\s+)?(static|extern)\s+)?thread_local\s+([^;]+?)\s+([\w:]+)\s*;/.exec(m1); // static thread_local int a;
 
             var def = {
-                modifier: r[2],
-                type: r[3],
-                name: r[4],
-                init: r[6] || ""
+                modifier: r[1],
+                type: r[4],
+                name: r[5],
+                init: r[7] || ""
             };
+
+            if (def.init == 'nullptr' || def.init == 'false' || def.init == '0')
+                def.init = '';
 
             var m2 = `\n${def.modifier ? def.modifier + " " : ""}exlib::fiber_local<${def.type}> ${def.name}${def.init ? "(" + def.init + ")" : ""};`;
             console.log(JSON.stringify(m2));
 
             f = f.replace(m, m2);
+
+            console.log('');
         });
 
         fs.writeTextFile(fname, "#include <exlib/include/fbTls.h>\n" + f);

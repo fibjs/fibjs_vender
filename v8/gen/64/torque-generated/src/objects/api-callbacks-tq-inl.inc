@@ -33,11 +33,6 @@ inline TorqueGeneratedCallHandlerInfo<D, P>::TorqueGeneratedCallHandlerInfo(Addr
     : P(ptr) {
   SLOW_DCHECK(IsCallHandlerInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedCallHandlerInfo<D, P>::TorqueGeneratedCallHandlerInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsCallHandlerInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=22&c=3
 template<class D, class P>
 Object TorqueGeneratedInterceptorInfo<D, P>::getter() const {
@@ -255,11 +250,6 @@ inline TorqueGeneratedInterceptorInfo<D, P>::TorqueGeneratedInterceptorInfo(Addr
     : P(ptr) {
   SLOW_DCHECK(IsInterceptorInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedInterceptorInfo<D, P>::TorqueGeneratedInterceptorInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsInterceptorInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=34&c=3
 template<class D, class P>
 Object TorqueGeneratedAccessCheckInfo<D, P>::callback() const {
@@ -367,11 +357,6 @@ inline TorqueGeneratedAccessCheckInfo<D, P>::TorqueGeneratedAccessCheckInfo(Addr
     : P(ptr) {
   SLOW_DCHECK(IsAccessCheckInfo_NonInline(*this));
 }
-template<class D, class P>
-inline TorqueGeneratedAccessCheckInfo<D, P>::TorqueGeneratedAccessCheckInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAccessCheckInfo_NonInline(*this));
-}
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=54&c=3
 template<class D, class P>
 Name TorqueGeneratedAccessorInfo<D, P>::name() const {
@@ -458,9 +443,4 @@ template<class D, class P>
 inline TorqueGeneratedAccessorInfo<D, P>::TorqueGeneratedAccessorInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsAccessorInfo_NonInline(*this));
-}
-template<class D, class P>
-inline TorqueGeneratedAccessorInfo<D, P>::TorqueGeneratedAccessorInfo(Address ptr, HeapObject::AllowInlineSmiStorage allow_smi)
-    : P(ptr, allow_smi) {
-  SLOW_DCHECK((allow_smi == HeapObject::AllowInlineSmiStorage::kAllowBeingASmi && this->IsSmi()) || IsAccessorInfo_NonInline(*this));
 }
