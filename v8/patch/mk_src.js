@@ -34,6 +34,7 @@ const skip_list = [
     "^src/base/platform/mutex.cc",
     "^src/base/platform/condition-variable.cc",
     "^src/base/platform/semaphore.cc",
+    "^src/base/platform/platform.cc",
 
     "^src/base/platform/memory-protection-key.cc",
 

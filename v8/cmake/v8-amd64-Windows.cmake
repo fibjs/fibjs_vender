@@ -465,6 +465,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/mutex.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/non-memory-protection-key.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform-fiber.cc
+	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/semaphore.cc
 	${PROJECT_SOURCE_DIR}/patch/src/builtin/mulodi4.c
 	${PROJECT_SOURCE_DIR}/patch/src/pthread_jit_write_protect_np.cc
@@ -503,7 +504,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/numbers/strtod.cc
 	${PROJECT_SOURCE_DIR}/src/base/once.cc
 	${PROJECT_SOURCE_DIR}/src/base/page-allocator.cc
-	${PROJECT_SOURCE_DIR}/src/base/platform/platform.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/time.cc
 	${PROJECT_SOURCE_DIR}/src/base/region-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/sanitizer/lsan-page-allocator.cc
