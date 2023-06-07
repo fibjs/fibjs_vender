@@ -764,7 +764,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/state-values-utils.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/store-store-elimination.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/string-builder-optimizer.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/turbofan-disabled.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turbofan-enabled.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/assembler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/build-graph-phase.cc

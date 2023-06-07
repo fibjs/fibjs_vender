@@ -43,6 +43,7 @@ const skip_list = [
     "^src/diagnostics/unwinding-info-win64.cc",
 
     "^src/compiler/revectorizer.cc",
+    "^src/compiler/turbofan-disabled.cc",
 
     "^src/d8/",
 

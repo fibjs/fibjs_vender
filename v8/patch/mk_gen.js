@@ -3,8 +3,9 @@ var path = require("path");
 
 var opts = [
     // "v8_enable_i18n_support=false",
+    "v8_enable_turbofan=true",
     "v8_use_external_startup_data=false",
-    "v8_use_libm_trig_functions=false",
+    // "v8_use_libm_trig_functions=false",
     "v8_enable_pointer_compression=false",
     "v8_enable_short_builtin_calls=false",
     "v8_enable_lazy_source_positions=false",
@@ -26,9 +27,7 @@ function mk_arch(arch) {
     child_process.run("bash", [
         path.join(__dirname, "depot_tools/ninja"),
         "-C",
-        `out.gn/${arch}.release`,
-        "torque_generated_definitions",
-        "protocol_generated_sources"
+        `out.gn/${arch}.release`
     ], { cwd: "v8" });
 }
 
