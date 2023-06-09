@@ -180,7 +180,7 @@ public:
         void unref()
         {
             if (refs_.dec() == 0)
-                delete[]((char*)this);
+                delete[] ((char*)this);
         }
 
         bool is_shared()
@@ -831,4 +831,21 @@ typedef uint32_t wchar32;
 typedef basic_string<char> string;
 typedef basic_string<wchar> wstring;
 typedef basic_string<wchar32> wstring32;
+}
+
+namespace std {
+template <>
+struct hash<exlib::string> {
+    size_t operator()(const exlib::string& str) const
+    {
+        size_t hash_value = 0;
+        const char* str_ptr = str.c_str();
+        size_t length = str.length();
+
+        for (size_t i = 0; i < length; i++)
+            hash_value = hash_value * 131 + static_cast<size_t>(str_ptr[i]);
+
+        return hash_value;
+    }
+};
 }
