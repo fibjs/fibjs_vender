@@ -177,7 +177,7 @@ extern "C" {
 #    define JEMALLOC_ALLOC_SIZE2(s1, s2)
 #  endif
 #  ifndef JEMALLOC_EXPORT
-#    define JEMALLOC_EXPORT JEMALLOC_ATTR(visibility("default"))
+#    define JEMALLOC_EXPORT
 #  endif
 #  ifdef JEMALLOC_HAVE_ATTR_FORMAT_ARG
 #    define JEMALLOC_FORMAT_ARG(i) JEMALLOC_ATTR(__format_arg__(3))

@@ -35,7 +35,7 @@ extern "C" {
   /* Windows - set up dll import/export decorators. */
 # if defined(BUILDING_UV_SHARED)
     /* Building shared library. */
-#   define UV_EXTERN __declspec(dllexport)
+#   define UV_EXTERN 
 # elif defined(USING_UV_SHARED)
     /* Using shared library. */
 #   define UV_EXTERN __declspec(dllimport)
@@ -44,7 +44,7 @@ extern "C" {
 #   define UV_EXTERN /* nothing */
 # endif
 #elif __GNUC__ >= 4
-# define UV_EXTERN __attribute__((visibility("default")))
+# define UV_EXTERN
 #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550) /* Sun Studio >= 8 */
 # define UV_EXTERN __global
 #else

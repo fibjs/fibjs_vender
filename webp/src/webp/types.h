@@ -40,7 +40,7 @@ typedef long long int int64_t;
 // This explicitly marks library functions and allows for changing the
 // signature for e.g., Windows DLL builds.
 # if defined(__GNUC__) && __GNUC__ >= 4
-#  define WEBP_EXTERN extern __attribute__ ((visibility ("default")))
+#  define WEBP_EXTERN extern
 # else
 #  define WEBP_EXTERN extern
 # endif  /* __GNUC__ >= 4 */

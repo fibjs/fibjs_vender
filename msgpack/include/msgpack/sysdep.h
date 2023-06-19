@@ -35,7 +35,7 @@
 
 #if !defined(MSGPACK_DLLEXPORT)
 #if defined(_MSC_VER)
-#   define MSGPACK_DLLEXPORT __declspec(dllexport)
+#   define MSGPACK_DLLEXPORT
 #else  /* _MSC_VER */
 #   define MSGPACK_DLLEXPORT
 #endif /* _MSC_VER */

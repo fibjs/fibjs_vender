@@ -50,7 +50,7 @@ extern "C" {
 # define BGD_STDCALL
 #else
 # if defined(__GNUC__) || defined(__clang__)
-#  define BGD_EXPORT_DATA_PROT __attribute__ ((__visibility__ ("default")))
+#  define BGD_EXPORT_DATA_PROT
 #  define BGD_EXPORT_DATA_IMPL __attribute__ ((__visibility__ ("hidden")))
 # else
 #  define BGD_EXPORT_DATA_PROT
