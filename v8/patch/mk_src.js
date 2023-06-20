@@ -214,7 +214,10 @@ function gen_list(arch, os) {
             } else if (os == "iPhone") {
                 src_list = util.difference(src_list, win_list, android_list, fuchsia_list);
 
-                src_list.push("src/base/platform/platform-darwin.cc")
+                src_list.push(
+                    "src/base/platform/platform-darwin.cc",
+                    "src/base/platform/platform-ios.cc"
+                )
             } else if (os == "Linux" || os == "Android") {
                 src_list = util.difference(src_list, win_list, mac_list, android_list, fuchsia_list);
 
