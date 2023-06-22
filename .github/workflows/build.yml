@@ -95,7 +95,15 @@ jobs:
             build_type: release
           - os: ubuntu-20.04
             build_target: android
+            target_arch: i386
+            build_type: release
+          - os: ubuntu-20.04
+            build_target: android
             target_arch: arm64
+            build_type: release
+          - os: ubuntu-20.04
+            build_target: android
+            target_arch: arm
             build_type: release
           - os: windows-2022
             target_arch: amd64
