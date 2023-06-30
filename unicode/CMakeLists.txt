@@ -10,4 +10,6 @@ include_directories(
 
 add_definitions(-DU_COMMON_IMPLEMENTATION -DU_I18N_IMPLEMENTATION)
 
+set(CMAKE_CXX_STANDARD 17)
+
 include(../build_tools/cmake/Library.cmake)
