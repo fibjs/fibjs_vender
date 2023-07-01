@@ -21,4 +21,6 @@ else()
 	include(cmake/v8-${ARCH}-${BUILD_OS}.cmake)
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 include(../build_tools/cmake/Library.cmake)

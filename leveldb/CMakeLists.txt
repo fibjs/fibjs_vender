@@ -10,4 +10,6 @@ endif()
 
 add_definitions(-DHAVE_SNAPPY)
 
+set(CMAKE_CXX_STANDARD 17)
+
 include(../build_tools/cmake/Library.cmake)
