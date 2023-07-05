@@ -289,6 +289,7 @@ gen_list("amd64", "Darwin");
 gen_list("arm64", "Darwin");
 
 gen_list("arm64", "iPhone");
+gen_list("amd64", "iPhone");
 
 gen_list("amd64", "Windows");
 gen_list("i386", "Windows");
