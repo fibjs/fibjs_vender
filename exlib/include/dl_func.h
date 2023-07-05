@@ -59,7 +59,7 @@ inline char* dlerror(void)
     DWORD msglen = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), 0, error_buffer_a, sizeof(error_buffer_a), NULL);
     if (msglen == 0)
-        return "unknown error";
+        return (char*)"unknown error";
     return error_buffer_a;
 }
 #endif
