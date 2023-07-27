@@ -27,6 +27,10 @@ add_definitions(
 	-DV8_ENABLE_TURBOFAN
 )
 
+if("${BUILD_OS}" STREQUAL "iPhone")
+	add_definitions(-DV8_JITLESS)
+endif()
+
 if(${BUILD_TYPE} STREQUAL "debug")
 	add_definitions(
 		-DOBJECT_PRINT

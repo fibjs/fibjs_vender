@@ -22,7 +22,39 @@
 
 namespace exlib {
 
+#ifdef iPhone
+class OSTls {
+public:
+    OSTls()
+    {
+        pthread_key_create(&m_index, NULL);
+    }
+
+    void* operator=(void* new_value)
+    {
+        pthread_setspecific(m_index, new_value);
+        return new_value;
+    }
+
+    operator void*() const
+    {
+        return pthread_getspecific(m_index);
+    }
+
+    template <class T>
+    operator T*() const
+    {
+        return (T*)pthread_getspecific(m_index);
+    }
+
+private:
+    pthread_key_t m_index;
+};
+
+static OSTls th_current;
+#else
 thread_local void* th_current;
+#endif
 
 void* OSThread::Entry(void* arg)
 {

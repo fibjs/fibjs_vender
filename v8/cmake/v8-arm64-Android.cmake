@@ -467,7 +467,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/semaphore.cc
 	${PROJECT_SOURCE_DIR}/patch/src/builtin/mulodi4.c
-	${PROJECT_SOURCE_DIR}/patch/src/pthread_jit_write_protect_np.cc
 	${PROJECT_SOURCE_DIR}/src/api/api-arguments.cc
 	${PROJECT_SOURCE_DIR}/src/api/api-natives.cc
 	${PROJECT_SOURCE_DIR}/src/api/api.cc
