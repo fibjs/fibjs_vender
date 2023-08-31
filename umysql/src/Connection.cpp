@@ -763,16 +763,47 @@ void *Connection::query(const char *_query, size_t _cbQuery)
     return NULL;
   }
 
-  m_writer.reset();
-  m_writer.writeByte(MC_QUERY);
-  m_writer.writeBytes ( (void *) _query, len);
-  m_writer.finalize(0);
+  UINT8 seqid = 0;
+  UINT32 pack_size;
+  bool done = false;
 
-  if (!sendPacket())
-  {
-    PRINTMARK();
-    m_dbgMethodProgress --;
-    return NULL;
+  while (!done) {
+    m_writer.reset();
+
+    if(seqid == 0) {
+      m_writer.writeByte(MC_QUERY);
+
+      if ( len >= 0xfffffe ) {
+        pack_size = 0xfffffe;
+      } else {
+        done = true;
+        pack_size = len;  
+      }
+
+      m_writer.writeBytes ( (void *) _query, pack_size);
+    } else {
+       if ( len >= 0xffffff ) {
+        pack_size = 0xffffff;
+      } else {
+        done = true;
+        pack_size = len;  
+      }
+
+      m_writer.writeBytes ( (void *) _query, pack_size);
+    }
+
+    m_writer.finalize(seqid);
+
+    if (!sendPacket())
+    {
+      PRINTMARK();
+      m_dbgMethodProgress --;
+      return NULL;
+    }
+
+    _query += pack_size;
+    len -= pack_size;
+    seqid ++;
   }
 
   return nextResultSet();
