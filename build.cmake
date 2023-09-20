@@ -45,6 +45,7 @@ else()
         jssdk
         unzip
         uv
+        fasttext
     )
 
     if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
