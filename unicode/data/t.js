@@ -18,7 +18,7 @@ txts.push(txt);
 fs.writeTextFile('icudtl_dat.c', 
 `#include <stdint.h>
 
-int32_t icudt72_dat[] = {
+int32_t icudt73_dat[] = {
 ${txts.join('\n')}
 };
 `);
