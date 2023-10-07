@@ -1,23 +1,22 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=35&c=3
 template<class D, class P>
-Object TorqueGeneratedJSPromise<D, P>::reactions_or_result() const {
+Tagged<Object> TorqueGeneratedJSPromise<D, P>::reactions_or_result() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSPromise::reactions_or_result(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=35&c=3
 template<class D, class P>
-Object TorqueGeneratedJSPromise<D, P>::reactions_or_result(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kReactionsOrResultOffset);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsPromiseReaction());
+Tagged<Object> TorqueGeneratedJSPromise<D, P>::reactions_or_result(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kReactionsOrResultOffset);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsPromiseReaction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=35&c=3
 template<class D, class P>
-void TorqueGeneratedJSPromise<D, P>::set_reactions_or_result(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsPromiseReaction());
+void TorqueGeneratedJSPromise<D, P>::set_reactions_or_result(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsPromiseReaction(value));
   WRITE_FIELD(*this, kReactionsOrResultOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kReactionsOrResultOffset, value, mode);
 }
@@ -25,8 +24,7 @@ void TorqueGeneratedJSPromise<D, P>::set_reactions_or_result(Object value, Write
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=36&c=3
 template<class D, class P>
 int TorqueGeneratedJSPromise<D, P>::flags() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
+  int value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
   return value;
 }
 
@@ -38,8 +36,8 @@ void TorqueGeneratedJSPromise<D, P>::set_flags(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=13&c=1
 template<class D, class P>
-D TorqueGeneratedJSPromise<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSPromise<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

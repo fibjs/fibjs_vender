@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -95,6 +96,7 @@
 #include "torque-generated/src/objects/fixed-array-tq-csa.h"
 #include "torque-generated/src/objects/heap-number-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
+#include "torque-generated/src/objects/js-collection-tq-csa.h"
 #include "torque-generated/src/objects/js-function-tq-csa.h"
 #include "torque-generated/src/objects/js-objects-tq-csa.h"
 #include "torque-generated/src/objects/js-proxy-tq-csa.h"
@@ -1146,8 +1148,8 @@ TNode<BoolT> IsSymbol_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> 
   return TNode<BoolT>{phi_bb2_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=155&c=1
-TNode<Oddball> Cast_Undefined_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=156&c=1
+TNode<Undefined> Cast_Undefined_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1156,7 +1158,7 @@ TNode<Oddball> Cast_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Mayb
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1170,7 +1172,7 @@ TNode<Oddball> Cast_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Mayb
     ca_.Goto(label_CastError);
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp2 = TORQUE_CAST(TNode<MaybeObject>{p_o});
@@ -1178,10 +1180,10 @@ TNode<Oddball> Cast_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Mayb
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp2};
+  return TNode<Undefined>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=167&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=168&c=1
 TNode<Smi> Cast_Smi_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1217,7 +1219,7 @@ TNode<Smi> Cast_Smi_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, c
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=172&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=173&c=1
 TNode<Smi> Cast_PositiveSmi_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1253,7 +1255,7 @@ TNode<Smi> Cast_PositiveSmi_0(compiler::CodeAssemblerState* state_, TNode<Object
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=178&c=1
 TNode<Smi> Cast_Zero_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1288,7 +1290,7 @@ TNode<Smi> Cast_Zero_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, 
   return TNode<Smi>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=182&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=183&c=1
 TNode<Number> Cast_Number_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1350,8 +1352,8 @@ TNode<Number> Cast_Number_0(compiler::CodeAssemblerState* state_, TNode<Object> 
   return TNode<Number>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=197&c=1
-TNode<Oddball> Cast_Undefined_1(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=198&c=1
+TNode<Undefined> Cast_Undefined_1(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1360,7 +1362,7 @@ TNode<Oddball> Cast_Undefined_1(compiler::CodeAssemblerState* state_, TNode<Obje
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1383,10 +1385,10 @@ TNode<Oddball> Cast_Undefined_1(compiler::CodeAssemblerState* state_, TNode<Obje
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp0};
+  return TNode<Undefined>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=204&c=1
 TNode<Numeric> Cast_Numeric_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1448,8 +1450,8 @@ TNode<Numeric> Cast_Numeric_0(compiler::CodeAssemblerState* state_, TNode<Object
   return TNode<Numeric>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=217&c=1
-TNode<HeapObject> Cast_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=218&c=1
+TNode<Hole> Cast_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1458,7 +1460,7 @@ TNode<HeapObject> Cast_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Obj
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<HeapObject> tmp0;
+  TNode<Hole> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1467,7 +1469,7 @@ TNode<HeapObject> Cast_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Obj
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp2;
+  TNode<Hole> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = TORQUE_CAST(TNode<Object>{p_o});
@@ -1480,11 +1482,11 @@ TNode<HeapObject> Cast_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Obj
   }
 
     ca_.Bind(&block5);
-  return TNode<HeapObject>{tmp2};
+  return TNode<Hole>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=222&c=1
-TNode<HeapObject> Cast_TheHole_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=223&c=1
+TNode<Hole> Cast_TheHole_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1493,7 +1495,7 @@ TNode<HeapObject> Cast_TheHole_1(compiler::CodeAssemblerState* state_, TNode<Hea
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<HeapObject> tmp0;
+  TNode<Hole> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1516,11 +1518,11 @@ TNode<HeapObject> Cast_TheHole_1(compiler::CodeAssemblerState* state_, TNode<Hea
   }
 
     ca_.Bind(&block5);
-  return TNode<HeapObject>{tmp0};
+  return TNode<Hole>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=227&c=1
-TNode<Oddball> Cast_True_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=228&c=1
+TNode<True> Cast_True_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1529,7 +1531,7 @@ TNode<Oddball> Cast_True_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<True> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1538,7 +1540,7 @@ TNode<Oddball> Cast_True_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp2;
+  TNode<True> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = TORQUE_CAST(TNode<Object>{p_o});
@@ -1551,11 +1553,11 @@ TNode<Oddball> Cast_True_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp2};
+  return TNode<True>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=232&c=1
-TNode<Oddball> Cast_True_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=233&c=1
+TNode<True> Cast_True_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1564,7 +1566,7 @@ TNode<Oddball> Cast_True_1(compiler::CodeAssemblerState* state_, TNode<HeapObjec
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<True> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1587,11 +1589,11 @@ TNode<Oddball> Cast_True_1(compiler::CodeAssemblerState* state_, TNode<HeapObjec
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp0};
+  return TNode<True>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=237&c=1
-TNode<Oddball> Cast_False_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=238&c=1
+TNode<False> Cast_False_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1600,7 +1602,7 @@ TNode<Oddball> Cast_False_0(compiler::CodeAssemblerState* state_, TNode<Object> 
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<False> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1609,7 +1611,7 @@ TNode<Oddball> Cast_False_0(compiler::CodeAssemblerState* state_, TNode<Object> 
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp2;
+  TNode<False> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = TORQUE_CAST(TNode<Object>{p_o});
@@ -1622,11 +1624,11 @@ TNode<Oddball> Cast_False_0(compiler::CodeAssemblerState* state_, TNode<Object> 
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp2};
+  return TNode<False>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=242&c=1
-TNode<Oddball> Cast_False_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=243&c=1
+TNode<False> Cast_False_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1635,7 +1637,7 @@ TNode<Oddball> Cast_False_1(compiler::CodeAssemblerState* state_, TNode<HeapObje
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<False> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1658,11 +1660,11 @@ TNode<Oddball> Cast_False_1(compiler::CodeAssemblerState* state_, TNode<HeapObje
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp0};
+  return TNode<False>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=247&c=1
-TNode<Oddball> Cast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=248&c=1
+TNode<Boolean> Cast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1670,11 +1672,11 @@ TNode<Oddball> Cast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Object
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<True> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1686,7 +1688,7 @@ TNode<Oddball> Cast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Object
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<False> tmp2;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -1713,18 +1715,18 @@ TNode<Oddball> Cast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Object
     ca_.Goto(&block2, tmp2);
   }
 
-  TNode<Oddball> phi_bb2_1;
+  TNode<Boolean> phi_bb2_1;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_1);
     ca_.Goto(&block11);
   }
 
     ca_.Bind(&block11);
-  return TNode<Oddball>{phi_bb2_1};
+  return TNode<Boolean>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=261&c=1
-TNode<Oddball> Cast_Boolean_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=262&c=1
+TNode<Boolean> Cast_Boolean_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1733,7 +1735,7 @@ TNode<Oddball> Cast_Boolean_1(compiler::CodeAssemblerState* state_, TNode<HeapOb
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Boolean> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1756,10 +1758,10 @@ TNode<Oddball> Cast_Boolean_1(compiler::CodeAssemblerState* state_, TNode<HeapOb
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp0};
+  return TNode<Boolean>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=269&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=270&c=1
 TNode<Object> Cast_JSPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1826,7 +1828,7 @@ TNode<Object> Cast_JSPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Obj
     ca_.Goto(&block2, tmp2);
   }
 
-  TNode<Oddball> tmp6;
+  TNode<Boolean> tmp6;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     compiler::CodeAssemblerLabel label7(&ca_);
@@ -1843,7 +1845,7 @@ TNode<Object> Cast_JSPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Obj
     ca_.Goto(&block2, tmp4);
   }
 
-  TNode<Oddball> tmp8;
+  TNode<Undefined> tmp8;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     compiler::CodeAssemblerLabel label9(&ca_);
@@ -1860,7 +1862,7 @@ TNode<Object> Cast_JSPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Obj
     ca_.Goto(&block2, tmp6);
   }
 
-  TNode<Oddball> tmp10;
+  TNode<Null> tmp10;
   if (block22.is_used()) {
     ca_.Bind(&block22);
     compiler::CodeAssemblerLabel label11(&ca_);
@@ -1897,7 +1899,7 @@ TNode<Object> Cast_JSPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Obj
   return TNode<Object>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=295&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=296&c=1
 TNode<Object> Cast_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1959,8 +1961,8 @@ TNode<Object> Cast_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   return TNode<Object>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=309&c=1
-TNode<Object> Cast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=310&c=1
+TNode<Object> Cast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1984,7 +1986,7 @@ TNode<Object> Cast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol
     }
   }
 
-  TNode<HeapObject> tmp2;
+  TNode<Hole> tmp2;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -2021,7 +2023,7 @@ TNode<Object> Cast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol
   return TNode<Object>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=323&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=324&c=1
 TNode<Object> Cast_Smi_OR_HeapNumber_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2046,7 +2048,7 @@ TNode<Object> Cast_Smi_OR_HeapNumber_OR_TheHole_0(compiler::CodeAssemblerState* 
     }
   }
 
-  TNode<HeapObject> tmp2;
+  TNode<Hole> tmp2;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -2083,7 +2085,7 @@ TNode<Object> Cast_Smi_OR_HeapNumber_OR_TheHole_0(compiler::CodeAssemblerState* 
   return TNode<Object>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=337&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=338&c=1
 TNode<Object> Cast_Context_OR_Undefined_OR_Zero_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2152,7 +2154,7 @@ TNode<Object> Cast_Context_OR_Undefined_OR_Zero_0(compiler::CodeAssemblerState* 
     }
   }
 
-  TNode<Oddball> tmp6;
+  TNode<Undefined> tmp6;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     compiler::CodeAssemblerLabel label7(&ca_);
@@ -2189,7 +2191,7 @@ TNode<Object> Cast_Context_OR_Undefined_OR_Zero_0(compiler::CodeAssemblerState* 
   return TNode<Object>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=358&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=359&c=1
 TNode<HeapObject> Cast_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label__CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2206,8 +2208,8 @@ TNode<HeapObject> Cast_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<HeapObject>{p_o};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=363&c=1
-TNode<Oddball> Cast_Null_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=364&c=1
+TNode<Null> Cast_Null_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2216,7 +2218,7 @@ TNode<Oddball> Cast_Null_0(compiler::CodeAssemblerState* state_, TNode<HeapObjec
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Null> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2230,7 +2232,7 @@ TNode<Oddball> Cast_Null_0(compiler::CodeAssemblerState* state_, TNode<HeapObjec
     ca_.Goto(label_CastError);
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Null> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp2 = TORQUE_CAST(TNode<HeapObject>{p_o});
@@ -2238,11 +2240,11 @@ TNode<Oddball> Cast_Null_0(compiler::CodeAssemblerState* state_, TNode<HeapObjec
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp2};
+  return TNode<Null>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=369&c=1
-TNode<Oddball> Cast_Undefined_2(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=370&c=1
+TNode<Undefined> Cast_Undefined_2(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2251,7 +2253,7 @@ TNode<Oddball> Cast_Undefined_2(compiler::CodeAssemblerState* state_, TNode<Heap
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -2274,10 +2276,10 @@ TNode<Oddball> Cast_Undefined_2(compiler::CodeAssemblerState* state_, TNode<Heap
   }
 
     ca_.Bind(&block5);
-  return TNode<Oddball>{tmp0};
+  return TNode<Undefined>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=375&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=376&c=1
 TNode<FixedArray> Cast_EmptyFixedArray_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2312,7 +2314,7 @@ TNode<FixedArray> Cast_EmptyFixedArray_0(compiler::CodeAssemblerState* state_, T
   return TNode<FixedArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=380&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=381&c=1
 TNode<FixedArray> Cast_EmptyFixedArray_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2348,7 +2350,7 @@ TNode<FixedArray> Cast_EmptyFixedArray_1(compiler::CodeAssemblerState* state_, T
   return TNode<FixedArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=386&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=387&c=1
 TNode<FixedArrayBase> Cast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2410,7 +2412,7 @@ TNode<FixedArrayBase> Cast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler::CodeA
   return TNode<FixedArrayBase>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=401&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=402&c=1
 TNode<JSReceiver> Cast_Callable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2446,7 +2448,7 @@ TNode<JSReceiver> Cast_Callable_0(compiler::CodeAssemblerState* state_, TNode<He
   return TNode<JSReceiver>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=406&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=407&c=1
 TNode<HeapObject> Cast_Undefined_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFunction_OR_JSBoundFunction_OR_JSWrappedFunction_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2459,7 +2461,7 @@ TNode<HeapObject> Cast_Undefined_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFu
   compiler::CodeAssemblerParameterizedLabel<HeapObject> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2468,7 +2470,7 @@ TNode<HeapObject> Cast_Undefined_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFu
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = Undefined_0(state_);
@@ -2508,7 +2510,7 @@ TNode<HeapObject> Cast_Undefined_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFu
   return TNode<HeapObject>{phi_bb7_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=412&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=413&c=1
 TNode<HeapObject> Cast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2521,7 +2523,7 @@ TNode<HeapObject> Cast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<HeapObject> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2530,7 +2532,7 @@ TNode<HeapObject> Cast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* s
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = Undefined_0(state_);
@@ -2570,7 +2572,7 @@ TNode<HeapObject> Cast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* s
   return TNode<HeapObject>{phi_bb7_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=419&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=420&c=1
 TNode<Symbol> Cast_PublicSymbol_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_s, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2607,7 +2609,7 @@ TNode<Symbol> Cast_PublicSymbol_0(compiler::CodeAssemblerState* state_, TNode<Sy
   return TNode<Symbol>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=423&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=424&c=1
 TNode<Symbol> Cast_PrivateSymbol_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_s, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2644,7 +2646,7 @@ TNode<Symbol> Cast_PrivateSymbol_0(compiler::CodeAssemblerState* state_, TNode<S
   return TNode<Symbol>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=427&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=428&c=1
 TNode<Symbol> Cast_PublicSymbol_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2705,7 +2707,7 @@ TNode<Symbol> Cast_PublicSymbol_1(compiler::CodeAssemblerState* state_, TNode<He
   return TNode<Symbol>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=431&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=432&c=1
 TNode<Symbol> Cast_PrivateSymbol_1(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2766,7 +2768,7 @@ TNode<Symbol> Cast_PrivateSymbol_1(compiler::CodeAssemblerState* state_, TNode<H
   return TNode<Symbol>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=436&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=437&c=1
 TNode<String> Cast_DirectString_0(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2802,7 +2804,7 @@ TNode<String> Cast_DirectString_0(compiler::CodeAssemblerState* state_, TNode<St
   return TNode<String>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=441&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=442&c=1
 TNode<JSReceiver> Cast_Constructor_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2838,7 +2840,7 @@ TNode<JSReceiver> Cast_Constructor_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<JSReceiver>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=446&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=447&c=1
 TNode<JSFunction> Cast_JSFunctionWithPrototypeSlot_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2874,7 +2876,7 @@ TNode<JSFunction> Cast_JSFunctionWithPrototypeSlot_0(compiler::CodeAssemblerStat
   return TNode<JSFunction>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=451&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=452&c=1
 TNode<BigInt> Cast_BigInt_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2907,7 +2909,7 @@ TNode<BigInt> Cast_BigInt_0(compiler::CodeAssemblerState* state_, TNode<HeapObje
   return TNode<BigInt>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=456&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=457&c=1
 TNode<JSArray> Cast_JSRegExpResult_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2940,7 +2942,7 @@ TNode<JSArray> Cast_JSRegExpResult_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<JSArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=462&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=463&c=1
 TNode<JSArgumentsObject> Cast_JSSloppyArgumentsObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3023,7 +3025,7 @@ TNode<JSArgumentsObject> Cast_JSSloppyArgumentsObject_0(compiler::CodeAssemblerS
   return TNode<JSArgumentsObject>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=473&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=474&c=1
 TNode<JSArgumentsObject> Cast_JSStrictArgumentsObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3062,7 +3064,7 @@ TNode<JSArgumentsObject> Cast_JSStrictArgumentsObject_0(compiler::CodeAssemblerS
   return TNode<JSArgumentsObject>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=482&c=1
 TNode<JSArgumentsObject> Cast_JSArgumentsObjectWithLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3124,7 +3126,7 @@ TNode<JSArgumentsObject> Cast_JSArgumentsObjectWithLength_0(compiler::CodeAssemb
   return TNode<JSArgumentsObject>{phi_bb2_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=497&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=498&c=1
 TNode<JSRegExp> Cast_FastJSRegExp_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3157,7 +3159,7 @@ TNode<JSRegExp> Cast_FastJSRegExp_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<JSRegExp>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=509&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=510&c=1
 TNode<JSArray> Cast_FastJSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3264,7 +3266,7 @@ TNode<JSArray> Cast_FastJSArray_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<JSArray>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=527&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=528&c=1
 TNode<JSArray> Cast_FastJSArrayForRead_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3357,7 +3359,7 @@ TNode<JSArray> Cast_FastJSArrayForRead_0(compiler::CodeAssemblerState* state_, T
   return TNode<JSArray>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=546&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=547&c=1
 TNode<JSArray> Cast_FastJSArrayForCopy_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3415,7 +3417,7 @@ TNode<JSArray> Cast_FastJSArrayForCopy_0(compiler::CodeAssemblerState* state_, T
   return TNode<JSArray>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=555&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=556&c=1
 TNode<JSArray> Cast_FastJSArrayForConcat_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3473,7 +3475,7 @@ TNode<JSArray> Cast_FastJSArrayForConcat_0(compiler::CodeAssemblerState* state_,
   return TNode<JSArray>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=563&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=564&c=1
 TNode<JSArray> Cast_FastJSArrayWithNoCustomIteration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3531,7 +3533,7 @@ TNode<JSArray> Cast_FastJSArrayWithNoCustomIteration_0(compiler::CodeAssemblerSt
   return TNode<JSArray>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=571&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=572&c=1
 TNode<JSArray> Cast_FastJSArrayForReadWithNoCustomIteration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3590,6 +3592,122 @@ TNode<JSArray> Cast_FastJSArrayForReadWithNoCustomIteration_0(compiler::CodeAsse
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=581&c=1
+TNode<JSSet> Cast_JSSetWithNoCustomIteration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<BoolT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = CodeStubAssembler(state_).IsSetIteratorProtectorCellInvalid();
+    ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block1);
+  }
+
+  TNode<JSSet> tmp1;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    compiler::CodeAssemblerLabel label2(&ca_);
+    tmp1 = Cast_JSSet_0(state_, TNode<HeapObject>{p_o}, &label2);
+    ca_.Goto(&block5);
+    if (label2.is_used()) {
+      ca_.Bind(&label2);
+      ca_.Goto(&block6);
+    }
+  }
+
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block1);
+  }
+
+  TNode<JSSet> tmp3;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp3 = (TNode<JSSet>{tmp1});
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<JSSet>{tmp3};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=589&c=1
+TNode<JSMap> Cast_JSMapWithNoCustomIteration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<BoolT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = CodeStubAssembler(state_).IsMapIteratorProtectorCellInvalid();
+    ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block1);
+  }
+
+  TNode<JSMap> tmp1;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    compiler::CodeAssemblerLabel label2(&ca_);
+    tmp1 = Cast_JSMap_0(state_, TNode<HeapObject>{p_o}, &label2);
+    ca_.Goto(&block5);
+    if (label2.is_used()) {
+      ca_.Bind(&label2);
+      ca_.Goto(&block6);
+    }
+  }
+
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block1);
+  }
+
+  TNode<JSMap> tmp3;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp3 = (TNode<JSMap>{tmp1});
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<JSMap>{tmp3};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=599&c=1
 TNode<SeqOneByteString> Cast_SeqOneByteString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3650,7 +3768,7 @@ TNode<SeqOneByteString> Cast_SeqOneByteString_0(compiler::CodeAssemblerState* st
   return TNode<SeqOneByteString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=586&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=604&c=1
 TNode<SeqOneByteString> Cast_SeqOneByteString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3695,7 +3813,7 @@ TNode<SeqOneByteString> Cast_SeqOneByteString_1(compiler::CodeAssemblerState* st
   return TNode<SeqOneByteString>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=596&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=614&c=1
 TNode<SeqTwoByteString> Cast_SeqTwoByteString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3756,7 +3874,7 @@ TNode<SeqTwoByteString> Cast_SeqTwoByteString_0(compiler::CodeAssemblerState* st
   return TNode<SeqTwoByteString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=601&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=619&c=1
 TNode<SeqTwoByteString> Cast_SeqTwoByteString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3803,7 +3921,7 @@ TNode<SeqTwoByteString> Cast_SeqTwoByteString_1(compiler::CodeAssemblerState* st
   return TNode<SeqTwoByteString>{tmp8};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=611&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=629&c=1
 TNode<ThinString> Cast_ThinString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3864,7 +3982,7 @@ TNode<ThinString> Cast_ThinString_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<ThinString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=616&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=634&c=1
 TNode<ThinString> Cast_ThinString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3903,7 +4021,7 @@ TNode<ThinString> Cast_ThinString_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<ThinString>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=624&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=642&c=1
 TNode<ConsString> Cast_ConsString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3964,7 +4082,7 @@ TNode<ConsString> Cast_ConsString_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<ConsString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=629&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=647&c=1
 TNode<ConsString> Cast_ConsString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4003,7 +4121,7 @@ TNode<ConsString> Cast_ConsString_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<ConsString>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=637&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=655&c=1
 TNode<SlicedString> Cast_SlicedString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4064,7 +4182,7 @@ TNode<SlicedString> Cast_SlicedString_0(compiler::CodeAssemblerState* state_, TN
   return TNode<SlicedString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=642&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=660&c=1
 TNode<SlicedString> Cast_SlicedString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4103,7 +4221,7 @@ TNode<SlicedString> Cast_SlicedString_1(compiler::CodeAssemblerState* state_, TN
   return TNode<SlicedString>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=651&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=669&c=1
 TNode<ExternalOneByteString> Cast_ExternalOneByteString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4164,7 +4282,7 @@ TNode<ExternalOneByteString> Cast_ExternalOneByteString_0(compiler::CodeAssemble
   return TNode<ExternalOneByteString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=657&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=675&c=1
 TNode<ExternalOneByteString> Cast_ExternalOneByteString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4209,7 +4327,7 @@ TNode<ExternalOneByteString> Cast_ExternalOneByteString_1(compiler::CodeAssemble
   return TNode<ExternalOneByteString>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=668&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=686&c=1
 TNode<ExternalTwoByteString> Cast_ExternalTwoByteString_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4270,7 +4388,7 @@ TNode<ExternalTwoByteString> Cast_ExternalTwoByteString_0(compiler::CodeAssemble
   return TNode<ExternalTwoByteString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=674&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=692&c=1
 TNode<ExternalTwoByteString> Cast_ExternalTwoByteString_1(compiler::CodeAssemblerState* state_, TNode<String> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4317,7 +4435,7 @@ TNode<ExternalTwoByteString> Cast_ExternalTwoByteString_1(compiler::CodeAssemble
   return TNode<ExternalTwoByteString>{tmp8};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=685&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=703&c=1
 TNode<HeapObject> Cast_JSReceiver_OR_Null_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4330,7 +4448,7 @@ TNode<HeapObject> Cast_JSReceiver_OR_Null_0(compiler::CodeAssemblerState* state_
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Null> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -4379,7 +4497,7 @@ TNode<HeapObject> Cast_JSReceiver_OR_Null_0(compiler::CodeAssemblerState* state_
   return TNode<HeapObject>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=700&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=718&c=1
 TNode<HeapObject> Cast_JSReceiver_OR_Symbol_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4441,7 +4559,7 @@ TNode<HeapObject> Cast_JSReceiver_OR_Symbol_0(compiler::CodeAssemblerState* stat
   return TNode<HeapObject>{phi_bb2_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=715&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=734&c=1
 TNode<Object> Cast_Smi_OR_PromiseReaction_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4503,7 +4621,7 @@ TNode<Object> Cast_Smi_OR_PromiseReaction_0(compiler::CodeAssemblerState* state_
   return TNode<Object>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=729&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=748&c=1
 TNode<HeapObject> Cast_String_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFunction_OR_JSBoundFunction_OR_JSWrappedFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4565,7 +4683,7 @@ TNode<HeapObject> Cast_String_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFunct
   return TNode<HeapObject>{phi_bb2_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=744&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=763&c=1
 TNode<Object> Cast_Zero_OR_PromiseReaction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4627,7 +4745,7 @@ TNode<Object> Cast_Zero_OR_PromiseReaction_0(compiler::CodeAssemblerState* state
   return TNode<Object>{phi_bb2_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=759&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=778&c=1
 TNode<JSFunctionOrBoundFunctionOrWrappedFunction> Cast_JSFunction_OR_JSBoundFunction_OR_JSWrappedFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4708,7 +4826,7 @@ TNode<JSFunctionOrBoundFunctionOrWrappedFunction> Cast_JSFunction_OR_JSBoundFunc
   return TNode<JSFunctionOrBoundFunctionOrWrappedFunction>{phi_bb2_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=777&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=797&c=1
 TNode<HeapObject> Cast_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4721,7 +4839,7 @@ TNode<HeapObject> Cast_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -4770,7 +4888,7 @@ TNode<HeapObject> Cast_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* s
   return TNode<HeapObject>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=792&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=812&c=1
 TNode<HeapObject> Cast_Null_OR_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4783,7 +4901,7 @@ TNode<HeapObject> Cast_Null_OR_JSProxy_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Null> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -4832,7 +4950,7 @@ TNode<HeapObject> Cast_Null_OR_JSProxy_0(compiler::CodeAssemblerState* state_, T
   return TNode<HeapObject>{phi_bb2_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=822&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=842&c=1
 TNode<RegExpMatchInfo> UnsafeCast_RegExpMatchInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4851,7 +4969,26 @@ TNode<RegExpMatchInfo> UnsafeCast_RegExpMatchInfo_0(compiler::CodeAssemblerState
   return TNode<RegExpMatchInfo>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=840&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=848&c=1
+TNode<ArrayList> UnsafeCast_ArrayList_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<ArrayList> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<ArrayList>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=864&c=1
 TNode<Object> Cast_Object_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label__CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4868,7 +5005,7 @@ TNode<Object> Cast_Object_0(compiler::CodeAssemblerState* state_, TNode<Object> 
   return TNode<Object>{p_o};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_TheHole_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4879,7 +5016,7 @@ TNode<BoolT> Is_TheHole_Object_0(compiler::CodeAssemblerState* state_, TNode<Con
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<HeapObject> tmp0;
+  TNode<Hole> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -5949,7 +6086,7 @@ TNode<BoolT> Is_Symbol_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=340&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=341&c=5
 TNode<Context> Cast_Context_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6010,7 +6147,7 @@ TNode<Context> Cast_Context_1(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<Context>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=513&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=514&c=8
 TNode<BoolT> Is_JSArray_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6057,7 +6194,7 @@ TNode<BoolT> Is_JSArray_HeapObject_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=750&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=769&c=5
 TNode<PromiseReaction> Cast_PromiseReaction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6118,7 +6255,7 @@ TNode<PromiseReaction> Cast_PromiseReaction_1(compiler::CodeAssemblerState* stat
   return TNode<PromiseReaction>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=762&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=782&c=5
 TNode<JSFunction> Cast_JSFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6179,7 +6316,7 @@ TNode<JSFunction> Cast_JSFunction_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<JSFunction>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=765&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=785&c=5
 TNode<JSBoundFunction> Cast_JSBoundFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6240,7 +6377,7 @@ TNode<JSBoundFunction> Cast_JSBoundFunction_1(compiler::CodeAssemblerState* stat
   return TNode<JSBoundFunction>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=768&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=788&c=5
 TNode<JSWrappedFunction> Cast_JSWrappedFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6301,7 +6438,7 @@ TNode<JSWrappedFunction> Cast_JSWrappedFunction_1(compiler::CodeAssemblerState* 
   return TNode<JSWrappedFunction>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=824&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=844&c=10
 TNode<BoolT> Is_FixedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6348,7 +6485,54 @@ TNode<BoolT> Is_FixedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
+TNode<BoolT> Is_Smi_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Smi> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = Cast_Smi_0(state_, TNode<Object>{p_o}, &label1);
+    ca_.Goto(&block4);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block5);
+    }
+  }
+
+  TNode<BoolT> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    ca_.Goto(&block1, tmp2);
+  }
+
+  TNode<BoolT> tmp3;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block1, tmp3);
+  }
+
+  TNode<BoolT> phi_bb1_2;
+  if (block1.is_used()) {
+    ca_.Bind(&block1, &phi_bb1_2);
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<BoolT>{phi_bb1_2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_FeedbackVector_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6395,7 +6579,7 @@ TNode<BoolT> Is_FeedbackVector_Object_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<FeedbackVector> Cast_FeedbackVector_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6456,7 +6640,7 @@ TNode<FeedbackVector> Cast_FeedbackVector_1(compiler::CodeAssemblerState* state_
   return TNode<FeedbackVector>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSAny_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6503,7 +6687,7 @@ TNode<BoolT> Is_JSAny_Object_0(compiler::CodeAssemblerState* state_, TNode<Conte
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_SeqTwoByteString_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6550,7 +6734,7 @@ TNode<BoolT> Is_SeqTwoByteString_Object_0(compiler::CodeAssemblerState* state_, 
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<SeqTwoByteString> Cast_SeqTwoByteString_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6611,7 +6795,7 @@ TNode<SeqTwoByteString> Cast_SeqTwoByteString_2(compiler::CodeAssemblerState* st
   return TNode<SeqTwoByteString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_SeqOneByteString_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6658,7 +6842,7 @@ TNode<BoolT> Is_SeqOneByteString_Object_0(compiler::CodeAssemblerState* state_, 
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<SeqOneByteString> Cast_SeqOneByteString_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6719,7 +6903,7 @@ TNode<SeqOneByteString> Cast_SeqOneByteString_2(compiler::CodeAssemblerState* st
   return TNode<SeqOneByteString>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_WasmArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6766,7 +6950,7 @@ TNode<BoolT> Is_WasmArray_Object_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<WasmArray> Cast_WasmArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6827,54 +7011,7 @@ TNode<WasmArray> Cast_WasmArray_1(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<WasmArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
-TNode<BoolT> Is_Smi_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Smi> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_Smi_0(state_, TNode<Object>{p_o}, &label1);
-    ca_.Goto(&block4);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block5);
-    }
-  }
-
-  TNode<BoolT> tmp2;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block1, tmp2);
-  }
-
-  TNode<BoolT> tmp3;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block1, tmp3);
-  }
-
-  TNode<BoolT> phi_bb1_2;
-  if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_2);
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<BoolT>{phi_bb1_2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<WasmInternalFunction> Cast_WasmInternalFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6935,7 +7072,7 @@ TNode<WasmInternalFunction> Cast_WasmInternalFunction_1(compiler::CodeAssemblerS
   return TNode<WasmInternalFunction>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_WasmTypeInfo_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6982,7 +7119,7 @@ TNode<BoolT> Is_WasmTypeInfo_Object_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<WasmTypeInfo> Cast_WasmTypeInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7043,7 +7180,7 @@ TNode<WasmTypeInfo> Cast_WasmTypeInfo_1(compiler::CodeAssemblerState* state_, TN
   return TNode<WasmTypeInfo>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7090,7 +7227,7 @@ TNode<BoolT> Is_JSArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_NumberDictionary_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7137,7 +7274,7 @@ TNode<BoolT> Is_NumberDictionary_Object_0(compiler::CodeAssemblerState* state_, 
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_FixedDoubleArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7184,7 +7321,7 @@ TNode<BoolT> Is_FixedDoubleArray_Object_0(compiler::CodeAssemblerState* state_, 
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSTypedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7231,7 +7368,7 @@ TNode<BoolT> Is_JSTypedArray_Object_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Smi_OR_HeapNumber_OR_TheHole_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7278,8 +7415,8 @@ TNode<BoolT> Is_Smi_OR_HeapNumber_OR_TheHole_Object_0(compiler::CodeAssemblerSta
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
-TNode<BoolT> Is_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
+TNode<BoolT> Is_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -7293,7 +7430,7 @@ TNode<BoolT> Is_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Object>{p_o}, &label1);
+    tmp0 = Cast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Object>{p_o}, &label1);
     ca_.Goto(&block4);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -7325,7 +7462,7 @@ TNode<BoolT> Is_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_HeapObject_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7372,7 +7509,7 @@ TNode<BoolT> Is_HeapObject_Object_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<FixedDoubleArray> Cast_FixedDoubleArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7433,68 +7570,7 @@ TNode<FixedDoubleArray> Cast_FixedDoubleArray_1(compiler::CodeAssemblerState* st
   return TNode<FixedDoubleArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
-TNode<JSArray> Cast_FastJSArrayForReadWithNoCustomIteration_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<HeapObject> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{p_o}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(&block1);
-  }
-
-  TNode<JSArray> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_FastJSArrayForReadWithNoCustomIteration_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{tmp0}, &label3);
-    ca_.Goto(&block5);
-    if (label3.is_used()) {
-      ca_.Bind(&label3);
-      ca_.Goto(&block6);
-    }
-  }
-
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    ca_.Goto(&block1);
-  }
-
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    ca_.Goto(&block7);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block7);
-  return TNode<JSArray>{tmp2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Boolean_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7505,7 +7581,7 @@ TNode<BoolT> Is_Boolean_Object_0(compiler::CodeAssemblerState* state_, TNode<Con
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Boolean> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -7541,7 +7617,7 @@ TNode<BoolT> Is_Boolean_Object_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSReceiver_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7588,7 +7664,7 @@ TNode<BoolT> Is_JSReceiver_Object_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSPrimitiveWrapper_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7635,7 +7711,7 @@ TNode<BoolT> Is_JSPrimitiveWrapper_Object_0(compiler::CodeAssemblerState* state_
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Map_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7682,7 +7758,7 @@ TNode<BoolT> Is_Map_Object_0(compiler::CodeAssemblerState* state_, TNode<Context
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSDataView_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7729,7 +7805,7 @@ TNode<BoolT> Is_JSDataView_Object_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSRabGsabDataView_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7776,7 +7852,7 @@ TNode<BoolT> Is_JSRabGsabDataView_Object_0(compiler::CodeAssemblerState* state_,
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSFinalizationRegistry_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7823,7 +7899,7 @@ TNode<BoolT> Is_JSFinalizationRegistry_Object_0(compiler::CodeAssemblerState* st
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSReceiver_OR_Symbol_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7870,7 +7946,7 @@ TNode<BoolT> Is_JSReceiver_OR_Symbol_Object_0(compiler::CodeAssemblerState* stat
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_ContextOrFrameType_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7917,7 +7993,7 @@ TNode<BoolT> Is_ContextOrFrameType_Object_0(compiler::CodeAssemblerState* state_
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=146&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=147&c=5
 TNode<MaybeObject> Cast_WeakHeapObject_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7952,7 +8028,7 @@ TNode<MaybeObject> Cast_WeakHeapObject_0(compiler::CodeAssemblerState* state_, T
   return TNode<MaybeObject>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=150&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=151&c=14
 TNode<AccessorInfo> Cast_AccessorInfo_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8013,7 +8089,7 @@ TNode<AccessorInfo> Cast_AccessorInfo_2(compiler::CodeAssemblerState* state_, TN
   return TNode<AccessorInfo>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSBoundFunction_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8060,7 +8136,7 @@ TNode<BoolT> Is_JSBoundFunction_Object_0(compiler::CodeAssemblerState* state_, T
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<AllocationSite> Cast_AllocationSite_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8121,54 +8197,7 @@ TNode<AllocationSite> Cast_AllocationSite_1(compiler::CodeAssemblerState* state_
   return TNode<AllocationSite>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
-TNode<BoolT> Is_CoverageInfo_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<CoverageInfo> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_CoverageInfo_1(state_, TNode<Context>{p_context}, TNode<Object>{p_o}, &label1);
-    ca_.Goto(&block4);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block5);
-    }
-  }
-
-  TNode<BoolT> tmp2;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block1, tmp2);
-  }
-
-  TNode<BoolT> tmp3;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block1, tmp3);
-  }
-
-  TNode<BoolT> phi_bb1_2;
-  if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_2);
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<BoolT>{phi_bb1_2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<FunctionTemplateInfo> Cast_FunctionTemplateInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8229,7 +8258,7 @@ TNode<FunctionTemplateInfo> Cast_FunctionTemplateInfo_1(compiler::CodeAssemblerS
   return TNode<FunctionTemplateInfo>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_PromiseFulfillReactionJobTask_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8276,7 +8305,7 @@ TNode<BoolT> Is_PromiseFulfillReactionJobTask_Object_0(compiler::CodeAssemblerSt
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_PromiseRejectReactionJobTask_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8323,7 +8352,7 @@ TNode<BoolT> Is_PromiseRejectReactionJobTask_Object_0(compiler::CodeAssemblerSta
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Zero_OR_PromiseReaction_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8370,7 +8399,7 @@ TNode<BoolT> Is_Zero_OR_PromiseReaction_Object_0(compiler::CodeAssemblerState* s
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Constructor_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8417,7 +8446,7 @@ TNode<BoolT> Is_Constructor_Object_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_NativeContext_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8464,7 +8493,7 @@ TNode<BoolT> Is_NativeContext_Object_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSRegExp_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8511,7 +8540,7 @@ TNode<BoolT> Is_JSRegExp_Object_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_FastJSRegExp_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8558,7 +8587,7 @@ TNode<BoolT> Is_FastJSRegExp_Object_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSRegExpResult_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8605,7 +8634,7 @@ TNode<BoolT> Is_JSRegExpResult_Object_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_String_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8652,7 +8681,7 @@ TNode<BoolT> Is_String_Object_0(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_PositiveSmi_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8699,7 +8728,7 @@ TNode<BoolT> Is_PositiveSmi_Object_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Symbol_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8746,7 +8775,7 @@ TNode<BoolT> Is_Symbol_Object_0(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Numeric_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8793,7 +8822,7 @@ TNode<BoolT> Is_Numeric_Object_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSWeakRef_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8840,7 +8869,7 @@ TNode<BoolT> Is_JSWeakRef_Object_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<JSArgumentsObject> Cast_JSArgumentsObjectWithLength_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8901,7 +8930,7 @@ TNode<JSArgumentsObject> Cast_JSArgumentsObjectWithLength_1(compiler::CodeAssemb
   return TNode<JSArgumentsObject>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<ExportedSubClassBase> Cast_ExportedSubClassBase_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8962,7 +8991,7 @@ TNode<ExportedSubClassBase> Cast_ExportedSubClassBase_1(compiler::CodeAssemblerS
   return TNode<ExportedSubClassBase>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<ExportedSubClass> Cast_ExportedSubClass_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9023,7 +9052,7 @@ TNode<ExportedSubClass> Cast_ExportedSubClass_1(compiler::CodeAssemblerState* st
   return TNode<ExportedSubClass>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<ExportedSubClass2> Cast_ExportedSubClass2_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9084,7 +9113,7 @@ TNode<ExportedSubClass2> Cast_ExportedSubClass2_1(compiler::CodeAssemblerState* 
   return TNode<ExportedSubClass2>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSObject_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9131,7 +9160,7 @@ TNode<BoolT> Is_JSObject_Object_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_HeapNumber_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9178,7 +9207,54 @@ TNode<BoolT> Is_HeapNumber_Object_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
+TNode<BoolT> Is_WasmExportedFunctionData_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<WasmExportedFunctionData> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = Cast_WasmExportedFunctionData_1(state_, TNode<Context>{p_context}, TNode<Object>{p_o}, &label1);
+    ca_.Goto(&block4);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block5);
+    }
+  }
+
+  TNode<BoolT> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    ca_.Goto(&block1, tmp2);
+  }
+
+  TNode<BoolT> tmp3;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block1, tmp3);
+  }
+
+  TNode<BoolT> phi_bb1_2;
+  if (block1.is_used()) {
+    ca_.Bind(&block1, &phi_bb1_2);
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<BoolT>{phi_bb1_2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<NumberDictionary> Cast_NumberDictionary_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9239,7 +9315,7 @@ TNode<NumberDictionary> Cast_NumberDictionary_1(compiler::CodeAssemblerState* st
   return TNode<NumberDictionary>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_FixedDoubleArray_OR_EmptyFixedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9286,7 +9362,7 @@ TNode<BoolT> Is_FixedDoubleArray_OR_EmptyFixedArray_Object_0(compiler::CodeAssem
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<JSPrimitiveWrapper> Cast_JSPrimitiveWrapper_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9347,7 +9423,7 @@ TNode<JSPrimitiveWrapper> Cast_JSPrimitiveWrapper_1(compiler::CodeAssemblerState
   return TNode<JSPrimitiveWrapper>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<Map> Cast_Map_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9408,68 +9484,7 @@ TNode<Map> Cast_Map_1(compiler::CodeAssemblerState* state_, TNode<Context> p_con
   return TNode<Map>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
-TNode<CoverageInfo> Cast_CoverageInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<HeapObject> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{p_o}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(&block1);
-  }
-
-  TNode<CoverageInfo> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_CoverageInfo_0(state_, TNode<HeapObject>{tmp0}, &label3);
-    ca_.Goto(&block5);
-    if (label3.is_used()) {
-      ca_.Bind(&label3);
-      ca_.Goto(&block6);
-    }
-  }
-
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    ca_.Goto(&block1);
-  }
-
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    ca_.Goto(&block7);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block7);
-  return TNode<CoverageInfo>{tmp2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<PromiseFulfillReactionJobTask> Cast_PromiseFulfillReactionJobTask_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9530,7 +9545,7 @@ TNode<PromiseFulfillReactionJobTask> Cast_PromiseFulfillReactionJobTask_1(compil
   return TNode<PromiseFulfillReactionJobTask>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<PromiseRejectReactionJobTask> Cast_PromiseRejectReactionJobTask_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9591,7 +9606,7 @@ TNode<PromiseRejectReactionJobTask> Cast_PromiseRejectReactionJobTask_1(compiler
   return TNode<PromiseRejectReactionJobTask>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_PromiseCapability_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9638,7 +9653,7 @@ TNode<BoolT> Is_PromiseCapability_Object_0(compiler::CodeAssemblerState* state_,
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<PromiseCapability> Cast_PromiseCapability_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9699,7 +9714,7 @@ TNode<PromiseCapability> Cast_PromiseCapability_1(compiler::CodeAssemblerState* 
   return TNode<PromiseCapability>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<NativeContext> Cast_NativeContext_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9760,7 +9775,7 @@ TNode<NativeContext> Cast_NativeContext_1(compiler::CodeAssemblerState* state_, 
   return TNode<NativeContext>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Null_OR_JSProxy_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9807,7 +9822,7 @@ TNode<BoolT> Is_Null_OR_JSProxy_Object_0(compiler::CodeAssemblerState* state_, T
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<HeapObject> Cast_Null_OR_JSProxy_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9868,7 +9883,7 @@ TNode<HeapObject> Cast_Null_OR_JSProxy_1(compiler::CodeAssemblerState* state_, T
   return TNode<HeapObject>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<JSObject> Cast_JSObject_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9929,7 +9944,7 @@ TNode<JSObject> Cast_JSObject_1(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<JSObject>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<HeapNumber> Cast_HeapNumber_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9990,7 +10005,68 @@ TNode<HeapNumber> Cast_HeapNumber_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<HeapNumber>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
+TNode<WasmExportedFunctionData> Cast_WasmExportedFunctionData_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<HeapObject> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{p_o}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(&block1);
+  }
+
+  TNode<WasmExportedFunctionData> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    compiler::CodeAssemblerLabel label3(&ca_);
+    tmp2 = Cast_WasmExportedFunctionData_0(state_, TNode<HeapObject>{tmp0}, &label3);
+    ca_.Goto(&block5);
+    if (label3.is_used()) {
+      ca_.Bind(&label3);
+      ca_.Goto(&block6);
+    }
+  }
+
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block1);
+  }
+
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<WasmExportedFunctionData>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_ScopeInfo_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10037,7 +10113,7 @@ TNode<BoolT> Is_ScopeInfo_Object_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<ScopeInfo> Cast_ScopeInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10098,7 +10174,7 @@ TNode<ScopeInfo> Cast_ScopeInfo_1(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<ScopeInfo>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<FixedArrayBase> Cast_FixedDoubleArray_OR_EmptyFixedArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10159,7 +10235,7 @@ TNode<FixedArrayBase> Cast_FixedDoubleArray_OR_EmptyFixedArray_1(compiler::CodeA
   return TNode<FixedArrayBase>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_JSFunction_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10206,7 +10282,7 @@ TNode<BoolT> Is_JSFunction_Object_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Undefined_OR_FixedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10253,7 +10329,7 @@ TNode<BoolT> Is_Undefined_OR_FixedArray_Object_0(compiler::CodeAssemblerState* s
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=808&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=828&c=3
 TNode<HeapObject> Cast_Undefined_OR_FixedArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10314,7 +10390,7 @@ TNode<HeapObject> Cast_Undefined_OR_FixedArray_1(compiler::CodeAssemblerState* s
   return TNode<HeapObject>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=814&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/cast.tq?l=834&c=10
 TNode<BoolT> Is_Undefined_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFunction_OR_JSBoundFunction_OR_JSWrappedFunction_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

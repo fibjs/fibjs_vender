@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-set-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -321,7 +322,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   TNode<UintPtrT> phi_bb26_8;
   TNode<UintPtrT> phi_bb26_19;
   TNode<BoolT> phi_bb26_20;
-  TNode<Oddball> tmp25;
+  TNode<Undefined> tmp25;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_7, &phi_bb26_8, &phi_bb26_19, &phi_bb26_20);
     tmp25 = Undefined_0(state_);
@@ -341,7 +342,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   TNode<UintPtrT> phi_bb28_8;
   TNode<UintPtrT> phi_bb28_15;
   TNode<BoolT> phi_bb28_16;
-  TNode<Oddball> tmp26;
+  TNode<Undefined> tmp26;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_7, &phi_bb28_8, &phi_bb28_15, &phi_bb28_16);
     tmp26 = Undefined_0(state_);
@@ -359,7 +360,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=112&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=111&c=1
 void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<JSTypedArray> p_target, TNode<UintPtrT> p_targetLength, TNode<Object> p_arrayArg, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -569,7 +570,7 @@ void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block29);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=173&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=171&c=1
 void TypedArrayPrototypeSetTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedTargetAndLength, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedSourceAndLength, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

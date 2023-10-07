@@ -1,8 +1,7 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/heap-number.tq?l=10&c=20
 template<class D, class P>
 double TorqueGeneratedHeapNumber<D, P>::value() const {
-  double value;
-  value = this->template ReadField<double>(kValueOffset);
+  double value = this->template ReadField<double>(kValueOffset);
   return value;
 }
 
@@ -14,8 +13,8 @@ void TorqueGeneratedHeapNumber<D, P>::set_value(double value, RelaxedStoreTag) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/heap-number.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedHeapNumber<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedHeapNumber<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

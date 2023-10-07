@@ -1,79 +1,76 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
 template<class D, class P>
-String TorqueGeneratedJSNumberFormat<D, P>::locale() const {
+Tagged<String> TorqueGeneratedJSNumberFormat<D, P>::locale() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSNumberFormat::locale(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
 template<class D, class P>
-String TorqueGeneratedJSNumberFormat<D, P>::locale(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kLocaleOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedJSNumberFormat<D, P>::locale(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kLocaleOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=8&c=3
 template<class D, class P>
-void TorqueGeneratedJSNumberFormat<D, P>::set_locale(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedJSNumberFormat<D, P>::set_locale(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSNumberFormat<D, P>::icu_number_formatter() const {
+Tagged<Foreign> TorqueGeneratedJSNumberFormat<D, P>::icu_number_formatter() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSNumberFormat::icu_number_formatter(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSNumberFormat<D, P>::icu_number_formatter(PtrComprCageBase cage_base) const {
-  Foreign value;
-  value = TaggedField<Foreign>::load(cage_base, *this, kIcuNumberFormatterOffset);
-  DCHECK(value.IsForeign());
+Tagged<Foreign> TorqueGeneratedJSNumberFormat<D, P>::icu_number_formatter(PtrComprCageBase cage_base) const {
+  Tagged<Foreign> value = TaggedField<Tagged<Foreign>>::load(cage_base, *this, kIcuNumberFormatterOffset);
+  DCHECK(IsForeign(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=9&c=3
 template<class D, class P>
-void TorqueGeneratedJSNumberFormat<D, P>::set_icu_number_formatter(Foreign value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsForeign());
+void TorqueGeneratedJSNumberFormat<D, P>::set_icu_number_formatter(Tagged<Foreign> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsForeign(value));
   WRITE_FIELD(*this, kIcuNumberFormatterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuNumberFormatterOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedJSNumberFormat<D, P>::bound_format() const {
+Tagged<HeapObject> TorqueGeneratedJSNumberFormat<D, P>::bound_format() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSNumberFormat::bound_format(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedJSNumberFormat<D, P>::bound_format(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kBoundFormatOffset);
-  DCHECK(value.IsUndefined() || value.IsJSFunction());
+Tagged<HeapObject> TorqueGeneratedJSNumberFormat<D, P>::bound_format(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundFormatOffset);
+  DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
 template<class D, class P>
-void TorqueGeneratedJSNumberFormat<D, P>::set_bound_format(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsUndefined() || value.IsJSFunction());
+void TorqueGeneratedJSNumberFormat<D, P>::set_bound_format(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundFormatOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundFormatOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1
 template<class D, class P>
-D TorqueGeneratedJSNumberFormat<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSNumberFormat<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

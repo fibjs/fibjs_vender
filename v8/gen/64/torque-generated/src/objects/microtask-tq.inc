@@ -1,9 +1,9 @@
 class Microtask;
 class CallbackTask;
 class CallableTask;
-// Alias for HeapObject::IsMicrotask() that avoids inlining.
+// Alias for IsMicrotask() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsMicrotask_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsMicrotask_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=5&c=1
 template <class D, class P>
@@ -20,10 +20,10 @@ class TorqueGeneratedMicrotask : public P {
   using TorqueGeneratedClass = TorqueGeneratedMicrotask<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -47,14 +47,16 @@ class TorqueGeneratedMicrotask : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedMicrotask(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedMicrotask(Address ptr);
 };
 
-// Alias for HeapObject::IsCallbackTask() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
-V8_EXPORT_PRIVATE bool IsCallbackTask_NonInline(HeapObject o);
+// Alias for IsCallbackTask() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+V8_EXPORT_PRIVATE bool IsCallbackTask_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
 template <class D, class P>
 class TorqueGeneratedCallbackTask : public P {
   static_assert(
@@ -68,39 +70,39 @@ class TorqueGeneratedCallbackTask : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedCallbackTask<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
-  inline Foreign callback() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
-  inline Foreign callback(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
-  inline void set_callback(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=3
+  inline Tagged<Foreign> callback() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=3
+  inline Tagged<Foreign> callback(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=3
+  inline void set_callback(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=3
-  inline Foreign data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=3
-  inline Foreign data(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=3
-  inline void set_data(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
+  inline Tagged<Foreign> data() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
+  inline Tagged<Foreign> data(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
+  inline void set_data(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(CallbackTask)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
   V8_EXPORT_PRIVATE void CallbackTaskVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=3
   static constexpr int kCallbackOffset = P::kHeaderSize;
   static constexpr int kCallbackOffsetEnd = kCallbackOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
   static constexpr int kDataOffset = kCallbackOffsetEnd + 1;
   static constexpr int kDataOffsetEnd = kDataOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kDataOffsetEnd + 1;
@@ -109,14 +111,14 @@ class TorqueGeneratedCallbackTask : public P {
   static constexpr int kHeaderSize = kDataOffsetEnd + 1;
   static constexpr int kSize = kDataOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -131,14 +133,16 @@ class TorqueGeneratedCallbackTask : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedCallbackTask(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedCallbackTask(Address ptr);
 };
 
-// Alias for HeapObject::IsCallableTask() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
-V8_EXPORT_PRIVATE bool IsCallableTask_NonInline(HeapObject o);
+// Alias for IsCallableTask() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+V8_EXPORT_PRIVATE bool IsCallableTask_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
 template <class D, class P>
 class TorqueGeneratedCallableTask : public P {
   static_assert(
@@ -152,39 +156,39 @@ class TorqueGeneratedCallableTask : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedCallableTask<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
-  inline JSReceiver callable() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
-  inline JSReceiver callable(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
-  inline void set_callable(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=3
+  inline Tagged<JSReceiver> callable() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=3
+  inline Tagged<JSReceiver> callable(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=3
+  inline void set_callable(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=3
-  inline Context context() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=3
-  inline Context context(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=3
-  inline void set_context(Context value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
+  inline Tagged<Context> context() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
+  inline Tagged<Context> context(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
+  inline void set_context(Tagged<Context> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(CallableTask)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
   V8_EXPORT_PRIVATE void CallableTaskVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=3
   static constexpr int kCallableOffset = P::kHeaderSize;
   static constexpr int kCallableOffsetEnd = kCallableOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
   static constexpr int kContextOffset = kCallableOffsetEnd + 1;
   static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kContextOffsetEnd + 1;
@@ -193,14 +197,14 @@ class TorqueGeneratedCallableTask : public P {
   static constexpr int kHeaderSize = kContextOffsetEnd + 1;
   static constexpr int kSize = kContextOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -215,6 +219,8 @@ class TorqueGeneratedCallableTask : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedCallableTask(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedCallableTask(Address ptr);
 };
 

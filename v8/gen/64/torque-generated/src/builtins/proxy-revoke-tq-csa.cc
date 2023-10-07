@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-revoke-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -93,7 +94,7 @@ TF_BUILTIN(ProxyRevoke, CodeStubAssembler) {
   TNode<Object> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<HeapObject> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Null> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
@@ -109,12 +110,12 @@ TF_BUILTIN(ProxyRevoke, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp7;
+  TNode<Null> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Null> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Oddball> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<Null> tmp11;
+  TNode<Undefined> tmp12;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp7 = Null_0(state_);
@@ -129,7 +130,7 @@ TF_BUILTIN(ProxyRevoke, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp12);
   }
 
-  TNode<Oddball> tmp13;
+  TNode<Undefined> tmp13;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp13 = Undefined_0(state_);

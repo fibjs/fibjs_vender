@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-findlastindex-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -151,7 +152,7 @@ TF_BUILTIN(ArrayFindLastIndexLoopContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-findlastindex.tq?l=37&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-findlastindex.tq?l=36&c=1
 TNode<Number> FastArrayFindLastIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<JSReceiver> p_predicate, TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -411,7 +412,7 @@ TNode<Number> FastArrayFindLastIndex_0(compiler::CodeAssemblerState* state_, TNo
   TNode<Smi> phi_bb27_6;
   TNode<Smi> phi_bb27_14;
   TNode<Smi> phi_bb27_17;
-  TNode<Oddball> tmp27;
+  TNode<Undefined> tmp27;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_6, &phi_bb27_14, &phi_bb27_17);
     tmp27 = Undefined_0(state_);
@@ -571,7 +572,8 @@ TF_BUILTIN(ArrayPrototypeFindLastIndex, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp16 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp15});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp16});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp16);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 

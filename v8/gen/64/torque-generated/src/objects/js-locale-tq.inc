@@ -1,7 +1,7 @@
 class JSLocale;
-// Alias for HeapObject::IsJSLocale() that avoids inlining.
+// Alias for IsJSLocale() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsJSLocale_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSLocale_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1
 template <class D, class P>
@@ -18,17 +18,17 @@ class TorqueGeneratedJSLocale : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSLocale<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
-  inline Foreign icu_locale() const;
+  inline Tagged<Foreign> icu_locale() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
-  inline Foreign icu_locale(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> icu_locale(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
-  inline void set_icu_locale(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_icu_locale(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSLocale)
@@ -57,6 +57,8 @@ class TorqueGeneratedJSLocale : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSLocale(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSLocale(Address ptr);
 };
 

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1
-bool IsJSGeneratorObject_NonInline(HeapObject o) {
-  return o.IsJSGeneratorObject();
+bool IsJSGeneratorObject_NonInline(Tagged<HeapObject> o) {
+  return IsJSGeneratorObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedJSGeneratorObject<JSGeneratorObject, JSObject>::JSGeneratorO
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=28&c=1
-bool IsJSAsyncFunctionObject_NonInline(HeapObject o) {
-  return o.IsJSAsyncFunctionObject();
+bool IsJSAsyncFunctionObject_NonInline(Tagged<HeapObject> o) {
+  return IsJSAsyncFunctionObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedJSAsyncFunctionObject<JSAsyncFunctionObject, JSGeneratorObje
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=32&c=1
-bool IsJSAsyncGeneratorObject_NonInline(HeapObject o) {
-  return o.IsJSAsyncGeneratorObject();
+bool IsJSAsyncGeneratorObject_NonInline(Tagged<HeapObject> o) {
+  return IsJSAsyncGeneratorObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -49,8 +49,8 @@ void TorqueGeneratedJSAsyncGeneratorObject<JSAsyncGeneratorObject, JSGeneratorOb
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=40&c=1
-bool IsAsyncGeneratorRequest_NonInline(HeapObject o) {
-  return o.IsAsyncGeneratorRequest();
+bool IsAsyncGeneratorRequest_NonInline(Tagged<HeapObject> o) {
+  return IsAsyncGeneratorRequest(o);
 }
 
 #ifdef VERIFY_HEAP

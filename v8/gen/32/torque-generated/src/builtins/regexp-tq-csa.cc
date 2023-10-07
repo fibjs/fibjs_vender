@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -185,7 +186,7 @@ TNode<BoolT> IsFastRegExpForSearch_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=26&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=27&c=1
 TNode<BoolT> IsFastRegExpStrict_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -235,7 +236,7 @@ TNode<BoolT> IsFastRegExpStrict_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=34&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=35&c=1
 TNode<BoolT> IsFastRegExpPermissive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -285,7 +286,7 @@ TNode<BoolT> IsFastRegExpPermissive_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=40&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=42&c=1
 TNode<Object> RegExpExec_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -329,7 +330,7 @@ TNode<Object> RegExpExec_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   }
 
   TNode<Object> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<Null> tmp7;
   TNode<BoolT> tmp8;
   if (block4.is_used()) {
     ca_.Bind(&block4);
@@ -374,7 +375,7 @@ TNode<Object> RegExpExec_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   return TNode<Object>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=84&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=86&c=1
 TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResult_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<Number> p_regexpLastIndex, bool p_isFastPath, compiler::CodeAssemblerLabel* label_IfDidNotMatch) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -495,7 +496,7 @@ TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResult_0(compiler::CodeAsse
   TNode<Number> phi_bb12_4;
   TNode<RegExpMatchInfo> tmp17;
   TNode<HeapObject> tmp18;
-  TNode<Oddball> tmp19;
+  TNode<Null> tmp19;
   TNode<BoolT> tmp20;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_4);
@@ -559,7 +560,7 @@ TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResult_0(compiler::CodeAsse
   return TNode<RegExpMatchInfo>{tmp21};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=136&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=138&c=1
 TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResultFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, compiler::CodeAssemblerLabel* label_IfDidNotMatch) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -597,7 +598,7 @@ TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResultFast_0(compiler::Code
   return TNode<RegExpMatchInfo>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=145&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=147&c=1
 TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResultFast_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<Number> p_lastIndex, compiler::CodeAssemblerLabel* label_IfDidNotMatch) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -633,7 +634,7 @@ TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResultFast_1(compiler::Code
   return TNode<RegExpMatchInfo>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=155&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=156&c=1
 TNode<Object> RegExpPrototypeExecBody_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string, bool p_isFastPath) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -706,7 +707,7 @@ TNode<Object> RegExpPrototypeExecBody_0(compiler::CodeAssemblerState* state_, TN
 
   TNode<JSRegExp> phi_bb12_3;
   TNode<JSRegExp> phi_bb12_5;
-  TNode<Oddball> tmp7;
+  TNode<Null> tmp7;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_3, &phi_bb12_5);
     tmp7 = Null_0(state_);
@@ -732,7 +733,7 @@ TNode<Object> RegExpPrototypeExecBody_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Object>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=172&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=174&c=1
 TNode<JSFunction> LoadRegExpFunction_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_nativeContext) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -756,7 +757,7 @@ TNode<JSFunction> LoadRegExpFunction_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<JSFunction>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=178&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=180&c=1
 TNode<BoolT> HasInitialRegExpMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -789,7 +790,7 @@ TNode<BoolT> HasInitialRegExpMap_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BoolT>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=185&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=187&c=1
 TNode<BoolT> IsReceiverInitialRegExpPrototype_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -822,7 +823,7 @@ TNode<BoolT> IsReceiverInitialRegExpPrototype_0(compiler::CodeAssemblerState* st
   return TNode<BoolT>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=207&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=209&c=1
 int31_t kNoCounterFlagGetter_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -831,7 +832,7 @@ int31_t kNoCounterFlagGetter_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=217&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=219&c=1
 TNode<Object> FlagGetter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, JSRegExp::Flag p_flag, int31_t p_counter, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -869,7 +870,7 @@ TNode<Object> FlagGetter_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   }
 
   TNode<BoolT> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Boolean> tmp5;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp4 = RegExpBuiltinsAssembler(state_).FastFlagGetter(TNode<JSRegExp>{tmp0}, p_flag);
@@ -904,7 +905,7 @@ TNode<Object> FlagGetter_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Goto(&block10);
   }
 
-  TNode<Oddball> tmp7;
+  TNode<Undefined> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp7 = Undefined_0(state_);
@@ -1075,7 +1076,7 @@ TF_BUILTIN(RegExpPrototypeUnicodeSetsGetter, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=313&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=314&c=1
 TNode<String> FastFlagsGetter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1094,7 +1095,7 @@ TNode<String> FastFlagsGetter_0(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<String>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=318&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=319&c=1
 TNode<String> SlowFlagsGetter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1152,7 +1153,7 @@ TF_BUILTIN(RegExpPrototypeFlagsGetter, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=346&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=347&c=1
 TNode<Object> LoadLastIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_regexp, bool p_isFastPath) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1196,7 +1197,7 @@ TNode<Object> LoadLastIndex_0(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<Object>{phi_bb4_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=353&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=355&c=1
 TNode<Number> LoadLastIndexAsLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, bool p_isFastPath) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1260,7 +1261,7 @@ TNode<Number> LoadLastIndexAsLength_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Number>{phi_bb9_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=373&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=376&c=1
 void StoreLastIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_regexp, TNode<Number> p_value, bool p_isFastPath) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1302,7 +1303,7 @@ void StoreLastIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=400&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=404&c=1
 TNode<BoolT> IsRegExp_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_obj) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1342,7 +1343,7 @@ TNode<BoolT> IsRegExp_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
 
   TNode<Symbol> tmp3;
   TNode<Object> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block4.is_used()) {
     ca_.Bind(&block4);
@@ -1424,7 +1425,7 @@ TNode<BoolT> IsRegExp_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
   return TNode<BoolT>{phi_bb22_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=431&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=435&c=1
 TNode<Object> RegExpCreate_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_maybeString, TNode<String> p_flags) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1451,7 +1452,7 @@ TNode<Object> RegExpCreate_0(compiler::CodeAssemblerState* state_, TNode<Context
   return TNode<Object>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=439&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=444&c=1
 TNode<Object> RegExpCreate_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_initialMap, TNode<Object> p_maybeString, TNode<String> p_flags) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1462,7 +1463,7 @@ TNode<Object> RegExpCreate_1(compiler::CodeAssemblerState* state_, TNode<Context
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1501,7 +1502,7 @@ TNode<Object> RegExpCreate_1(compiler::CodeAssemblerState* state_, TNode<Context
   return TNode<Object>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=333&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=334&c=22
 TNode<JSRegExp> Cast_FastJSRegExp_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1562,7 +1563,7 @@ TNode<JSRegExp> Cast_FastJSRegExp_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<JSRegExp>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=359&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=362&c=12
 TNode<Smi> UnsafeCast_PositiveSmi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1581,7 +1582,7 @@ TNode<Smi> UnsafeCast_PositiveSmi_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=407&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=411&c=12
 TNode<BoolT> Is_JSRegExp_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

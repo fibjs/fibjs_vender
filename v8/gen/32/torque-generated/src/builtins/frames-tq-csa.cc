@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/frames-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -131,7 +132,7 @@ TNode<Smi> Cast_FrameType_0(compiler::CodeAssemblerState* state_, TNode<Object> 
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=40&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=41&c=1
 TNode<Object> LoadObjectFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f, int32_t p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -150,7 +151,7 @@ TNode<Object> LoadObjectFromFrame_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=43&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=44&c=1
 TNode<RawPtrT> LoadPointerFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f, int32_t p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -169,7 +170,7 @@ TNode<RawPtrT> LoadPointerFromFrame_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<RawPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=46&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=47&c=1
 TNode<IntPtrT> LoadIntptrFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f, int32_t p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -188,7 +189,7 @@ TNode<IntPtrT> LoadIntptrFromFrame_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=52&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=53&c=1
 TNode<JSFunction> LoadFunctionFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -209,7 +210,7 @@ TNode<JSFunction> LoadFunctionFromFrame_0(compiler::CodeAssemblerState* state_, 
   return TNode<JSFunction>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=62&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=63&c=1
 TNode<RawPtrT> LoadCallerFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -230,7 +231,7 @@ TNode<RawPtrT> LoadCallerFromFrame_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<RawPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=73&c=1
 TNode<IntPtrT> LoadArgCFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -253,7 +254,7 @@ TNode<IntPtrT> LoadArgCFromFrame_0(compiler::CodeAssemblerState* state_, TNode<R
   return TNode<IntPtrT>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=78&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=79&c=1
 TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -315,7 +316,7 @@ TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Object>{phi_bb2_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=96&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=97&c=1
 TNode<Object> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

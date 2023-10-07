@@ -1,7 +1,7 @@
 class JSDisplayNames;
-// Alias for HeapObject::IsJSDisplayNames() that avoids inlining.
+// Alias for IsJSDisplayNames() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
-V8_EXPORT_PRIVATE bool IsJSDisplayNames_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSDisplayNames_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
 template <class D, class P>
@@ -18,11 +18,11 @@ class TorqueGeneratedJSDisplayNames : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSDisplayNames<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
-  inline Foreign internal() const;
+  inline Tagged<Foreign> internal() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
-  inline Foreign internal(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> internal(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
-  inline void set_internal(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_internal(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
   inline int flags() const;
@@ -30,10 +30,10 @@ class TorqueGeneratedJSDisplayNames : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSDisplayNames)
@@ -65,6 +65,8 @@ class TorqueGeneratedJSDisplayNames : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSDisplayNames(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSDisplayNames(Address ptr);
 };
 

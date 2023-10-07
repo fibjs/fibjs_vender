@@ -1,7 +1,7 @@
 class SyntheticModule;
-// Alias for HeapObject::IsSyntheticModule() that avoids inlining.
+// Alias for IsSyntheticModule() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsSyntheticModule_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSyntheticModule_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1
 template <class D, class P>
@@ -18,31 +18,31 @@ class TorqueGeneratedSyntheticModule : public P {
   using TorqueGeneratedClass = TorqueGeneratedSyntheticModule<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=6&c=3
-  inline String name() const;
+  inline Tagged<String> name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=6&c=3
-  inline String name(PtrComprCageBase cage_base) const;
+  inline Tagged<String> name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=6&c=3
-  inline void set_name(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_name(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=7&c=3
-  inline FixedArray export_names() const;
+  inline Tagged<FixedArray> export_names() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=7&c=3
-  inline FixedArray export_names(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> export_names(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=7&c=3
-  inline void set_export_names(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_export_names(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=8&c=3
-  inline Foreign evaluation_steps() const;
+  inline Tagged<Foreign> evaluation_steps() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=8&c=3
-  inline Foreign evaluation_steps(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> evaluation_steps(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=8&c=3
-  inline void set_evaluation_steps(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_evaluation_steps(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SyntheticModule)
@@ -90,6 +90,8 @@ class TorqueGeneratedSyntheticModule : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSyntheticModule(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSyntheticModule(Address ptr);
 };
 

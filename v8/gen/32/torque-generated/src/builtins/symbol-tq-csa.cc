@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/symbol-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -172,7 +173,7 @@ TF_BUILTIN(SymbolPrototypeValueOf, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/symbol.tq?l=11&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/symbol.tq?l=12&c=10
 TNode<Symbol> UnsafeCast_Symbol_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

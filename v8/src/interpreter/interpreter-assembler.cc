@@ -826,13 +826,26 @@ TNode<Object> InterpreterAssembler::Construct(
   DCHECK(Bytecodes::MakesCallAlongCriticalPath(bytecode_));
   TVARIABLE(Object, var_result);
   TVARIABLE(AllocationSite, var_site);
-  Label return_result(this), construct_generic(this),
+  Label return_result(this), try_fast_construct(this), construct_generic(this),
       construct_array(this, &var_site);
 
   TNode<Word32T> args_count = JSParameterCount(args.reg_count());
   CollectConstructFeedback(context, target, new_target, maybe_feedback_vector,
                            slot_id, UpdateFeedbackMode::kOptionalFeedback,
-                           &construct_generic, &construct_array, &var_site);
+                           &try_fast_construct, &construct_array, &var_site);
+
+  BIND(&try_fast_construct);
+  {
+    Comment("call using FastConstruct builtin");
+    GotoIf(TaggedIsSmi(target), &construct_generic);
+    GotoIfNot(IsJSFunction(CAST(target)), &construct_generic);
+    Callable callable = Builtins::CallableFor(
+        isolate(), Builtin::kInterpreterPushArgsThenFastConstructFunction);
+    var_result =
+        CallStub(callable, context, args_count, args.base_reg_location(),
+                 target, new_target, UndefinedConstant());
+    Goto(&return_result);
+  }
 
   BIND(&construct_generic);
   {
@@ -1360,13 +1373,13 @@ void InterpreterAssembler::OnStackReplacement(
     OnStackReplacementParams params) {
   // Three cases may cause us to attempt OSR, in the following order:
   //
-  // 1) Presence of cached OSR Turbofan code.
+  // 1) Presence of cached OSR Turbofan/Maglev code.
   // 2) Presence of cached OSR Sparkplug code.
   // 3) The OSR urgency exceeds the current loop depth - in that case, trigger
   //    a Turbofan OSR compilation.
 
   TVARIABLE(Object, maybe_target_code, SmiConstant(0));
-  Label osr_to_turbofan(this), osr_to_sparkplug(this);
+  Label osr_to_opt(this), osr_to_sparkplug(this);
 
   // Case 1).
   {
@@ -1378,7 +1391,7 @@ void InterpreterAssembler::OnStackReplacement(
 
     // Is it marked_for_deoptimization? If yes, clear the slot.
     GotoIfNot(IsMarkedForDeoptimization(CAST(maybe_target_code.value())),
-              &osr_to_turbofan);
+              &osr_to_opt);
     StoreFeedbackVectorSlot(feedback_vector, Unsigned(feedback_slot),
                             ClearedValue(), UNSAFE_SKIP_WRITE_BARRIER);
     maybe_target_code = SmiConstant(0);
@@ -1404,22 +1417,21 @@ void InterpreterAssembler::OnStackReplacement(
       static_assert(FeedbackVector::OsrUrgencyBits::kShift == 0);
       TNode<Int32T> osr_urgency = Word32And(
           osr_state, Int32Constant(FeedbackVector::OsrUrgencyBits::kMask));
-      GotoIf(Uint32LessThan(loop_depth, osr_urgency), &osr_to_turbofan);
+      GotoIf(Uint32LessThan(loop_depth, osr_urgency), &osr_to_opt);
       JumpBackward(relative_jump);
     }
   }
 
-  BIND(&osr_to_turbofan);
+  BIND(&osr_to_opt);
   {
-    TNode<IntPtrT> length =
-        LoadAndUntagFixedArrayBaseLength(BytecodeArrayTaggedPointer());
-    TNode<IntPtrT> weight =
-        IntPtrMul(length, IntPtrConstant(v8_flags.osr_to_tierup));
-    DecreaseInterruptBudget(TruncateWordToInt32(weight), kDisableStackCheck);
+    TNode<Uint32T> length =
+        LoadAndUntagFixedArrayBaseLengthAsUint32(BytecodeArrayTaggedPointer());
+    TNode<Uint32T> weight =
+        Uint32Mul(length, Uint32Constant(v8_flags.osr_to_tierup));
+    DecreaseInterruptBudget(Signed(weight), kDisableStackCheck);
     Callable callable = CodeFactory::InterpreterOnStackReplacement(isolate());
     CallStub(callable, context, maybe_target_code.value());
-    UpdateInterruptBudget(
-        Int32Mul(TruncateWordToInt32(weight), Int32Constant(-1)));
+    UpdateInterruptBudget(Int32Mul(Signed(weight), Int32Constant(-1)));
     JumpBackward(relative_jump);
   }
 

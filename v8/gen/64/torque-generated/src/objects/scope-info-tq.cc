@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
-bool IsScopeInfo_NonInline(HeapObject o) {
-  return o.IsScopeInfo();
+bool IsScopeInfo_NonInline(Tagged<HeapObject> o) {
+  return IsScopeInfo(o);
 }
 
 #ifdef VERIFY_HEAP

@@ -52,7 +52,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(Integer
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 inline intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
@@ -94,16 +94,16 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTex
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=113&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=125&c=23
 inline intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=379&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
 inline uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=97&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 inline intptr_t TqRuntimeTimesSizeOf_Smi_0(intptr_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=96&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 inline std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr_t p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
@@ -1120,7 +1120,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Object 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   goto block0;
@@ -1394,7 +1394,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Object p_obj
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=113&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=125&c=23
 intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -1412,7 +1412,7 @@ intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_uintptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_uintptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=379&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
 uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
@@ -1430,7 +1430,7 @@ uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeTimesSizeOf_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeTimesSizeOf_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=97&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 intptr_t TqRuntimeTimesSizeOf_Smi_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -1450,7 +1450,7 @@ intptr_t TqRuntimeTimesSizeOf_Smi_0(intptr_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewReference_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewReference_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=96&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr_t p_offset) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -1543,8 +1543,7 @@ Smi TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=113&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::flags() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
+  int value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
   return value;
 }
 
@@ -1557,8 +1556,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_flags(int value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=116&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::parameter_count() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kParameterCountOffset).value();
+  int value = TaggedField<Smi>::load(*this, kParameterCountOffset).value();
   return value;
 }
 
@@ -1571,8 +1569,7 @@ void TorqueGeneratedScopeInfo<D, P>::set_parameter_count(int value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=120&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::context_local_count() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kContextLocalCountOffset).value();
+  int value = TaggedField<Smi>::load(*this, kContextLocalCountOffset).value();
   return value;
 }
 
@@ -1584,60 +1581,58 @@ void TorqueGeneratedScopeInfo<D, P>::set_context_local_count(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 template<class D, class P>
-String TorqueGeneratedScopeInfo<D, P>::context_local_names(int i) const {
+Tagged<String> TorqueGeneratedScopeInfo<D, P>::context_local_names(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::context_local_names(cage_base, i);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 template<class D, class P>
-String TorqueGeneratedScopeInfo<D, P>::context_local_names(PtrComprCageBase cage_base, int i) const {
-  String value;
+Tagged<String> TorqueGeneratedScopeInfo<D, P>::context_local_names(PtrComprCageBase cage_base, int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoContextLocalNames(*static_cast<const D*>(this)))));
   int offset = kContextLocalNamesOffset + i * kTaggedSize;
-  value = TaggedField<String>::load(cage_base, *this, offset);
-  DCHECK(value.IsString());
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, offset);
+  DCHECK(IsString(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_context_local_names(int i, String value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_context_local_names(int i, Tagged<String> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoContextLocalNames(*static_cast<const D*>(this)))));
   int offset = kContextLocalNamesOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsString());
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
 template<class D, class P>
-NameToIndexHashTable TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtable() const {
+Tagged<NameToIndexHashTable> TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtable() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::context_local_names_hashtable(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
 template<class D, class P>
-NameToIndexHashTable TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtable(PtrComprCageBase cage_base) const {
-  NameToIndexHashTable value;
+Tagged<NameToIndexHashTable> TorqueGeneratedScopeInfo<D, P>::context_local_names_hashtable(PtrComprCageBase cage_base) const {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(*static_cast<const D*>(this)))));
   int offset = ContextLocalNamesHashtableOffset() + 0 * kTaggedSize;
-  value = TaggedField<NameToIndexHashTable>::load(cage_base, *this, offset);
-  DCHECK(value.IsNameToIndexHashTable());
+  Tagged<NameToIndexHashTable> value = TaggedField<Tagged<NameToIndexHashTable>>::load(cage_base, *this, offset);
+  DCHECK(IsNameToIndexHashTable(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_context_local_names_hashtable(NameToIndexHashTable value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_context_local_names_hashtable(Tagged<NameToIndexHashTable> value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(*static_cast<const D*>(this)))));
   int offset = ContextLocalNamesHashtableOffset() + 0 * kTaggedSize;
-  SLOW_DCHECK(value.IsNameToIndexHashTable());
+  SLOW_DCHECK(IsNameToIndexHashTable(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
@@ -1645,11 +1640,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_context_local_names_hashtable(NameToInd
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::context_local_infos(int i) const {
-  int value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->context_local_count());
   int offset = ContextLocalInfosOffset() + i * kTaggedSize;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1665,11 +1659,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_context_local_infos(int i, int value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::saved_class_variable_info() const {
-  int value;
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(*static_cast<const D*>(this)))));
   int offset = SavedClassVariableInfoOffset() + 0 * kTaggedSize;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1684,30 +1677,29 @@ void TorqueGeneratedScopeInfo<D, P>::set_saved_class_variable_info(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
 template<class D, class P>
-Object TorqueGeneratedScopeInfo<D, P>::function_variable_info_name() const {
+Tagged<Object> TorqueGeneratedScopeInfo<D, P>::function_variable_info_name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::function_variable_info_name(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
 template<class D, class P>
-Object TorqueGeneratedScopeInfo<D, P>::function_variable_info_name(PtrComprCageBase cage_base) const {
-  Object value;
+Tagged<Object> TorqueGeneratedScopeInfo<D, P>::function_variable_info_name(PtrComprCageBase cage_base) const {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(*static_cast<const D*>(this)))));
   int offset = FunctionVariableInfoOffset() + 0 + 0 * 16;
-  value = TaggedField<Object>::load(cage_base, *this, offset);
-  DCHECK(value.IsString() || value.IsZero());
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, offset);
+  DCHECK(IsString(value) || IsZero(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_name(Object value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_name(Tagged<Object> value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(*static_cast<const D*>(this)))));
   int offset = FunctionVariableInfoOffset() + 0 + 0 * 16;
-  SLOW_DCHECK(value.IsString() || value.IsZero());
+  SLOW_DCHECK(IsString(value) || IsZero(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
@@ -1715,11 +1707,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_name(Object valu
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::function_variable_info_context_or_stack_slot_index() const {
-  int value;
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(*static_cast<const D*>(this)))));
   int offset = FunctionVariableInfoOffset() + 8 + 0 * 16;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1734,30 +1725,29 @@ void TorqueGeneratedScopeInfo<D, P>::set_function_variable_info_context_or_stack
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
 template<class D, class P>
-PrimitiveHeapObject TorqueGeneratedScopeInfo<D, P>::inferred_function_name() const {
+Tagged<PrimitiveHeapObject> TorqueGeneratedScopeInfo<D, P>::inferred_function_name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::inferred_function_name(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
 template<class D, class P>
-PrimitiveHeapObject TorqueGeneratedScopeInfo<D, P>::inferred_function_name(PtrComprCageBase cage_base) const {
-  PrimitiveHeapObject value;
+Tagged<PrimitiveHeapObject> TorqueGeneratedScopeInfo<D, P>::inferred_function_name(PtrComprCageBase cage_base) const {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoInferredFunctionName(*static_cast<const D*>(this)))));
   int offset = InferredFunctionNameOffset() + 0 * kTaggedSize;
-  value = TaggedField<PrimitiveHeapObject>::load(cage_base, *this, offset);
-  DCHECK(value.IsString() || value.IsUndefined());
+  Tagged<PrimitiveHeapObject> value = TaggedField<Tagged<PrimitiveHeapObject>>::load(cage_base, *this, offset);
+  DCHECK(IsString(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_inferred_function_name(PrimitiveHeapObject value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_inferred_function_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoInferredFunctionName(*static_cast<const D*>(this)))));
   int offset = InferredFunctionNameOffset() + 0 * kTaggedSize;
-  SLOW_DCHECK(value.IsString() || value.IsUndefined());
+  SLOW_DCHECK(IsString(value) || IsUndefined(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
@@ -1765,11 +1755,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_inferred_function_name(PrimitiveHeapObj
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::position_info_start() const {
-  int value;
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoPositionInfo(*static_cast<const D*>(this)))));
   int offset = PositionInfoOffset() + 0 + 0 * 16;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1785,11 +1774,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_position_info_start(int value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::position_info_end() const {
-  int value;
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoPositionInfo(*static_cast<const D*>(this)))));
   int offset = PositionInfoOffset() + 8 + 0 * 16;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1804,90 +1792,87 @@ void TorqueGeneratedScopeInfo<D, P>::set_position_info_end(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedScopeInfo<D, P>::outer_scope_info() const {
+Tagged<HeapObject> TorqueGeneratedScopeInfo<D, P>::outer_scope_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::outer_scope_info(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedScopeInfo<D, P>::outer_scope_info(PtrComprCageBase cage_base) const {
-  HeapObject value;
+Tagged<HeapObject> TorqueGeneratedScopeInfo<D, P>::outer_scope_info(PtrComprCageBase cage_base) const {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoOuterScopeInfo(*static_cast<const D*>(this)))));
   int offset = OuterScopeInfoOffset() + 0 * kTaggedSize;
-  value = TaggedField<HeapObject>::load(cage_base, *this, offset);
-  DCHECK(value.IsTheHole() || value.IsScopeInfo());
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, offset);
+  DCHECK(IsTheHole(value) || IsScopeInfo(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_outer_scope_info(HeapObject value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_outer_scope_info(Tagged<HeapObject> value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoOuterScopeInfo(*static_cast<const D*>(this)))));
   int offset = OuterScopeInfoOffset() + 0 * kTaggedSize;
-  SLOW_DCHECK(value.IsTheHole() || value.IsScopeInfo());
+  SLOW_DCHECK(IsTheHole(value) || IsScopeInfo(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedScopeInfo<D, P>::locals_block_list() const {
+Tagged<FixedArray> TorqueGeneratedScopeInfo<D, P>::locals_block_list() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::locals_block_list(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedScopeInfo<D, P>::locals_block_list(PtrComprCageBase cage_base) const {
-  FixedArray value;
+Tagged<FixedArray> TorqueGeneratedScopeInfo<D, P>::locals_block_list(PtrComprCageBase cage_base) const {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoLocalsBlockList(*static_cast<const D*>(this)))));
   int offset = LocalsBlockListOffset() + 0 * kTaggedSize;
-  value = TaggedField<FixedArray>::load(cage_base, *this, offset);
-  DCHECK(value.IsHashTable());
+  Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, offset);
+  DCHECK(IsHashTable(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_locals_block_list(FixedArray value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_locals_block_list(Tagged<FixedArray> value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoLocalsBlockList(*static_cast<const D*>(this)))));
   int offset = LocalsBlockListOffset() + 0 * kTaggedSize;
-  SLOW_DCHECK(value.IsHashTable());
+  SLOW_DCHECK(IsHashTable(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedScopeInfo<D, P>::module_info() const {
+Tagged<FixedArray> TorqueGeneratedScopeInfo<D, P>::module_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::module_info(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedScopeInfo<D, P>::module_info(PtrComprCageBase cage_base) const {
-  FixedArray value;
+Tagged<FixedArray> TorqueGeneratedScopeInfo<D, P>::module_info(PtrComprCageBase cage_base) const {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleInfo(*static_cast<const D*>(this)))));
   int offset = ModuleInfoOffset() + 0 * kTaggedSize;
-  value = TaggedField<FixedArray>::load(cage_base, *this, offset);
-  DCHECK(value.IsSourceTextModuleInfo());
+  Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, offset);
+  DCHECK(IsSourceTextModuleInfo(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_module_info(FixedArray value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_module_info(Tagged<FixedArray> value, WriteBarrierMode mode) {
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleInfo(*static_cast<const D*>(this)))));
   int offset = ModuleInfoOffset() + 0 * kTaggedSize;
-  SLOW_DCHECK(value.IsSourceTextModuleInfo());
+  SLOW_DCHECK(IsSourceTextModuleInfo(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
@@ -1895,11 +1880,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_info(FixedArray value, WriteBarr
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::module_variable_count() const {
-  int value;
   DCHECK_GE(0, 0);
   DCHECK_LT(0, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleVariableCount(*static_cast<const D*>(this)))));
   int offset = ModuleVariableCountOffset() + 0 * kTaggedSize;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1914,30 +1898,29 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variable_count(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 template<class D, class P>
-String TorqueGeneratedScopeInfo<D, P>::module_variables_name(int i) const {
+Tagged<String> TorqueGeneratedScopeInfo<D, P>::module_variables_name(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScopeInfo::module_variables_name(cage_base, i);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 template<class D, class P>
-String TorqueGeneratedScopeInfo<D, P>::module_variables_name(PtrComprCageBase cage_base, int i) const {
-  String value;
+Tagged<String> TorqueGeneratedScopeInfo<D, P>::module_variables_name(PtrComprCageBase cage_base, int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleVariables(*static_cast<const D*>(this)))));
   int offset = ModuleVariablesOffset() + 0 + i * 24;
-  value = TaggedField<String>::load(cage_base, *this, offset);
-  DCHECK(value.IsString());
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, offset);
+  DCHECK(IsString(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 template<class D, class P>
-void TorqueGeneratedScopeInfo<D, P>::set_module_variables_name(int i, String value, WriteBarrierMode mode) {
+void TorqueGeneratedScopeInfo<D, P>::set_module_variables_name(int i, Tagged<String> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleVariables(*static_cast<const D*>(this)))));
   int offset = ModuleVariablesOffset() + 0 + i * 24;
-  SLOW_DCHECK(value.IsString());
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
@@ -1945,11 +1928,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variables_name(int i, String val
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::module_variables_index(int i) const {
-  int value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleVariables(*static_cast<const D*>(this)))));
   int offset = ModuleVariablesOffset() + 8 + i * 24;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1965,11 +1947,10 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variables_index(int i, int value
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 template<class D, class P>
 int TorqueGeneratedScopeInfo<D, P>::module_variables_properties(int i) const {
-  int value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, static_cast<int>(std::get<2>(TqRuntimeFieldSliceScopeInfoModuleVariables(*static_cast<const D*>(this)))));
   int offset = ModuleVariablesOffset() + 16 + i * 24;
-  value = TaggedField<Smi>::load(*this, offset).value();
+  int value = TaggedField<Smi>::load(*this, offset).value();
   return value;
 }
 
@@ -1984,8 +1965,8 @@ void TorqueGeneratedScopeInfo<D, P>::set_module_variables_properties(int i, int 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
 template<class D, class P>
-D TorqueGeneratedScopeInfo<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedScopeInfo<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3

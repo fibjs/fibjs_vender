@@ -24,6 +24,7 @@
 #include "src/objects/code-kind.h"
 #include "src/objects/feedback-vector.h"
 #include "src/objects/objects.h"
+#include "src/objects/tagged.h"
 #include "src/roots/roots.h"
 #include "src/utils/address-map.h"
 #include "src/utils/identity-map.h"
@@ -180,18 +181,19 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
 #endif  // DEBUG
 
   // Returns the handle from root index table for read only heap objects.
-  Handle<Object> GetRootHandle(Object object);
+  Handle<Object> GetRootHandle(Tagged<Object> object);
 
   // Never returns nullptr.
   ObjectData* GetOrCreateData(Handle<Object> object,
                               GetOrCreateDataFlags flags = {});
-  ObjectData* GetOrCreateData(Object object, GetOrCreateDataFlags flags = {});
+  ObjectData* GetOrCreateData(Tagged<Object> object,
+                              GetOrCreateDataFlags flags = {});
 
   // Gets data only if we have it. However, thin wrappers will be created for
   // smis, read-only objects and never-serialized objects.
   ObjectData* TryGetOrCreateData(Handle<Object> object,
                                  GetOrCreateDataFlags flags = {});
-  ObjectData* TryGetOrCreateData(Object object,
+  ObjectData* TryGetOrCreateData(Tagged<Object> object,
                                  GetOrCreateDataFlags flags = {});
 
   // Check if {object} is any native context's %ArrayPrototype% or
@@ -280,7 +282,7 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
   // that happens, we should be inside a persistent handle scope. Then, we would
   // just use the regular handle creation.
   template <typename T>
-  Handle<T> CanonicalPersistentHandle(T object) {
+  Handle<T> CanonicalPersistentHandle(Tagged<T> object) {
     DCHECK_NOT_NULL(canonical_handles_);
     Address address = object.ptr();
     if (Internals::HasHeapObjectTag(address)) {
@@ -290,7 +292,7 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
       }
     }
 
-    Object obj(address);
+    Tagged<Object> obj(address);
     auto find_result = canonical_handles_->FindOrInsert(obj);
     if (find_result.already_exists) return Handle<T>(*find_result.entry);
 
@@ -339,14 +341,9 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
   // occurrence. This is done to have a recursive shared lock on {mutex}.
   class V8_NODISCARD RecursiveSharedMutexGuardIfNeeded {
    protected:
-    RecursiveSharedMutexGuardIfNeeded(LocalIsolate* local_isolate,
-                                      base::SharedMutex* mutex,
-                                      int* mutex_depth_address)
-        : mutex_depth_address_(mutex_depth_address),
-          initial_mutex_depth_(*mutex_depth_address_),
-          shared_mutex_guard_(local_isolate, mutex, initial_mutex_depth_ == 0) {
-      (*mutex_depth_address_)++;
-    }
+    V8_INLINE RecursiveSharedMutexGuardIfNeeded(LocalIsolate* local_isolate,
+                                                base::SharedMutex* mutex,
+                                                int* mutex_depth_address);
 
     ~RecursiveSharedMutexGuardIfNeeded() {
       DCHECK_GE((*mutex_depth_address_), 1);
@@ -363,29 +360,21 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
   class MapUpdaterGuardIfNeeded final
       : public RecursiveSharedMutexGuardIfNeeded {
    public:
-    explicit MapUpdaterGuardIfNeeded(JSHeapBroker* broker)
-        : RecursiveSharedMutexGuardIfNeeded(
-              broker->local_isolate_or_isolate(),
-              broker->isolate()->map_updater_access(),
-              &broker->map_updater_mutex_depth_) {}
+    V8_INLINE explicit MapUpdaterGuardIfNeeded(JSHeapBroker* broker);
   };
 
   class BoilerplateMigrationGuardIfNeeded final
       : public RecursiveSharedMutexGuardIfNeeded {
    public:
-    explicit BoilerplateMigrationGuardIfNeeded(JSHeapBroker* broker)
-        : RecursiveSharedMutexGuardIfNeeded(
-              broker->local_isolate_or_isolate(),
-              broker->isolate()->boilerplate_migration_access(),
-              &broker->boilerplate_migration_mutex_depth_) {}
+    V8_INLINE explicit BoilerplateMigrationGuardIfNeeded(JSHeapBroker* broker);
   };
 
   // If this returns false, the object is guaranteed to be fully initialized and
   // thus safe to read from a memory safety perspective. The converse does not
   // necessarily hold.
   bool ObjectMayBeUninitialized(Handle<Object> object) const;
-  bool ObjectMayBeUninitialized(Object object) const;
-  bool ObjectMayBeUninitialized(HeapObject object) const;
+  bool ObjectMayBeUninitialized(Tagged<Object> object) const;
+  bool ObjectMayBeUninitialized(Tagged<HeapObject> object) const;
 
   void set_dependencies(CompilationDependencies* dependencies) {
     DCHECK_NOT_NULL(dependencies);
@@ -606,12 +595,20 @@ OptionalRef<typename ref_traits<T>::ref_type> TryMakeRef(JSHeapBroker* broker,
 template <class T,
           typename = std::enable_if_t<std::is_convertible<T*, Object*>::value>>
 OptionalRef<typename ref_traits<T>::ref_type> TryMakeRef(
-    JSHeapBroker* broker, T object, GetOrCreateDataFlags flags = {}) {
+    JSHeapBroker* broker, Tagged<T> object, GetOrCreateDataFlags flags = {}) {
   ObjectData* data = broker->TryGetOrCreateData(object, flags);
   if (data == nullptr) {
     TRACE_BROKER_MISSING(broker, "ObjectData for " << Brief(object));
   }
   return TryMakeRef<T>(broker, data);
+}
+
+template <class T,
+          typename = std::enable_if_t<std::is_convertible<T*, Object*>::value>>
+OptionalRef<typename ref_traits<T>::ref_type> TryMakeRef(
+    JSHeapBroker* broker, T object, GetOrCreateDataFlags flags = {}) {
+  static_assert(kTaggedCanConvertToRawObjects);
+  return TryMakeRef<T>(broker, Tagged<T>(object), flags);
 }
 
 template <class T,
@@ -628,8 +625,16 @@ OptionalRef<typename ref_traits<T>::ref_type> TryMakeRef(
 
 template <class T,
           typename = std::enable_if_t<std::is_convertible<T*, Object*>::value>>
-typename ref_traits<T>::ref_type MakeRef(JSHeapBroker* broker, T object) {
+typename ref_traits<T>::ref_type MakeRef(JSHeapBroker* broker,
+                                         Tagged<T> object) {
   return TryMakeRef(broker, object, kCrashOnError).value();
+}
+
+template <class T,
+          typename = std::enable_if_t<std::is_convertible<T*, Object*>::value>>
+typename ref_traits<T>::ref_type MakeRef(JSHeapBroker* broker, T object) {
+  static_assert(kTaggedCanConvertToRawObjects);
+  return TryMakeRef(broker, Tagged<T>(object), kCrashOnError).value();
 }
 
 template <class T,
@@ -642,7 +647,15 @@ typename ref_traits<T>::ref_type MakeRef(JSHeapBroker* broker,
 template <class T,
           typename = std::enable_if_t<std::is_convertible<T*, Object*>::value>>
 typename ref_traits<T>::ref_type MakeRefAssumeMemoryFence(JSHeapBroker* broker,
+                                                          Tagged<T> object) {
+  return TryMakeRef(broker, object, kAssumeMemoryFence | kCrashOnError).value();
+}
+
+template <class T,
+          typename = std::enable_if_t<std::is_convertible<T*, Object*>::value>>
+typename ref_traits<T>::ref_type MakeRefAssumeMemoryFence(JSHeapBroker* broker,
                                                           T object) {
+  static_assert(kTaggedCanConvertToRawObjects);
   return TryMakeRef(broker, object, kAssumeMemoryFence | kCrashOnError).value();
 }
 

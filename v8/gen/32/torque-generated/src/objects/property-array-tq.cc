@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-array.tq?l=5&c=1
-bool IsPropertyArray_NonInline(HeapObject o) {
-  return o.IsPropertyArray();
+bool IsPropertyArray_NonInline(Tagged<HeapObject> o) {
+  return IsPropertyArray(o);
 }
 
 #ifdef VERIFY_HEAP

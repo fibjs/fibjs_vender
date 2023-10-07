@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
-bool IsModule_NonInline(HeapObject o) {
-  return o.IsModule();
+bool IsModule_NonInline(Tagged<HeapObject> o) {
+  return IsModule(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedModule<Module, HeapObject>::ModuleVerify(Isolate* isolate) {
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
-bool IsJSModuleNamespace_NonInline(HeapObject o) {
-  return o.IsJSModuleNamespace();
+bool IsJSModuleNamespace_NonInline(Tagged<HeapObject> o) {
+  return IsJSModuleNamespace(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedJSModuleNamespace<JSModuleNamespace, JSSpecialObject>::JSMod
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
-bool IsScriptOrModule_NonInline(HeapObject o) {
-  return o.IsScriptOrModule();
+bool IsScriptOrModule_NonInline(Tagged<HeapObject> o) {
+  return IsScriptOrModule(o);
 }
 
 #ifdef VERIFY_HEAP

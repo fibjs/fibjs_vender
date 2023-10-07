@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-shift-tq-csa.h"
 #include "torque-generated/src/builtins/array-findindex-tq-csa.h"
@@ -187,7 +188,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Branch(tmp13, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp14;
+  TNode<Undefined> tmp14;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp14 = Undefined_0(state_);
@@ -297,7 +298,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block15, phi_bb18_17);
   }
 
-  TNode<Oddball> tmp33;
+  TNode<Undefined> tmp33;
   if (block17.is_used()) {
     ca_.Bind(&block17);
     tmp33 = Undefined_0(state_);
@@ -493,7 +494,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<IntPtrT> tmp74;
   TNode<Object> tmp75;
   TNode<IntPtrT> tmp76;
-  TNode<HeapObject> tmp77;
+  TNode<Hole> tmp77;
   if (block74.is_used()) {
     ca_.Bind(&block74);
     tmp73 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp69});
@@ -568,7 +569,7 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<String> tmp4;
   TNode<Smi> tmp5;
   TNode<Object> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<Undefined> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = kLengthString_0(state_);
@@ -600,14 +601,14 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<Number> phi_bb4_5;
   TNode<Number> tmp12;
   TNode<Number> tmp13;
-  TNode<Oddball> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<Boolean> tmp14;
+  TNode<True> tmp15;
   TNode<BoolT> tmp16;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_5);
     tmp12 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp13 = CodeStubAssembler(state_).NumberSub(TNode<Number>{phi_bb4_5}, TNode<Number>{tmp12});
-    tmp14 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb4_5);
+    tmp14 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb4_5);
     tmp15 = True_0(state_);
     tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp14}, TNode<HeapObject>{tmp15});
     ca_.Branch(tmp16, &block7, std::vector<compiler::Node*>{phi_bb4_5, phi_bb4_5}, &block8, std::vector<compiler::Node*>{phi_bb4_5, phi_bb4_5});
@@ -627,11 +628,11 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<Number> phi_bb8_5;
   TNode<Number> phi_bb8_6;
   TNode<Smi> tmp19;
-  TNode<Oddball> tmp20;
+  TNode<Boolean> tmp20;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_5, &phi_bb8_6);
     tmp19 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp20 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, tmp13, tmp19);
+    tmp20 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, tmp13, tmp19);
     ca_.Goto(&block9, phi_bb8_5, phi_bb8_6);
   }
 
@@ -650,7 +651,7 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<Number> tmp23;
   TNode<Number> tmp24;
   TNode<Smi> tmp25;
-  TNode<Oddball> tmp26;
+  TNode<Boolean> tmp26;
   TNode<String> tmp27;
   TNode<Number> tmp28;
   TNode<Number> tmp29;
@@ -660,7 +661,7 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp23 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp24 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp1}, TNode<Number>{tmp23});
     tmp25 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp26 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, tmp24, tmp25);
+    tmp26 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, tmp24, tmp25);
     tmp27 = kLengthString_0(state_);
     tmp28 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp29 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp1}, TNode<Number>{tmp28});
@@ -721,7 +722,7 @@ TF_BUILTIN(ArrayPrototypeShift, CodeStubAssembler) {
   }
 
   TNode<JSFunction> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<Int32T> tmp6;
   if (block7.is_used()) {
     ca_.Bind(&block7);

@@ -9,7 +9,7 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=7&c=1
 void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, compiler::CodeAssemblerLabel* label_SmiResult, compiler::TypedCodeAssemblerVariable<Smi>* label_SmiResult_parameter_0, compiler::CodeAssemblerLabel* label_Float64Result, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64Result_parameter_0);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=118&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=119&c=1
 TNode<Number> MathPowImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_base, TNode<Object> p_exponent);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=440&c=24

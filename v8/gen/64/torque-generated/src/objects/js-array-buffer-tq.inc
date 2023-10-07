@@ -4,9 +4,9 @@ class JSArrayBuffer;
 class JSDataViewOrRabGsabDataView;
 class JSDataView;
 class JSRabGsabDataView;
-// Alias for HeapObject::IsJSArrayBufferView() that avoids inlining.
+// Alias for IsJSArrayBufferView() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
-V8_EXPORT_PRIVATE bool IsJSArrayBufferView_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSArrayBufferView_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
 template <class D, class P>
@@ -23,11 +23,11 @@ class TorqueGeneratedJSArrayBufferView : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSArrayBufferView<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
-  inline JSArrayBuffer buffer() const;
+  inline Tagged<JSArrayBuffer> buffer() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
-  inline JSArrayBuffer buffer(PtrComprCageBase cage_base) const;
+  inline Tagged<JSArrayBuffer> buffer(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
-  inline void set_buffer(JSArrayBuffer value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_buffer(Tagged<JSArrayBuffer> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=3
   inline uintptr_t raw_byte_offset() const;
@@ -50,10 +50,10 @@ class TorqueGeneratedJSArrayBufferView : public P {
   inline void set_optional_padding(uint32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -92,12 +92,14 @@ class TorqueGeneratedJSArrayBufferView : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSArrayBufferView(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSArrayBufferView(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTypedArray() that avoids inlining.
+// Alias for IsJSTypedArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
-V8_EXPORT_PRIVATE bool IsJSTypedArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTypedArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
 template <class D, class P>
@@ -125,17 +127,17 @@ class TorqueGeneratedJSTypedArray : public P {
 
   // Torque type: (Smi | class ByteArray)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
-  inline Object base_pointer() const;
+  inline Tagged<Object> base_pointer() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
-  inline Object base_pointer(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> base_pointer(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
-  inline void set_base_pointer(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_base_pointer(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTypedArray)
@@ -170,12 +172,14 @@ class TorqueGeneratedJSTypedArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTypedArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTypedArray(Address ptr);
 };
 
-// Alias for HeapObject::IsJSArrayBuffer() that avoids inlining.
+// Alias for IsJSArrayBuffer() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
-V8_EXPORT_PRIVATE bool IsJSArrayBuffer_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSArrayBuffer_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
 template <class D, class P>
@@ -192,11 +196,11 @@ class TorqueGeneratedJSArrayBuffer : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSArrayBuffer<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
-  inline Object detach_key() const;
+  inline Tagged<Object> detach_key() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
-  inline Object detach_key(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> detach_key(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
-  inline void set_detach_key(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_detach_key(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=17&c=3
   inline uintptr_t raw_byte_length() const;
@@ -224,10 +228,10 @@ class TorqueGeneratedJSArrayBuffer : public P {
   inline void set_optional_padding(uint32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSArrayBuffer)
@@ -274,12 +278,14 @@ class TorqueGeneratedJSArrayBuffer : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSArrayBuffer(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSArrayBuffer(Address ptr);
 };
 
-// Alias for HeapObject::IsJSDataViewOrRabGsabDataView() that avoids inlining.
+// Alias for IsJSDataViewOrRabGsabDataView() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-V8_EXPORT_PRIVATE bool IsJSDataViewOrRabGsabDataView_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSDataViewOrRabGsabDataView_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
 template <class D, class P>
@@ -301,10 +307,10 @@ class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   inline void set_data_pointer(Address value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -331,12 +337,14 @@ class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSDataViewOrRabGsabDataView(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSDataViewOrRabGsabDataView(Address ptr);
 };
 
-// Alias for HeapObject::IsJSDataView() that avoids inlining.
+// Alias for IsJSDataView() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
-V8_EXPORT_PRIVATE bool IsJSDataView_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSDataView_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
 template <class D, class P>
@@ -353,10 +361,10 @@ class TorqueGeneratedJSDataView : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSDataView<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSDataView)
@@ -382,12 +390,14 @@ class TorqueGeneratedJSDataView : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSDataView(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSDataView(Address ptr);
 };
 
-// Alias for HeapObject::IsJSRabGsabDataView() that avoids inlining.
+// Alias for IsJSRabGsabDataView() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
-V8_EXPORT_PRIVATE bool IsJSRabGsabDataView_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSRabGsabDataView_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
 template <class D, class P>
@@ -404,10 +414,10 @@ class TorqueGeneratedJSRabGsabDataView : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRabGsabDataView<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRabGsabDataView)
@@ -433,6 +443,8 @@ class TorqueGeneratedJSRabGsabDataView : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRabGsabDataView(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRabGsabDataView(Address ptr);
 };
 

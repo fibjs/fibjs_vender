@@ -9,10 +9,10 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=9&c=1
 TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_promiseOrCapability, TNode<Object> p_reason, PromiseReaction::Type p_reactionType);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=42&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=41&c=1
 TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_promiseOrCapability, TNode<Object> p_result, PromiseReaction::Type p_reactionType);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=70&c=1
 TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_argument, TNode<HeapObject> p_handler, TNode<HeapObject> p_promiseOrCapability, PromiseReaction::Type p_reactionType);
 
 } // namespace internal

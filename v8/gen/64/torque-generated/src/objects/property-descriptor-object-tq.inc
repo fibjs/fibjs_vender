@@ -1,7 +1,7 @@
 class PropertyDescriptorObject;
-// Alias for HeapObject::IsPropertyDescriptorObject() that avoids inlining.
+// Alias for IsPropertyDescriptorObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
-V8_EXPORT_PRIVATE bool IsPropertyDescriptorObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsPropertyDescriptorObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
 template <class D, class P>
@@ -22,35 +22,35 @@ class TorqueGeneratedPropertyDescriptorObject : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
   inline void set_flags(int value);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | True | False | Null | Undefined | TheHole)
+  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-  inline Object value() const;
+  inline Tagged<Object> value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-  inline Object value(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-  inline void set_value(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_value(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | True | False | Null | Undefined | TheHole)
+  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-  inline Object get() const;
+  inline Tagged<Object> get() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-  inline Object get(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> get(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-  inline void set_get(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_get(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | True | False | Null | Undefined | TheHole)
+  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-  inline Object set() const;
+  inline Tagged<Object> set() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-  inline Object set(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> set(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-  inline void set_set(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_set(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(PropertyDescriptorObject)
@@ -101,6 +101,8 @@ class TorqueGeneratedPropertyDescriptorObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedPropertyDescriptorObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedPropertyDescriptorObject(Address ptr);
 };
 

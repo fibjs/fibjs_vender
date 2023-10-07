@@ -4,9 +4,9 @@ class JSMap;
 class JSWeakCollection;
 class JSWeakSet;
 class JSWeakMap;
-// Alias for HeapObject::IsJSCollection() that avoids inlining.
+// Alias for IsJSCollection() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSCollection_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSCollection_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
 template <class D, class P>
@@ -23,17 +23,17 @@ class TorqueGeneratedJSCollection : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSCollection<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
-  inline Object table() const;
+  inline Tagged<Object> table() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
-  inline Object table(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> table(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
-  inline void set_table(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_table(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -60,12 +60,14 @@ class TorqueGeneratedJSCollection : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSCollection(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSCollection(Address ptr);
 };
 
-// Alias for HeapObject::IsJSSet() that avoids inlining.
+// Alias for IsJSSet() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
-V8_EXPORT_PRIVATE bool IsJSSet_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSSet_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
 template <class D, class P>
@@ -82,10 +84,10 @@ class TorqueGeneratedJSSet : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSSet<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSSet)
@@ -111,12 +113,14 @@ class TorqueGeneratedJSSet : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSSet(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSSet(Address ptr);
 };
 
-// Alias for HeapObject::IsJSMap() that avoids inlining.
+// Alias for IsJSMap() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
-V8_EXPORT_PRIVATE bool IsJSMap_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSMap_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
 template <class D, class P>
@@ -133,10 +137,10 @@ class TorqueGeneratedJSMap : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSMap<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSMap)
@@ -162,12 +166,14 @@ class TorqueGeneratedJSMap : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSMap(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSMap(Address ptr);
 };
 
-// Alias for HeapObject::IsJSWeakCollection() that avoids inlining.
+// Alias for IsJSWeakCollection() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
-V8_EXPORT_PRIVATE bool IsJSWeakCollection_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSWeakCollection_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
 template <class D, class P>
@@ -184,17 +190,17 @@ class TorqueGeneratedJSWeakCollection : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSWeakCollection<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
-  inline Object table() const;
+  inline Tagged<Object> table() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
-  inline Object table(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> table(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
-  inline void set_table(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_table(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -221,12 +227,14 @@ class TorqueGeneratedJSWeakCollection : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSWeakCollection(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSWeakCollection(Address ptr);
 };
 
-// Alias for HeapObject::IsJSWeakSet() that avoids inlining.
+// Alias for IsJSWeakSet() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
-V8_EXPORT_PRIVATE bool IsJSWeakSet_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSWeakSet_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
 template <class D, class P>
@@ -243,10 +251,10 @@ class TorqueGeneratedJSWeakSet : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSWeakSet<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSWeakSet)
@@ -272,12 +280,14 @@ class TorqueGeneratedJSWeakSet : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSWeakSet(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSWeakSet(Address ptr);
 };
 
-// Alias for HeapObject::IsJSWeakMap() that avoids inlining.
+// Alias for IsJSWeakMap() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
-V8_EXPORT_PRIVATE bool IsJSWeakMap_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSWeakMap_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
 template <class D, class P>
@@ -294,10 +304,10 @@ class TorqueGeneratedJSWeakMap : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSWeakMap<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSWeakMap)
@@ -323,6 +333,8 @@ class TorqueGeneratedJSWeakMap : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSWeakMap(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSWeakMap(Address ptr);
 };
 

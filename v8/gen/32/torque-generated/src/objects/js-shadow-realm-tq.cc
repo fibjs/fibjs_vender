@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
-bool IsJSShadowRealm_NonInline(HeapObject o) {
-  return o.IsJSShadowRealm();
+bool IsJSShadowRealm_NonInline(Tagged<HeapObject> o) {
+  return IsJSShadowRealm(o);
 }
 
 #ifdef VERIFY_HEAP

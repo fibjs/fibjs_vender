@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-reaction-job-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
@@ -116,7 +117,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -128,7 +129,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
     }
   }
 
-  TNode<Oddball> tmp4;
+  TNode<False> tmp4;
   TNode<Object> tmp5;
   if (block7.is_used()) {
     ca_.Bind(&block7);
@@ -140,7 +141,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> tmp6;
   TNode<Object> tmp7;
   TNode<JSReceiver> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp9;
   TNode<Object> tmp10;
   if (block12.is_used()) {
     ca_.Bind(&block12);
@@ -152,7 +153,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block1, tmp10);
   }
 
-  TNode<Oddball> tmp11;
+  TNode<Undefined> tmp11;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp11 = Undefined_0(state_);
@@ -160,12 +161,12 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
   }
 
   TNode<BoolT> tmp12;
-  TNode<Oddball> tmp13;
+  TNode<Undefined> tmp13;
   TNode<Object> tmp14;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp12 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kFulfill)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp12}, "static_assert(reactionType == kPromiseReactionFulfill) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=33&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp12}, "static_assert(reactionType == kPromiseReactionFulfill) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=32&c=5");
     tmp13 = Undefined_0(state_);
     tmp14 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kPromiseRejectReactionJob), p_context, p_reason, tmp13, p_promiseOrCapability);
     ca_.Goto(&block1, tmp14);
@@ -181,7 +182,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
   return TNode<Object>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=42&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=41&c=1
 TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_promiseOrCapability, TNode<Object> p_result, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -207,7 +208,7 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -229,7 +230,7 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
   TNode<IntPtrT> tmp5;
   TNode<Object> tmp6;
   TNode<JSReceiver> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<Undefined> tmp8;
   TNode<Object> tmp9;
       TNode<Object> tmp11;
   if (block9.is_used()) {
@@ -252,7 +253,7 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
     ca_.Goto(&block1, tmp9);
   }
 
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp12 = Undefined_0(state_);
@@ -278,7 +279,7 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
   return TNode<Object>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=70&c=1
 TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_argument, TNode<HeapObject> p_handler, TNode<HeapObject> p_promiseOrCapability, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -298,7 +299,7 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -328,17 +329,17 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kReject)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp3}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=82&c=7");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp3}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=79&c=7");
     tmp4 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_promiseOrCapability}, TNode<Object>{p_argument}, p_reactionType);
     ca_.Goto(&block1, tmp4);
   }
 
   TNode<JSReceiver> tmp5;
       TNode<Object> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<Undefined> tmp8;
   TNode<Object> tmp9;
       TNode<Object> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   TNode<BoolT> tmp13;
       TNode<Object> tmp15;
   if (block3.is_used()) {
@@ -402,7 +403,7 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Goto(&block9, tmp15, tmp18);
   }
 
-  TNode<Oddball> tmp19;
+  TNode<Undefined> tmp19;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp19 = Undefined_0(state_);

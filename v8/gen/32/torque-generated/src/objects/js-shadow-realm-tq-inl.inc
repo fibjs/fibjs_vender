@@ -1,31 +1,30 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
 template<class D, class P>
-NativeContext TorqueGeneratedJSShadowRealm<D, P>::native_context() const {
+Tagged<NativeContext> TorqueGeneratedJSShadowRealm<D, P>::native_context() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSShadowRealm::native_context(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
 template<class D, class P>
-NativeContext TorqueGeneratedJSShadowRealm<D, P>::native_context(PtrComprCageBase cage_base) const {
-  NativeContext value;
-  value = TaggedField<NativeContext>::load(cage_base, *this, kNativeContextOffset);
-  DCHECK(value.IsNativeContext());
+Tagged<NativeContext> TorqueGeneratedJSShadowRealm<D, P>::native_context(PtrComprCageBase cage_base) const {
+  Tagged<NativeContext> value = TaggedField<Tagged<NativeContext>>::load(cage_base, *this, kNativeContextOffset);
+  DCHECK(IsNativeContext(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
 template<class D, class P>
-void TorqueGeneratedJSShadowRealm<D, P>::set_native_context(NativeContext value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsNativeContext());
+void TorqueGeneratedJSShadowRealm<D, P>::set_native_context(Tagged<NativeContext> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsNativeContext(value));
   WRITE_FIELD(*this, kNativeContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNativeContextOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedJSShadowRealm<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSShadowRealm<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

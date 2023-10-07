@@ -1,7 +1,7 @@
 class EmbedderDataArray;
-// Alias for HeapObject::IsEmbedderDataArray() that avoids inlining.
+// Alias for IsEmbedderDataArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsEmbedderDataArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsEmbedderDataArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1
 template <class D, class P>
@@ -23,10 +23,10 @@ class TorqueGeneratedEmbedderDataArray : public P {
   inline void set_length(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(EmbedderDataArray)
@@ -68,6 +68,8 @@ class TorqueGeneratedEmbedderDataArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedEmbedderDataArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedEmbedderDataArray(Address ptr);
 };
 

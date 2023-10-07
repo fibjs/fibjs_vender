@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
-bool IsJSDisplayNames_NonInline(HeapObject o) {
-  return o.IsJSDisplayNames();
+bool IsJSDisplayNames_NonInline(Tagged<HeapObject> o) {
+  return IsJSDisplayNames(o);
 }
 
 #ifdef VERIFY_HEAP

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-get-property-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -101,7 +102,7 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp0;
   TNode<HeapObject> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Null> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     CodeStubAssembler(state_).PerformStackCheck(TNode<Context>{parameter0});
@@ -142,31 +143,33 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp8;
+  TNode<String> tmp8;
+  TNode<JSReceiver> tmp9;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    compiler::CodeAssemblerLabel label9(&ca_);
-    tmp8 = GetMethod_2(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<JSReceiver>(tmp1)}, "get", &label9);
+    tmp8 = CodeStubAssembler(state_).GetStringConstant();
+    compiler::CodeAssemblerLabel label10(&ca_);
+    tmp9 = GetInterestingMethod_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{ca_.UncheckedCast<JSReceiver>(tmp1)}, TNode<String>{tmp8}, &label10);
     ca_.Goto(&block23);
-    if (label9.is_used()) {
-      ca_.Bind(&label9);
+    if (label10.is_used()) {
+      ca_.Bind(&label10);
       ca_.Goto(&block24);
     }
   }
 
-  TNode<Object> tmp10;
+  TNode<Object> tmp11;
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    tmp10 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kGetPropertyWithReceiver), parameter0, tmp6, parameter2, parameter3, parameter4);
-    CodeStubAssembler(state_).Return(tmp10);
+    tmp11 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kGetPropertyWithReceiver), parameter0, tmp6, parameter2, parameter3, parameter4);
+    CodeStubAssembler(state_).Return(tmp11);
   }
 
-  TNode<Object> tmp11;
+  TNode<Object> tmp12;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp11 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp8}, TNode<Object>{ca_.UncheckedCast<JSReceiver>(tmp1)}, TNode<Object>{tmp6}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
-    ProxiesCodeStubAssembler(state_).CheckGetSetTrapResult(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp6}, TNode<JSProxy>{parameter1}, TNode<Name>{parameter2}, TNode<Object>{tmp11}, JSProxy::AccessKind::kGet);
-    CodeStubAssembler(state_).Return(tmp11);
+    tmp12 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp9}, TNode<Object>{ca_.UncheckedCast<JSReceiver>(tmp1)}, TNode<Object>{tmp6}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
+    ProxiesCodeStubAssembler(state_).CheckGetSetTrapResult(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp6}, TNode<JSProxy>{parameter1}, TNode<Name>{parameter2}, TNode<Object>{tmp12}, JSProxy::AccessKind::kGet);
+    CodeStubAssembler(state_).Return(tmp12);
   }
 }
 

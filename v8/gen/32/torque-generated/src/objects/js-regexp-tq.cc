@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
-bool IsJSRegExp_NonInline(HeapObject o) {
-  return o.IsJSRegExp();
+bool IsJSRegExp_NonInline(Tagged<HeapObject> o) {
+  return IsJSRegExp(o);
 }
 
 #ifdef VERIFY_HEAP

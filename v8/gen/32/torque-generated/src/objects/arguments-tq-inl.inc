@@ -138,8 +138,8 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedJSArgumentsObject<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSArgumentsObject<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -149,56 +149,54 @@ inline TorqueGeneratedJSArgumentsObject<D, P>::TorqueGeneratedJSArgumentsObject(
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
 template<class D, class P>
-Object TorqueGeneratedJSSloppyArgumentsObject<D, P>::length() const {
+Tagged<Object> TorqueGeneratedJSSloppyArgumentsObject<D, P>::length() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSSloppyArgumentsObject::length(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
 template<class D, class P>
-Object TorqueGeneratedJSSloppyArgumentsObject<D, P>::length(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kLengthOffset);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+Tagged<Object> TorqueGeneratedJSSloppyArgumentsObject<D, P>::length(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kLengthOffset);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
 template<class D, class P>
-void TorqueGeneratedJSSloppyArgumentsObject<D, P>::set_length(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+void TorqueGeneratedJSSloppyArgumentsObject<D, P>::set_length(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   WRITE_FIELD(*this, kLengthOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLengthOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
 template<class D, class P>
-Object TorqueGeneratedJSSloppyArgumentsObject<D, P>::callee() const {
+Tagged<Object> TorqueGeneratedJSSloppyArgumentsObject<D, P>::callee() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSSloppyArgumentsObject::callee(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
 template<class D, class P>
-Object TorqueGeneratedJSSloppyArgumentsObject<D, P>::callee(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kCalleeOffset);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+Tagged<Object> TorqueGeneratedJSSloppyArgumentsObject<D, P>::callee(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kCalleeOffset);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
 template<class D, class P>
-void TorqueGeneratedJSSloppyArgumentsObject<D, P>::set_callee(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+void TorqueGeneratedJSSloppyArgumentsObject<D, P>::set_callee(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   WRITE_FIELD(*this, kCalleeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCalleeOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=17&c=1
 template<class D, class P>
-D TorqueGeneratedJSSloppyArgumentsObject<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSSloppyArgumentsObject<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -208,32 +206,31 @@ inline TorqueGeneratedJSSloppyArgumentsObject<D, P>::TorqueGeneratedJSSloppyArgu
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
 template<class D, class P>
-Object TorqueGeneratedJSStrictArgumentsObject<D, P>::length() const {
+Tagged<Object> TorqueGeneratedJSStrictArgumentsObject<D, P>::length() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSStrictArgumentsObject::length(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
 template<class D, class P>
-Object TorqueGeneratedJSStrictArgumentsObject<D, P>::length(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kLengthOffset);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+Tagged<Object> TorqueGeneratedJSStrictArgumentsObject<D, P>::length(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kLengthOffset);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
 template<class D, class P>
-void TorqueGeneratedJSStrictArgumentsObject<D, P>::set_length(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+void TorqueGeneratedJSStrictArgumentsObject<D, P>::set_length(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   WRITE_FIELD(*this, kLengthOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLengthOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=23&c=1
 template<class D, class P>
-D TorqueGeneratedJSStrictArgumentsObject<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSStrictArgumentsObject<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -243,86 +240,83 @@ inline TorqueGeneratedJSStrictArgumentsObject<D, P>::TorqueGeneratedJSStrictArgu
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
 template<class D, class P>
-Context TorqueGeneratedSloppyArgumentsElements<D, P>::context() const {
+Tagged<Context> TorqueGeneratedSloppyArgumentsElements<D, P>::context() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSloppyArgumentsElements::context(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
 template<class D, class P>
-Context TorqueGeneratedSloppyArgumentsElements<D, P>::context(PtrComprCageBase cage_base) const {
-  Context value;
-  value = TaggedField<Context>::load(cage_base, *this, kContextOffset);
-  DCHECK(value.IsContext());
+Tagged<Context> TorqueGeneratedSloppyArgumentsElements<D, P>::context(PtrComprCageBase cage_base) const {
+  Tagged<Context> value = TaggedField<Tagged<Context>>::load(cage_base, *this, kContextOffset);
+  DCHECK(IsContext(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
 template<class D, class P>
-void TorqueGeneratedSloppyArgumentsElements<D, P>::set_context(Context value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsContext());
+void TorqueGeneratedSloppyArgumentsElements<D, P>::set_context(Tagged<Context> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsContext(value));
   WRITE_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedSloppyArgumentsElements<D, P>::arguments() const {
+Tagged<FixedArray> TorqueGeneratedSloppyArgumentsElements<D, P>::arguments() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSloppyArgumentsElements::arguments(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedSloppyArgumentsElements<D, P>::arguments(PtrComprCageBase cage_base) const {
-  FixedArray value;
-  value = TaggedField<FixedArray>::load(cage_base, *this, kArgumentsOffset);
-  DCHECK(value.IsFixedArray());
+Tagged<FixedArray> TorqueGeneratedSloppyArgumentsElements<D, P>::arguments(PtrComprCageBase cage_base) const {
+  Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kArgumentsOffset);
+  DCHECK(IsFixedArray(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
 template<class D, class P>
-void TorqueGeneratedSloppyArgumentsElements<D, P>::set_arguments(FixedArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFixedArray());
+void TorqueGeneratedSloppyArgumentsElements<D, P>::set_arguments(Tagged<FixedArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsFixedArray(value));
   WRITE_FIELD(*this, kArgumentsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kArgumentsOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
 template<class D, class P>
-Object TorqueGeneratedSloppyArgumentsElements<D, P>::mapped_entries(int i, RelaxedLoadTag) const {
+Tagged<Object> TorqueGeneratedSloppyArgumentsElements<D, P>::mapped_entries(int i, RelaxedLoadTag) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSloppyArgumentsElements::mapped_entries(cage_base, i, kRelaxedLoad);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
 template<class D, class P>
-Object TorqueGeneratedSloppyArgumentsElements<D, P>::mapped_entries(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const {
-  Object value;
+Tagged<Object> TorqueGeneratedSloppyArgumentsElements<D, P>::mapped_entries(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kMappedEntriesOffset + i * kTaggedSize;
-  value = TaggedField<Object>::Relaxed_Load(cage_base, *this, offset);
-  DCHECK(value.IsSmi() || value.IsTheHole());
+  Tagged<Object> value = TaggedField<Tagged<Object>>::Relaxed_Load(cage_base, *this, offset);
+  DCHECK(IsSmi(value) || IsTheHole(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
 template<class D, class P>
-void TorqueGeneratedSloppyArgumentsElements<D, P>::set_mapped_entries(int i, Object value, WriteBarrierMode mode) {
+void TorqueGeneratedSloppyArgumentsElements<D, P>::set_mapped_entries(int i, Tagged<Object> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kMappedEntriesOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsSmi() || value.IsTheHole());
+  SLOW_DCHECK(IsSmi(value) || IsTheHole(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
 template<class D, class P>
-D TorqueGeneratedSloppyArgumentsElements<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedSloppyArgumentsElements<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -334,8 +328,7 @@ TQ_OBJECT_CONSTRUCTORS_IMPL(SloppyArgumentsElements)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=92&c=3
 template<class D, class P>
 int TorqueGeneratedAliasedArgumentsEntry<D, P>::aliased_context_slot() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kAliasedContextSlotOffset).value();
+  int value = TaggedField<Smi>::load(*this, kAliasedContextSlotOffset).value();
   return value;
 }
 
@@ -347,8 +340,8 @@ void TorqueGeneratedAliasedArgumentsEntry<D, P>::set_aliased_context_slot(int va
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
 template<class D, class P>
-D TorqueGeneratedAliasedArgumentsEntry<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedAliasedArgumentsEntry<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1
-bool IsWeakCell_NonInline(HeapObject o) {
-  return o.IsWeakCell();
+bool IsWeakCell_NonInline(Tagged<HeapObject> o) {
+  return IsWeakCell(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedWeakCell<WeakCell, HeapObject>::WeakCellVerify(Isolate* isol
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1
-bool IsJSFinalizationRegistry_NonInline(HeapObject o) {
-  return o.IsJSFinalizationRegistry();
+bool IsJSFinalizationRegistry_NonInline(Tagged<HeapObject> o) {
+  return IsJSFinalizationRegistry(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedJSFinalizationRegistry<JSFinalizationRegistry, JSObject>::JS
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1
-bool IsJSWeakRef_NonInline(HeapObject o) {
-  return o.IsJSWeakRef();
+bool IsJSWeakRef_NonInline(Tagged<HeapObject> o) {
+  return IsJSWeakRef(o);
 }
 
 #ifdef VERIFY_HEAP

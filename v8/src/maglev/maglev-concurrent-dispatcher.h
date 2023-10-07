@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "src/codegen/compiler.h"  // For OptimizedCompilationJob.
+#include "src/maglev/maglev-pipeline-statistics.h"
 #include "src/utils/locked-queue.h"
 
 namespace v8 {
@@ -56,7 +57,9 @@ class MaglevCompilationJob final : public OptimizedCompilationJob {
   Status FinalizeJobImpl(Isolate* isolate) override;
 
   Handle<JSFunction> function() const;
+  MaybeHandle<Code> code() const;
   BytecodeOffset osr_offset() const;
+  bool is_osr() const;
 
   bool specialize_to_function_context() const;
 
@@ -66,12 +69,24 @@ class MaglevCompilationJob final : public OptimizedCompilationJob {
 
   void RecordCompilationStats(Isolate* isolate) const;
 
+  void DisposeOnMainThread(Isolate* isolate);
+
+  // Intended for use as a globally unique id in trace events.
+  uint64_t trace_id() const;
+
  private:
-  explicit MaglevCompilationJob(std::unique_ptr<MaglevCompilationInfo>&& info);
+  explicit MaglevCompilationJob(Isolate* isolate,
+                                std::unique_ptr<MaglevCompilationInfo>&& info);
+  void BeginPhaseKind(const char* name);
+  void EndPhaseKind();
 
   MaglevCompilationInfo* info() const { return info_.get(); }
 
   const std::unique_ptr<MaglevCompilationInfo> info_;
+  // TODO(pthier): Gather more fine grained stats for maglev compilation.
+  // Currently only totals are collected.
+  compiler::ZoneStats zone_stats_;
+  std::unique_ptr<MaglevPipelineStatistics> pipeline_statistics_;
 };
 
 // The public API for Maglev concurrent compilation.
@@ -95,6 +110,8 @@ class V8_EXPORT_PRIVATE MaglevConcurrentDispatcher final {
 
   void AwaitCompileJobs();
 
+  void Flush(BlockingBehavior blocking_behavior);
+
   bool is_enabled() const { return static_cast<bool>(job_handle_); }
 
  private:
@@ -102,6 +119,7 @@ class V8_EXPORT_PRIVATE MaglevConcurrentDispatcher final {
   std::unique_ptr<JobHandle> job_handle_;
   QueueT incoming_queue_;
   QueueT outgoing_queue_;
+  QueueT destruction_queue_;
 };
 
 }  // namespace maglev

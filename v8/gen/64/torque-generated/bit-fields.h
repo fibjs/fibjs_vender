@@ -5,7 +5,7 @@
 
 namespace v8 {
 namespace internal {
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=15&c=1
 #define DEFINE_TORQUE_GENERATED_INTERCEPTOR_INFO_FLAGS() \
   using CanInterceptSymbolsBit = base::BitField<bool, 0, 1, uint32_t>; \
   using AllCanReadBit = base::BitField<bool, 1, 1, uint32_t>; \
@@ -23,7 +23,7 @@ namespace internal {
   using Flags = base::Flags<Flag>; \
   static constexpr int kFlagCount = 5; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=42&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=44&c=1
 #define DEFINE_TORQUE_GENERATED_ACCESSOR_INFO_FLAGS() \
   using AllCanReadBit = base::BitField<bool, 0, 1, uint32_t>; \
   using AllCanWriteBit = base::BitField<bool, 1, 1, uint32_t>; \
@@ -85,7 +85,7 @@ namespace internal {
   using ComputedDebugIsBlackboxedBit = base::BitField<bool, 3, 1, uint32_t>; \
   using DebuggingIdBits = base::BitField<int32_t, 4, 20, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=71&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=69&c=1
 #define DEFINE_TORQUE_GENERATED_STACK_FRAME_INFO_FLAGS() \
   using IsConstructorBit = base::BitField<bool, 0, 1, uint32_t>; \
   using BytecodeOffsetOrSourcePositionBits = base::BitField<int32_t, 1, 30, uint32_t>; \
@@ -102,8 +102,9 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=22&c=1
 #define DEFINE_TORQUE_GENERATED_OSR_STATE() \
   using OsrUrgencyBits = base::BitField<uint32_t, 0, 3, uint8_t>; \
-  using MaybeHasOptimizedOsrCodeBit = base::BitField<bool, 3, 1, uint8_t>; \
-  using DontUseTheseBitsUnlessBeneficialBits = base::BitField<uint32_t, 4, 4, uint8_t>; \
+  using MaybeHasMaglevOsrCodeBit = base::BitField<bool, 3, 1, uint8_t>; \
+  using MaybeHasTurbofanOsrCodeBit = base::BitField<bool, 4, 1, uint8_t>; \
+  using DontUseTheseBitsUnlessBeneficialBits = base::BitField<uint32_t, 5, 3, uint8_t>; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=5&c=1
 #define DEFINE_TORQUE_GENERATED_JS_ARRAY_BUFFER_FLAGS() \
@@ -417,7 +418,7 @@ namespace internal {
   using AsyncBit = base::BitField<bool, 0, 1, uint32_t>; \
   using AsyncEvaluatingOrdinalBits = base::BitField<uint32_t, 1, 30, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=65&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=57&c=1
 #define DEFINE_TORQUE_GENERATED_STRING_INSTANCE_TYPE() \
   using RepresentationBits = base::BitField<StringRepresentationTag, 0, 3, uint16_t>; \
   using IsOneByteBit = base::BitField<bool, 3, 1, uint16_t>; \
@@ -442,7 +443,7 @@ namespace internal {
   using IsCodeKindBit = base::BitField<bool, 1, 1, uint32_t>; \
   using EmbedderFieldCountBits = base::BitField<int32_t, 2, 28, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=20&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=19&c=1
 #define DEFINE_TORQUE_GENERATED_TURBOFAN_TYPE_LOW_BITS() \
   using UnusedPaddingField1Bit = base::BitField<bool, 0, 1, uint32_t>; \
   using OtherUnsigned31Bit = base::BitField<bool, 1, 1, uint32_t>; \
@@ -467,15 +468,15 @@ namespace internal {
   using CallableFunctionBit = base::BitField<bool, 20, 1, uint32_t>; \
   using ClassConstructorBit = base::BitField<bool, 21, 1, uint32_t>; \
   using BoundFunctionBit = base::BitField<bool, 22, 1, uint32_t>; \
-  using HoleBit = base::BitField<bool, 23, 1, uint32_t>; \
-  using OtherInternalBit = base::BitField<bool, 24, 1, uint32_t>; \
-  using ExternalPointerBit = base::BitField<bool, 25, 1, uint32_t>; \
-  using ArrayBit = base::BitField<bool, 26, 1, uint32_t>; \
-  using UnsignedBigInt63Bit = base::BitField<bool, 27, 1, uint32_t>; \
-  using OtherUnsignedBigInt64Bit = base::BitField<bool, 28, 1, uint32_t>; \
-  using NegativeBigInt63Bit = base::BitField<bool, 29, 1, uint32_t>; \
-  using OtherBigIntBit = base::BitField<bool, 30, 1, uint32_t>; \
-  using WasmObjectBit = base::BitField<bool, 31, 1, uint32_t>; \
+  using OtherInternalBit = base::BitField<bool, 23, 1, uint32_t>; \
+  using ExternalPointerBit = base::BitField<bool, 24, 1, uint32_t>; \
+  using ArrayBit = base::BitField<bool, 25, 1, uint32_t>; \
+  using UnsignedBigInt63Bit = base::BitField<bool, 26, 1, uint32_t>; \
+  using OtherUnsignedBigInt64Bit = base::BitField<bool, 27, 1, uint32_t>; \
+  using NegativeBigInt63Bit = base::BitField<bool, 28, 1, uint32_t>; \
+  using OtherBigIntBit = base::BitField<bool, 29, 1, uint32_t>; \
+  using WasmObjectBit = base::BitField<bool, 30, 1, uint32_t>; \
+  using SandboxedPointerBit = base::BitField<bool, 31, 1, uint32_t>; \
   enum Flag: uint32_t { \
     kNone = 0, \
     kUnusedPaddingField1 = uint32_t{1} << 0, \
@@ -501,30 +502,32 @@ namespace internal {
     kCallableFunction = uint32_t{1} << 20, \
     kClassConstructor = uint32_t{1} << 21, \
     kBoundFunction = uint32_t{1} << 22, \
-    kHole = uint32_t{1} << 23, \
-    kOtherInternal = uint32_t{1} << 24, \
-    kExternalPointer = uint32_t{1} << 25, \
-    kArray = uint32_t{1} << 26, \
-    kUnsignedBigInt63 = uint32_t{1} << 27, \
-    kOtherUnsignedBigInt64 = uint32_t{1} << 28, \
-    kNegativeBigInt63 = uint32_t{1} << 29, \
-    kOtherBigInt = uint32_t{1} << 30, \
-    kWasmObject = uint32_t{1} << 31, \
+    kOtherInternal = uint32_t{1} << 23, \
+    kExternalPointer = uint32_t{1} << 24, \
+    kArray = uint32_t{1} << 25, \
+    kUnsignedBigInt63 = uint32_t{1} << 26, \
+    kOtherUnsignedBigInt64 = uint32_t{1} << 27, \
+    kNegativeBigInt63 = uint32_t{1} << 28, \
+    kOtherBigInt = uint32_t{1} << 29, \
+    kWasmObject = uint32_t{1} << 30, \
+    kSandboxedPointer = uint32_t{1} << 31, \
   }; \
   using Flags = base::Flags<Flag>; \
   static constexpr int kFlagCount = 32; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=55&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=54&c=1
 #define DEFINE_TORQUE_GENERATED_TURBOFAN_TYPE_HIGH_BITS() \
-  using SandboxedPointerBit = base::BitField<bool, 0, 1, uint32_t>; \
-  using MachineBit = base::BitField<bool, 1, 1, uint32_t>; \
+  using MachineBit = base::BitField<bool, 0, 1, uint32_t>; \
+  using TheHoleBit = base::BitField<bool, 1, 1, uint32_t>; \
+  using PropertyCellHoleBit = base::BitField<bool, 2, 1, uint32_t>; \
   enum Flag: uint32_t { \
     kNone = 0, \
-    kSandboxedPointer = uint32_t{1} << 0, \
-    kMachine = uint32_t{1} << 1, \
+    kMachine = uint32_t{1} << 0, \
+    kTheHole = uint32_t{1} << 1, \
+    kPropertyCellHole = uint32_t{1} << 2, \
   }; \
   using Flags = base::Flags<Flag>; \
-  static constexpr int kFlagCount = 2; \
+  static constexpr int kFlagCount = 3; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=7&c=1
 #define DEFINE_TORQUE_GENERATED_TURBOSHAFT_FLOAT_SPECIAL_VALUES() \
@@ -562,12 +565,11 @@ namespace internal {
   using ABit = base::BitField<bool, 19, 1, uint32_t>; \
   using CBit = base::BitField<bool, 20, 1, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=9&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=10&c=1
 #define DEFINE_TORQUE_GENERATED_JS_DATE_TIME_FORMAT_FLAGS() \
   using HourCycleBits = base::BitField<JSDateTimeFormat::HourCycle, 0, 3, uint32_t>; \
   using DateStyleBits = base::BitField<JSDateTimeFormat::DateTimeStyle, 3, 3, uint32_t>; \
   using TimeStyleBits = base::BitField<JSDateTimeFormat::DateTimeStyle, 6, 3, uint32_t>; \
-  using AltCalendarBit = base::BitField<bool, 9, 1, uint32_t>; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=12&c=1
 #define DEFINE_TORQUE_GENERATED_JS_DISPLAY_NAMES_FLAGS() \
@@ -575,7 +577,7 @@ namespace internal {
   using FallbackBit = base::BitField<JSDisplayNames::Fallback, 2, 1, uint32_t>; \
   using LanguageDisplayBit = base::BitField<JSDisplayNames::LanguageDisplay, 3, 1, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=15&c=1
 #define DEFINE_TORQUE_GENERATED_JS_DURATION_FORMAT_STYLE_FLAGS() \
   using StyleBits = base::BitField<JSDurationFormat::Style, 0, 2, uint32_t>; \
   using YearsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 2, 2, uint32_t>; \
@@ -588,8 +590,9 @@ namespace internal {
   using MillisecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 19, 2, uint32_t>; \
   using MicrosecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 21, 2, uint32_t>; \
   using NanosecondsStyleBits = base::BitField<JSDurationFormat::FieldStyle, 23, 2, uint32_t>; \
+  using SeparatorBits = base::BitField<JSDurationFormat::Separator, 25, 2, uint32_t>; \
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=25&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=29&c=1
 #define DEFINE_TORQUE_GENERATED_JS_DURATION_FORMAT_DISPLAY_FLAGS() \
   using YearsDisplayBit = base::BitField<JSDurationFormat::Display, 0, 1, uint32_t>; \
   using MonthsDisplayBit = base::BitField<JSDurationFormat::Display, 1, 1, uint32_t>; \

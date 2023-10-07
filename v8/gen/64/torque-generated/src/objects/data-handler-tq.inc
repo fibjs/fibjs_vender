@@ -1,7 +1,7 @@
 class DataHandler;
-// Alias for HeapObject::IsDataHandler() that avoids inlining.
+// Alias for IsDataHandler() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsDataHandler_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsDataHandler_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
 template <class D, class P>
@@ -19,19 +19,19 @@ class TorqueGeneratedDataHandler : public P {
 
   // Torque type: (Smi | class Code)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
-  inline Object smi_handler() const;
+  inline Tagged<Object> smi_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
-  inline Object smi_handler(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> smi_handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
-  inline void set_smi_handler(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_smi_handler(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class Cell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
-  inline Object validity_cell() const;
+  inline Tagged<Object> validity_cell() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
-  inline Object validity_cell(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> validity_cell(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
-  inline void set_validity_cell(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_validity_cell(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
@@ -58,10 +58,10 @@ class TorqueGeneratedDataHandler : public P {
   inline void set_data3(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -100,6 +100,8 @@ class TorqueGeneratedDataHandler : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedDataHandler(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedDataHandler(Address ptr);
 };
 

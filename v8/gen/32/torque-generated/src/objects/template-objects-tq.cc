@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=5&c=1
-bool IsTemplateObjectDescription_NonInline(HeapObject o) {
-  return o.IsTemplateObjectDescription();
+bool IsTemplateObjectDescription_NonInline(Tagged<HeapObject> o) {
+  return IsTemplateObjectDescription(o);
 }
 
 #ifdef VERIFY_HEAP

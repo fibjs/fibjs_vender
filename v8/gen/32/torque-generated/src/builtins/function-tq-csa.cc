@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/function-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -102,7 +103,7 @@ TF_BUILTIN(FunctionPrototypeHasInstance, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=28&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=27&c=1
 void CheckAccessor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<DescriptorArray> p_array, int32_t p_index, TNode<Name> p_name, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -480,7 +481,7 @@ USE(parameter3);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=35&c=3
 TNode<AccessorInfo> Cast_AccessorInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -541,7 +542,7 @@ TNode<AccessorInfo> Cast_AccessorInfo_1(compiler::CodeAssemblerState* state_, TN
   return TNode<AccessorInfo>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=74&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=72&c=14
 TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -561,7 +562,7 @@ TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::Code
   return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=87&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=85&c=13
 TNode<FixedArray> NewFixedArray_ArgumentsIterator_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_length, TorqueStructArgumentsIterator_0 p_it) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -1,7 +1,7 @@
 class JSV8BreakIterator;
-// Alias for HeapObject::IsJSV8BreakIterator() that avoids inlining.
+// Alias for IsJSV8BreakIterator() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsJSV8BreakIterator_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSV8BreakIterator_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
 template <class D, class P>
@@ -18,71 +18,71 @@ class TorqueGeneratedJSV8BreakIterator : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSV8BreakIterator<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
-  inline String locale() const;
+  inline Tagged<String> locale() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
-  inline String locale(PtrComprCageBase cage_base) const;
+  inline Tagged<String> locale(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
-  inline void set_locale(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_locale(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
-  inline Foreign break_iterator() const;
+  inline Tagged<Foreign> break_iterator() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
-  inline Foreign break_iterator(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> break_iterator(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
-  inline void set_break_iterator(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_break_iterator(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
-  inline Foreign unicode_string() const;
+  inline Tagged<Foreign> unicode_string() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
-  inline Foreign unicode_string(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> unicode_string(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
-  inline void set_unicode_string(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSFunction)
+  // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
-  inline HeapObject bound_adopt_text() const;
+  inline Tagged<HeapObject> bound_adopt_text() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
-  inline HeapObject bound_adopt_text(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> bound_adopt_text(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
-  inline void set_bound_adopt_text(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_adopt_text(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSFunction)
+  // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
-  inline HeapObject bound_first() const;
+  inline Tagged<HeapObject> bound_first() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
-  inline HeapObject bound_first(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> bound_first(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
-  inline void set_bound_first(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_first(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSFunction)
+  // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
-  inline HeapObject bound_next() const;
+  inline Tagged<HeapObject> bound_next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
-  inline HeapObject bound_next(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> bound_next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
-  inline void set_bound_next(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_next(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSFunction)
+  // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
-  inline HeapObject bound_current() const;
+  inline Tagged<HeapObject> bound_current() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
-  inline HeapObject bound_current(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> bound_current(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
-  inline void set_bound_current(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_current(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSFunction)
+  // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
-  inline HeapObject bound_break_type() const;
+  inline Tagged<HeapObject> bound_break_type() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
-  inline HeapObject bound_break_type(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> bound_break_type(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
-  inline void set_bound_break_type(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_break_type(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSV8BreakIterator)
@@ -132,6 +132,8 @@ class TorqueGeneratedJSV8BreakIterator : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSV8BreakIterator(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSV8BreakIterator(Address ptr);
 };
 

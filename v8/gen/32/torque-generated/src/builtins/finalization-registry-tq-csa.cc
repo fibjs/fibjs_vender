@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/finalization-registry-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -81,7 +82,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=22&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=20&c=1
 TNode<HeapObject> SplitOffTail_0(compiler::CodeAssemblerState* state_, TNode<WeakCell> p_weakCell) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -95,8 +96,8 @@ TNode<HeapObject> SplitOffTail_0(compiler::CodeAssemblerState* state_, TNode<Wea
   TNode<IntPtrT> tmp0;
   TNode<HeapObject> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Oddball> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<Undefined> tmp3;
+  TNode<Undefined> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
@@ -114,7 +115,7 @@ TNode<HeapObject> SplitOffTail_0(compiler::CodeAssemblerState* state_, TNode<Wea
   }
 
   TNode<IntPtrT> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<Undefined> tmp7;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 20);
@@ -137,7 +138,7 @@ TNode<HeapObject> SplitOffTail_0(compiler::CodeAssemblerState* state_, TNode<Wea
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=36&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=34&c=1
 TNode<HeapObject> PopClearedCell_0(compiler::CodeAssemblerState* state_, TNode<JSFinalizationRegistry> p_finalizationRegistry) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -152,7 +153,7 @@ TNode<HeapObject> PopClearedCell_0(compiler::CodeAssemblerState* state_, TNode<J
 
   TNode<IntPtrT> tmp0;
   TNode<HeapObject> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
@@ -170,7 +171,7 @@ TNode<HeapObject> PopClearedCell_0(compiler::CodeAssemblerState* state_, TNode<J
   TNode<HeapObject> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<HeapObject> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<Undefined> tmp8;
   TNode<BoolT> tmp9;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -184,7 +185,7 @@ TNode<HeapObject> PopClearedCell_0(compiler::CodeAssemblerState* state_, TNode<J
     ca_.Branch(tmp9, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp10;
+  TNode<Undefined> tmp10;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp10 = Undefined_0(state_);
@@ -212,7 +213,7 @@ TNode<HeapObject> PopClearedCell_0(compiler::CodeAssemblerState* state_, TNode<J
   return TNode<HeapObject>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=61&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=59&c=1
 void PushCell_0(compiler::CodeAssemblerState* state_, TNode<JSFinalizationRegistry> p_finalizationRegistry, TNode<WeakCell> p_cell) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -228,7 +229,7 @@ void PushCell_0(compiler::CodeAssemblerState* state_, TNode<JSFinalizationRegist
   TNode<HeapObject> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<HeapObject> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
@@ -270,7 +271,7 @@ void PushCell_0(compiler::CodeAssemblerState* state_, TNode<JSFinalizationRegist
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=74&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=72&c=1
 void FinalizationRegistryCleanupLoop_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFinalizationRegistry> p_finalizationRegistry, TNode<JSReceiver> p_callback) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -299,7 +300,7 @@ void FinalizationRegistryCleanupLoop_0(compiler::CodeAssemblerState* state_, TNo
   }
 
   TNode<HeapObject> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp1 = PopClearedCell_0(state_, TNode<JSFinalizationRegistry>{p_finalizationRegistry});
@@ -312,7 +313,7 @@ void FinalizationRegistryCleanupLoop_0(compiler::CodeAssemblerState* state_, TNo
     }
   }
 
-  TNode<Oddball> tmp4;
+  TNode<Undefined> tmp4;
   TNode<IntPtrT> tmp5;
       TNode<Object> tmp7;
   TNode<Object> tmp8;
@@ -403,7 +404,7 @@ USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -568,7 +569,7 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
     ca_.Branch(tmp14, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp15;
+  TNode<Undefined> tmp15;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp15 = Undefined_0(state_);
@@ -600,10 +601,10 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
 
   TNode<HeapObject> phi_bb13_10;
   TNode<Map> tmp18;
-  TNode<Oddball> tmp19;
-  TNode<Oddball> tmp20;
-  TNode<Oddball> tmp21;
-  TNode<Oddball> tmp22;
+  TNode<Undefined> tmp19;
+  TNode<Undefined> tmp20;
+  TNode<Undefined> tmp21;
+  TNode<Undefined> tmp22;
   TNode<BoolT> tmp23;
   TNode<BoolT> tmp24;
   TNode<IntPtrT> tmp25;
@@ -618,7 +619,7 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
   TNode<WeakCell> tmp36;
-  TNode<Oddball> tmp37;
+  TNode<Undefined> tmp37;
   TNode<BoolT> tmp38;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_10);
@@ -664,7 +665,7 @@ TF_BUILTIN(FinalizationRegistryRegister, CodeStubAssembler) {
   }
 
   TNode<HeapObject> phi_bb19_10;
-  TNode<Oddball> tmp39;
+  TNode<Undefined> tmp39;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_10);
     tmp39 = Undefined_0(state_);
@@ -714,7 +715,7 @@ TF_BUILTIN(FinalizationRegistryPrototypeCleanupSome, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp3;
   TNode<Object> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -765,7 +766,7 @@ TF_BUILTIN(FinalizationRegistryPrototypeCleanupSome, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb7_7;
-  TNode<Oddball> tmp15;
+  TNode<Undefined> tmp15;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_7);
     FinalizationRegistryCleanupLoop_0(state_, TNode<Context>{parameter0}, TNode<JSFinalizationRegistry>{tmp0}, TNode<JSReceiver>{phi_bb7_7});
@@ -774,7 +775,7 @@ TF_BUILTIN(FinalizationRegistryPrototypeCleanupSome, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=115&c=32
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=112&c=32
 TNode<JSFinalizationRegistry> UnsafeCast_JSFinalizationRegistry_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -793,7 +794,7 @@ TNode<JSFinalizationRegistry> UnsafeCast_JSFinalizationRegistry_0(compiler::Code
   return TNode<JSFinalizationRegistry>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=123&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=120&c=7
 TNode<Smi> SmiTag_FinalizationRegistryFlags_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -814,7 +815,7 @@ TNode<Smi> SmiTag_FinalizationRegistryFlags_0(compiler::CodeAssemblerState* stat
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=138&c=32
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=134&c=32
 TNode<JSFinalizationRegistry> Cast_JSFinalizationRegistry_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -875,7 +876,7 @@ TNode<JSFinalizationRegistry> Cast_JSFinalizationRegistry_1(compiler::CodeAssemb
   return TNode<JSFinalizationRegistry>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=146&c=18
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/finalization-registry.tq?l=142&c=18
 TNode<HeapObject> UnsafeCast_JSReceiver_OR_Symbol_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

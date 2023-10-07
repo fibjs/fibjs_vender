@@ -132,6 +132,7 @@ namespace base {
 
         char name_[kMaxThreadNameLength];
         int stack_size_;
+        Priority priority_;
         Semaphore* start_semaphore_;
     };
 

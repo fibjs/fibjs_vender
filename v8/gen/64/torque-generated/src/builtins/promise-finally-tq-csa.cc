@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-finally-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -76,10 +77,10 @@
 #include "torque-generated/src/builtins/promise-all-tq-csa.h"
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/promise-finally-tq-csa.h"
+#include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/promise-misc-tq-csa.h"
 #include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
 #include "torque-generated/src/builtins/promise-then-tq-csa.h"
-#include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 
@@ -279,7 +280,7 @@ TF_BUILTIN(PromiseThrowerFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=41&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=40&c=1
 TNode<JSFunction> CreateThrowerFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_reason) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -332,7 +333,7 @@ TF_BUILTIN(PromiseCatchFinally, CodeStubAssembler) {
   TNode<Object> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<JSReceiver> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<Object> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<Object> tmp8;
@@ -363,7 +364,7 @@ TF_BUILTIN(PromiseCatchFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=86&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=85&c=1
 TNode<JSFunction> CreateValueThunkFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -416,7 +417,7 @@ TF_BUILTIN(PromiseThenFinally, CodeStubAssembler) {
   TNode<Object> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<JSReceiver> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<Object> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<Object> tmp8;
@@ -447,7 +448,7 @@ TF_BUILTIN(PromiseThenFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=138&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=137&c=1
 TorqueStructPromiseFinallyFunctions_0 CreatePromiseFinallyFunctions_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSReceiver> p_onFinally, TNode<JSReceiver> p_constructor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -542,7 +543,7 @@ TF_BUILTIN(PromisePrototypeFinally, CodeStubAssembler) {
     ca_.Bind(&block6);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-finally.tq", 175});
+      pos_stack.push_back({"src/builtins/promise-finally.tq", 173});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Is<NativeContext>(context)' failed", pos_stack);
     }
   }
@@ -640,7 +641,7 @@ TF_BUILTIN(PromisePrototypeFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=29&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=28&c=11
 TorqueStructReference_JSAny_0 ContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -735,7 +736,7 @@ void InitContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonC
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=63&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=62&c=8
 TorqueStructReference_Callable_0 ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -784,7 +785,7 @@ TorqueStructReference_Callable_0 ContextSlot_PromiseFinallyContext_PromiseFinall
   return TorqueStructReference_Callable_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=70&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=69&c=8
 TorqueStructReference_Constructor_0 ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -833,7 +834,7 @@ TorqueStructReference_Constructor_0 ContextSlot_PromiseFinallyContext_PromiseFin
   return TorqueStructReference_Constructor_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=145&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=144&c=3
 void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -879,7 +880,7 @@ void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_Callab
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=147&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=146&c=3
 void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

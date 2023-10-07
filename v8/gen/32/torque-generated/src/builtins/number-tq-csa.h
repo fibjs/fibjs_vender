@@ -75,45 +75,45 @@ TNode<Uint32T> FromConstexpr_Operation_constexpr_kGreaterThanOrEqual_0(compiler:
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=56&c=1
 TNode<Number> ThisNumberValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=62&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=63&c=1
 TNode<Uint8T> ToCharCode_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_input);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=69&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=70&c=1
 TNode<String> IntToDecimalStringImpl_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_x, TNode<RawPtrT> p_log10OffsetsTable, bool p_isPositive);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=104&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=105&c=1
 TNode<String> IntToDecimalString_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_x);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=125&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=126&c=1
 TNode<String> IntToString_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_x, TNode<Uint32T> p_radix);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=384&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=386&c=1
 TNode<Object> ToNumericOrPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=498&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=500&c=1
 void UnaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Number, compiler::TypedCodeAssemblerVariable<Number>* label_Number_parameter_0, compiler::CodeAssemblerLabel* label_BigInt, compiler::TypedCodeAssemblerVariable<BigInt>* label_BigInt_parameter_0);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=518&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=520&c=1
 void UnaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Smi, compiler::TypedCodeAssemblerVariable<Smi>* label_Smi_parameter_0, compiler::CodeAssemblerLabel* label_HeapNumber, compiler::TypedCodeAssemblerVariable<HeapNumber>* label_HeapNumber_parameter_0, compiler::CodeAssemblerLabel* label_BigInt, compiler::TypedCodeAssemblerVariable<BigInt>* label_BigInt_parameter_0);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=541&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=543&c=1
 void BinaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_leftVal, TNode<Object> p_rightVal, compiler::CodeAssemblerLabel* label_Number, compiler::TypedCodeAssemblerVariable<Number>* label_Number_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Number_parameter_1, compiler::CodeAssemblerLabel* label_AtLeastOneBigInt, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_0, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_1);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=584&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=586&c=1
 void BinaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_leftVal, TNode<Object> p_rightVal, compiler::CodeAssemblerLabel* label_Smis, compiler::TypedCodeAssemblerVariable<Smi>* label_Smis_parameter_0, compiler::TypedCodeAssemblerVariable<Smi>* label_Smis_parameter_1, compiler::CodeAssemblerLabel* label_Float64s, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64s_parameter_0, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64s_parameter_1, compiler::CodeAssemblerLabel* label_AtLeastOneBigInt, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_0, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_1);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=679&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=681&c=1
 TNode<Int32T> kMinimumDividend_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=58&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=59&c=10
 TNode<Number> UnsafeCast_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=93&c=6
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=94&c=6
 TorqueStructReference_char8_0 UnsafeConstCast_char8_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char8_0 p_r);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=147&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=148&c=36
 TNode<Int32T> Convert_int32_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=735&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=739&c=31
 TNode<Smi> SmiTag_Operation_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value);
 
 } // namespace internal

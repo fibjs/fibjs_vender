@@ -15,28 +15,28 @@ TNode<BoolT> CannotUseSameArrayAccessor_JSTypedArray_0(compiler::CodeAssemblerSt
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=135&c=1
 TNode<IntPtrT> AddStringLength_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_lenA, TNode<IntPtrT> p_lenB);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=267&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=269&c=1
 TorqueStructBuffer_0 NewBuffer_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_len, TNode<String> p_sep);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=281&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=283&c=1
 TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructBuffer_0 p_buffer, TNode<String> p_sep);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=385&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=388&c=1
 TNode<Object> ArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lenNumber, TNode<Object> p_locales, TNode<Object> p_options);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=431&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=435&c=1
 TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lenNumber, TNode<Object> p_locales, TNode<Object> p_options);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=502&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=507&c=1
 TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_IfUninitialized);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=514&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=519&c=1
 void SetJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_stack);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=546&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=552&c=1
 TNode<BoolT> JoinStackPushInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=590&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=597&c=1
 void JoinStackPopInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=25&c=26
@@ -57,31 +57,31 @@ TNode<FixedDoubleArray> UnsafeCast_FixedDoubleArray_0(compiler::CodeAssemblerSta
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=116&c=36
 TNode<JSTypedArray> UnsafeCast_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=292&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=294&c=7
 TNode<String> Cast_String_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=427&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=431&c=10
 TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=491&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=496&c=10
 TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=504&c=16
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=509&c=16
 TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=539&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=545&c=7
 TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<JSReceiver> p_element);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=650&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=656&c=10
 TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=706&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=712&c=10
 TNode<Object> CycleProtectedArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=207&c=27
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=209&c=27
 TNode<FixedArray> StoreAndGrowFixedArray_Smi_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<Smi> p_element);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=186&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=187&c=11
 TNode<FixedArray> StoreAndGrowFixedArray_String_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<String> p_element);
 
 } // namespace internal

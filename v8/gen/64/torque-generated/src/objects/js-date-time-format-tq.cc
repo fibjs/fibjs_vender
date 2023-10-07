@@ -6,9 +6,9 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=23&c=1
-bool IsJSDateTimeFormat_NonInline(HeapObject o) {
-  return o.IsJSDateTimeFormat();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=16&c=1
+bool IsJSDateTimeFormat_NonInline(Tagged<HeapObject> o) {
+  return IsJSDateTimeFormat(o);
 }
 
 #ifdef VERIFY_HEAP

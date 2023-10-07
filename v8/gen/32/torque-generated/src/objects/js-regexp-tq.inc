@@ -2,9 +2,9 @@ class JSRegExp;
 class JSRegExpResult;
 class JSRegExpResultWithIndices;
 class JSRegExpResultIndices;
-// Alias for HeapObject::IsJSRegExp() that avoids inlining.
+// Alias for IsJSRegExp() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
-V8_EXPORT_PRIVATE bool IsJSRegExp_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSRegExp_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
 template <class D, class P>
@@ -20,35 +20,35 @@ class TorqueGeneratedJSRegExp : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSRegExp<D,P>;
 
-  // Torque type: (Undefined | class FixedArray)
+  // Torque type: (class Undefined | class FixedArray)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
-  inline HeapObject data() const;
+  inline Tagged<HeapObject> data() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
-  inline HeapObject data(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> data(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
-  inline void set_data(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_data(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
-  inline PrimitiveHeapObject source() const;
+  inline Tagged<PrimitiveHeapObject> source() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
-  inline PrimitiveHeapObject source(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> source(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
-  inline void set_source(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | SmiTagged<bitfield struct JSRegExpFlags>)
+  // Torque type: (class Undefined | SmiTagged<bitfield struct JSRegExpFlags>)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
-  inline Object flags() const;
+  inline Tagged<Object> flags() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
-  inline Object flags(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> flags(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
-  inline void set_flags(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_flags(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRegExp)
@@ -83,6 +83,8 @@ class TorqueGeneratedJSRegExp : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRegExp(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRegExp(Address ptr);
 };
 
@@ -102,42 +104,42 @@ class TorqueGeneratedJSRegExpResult : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
-  inline Object index() const;
+  inline Tagged<Object> index() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
-  inline Object index(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> index(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
-  inline void set_index(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_index(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
-  inline Object input() const;
+  inline Tagged<Object> input() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
-  inline Object input(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> input(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
-  inline void set_input(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_input(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
-  inline Object groups() const;
+  inline Tagged<Object> groups() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
-  inline Object groups(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> groups(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
-  inline void set_groups(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_groups(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class FixedArray)
+  // Torque type: (class Undefined | class FixedArray)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-  inline HeapObject names() const;
+  inline Tagged<HeapObject> names() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-  inline HeapObject names(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> names(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-  inline void set_names(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_names(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
-  inline String regexp_input() const;
+  inline Tagged<String> regexp_input() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
-  inline String regexp_input(PtrComprCageBase cage_base) const;
+  inline Tagged<String> regexp_input(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
-  inline void set_regexp_input(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_regexp_input(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=54&c=3
   inline int regexp_last_index() const;
@@ -145,10 +147,10 @@ class TorqueGeneratedJSRegExpResult : public P {
   inline void set_regexp_last_index(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=44&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=44&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRegExpResult)
@@ -188,6 +190,8 @@ class TorqueGeneratedJSRegExpResult : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRegExpResult(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRegExpResult(Address ptr);
 };
 
@@ -207,17 +211,17 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
-  inline Object indices() const;
+  inline Tagged<Object> indices() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
-  inline Object indices(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> indices(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
-  inline void set_indices(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_indices(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=57&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=57&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRegExpResultWithIndices)
@@ -242,6 +246,8 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRegExpResultWithIndices(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRegExpResultWithIndices(Address ptr);
 };
 
@@ -261,17 +267,17 @@ class TorqueGeneratedJSRegExpResultIndices : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
-  inline Object groups() const;
+  inline Tagged<Object> groups() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
-  inline Object groups(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> groups(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
-  inline void set_groups(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_groups(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=61&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=61&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRegExpResultIndices)
@@ -296,6 +302,8 @@ class TorqueGeneratedJSRegExpResultIndices : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRegExpResultIndices(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRegExpResultIndices(Address ptr);
 };
 

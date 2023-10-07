@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-filter-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -440,8 +441,8 @@ TF_BUILTIN(ArrayFilterLoopContinuation, CodeStubAssembler) {
 
   TNode<Number> phi_bb1_9;
   TNode<Number> phi_bb1_10;
-  TNode<Oddball> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Boolean> tmp1;
+  TNode<True> tmp2;
   TNode<BoolT> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_9, &phi_bb1_10);
@@ -503,7 +504,7 @@ TF_BUILTIN(ArrayFilterLoopContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-filter.tq?l=98&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-filter.tq?l=96&c=1
 void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_fastO, TNode<Smi> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, TNode<JSArray> p_output, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1027,7 +1028,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
     ca_.Bind(&block69);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-filter.tq?l=137&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-filter.tq?l=135&c=1
 TNode<JSReceiver> FastFilterSpeciesCreate_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1295,7 +1296,8 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp27 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp28 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp27});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp28});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp28);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 

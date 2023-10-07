@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-from-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -180,7 +181,7 @@ TF_BUILTIN(TypedArrayFrom, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kNotConstructor, TNode<Object>{parameter1});
   }
 
-  TNode<Oddball> tmp8;
+  TNode<Undefined> tmp8;
   TNode<BoolT> tmp9;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -213,7 +214,8 @@ TF_BUILTIN(TypedArrayFrom, CodeStubAssembler) {
 
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp3});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp3);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<Symbol> tmp13;
@@ -329,7 +331,7 @@ TF_BUILTIN(TypedArrayFrom, CodeStubAssembler) {
   TNode<BoolT> tmp35;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp30 = CodeStubAssembler(state_).LoadReference<SharedFunctionInfo>(CodeStubAssembler::Reference{tmp22, tmp29});
     tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
     tmp32 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp30, tmp31});
@@ -386,7 +388,7 @@ TF_BUILTIN(TypedArrayFrom, CodeStubAssembler) {
   TNode<BoolT> tmp47;
   if (block37.is_used()) {
     ca_.Bind(&block37);
-    tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp42 = CodeStubAssembler(state_).LoadReference<SharedFunctionInfo>(CodeStubAssembler::Reference{tmp22, tmp41});
     tmp43 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
     tmp44 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp42, tmp43});

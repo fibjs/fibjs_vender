@@ -1,7 +1,7 @@
 class Map;
-// Alias for HeapObject::IsMap() that avoids inlining.
+// Alias for IsMap() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
-V8_EXPORT_PRIVATE bool IsMap_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsMap_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
 template <class D, class P>
@@ -62,43 +62,43 @@ class TorqueGeneratedMap : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=68&c=28
   inline void set_optional_padding(uint32_t value);
 
-  // Torque type: (class JSReceiver | Null)
+  // Torque type: (class JSReceiver | class Null)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-  inline HeapObject prototype() const;
+  inline Tagged<HeapObject> prototype() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-  inline HeapObject prototype(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> prototype(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-  inline void set_prototype(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
-  inline Object constructor_or_back_pointer_or_native_context() const;
+  inline Tagged<Object> constructor_or_back_pointer_or_native_context() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
-  inline Object constructor_or_back_pointer_or_native_context(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> constructor_or_back_pointer_or_native_context(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
-  inline void set_constructor_or_back_pointer_or_native_context(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_constructor_or_back_pointer_or_native_context(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-  inline DescriptorArray instance_descriptors() const;
+  inline Tagged<DescriptorArray> instance_descriptors() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-  inline DescriptorArray instance_descriptors(PtrComprCageBase cage_base) const;
+  inline Tagged<DescriptorArray> instance_descriptors(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-  inline void set_instance_descriptors(DescriptorArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_instance_descriptors(Tagged<DescriptorArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: DependentCode
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
-  inline WeakFixedArray dependent_code() const;
+  inline Tagged<WeakFixedArray> dependent_code() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
-  inline WeakFixedArray dependent_code(PtrComprCageBase cage_base) const;
+  inline Tagged<WeakFixedArray> dependent_code(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
-  inline void set_dependent_code(WeakFixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_dependent_code(Tagged<WeakFixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class Cell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-  inline Object prototype_validity_cell() const;
+  inline Tagged<Object> prototype_validity_cell() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-  inline Object prototype_validity_cell(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> prototype_validity_cell(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-  inline void set_prototype_validity_cell(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_validity_cell(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class TransitionArray | class Map | Weak<class Map> | class PrototypeInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
@@ -109,10 +109,10 @@ class TorqueGeneratedMap : public P {
   inline void set_transitions_or_prototype_info(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(Map)
@@ -196,6 +196,8 @@ class TorqueGeneratedMap : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedMap(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedMap(Address ptr);
 };
 

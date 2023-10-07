@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/turbofan-types-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -455,7 +456,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Null> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -614,7 +615,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Goto(&block1, tmp29);
   }
 
-  TNode<Oddball> tmp30;
+  TNode<Undefined> tmp30;
   if (block36.is_used()) {
     ca_.Bind(&block36);
     compiler::CodeAssemblerLabel label31(&ca_);
@@ -633,7 +634,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Goto(&block1, tmp32);
   }
 
-  TNode<Oddball> tmp33;
+  TNode<Boolean> tmp33;
   if (block40.is_used()) {
     ca_.Bind(&block40);
     compiler::CodeAssemblerLabel label34(&ca_);
@@ -806,7 +807,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp61;
   if (block71.is_used()) {
     ca_.Bind(&block71);
-    tmp57 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp57 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp58 = CodeStubAssembler(state_).LoadReference<SharedFunctionInfo>(CodeStubAssembler::Reference{tmp47, tmp57});
     tmp59 = FromConstexpr_intptr_constexpr_int31_0(state_, 28);
     tmp60 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp58, tmp59});
@@ -828,7 +829,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Goto(&block1, tmp63);
   }
 
-  TNode<HeapObject> tmp64;
+  TNode<Hole> tmp64;
   if (block79.is_used()) {
     ca_.Bind(&block79);
     compiler::CodeAssemblerLabel label65(&ca_);
@@ -862,7 +863,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp69;
   if (block82.is_used()) {
     ca_.Bind(&block82);
-    tmp69 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 23, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp69 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 1, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetHigh)));
     ca_.Goto(&block1, tmp69);
   }
 
@@ -881,7 +882,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp72;
   if (block86.is_used()) {
     ca_.Bind(&block86);
-    tmp72 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 26, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp72 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 25, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block1, tmp72);
   }
 
@@ -907,7 +908,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp76;
   if (block120.is_used()) {
     ca_.Bind(&block120);
-    tmp76 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 30, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp76 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 29, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block1, tmp76);
   }
 
@@ -925,7 +926,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp80;
   if (block122.is_used()) {
     ca_.Bind(&block122);
-    tmp80 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 30, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp80 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 29, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block1, tmp80);
   }
 
@@ -941,7 +942,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp83;
   if (block125.is_used()) {
     ca_.Bind(&block125);
-    tmp83 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 27, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp83 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 26, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block1, tmp83);
   }
 
@@ -963,7 +964,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp89;
   if (block131.is_used()) {
     ca_.Bind(&block131);
-    tmp89 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 28, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp89 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 27, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Branch(tmp89, &block134, std::vector<compiler::Node*>{}, &block135, std::vector<compiler::Node*>{});
   }
 
@@ -986,7 +987,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp93;
   if (block137.is_used()) {
     ca_.Bind(&block137);
-    tmp93 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 27, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp93 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 26, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block139, tmp93);
   }
 
@@ -1012,7 +1013,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp95;
   if (block132.is_used()) {
     ca_.Bind(&block132);
-    tmp95 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 30, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp95 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 29, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Branch(tmp95, &block140, std::vector<compiler::Node*>{}, &block141, std::vector<compiler::Node*>{});
   }
 
@@ -1035,7 +1036,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp99;
   if (block143.is_used()) {
     ca_.Bind(&block143);
-    tmp99 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 29, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp99 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 28, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block145, tmp99);
   }
 
@@ -1144,7 +1145,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   TNode<BoolT> tmp114;
   if (block163.is_used()) {
     ca_.Bind(&block163);
-    tmp114 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 31, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    tmp114 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 30, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block1, tmp114);
   }
 
@@ -1223,7 +1224,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
   TNode<IntPtrT> tmp6;
   TNode<Uint32T> tmp7;
   TNode<BoolT> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Boolean> tmp9;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
@@ -1249,14 +1250,14 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp12;
   TNode<TurbofanType> tmp13;
-  TNode<Oddball> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<Boolean> tmp14;
+  TNode<True> tmp15;
   TNode<BoolT> tmp16;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
     tmp13 = CodeStubAssembler(state_).LoadReference<TurbofanType>(CodeStubAssembler::Reference{tmp2, tmp12});
-    tmp14 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kTestTurbofanType), parameter0, parameter1, tmp13);
+    tmp14 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kTestTurbofanType), parameter0, parameter1, tmp13);
     tmp15 = True_0(state_);
     tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp14}, TNode<HeapObject>{tmp15});
     ca_.Branch(tmp16, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
@@ -1271,21 +1272,21 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp18;
   TNode<TurbofanType> tmp19;
-  TNode<Oddball> tmp20;
-  TNode<Oddball> tmp21;
+  TNode<Boolean> tmp20;
+  TNode<True> tmp21;
   TNode<BoolT> tmp22;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp18 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp19 = CodeStubAssembler(state_).LoadReference<TurbofanType>(CodeStubAssembler::Reference{tmp2, tmp18});
-    tmp20 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kTestTurbofanType), parameter0, parameter1, tmp19);
+    tmp20 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kTestTurbofanType), parameter0, parameter1, tmp19);
     tmp21 = True_0(state_);
     tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp20}, TNode<HeapObject>{tmp21});
     ca_.Goto(&block11, tmp22);
   }
 
   TNode<BoolT> phi_bb11_6;
-  TNode<Oddball> tmp23;
+  TNode<Boolean> tmp23;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_6);
     tmp23 = Convert_Boolean_bool_0(state_, TNode<BoolT>{phi_bb11_6});
@@ -1316,7 +1317,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp28;
+  TNode<False> tmp28;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp28 = False_0(state_);
@@ -1332,7 +1333,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
     ca_.Branch(tmp30, &block20, std::vector<compiler::Node*>{}, &block21, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp31;
+  TNode<False> tmp31;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp31 = False_0(state_);
@@ -1393,7 +1394,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
   }
 
   TNode<BoolT> phi_bb27_8;
-  TNode<Oddball> tmp43;
+  TNode<Boolean> tmp43;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_8);
     tmp43 = Convert_Boolean_bool_0(state_, TNode<BoolT>{phi_bb27_8});
@@ -1415,7 +1416,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
   TNode<IntPtrT> tmp46;
   TNode<HeapObject> tmp47;
   TNode<BoolT> tmp48;
-  TNode<Oddball> tmp49;
+  TNode<Boolean> tmp49;
   if (block30.is_used()) {
     ca_.Bind(&block30);
     tmp46 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
@@ -1442,7 +1443,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp52;
+  TNode<False> tmp52;
   if (block39.is_used()) {
     ca_.Bind(&block39);
     tmp52 = False_0(state_);
@@ -1453,7 +1454,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
   TNode<IntPtrT> tmp54;
   TNode<Float64T> tmp55;
   TNode<BoolT> tmp56;
-  TNode<Oddball> tmp57;
+  TNode<Boolean> tmp57;
   if (block38.is_used()) {
     ca_.Bind(&block38);
     tmp53 = Convert_float64_Number_0(state_, TNode<Number>{tmp50});
@@ -1480,18 +1481,18 @@ TF_BUILTIN(CheckTurbofanType, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
-  TNode<Oddball> tmp1;
+  TNode<Boolean> tmp0;
+  TNode<True> tmp1;
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kTestTurbofanType), parameter0, parameter1, parameter2);
+    tmp0 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kTestTurbofanType), parameter0, parameter1, parameter2);
     tmp1 = True_0(state_);
     tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp0}, TNode<HeapObject>{tmp1});
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<Undefined> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = Undefined_0(state_);
@@ -1861,7 +1862,7 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(215), static_cast<InstanceType>(219))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(196), static_cast<InstanceType>(200))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1904,7 +1905,7 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(215));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(196));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -1938,12 +1939,12 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(219), static_cast<InstanceType>(215))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(200), static_cast<InstanceType>(196))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(215));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(196));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2006,7 +2007,7 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(215), static_cast<InstanceType>(215))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(196), static_cast<InstanceType>(196))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2049,7 +2050,7 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(215));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(196));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2083,12 +2084,12 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(215), static_cast<InstanceType>(215))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(196), static_cast<InstanceType>(196))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(215));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(196));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2151,7 +2152,7 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(219), static_cast<InstanceType>(219))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(200), static_cast<InstanceType>(200))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2194,7 +2195,7 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(219));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(200));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2228,12 +2229,12 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(219), static_cast<InstanceType>(219))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(200), static_cast<InstanceType>(200))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(219));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(200));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2296,7 +2297,7 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(218), static_cast<InstanceType>(218))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(199), static_cast<InstanceType>(199))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2339,7 +2340,7 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(218));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(199));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2373,12 +2374,12 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(218), static_cast<InstanceType>(218))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(199), static_cast<InstanceType>(199))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(218));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(199));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2441,7 +2442,7 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(216), static_cast<InstanceType>(216))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(197), static_cast<InstanceType>(197))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2484,7 +2485,7 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(216));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(197));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2518,12 +2519,12 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(216), static_cast<InstanceType>(216))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(197), static_cast<InstanceType>(197))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(216));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(197));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2586,7 +2587,7 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(217), static_cast<InstanceType>(217))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(198), static_cast<InstanceType>(198))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2629,7 +2630,7 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(217));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(198));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2663,12 +2664,12 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(217), static_cast<InstanceType>(217))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(198), static_cast<InstanceType>(198))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(217));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(198));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});

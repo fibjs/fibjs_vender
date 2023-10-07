@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-is-extensible-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -151,14 +152,14 @@ TF_BUILTIN(ProxyIsExtensible, CodeStubAssembler) {
     ca_.Branch(tmp13, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp14;
+  TNode<Boolean> tmp14;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp14 = CodeStubAssembler(state_).SelectBooleanConstant(TNode<BoolT>{tmp12});
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kProxyIsExtensibleInconsistent, TNode<Object>{tmp14});
   }
 
-  TNode<Oddball> tmp15;
+  TNode<Boolean> tmp15;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp15 = CodeStubAssembler(state_).SelectBooleanConstant(TNode<BoolT>{tmp10});

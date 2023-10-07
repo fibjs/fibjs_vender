@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=5&c=1
-bool IsFixedArrayBase_NonInline(HeapObject o) {
-  return o.IsFixedArrayBase();
+bool IsFixedArrayBase_NonInline(Tagged<HeapObject> o) {
+  return IsFixedArrayBase(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedFixedArrayBase<FixedArrayBase, HeapObject>::FixedArrayBaseVe
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1
-bool IsFixedArray_NonInline(HeapObject o) {
-  return o.IsFixedArray();
+bool IsFixedArray_NonInline(Tagged<HeapObject> o) {
+  return IsFixedArray(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedFixedArray<FixedArray, FixedArrayBase>::FixedArrayVerify(Iso
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1
-bool IsWeakFixedArray_NonInline(HeapObject o) {
-  return o.IsWeakFixedArray();
+bool IsWeakFixedArray_NonInline(Tagged<HeapObject> o) {
+  return IsWeakFixedArray(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -49,8 +49,8 @@ void TorqueGeneratedWeakFixedArray<WeakFixedArray, HeapObject>::WeakFixedArrayVe
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
-bool IsFixedDoubleArray_NonInline(HeapObject o) {
-  return o.IsFixedDoubleArray();
+bool IsFixedDoubleArray_NonInline(Tagged<HeapObject> o) {
+  return IsFixedDoubleArray(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -63,8 +63,8 @@ void TorqueGeneratedFixedDoubleArray<FixedDoubleArray, FixedArrayBase>::FixedDou
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1
-bool IsByteArray_NonInline(HeapObject o) {
-  return o.IsByteArray();
+bool IsByteArray_NonInline(Tagged<HeapObject> o) {
+  return IsByteArray(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -77,8 +77,22 @@ void TorqueGeneratedByteArray<ByteArray, FixedArrayBase>::ByteArrayVerify(Isolat
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
-bool IsArrayList_NonInline(HeapObject o) {
-  return o.IsArrayList();
+bool IsExternalPointerArray_NonInline(Tagged<HeapObject> o) {
+  return IsExternalPointerArray(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedExternalPointerArray<ExternalPointerArray, FixedArrayBase>::ExternalPointerArrayVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::ExternalPointerArrayVerify(ExternalPointerArray::cast(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
+bool IsArrayList_NonInline(Tagged<HeapObject> o) {
+  return IsArrayList(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -90,9 +104,9 @@ void TorqueGeneratedArrayList<ArrayList, FixedArray>::ArrayListVerify(Isolate* i
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
-bool IsTemplateList_NonInline(HeapObject o) {
-  return o.IsTemplateList();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+bool IsTemplateList_NonInline(Tagged<HeapObject> o) {
+  return IsTemplateList(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -104,9 +118,9 @@ void TorqueGeneratedTemplateList<TemplateList, FixedArray>::TemplateListVerify(I
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
-bool IsWeakArrayList_NonInline(HeapObject o) {
-  return o.IsWeakArrayList();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
+bool IsWeakArrayList_NonInline(Tagged<HeapObject> o) {
+  return IsWeakArrayList(o);
 }
 
 #ifdef VERIFY_HEAP

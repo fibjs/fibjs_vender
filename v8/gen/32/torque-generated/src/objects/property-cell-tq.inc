@@ -1,7 +1,7 @@
 class PropertyCell;
-// Alias for HeapObject::IsPropertyCell() that avoids inlining.
+// Alias for IsPropertyCell() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsPropertyCell_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsPropertyCell_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1
 template <class D, class P>
@@ -19,11 +19,11 @@ class TorqueGeneratedPropertyCell : public P {
 
   // Torque type: AnyName
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=3
-  inline Name name() const;
+  inline Tagged<Name> name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=3
-  inline Name name(PtrComprCageBase cage_base) const;
+  inline Tagged<Name> name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=3
-  inline void set_name(Name value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_name(Tagged<Name> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=7&c=3
   inline int property_details_raw() const;
@@ -31,25 +31,25 @@ class TorqueGeneratedPropertyCell : public P {
   inline void set_property_details_raw(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=8&c=3
-  inline Object value() const;
+  inline Tagged<Object> value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=8&c=3
-  inline Object value(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=8&c=3
-  inline void set_value(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_value(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: DependentCode
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=9&c=3
-  inline WeakFixedArray dependent_code() const;
+  inline Tagged<WeakFixedArray> dependent_code() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=9&c=3
-  inline WeakFixedArray dependent_code(PtrComprCageBase cage_base) const;
+  inline Tagged<WeakFixedArray> dependent_code(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=9&c=3
-  inline void set_dependent_code(WeakFixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_dependent_code(Tagged<WeakFixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(PropertyCell)
@@ -100,6 +100,8 @@ class TorqueGeneratedPropertyCell : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedPropertyCell(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedPropertyCell(Address ptr);
 };
 

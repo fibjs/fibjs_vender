@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/conversion-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -79,7 +80,6 @@
 #include "torque-generated/src/objects/js-objects-tq-csa.h"
 #include "torque-generated/src/objects/name-tq-csa.h"
 #include "torque-generated/src/objects/oddball-tq-csa.h"
-#include "torque-generated/src/builtins/wasm-tq-csa.h"
 
 namespace v8 {
 namespace internal {
@@ -208,14 +208,14 @@ TF_BUILTIN(ToBoolean, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<True> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp2 = CodeStubAssembler(state_).TrueConstant();
     CodeStubAssembler(state_).Return(tmp2);
   }
 
-  TNode<Oddball> tmp3;
+  TNode<False> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp3 = CodeStubAssembler(state_).FalseConstant();
@@ -672,42 +672,65 @@ TF_BUILTIN(ToObject, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=160&c=1
-TNode<Object> TryGetExoticToPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input, compiler::CodeAssemblerLabel* label_OrdinaryToPrimitive) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=162&c=1
+TNode<Object> TryGetExoticToPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_input, compiler::CodeAssemblerLabel* label_OrdinaryToPrimitive) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Symbol> tmp0;
   TNode<Object> tmp1;
-  TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).ToPrimitiveSymbolConstant();
-    tmp1 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_input}, TNode<Object>{tmp0});
-    tmp2 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{tmp1});
-    ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    ca_.Goto(label_OrdinaryToPrimitive);
+    compiler::CodeAssemblerLabel label2(&ca_);
+    tmp1 = CodeStubAssembler(state_).GetInterestingProperty(TNode<Context>{p_context}, TNode<JSReceiver>{p_input}, TNode<Name>{tmp0}, &label2);
+    ca_.Goto(&block3);
+    if (label2.is_used()) {
+      ca_.Bind(&label2);
+      ca_.Goto(&block4);
+    }
   }
 
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    ca_.Goto(&block5);
+    ca_.Goto(&block1);
   }
 
+  TNode<BoolT> tmp3;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp3 = CodeStubAssembler(state_).IsNullOrUndefined(TNode<Object>{tmp1});
+    ca_.Branch(tmp3, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
+  }
+
+  if (block5.is_used()) {
     ca_.Bind(&block5);
+    ca_.Goto(&block1);
+  }
+
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_OrdinaryToPrimitive);
+  }
+
+    ca_.Bind(&block7);
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=169&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=173&c=1
 TNode<Object> CallExoticToPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input, TNode<Object> p_exoticToPrimitive, TNode<String> p_hint) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -760,7 +783,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Default, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
+    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, &label1);
     ca_.Goto(&block3);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -800,7 +823,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Number, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
+    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, &label1);
     ca_.Goto(&block3);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -825,7 +848,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Number, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=208&c=1
 TNode<Object> NonPrimitiveToPrimitive_String_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_input) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -840,7 +863,7 @@ TNode<Object> NonPrimitiveToPrimitive_String_Inline_0(compiler::CodeAssemblerSta
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{p_context}, TNode<Object>{p_input}, &label1);
+    tmp0 = TryGetExoticToPrimitive_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_input}, &label1);
     ca_.Goto(&block4);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -891,7 +914,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_String, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=218&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=223&c=1
 TNode<Object> TryToPrimitiveMethod_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input, TNode<String> p_name, compiler::CodeAssemblerLabel* label_Continue) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1047,7 +1070,7 @@ TF_BUILTIN(OrdinaryToPrimitive_String, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=255&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=261&c=1
 TNode<Object> OrdinaryToPrimitive_String_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1113,7 +1136,7 @@ TNode<Object> OrdinaryToPrimitive_String_Inline_0(compiler::CodeAssemblerState* 
   return TNode<Object>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=103&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=105&c=7
 TNode<Name> Cast_Name_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1174,7 +1197,7 @@ TNode<Name> Cast_Name_1(compiler::CodeAssemblerState* state_, TNode<Context> p_c
   return TNode<Name>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=150&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=152&c=22
 TNode<Map> UnsafeCast_Map_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

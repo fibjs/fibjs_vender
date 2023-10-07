@@ -4,9 +4,9 @@ class TurbofanUnionType;
 class TurbofanRangeType;
 class TurbofanHeapConstantType;
 class TurbofanOtherNumberConstantType;
-// Alias for HeapObject::IsTurbofanType() that avoids inlining.
+// Alias for IsTurbofanType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=12&c=1
-V8_EXPORT_PRIVATE bool IsTurbofanType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurbofanType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=12&c=1
 template <class D, class P>
@@ -23,10 +23,10 @@ class TorqueGeneratedTurbofanType : public P {
   using TorqueGeneratedClass = TorqueGeneratedTurbofanType<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=12&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=12&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurbofanType)
@@ -52,6 +52,8 @@ class TorqueGeneratedTurbofanType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurbofanType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurbofanType(Address ptr);
 };
 
@@ -60,9 +62,9 @@ class TurbofanType : public TorqueGeneratedTurbofanType<TurbofanType, HeapObject
   TQ_OBJECT_CONSTRUCTORS(TurbofanType)
 };
 
-// Alias for HeapObject::IsTurbofanBitsetType() that avoids inlining.
+// Alias for IsTurbofanBitsetType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
-V8_EXPORT_PRIVATE bool IsTurbofanBitsetType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurbofanBitsetType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
 template <class D, class P>
@@ -89,10 +91,10 @@ class TorqueGeneratedTurbofanBitsetType : public P {
   inline void set_bitset_high(uint32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurbofanBitsetType)
@@ -137,6 +139,8 @@ class TorqueGeneratedTurbofanBitsetType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurbofanBitsetType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurbofanBitsetType(Address ptr);
 };
 
@@ -146,9 +150,9 @@ class TurbofanBitsetType : public TorqueGeneratedTurbofanBitsetType<TurbofanBits
   TQ_OBJECT_CONSTRUCTORS(TurbofanBitsetType)
 };
 
-// Alias for HeapObject::IsTurbofanUnionType() that avoids inlining.
+// Alias for IsTurbofanUnionType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
-V8_EXPORT_PRIVATE bool IsTurbofanUnionType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurbofanUnionType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
 template <class D, class P>
@@ -165,24 +169,24 @@ class TorqueGeneratedTurbofanUnionType : public P {
   using TorqueGeneratedClass = TorqueGeneratedTurbofanUnionType<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
-  inline TurbofanType type1() const;
+  inline Tagged<TurbofanType> type1() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
-  inline TurbofanType type1(PtrComprCageBase cage_base) const;
+  inline Tagged<TurbofanType> type1(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
-  inline void set_type1(TurbofanType value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_type1(Tagged<TurbofanType> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
-  inline TurbofanType type2() const;
+  inline Tagged<TurbofanType> type2() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
-  inline TurbofanType type2(PtrComprCageBase cage_base) const;
+  inline Tagged<TurbofanType> type2(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
-  inline void set_type2(TurbofanType value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_type2(Tagged<TurbofanType> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurbofanUnionType)
@@ -227,6 +231,8 @@ class TorqueGeneratedTurbofanUnionType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurbofanUnionType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurbofanUnionType(Address ptr);
 };
 
@@ -236,9 +242,9 @@ class TurbofanUnionType : public TorqueGeneratedTurbofanUnionType<TurbofanUnionT
   TQ_OBJECT_CONSTRUCTORS(TurbofanUnionType)
 };
 
-// Alias for HeapObject::IsTurbofanRangeType() that avoids inlining.
+// Alias for IsTurbofanRangeType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
-V8_EXPORT_PRIVATE bool IsTurbofanRangeType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurbofanRangeType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
 template <class D, class P>
@@ -265,10 +271,10 @@ class TorqueGeneratedTurbofanRangeType : public P {
   inline void set_max(double value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurbofanRangeType)
@@ -313,6 +319,8 @@ class TorqueGeneratedTurbofanRangeType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurbofanRangeType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurbofanRangeType(Address ptr);
 };
 
@@ -322,9 +330,9 @@ class TurbofanRangeType : public TorqueGeneratedTurbofanRangeType<TurbofanRangeT
   TQ_OBJECT_CONSTRUCTORS(TurbofanRangeType)
 };
 
-// Alias for HeapObject::IsTurbofanHeapConstantType() that avoids inlining.
+// Alias for IsTurbofanHeapConstantType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
-V8_EXPORT_PRIVATE bool IsTurbofanHeapConstantType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurbofanHeapConstantType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
 template <class D, class P>
@@ -341,17 +349,17 @@ class TorqueGeneratedTurbofanHeapConstantType : public P {
   using TorqueGeneratedClass = TorqueGeneratedTurbofanHeapConstantType<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
-  inline HeapObject constant() const;
+  inline Tagged<HeapObject> constant() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
-  inline HeapObject constant(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> constant(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
-  inline void set_constant(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_constant(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurbofanHeapConstantType)
@@ -393,6 +401,8 @@ class TorqueGeneratedTurbofanHeapConstantType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurbofanHeapConstantType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurbofanHeapConstantType(Address ptr);
 };
 
@@ -402,9 +412,9 @@ class TurbofanHeapConstantType : public TorqueGeneratedTurbofanHeapConstantType<
   TQ_OBJECT_CONSTRUCTORS(TurbofanHeapConstantType)
 };
 
-// Alias for HeapObject::IsTurbofanOtherNumberConstantType() that avoids inlining.
+// Alias for IsTurbofanOtherNumberConstantType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
-V8_EXPORT_PRIVATE bool IsTurbofanOtherNumberConstantType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurbofanOtherNumberConstantType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
 template <class D, class P>
@@ -426,10 +436,10 @@ class TorqueGeneratedTurbofanOtherNumberConstantType : public P {
   inline void set_constant(double value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurbofanOtherNumberConstantType)
@@ -471,6 +481,8 @@ class TorqueGeneratedTurbofanOtherNumberConstantType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurbofanOtherNumberConstantType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurbofanOtherNumberConstantType(Address ptr);
 };
 

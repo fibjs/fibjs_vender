@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-findlast-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -142,7 +143,7 @@ TF_BUILTIN(ArrayFindLastLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb2_5;
-  TNode<Oddball> tmp7;
+  TNode<Undefined> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_5);
     tmp7 = Undefined_0(state_);
@@ -410,7 +411,7 @@ TNode<Object> FastArrayFindLast_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<Smi> phi_bb27_6;
   TNode<Smi> phi_bb27_14;
   TNode<Smi> phi_bb27_17;
-  TNode<Oddball> tmp27;
+  TNode<Undefined> tmp27;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_6, &phi_bb27_14, &phi_bb27_17);
     tmp27 = Undefined_0(state_);
@@ -448,7 +449,7 @@ TNode<Object> FastArrayFindLast_0(compiler::CodeAssemblerState* state_, TNode<Co
 
   TNode<Smi> phi_bb12_6;
   TNode<JSArray> phi_bb12_9;
-  TNode<Oddball> tmp32;
+  TNode<Undefined> tmp32;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_6, &phi_bb12_9);
     tmp32 = Undefined_0(state_);
@@ -570,7 +571,8 @@ TF_BUILTIN(ArrayPrototypeFindLast, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp16 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp15});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp16});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp16);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 

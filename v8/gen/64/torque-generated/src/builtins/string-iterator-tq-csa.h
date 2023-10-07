@@ -9,7 +9,7 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-iterator.tq?l=7&c=1
 TNode<JSStringIterator> NewJSStringIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_string, TNode<Smi> p_nextIndex);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-iterator.tq?l=30&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-iterator.tq?l=31&c=20
 TNode<JSStringIterator> Cast_JSStringIterator_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 } // namespace internal

@@ -140,56 +140,54 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=6&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedEnumCache<D, P>::keys() const {
+Tagged<FixedArray> TorqueGeneratedEnumCache<D, P>::keys() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedEnumCache::keys(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=6&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedEnumCache<D, P>::keys(PtrComprCageBase cage_base) const {
-  FixedArray value;
-  value = TaggedField<FixedArray>::load(cage_base, *this, kKeysOffset);
-  DCHECK(value.IsFixedArray());
+Tagged<FixedArray> TorqueGeneratedEnumCache<D, P>::keys(PtrComprCageBase cage_base) const {
+  Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kKeysOffset);
+  DCHECK(IsFixedArray(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=6&c=3
 template<class D, class P>
-void TorqueGeneratedEnumCache<D, P>::set_keys(FixedArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFixedArray());
+void TorqueGeneratedEnumCache<D, P>::set_keys(Tagged<FixedArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsFixedArray(value));
   WRITE_FIELD(*this, kKeysOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kKeysOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=7&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedEnumCache<D, P>::indices() const {
+Tagged<FixedArray> TorqueGeneratedEnumCache<D, P>::indices() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedEnumCache::indices(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=7&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedEnumCache<D, P>::indices(PtrComprCageBase cage_base) const {
-  FixedArray value;
-  value = TaggedField<FixedArray>::load(cage_base, *this, kIndicesOffset);
-  DCHECK(value.IsFixedArray());
+Tagged<FixedArray> TorqueGeneratedEnumCache<D, P>::indices(PtrComprCageBase cage_base) const {
+  Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kIndicesOffset);
+  DCHECK(IsFixedArray(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=7&c=3
 template<class D, class P>
-void TorqueGeneratedEnumCache<D, P>::set_indices(FixedArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFixedArray());
+void TorqueGeneratedEnumCache<D, P>::set_indices(Tagged<FixedArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsFixedArray(value));
   WRITE_FIELD(*this, kIndicesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIndicesOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedEnumCache<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedEnumCache<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -200,8 +198,7 @@ inline TorqueGeneratedEnumCache<D, P>::TorqueGeneratedEnumCache(Address ptr)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=20&c=9
 template<class D, class P>
 uint16_t TorqueGeneratedDescriptorArray<D, P>::number_of_all_descriptors() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kNumberOfAllDescriptorsOffset);
+  uint16_t value = this->template ReadField<uint16_t>(kNumberOfAllDescriptorsOffset);
   return value;
 }
 
@@ -214,8 +211,7 @@ void TorqueGeneratedDescriptorArray<D, P>::set_number_of_all_descriptors(uint16_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=21&c=3
 template<class D, class P>
 uint16_t TorqueGeneratedDescriptorArray<D, P>::number_of_descriptors() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kNumberOfDescriptorsOffset);
+  uint16_t value = this->template ReadField<uint16_t>(kNumberOfDescriptorsOffset);
   return value;
 }
 
@@ -228,8 +224,7 @@ void TorqueGeneratedDescriptorArray<D, P>::set_number_of_descriptors(uint16_t va
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=24&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedDescriptorArray<D, P>::raw_gc_state() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kRawGcStateOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kRawGcStateOffset);
   return value;
 }
 
@@ -241,84 +236,81 @@ void TorqueGeneratedDescriptorArray<D, P>::set_raw_gc_state(uint32_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 template<class D, class P>
-EnumCache TorqueGeneratedDescriptorArray<D, P>::enum_cache() const {
+Tagged<EnumCache> TorqueGeneratedDescriptorArray<D, P>::enum_cache() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::enum_cache(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 template<class D, class P>
-EnumCache TorqueGeneratedDescriptorArray<D, P>::enum_cache(PtrComprCageBase cage_base) const {
-  EnumCache value;
-  value = TaggedField<EnumCache>::load(cage_base, *this, kEnumCacheOffset);
-  DCHECK(value.IsEnumCache());
+Tagged<EnumCache> TorqueGeneratedDescriptorArray<D, P>::enum_cache(PtrComprCageBase cage_base) const {
+  Tagged<EnumCache> value = TaggedField<Tagged<EnumCache>>::load(cage_base, *this, kEnumCacheOffset);
+  DCHECK(IsEnumCache(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
 template<class D, class P>
-void TorqueGeneratedDescriptorArray<D, P>::set_enum_cache(EnumCache value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsEnumCache());
+void TorqueGeneratedDescriptorArray<D, P>::set_enum_cache(Tagged<EnumCache> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsEnumCache(value));
   WRITE_FIELD(*this, kEnumCacheOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kEnumCacheOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
-PrimitiveHeapObject TorqueGeneratedDescriptorArray<D, P>::descriptors_key(int i) const {
+Tagged<PrimitiveHeapObject> TorqueGeneratedDescriptorArray<D, P>::descriptors_key(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::descriptors_key(cage_base, i);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
-PrimitiveHeapObject TorqueGeneratedDescriptorArray<D, P>::descriptors_key(PtrComprCageBase cage_base, int i) const {
-  PrimitiveHeapObject value;
+Tagged<PrimitiveHeapObject> TorqueGeneratedDescriptorArray<D, P>::descriptors_key(PtrComprCageBase cage_base, int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->number_of_all_descriptors());
   int offset = kDescriptorsOffset + 0 + i * 24;
-  value = TaggedField<PrimitiveHeapObject>::load(cage_base, *this, offset);
-  DCHECK(value.IsName() || value.IsUndefined());
+  Tagged<PrimitiveHeapObject> value = TaggedField<Tagged<PrimitiveHeapObject>>::load(cage_base, *this, offset);
+  DCHECK(IsName(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
-void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_key(int i, PrimitiveHeapObject value, WriteBarrierMode mode) {
+void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_key(int i, Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->number_of_all_descriptors());
   int offset = kDescriptorsOffset + 0 + i * 24;
-  SLOW_DCHECK(value.IsName() || value.IsUndefined());
+  SLOW_DCHECK(IsName(value) || IsUndefined(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
-Object TorqueGeneratedDescriptorArray<D, P>::descriptors_details(int i) const {
+Tagged<Object> TorqueGeneratedDescriptorArray<D, P>::descriptors_details(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDescriptorArray::descriptors_details(cage_base, i);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
-Object TorqueGeneratedDescriptorArray<D, P>::descriptors_details(PtrComprCageBase cage_base, int i) const {
-  Object value;
+Tagged<Object> TorqueGeneratedDescriptorArray<D, P>::descriptors_details(PtrComprCageBase cage_base, int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->number_of_all_descriptors());
   int offset = kDescriptorsOffset + 8 + i * 24;
-  value = TaggedField<Object>::load(cage_base, *this, offset);
-  DCHECK(value.IsSmi() || value.IsUndefined());
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, offset);
+  DCHECK(IsSmi(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
-void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_details(int i, Object value, WriteBarrierMode mode) {
+void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_details(int i, Tagged<Object> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->number_of_all_descriptors());
   int offset = kDescriptorsOffset + 8 + i * 24;
-  SLOW_DCHECK(value.IsSmi() || value.IsUndefined());
+  SLOW_DCHECK(IsSmi(value) || IsUndefined(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
@@ -333,12 +325,11 @@ MaybeObject TorqueGeneratedDescriptorArray<D, P>::descriptors_value(int i) const
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedDescriptorArray<D, P>::descriptors_value(PtrComprCageBase cage_base, int i) const {
-  MaybeObject value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->number_of_all_descriptors());
   int offset = kDescriptorsOffset + 16 + i * 24;
-  value = TaggedField<MaybeObject>::load(cage_base, *this, offset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsJSReceiver()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapNumber()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsBigInt()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsString()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSymbol()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsTrue()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsFalse()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsNull()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUndefined()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsAccessorInfo()) || (value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsAccessorPair()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsClassPositions()));
+  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, offset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsJSReceiver(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsHeapNumber(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsBigInt(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsString(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSymbol(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsBoolean(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsNull(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsUndefined(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsAccessorInfo(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsAccessorPair(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsClassPositions(value.GetHeapObjectOrSmi())));
   return value;
 }
 
@@ -348,15 +339,15 @@ void TorqueGeneratedDescriptorArray<D, P>::set_descriptors_value(int i, MaybeObj
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->number_of_all_descriptors());
   int offset = kDescriptorsOffset + 16 + i * 24;
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsJSReceiver()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapNumber()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsBigInt()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsString()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSymbol()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsTrue()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsFalse()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsNull()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUndefined()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsAccessorInfo()) || (value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsAccessorPair()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsClassPositions()));
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsJSReceiver(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsHeapNumber(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsBigInt(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsString(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSymbol(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsBoolean(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsNull(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsUndefined(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsAccessorInfo(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsAccessorPair(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsClassPositions(value.GetHeapObjectOrSmi())));
   RELAXED_WRITE_WEAK_FIELD(*this, offset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
 template<class D, class P>
-D TorqueGeneratedDescriptorArray<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedDescriptorArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=5&c=1
-bool IsStruct_NonInline(HeapObject o) {
-  return o.IsStruct();
+bool IsStruct_NonInline(Tagged<HeapObject> o) {
+  return IsStruct(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedStruct<Struct, HeapObject>::StructVerify(Isolate* isolate) {
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=19&c=1
-bool IsAccessorPair_NonInline(HeapObject o) {
-  return o.IsAccessorPair();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=18&c=1
+bool IsAccessorPair_NonInline(Tagged<HeapObject> o) {
+  return IsAccessorPair(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,9 +34,9 @@ void TorqueGeneratedAccessorPair<AccessorPair, Struct>::AccessorPairVerify(Isola
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=14&c=1
-bool IsClassPositions_NonInline(HeapObject o) {
-  return o.IsClassPositions();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=13&c=1
+bool IsClassPositions_NonInline(Tagged<HeapObject> o) {
+  return IsClassPositions(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -48,9 +48,9 @@ void TorqueGeneratedClassPositions<ClassPositions, Struct>::ClassPositionsVerify
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=9&c=1
-bool IsTuple2_NonInline(HeapObject o) {
-  return o.IsTuple2();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=8&c=1
+bool IsTuple2_NonInline(Tagged<HeapObject> o) {
+  return IsTuple2(o);
 }
 
 #ifdef VERIFY_HEAP

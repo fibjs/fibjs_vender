@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/property-descriptor-object-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -553,7 +554,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_1(compiler::CodeAssemblerState* stat
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -600,7 +601,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_2(compiler::CodeAssemblerState* stat
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -684,7 +685,7 @@ void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<Pr
   TNode<BoolT> tmp8;
   TNode<Smi> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Oddball> tmp11;
+  TNode<Undefined> tmp11;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
@@ -757,7 +758,7 @@ void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<Pr
   TNode<BoolT> tmp30;
   TNode<Smi> tmp31;
   TNode<IntPtrT> tmp32;
-  TNode<Oddball> tmp33;
+  TNode<Undefined> tmp33;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp28 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
@@ -789,7 +790,7 @@ void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<Pr
   TNode<BoolT> tmp40;
   TNode<Smi> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<Oddball> tmp43;
+  TNode<Undefined> tmp43;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp38 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);

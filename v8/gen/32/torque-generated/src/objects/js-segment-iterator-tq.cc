@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=11&c=1
-bool IsJSSegmentIterator_NonInline(HeapObject o) {
-  return o.IsJSSegmentIterator();
+bool IsJSSegmentIterator_NonInline(Tagged<HeapObject> o) {
+  return IsJSSegmentIterator(o);
 }
 
 #ifdef VERIFY_HEAP

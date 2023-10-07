@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-replaceall-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
@@ -189,7 +190,7 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<Object> tmp0;
-  TNode<Oddball> tmp1;
+  TNode<Undefined> tmp1;
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -199,7 +200,7 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
     ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<Null> tmp3;
   TNode<BoolT> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -324,7 +325,7 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   TNode<String> phi_bb17_11;
   TNode<Smi> phi_bb17_12;
   TNode<JSReceiver> tmp25;
-  TNode<Oddball> tmp26;
+  TNode<Undefined> tmp26;
   TNode<Object> tmp27;
   TNode<String> tmp28;
   if (block17.is_used()) {

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
-bool IsJSSharedArray_NonInline(HeapObject o) {
-  return o.IsJSSharedArray();
+bool IsJSSharedArray_NonInline(Tagged<HeapObject> o) {
+  return IsJSSharedArray(o);
 }
 
 #ifdef VERIFY_HEAP

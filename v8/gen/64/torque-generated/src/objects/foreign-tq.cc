@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1
-bool IsForeign_NonInline(HeapObject o) {
-  return o.IsForeign();
+bool IsForeign_NonInline(Tagged<HeapObject> o) {
+  return IsForeign(o);
 }
 
 #ifdef VERIFY_HEAP

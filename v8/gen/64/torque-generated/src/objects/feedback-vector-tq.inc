@@ -1,9 +1,9 @@
 class FeedbackVector;
-// Alias for HeapObject::IsFeedbackVector() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
-V8_EXPORT_PRIVATE bool IsFeedbackVector_NonInline(HeapObject o);
+// Alias for IsFeedbackVector() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
+V8_EXPORT_PRIVATE bool IsFeedbackVector_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
 template <class D, class P>
 class TorqueGeneratedFeedbackVector : public P {
   static_assert(
@@ -17,134 +17,134 @@ class TorqueGeneratedFeedbackVector : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedFeedbackVector<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=9
   inline int32_t length() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=9
   inline void set_length(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
   inline int32_t invocation_count() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
   inline void set_invocation_count(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=28
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=28
   inline uint32_t optional_padding() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=28
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=28
   inline void set_optional_padding(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
   inline uint8_t placeholder0() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
   inline void set_placeholder0(uint8_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
   inline uint8_t osr_state() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
   inline void set_osr_state(uint8_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
   inline uint16_t flags() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
   inline void set_flags(uint16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
-  inline SharedFunctionInfo shared_function_info() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
-  inline SharedFunctionInfo shared_function_info(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
-  inline void set_shared_function_info(SharedFunctionInfo value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+  inline Tagged<SharedFunctionInfo> shared_function_info() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+  inline Tagged<SharedFunctionInfo> shared_function_info(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+  inline void set_shared_function_info(Tagged<SharedFunctionInfo> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
-  inline ClosureFeedbackCellArray closure_feedback_cell_array() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
-  inline ClosureFeedbackCellArray closure_feedback_cell_array(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
-  inline void set_closure_feedback_cell_array(ClosureFeedbackCellArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  inline Tagged<ClosureFeedbackCellArray> closure_feedback_cell_array() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  inline Tagged<ClosureFeedbackCellArray> closure_feedback_cell_array(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  inline void set_closure_feedback_cell_array(Tagged<ClosureFeedbackCellArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
-  inline FeedbackCell parent_feedback_cell() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
-  inline FeedbackCell parent_feedback_cell(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
-  inline void set_parent_feedback_cell(FeedbackCell value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
+  inline Tagged<FeedbackCell> parent_feedback_cell() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
+  inline Tagged<FeedbackCell> parent_feedback_cell(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
+  inline void set_parent_feedback_cell(Tagged<FeedbackCell> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Weak<class Code>
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
   inline MaybeObject maybe_optimized_code() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
   inline MaybeObject maybe_optimized_code(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
   inline void set_maybe_optimized_code(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
   inline MaybeObject raw_feedback_slots(int i, RelaxedLoadTag) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
   inline MaybeObject raw_feedback_slots(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
   inline void set_raw_feedback_slots(int i, MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(FeedbackVector)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
   V8_EXPORT_PRIVATE void FeedbackVectorVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=9
   static constexpr int kLengthOffset = P::kHeaderSize;
   static constexpr int kLengthOffsetEnd = kLengthOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
   static constexpr int kInvocationCountOffset = kLengthOffsetEnd + 1;
   static constexpr int kInvocationCountOffsetEnd = kInvocationCountOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=28
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=28
   static constexpr int kOptionalPaddingOffset = kInvocationCountOffsetEnd + 1;
   static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
   static constexpr int kPlaceholder0Offset = kOptionalPaddingOffsetEnd + 1;
   static constexpr int kPlaceholder0OffsetEnd = kPlaceholder0Offset + kUInt8Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
   static constexpr int kOsrStateOffset = kPlaceholder0OffsetEnd + 1;
   static constexpr int kOsrStateOffsetEnd = kOsrStateOffset + kUInt8Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
   static constexpr int kFlagsOffset = kOsrStateOffsetEnd + 1;
   static constexpr int kFlagsOffsetEnd = kFlagsOffset + kUInt16Size - 1;
   static constexpr int kStartOfStrongFieldsOffset = kFlagsOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
   static constexpr int kSharedFunctionInfoOffset = kFlagsOffsetEnd + 1;
   static constexpr int kSharedFunctionInfoOffsetEnd = kSharedFunctionInfoOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
   static constexpr int kClosureFeedbackCellArrayOffset = kSharedFunctionInfoOffsetEnd + 1;
   static constexpr int kClosureFeedbackCellArrayOffsetEnd = kClosureFeedbackCellArrayOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
   static constexpr int kParentFeedbackCellOffset = kClosureFeedbackCellArrayOffsetEnd + 1;
   static constexpr int kParentFeedbackCellOffsetEnd = kParentFeedbackCellOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kParentFeedbackCellOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kParentFeedbackCellOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
   static constexpr int kMaybeOptimizedCodeOffset = kParentFeedbackCellOffsetEnd + 1;
   static constexpr int kMaybeOptimizedCodeOffsetEnd = kMaybeOptimizedCodeOffset + kTaggedSize - 1;
   static constexpr int kHeaderSize = kMaybeOptimizedCodeOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
   static constexpr int kRawFeedbackSlotsOffset = kMaybeOptimizedCodeOffsetEnd + 1;
   static constexpr int kRawFeedbackSlotsOffsetEnd = kRawFeedbackSlotsOffset + 0 - 1;
   static constexpr int kEndOfWeakFieldsOffset = kRawFeedbackSlotsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
   V8_INLINE static constexpr int32_t SizeFor(int length) {
     int32_t size = kHeaderSize;
     size += length * 8;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->length());
   }
@@ -159,6 +159,8 @@ class TorqueGeneratedFeedbackVector : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFeedbackVector(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFeedbackVector(Address ptr);
 };
 

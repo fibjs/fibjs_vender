@@ -47,29 +47,17 @@ class BytecodeArray
   inline void set_incoming_new_target_or_generator_register(
       interpreter::Register incoming_new_target_or_generator_register);
 
-  static constexpr int kBytecodeAgeSize = kUInt16Size;
-  static_assert(kBytecodeAgeOffset + kBytecodeAgeSize - 1 ==
-                kBytecodeAgeOffsetEnd);
-
-  inline uint16_t bytecode_age() const;
-  inline void set_bytecode_age(uint16_t age);
-
-  // Replaces the current bytecode_age with a new value if the current value
-  // matches the one expected. Returns the value before this operation.
-  inline uint16_t CompareExchangeBytecodeAge(uint16_t expected_age,
-                                             uint16_t new_age);
-
   inline bool HasSourcePositionTable() const;
   inline bool DidSourcePositionGenerationFail() const;
 
   // If source positions have not been collected or an exception has been thrown
   // this will return empty_byte_array.
-  DECL_GETTER(SourcePositionTable, ByteArray)
+  DECL_GETTER(SourcePositionTable, Tagged<ByteArray>)
 
   // Raw accessors to access these fields during code cache deserialization.
-  DECL_GETTER(raw_constant_pool, Object)
-  DECL_GETTER(raw_handler_table, Object)
-  DECL_GETTER(raw_source_position_table, Object)
+  DECL_GETTER(raw_constant_pool, Tagged<Object>)
+  DECL_GETTER(raw_handler_table, Tagged<Object>)
+  DECL_GETTER(raw_source_position_table, Tagged<Object>)
 
   // Indicates that an attempt was made to collect source positions, but that it
   // failed most likely due to stack exhaustion. When in this state
@@ -92,12 +80,7 @@ class BytecodeArray
   V8_EXPORT_PRIVATE static void Disassemble(Handle<BytecodeArray> handle,
                                             std::ostream& os);
 
-  void CopyBytecodesTo(BytecodeArray to);
-
-  // Bytecode aging
-  V8_EXPORT_PRIVATE bool IsOld() const;
-  V8_EXPORT_PRIVATE void MakeOlder(uint16_t increment);
-  V8_EXPORT_PRIVATE void EnsureOldForTesting();
+  void CopyBytecodesTo(Tagged<BytecodeArray> to);
 
   // Clear uninitialized padding space. This ensures that the snapshot content
   // is deterministic.

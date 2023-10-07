@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-has-property-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -167,14 +168,14 @@ TF_BUILTIN(ProxyHasProperty, CodeStubAssembler) {
     ca_.Branch(tmp11, &block34, std::vector<compiler::Node*>{}, &block35, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp12;
+  TNode<True> tmp12;
   if (block34.is_used()) {
     ca_.Bind(&block34);
     tmp12 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp12);
   }
 
-  TNode<Oddball> tmp13;
+  TNode<False> tmp13;
   if (block35.is_used()) {
     ca_.Bind(&block35);
     ProxiesCodeStubAssembler(state_).CheckHasTrapResult(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp6}, TNode<JSProxy>{parameter1}, TNode<Name>{parameter2});

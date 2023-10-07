@@ -1,7 +1,7 @@
 class JSCollectionIterator;
-// Alias for HeapObject::IsJSCollectionIterator() that avoids inlining.
+// Alias for IsJSCollectionIterator() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSCollectionIterator_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSCollectionIterator_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=5&c=1
 template <class D, class P>
@@ -18,24 +18,24 @@ class TorqueGeneratedJSCollectionIterator : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSCollectionIterator<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=8&c=3
-  inline Object table() const;
+  inline Tagged<Object> table() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=8&c=3
-  inline Object table(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> table(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=8&c=3
-  inline void set_table(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_table(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=10&c=3
-  inline Object index() const;
+  inline Tagged<Object> index() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=10&c=3
-  inline Object index(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> index(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=10&c=3
-  inline void set_index(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_index(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -65,6 +65,8 @@ class TorqueGeneratedJSCollectionIterator : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSCollectionIterator(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSCollectionIterator(Address ptr);
 };
 

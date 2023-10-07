@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=13&c=1
-bool IsJSSegmenter_NonInline(HeapObject o) {
-  return o.IsJSSegmenter();
+bool IsJSSegmenter_NonInline(Tagged<HeapObject> o) {
+  return IsJSSegmenter(o);
 }
 
 #ifdef VERIFY_HEAP

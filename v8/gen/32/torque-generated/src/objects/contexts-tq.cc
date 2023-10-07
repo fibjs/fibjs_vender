@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=5&c=1
-bool IsContext_NonInline(HeapObject o) {
-  return o.IsContext();
+bool IsContext_NonInline(Tagged<HeapObject> o) {
+  return IsContext(o);
 }
 
 #ifdef VERIFY_HEAP

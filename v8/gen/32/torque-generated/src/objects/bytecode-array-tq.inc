@@ -1,7 +1,7 @@
 class BytecodeArray;
-// Alias for HeapObject::IsBytecodeArray() that avoids inlining.
+// Alias for IsBytecodeArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsBytecodeArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsBytecodeArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1
 template <class D, class P>
@@ -18,26 +18,26 @@ class TorqueGeneratedBytecodeArray : public P {
   using TorqueGeneratedClass = TorqueGeneratedBytecodeArray<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=9&c=3
-  inline FixedArray constant_pool() const;
+  inline Tagged<FixedArray> constant_pool() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=9&c=3
-  inline FixedArray constant_pool(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> constant_pool(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=9&c=3
-  inline void set_constant_pool(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_constant_pool(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=11&c=3
-  inline ByteArray handler_table() const;
+  inline Tagged<ByteArray> handler_table() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=11&c=3
-  inline ByteArray handler_table(PtrComprCageBase cage_base) const;
+  inline Tagged<ByteArray> handler_table(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=11&c=3
-  inline void set_handler_table(ByteArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_handler_table(Tagged<ByteArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | Exception | class ByteArray)
+  // Torque type: (class Undefined | Exception | class ByteArray)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=21&c=3
-  inline HeapObject source_position_table(AcquireLoadTag) const;
+  inline Tagged<HeapObject> source_position_table(AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=21&c=3
-  inline HeapObject source_position_table(PtrComprCageBase cage_base, AcquireLoadTag) const;
+  inline Tagged<HeapObject> source_position_table(PtrComprCageBase cage_base, AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=21&c=3
-  inline void set_source_position_table(HeapObject value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source_position_table(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=22&c=3
   inline int32_t frame_size() const;
@@ -54,16 +54,11 @@ class TorqueGeneratedBytecodeArray : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=24&c=3
   inline void set_incoming_new_target_or_generator_register(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=25&c=3
-  inline uint16_t bytecode_age() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=25&c=3
-  inline void set_bytecode_age(uint16_t value);
-
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(BytecodeArray)
@@ -93,19 +88,15 @@ class TorqueGeneratedBytecodeArray : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=24&c=3
   static constexpr int kIncomingNewTargetOrGeneratorRegisterOffset = kParameterSizeOffsetEnd + 1;
   static constexpr int kIncomingNewTargetOrGeneratorRegisterOffsetEnd = kIncomingNewTargetOrGeneratorRegisterOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=25&c=3
-  static constexpr int kBytecodeAgeOffset = kIncomingNewTargetOrGeneratorRegisterOffsetEnd + 1;
-  static constexpr int kBytecodeAgeOffsetEnd = kBytecodeAgeOffset + kUInt16Size - 1;
-  static constexpr int kStartOfWeakFieldsOffset = kBytecodeAgeOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kBytecodeAgeOffsetEnd + 1;
-  static constexpr int kHeaderSize = kBytecodeAgeOffsetEnd + 1;
-  static constexpr int kSize = kBytecodeAgeOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kIncomingNewTargetOrGeneratorRegisterOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kIncomingNewTargetOrGeneratorRegisterOffsetEnd + 1;
+  static constexpr int kHeaderSize = kIncomingNewTargetOrGeneratorRegisterOffsetEnd + 1;
+  static constexpr int kSize = kIncomingNewTargetOrGeneratorRegisterOffsetEnd + 1;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
-    DCHECK(kHeaderSize == kSize && kHeaderSize == 34);
+    DCHECK(kHeaderSize == kSize && kHeaderSize == 32);
     int32_t size = kHeaderSize;
-    size = OBJECT_POINTER_ALIGN(size);
     return size;
   }
 
@@ -124,6 +115,8 @@ class TorqueGeneratedBytecodeArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedBytecodeArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedBytecodeArray(Address ptr);
 };
 

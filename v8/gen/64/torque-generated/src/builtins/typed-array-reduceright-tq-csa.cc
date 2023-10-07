@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-reduceright-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -185,7 +186,7 @@ tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
 
   TNode<JSTypedArray> phi_bb8_6;
   TNode<Object> phi_bb8_8;
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_6, &phi_bb8_8);
     tmp12 = Undefined_0(state_);
@@ -195,7 +196,7 @@ tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<JSTypedArray> phi_bb5_6;
   TNode<Object> phi_bb5_8;
   TNode<Object> phi_bb5_10;
-  TNode<HeapObject> tmp13;
+  TNode<Hole> tmp13;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6, &phi_bb5_8, &phi_bb5_10);
     compiler::CodeAssemblerLabel label14(&ca_);
@@ -210,7 +211,7 @@ tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<Object> phi_bb18_8;
   TNode<Object> phi_bb18_11;
   TNode<Object> phi_bb18_12;
-  TNode<Oddball> tmp15;
+  TNode<Undefined> tmp15;
   TNode<Number> tmp16;
   TNode<Object> tmp17;
   if (block18.is_used()) {
@@ -238,7 +239,7 @@ tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
 
   TNode<JSTypedArray> phi_bb3_6;
   TNode<Object> phi_bb3_8;
-  TNode<HeapObject> tmp18;
+  TNode<Hole> tmp18;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_6, &phi_bb3_8);
     compiler::CodeAssemblerLabel label19(&ca_);
@@ -352,7 +353,8 @@ TF_BUILTIN(TypedArrayPrototypeReduceRight, CodeStubAssembler) {
     ca_.Bind(&block12);
     tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp10 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp9});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp10});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp10);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<IntPtrT> tmp11;
@@ -373,7 +375,7 @@ TF_BUILTIN(TypedArrayPrototypeReduceRight, CodeStubAssembler) {
     ca_.Goto(&block15, tmp14);
   }
 
-  TNode<HeapObject> tmp15;
+  TNode<Hole> tmp15;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp15 = TheHole_0(state_);

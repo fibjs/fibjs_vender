@@ -6,12 +6,14 @@
 
 #include "src/codegen/compiler.h"
 #include "src/codegen/optimized-compilation-info.h"
+#include "src/compiler/turboshaft/wasm-turboshaft-compiler.h"
 #include "src/compiler/wasm-compiler.h"
 #include "src/handles/handles-inl.h"
 #include "src/logging/counters-scopes.h"
 #include "src/logging/log.h"
 #include "src/objects/code-inl.h"
 #include "src/wasm/baseline/liftoff-compiler.h"
+#include "src/wasm/turboshaft-graph-interface.h"
 #include "src/wasm/wasm-code-manager.h"
 #include "src/wasm/wasm-debug.h"
 
@@ -147,6 +149,18 @@ WasmCompilationResult WasmCompilationUnit::ExecuteFunctionCompilation(
       compiler::WasmCompilationData data(func_body);
       data.func_index = func_index_;
       data.wire_bytes_storage = wire_bytes_storage;
+      bool use_turboshaft = v8_flags.turboshaft_wasm;
+      if (func_index_ < 32 && ((v8_flags.wasm_turboshaft_mask_for_testing &
+                                (1 << func_index_)) == 1)) {
+        use_turboshaft = true;
+      }
+      if (use_turboshaft) {
+        result = compiler::turboshaft::ExecuteTurboshaftWasmCompilation(
+            env, data, detected);
+        if (result.succeeded()) return result;
+        // Else fall back to turbofan.
+      }
+
       result = compiler::ExecuteTurbofanWasmCompilation(env, data, counters,
                                                         detected);
       result.for_debugging = for_debugging_;
@@ -186,36 +200,13 @@ void WasmCompilationUnit::CompileWasmFunction(Counters* counters,
 }
 
 namespace {
-bool UseGenericWrapper(const FunctionSig* sig) {
-#if V8_TARGET_ARCH_ARM64
-  if (!v8_flags.enable_wasm_arm64_generic_wrapper) {
-    return false;
-  }
-#endif
-#if (V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64)
-  if (sig->returns().size() > 1) {
-    return false;
-  }
-  if (sig->returns().size() == 1) {
-    ValueType ret = sig->GetReturn(0);
-    if (ret.kind() == kS128) return false;
-    if (ret.is_reference()) {
-      if (ret.heap_representation() != wasm::HeapType::kExtern &&
-          ret.heap_representation() != wasm::HeapType::kFunc) {
-        return false;
-      }
-    }
-  }
-  for (ValueType type : sig->parameters()) {
-    if (type.kind() != kI32 && type.kind() != kI64 && type.kind() != kF32 &&
-        type.kind() != kF64 &&
-        // TODO(7748): The generic wrapper should also take care of null checks.
-        !(type.kind() == kRefNull &&
-          type.heap_representation() == wasm::HeapType::kExtern)) {
-      return false;
-    }
-  }
-  return v8_flags.wasm_generic_wrapper;
+bool UseGenericWrapper(const WasmModule* module, const FunctionSig* sig) {
+#if (V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_IA32 || \
+     V8_TARGET_ARCH_ARM)
+  // We don't use the generic wrapper for asm.js, because it creates invalid
+  // stack traces.
+  return !is_asmjs_module(module) && v8_flags.wasm_generic_wrapper &&
+         IsJSCompatibleSignature(sig);
 #else
   return false;
 #endif
@@ -230,7 +221,7 @@ JSToWasmWrapperCompilationUnit::JSToWasmWrapperCompilationUnit(
       is_import_(is_import),
       sig_(sig),
       canonical_sig_index_(canonical_sig_index),
-      use_generic_wrapper_(allow_generic && UseGenericWrapper(sig) &&
+      use_generic_wrapper_(allow_generic && UseGenericWrapper(module, sig) &&
                            !is_import),
       job_(use_generic_wrapper_
                ? nullptr
@@ -250,7 +241,7 @@ void JSToWasmWrapperCompilationUnit::Execute() {
 
 Handle<Code> JSToWasmWrapperCompilationUnit::Finalize() {
   if (use_generic_wrapper_) {
-    return isolate_->builtins()->code_handle(Builtin::kGenericJSToWasmWrapper);
+    return isolate_->builtins()->code_handle(Builtin::kJSToWasmWrapper);
   }
 
   CompilationJob::Status status = job_->FinalizeJob(isolate_);

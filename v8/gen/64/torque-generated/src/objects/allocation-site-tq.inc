@@ -1,7 +1,7 @@
 class AllocationMemento;
-// Alias for HeapObject::IsAllocationMemento() that avoids inlining.
+// Alias for IsAllocationMemento() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsAllocationMemento_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsAllocationMemento_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1
 template <class D, class P>
@@ -18,17 +18,17 @@ class TorqueGeneratedAllocationMemento : public P {
   using TorqueGeneratedClass = TorqueGeneratedAllocationMemento<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=8&c=3
-  inline AllocationSite allocation_site() const;
+  inline Tagged<AllocationSite> allocation_site() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=8&c=3
-  inline AllocationSite allocation_site(PtrComprCageBase cage_base) const;
+  inline Tagged<AllocationSite> allocation_site(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=8&c=3
-  inline void set_allocation_site(AllocationSite value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_allocation_site(Tagged<AllocationSite> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(AllocationMemento)
@@ -70,6 +70,8 @@ class TorqueGeneratedAllocationMemento : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAllocationMemento(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAllocationMemento(Address ptr);
 };
 

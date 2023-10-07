@@ -15,16 +15,16 @@ TNode<Object> LoadElementOrUndefined_0(compiler::CodeAssemblerState* state_, TNo
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=42&c=1
 TNode<Object> LoadElementOrUndefined_1(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_a, TNode<Smi> p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=47&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=48&c=1
 void StoreArrayHole_0(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_k);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=51&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=52&c=1
 void StoreArrayHole_1(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_elements, TNode<Smi> p_k);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=62&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=64&c=1
 void EnsureArrayLengthWritable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_map, compiler::CodeAssemblerLabel* label_Bailout);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=85&c=1
 TNode<JSArray> CreateJSArrayWithElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_array);
 
 } // namespace internal

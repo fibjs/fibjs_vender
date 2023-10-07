@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=5&c=1
-bool IsMicrotask_NonInline(HeapObject o) {
-  return o.IsMicrotask();
+bool IsMicrotask_NonInline(Tagged<HeapObject> o) {
+  return IsMicrotask(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedMicrotask<Microtask, Struct>::MicrotaskVerify(Isolate* isola
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=1
-bool IsCallbackTask_NonInline(HeapObject o) {
-  return o.IsCallbackTask();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+bool IsCallbackTask_NonInline(Tagged<HeapObject> o) {
+  return IsCallbackTask(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,9 +34,9 @@ void TorqueGeneratedCallbackTask<CallbackTask, Microtask>::CallbackTaskVerify(Is
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=1
-bool IsCallableTask_NonInline(HeapObject o) {
-  return o.IsCallableTask();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+bool IsCallableTask_NonInline(Tagged<HeapObject> o) {
+  return IsCallableTask(o);
 }
 
 #ifdef VERIFY_HEAP

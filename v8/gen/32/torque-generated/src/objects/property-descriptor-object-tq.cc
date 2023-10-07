@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
-bool IsPropertyDescriptorObject_NonInline(HeapObject o) {
-  return o.IsPropertyDescriptorObject();
+bool IsPropertyDescriptorObject_NonInline(Tagged<HeapObject> o) {
+  return IsPropertyDescriptorObject(o);
 }
 
 #ifdef VERIFY_HEAP

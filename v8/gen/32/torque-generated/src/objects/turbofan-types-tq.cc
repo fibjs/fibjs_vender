@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=12&c=1
-bool IsTurbofanType_NonInline(HeapObject o) {
-  return o.IsTurbofanType();
+bool IsTurbofanType_NonInline(Tagged<HeapObject> o) {
+  return IsTurbofanType(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedTurbofanType<TurbofanType, HeapObject>::TurbofanTypeVerify(I
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
-bool IsTurbofanBitsetType_NonInline(HeapObject o) {
-  return o.IsTurbofanBitsetType();
+bool IsTurbofanBitsetType_NonInline(Tagged<HeapObject> o) {
+  return IsTurbofanBitsetType(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedTurbofanBitsetType<TurbofanBitsetType, TurbofanType>::Turbof
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
-bool IsTurbofanUnionType_NonInline(HeapObject o) {
-  return o.IsTurbofanUnionType();
+bool IsTurbofanUnionType_NonInline(Tagged<HeapObject> o) {
+  return IsTurbofanUnionType(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -49,8 +49,8 @@ void TorqueGeneratedTurbofanUnionType<TurbofanUnionType, TurbofanType>::Turbofan
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
-bool IsTurbofanRangeType_NonInline(HeapObject o) {
-  return o.IsTurbofanRangeType();
+bool IsTurbofanRangeType_NonInline(Tagged<HeapObject> o) {
+  return IsTurbofanRangeType(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -63,8 +63,8 @@ void TorqueGeneratedTurbofanRangeType<TurbofanRangeType, TurbofanType>::Turbofan
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
-bool IsTurbofanHeapConstantType_NonInline(HeapObject o) {
-  return o.IsTurbofanHeapConstantType();
+bool IsTurbofanHeapConstantType_NonInline(Tagged<HeapObject> o) {
+  return IsTurbofanHeapConstantType(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -77,8 +77,8 @@ void TorqueGeneratedTurbofanHeapConstantType<TurbofanHeapConstantType, TurbofanT
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
-bool IsTurbofanOtherNumberConstantType_NonInline(HeapObject o) {
-  return o.IsTurbofanOtherNumberConstantType();
+bool IsTurbofanOtherNumberConstantType_NonInline(Tagged<HeapObject> o) {
+  return IsTurbofanOtherNumberConstantType(o);
 }
 
 #ifdef VERIFY_HEAP

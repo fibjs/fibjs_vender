@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/builtins-string-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -358,7 +359,7 @@ TF_BUILTIN(StringToList, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{parameter0});
     tmp2 = CodeStubAssembler(state_).LoadJSArrayElementsMap(ElementsKind::PACKED_ELEMENTS, TNode<NativeContext>{tmp1});
     tmp3 = CodeStubAssembler(state_).SmiTag(TNode<IntPtrT>{tmp0});
-    tmp4 = CodeStubAssembler(state_).AllocateJSArray(ElementsKind::PACKED_ELEMENTS, TNode<Map>{tmp2}, TNode<IntPtrT>{tmp0}, TNode<Smi>{tmp3}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp4 = CodeStubAssembler(state_).AllocateJSArray(ElementsKind::PACKED_ELEMENTS, TNode<Map>{tmp2}, TNode<IntPtrT>{tmp0}, TNode<Smi>{tmp3});
     tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp6 = CodeStubAssembler(state_).LoadReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp4, tmp5});
     tmp7 = UnsafeCast_FixedArray_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp6});
@@ -407,7 +408,7 @@ TF_BUILTIN(StringToList, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=104&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=101&c=1
 void GenerateStringAt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_position, const char* p_methodName, compiler::CodeAssemblerLabel* label_IfInBounds, compiler::TypedCodeAssemblerVariable<String>* label_IfInBounds_parameter_0, compiler::TypedCodeAssemblerVariable<UintPtrT>* label_IfInBounds_parameter_1, compiler::TypedCodeAssemblerVariable<UintPtrT>* label_IfInBounds_parameter_2, compiler::CodeAssemblerLabel* label_IfOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -615,7 +616,7 @@ TF_BUILTIN(StringPrototypeCodePointAt, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp8);
   }
 
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp9 = Undefined_0(state_);
@@ -732,7 +733,7 @@ USE(parameter3);
     ca_.Goto(&block3, tmp3);
   }
 
-  TNode<Oddball> tmp4;
+  TNode<Undefined> tmp4;
   TNode<BoolT> tmp5;
   if (block2.is_used()) {
     ca_.Bind(&block2);
@@ -781,7 +782,7 @@ USE(parameter3);
   }
 
   TNode<String> phi_bb3_9;
-  TNode<Oddball> tmp14;
+  TNode<Undefined> tmp14;
   TNode<BoolT> tmp15;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_9);
@@ -881,7 +882,7 @@ TF_BUILTIN(StringCharAt, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 TNode<IntPtrT> Convert_intptr_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -898,7 +899,7 @@ TNode<IntPtrT> Convert_intptr_intptr_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{p_i};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=219&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=216&c=9
 TNode<Symbol> Cast_Symbol_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -959,7 +960,7 @@ TNode<Symbol> Cast_Symbol_1(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<Symbol>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=278&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=275&c=14
 TorqueStructReference_char8_0 AddOffset_char8_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char8_0 p_ref, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -983,7 +984,7 @@ TorqueStructReference_char8_0 AddOffset_char8_0(compiler::CodeAssemblerState* st
   return TorqueStructReference_char8_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=280&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=277&c=14
 TorqueStructReference_char16_0 AddOffset_char16_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char16_0 p_ref, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

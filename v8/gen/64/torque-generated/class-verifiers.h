@@ -67,6 +67,7 @@ class EmbedderDataArray;
 class FeedbackCell;
 class FeedbackVector;
 class ByteArray;
+class ExternalPointerArray;
 class ArrayList;
 class TemplateList;
 class WeakArrayList;
@@ -215,8 +216,6 @@ class JSRelativeTimeFormat;
 class JSSegmentIterator;
 class JSSegmenter;
 class JSSegments;
-class WasmObject;
-class WasmArray;
 class WasmApiFunctionRef;
 class WasmFunctionData;
 class WasmExportedFunctionData;
@@ -234,7 +233,9 @@ class WasmGlobalObject;
 class WasmTagObject;
 class AsmWasmData;
 class WasmTypeInfo;
+class WasmObject;
 class WasmStruct;
+class WasmArray;
 class WasmStringViewIter;
 class V8_EXPORT_PRIVATE TorqueGeneratedClassVerifiers{
  public:
@@ -298,6 +299,7 @@ class V8_EXPORT_PRIVATE TorqueGeneratedClassVerifiers{
   static void FeedbackCellVerify(FeedbackCell o, Isolate* isolate);
   static void FeedbackVectorVerify(FeedbackVector o, Isolate* isolate);
   static void ByteArrayVerify(ByteArray o, Isolate* isolate);
+  static void ExternalPointerArrayVerify(ExternalPointerArray o, Isolate* isolate);
   static void ArrayListVerify(ArrayList o, Isolate* isolate);
   static void TemplateListVerify(TemplateList o, Isolate* isolate);
   static void WeakArrayListVerify(WeakArrayList o, Isolate* isolate);
@@ -446,8 +448,6 @@ class V8_EXPORT_PRIVATE TorqueGeneratedClassVerifiers{
   static void JSSegmentIteratorVerify(JSSegmentIterator o, Isolate* isolate);
   static void JSSegmenterVerify(JSSegmenter o, Isolate* isolate);
   static void JSSegmentsVerify(JSSegments o, Isolate* isolate);
-  static void WasmObjectVerify(WasmObject o, Isolate* isolate);
-  static void WasmArrayVerify(WasmArray o, Isolate* isolate);
   static void WasmApiFunctionRefVerify(WasmApiFunctionRef o, Isolate* isolate);
   static void WasmFunctionDataVerify(WasmFunctionData o, Isolate* isolate);
   static void WasmExportedFunctionDataVerify(WasmExportedFunctionData o, Isolate* isolate);
@@ -465,7 +465,9 @@ class V8_EXPORT_PRIVATE TorqueGeneratedClassVerifiers{
   static void WasmTagObjectVerify(WasmTagObject o, Isolate* isolate);
   static void AsmWasmDataVerify(AsmWasmData o, Isolate* isolate);
   static void WasmTypeInfoVerify(WasmTypeInfo o, Isolate* isolate);
+  static void WasmObjectVerify(WasmObject o, Isolate* isolate);
   static void WasmStructVerify(WasmStruct o, Isolate* isolate);
+  static void WasmArrayVerify(WasmArray o, Isolate* isolate);
   static void WasmStringViewIterVerify(WasmStringViewIter o, Isolate* isolate);
 };
 }  // namespace internal

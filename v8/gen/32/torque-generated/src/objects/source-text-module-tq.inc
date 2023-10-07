@@ -1,9 +1,9 @@
 class SourceTextModule;
 class ModuleRequest;
 class SourceTextModuleInfoEntry;
-// Alias for HeapObject::IsSourceTextModule() that avoids inlining.
+// Alias for IsSourceTextModule() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
-V8_EXPORT_PRIVATE bool IsSourceTextModule_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSourceTextModule_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
 template <class D, class P>
@@ -21,55 +21,55 @@ class TorqueGeneratedSourceTextModule : public P {
 
   // Torque type: (class JSFunction | class JSGeneratorObject | class SharedFunctionInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
-  inline HeapObject code() const;
+  inline Tagged<HeapObject> code() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
-  inline HeapObject code(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> code(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
-  inline void set_code(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_code(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=20&c=3
-  inline FixedArray regular_exports() const;
+  inline Tagged<FixedArray> regular_exports() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=20&c=3
-  inline FixedArray regular_exports(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> regular_exports(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=20&c=3
-  inline void set_regular_exports(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_regular_exports(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=21&c=3
-  inline FixedArray regular_imports() const;
+  inline Tagged<FixedArray> regular_imports() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=21&c=3
-  inline FixedArray regular_imports(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> regular_imports(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=21&c=3
-  inline void set_regular_imports(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_regular_imports(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=26&c=3
-  inline FixedArray requested_modules() const;
+  inline Tagged<FixedArray> requested_modules() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=26&c=3
-  inline FixedArray requested_modules(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> requested_modules(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=26&c=3
-  inline void set_requested_modules(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_requested_modules(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class JSObject | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
-  inline HeapObject import_meta(AcquireLoadTag) const;
+  inline Tagged<HeapObject> import_meta(AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
-  inline HeapObject import_meta(PtrComprCageBase cage_base, AcquireLoadTag) const;
+  inline Tagged<HeapObject> import_meta(PtrComprCageBase cage_base, AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
-  inline void set_import_meta(HeapObject value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_import_meta(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (TheHole | class SourceTextModule)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
-  inline HeapObject cycle_root() const;
+  inline Tagged<HeapObject> cycle_root() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
-  inline HeapObject cycle_root(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> cycle_root(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
-  inline void set_cycle_root(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cycle_root(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=38&c=3
-  inline ArrayList async_parent_modules() const;
+  inline Tagged<ArrayList> async_parent_modules() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=38&c=3
-  inline ArrayList async_parent_modules(PtrComprCageBase cage_base) const;
+  inline Tagged<ArrayList> async_parent_modules(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=38&c=3
-  inline void set_async_parent_modules(ArrayList value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_async_parent_modules(Tagged<ArrayList> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=41&c=3
   inline int dfs_index() const;
@@ -92,10 +92,10 @@ class TorqueGeneratedSourceTextModule : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SourceTextModule)
@@ -167,12 +167,14 @@ class TorqueGeneratedSourceTextModule : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSourceTextModule(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSourceTextModule(Address ptr);
 };
 
-// Alias for HeapObject::IsModuleRequest() that avoids inlining.
+// Alias for IsModuleRequest() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
-V8_EXPORT_PRIVATE bool IsModuleRequest_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsModuleRequest_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
 template <class D, class P>
@@ -189,18 +191,18 @@ class TorqueGeneratedModuleRequest : public P {
   using TorqueGeneratedClass = TorqueGeneratedModuleRequest<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
-  inline String specifier() const;
+  inline Tagged<String> specifier() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
-  inline String specifier(PtrComprCageBase cage_base) const;
+  inline Tagged<String> specifier(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
-  inline void set_specifier(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_specifier(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  inline FixedArray import_assertions() const;
+  inline Tagged<FixedArray> import_assertions() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  inline FixedArray import_assertions(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> import_assertions(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  inline void set_import_assertions(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_import_assertions(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=3
   inline int position() const;
@@ -208,10 +210,10 @@ class TorqueGeneratedModuleRequest : public P {
   inline void set_position(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ModuleRequest)
@@ -259,12 +261,14 @@ class TorqueGeneratedModuleRequest : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedModuleRequest(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedModuleRequest(Address ptr);
 };
 
-// Alias for HeapObject::IsSourceTextModuleInfoEntry() that avoids inlining.
+// Alias for IsSourceTextModuleInfoEntry() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
-V8_EXPORT_PRIVATE bool IsSourceTextModuleInfoEntry_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSourceTextModuleInfoEntry_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
 template <class D, class P>
@@ -280,29 +284,29 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedSourceTextModuleInfoEntry<D,P>;
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
-  inline PrimitiveHeapObject export_name() const;
+  inline Tagged<PrimitiveHeapObject> export_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
-  inline PrimitiveHeapObject export_name(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> export_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
-  inline void set_export_name(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_export_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
-  inline PrimitiveHeapObject local_name() const;
+  inline Tagged<PrimitiveHeapObject> local_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
-  inline PrimitiveHeapObject local_name(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> local_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
-  inline void set_local_name(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_local_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
-  inline PrimitiveHeapObject import_name() const;
+  inline Tagged<PrimitiveHeapObject> import_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
-  inline PrimitiveHeapObject import_name(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> import_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
-  inline void set_import_name(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_import_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
   inline int module_request() const;
@@ -325,10 +329,10 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   inline void set_end_pos(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SourceTextModuleInfoEntry)
@@ -388,6 +392,8 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSourceTextModuleInfoEntry(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSourceTextModuleInfoEntry(Address ptr);
 };
 

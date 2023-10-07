@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=5&c=1
-bool IsEnumCache_NonInline(HeapObject o) {
-  return o.IsEnumCache();
+bool IsEnumCache_NonInline(Tagged<HeapObject> o) {
+  return IsEnumCache(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedEnumCache<EnumCache, Struct>::EnumCacheVerify(Isolate* isola
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
-bool IsDescriptorArray_NonInline(HeapObject o) {
-  return o.IsDescriptorArray();
+bool IsDescriptorArray_NonInline(Tagged<HeapObject> o) {
+  return IsDescriptorArray(o);
 }
 
 #ifdef VERIFY_HEAP

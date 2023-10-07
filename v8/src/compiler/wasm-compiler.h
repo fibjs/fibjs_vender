@@ -120,19 +120,18 @@ V8_EXPORT_PRIVATE Handle<Code> CompileCWasmEntry(
 // and manipulated in wasm-compiler.{h,cc} instead of inside the Wasm decoder.
 // (Note that currently, the globals base is immutable, so not cached here.)
 struct WasmInstanceCacheNodes {
-  // Cache the memory start and size of the first memory.
-  // TODO(clemensb): Reconsider this for better performance of additional
-  // memories.
-  Node* mem0_start = nullptr;
-  Node* mem0_size = nullptr;
+  // Cache the memory start and size of one fixed memory per function. Which one
+  // is determined by {WasmGraphBuilder::cached_memory_index}.
+  Node* mem_start = nullptr;
+  Node* mem_size = nullptr;
 
   // For iteration support. Defined outside the class for MSVC compatibility.
   using FieldPtr = Node* WasmInstanceCacheNodes::*;
   static const FieldPtr kFields[2];
 };
 inline constexpr WasmInstanceCacheNodes::FieldPtr
-    WasmInstanceCacheNodes::kFields[] = {&WasmInstanceCacheNodes::mem0_start,
-                                         &WasmInstanceCacheNodes::mem0_size};
+    WasmInstanceCacheNodes::kFields[] = {&WasmInstanceCacheNodes::mem_start,
+                                         &WasmInstanceCacheNodes::mem_size};
 
 struct WasmLoopInfo {
   Node* header;
@@ -177,18 +176,6 @@ class WasmGraphBuilder {
     kInstanceMode,
     kWasmApiFunctionRefMode,
     kNoSpecialParameterMode
-  };
-  enum EnforceBoundsCheck : bool {  // --
-    kNeedsBoundsCheck = true,
-    kCanOmitBoundsCheck = false
-  };
-  enum BoundsCheckResult {
-    // Dynamically checked (using 1-2 conditional branches).
-    kDynamicallyChecked,
-    // OOB handled via the trap handler.
-    kTrapHandler,
-    // Statically known to be in bounds.
-    kInBounds
   };
 
   V8_EXPORT_PRIVATE WasmGraphBuilder(
@@ -247,7 +234,7 @@ class WasmGraphBuilder {
   Node* Unop(wasm::WasmOpcode opcode, Node* input,
              wasm::ValueType type = wasm::kWasmBottom,
              wasm::WasmCodePosition position = wasm::kNoCodePosition);
-  Node* MemoryGrow(Node* input);
+  Node* MemoryGrow(const wasm::WasmMemory* memory, Node* input);
   Node* Throw(uint32_t tag_index, const wasm::WasmTag* tag,
               const base::Vector<Node*> values,
               wasm::WasmCodePosition position);
@@ -272,9 +259,11 @@ class WasmGraphBuilder {
   //-----------------------------------------------------------------------
   // Operations that read and/or write {control} and {effect}.
   //-----------------------------------------------------------------------
-  Node* BranchNoHint(Node* cond, Node** true_node, Node** false_node);
-  Node* BranchExpectFalse(Node* cond, Node** true_node, Node** false_node);
-  Node* BranchExpectTrue(Node* cond, Node** true_node, Node** false_node);
+
+  // Branch nodes return the true and false projection.
+  std::tuple<Node*, Node*> BranchNoHint(Node* cond);
+  std::tuple<Node*, Node*> BranchExpectFalse(Node* cond);
+  std::tuple<Node*, Node*> BranchExpectTrue(Node* cond);
 
   void TrapIfTrue(wasm::TrapReason reason, Node* cond,
                   wasm::WasmCodePosition position);
@@ -333,8 +322,8 @@ class WasmGraphBuilder {
                                         Node** failure_control,
                                         bool is_last_case);
 
-  void BrOnNull(Node* ref_object, wasm::ValueType type, Node** non_null_node,
-                Node** null_node);
+  // BrOnNull returns the control for the null and non-null case.
+  std::tuple<Node*, Node*> BrOnNull(Node* ref_object, wasm::ValueType type);
 
   Node* Invert(Node* node);
 
@@ -347,12 +336,12 @@ class WasmGraphBuilder {
   //-----------------------------------------------------------------------
   // Operations that concern the linear memory.
   //-----------------------------------------------------------------------
-  Node* CurrentMemoryPages();
+  Node* CurrentMemoryPages(const wasm::WasmMemory* memory);
   void TraceMemoryOperation(bool is_store, MachineRepresentation, Node* index,
                             uintptr_t offset, wasm::WasmCodePosition);
-  Node* LoadMem(wasm::ValueType type, MachineType memtype, Node* index,
-                uintptr_t offset, uint32_t alignment,
-                wasm::WasmCodePosition position);
+  Node* LoadMem(const wasm::WasmMemory* memory, wasm::ValueType type,
+                MachineType memtype, Node* index, uintptr_t offset,
+                uint32_t alignment, wasm::WasmCodePosition position);
 #if defined(V8_TARGET_BIG_ENDIAN) || defined(V8_TARGET_ARCH_S390_LE_SIM)
   Node* LoadTransformBigEndian(wasm::ValueType type, MachineType memtype,
                                wasm::LoadTransformationKind transform,
@@ -360,19 +349,22 @@ class WasmGraphBuilder {
                                uint32_t alignment,
                                wasm::WasmCodePosition position);
 #endif
-  Node* LoadTransform(wasm::ValueType type, MachineType memtype,
+  Node* LoadTransform(const wasm::WasmMemory* memory, wasm::ValueType type,
+                      MachineType memtype,
                       wasm::LoadTransformationKind transform, Node* index,
                       uintptr_t offset, uint32_t alignment,
                       wasm::WasmCodePosition position);
-  Node* LoadLane(wasm::ValueType type, MachineType memtype, Node* value,
-                 Node* index, uintptr_t offset, uint32_t alignment,
-                 uint8_t laneidx, wasm::WasmCodePosition position);
-  void StoreMem(MachineRepresentation mem_rep, Node* index, uintptr_t offset,
-                uint32_t alignment, Node* val, wasm::WasmCodePosition position,
-                wasm::ValueType type);
-  void StoreLane(MachineRepresentation mem_rep, Node* index, uintptr_t offset,
-                 uint32_t alignment, Node* val, uint8_t laneidx,
-                 wasm::WasmCodePosition position, wasm::ValueType type);
+  Node* LoadLane(const wasm::WasmMemory* memory, wasm::ValueType type,
+                 MachineType memtype, Node* value, Node* index,
+                 uintptr_t offset, uint32_t alignment, uint8_t laneidx,
+                 wasm::WasmCodePosition position);
+  void StoreMem(const wasm::WasmMemory* memory, MachineRepresentation mem_rep,
+                Node* index, uintptr_t offset, uint32_t alignment, Node* val,
+                wasm::WasmCodePosition position, wasm::ValueType type);
+  void StoreLane(const wasm::WasmMemory* memory, MachineRepresentation mem_rep,
+                 Node* index, uintptr_t offset, uint32_t alignment, Node* val,
+                 uint8_t laneidx, wasm::WasmCodePosition position,
+                 wasm::ValueType type);
   static void PrintDebugName(Node* node);
 
   Node* effect();
@@ -422,18 +414,20 @@ class WasmGraphBuilder {
 
   Node* Simd8x16ShuffleOp(const uint8_t shuffle[16], Node* const* inputs);
 
-  Node* AtomicOp(wasm::WasmOpcode opcode, Node* const* inputs,
-                 uint32_t alignment, uintptr_t offset,
+  Node* AtomicOp(const wasm::WasmMemory* memory, wasm::WasmOpcode opcode,
+                 Node* const* inputs, uint32_t alignment, uintptr_t offset,
                  wasm::WasmCodePosition position);
   void AtomicFence();
 
-  void MemoryInit(uint32_t data_segment_index, Node* dst, Node* src, Node* size,
+  void MemoryInit(const wasm::WasmMemory* memory, uint32_t data_segment_index,
+                  Node* dst, Node* src, Node* size,
                   wasm::WasmCodePosition position);
-  void MemoryCopy(Node* dst, Node* src, Node* size,
-                  wasm::WasmCodePosition position);
+  void MemoryCopy(const wasm::WasmMemory* dst_memory,
+                  const wasm::WasmMemory* src_memory, Node* dst, Node* src,
+                  Node* size, wasm::WasmCodePosition position);
   void DataDrop(uint32_t data_segment_index, wasm::WasmCodePosition position);
-  void MemoryFill(Node* dst, Node* fill, Node* size,
-                  wasm::WasmCodePosition position);
+  void MemoryFill(const wasm::WasmMemory* memory, Node* dst, Node* fill,
+                  Node* size, wasm::WasmCodePosition position);
 
   void TableInit(uint32_t table_index, uint32_t elem_segment_index, Node* dst,
                  Node* src, Node* size, wasm::WasmCodePosition position);
@@ -472,12 +466,12 @@ class WasmGraphBuilder {
                  wasm::WasmCodePosition position);
   Node* ArrayNewFixed(const wasm::ArrayType* type, Node* rtt,
                       base::Vector<Node*> elements);
-  Node* ArrayNewSegment(const wasm::ArrayType* type, uint32_t segment_index,
-                        Node* offset, Node* length, Node* rtt,
+  Node* ArrayNewSegment(uint32_t segment_index, Node* offset, Node* length,
+                        Node* rtt, bool is_element,
                         wasm::WasmCodePosition position);
-  void ArrayInitSegment(const wasm::ArrayType* type, uint32_t segment_index,
-                        Node* array, Node* array_index, Node* segment_offset,
-                        Node* length, wasm::WasmCodePosition position);
+  void ArrayInitSegment(uint32_t segment_index, Node* array, Node* array_index,
+                        Node* segment_offset, Node* length, bool is_element,
+                        wasm::WasmCodePosition position);
   Node* I31New(Node* input);
   Node* I31GetS(Node* input, CheckForNull null_check,
                 wasm::WasmCodePosition position);
@@ -486,52 +480,35 @@ class WasmGraphBuilder {
   Node* RttCanon(uint32_t type_index);
 
   Node* RefTest(Node* object, Node* rtt, WasmTypeCheckConfig config);
-  Node* RefTestAbstract(Node* object, wasm::HeapType type, bool is_nullable,
-                        bool null_succeeds);
+  Node* RefTestAbstract(Node* object, WasmTypeCheckConfig config);
   Node* RefCast(Node* object, Node* rtt, WasmTypeCheckConfig config,
                 wasm::WasmCodePosition position);
-  Node* RefCastAbstract(Node* object, wasm::HeapType type,
-                        wasm::WasmCodePosition position, bool is_nullable,
-                        bool null_succeeds);
-  void BrOnCast(Node* object, Node* rtt, WasmTypeCheckConfig config,
-                Node** match_control, Node** match_effect,
-                Node** no_match_control, Node** no_match_effect);
-  Node* RefIsEq(Node* object, bool object_can_be_null, bool null_succeeds);
-  Node* RefAsEq(Node* object, bool object_can_be_null,
-                wasm::WasmCodePosition position, bool null_succeeds);
-  void BrOnEq(Node* object, Node* rtt, WasmTypeCheckConfig config,
-              Node** match_control, Node** match_effect,
-              Node** no_match_control, Node** no_match_effect);
-  Node* RefIsStruct(Node* object, bool object_can_be_null, bool null_succeeds);
-  Node* RefAsStruct(Node* object, bool object_can_be_null,
-                    wasm::WasmCodePosition position, bool null_succeeds);
-  void BrOnStruct(Node* object, Node* rtt, WasmTypeCheckConfig config,
-                  Node** match_control, Node** match_effect,
-                  Node** no_match_control, Node** no_match_effect);
-  Node* RefIsArray(Node* object, bool object_can_be_null, bool null_succeeds);
-  Node* RefAsArray(Node* object, bool object_can_be_null,
-                   wasm::WasmCodePosition position, bool null_succeeds);
-  void BrOnArray(Node* object, Node* rtt, WasmTypeCheckConfig config,
-                 Node** match_control, Node** match_effect,
-                 Node** no_match_control, Node** no_match_effect);
-  Node* RefIsI31(Node* object, bool null_succeeds);
-  Node* RefAsI31(Node* object, wasm::WasmCodePosition position,
-                 bool null_succeeds);
-  void BrOnI31(Node* object, Node* rtt, WasmTypeCheckConfig config,
-               Node** match_control, Node** match_effect,
-               Node** no_match_control, Node** no_match_effect);
-  Node* RefIsString(Node* object, bool object_can_be_null, bool null_succeeds);
-  Node* RefAsString(Node* object, bool object_can_be_null,
-                    wasm::WasmCodePosition position, bool null_succeeds);
-  void BrOnString(Node* object, Node* rtt, WasmTypeCheckConfig config,
-                  Node** match_control, Node** match_effect,
-                  Node** no_match_control, Node** no_match_effect);
+  Node* RefCastAbstract(Node* object, WasmTypeCheckConfig config,
+                        wasm::WasmCodePosition position);
+  struct ResultNodesOfBr {
+    Node* control_on_match;
+    Node* effect_on_match;
+    Node* control_on_no_match;
+    Node* effect_on_no_match;
+  };
+  ResultNodesOfBr BrOnCast(Node* object, Node* rtt, WasmTypeCheckConfig config);
+  ResultNodesOfBr BrOnEq(Node* object, Node* rtt, WasmTypeCheckConfig config);
+  ResultNodesOfBr BrOnStruct(Node* object, Node* rtt,
+                             WasmTypeCheckConfig config);
+  ResultNodesOfBr BrOnArray(Node* object, Node* rtt,
+                            WasmTypeCheckConfig config);
+  ResultNodesOfBr BrOnI31(Node* object, Node* rtt, WasmTypeCheckConfig config);
+  ResultNodesOfBr BrOnString(Node* object, Node* rtt,
+                             WasmTypeCheckConfig config);
+
   Node* StringNewWtf8(uint32_t memory, unibrow::Utf8Variant variant,
                       Node* offset, Node* size);
   Node* StringNewWtf8Array(unibrow::Utf8Variant variant, Node* array,
-                           Node* start, Node* end);
+                           CheckForNull null_check, Node* start, Node* end,
+                           wasm::WasmCodePosition position);
   Node* StringNewWtf16(uint32_t memory, Node* offset, Node* size);
-  Node* StringNewWtf16Array(Node* array, Node* start, Node* end);
+  Node* StringNewWtf16Array(Node* array, CheckForNull null_check, Node* start,
+                            Node* end, wasm::WasmCodePosition position);
   Node* StringAsWtf16(Node* string, CheckForNull null_check,
                       wasm::WasmCodePosition position);
   Node* StringConst(uint32_t index);
@@ -557,8 +534,8 @@ class WasmGraphBuilder {
   Node* StringConcat(Node* head, CheckForNull head_null_check, Node* tail,
                      CheckForNull tail_null_check,
                      wasm::WasmCodePosition position);
-  Node* StringEqual(Node* a, CheckForNull a_null_check, Node* b,
-                    CheckForNull b_null_check, wasm::WasmCodePosition position);
+  Node* StringEqual(Node* a, wasm::ValueType a_type, Node* b,
+                    wasm::ValueType b_type, wasm::WasmCodePosition position);
   Node* StringIsUSVSequence(Node* str, CheckForNull null_check,
                             wasm::WasmCodePosition position);
   Node* StringAsWtf8(Node* str, CheckForNull null_check,
@@ -575,6 +552,8 @@ class WasmGraphBuilder {
   Node* StringViewWtf16GetCodeUnit(Node* string, CheckForNull null_check,
                                    Node* offset,
                                    wasm::WasmCodePosition position);
+  Node* StringCodePointAt(Node* string, CheckForNull null_check, Node* offset,
+                          wasm::WasmCodePosition position);
   Node* StringViewWtf16Encode(uint32_t memory, Node* string,
                               CheckForNull null_check, Node* offset,
                               Node* start, Node* length,
@@ -595,6 +574,7 @@ class WasmGraphBuilder {
   Node* StringCompare(Node* lhs, CheckForNull null_check_lhs, Node* rhs,
                       CheckForNull null_check_rhs,
                       wasm::WasmCodePosition position);
+  Node* StringFromCharCode(Node* char_code);
   Node* StringFromCodePoint(Node* code_point);
   Node* StringHash(Node* string, CheckForNull null_check,
                    wasm::WasmCodePosition position);
@@ -617,10 +597,6 @@ class WasmGraphBuilder {
 
   bool has_simd() const { return has_simd_; }
 
-  wasm::BoundsCheckStrategy bounds_checks() const {
-    return env_->bounds_checks;
-  }
-
   Node* DefaultValue(wasm::ValueType type);
 
   MachineGraph* mcgraph() { return mcgraph_; }
@@ -640,6 +616,19 @@ class WasmGraphBuilder {
     inlining_id_ = inlining_id;
   }
 
+  bool has_cached_memory() const {
+    return cached_memory_index_ != kNoCachedMemoryIndex;
+  }
+  int cached_memory_index() const {
+    DCHECK(has_cached_memory());
+    return cached_memory_index_;
+  }
+  void set_cached_memory_index(int cached_memory_index) {
+    DCHECK_LE(0, cached_memory_index);
+    DCHECK(!has_cached_memory());
+    cached_memory_index_ = cached_memory_index;
+  }
+
  protected:
   Node* NoContextConstant();
 
@@ -647,22 +636,28 @@ class WasmGraphBuilder {
   Node* BuildLoadIsolateRoot();
   Node* UndefinedValue();
 
+  // Get a memory start or size, using the cached SSA value if available.
+  Node* MemStart(uint32_t mem_index);
+  Node* MemSize(uint32_t mem_index);
+
+  // Load a memory start or size (without using the cache).
+  Node* LoadMemStart(uint32_t mem_index);
+  Node* LoadMemSize(uint32_t mem_index);
+
   // MemBuffer is only called with valid offsets (after bounds checking), so the
   // offset fits in a platform-dependent uintptr_t.
-  Node* MemBuffer(uintptr_t offset);
+  Node* MemBuffer(uint32_t mem_index, uintptr_t offset);
 
   // BoundsCheckMem receives a 32/64-bit index (depending on
-  // WasmModule::is_memory64) and returns a ptrsize index and information about
+  // {memory->is_memory64}) and returns a ptrsize index and information about
   // the kind of bounds check performed (or why none was needed).
-  std::pair<Node*, BoundsCheckResult> BoundsCheckMem(uint8_t access_size,
-                                                     Node* index,
-                                                     uintptr_t offset,
-                                                     wasm::WasmCodePosition,
-                                                     EnforceBoundsCheck);
+  std::pair<Node*, BoundsCheckResult> BoundsCheckMem(
+      const wasm::WasmMemory* memory, uint8_t access_size, Node* index,
+      uintptr_t offset, wasm::WasmCodePosition, EnforceBoundsCheck);
 
   std::pair<Node*, BoundsCheckResult> CheckBoundsAndAlignment(
-      int8_t access_size, Node* index, uintptr_t offset, wasm::WasmCodePosition,
-      EnforceBoundsCheck);
+      const wasm::WasmMemory* memory, int8_t access_size, Node* index,
+      uintptr_t offset, wasm::WasmCodePosition, EnforceBoundsCheck);
 
   const Operator* GetSafeLoadOperator(int offset, wasm::ValueType type);
   const Operator* GetSafeStoreOperator(int offset, wasm::ValueType type);
@@ -764,7 +759,8 @@ class WasmGraphBuilder {
                        MachineType result_type, wasm::TrapReason trap_zero,
                        wasm::WasmCodePosition position);
 
-  void MemTypeToUintPtrOrOOBTrap(std::initializer_list<Node**> nodes,
+  void MemTypeToUintPtrOrOOBTrap(bool is_memory64,
+                                 std::initializer_list<Node**> nodes,
                                  wasm::WasmCodePosition position);
 
   void GetGlobalBaseAndOffset(const wasm::WasmGlobal&, Node** base_node,
@@ -799,9 +795,8 @@ class WasmGraphBuilder {
   void StringCheck(Node* object, bool object_can_be_null, Callbacks callbacks,
                    bool null_succeeds);
 
-  void BrOnCastAbs(Node** match_control, Node** match_effect,
-                   Node** no_match_control, Node** no_match_effect,
-                   std::function<void(Callbacks)> type_checker);
+  // BrOnCastAbs returns four node:
+  ResultNodesOfBr BrOnCastAbs(std::function<void(Callbacks)> type_checker);
   void BoundsCheckArray(Node* array, Node* index, CheckForNull null_check,
                         wasm::WasmCodePosition position);
   void BoundsCheckArrayWithLength(Node* array, Node* index, Node* length,
@@ -840,6 +835,8 @@ class WasmGraphBuilder {
 
   Node* BuildMultiReturnFixedArrayFromIterable(const wasm::FunctionSig* sig,
                                                Node* iterable, Node* context);
+
+  Node* BuildLoadCodePointerFromObject(Node* object, int field_offset);
 
   Node* BuildLoadCallTargetFromExportedFunctionData(Node* function_data);
 
@@ -892,19 +889,15 @@ class WasmGraphBuilder {
   Isolate* const isolate_;
   SetOncePointer<Node> instance_node_;
   NullCheckStrategy null_check_strategy_;
+  static constexpr int kNoCachedMemoryIndex = -1;
+  int cached_memory_index_ = kNoCachedMemoryIndex;
 };
-
-enum WasmCallKind { kWasmFunction, kWasmImportWrapper, kWasmCapiFunction };
 
 V8_EXPORT_PRIVATE void BuildInlinedJSToWasmWrapper(
     Zone* zone, MachineGraph* mcgraph, const wasm::FunctionSig* signature,
     const wasm::WasmModule* module, Isolate* isolate,
     compiler::SourcePositionTable* spt, wasm::WasmFeatures features,
     Node* frame_state, bool set_in_wasm_flag);
-
-V8_EXPORT_PRIVATE CallDescriptor* GetWasmCallDescriptor(
-    Zone* zone, const wasm::FunctionSig* signature,
-    WasmCallKind kind = kWasmFunction, bool need_frame_state = false);
 
 V8_EXPORT_PRIVATE CallDescriptor* GetI32WasmCallDescriptor(
     Zone* zone, const CallDescriptor* call_descriptor);

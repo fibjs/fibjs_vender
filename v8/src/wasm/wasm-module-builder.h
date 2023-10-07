@@ -32,7 +32,7 @@ class ZoneBuffer : public ZoneObject {
 
   static constexpr size_t kInitialSize = 1024;
   explicit ZoneBuffer(Zone* zone, size_t initial = kInitialSize)
-      : zone_(zone), buffer_(zone->NewArray<uint8_t, Buffer>(initial)) {
+      : zone_(zone), buffer_(zone->AllocateArray<uint8_t, Buffer>(initial)) {
     pos_ = buffer_;
     end_ = buffer_ + initial;
   }
@@ -138,7 +138,7 @@ class ZoneBuffer : public ZoneObject {
   void EnsureSpace(size_t size) {
     if ((pos_ + size) > end_) {
       size_t new_size = size + (end_ - buffer_) * 2;
-      uint8_t* new_buffer = zone_->NewArray<uint8_t, Buffer>(new_size);
+      uint8_t* new_buffer = zone_->AllocateArray<uint8_t, Buffer>(new_size);
       memcpy(new_buffer, buffer_, (pos_ - buffer_));
       pos_ = new_buffer + (pos_ - buffer_);
       buffer_ = new_buffer;
@@ -317,8 +317,7 @@ class V8_EXPORT_PRIVATE WasmModuleBuilder : public ZoneObject {
                      base::Vector<const char> module = {});
   WasmFunctionBuilder* AddFunction(const FunctionSig* sig = nullptr);
   WasmFunctionBuilder* AddFunction(uint32_t sig_index);
-  uint32_t AddGlobal(ValueType type, bool mutability = true,
-                     WasmInitExpr init = WasmInitExpr());
+  uint32_t AddGlobal(ValueType type, bool mutability, WasmInitExpr init);
   uint32_t AddGlobalImport(base::Vector<const char> name, ValueType type,
                            bool mutability,
                            base::Vector<const char> module = {});
@@ -379,6 +378,10 @@ class V8_EXPORT_PRIVATE WasmModuleBuilder : public ZoneObject {
         current_recursive_group_start_,
         static_cast<uint32_t>(types_.size()) - current_recursive_group_start_);
     current_recursive_group_start_ = -1;
+  }
+
+  void AddRecursiveTypeGroup(uint32_t start, uint32_t size) {
+    recursive_groups_.emplace(start, size);
   }
 
   // Writing methods.
@@ -460,7 +463,7 @@ class V8_EXPORT_PRIVATE WasmModuleBuilder : public ZoneObject {
     uint32_t min_size;
     uint32_t max_size;
     bool has_maximum;
-    WasmInitExpr init;
+    base::Optional<WasmInitExpr> init;
   };
 
   struct WasmDataSegment {

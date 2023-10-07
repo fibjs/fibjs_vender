@@ -2,9 +2,9 @@ class JSGeneratorObject;
 class JSAsyncFunctionObject;
 class JSAsyncGeneratorObject;
 class AsyncGeneratorRequest;
-// Alias for HeapObject::IsJSGeneratorObject() that avoids inlining.
+// Alias for IsJSGeneratorObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSGeneratorObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSGeneratorObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1
 template <class D, class P>
@@ -21,33 +21,33 @@ class TorqueGeneratedJSGeneratorObject : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSGeneratorObject<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=6&c=3
-  inline JSFunction function() const;
+  inline Tagged<JSFunction> function() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=6&c=3
-  inline JSFunction function(PtrComprCageBase cage_base) const;
+  inline Tagged<JSFunction> function(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=6&c=3
-  inline void set_function(JSFunction value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_function(Tagged<JSFunction> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=7&c=3
-  inline Context context() const;
+  inline Tagged<Context> context() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=7&c=3
-  inline Context context(PtrComprCageBase cage_base) const;
+  inline Tagged<Context> context(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=7&c=3
-  inline void set_context(Context value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_context(Tagged<Context> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
-  inline Object receiver() const;
+  inline Tagged<Object> receiver() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
-  inline Object receiver(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> receiver(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
-  inline void set_receiver(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_receiver(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=14&c=3
-  inline Object input_or_debug_pos() const;
+  inline Tagged<Object> input_or_debug_pos() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=14&c=3
-  inline Object input_or_debug_pos(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> input_or_debug_pos(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=14&c=3
-  inline void set_input_or_debug_pos(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_input_or_debug_pos(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=17&c=3
   inline int resume_mode() const;
@@ -60,17 +60,17 @@ class TorqueGeneratedJSGeneratorObject : public P {
   inline void set_continuation(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=25&c=3
-  inline FixedArray parameters_and_registers() const;
+  inline Tagged<FixedArray> parameters_and_registers() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=25&c=3
-  inline FixedArray parameters_and_registers(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> parameters_and_registers(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=25&c=3
-  inline void set_parameters_and_registers(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_parameters_and_registers(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSGeneratorObject)
@@ -117,12 +117,14 @@ class TorqueGeneratedJSGeneratorObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSGeneratorObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSGeneratorObject(Address ptr);
 };
 
-// Alias for HeapObject::IsJSAsyncFunctionObject() that avoids inlining.
+// Alias for IsJSAsyncFunctionObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=28&c=1
-V8_EXPORT_PRIVATE bool IsJSAsyncFunctionObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSAsyncFunctionObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=28&c=1
 template <class D, class P>
@@ -139,17 +141,17 @@ class TorqueGeneratedJSAsyncFunctionObject : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSAsyncFunctionObject<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=29&c=3
-  inline JSPromise promise() const;
+  inline Tagged<JSPromise> promise() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=29&c=3
-  inline JSPromise promise(PtrComprCageBase cage_base) const;
+  inline Tagged<JSPromise> promise(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=29&c=3
-  inline void set_promise(JSPromise value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_promise(Tagged<JSPromise> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=28&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=28&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSAsyncFunctionObject)
@@ -178,12 +180,14 @@ class TorqueGeneratedJSAsyncFunctionObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSAsyncFunctionObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSAsyncFunctionObject(Address ptr);
 };
 
-// Alias for HeapObject::IsJSAsyncGeneratorObject() that avoids inlining.
+// Alias for IsJSAsyncGeneratorObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=32&c=1
-V8_EXPORT_PRIVATE bool IsJSAsyncGeneratorObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSAsyncGeneratorObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=32&c=1
 template <class D, class P>
@@ -200,11 +204,11 @@ class TorqueGeneratedJSAsyncGeneratorObject : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSAsyncGeneratorObject<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=35&c=3
-  inline HeapObject queue() const;
+  inline Tagged<HeapObject> queue() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=35&c=3
-  inline HeapObject queue(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> queue(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=35&c=3
-  inline void set_queue(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_queue(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=37&c=3
   inline int is_awaiting() const;
@@ -212,10 +216,10 @@ class TorqueGeneratedJSAsyncGeneratorObject : public P {
   inline void set_is_awaiting(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=32&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=32&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSAsyncGeneratorObject)
@@ -247,12 +251,14 @@ class TorqueGeneratedJSAsyncGeneratorObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSAsyncGeneratorObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSAsyncGeneratorObject(Address ptr);
 };
 
-// Alias for HeapObject::IsAsyncGeneratorRequest() that avoids inlining.
+// Alias for IsAsyncGeneratorRequest() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=40&c=1
-V8_EXPORT_PRIVATE bool IsAsyncGeneratorRequest_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsAsyncGeneratorRequest_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=40&c=1
 template <class D, class P>
@@ -268,13 +274,13 @@ class TorqueGeneratedAsyncGeneratorRequest : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedAsyncGeneratorRequest<D,P>;
 
-  // Torque type: (Undefined | class AsyncGeneratorRequest)
+  // Torque type: (class Undefined | class AsyncGeneratorRequest)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
-  inline HeapObject next() const;
+  inline Tagged<HeapObject> next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
-  inline HeapObject next(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
-  inline void set_next(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_next(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=42&c=3
   inline int resume_mode() const;
@@ -282,24 +288,24 @@ class TorqueGeneratedAsyncGeneratorRequest : public P {
   inline void set_resume_mode(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=43&c=3
-  inline Object value() const;
+  inline Tagged<Object> value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=43&c=3
-  inline Object value(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=43&c=3
-  inline void set_value(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_value(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=44&c=3
-  inline JSPromise promise() const;
+  inline Tagged<JSPromise> promise() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=44&c=3
-  inline JSPromise promise(PtrComprCageBase cage_base) const;
+  inline Tagged<JSPromise> promise(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=44&c=3
-  inline void set_promise(JSPromise value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_promise(Tagged<JSPromise> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=40&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=40&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(AsyncGeneratorRequest)
@@ -350,6 +356,8 @@ class TorqueGeneratedAsyncGeneratorRequest : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAsyncGeneratorRequest(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAsyncGeneratorRequest(Address ptr);
 };
 

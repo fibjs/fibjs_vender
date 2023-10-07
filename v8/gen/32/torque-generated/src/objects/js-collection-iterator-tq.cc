@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=5&c=1
-bool IsJSCollectionIterator_NonInline(HeapObject o) {
-  return o.IsJSCollectionIterator();
+bool IsJSCollectionIterator_NonInline(Tagged<HeapObject> o) {
+  return IsJSCollectionIterator(o);
 }
 
 #ifdef VERIFY_HEAP

@@ -6,7 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/reflect.tq?l=44&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/reflect.tq?l=42&c=9
 TNode<BoolT> Is_WasmObject_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o);
 
 } // namespace internal

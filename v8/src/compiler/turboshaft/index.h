@@ -12,13 +12,23 @@
 #include "src/codegen/tnode.h"
 #include "src/compiler/turboshaft/fast-hash.h"
 #include "src/compiler/turboshaft/representations.h"
+#include "src/objects/heap-number.h"
 #include "src/objects/oddball.h"
+#include "src/objects/string.h"
 
 namespace v8::internal::compiler::turboshaft {
+namespace detail {
+template <typename T>
+struct lazy_false : std::false_type {};
+}  // namespace detail
+
 // Operations are stored in possibly muliple sequential storage slots.
 using OperationStorageSlot = std::aligned_storage_t<8, 8>;
 // Operations occupy at least 2 slots, therefore we assign one id per two slots.
 constexpr size_t kSlotsPerId = 2;
+
+template <typename T, typename C>
+class ConstOrV;
 
 // `OpIndex` is an offset from the beginning of the operations buffer.
 // Compared to `Operation*`, it is more memory efficient (32bit) and stable when
@@ -29,6 +39,12 @@ class OpIndex {
     DCHECK_EQ(offset % sizeof(OperationStorageSlot), 0);
   }
   constexpr OpIndex() : offset_(std::numeric_limits<uint32_t>::max()) {}
+  template <typename T, typename C>
+  OpIndex(const ConstOrV<T, C>&) {  // NOLINT(runtime/explicit)
+    static_assert(detail::lazy_false<T>::value,
+                  "Cannot initialize OpIndex from ConstOrV<>. Did you forget "
+                  "to resolve() it in the assembler?");
+  }
 
   uint32_t id() const {
     // Operations are stored at an offset that's a multiple of
@@ -37,6 +53,13 @@ class OpIndex {
     // by dividing by `kSlotsPerId`. A compact id space is important, because it
     // makes side-tables smaller.
     DCHECK_EQ(offset_ % sizeof(OperationStorageSlot), 0);
+    return offset_ / sizeof(OperationStorageSlot) / kSlotsPerId;
+  }
+  uint32_t hash() const {
+    // It can be useful to hash OpIndex::Invalid(), so we have this `hash`
+    // function, which returns the id, but without DCHECKing that Invalid is
+    // valid.
+    DCHECK_IMPLIES(valid(), offset_ % sizeof(OperationStorageSlot) == 0);
     return offset_ / sizeof(OperationStorageSlot) / kSlotsPerId;
   }
   uint32_t offset() const {
@@ -88,7 +111,7 @@ struct Any {};
 template <size_t Bits>
 struct WordWithBits : public Any {
   static constexpr int bits = Bits;
-  static_assert(Bits == 32 || Bits == 64);
+  static_assert(Bits == 32 || Bits == 64 || Bits == 128);
 };
 
 using Word32 = WordWithBits<32>;
@@ -103,6 +126,8 @@ struct FloatWithBits : public Any {  // FloatAny {
 
 using Float32 = FloatWithBits<32>;
 using Float64 = FloatWithBits<64>;
+
+using Simd128 = WordWithBits<128>;
 
 // TODO(nicohartmann@): Replace all uses of `V<Tagged>` by `V<Object>`.
 using Tagged = Object;
@@ -166,8 +191,7 @@ struct v_traits<Word64> {
 
   template <typename U>
   struct implicitly_convertible_to
-      : std::bool_constant<std::is_base_of_v<U, Word64> ||
-                           std::is_same_v<U, Word32>> {};
+      : std::bool_constant<std::is_base_of_v<U, Word64>> {};
 };
 
 template <>
@@ -196,6 +220,21 @@ struct v_traits<Float64> {
   template <typename U>
   struct implicitly_convertible_to
       : std::bool_constant<std::is_base_of_v<U, Float64>> {};
+};
+
+template <>
+struct v_traits<Simd128> {
+  static constexpr bool is_abstract_tag = true;
+  static constexpr RegisterRepresentation rep =
+      RegisterRepresentation::Simd128();
+  using constexpr_type = uint8_t[kSimd128Size];
+  static constexpr bool allows_representation(RegisterRepresentation rep) {
+    return rep == RegisterRepresentation::Simd128();
+  }
+
+  template <typename U>
+  struct implicitly_convertible_to
+      : std::bool_constant<std::is_base_of_v<U, Simd128>> {};
 };
 
 template <typename T>
@@ -230,10 +269,7 @@ struct v_traits<UnionT<T1, T2>> {
             v_traits<T2>::template implicitly_convertible_to<U>::value)> {};
 };
 
-// We do not have distinct types for Boolean, Null and Undefined, so we use
-// Oddball as the best approximation for now to be usable in V<>.
-using Boolean = Oddball;
-using BooleanOrNullOrUndefined = Oddball;
+using BooleanOrNullOrUndefined = UnionT<UnionT<Boolean, Null>, Undefined>;
 using NumberOrString = UnionT<Number, String>;
 using PlainPrimitive = UnionT<NumberOrString, BooleanOrNullOrUndefined>;
 
@@ -325,10 +361,10 @@ class ConstOrV {
 
 template <>
 struct fast_hash<OpIndex> {
-  V8_INLINE size_t operator()(OpIndex op) const { return op.id(); }
+  V8_INLINE size_t operator()(OpIndex op) const { return op.hash(); }
 };
 
-V8_INLINE size_t hash_value(OpIndex op) { return base::hash_value(op.id()); }
+V8_INLINE size_t hash_value(OpIndex op) { return base::hash_value(op.hash()); }
 
 // `BlockIndex` is the index of a bound block.
 // A dominating block always has a smaller index.

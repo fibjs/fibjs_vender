@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
-bool IsJSArgumentsObject_NonInline(HeapObject o) {
-  return o.IsJSArgumentsObject();
+bool IsJSArgumentsObject_NonInline(Tagged<HeapObject> o) {
+  return IsJSArgumentsObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedJSArgumentsObject<JSArgumentsObject, JSObject>::JSArgumentsO
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-bool IsSloppyArgumentsElements_NonInline(HeapObject o) {
-  return o.IsSloppyArgumentsElements();
+bool IsSloppyArgumentsElements_NonInline(Tagged<HeapObject> o) {
+  return IsSloppyArgumentsElements(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedSloppyArgumentsElements<SloppyArgumentsElements, FixedArrayB
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
-bool IsAliasedArgumentsEntry_NonInline(HeapObject o) {
-  return o.IsAliasedArgumentsEntry();
+bool IsAliasedArgumentsEntry_NonInline(Tagged<HeapObject> o) {
+  return IsAliasedArgumentsEntry(o);
 }
 
 #ifdef VERIFY_HEAP

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/js-iterator-helpers-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -715,7 +716,7 @@ void StoreJSIteratorFlatMapHelperInnerIterator_0(compiler::CodeAssemblerState* s
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-TNode<Oddball> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o) {
+TNode<Boolean> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -723,20 +724,20 @@ TNode<Oddball> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerSt
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Oddball> tmp1;
+  TNode<Boolean> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Oddball>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Boolean>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Oddball>{tmp1};
+  return TNode<Boolean>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-void StoreJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<Oddball> p_v) {
+void StoreJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<Boolean> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -747,7 +748,7 @@ void StoreJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* stat
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
-    CodeStubAssembler(state_).StoreReference<Oddball>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Boolean>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 

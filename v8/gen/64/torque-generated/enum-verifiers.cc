@@ -66,12 +66,13 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 
 namespace v8 {
 namespace internal {
 namespace  {
 class EnumVerifier {
-  // UpdateFeedbackMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=270&c=1)
+  // UpdateFeedbackMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=277&c=1)
   void VerifyEnum_UpdateFeedbackMode(UpdateFeedbackMode x) {
     switch(x) {
       case UpdateFeedbackMode::kOptionalFeedback: break;
@@ -80,7 +81,7 @@ class EnumVerifier {
     }
   }
 
-  // CallFeedbackContent (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=278&c=1)
+  // CallFeedbackContent (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=285&c=1)
   void VerifyEnum_CallFeedbackContent(CallFeedbackContent x) {
     switch(x) {
       case CallFeedbackContent::kTarget: break;
@@ -88,7 +89,7 @@ class EnumVerifier {
     }
   }
 
-  // UnicodeEncoding (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=280&c=1)
+  // UnicodeEncoding (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=287&c=1)
   void VerifyEnum_UnicodeEncoding(UnicodeEncoding x) {
     switch(x) {
       case UnicodeEncoding::UTF16: break;
@@ -96,7 +97,7 @@ class EnumVerifier {
     }
   }
 
-  // PromiseState (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=283&c=1)
+  // PromiseState (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=290&c=1)
   void VerifyEnum_PromiseState(Promise::PromiseState x) {
     switch(x) {
       case Promise::PromiseState::kPending: break;
@@ -105,7 +106,7 @@ class EnumVerifier {
     }
   }
 
-  // ElementsKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=299&c=1)
+  // ElementsKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1)
   void VerifyEnum_ElementsKind(ElementsKind x) {
     switch(x) {
       case ElementsKind::NO_ELEMENTS: break;
@@ -143,25 +144,25 @@ class EnumVerifier {
     }
   }
 
-  // AllocationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=344&c=1)
+  // AllocationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=351&c=1)
   void VerifyEnum_AllocationFlag(CodeStubAssembler::AllocationFlag x) {
     switch(x) {
       case CodeStubAssembler::AllocationFlag::kNone: break;
       case CodeStubAssembler::AllocationFlag::kDoubleAlignment: break;
       case CodeStubAssembler::AllocationFlag::kPretenured: break;
-      case CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation: break;
     }
   }
 
-  // SlackTrackingMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=352&c=1)
+  // SlackTrackingMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=358&c=1)
   void VerifyEnum_SlackTrackingMode(CodeStubAssembler::SlackTrackingMode x) {
     switch(x) {
       case CodeStubAssembler::SlackTrackingMode::kWithSlackTracking: break;
       case CodeStubAssembler::SlackTrackingMode::kNoSlackTracking: break;
+      case CodeStubAssembler::SlackTrackingMode::kDontInitializeInObjectProperties: break;
     }
   }
 
-  // ExtractFixedArrayFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=358&c=1)
+  // ExtractFixedArrayFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=365&c=1)
   void VerifyEnum_ExtractFixedArrayFlag(CodeStubAssembler::ExtractFixedArrayFlag x) {
     switch(x) {
       case CodeStubAssembler::ExtractFixedArrayFlag::kFixedDoubleArrays: break;
@@ -171,7 +172,7 @@ class EnumVerifier {
     }
   }
 
-  // MessageTemplate (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=373&c=1)
+  // MessageTemplate (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=380&c=1)
   void VerifyEnum_MessageTemplate(MessageTemplate x) {
     switch(x) {
       case MessageTemplate::kAllPromisesRejected: break;
@@ -244,6 +245,7 @@ class EnumVerifier {
       case MessageTemplate::kWasmTrapFuncSigMismatch: break;
       case MessageTemplate::kWasmTrapDataSegmentOutOfBounds: break;
       case MessageTemplate::kWasmTrapElementSegmentOutOfBounds: break;
+      case MessageTemplate::kWasmTrapJSTypeError: break;
       case MessageTemplate::kWasmTrapTableOutOfBounds: break;
       case MessageTemplate::kWasmTrapRethrowNull: break;
       case MessageTemplate::kWasmTrapNullDereference: break;
@@ -261,11 +263,15 @@ class EnumVerifier {
       case MessageTemplate::kPropertyDescObject: break;
       case MessageTemplate::kMustBePositive: break;
       case MessageTemplate::kIteratorReduceNoInitial: break;
+      case MessageTemplate::kSizeIsNaN: break;
+      case MessageTemplate::kArgumentIsNonObject: break;
+      case MessageTemplate::kKeysMethodInvalid: break;
+      case MessageTemplate::kGeneratorRunning: break;
       default: break;
     }
   }
 
-  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=464&c=1)
+  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=476&c=1)
   void VerifyEnum_PropertyAttributes(PropertyAttributes x) {
     switch(x) {
       case PropertyAttributes::NONE: break;
@@ -278,7 +284,7 @@ class EnumVerifier {
     }
   }
 
-  // PrimitiveType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=513&c=1)
+  // PrimitiveType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=525&c=1)
   void VerifyEnum_PrimitiveType(PrimitiveType x) {
     switch(x) {
       case PrimitiveType::kString: break;
@@ -288,7 +294,7 @@ class EnumVerifier {
     }
   }
 
-  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=582&c=1)
+  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=596&c=1)
   void VerifyEnum_LanguageMode(LanguageMode x) {
     switch(x) {
       case LanguageMode::kStrict: break;
@@ -296,7 +302,7 @@ class EnumVerifier {
     }
   }
 
-  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=682&c=1)
+  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=697&c=1)
   void VerifyEnum_BigIntHandling(CodeStubAssembler::BigIntHandling x) {
     switch(x) {
       case CodeStubAssembler::BigIntHandling::kConvertToNumber: break;
@@ -304,7 +310,7 @@ class EnumVerifier {
     }
   }
 
-  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2037&c=1)
+  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2086&c=1)
   void VerifyEnum_HashFieldType(Name::HashFieldType x) {
     switch(x) {
       case Name::HashFieldType::kHash: break;
@@ -330,7 +336,7 @@ class EnumVerifier {
     }
   }
 
-  // ForInFeedback (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=43&c=1)
+  // ForInFeedback (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=44&c=1)
   void VerifyEnum_ForInFeedback(ForInFeedback x) {
     switch(x) {
       case ForInFeedback::kAny: break;
@@ -366,7 +372,7 @@ class EnumVerifier {
     }
   }
 
-  // PromiseResolvingFunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1)
+  // PromiseResolvingFunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1)
   void VerifyEnum_PromiseResolvingFunctionContextSlot(PromiseBuiltins::PromiseResolvingFunctionContextSlot x) {
     switch(x) {
       case PromiseBuiltins::PromiseResolvingFunctionContextSlot::kPromiseSlot: break;
@@ -376,7 +382,7 @@ class EnumVerifier {
     }
   }
 
-  // FunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=277&c=1)
+  // FunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=273&c=1)
   void VerifyEnum_FunctionContextSlot(PromiseBuiltins::FunctionContextSlot x) {
     switch(x) {
       case PromiseBuiltins::FunctionContextSlot::kCapabilitySlot: break;
@@ -429,7 +435,7 @@ class EnumVerifier {
     }
   }
 
-  // Flag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=194&c=1)
+  // Flag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=196&c=1)
   void VerifyEnum_Flag(JSRegExp::Flag x) {
     switch(x) {
       case JSRegExp::Flag::kNone: break;
@@ -476,6 +482,8 @@ class EnumVerifier {
       case Context::Field::VALID_ITERATOR_WRAPPER_MAP_INDEX: break;
       case Context::Field::JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX: break;
       case Context::Field::JS_ARRAY_PACKED_SMI_ELEMENTS_MAP_INDEX: break;
+      case Context::Field::JS_MAP_MAP_INDEX: break;
+      case Context::Field::JS_SET_MAP_INDEX: break;
       case Context::Field::MATH_RANDOM_CACHE_INDEX: break;
       case Context::Field::MATH_RANDOM_INDEX_INDEX: break;
       case Context::Field::NUMBER_FUNCTION_INDEX: break;
@@ -607,7 +615,7 @@ class EnumVerifier {
     }
   }
 
-  // StringRepresentationTag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=57&c=1)
+  // StringRepresentationTag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=49&c=1)
   void VerifyEnum_StringRepresentationTag(StringRepresentationTag x) {
     switch(x) {
       case StringRepresentationTag::kSeqStringTag: break;
@@ -615,6 +623,32 @@ class EnumVerifier {
       case StringRepresentationTag::kExternalStringTag: break;
       case StringRepresentationTag::kSlicedStringTag: break;
       case StringRepresentationTag::kThinStringTag: break;
+    }
+  }
+
+  // ValueKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=61&c=1)
+  void VerifyEnum_ValueKind(wasm::ValueKind x) {
+    switch(x) {
+      case wasm::ValueKind::kRef: break;
+      case wasm::ValueKind::kRefNull: break;
+      default: break;
+    }
+  }
+
+  // HeapType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=67&c=1)
+  void VerifyEnum_HeapType(wasm::HeapType::Representation x) {
+    switch(x) {
+      case wasm::HeapType::Representation::kExtern: break;
+      case wasm::HeapType::Representation::kNoExtern: break;
+      case wasm::HeapType::Representation::kString: break;
+      case wasm::HeapType::Representation::kEq: break;
+      case wasm::HeapType::Representation::kI31: break;
+      case wasm::HeapType::Representation::kStruct: break;
+      case wasm::HeapType::Representation::kArray: break;
+      case wasm::HeapType::Representation::kAny: break;
+      case wasm::HeapType::Representation::kNone: break;
+      case wasm::HeapType::Representation::kNoFunc: break;
+      default: break;
     }
   }
 

@@ -2,9 +2,9 @@ class TemplateInfo;
 class FunctionTemplateRareData;
 class FunctionTemplateInfo;
 class ObjectTemplateInfo;
-// Alias for HeapObject::IsTemplateInfo() that avoids inlining.
+// Alias for IsTemplateInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsTemplateInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTemplateInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=5&c=1
 template <class D, class P>
@@ -35,27 +35,27 @@ class TorqueGeneratedTemplateInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=9&c=3
   inline void set_number_of_properties(int value);
 
-  // Torque type: (Undefined | class TemplateList)
+  // Torque type: (class Undefined | class TemplateList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
-  inline HeapObject property_list() const;
+  inline Tagged<HeapObject> property_list() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
-  inline HeapObject property_list(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> property_list(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
-  inline void set_property_list(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_property_list(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class TemplateList)
+  // Torque type: (class Undefined | class TemplateList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=11&c=3
-  inline HeapObject property_accessors() const;
+  inline Tagged<HeapObject> property_accessors() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=11&c=3
-  inline HeapObject property_accessors(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> property_accessors(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=11&c=3
-  inline void set_property_accessors(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_property_accessors(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -94,12 +94,14 @@ class TorqueGeneratedTemplateInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTemplateInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTemplateInfo(Address ptr);
 };
 
-// Alias for HeapObject::IsFunctionTemplateRareData() that avoids inlining.
+// Alias for IsFunctionTemplateRareData() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=14&c=1
-V8_EXPORT_PRIVATE bool IsFunctionTemplateRareData_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsFunctionTemplateRareData_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=14&c=1
 template <class D, class P>
@@ -115,82 +117,82 @@ class TorqueGeneratedFunctionTemplateRareData : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedFunctionTemplateRareData<D,P>;
 
-  // Torque type: (Undefined | class ObjectTemplateInfo)
+  // Torque type: (class Undefined | class ObjectTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=16&c=3
-  inline HeapObject prototype_template() const;
+  inline Tagged<HeapObject> prototype_template() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=16&c=3
-  inline HeapObject prototype_template(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> prototype_template(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=16&c=3
-  inline void set_prototype_template(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_template(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class FunctionTemplateInfo)
+  // Torque type: (class Undefined | class FunctionTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=17&c=3
-  inline HeapObject prototype_provider_template() const;
+  inline Tagged<HeapObject> prototype_provider_template() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=17&c=3
-  inline HeapObject prototype_provider_template(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> prototype_provider_template(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=17&c=3
-  inline void set_prototype_provider_template(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_provider_template(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class FunctionTemplateInfo)
+  // Torque type: (class Undefined | class FunctionTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=18&c=3
-  inline HeapObject parent_template() const;
+  inline Tagged<HeapObject> parent_template() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=18&c=3
-  inline HeapObject parent_template(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> parent_template(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=18&c=3
-  inline void set_parent_template(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_parent_template(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class InterceptorInfo)
+  // Torque type: (class Undefined | class InterceptorInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=19&c=3
-  inline HeapObject named_property_handler() const;
+  inline Tagged<HeapObject> named_property_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=19&c=3
-  inline HeapObject named_property_handler(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> named_property_handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=19&c=3
-  inline void set_named_property_handler(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_named_property_handler(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class InterceptorInfo)
+  // Torque type: (class Undefined | class InterceptorInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=20&c=3
-  inline HeapObject indexed_property_handler() const;
+  inline Tagged<HeapObject> indexed_property_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=20&c=3
-  inline HeapObject indexed_property_handler(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> indexed_property_handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=20&c=3
-  inline void set_indexed_property_handler(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_indexed_property_handler(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class ObjectTemplateInfo)
+  // Torque type: (class Undefined | class ObjectTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=21&c=3
-  inline HeapObject instance_template() const;
+  inline Tagged<HeapObject> instance_template() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=21&c=3
-  inline HeapObject instance_template(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> instance_template(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=21&c=3
-  inline void set_instance_template(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_instance_template(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class CallHandlerInfo)
+  // Torque type: (class Undefined | class CallHandlerInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=22&c=3
-  inline HeapObject instance_call_handler() const;
+  inline Tagged<HeapObject> instance_call_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=22&c=3
-  inline HeapObject instance_call_handler(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> instance_call_handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=22&c=3
-  inline void set_instance_call_handler(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_instance_call_handler(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class AccessCheckInfo)
+  // Torque type: (class Undefined | class AccessCheckInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=23&c=3
-  inline HeapObject access_check_info() const;
+  inline Tagged<HeapObject> access_check_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=23&c=3
-  inline HeapObject access_check_info(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> access_check_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=23&c=3
-  inline void set_access_check_info(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_access_check_info(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=24&c=3
-  inline FixedArray c_function_overloads() const;
+  inline Tagged<FixedArray> c_function_overloads() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=24&c=3
-  inline FixedArray c_function_overloads(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> c_function_overloads(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=24&c=3
-  inline void set_c_function_overloads(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_c_function_overloads(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=14&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=14&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(FunctionTemplateRareData)
@@ -256,12 +258,14 @@ class TorqueGeneratedFunctionTemplateRareData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFunctionTemplateRareData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFunctionTemplateRareData(Address ptr);
 };
 
-// Alias for HeapObject::IsFunctionTemplateInfo() that avoids inlining.
+// Alias for IsFunctionTemplateInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=41&c=1
-V8_EXPORT_PRIVATE bool IsFunctionTemplateInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsFunctionTemplateInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=41&c=1
 template <class D, class P>
@@ -277,50 +281,50 @@ class TorqueGeneratedFunctionTemplateInfo : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedFunctionTemplateInfo<D,P>;
 
-  // Torque type: (Undefined | class CallHandlerInfo)
+  // Torque type: (class Undefined | class CallHandlerInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=44&c=36
-  inline HeapObject call_code(AcquireLoadTag) const;
+  inline Tagged<HeapObject> call_code(AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=44&c=36
-  inline HeapObject call_code(PtrComprCageBase cage_base, AcquireLoadTag) const;
+  inline Tagged<HeapObject> call_code(PtrComprCageBase cage_base, AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=44&c=36
-  inline void set_call_code(HeapObject value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_call_code(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=45&c=3
-  inline PrimitiveHeapObject class_name() const;
+  inline Tagged<PrimitiveHeapObject> class_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=45&c=3
-  inline PrimitiveHeapObject class_name(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> class_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=45&c=3
-  inline void set_class_name(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_class_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class FunctionTemplateInfo)
+  // Torque type: (class Undefined | class FunctionTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=50&c=3
-  inline HeapObject signature() const;
+  inline Tagged<HeapObject> signature() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=50&c=3
-  inline HeapObject signature(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> signature(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=50&c=3
-  inline void set_signature(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_signature(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class FunctionTemplateRareData)
+  // Torque type: (class Undefined | class FunctionTemplateRareData)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=56&c=3
-  inline HeapObject rare_data(AcquireLoadTag) const;
+  inline Tagged<HeapObject> rare_data(AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=56&c=3
-  inline HeapObject rare_data(PtrComprCageBase cage_base, AcquireLoadTag) const;
+  inline Tagged<HeapObject> rare_data(PtrComprCageBase cage_base, AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=56&c=3
-  inline void set_rare_data(HeapObject value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_rare_data(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class SharedFunctionInfo)
+  // Torque type: (class Undefined | class SharedFunctionInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=57&c=3
-  inline HeapObject shared_function_info() const;
+  inline Tagged<HeapObject> shared_function_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=57&c=3
-  inline HeapObject shared_function_info(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> shared_function_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=57&c=3
-  inline void set_shared_function_info(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_shared_function_info(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=59&c=3
-  inline int flag() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=59&c=3
-  inline void set_flag(int value);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=59&c=36
+  inline int flag(RelaxedLoadTag) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=59&c=36
+  inline void set_flag(int value, RelaxedStoreTag);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=61&c=3
   inline int length() const;
@@ -328,11 +332,11 @@ class TorqueGeneratedFunctionTemplateInfo : public P {
   inline void set_length(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=65&c=3
-  inline Object cached_property_name() const;
+  inline Tagged<Object> cached_property_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=65&c=3
-  inline Object cached_property_name(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> cached_property_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=65&c=3
-  inline void set_cached_property_name(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cached_property_name(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=68&c=3
   inline int instance_type() const;
@@ -340,10 +344,10 @@ class TorqueGeneratedFunctionTemplateInfo : public P {
   inline void set_instance_type(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=41&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=41&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(FunctionTemplateInfo)
@@ -369,7 +373,7 @@ class TorqueGeneratedFunctionTemplateInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=57&c=3
   static constexpr int kSharedFunctionInfoOffset = kRareDataOffsetEnd + 1;
   static constexpr int kSharedFunctionInfoOffsetEnd = kSharedFunctionInfoOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=59&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=59&c=36
   static constexpr int kFlagOffset = kSharedFunctionInfoOffsetEnd + 1;
   static constexpr int kFlagOffsetEnd = kFlagOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=61&c=3
@@ -409,12 +413,14 @@ class TorqueGeneratedFunctionTemplateInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFunctionTemplateInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFunctionTemplateInfo(Address ptr);
 };
 
-// Alias for HeapObject::IsObjectTemplateInfo() that avoids inlining.
+// Alias for IsObjectTemplateInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1
-V8_EXPORT_PRIVATE bool IsObjectTemplateInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsObjectTemplateInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1
 template <class D, class P>
@@ -430,13 +436,13 @@ class TorqueGeneratedObjectTemplateInfo : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedObjectTemplateInfo<D,P>;
 
-  // Torque type: (Undefined | class FunctionTemplateInfo)
+  // Torque type: (class Undefined | class FunctionTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=78&c=3
-  inline HeapObject constructor() const;
+  inline Tagged<HeapObject> constructor() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=78&c=3
-  inline HeapObject constructor(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> constructor(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=78&c=3
-  inline void set_constructor(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_constructor(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=79&c=3
   inline int data() const;
@@ -444,10 +450,10 @@ class TorqueGeneratedObjectTemplateInfo : public P {
   inline void set_data(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ObjectTemplateInfo)
@@ -492,6 +498,8 @@ class TorqueGeneratedObjectTemplateInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedObjectTemplateInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedObjectTemplateInfo(Address ptr);
 };
 

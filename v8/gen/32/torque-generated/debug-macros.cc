@@ -2,6 +2,7 @@
 
 #include "src/objects/swiss-name-dictionary.h"
 #include "src/objects/ordered-hash-table.h"
+#include "src/torque/runtime-support.h"
 #include "tools/debug_helper/debug-macro-shims.h"
 #include "include/v8-internal.h"
 
@@ -1024,7 +1025,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFixedDoubleArr
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceCoverageInfoSlots
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceCoverageInfoSlots
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceCoverageInfoSlots(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   int32_t tmp1{}; USE(tmp1);
@@ -1078,7 +1079,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceDescriptorArra
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceFeedbackVectorRawFeedbackSlots
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceFeedbackVectorRawFeedbackSlots
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFeedbackVectorRawFeedbackSlots(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   int32_t tmp1{}; USE(tmp1);
@@ -1129,10 +1130,37 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceByteArrayBytes
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayBytes
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceExternalPointerArrayPointers
+#define V8_INTERNAL_DEFINED_TqDebugFieldSliceExternalPointerArrayPointers
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceExternalPointerArrayPointers(d::MemoryAccessor accessor, uintptr_t p_o) {
+  intptr_t tmp0{}; USE(tmp0);
+  uintptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  intptr_t tmp3{}; USE(tmp3);
+  uintptr_t tmp4{}; USE(tmp4);
+  intptr_t tmp5{}; USE(tmp5);
+  intptr_t tmp6{}; USE(tmp6);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 4));
+  READ_TAGGED_FIELD_OR_FAIL(tmp1, accessor, p_o, static_cast<int>(tmp0));
+  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_Smi_0(accessor, tmp1));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x8ull)));
+  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_ExternalPointer_0(accessor, p_o, tmp3, tmp2));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp4, tmp5, tmp6)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceExternalPointerArrayPointers
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceWeakArrayListObjects
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceWeakArrayListObjects
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceWeakArrayListObjects(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -1159,7 +1187,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceWeakArrayListO
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetPadding
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetPadding
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=31&c=31
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashSetPadding(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1182,7 +1210,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetDataTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetDataTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashSetDataTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint8_t tmp1{}; USE(tmp1);
@@ -1204,7 +1232,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
   ASSIGN_OR_RETURN(tmp4, TorqueDebugMacroShims::CodeStubAssembler::IntPtrMul(accessor, tmp2, tmp3));
   ASSIGN_OR_RETURN(tmp5, TqDebugConvert_intptr_intptr_0(accessor, tmp4));
   ASSIGN_OR_RETURN(tmp6, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x8ull)));
-  ASSIGN_OR_RETURN(std::tie(tmp7, tmp8, tmp9), TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(accessor, p_o, tmp6, tmp5));
+  ASSIGN_OR_RETURN(std::tie(tmp7, tmp8, tmp9), TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(accessor, p_o, tmp6, tmp5));
   goto block2;
 
   block2:
@@ -1215,7 +1243,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetHashTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetHashTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=34&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashSetHashTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1250,7 +1278,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetChainTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashSetChainTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashSetChainTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1291,7 +1319,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapPadding
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapPadding
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=70&c=31
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashMapPadding(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1314,7 +1342,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapDataTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapDataTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashMapDataTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint8_t tmp1{}; USE(tmp1);
@@ -1347,7 +1375,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapHashTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapHashTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=73&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashMapHashTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1382,7 +1410,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapChainTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedHashMapChainTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHashMapChainTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1423,7 +1451,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedHa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryPadding1
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryPadding1
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=110&c=31
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNameDictionaryPadding1(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1446,7 +1474,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryDataTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryDataTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNameDictionaryDataTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint8_t tmp1{}; USE(tmp1);
@@ -1479,7 +1507,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryHashTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryHashTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=113&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNameDictionaryHashTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1514,7 +1542,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryChainTable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryChainTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNameDictionaryChainTable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1549,7 +1577,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSeqOneByteStringChars
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSeqOneByteStringChars
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSeqOneByteStringChars(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   int32_t tmp1{}; USE(tmp1);
@@ -1576,7 +1604,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSeqOneByteStri
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSeqTwoByteStringChars
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSeqTwoByteStringChars
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=139&c=9
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSeqTwoByteStringChars(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   int32_t tmp1{}; USE(tmp1);
@@ -1625,7 +1653,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSwissNameDicti
   ASSIGN_OR_RETURN(tmp4, TorqueDebugMacroShims::CodeStubAssembler::IntPtrMul(accessor, tmp2, tmp3));
   ASSIGN_OR_RETURN(tmp5, TqDebugConvert_intptr_intptr_0(accessor, tmp4));
   ASSIGN_OR_RETURN(tmp6, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x10ull)));
-  ASSIGN_OR_RETURN(std::tie(tmp7, tmp8, tmp9), TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(accessor, p_o, tmp6, tmp5));
+  ASSIGN_OR_RETURN(std::tie(tmp7, tmp8, tmp9), TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(accessor, p_o, tmp6, tmp5));
   goto block2;
 
   block2:
@@ -1714,7 +1742,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSwissNameDicti
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftWord32SetTypeElements
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftWord32SetTypeElements
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord32SetTypeElements(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
@@ -1741,7 +1769,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftWord64SetTypeElementsHigh
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftWord64SetTypeElementsHigh
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord64SetTypeElementsHigh(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
@@ -1768,7 +1796,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftWord64SetTypeElementsLow
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftWord64SetTypeElementsLow
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord64SetTypeElementsLow(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1803,7 +1831,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftFloat64SetTypeElements
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceTurboshaftFloat64SetTypeElements
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftFloat64SetTypeElements(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
@@ -1830,7 +1858,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftFloa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithSmiElementsEntries
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithSmiElementsEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1194&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassWithSmiElementsEntries(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -1857,7 +1885,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassW
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsEntries
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassWithStructElementsEntries(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -1884,7 +1912,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassW
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsMoreEntries
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsMoreEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassWithStructElementsMoreEntries(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1919,7 +1947,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassW
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceWasmTypeInfoSupertypes
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceWasmTypeInfoSupertypes
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceWasmTypeInfoSupertypes(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -2279,7 +2307,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_String_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   goto block0;
 
@@ -2539,7 +2567,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_Smi_0(d::M
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=113&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=125&c=23
 Value<intptr_t> TqDebugConvert_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
   intptr_t tmp0{}; USE(tmp0);
   goto block0;
@@ -2556,7 +2584,7 @@ Value<intptr_t> TqDebugConvert_intptr_constexpr_int31_0(d::MemoryAccessor access
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_uintptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_uintptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=379&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
 Value<uintptr_t> TqDebugConvert_uintptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   uintptr_t tmp0{}; USE(tmp0);
   goto block0;
@@ -2573,7 +2601,7 @@ Value<uintptr_t> TqDebugConvert_uintptr_intptr_0(d::MemoryAccessor accessor, int
 #ifndef V8_INTERNAL_DEFINED_TqDebugTimesSizeOf_Smi_0
 #define V8_INTERNAL_DEFINED_TqDebugTimesSizeOf_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=97&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 Value<intptr_t> TqDebugTimesSizeOf_Smi_0(d::MemoryAccessor accessor, intptr_t p_i) {
   intptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2592,7 +2620,7 @@ Value<intptr_t> TqDebugTimesSizeOf_Smi_0(d::MemoryAccessor accessor, intptr_t p_
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewReference_Smi_0
 #define V8_INTERNAL_DEFINED_TqDebugNewReference_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=96&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 Value<std::tuple<uintptr_t, intptr_t>> TqDebugNewReference_Smi_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2699,7 +2727,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_CoverageInfoSlot_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_CoverageInfoSlot_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_CoverageInfoSlot_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2876,10 +2904,29 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint8_0(
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ExternalPointer_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ExternalPointer_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_ExternalPointer_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ExternalPointer_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_IntegerLiteral_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=577&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=591&c=47
 Value<intptr_t> TqDebugConvert_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
   intptr_t tmp0{}; USE(tmp0);
   goto block0;
@@ -2968,7 +3015,7 @@ Value<intptr_t> TqDebugConvert_intptr_uint8_0(d::MemoryAccessor accessor, uint8_
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   goto block0;
 
@@ -2980,11 +3027,11 @@ Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intpt
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -2998,11 +3045,11 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_JSReceiv
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_HashMapEntry_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_HashMapEntry_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_HashMapEntry_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3021,7 +3068,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_HashMapE
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_NameDictionaryEntry_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_NameDictionaryEntry_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_NameDictionaryEntry_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3091,7 +3138,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char8_0
 #define V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char8_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_char8_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3110,7 +3157,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_char8_0(d:
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char16_0
 #define V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char16_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=806&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=937&c=26
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_char16_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3180,7 +3227,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   goto block0;
 
@@ -3192,11 +3239,11 @@ Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intpt
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -3210,7 +3257,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_JSReceiv
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int32_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int32_0
 
@@ -3303,7 +3350,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint32_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint32_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint32_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3322,7 +3369,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint32_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_float64_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3411,7 +3458,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d:
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_InternalClassStructElement_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_InternalClassStructElement_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_InternalClassStructElement_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);

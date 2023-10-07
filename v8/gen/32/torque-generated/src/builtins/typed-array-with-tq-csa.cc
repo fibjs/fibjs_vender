@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-with-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -359,7 +360,7 @@ tmp37 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   }
 
   TNode<UintPtrT> phi_bb40_20;
-  TNode<Oddball> tmp42;
+  TNode<Undefined> tmp42;
   TNode<Smi> tmp43;
   TNode<Smi> tmp44;
   TNode<BoolT> tmp45;

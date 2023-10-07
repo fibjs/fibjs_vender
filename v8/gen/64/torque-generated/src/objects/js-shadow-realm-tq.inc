@@ -1,7 +1,7 @@
 class JSShadowRealm;
-// Alias for HeapObject::IsJSShadowRealm() that avoids inlining.
+// Alias for IsJSShadowRealm() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSShadowRealm_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSShadowRealm_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
 template <class D, class P>
@@ -18,17 +18,17 @@ class TorqueGeneratedJSShadowRealm : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSShadowRealm<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
-  inline NativeContext native_context() const;
+  inline Tagged<NativeContext> native_context() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
-  inline NativeContext native_context(PtrComprCageBase cage_base) const;
+  inline Tagged<NativeContext> native_context(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
-  inline void set_native_context(NativeContext value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_native_context(Tagged<NativeContext> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSShadowRealm)
@@ -57,6 +57,8 @@ class TorqueGeneratedJSShadowRealm : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSShadowRealm(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSShadowRealm(Address ptr);
 };
 

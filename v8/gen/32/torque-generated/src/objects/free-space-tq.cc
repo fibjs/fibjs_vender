@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
-bool IsFreeSpace_NonInline(HeapObject o) {
-  return o.IsFreeSpace();
+bool IsFreeSpace_NonInline(Tagged<HeapObject> o) {
+  return IsFreeSpace(o);
 }
 
 #ifdef VERIFY_HEAP

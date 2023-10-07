@@ -1,7 +1,7 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -9,130 +9,125 @@ inline TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<D, P>::TorqueGe
     : P(ptr) {
   SLOW_DCHECK(IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=38
 template<class D, class P>
-SharedFunctionInfo TorqueGeneratedJSFunction<D, P>::shared_function_info() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedJSFunction::shared_function_info(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=33&c=3
-template<class D, class P>
-SharedFunctionInfo TorqueGeneratedJSFunction<D, P>::shared_function_info(PtrComprCageBase cage_base) const {
-  SharedFunctionInfo value;
-  value = TaggedField<SharedFunctionInfo>::load(cage_base, *this, kSharedFunctionInfoOffset);
-  DCHECK(value.IsSharedFunctionInfo());
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=33&c=3
-template<class D, class P>
-void TorqueGeneratedJSFunction<D, P>::set_shared_function_info(SharedFunctionInfo value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSharedFunctionInfo());
-  WRITE_FIELD(*this, kSharedFunctionInfoOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kSharedFunctionInfoOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=34&c=3
-template<class D, class P>
-Context TorqueGeneratedJSFunction<D, P>::context() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedJSFunction::context(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=34&c=3
-template<class D, class P>
-Context TorqueGeneratedJSFunction<D, P>::context(PtrComprCageBase cage_base) const {
-  Context value;
-  value = TaggedField<Context>::load(cage_base, *this, kContextOffset);
-  DCHECK(value.IsContext());
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=34&c=3
-template<class D, class P>
-void TorqueGeneratedJSFunction<D, P>::set_context(Context value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsContext());
-  WRITE_FIELD(*this, kContextOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
-template<class D, class P>
-FeedbackCell TorqueGeneratedJSFunction<D, P>::feedback_cell() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedJSFunction::feedback_cell(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
-template<class D, class P>
-FeedbackCell TorqueGeneratedJSFunction<D, P>::feedback_cell(PtrComprCageBase cage_base) const {
-  FeedbackCell value;
-  value = TaggedField<FeedbackCell>::load(cage_base, *this, kFeedbackCellOffset);
-  DCHECK(value.IsFeedbackCell());
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
-template<class D, class P>
-void TorqueGeneratedJSFunction<D, P>::set_feedback_cell(FeedbackCell value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFeedbackCell());
-  WRITE_FIELD(*this, kFeedbackCellOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kFeedbackCellOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
-template<class D, class P>
-Code TorqueGeneratedJSFunction<D, P>::code() const {
+Tagged<Code> TorqueGeneratedJSFunction<D, P>::code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSFunction::code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=38
 template<class D, class P>
-Code TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
-  Code value;
-  value = TaggedField<Code>::load(cage_base, *this, kCodeOffset);
-  DCHECK(value.IsCode());
+Tagged<Code> TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
+  Tagged<Code> value = TaggedField<Tagged<Code>>::load(cage_base, *this, kCodeOffset);
+  DCHECK(IsCode(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=38
 template<class D, class P>
-void TorqueGeneratedJSFunction<D, P>::set_code(Code value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCode());
+void TorqueGeneratedJSFunction<D, P>::set_code(Tagged<Code> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCode(value));
   WRITE_FIELD(*this, kCodeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCodeOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map() const {
+Tagged<SharedFunctionInfo> TorqueGeneratedJSFunction<D, P>::shared_function_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedJSFunction::prototype_or_initial_map(cage_base);
+  return TorqueGeneratedJSFunction::shared_function_info(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+template<class D, class P>
+Tagged<SharedFunctionInfo> TorqueGeneratedJSFunction<D, P>::shared_function_info(PtrComprCageBase cage_base) const {
+  Tagged<SharedFunctionInfo> value = TaggedField<Tagged<SharedFunctionInfo>>::load(cage_base, *this, kSharedFunctionInfoOffset);
+  DCHECK(IsSharedFunctionInfo(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+template<class D, class P>
+void TorqueGeneratedJSFunction<D, P>::set_shared_function_info(Tagged<SharedFunctionInfo> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSharedFunctionInfo(value));
+  WRITE_FIELD(*this, kSharedFunctionInfoOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kSharedFunctionInfoOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+template<class D, class P>
+Tagged<Context> TorqueGeneratedJSFunction<D, P>::context() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSFunction::context(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+template<class D, class P>
+Tagged<Context> TorqueGeneratedJSFunction<D, P>::context(PtrComprCageBase cage_base) const {
+  Tagged<Context> value = TaggedField<Tagged<Context>>::load(cage_base, *this, kContextOffset);
+  DCHECK(IsContext(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+template<class D, class P>
+void TorqueGeneratedJSFunction<D, P>::set_context(Tagged<Context> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsContext(value));
+  WRITE_FIELD(*this, kContextOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kPrototypeOrInitialMapOffset);
-  DCHECK(value.IsJSReceiver() || value.IsMap());
+Tagged<FeedbackCell> TorqueGeneratedJSFunction<D, P>::feedback_cell() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSFunction::feedback_cell(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
+template<class D, class P>
+Tagged<FeedbackCell> TorqueGeneratedJSFunction<D, P>::feedback_cell(PtrComprCageBase cage_base) const {
+  Tagged<FeedbackCell> value = TaggedField<Tagged<FeedbackCell>>::load(cage_base, *this, kFeedbackCellOffset);
+  DCHECK(IsFeedbackCell(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
 template<class D, class P>
-void TorqueGeneratedJSFunction<D, P>::set_prototype_or_initial_map(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsMap());
+void TorqueGeneratedJSFunction<D, P>::set_feedback_cell(Tagged<FeedbackCell> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsFeedbackCell(value));
+  WRITE_FIELD(*this, kFeedbackCellOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kFeedbackCellOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
+template<class D, class P>
+Tagged<HeapObject> TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSFunction::prototype_or_initial_map(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
+template<class D, class P>
+Tagged<HeapObject> TorqueGeneratedJSFunction<D, P>::prototype_or_initial_map(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kPrototypeOrInitialMapOffset);
+  DCHECK(IsJSReceiver(value) || IsMap(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
+template<class D, class P>
+void TorqueGeneratedJSFunction<D, P>::set_prototype_or_initial_map(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsMap(value));
   WRITE_FIELD(*this, kPrototypeOrInitialMapOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeOrInitialMapOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=30&c=1
 template<class D, class P>
-D TorqueGeneratedJSFunction<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSFunction<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -140,82 +135,79 @@ inline TorqueGeneratedJSFunction<D, P>::TorqueGeneratedJSFunction(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSFunction_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=12&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=11&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSBoundFunction<D, P>::bound_target_function() const {
+Tagged<JSReceiver> TorqueGeneratedJSBoundFunction<D, P>::bound_target_function() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSBoundFunction::bound_target_function(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=12&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=11&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSBoundFunction<D, P>::bound_target_function(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kBoundTargetFunctionOffset);
-  DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+Tagged<JSReceiver> TorqueGeneratedJSBoundFunction<D, P>::bound_target_function(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kBoundTargetFunctionOffset);
+  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=12&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=11&c=3
 template<class D, class P>
-void TorqueGeneratedJSBoundFunction<D, P>::set_bound_target_function(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+void TorqueGeneratedJSBoundFunction<D, P>::set_bound_target_function(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kBoundTargetFunctionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundTargetFunctionOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=15&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=14&c=3
 template<class D, class P>
-Object TorqueGeneratedJSBoundFunction<D, P>::bound_this() const {
+Tagged<Object> TorqueGeneratedJSBoundFunction<D, P>::bound_this() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSBoundFunction::bound_this(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=15&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=14&c=3
 template<class D, class P>
-Object TorqueGeneratedJSBoundFunction<D, P>::bound_this(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kBoundThisOffset);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsSourceTextModule());
+Tagged<Object> TorqueGeneratedJSBoundFunction<D, P>::bound_this(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kBoundThisOffset);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsSourceTextModule(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=15&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=14&c=3
 template<class D, class P>
-void TorqueGeneratedJSBoundFunction<D, P>::set_bound_this(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined() || value.IsSourceTextModule());
+void TorqueGeneratedJSBoundFunction<D, P>::set_bound_this(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsSourceTextModule(value));
   WRITE_FIELD(*this, kBoundThisOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundThisOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=17&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedJSBoundFunction<D, P>::bound_arguments() const {
+Tagged<FixedArray> TorqueGeneratedJSBoundFunction<D, P>::bound_arguments() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSBoundFunction::bound_arguments(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=17&c=3
 template<class D, class P>
-FixedArray TorqueGeneratedJSBoundFunction<D, P>::bound_arguments(PtrComprCageBase cage_base) const {
-  FixedArray value;
-  value = TaggedField<FixedArray>::load(cage_base, *this, kBoundArgumentsOffset);
-  DCHECK(value.IsFixedArray());
+Tagged<FixedArray> TorqueGeneratedJSBoundFunction<D, P>::bound_arguments(PtrComprCageBase cage_base) const {
+  Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kBoundArgumentsOffset);
+  DCHECK(IsFixedArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=18&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=17&c=3
 template<class D, class P>
-void TorqueGeneratedJSBoundFunction<D, P>::set_bound_arguments(FixedArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFixedArray());
+void TorqueGeneratedJSBoundFunction<D, P>::set_bound_arguments(Tagged<FixedArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsFixedArray(value));
   WRITE_FIELD(*this, kBoundArgumentsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundArgumentsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=9&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=8&c=1
 template<class D, class P>
-D TorqueGeneratedJSBoundFunction<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSBoundFunction<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -223,58 +215,56 @@ inline TorqueGeneratedJSBoundFunction<D, P>::TorqueGeneratedJSBoundFunction(Addr
     : P(ptr) {
   SLOW_DCHECK(IsJSBoundFunction_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=23&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_function() const {
+Tagged<JSReceiver> TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_function() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSWrappedFunction::wrapped_target_function(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=23&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_function(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kWrappedTargetFunctionOffset);
-  DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+Tagged<JSReceiver> TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_function(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kWrappedTargetFunctionOffset);
+  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=24&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=23&c=3
 template<class D, class P>
-void TorqueGeneratedJSWrappedFunction<D, P>::set_wrapped_target_function(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+void TorqueGeneratedJSWrappedFunction<D, P>::set_wrapped_target_function(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kWrappedTargetFunctionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kWrappedTargetFunctionOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=25&c=3
 template<class D, class P>
-NativeContext TorqueGeneratedJSWrappedFunction<D, P>::context() const {
+Tagged<NativeContext> TorqueGeneratedJSWrappedFunction<D, P>::context() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSWrappedFunction::context(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=25&c=3
 template<class D, class P>
-NativeContext TorqueGeneratedJSWrappedFunction<D, P>::context(PtrComprCageBase cage_base) const {
-  NativeContext value;
-  value = TaggedField<NativeContext>::load(cage_base, *this, kContextOffset);
-  DCHECK(value.IsNativeContext());
+Tagged<NativeContext> TorqueGeneratedJSWrappedFunction<D, P>::context(PtrComprCageBase cage_base) const {
+  Tagged<NativeContext> value = TaggedField<Tagged<NativeContext>>::load(cage_base, *this, kContextOffset);
+  DCHECK(IsNativeContext(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=25&c=3
 template<class D, class P>
-void TorqueGeneratedJSWrappedFunction<D, P>::set_context(NativeContext value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsNativeContext());
+void TorqueGeneratedJSWrappedFunction<D, P>::set_context(Tagged<NativeContext> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsNativeContext(value));
   WRITE_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=21&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=20&c=1
 template<class D, class P>
-D TorqueGeneratedJSWrappedFunction<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSWrappedFunction<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

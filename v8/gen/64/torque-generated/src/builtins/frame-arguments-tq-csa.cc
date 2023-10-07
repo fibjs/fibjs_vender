@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
@@ -74,7 +75,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frame-arguments.tq?l=45&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frame-arguments.tq?l=46&c=1
 TorqueStructFrameWithArgumentsInfo_0 GetFrameWithArgumentsInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -114,7 +115,7 @@ TorqueStructFrameWithArgumentsInfo_0 GetFrameWithArgumentsInfo_0(compiler::CodeA
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp3 = LoadFunctionFromFrame_0(state_, TNode<RawPtrT>{tmp1});
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp5 = CodeStubAssembler(state_).LoadReference<SharedFunctionInfo>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = LoadSharedFunctionInfoFormalParameterCountWithoutReceiver_0(state_, TNode<SharedFunctionInfo>{tmp5});
     tmp7 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp6});

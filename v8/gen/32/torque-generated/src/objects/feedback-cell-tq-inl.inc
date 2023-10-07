@@ -1,23 +1,22 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedFeedbackCell<D, P>::value() const {
+Tagged<HeapObject> TorqueGeneratedFeedbackCell<D, P>::value() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackCell::value(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedFeedbackCell<D, P>::value(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kValueOffset);
-  DCHECK(value.IsUndefined() || value.IsFixedArray() || value.IsFeedbackVector());
+Tagged<HeapObject> TorqueGeneratedFeedbackCell<D, P>::value(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kValueOffset);
+  DCHECK(IsUndefined(value) || IsFixedArray(value) || IsFeedbackVector(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
 template<class D, class P>
-void TorqueGeneratedFeedbackCell<D, P>::set_value(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsUndefined() || value.IsFixedArray() || value.IsFeedbackVector());
+void TorqueGeneratedFeedbackCell<D, P>::set_value(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsUndefined(value) || IsFixedArray(value) || IsFeedbackVector(value));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
@@ -25,8 +24,7 @@ void TorqueGeneratedFeedbackCell<D, P>::set_value(HeapObject value, WriteBarrier
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=7&c=3
 template<class D, class P>
 int32_t TorqueGeneratedFeedbackCell<D, P>::interrupt_budget() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kInterruptBudgetOffset);
+  int32_t value = this->template ReadField<int32_t>(kInterruptBudgetOffset);
   return value;
 }
 
@@ -38,8 +36,8 @@ void TorqueGeneratedFeedbackCell<D, P>::set_interrupt_budget(int32_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedFeedbackCell<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedFeedbackCell<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

@@ -1,7 +1,7 @@
 class Cell;
-// Alias for HeapObject::IsCell() that avoids inlining.
+// Alias for IsCell() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsCell_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsCell_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
 template <class D, class P>
@@ -18,17 +18,17 @@ class TorqueGeneratedCell : public P {
   using TorqueGeneratedClass = TorqueGeneratedCell<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  inline Object value() const;
+  inline Tagged<Object> value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  inline Object value(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  inline void set_value(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_value(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(Cell)
@@ -70,6 +70,8 @@ class TorqueGeneratedCell : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedCell(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedCell(Address ptr);
 };
 

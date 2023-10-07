@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -489,7 +490,7 @@ TorqueStructAttachedJSTypedArrayWitness_0 NewAttachedJSTypedArrayWitness_0(compi
   return TorqueStructAttachedJSTypedArrayWitness_0{TNode<JSTypedArray>{p_array}, TNode<JSTypedArray>{p_array}, TNode<BuiltinPtr>{tmp1}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=253&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=254&c=1
 ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -506,7 +507,7 @@ ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::UINT8_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=256&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=257&c=1
 ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -523,7 +524,7 @@ ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state
   return ElementsKind::INT8_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=259&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=260&c=1
 ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -540,7 +541,7 @@ ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* sta
   return ElementsKind::UINT16_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=262&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=263&c=1
 ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -557,7 +558,7 @@ ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::INT16_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=265&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=266&c=1
 ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -574,7 +575,7 @@ ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* sta
   return ElementsKind::UINT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=269&c=1
 ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -591,7 +592,7 @@ ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::INT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=271&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=272&c=1
 ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -608,7 +609,7 @@ ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* st
   return ElementsKind::FLOAT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=274&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=275&c=1
 ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -625,7 +626,7 @@ ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* st
   return ElementsKind::FLOAT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=277&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=278&c=1
 ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -642,7 +643,7 @@ ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerStat
   return ElementsKind::UINT8_CLAMPED_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=280&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=281&c=1
 ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -659,7 +660,7 @@ ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* 
   return ElementsKind::BIGUINT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=284&c=1
 ElementsKind KindForArrayType_BigInt64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

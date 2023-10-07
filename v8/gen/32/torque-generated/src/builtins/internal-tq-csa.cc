@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/internal-tq-csa.h"
 #include "torque-generated/src/builtins/array-isarray-tq-csa.h"
@@ -177,7 +178,7 @@ TF_BUILTIN(GetTemplateObject, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=43&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=44&c=1
 TNode<Uint32T> FromConstexpr_ForInFeedback_constexpr_kAny_0(compiler::CodeAssemblerState* state_, ForInFeedback p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -198,7 +199,7 @@ TNode<Uint32T> FromConstexpr_ForInFeedback_constexpr_kAny_0(compiler::CodeAssemb
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=48&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=49&c=1
 TNode<Object> ForInNextSlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<UintPtrT> p_slot, TNode<HeapObject> p_receiver, TNode<Object> p_key, TNode<Object> p_cacheType, TNode<HeapObject> p_maybeFeedbackVector, UpdateFeedbackMode p_guaranteedFeedback) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -317,7 +318,7 @@ TF_BUILTIN(GetImportMetaObjectBaseline, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=29&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=30&c=12
 TNode<JSArray> Cast_JSArray_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -378,7 +379,7 @@ TNode<JSArray> Cast_JSArray_2(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<JSArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=55&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=56&c=7
 TNode<Smi> SmiTag_ForInFeedback_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

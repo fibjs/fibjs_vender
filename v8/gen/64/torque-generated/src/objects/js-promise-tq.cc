@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=13&c=1
-bool IsJSPromise_NonInline(HeapObject o) {
-  return o.IsJSPromise();
+bool IsJSPromise_NonInline(Tagged<HeapObject> o) {
+  return IsJSPromise(o);
 }
 
 #ifdef VERIFY_HEAP

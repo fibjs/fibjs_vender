@@ -1,7 +1,7 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqOneByteStringChars(SeqOneByteString p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=139&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqTwoByteStringChars(SeqTwoByteString p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
@@ -13,10 +13,10 @@ inline intptr_t TqRuntimeConvert_intptr_int32_0(int32_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=806&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=937&c=26
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
@@ -25,7 +25,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqOneByteStringChars
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqOneByteStringChars
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqOneByteStringChars(SeqOneByteString p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -53,7 +53,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqOneByteStringChars(
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqTwoByteStringChars
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSeqTwoByteStringChars
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=139&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSeqTwoByteStringChars(SeqTwoByteString p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -135,7 +135,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char8_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char8_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -155,7 +155,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char8_0(Object p_o
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char16_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_char16_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=806&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=937&c=26
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_char16_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -190,15 +190,14 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=46&c=9
 template<class D, class P>
 int32_t TorqueGeneratedString<D, P>::length() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kLengthOffset);
+  int32_t value = this->template ReadField<int32_t>(kLengthOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=46&c=9
 template<class D, class P>
 void TorqueGeneratedString<D, P>::set_length(int32_t value) {
   this->template WriteField<int32_t>(kLengthOffset, value);
@@ -206,8 +205,8 @@ void TorqueGeneratedString<D, P>::set_length(int32_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=7&c=1
 template<class D, class P>
-D TorqueGeneratedString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -215,58 +214,56 @@ inline TorqueGeneratedString<D, P>::TorqueGeneratedString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=77&c=3
 template<class D, class P>
-String TorqueGeneratedConsString<D, P>::first() const {
+Tagged<String> TorqueGeneratedConsString<D, P>::first() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedConsString::first(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=77&c=3
 template<class D, class P>
-String TorqueGeneratedConsString<D, P>::first(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kFirstOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedConsString<D, P>::first(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kFirstOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=77&c=3
 template<class D, class P>
-void TorqueGeneratedConsString<D, P>::set_first(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedConsString<D, P>::set_first(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kFirstOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFirstOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=78&c=3
 template<class D, class P>
-String TorqueGeneratedConsString<D, P>::second() const {
+Tagged<String> TorqueGeneratedConsString<D, P>::second() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedConsString::second(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=78&c=3
 template<class D, class P>
-String TorqueGeneratedConsString<D, P>::second(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kSecondOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedConsString<D, P>::second(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kSecondOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=78&c=3
 template<class D, class P>
-void TorqueGeneratedConsString<D, P>::set_second(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedConsString<D, P>::set_second(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kSecondOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSecondOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=73&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=65&c=1
 template<class D, class P>
-D TorqueGeneratedConsString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedConsString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -274,10 +271,10 @@ inline TorqueGeneratedConsString<D, P>::TorqueGeneratedConsString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsConsString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=89&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=81&c=1
 template<class D, class P>
-D TorqueGeneratedExternalString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedExternalString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -285,10 +282,10 @@ inline TorqueGeneratedExternalString<D, P>::TorqueGeneratedExternalString(Addres
     : P(ptr) {
   SLOW_DCHECK(IsExternalString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=103&c=1
 template<class D, class P>
-D TorqueGeneratedExternalOneByteString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedExternalOneByteString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -296,10 +293,10 @@ inline TorqueGeneratedExternalOneByteString<D, P>::TorqueGeneratedExternalOneByt
     : P(ptr) {
   SLOW_DCHECK(IsExternalOneByteString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=122&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=114&c=1
 template<class D, class P>
-D TorqueGeneratedExternalTwoByteString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedExternalTwoByteString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -307,10 +304,10 @@ inline TorqueGeneratedExternalTwoByteString<D, P>::TorqueGeneratedExternalTwoByt
     : P(ptr) {
   SLOW_DCHECK(IsExternalTwoByteString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=125&c=1
 template<class D, class P>
-D TorqueGeneratedInternalizedString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedInternalizedString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -318,10 +315,10 @@ inline TorqueGeneratedInternalizedString<D, P>::TorqueGeneratedInternalizedStrin
     : P(ptr) {
   SLOW_DCHECK(IsInternalizedString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=137&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=128&c=1
 template<class D, class P>
-D TorqueGeneratedSeqString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedSeqString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -329,18 +326,17 @@ inline TorqueGeneratedSeqString<D, P>::TorqueGeneratedSeqString(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsSeqString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 template<class D, class P>
 char TorqueGeneratedSeqOneByteString<D, P>::chars(int i) const {
-  char value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kCharsOffset + i * kUInt8Size;
-  value = this->template ReadField<char>(offset);
+  char value = this->template ReadField<char>(offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=144&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=134&c=9
 template<class D, class P>
 void TorqueGeneratedSeqOneByteString<D, P>::set_chars(int i, char value) {
   DCHECK_GE(i, 0);
@@ -349,10 +345,10 @@ void TorqueGeneratedSeqOneByteString<D, P>::set_chars(int i, char value) {
   this->template WriteField<char>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=131&c=1
 template<class D, class P>
-D TorqueGeneratedSeqOneByteString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedSeqOneByteString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -360,18 +356,17 @@ inline TorqueGeneratedSeqOneByteString<D, P>::TorqueGeneratedSeqOneByteString(Ad
     : P(ptr) {
   SLOW_DCHECK(IsSeqOneByteString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=139&c=9
 template<class D, class P>
 char16_t TorqueGeneratedSeqTwoByteString<D, P>::chars(int i) const {
-  char16_t value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kCharsOffset + i * kUInt16Size;
-  value = this->template ReadField<char16_t>(offset);
+  char16_t value = this->template ReadField<char16_t>(offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=139&c=9
 template<class D, class P>
 void TorqueGeneratedSeqTwoByteString<D, P>::set_chars(int i, char16_t value) {
   DCHECK_GE(i, 0);
@@ -380,10 +375,10 @@ void TorqueGeneratedSeqTwoByteString<D, P>::set_chars(int i, char16_t value) {
   this->template WriteField<char16_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=136&c=1
 template<class D, class P>
-D TorqueGeneratedSeqTwoByteString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedSeqTwoByteString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -391,48 +386,46 @@ inline TorqueGeneratedSeqTwoByteString<D, P>::TorqueGeneratedSeqTwoByteString(Ad
     : P(ptr) {
   SLOW_DCHECK(IsSeqTwoByteString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=145&c=3
 template<class D, class P>
-String TorqueGeneratedSlicedString<D, P>::parent() const {
+Tagged<String> TorqueGeneratedSlicedString<D, P>::parent() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSlicedString::parent(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=145&c=3
 template<class D, class P>
-String TorqueGeneratedSlicedString<D, P>::parent(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kParentOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedSlicedString<D, P>::parent(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kParentOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=155&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=145&c=3
 template<class D, class P>
-void TorqueGeneratedSlicedString<D, P>::set_parent(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedSlicedString<D, P>::set_parent(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kParentOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kParentOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=3
 template<class D, class P>
 int TorqueGeneratedSlicedString<D, P>::offset() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kOffsetOffset).value();
+  int value = TaggedField<Smi>::load(*this, kOffsetOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=156&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=146&c=3
 template<class D, class P>
 void TorqueGeneratedSlicedString<D, P>::set_offset(int value) {
   WRITE_FIELD(*this, kOffsetOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=142&c=1
 template<class D, class P>
-D TorqueGeneratedSlicedString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedSlicedString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -440,34 +433,33 @@ inline TorqueGeneratedSlicedString<D, P>::TorqueGeneratedSlicedString(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsSlicedString_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=3
 template<class D, class P>
-String TorqueGeneratedThinString<D, P>::actual() const {
+Tagged<String> TorqueGeneratedThinString<D, P>::actual() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedThinString::actual(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=3
 template<class D, class P>
-String TorqueGeneratedThinString<D, P>::actual(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kActualOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedThinString<D, P>::actual(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kActualOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=162&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=152&c=3
 template<class D, class P>
-void TorqueGeneratedThinString<D, P>::set_actual(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedThinString<D, P>::set_actual(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kActualOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kActualOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=159&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=149&c=1
 template<class D, class P>
-D TorqueGeneratedThinString<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedThinString<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

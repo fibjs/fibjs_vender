@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/array-concat-tq-csa.h"
@@ -366,7 +367,7 @@ TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice_0(compiler::CodeAssemblerSt
   TNode<Object> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<Object> tmp37;
-  TNode<HeapObject> tmp38;
+  TNode<Hole> tmp38;
   TNode<BoolT> tmp39;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_12, &phi_bb19_15, &phi_bb19_20, &phi_bb19_21);
@@ -488,7 +489,7 @@ TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice_0(compiler::CodeAssemblerSt
   TNode<Smi> tmp69;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_15, &phi_bb25_17);
-    tmp65 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb25_17});
+    tmp65 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb25_17});
     tmp66 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp67 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb25_12}, TNode<Smi>{tmp66});
     CodeStubAssembler(state_).StoreFixedArrayElement(TNode<FixedArray>{tmp23}, TNode<Smi>{phi_bb25_12}, TNode<Object>{tmp65}, UNSAFE_SKIP_WRITE_BARRIER);
@@ -833,7 +834,7 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
   TNode<Number> phi_bb3_10;
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
-  TNode<Oddball> tmp13;
+  TNode<Undefined> tmp13;
   TNode<BoolT> tmp14;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_10);
@@ -857,7 +858,7 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb7_12;
-  TNode<Oddball> tmp16;
+  TNode<Undefined> tmp16;
   TNode<BoolT> tmp17;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_12);
@@ -888,7 +889,7 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
     ca_.Branch(phi_bb13_14, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp21;
+  TNode<Undefined> tmp21;
   TNode<BoolT> tmp22;
   if (block14.is_used()) {
     ca_.Bind(&block14);
@@ -1005,12 +1006,12 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
 
   TNode<Number> phi_bb53_10;
   TNode<Number> phi_bb53_16;
-  TNode<Oddball> tmp41;
-  TNode<Oddball> tmp42;
+  TNode<Boolean> tmp41;
+  TNode<True> tmp42;
   TNode<BoolT> tmp43;
   if (block53.is_used()) {
     ca_.Bind(&block53, &phi_bb53_10, &phi_bb53_16);
-    tmp41 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, phi_bb53_10);
+    tmp41 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, phi_bb53_10);
     tmp42 = True_0(state_);
     tmp43 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp41}, TNode<HeapObject>{tmp42});
     ca_.Branch(tmp43, &block56, std::vector<compiler::Node*>{phi_bb53_10, phi_bb53_16, phi_bb53_10}, &block57, std::vector<compiler::Node*>{phi_bb53_10, phi_bb53_16, phi_bb53_10});
@@ -1076,7 +1077,7 @@ TNode<Smi> UnsafeCast_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context>
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=64&c=24
-TNode<Object> UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+TNode<Object> UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

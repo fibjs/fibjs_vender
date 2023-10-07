@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-search-tq-csa.h"
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
@@ -172,7 +173,7 @@ TNode<Object> RegExpPrototypeSearchBodyFast_0(compiler::CodeAssemblerState* stat
   return TNode<Object>{phi_bb18_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=45&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=44&c=1
 TNode<BoolT> IsRegExpResult_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_execResult) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -222,7 +223,7 @@ TNode<BoolT> IsRegExpResult_0(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=49&c=1
 TNode<Object> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_regexp, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -277,7 +278,7 @@ TNode<Object> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* stat
     ca_.Goto(&block5);
   }
 
-  TNode<Oddball> tmp8;
+  TNode<Null> tmp8;
   TNode<BoolT> tmp9;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -395,7 +396,7 @@ TF_BUILTIN(RegExpPrototypeSearch, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=76&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=75&c=26
 TNode<JSArray> Cast_JSRegExpResult_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

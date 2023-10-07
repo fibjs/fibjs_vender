@@ -1,7 +1,7 @@
 class JSSharedArray;
-// Alias for HeapObject::IsJSSharedArray() that avoids inlining.
+// Alias for IsJSSharedArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSSharedArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSSharedArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
 template <class D, class P>
@@ -18,10 +18,10 @@ class TorqueGeneratedJSSharedArray : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSSharedArray<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSSharedArray)
@@ -47,6 +47,8 @@ class TorqueGeneratedJSSharedArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSSharedArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSSharedArray(Address ptr);
 };
 

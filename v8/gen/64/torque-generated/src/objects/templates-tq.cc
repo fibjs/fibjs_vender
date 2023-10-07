@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=5&c=1
-bool IsTemplateInfo_NonInline(HeapObject o) {
-  return o.IsTemplateInfo();
+bool IsTemplateInfo_NonInline(Tagged<HeapObject> o) {
+  return IsTemplateInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedTemplateInfo<TemplateInfo, Struct>::TemplateInfoVerify(Isola
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=14&c=1
-bool IsFunctionTemplateRareData_NonInline(HeapObject o) {
-  return o.IsFunctionTemplateRareData();
+bool IsFunctionTemplateRareData_NonInline(Tagged<HeapObject> o) {
+  return IsFunctionTemplateRareData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedFunctionTemplateRareData<FunctionTemplateRareData, Struct>::
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=41&c=1
-bool IsFunctionTemplateInfo_NonInline(HeapObject o) {
-  return o.IsFunctionTemplateInfo();
+bool IsFunctionTemplateInfo_NonInline(Tagged<HeapObject> o) {
+  return IsFunctionTemplateInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -49,8 +49,8 @@ void TorqueGeneratedFunctionTemplateInfo<FunctionTemplateInfo, TemplateInfo>::Fu
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1
-bool IsObjectTemplateInfo_NonInline(HeapObject o) {
-  return o.IsObjectTemplateInfo();
+bool IsObjectTemplateInfo_NonInline(Tagged<HeapObject> o) {
+  return IsObjectTemplateInfo(o);
 }
 
 #ifdef VERIFY_HEAP

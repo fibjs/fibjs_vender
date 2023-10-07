@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/constructor-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -336,7 +337,7 @@ USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -385,7 +386,7 @@ USE(parameter3);
     ca_.Goto(&block11, tmp8);
   }
 
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp9;
   TNode<BoolT> tmp10;
   if (block10.is_used()) {
     ca_.Bind(&block10);
@@ -407,7 +408,7 @@ USE(parameter3);
     ca_.Goto(&block14, tmp11);
   }
 
-  TNode<Oddball> tmp12;
+  TNode<Null> tmp12;
   TNode<BoolT> tmp13;
   if (block13.is_used()) {
     ca_.Bind(&block13);
@@ -506,7 +507,7 @@ USE(parameter3);
   }
 
   TNode<Number> phi_bb2_8;
-  TNode<Oddball> tmp6;
+  TNode<Undefined> tmp6;
   TNode<BoolT> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_8);

@@ -42,6 +42,69 @@ struct TorqueStructKeyValuePair {
     return std::make_tuple(key, value);
   }
 };
+struct TorqueStructSetRecord {
+  TNode<JSReceiver> object;
+  TNode<Number> size;
+  TNode<Object> has;
+  TNode<Object> keys;
+
+  std::tuple<TNode<JSReceiver>, TNode<Number>, TNode<Object>, TNode<Object>> Flatten() const {
+    return std::make_tuple(object, size, has, keys);
+  }
+};
+struct TorqueStructKeyIndexPair {
+  TNode<Object> key;
+  TNode<IntPtrT> index;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(key, index);
+  }
+};
+struct TorqueStructOrderedHashSetIndexPair {
+  TNode<OrderedHashSet> table;
+  TNode<IntPtrT> index;
+
+  std::tuple<TNode<OrderedHashSet>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(table, index);
+  }
+};
+struct TorqueStructUnmodifiedOrderedHashSetIterator_0 {
+  TNode<OrderedHashSet> table;
+  TNode<Int32T> numBuckets;
+  TNode<Int32T> usedCapacity;
+  TorqueStructKeyIndexPair current;
+
+  std::tuple<TNode<OrderedHashSet>, TNode<Int32T>, TNode<Int32T>, TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(table, numBuckets, usedCapacity, current.key, current.index);
+  }
+};
+struct TorqueStructOrderedHashSetIterator_0 {
+  TNode<OrderedHashSet> table;
+  TorqueStructKeyIndexPair current;
+
+  std::tuple<TNode<OrderedHashSet>, TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(table, current.key, current.index);
+  }
+};
+struct TorqueStructKeyValueIndexTuple {
+  TNode<Object> key;
+  TNode<Object> value;
+  TNode<IntPtrT> index;
+
+  std::tuple<TNode<Object>, TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(key, value, index);
+  }
+};
+struct TorqueStructUnmodifiedOrderedHashMapIterator_0 {
+  TNode<OrderedHashMap> table;
+  TNode<Int32T> numBuckets;
+  TNode<Int32T> usedCapacity;
+  TorqueStructKeyValueIndexTuple current;
+
+  std::tuple<TNode<OrderedHashMap>, TNode<Int32T>, TNode<Int32T>, TNode<Object>, TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(table, numBuckets, usedCapacity, current.key, current.value, current.index);
+  }
+};
 struct TorqueStructToBooleanForBaselineJumpResult_0 {
   TNode<Object> value;
   TNode<Smi> is_to_boolean;
@@ -162,6 +225,14 @@ struct TorqueStructInvokeThenTwoArgFunctor_0 {
 
   std::tuple<> Flatten() const {
     return std::make_tuple();
+  }
+};
+struct TorqueStructOrderedHashSetAndNumberOfElements_0 {
+  TNode<OrderedHashSet> setData;
+  TNode<Smi> numberOfElements;
+
+  std::tuple<TNode<OrderedHashSet>, TNode<Smi>> Flatten() const {
+    return std::make_tuple(setData, numberOfElements);
   }
 };
 struct TorqueStructIsSubstringAtFunctor_0 {
@@ -472,6 +543,40 @@ struct TorqueStructTwoValues_0 {
     return std::make_tuple(a, b);
   }
 };
+struct TorqueStructInt64AsInt32Pair {
+  TNode<UintPtrT> low;
+  TNode<UintPtrT> high;
+
+  std::tuple<TNode<UintPtrT>, TNode<UintPtrT>> Flatten() const {
+    return std::make_tuple(low, high);
+  }
+};
+struct TorqueStructReturnSlotAllocator_0 {
+  TNode<IntPtrT> remainingGPRegs;
+  TNode<IntPtrT> remainingFPRegs;
+  TNode<BoolT> hasSmallSlot;
+  TNode<BoolT> smallSlotLast;
+  TNode<IntPtrT> stackSlots;
+
+  std::tuple<TNode<IntPtrT>, TNode<IntPtrT>, TNode<BoolT>, TNode<BoolT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(remainingGPRegs, remainingFPRegs, hasSmallSlot, smallSlotLast, stackSlots);
+  }
+};
+struct TorqueStructLocationAllocator_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> remainingGPRegs;
+  TNode<IntPtrT> remainingFPRegs;
+  TNode<IntPtrT> nextGPReg;
+  TNode<IntPtrT> nextFPReg;
+  TNode<IntPtrT> nextStack;
+  TNode<IntPtrT> stackStart;
+  TNode<IntPtrT> smallSlot;
+  TNode<BoolT> smallSlotLast;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<BoolT>> Flatten() const {
+    return std::make_tuple(object, remainingGPRegs, remainingFPRegs, nextGPReg, nextFPReg, nextStack, stackStart, smallSlot, smallSlotLast);
+  }
+};
 struct TorqueStructTargetAndInstance_0 {
   TNode<RawPtrT> target;
   TNode<HeapObject> instance;
@@ -481,12 +586,12 @@ struct TorqueStructTargetAndInstance_0 {
   }
 };
 struct TorqueStructTwoByteToOneByteIterator_0 {
-  TNode<WasmArray> array;
-  TNode<IntPtrT> offset;
-  TNode<IntPtrT> end_offset;
+  TNode<Object> object;
+  TNode<IntPtrT> start;
+  TNode<IntPtrT> end;
 
-  std::tuple<TNode<WasmArray>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(array, offset, end_offset);
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, start, end);
   }
 };
 struct TorqueStructNewPositionAndBytesWritten_0 {
@@ -495,6 +600,17 @@ struct TorqueStructNewPositionAndBytesWritten_0 {
 
   std::tuple<TNode<UintPtrT>, TNode<UintPtrT>> Flatten() const {
     return std::make_tuple(newPosition, bytesWritten);
+  }
+};
+struct TorqueStructWasmToJSResult {
+  TNode<IntPtrT> popCount;
+  TNode<IntPtrT> result0;
+  TNode<IntPtrT> result1;
+  TNode<Float64T> result2;
+  TNode<Float64T> result3;
+
+  std::tuple<TNode<IntPtrT>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<Float64T>, TNode<Float64T>> Flatten() const {
+    return std::make_tuple(popCount, result0, result1, result2, result3);
   }
 };
 struct TorqueStructReference_char8_0 {
@@ -615,6 +731,15 @@ struct TorqueStructSliceIterator_char16_ConstReference_char16_0 {
 
   std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
     return std::make_tuple(object, start, end);
+  }
+};
+struct TorqueStructReference_intptr_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
   }
 };
 struct TorqueStructSlice_Object_MutableReference_Object_0 {
@@ -951,7 +1076,7 @@ struct TorqueStructSlice_uint8_MutableReference_uint8_0 {
     return std::make_tuple(object, offset, length);
   }
 };
-struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0 {
+struct TorqueStructReference_ExternalPointer_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -960,7 +1085,26 @@ struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_MutableReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0 {
+struct TorqueStructSlice_ExternalPointer_MutableReference_ExternalPointer_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TNode<IntPtrT> length;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset, length);
+  }
+};
+struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_MutableReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TNode<IntPtrT> length;
@@ -1275,7 +1419,17 @@ struct TorqueStructSliceIterator_uint8_MutableReference_uint8_0 {
     return std::make_tuple(object, start, end);
   }
 };
-struct TorqueStructSliceIterator_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_MutableReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0 {
+struct TorqueStructSliceIterator_ExternalPointer_MutableReference_ExternalPointer_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> start;
+  TNode<IntPtrT> end;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, start, end);
+  }
+};
+struct TorqueStructSliceIterator_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_MutableReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0 {
   TNode<Object> object;
   TNode<IntPtrT> start;
   TNode<IntPtrT> end;
@@ -1479,6 +1633,15 @@ struct TorqueStructReference_SymbolFlags_0 {
     return std::make_tuple(object, offset);
   }
 };
+struct TorqueStructReference_SharedFunctionInfo_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
 struct TorqueStructReference_JSReceiver_OR_Map_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
@@ -1542,16 +1705,7 @@ struct TorqueStructReference_Undefined_OR_JSFinalizationRegistry_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_SharedFunctionInfo_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_AccessorInfo_OR_Weak_Map_OR_AccessorPair_OR_ClassPositions_0 {
+struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_AccessorInfo_OR_Weak_Map_OR_AccessorPair_OR_ClassPositions_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -1587,7 +1741,7 @@ struct TorqueStructReference_Smi_OR_FixedArrayBase_OR_PropertyArray_OR_SwissName
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_SourceTextModule_0 {
+struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_SourceTextModule_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -1597,33 +1751,6 @@ struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String
   }
 };
 struct TorqueStructReference_FeedbackCell_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_Undefined_OR_DebugInfo_OR_Script_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_SmiTagged_DebugInfoFlags_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_Undefined_OR_CoverageInfo_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -1722,7 +1849,7 @@ struct TorqueStructReference_Zero_OR_PromiseReaction_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_PromiseReaction_0 {
+struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_PromiseReaction_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -1847,9 +1974,9 @@ struct TorqueStructConstantIterator_Smi_0 {
   }
 };
 struct TorqueStructConstantIterator_TheHole_0 {
-  TNode<HeapObject> value;
+  TNode<Hole> value;
 
-  std::tuple<TNode<HeapObject>> Flatten() const {
+  std::tuple<TNode<Hole>> Flatten() const {
     return std::make_tuple(value);
   }
 };
@@ -1857,7 +1984,7 @@ struct TorqueStructIteratorSequence_Object_SliceIterator_Object_MutableReference
   TorqueStructSliceIterator_Object_MutableReference_Object_0 first;
   TorqueStructConstantIterator_TheHole_0 second;
 
-  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<HeapObject>> Flatten() const {
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>, TNode<Hole>> Flatten() const {
     return std::make_tuple(first.object, first.start, first.end, second.value);
   }
 };
@@ -2066,6 +2193,98 @@ struct TorqueStructReference_CanUseSameAccessorFn_0 {
     return std::make_tuple(object, offset);
   }
 };
+struct TorqueStructReference_RawPtr_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructSlice_int32_ConstReference_int32_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TNode<IntPtrT> length;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset, length);
+  }
+};
+struct TorqueStructSliceIterator_int32_ConstReference_int32_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> start;
+  TNode<IntPtrT> end;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, start, end);
+  }
+};
+struct TorqueStructReference_WasmInstanceObject_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_WasmInternalFunction_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_bool_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_RawPtr_intptr_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_int16_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_float32_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_uintptr_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
 struct TorqueStructReference_Undefined_OR_JSFunction_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
@@ -2093,7 +2312,7 @@ struct TorqueStructReference_Code_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_ScopeInfo_0 {
+struct TorqueStructReference_PodArrayOfWasmValueType_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2102,7 +2321,16 @@ struct TorqueStructReference_ScopeInfo_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_ExternalPointer_0 {
+struct TorqueStructReference_Undefined_OR_WasmInstanceObject_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_ScopeInfo_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2147,24 +2375,6 @@ struct TorqueStructReference_Smi_OR_TransitionArray_OR_Map_OR_Weak_Map_OR_Protot
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_uintptr_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_RawPtr_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
 struct TorqueStructReference_Smi_OR_Code_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
@@ -2175,6 +2385,15 @@ struct TorqueStructReference_Smi_OR_Code_0 {
   }
 };
 struct TorqueStructReference_AllocationSite_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_FunctionTemplateInfo_OR_ObjectTemplateInfo_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2282,7 +2501,7 @@ struct TorqueStructReference_SmiTagged_DebuggerHints_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_Undefined_OR_Script_0 {
+struct TorqueStructReference_Undefined_OR_BytecodeArray_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2291,7 +2510,16 @@ struct TorqueStructReference_Undefined_OR_Script_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_Undefined_OR_BytecodeArray_0 {
+struct TorqueStructReference_SmiTagged_DebugInfoFlags_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_Undefined_OR_CoverageInfo_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2318,7 +2546,7 @@ struct TorqueStructReference_SmiTagged_StackFrameInfoFlags_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_FixedArray_0 {
+struct TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_FixedArray_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2705,7 +2933,7 @@ struct TorqueStructReference_String_OR_NoSharedNameSentinel_OR_ScopeInfo_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_int16_0 {
+struct TorqueStructReference_Undefined_OR_Script_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -2984,34 +3212,7 @@ struct TorqueStructReference_SmiTagged_JSSegmentsFlags_0 {
     return std::make_tuple(object, offset);
   }
 };
-struct TorqueStructReference_Undefined_OR_WasmInstanceObject_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_WasmInternalFunction_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_WasmInstanceObject_0 {
-  TNode<Object> object;
-  TNode<IntPtrT> offset;
-  TorqueStructUnsafe_0 unsafeMarker;
-
-  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
-    return std::make_tuple(object, offset);
-  }
-};
-struct TorqueStructReference_PodArrayOfWasmValueType_0 {
+struct TorqueStructReference_Smi_OR_WasmInternalFunction_OR_Tuple2_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;
@@ -3021,6 +3222,15 @@ struct TorqueStructReference_PodArrayOfWasmValueType_0 {
   }
 };
 struct TorqueStructReference_WasmSuspenderObject_0 {
+  TNode<Object> object;
+  TNode<IntPtrT> offset;
+  TorqueStructUnsafe_0 unsafeMarker;
+
+  std::tuple<TNode<Object>, TNode<IntPtrT>> Flatten() const {
+    return std::make_tuple(object, offset);
+  }
+};
+struct TorqueStructReference_ExternalPointerArray_0 {
   TNode<Object> object;
   TNode<IntPtrT> offset;
   TorqueStructUnsafe_0 unsafeMarker;

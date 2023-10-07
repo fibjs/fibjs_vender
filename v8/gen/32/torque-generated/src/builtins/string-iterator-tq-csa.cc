@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-iterator-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -200,14 +201,14 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Branch(tmp9, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp10;
-  TNode<Oddball> tmp11;
+  TNode<Undefined> tmp10;
+  TNode<True> tmp11;
   TNode<JSObject> tmp12;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp10 = Undefined_0(state_);
     tmp11 = True_0(state_);
-    tmp12 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp10}, TNode<Oddball>{tmp11});
+    tmp12 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp10}, TNode<Boolean>{tmp11});
     CodeStubAssembler(state_).Return(tmp12);
   }
 
@@ -217,7 +218,7 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
   TNode<IntPtrT> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<Smi> tmp18;
-  TNode<Oddball> tmp19;
+  TNode<False> tmp19;
   TNode<JSObject> tmp20;
   if (block6.is_used()) {
     ca_.Bind(&block6);
@@ -229,12 +230,12 @@ TF_BUILTIN(StringIteratorPrototypeNext, CodeStubAssembler) {
     tmp18 = CodeStubAssembler(state_).SmiTag(TNode<IntPtrT>{tmp17});
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp15}, tmp18);
     tmp19 = False_0(state_);
-    tmp20 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp14}, TNode<Oddball>{tmp19});
+    tmp20 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp14}, TNode<Boolean>{tmp19});
     CodeStubAssembler(state_).Return(tmp20);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-iterator.tq?l=30&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-iterator.tq?l=31&c=20
 TNode<JSStringIterator> Cast_JSStringIterator_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

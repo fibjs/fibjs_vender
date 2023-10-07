@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -147,7 +148,7 @@ TNode<FixedArrayBase> Extract_1(compiler::CodeAssemblerState* state_, TNode<Cont
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp6 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_resultCapacity});
-    tmp7 = CodeStubAssembler(state_).AllocateFixedDoubleArrayWithHoles(TNode<IntPtrT>{tmp6}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp7 = CodeStubAssembler(state_).AllocateFixedDoubleArrayWithHoles(TNode<IntPtrT>{tmp6});
     ca_.Goto(&block1, tmp7);
   }
 
@@ -161,7 +162,7 @@ TNode<FixedArrayBase> Extract_1(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<FixedArrayBase>{phi_bb1_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=126&c=1
 TNode<Int32T> TransitionElementsKindForInsertionIfNeeded_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_a, TNode<Int32T> p_originalElementsKind, TorqueStructArguments p_args, IntegerLiteral p_argsStart) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -351,7 +352,7 @@ TNode<Int32T> TransitionElementsKindForInsertionIfNeeded_0(compiler::CodeAssembl
   return TNode<Int32T>{phi_bb26_7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=161&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=160&c=1
 TNode<Object> FastArraySplice_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSReceiver> p_o, TNode<Number> p_originalLengthNumber, TNode<Number> p_actualStartNumber, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCountNumber, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -632,7 +633,7 @@ TNode<Object> FastArraySplice_0(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<Object>{tmp26};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=213&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=212&c=1
 TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount, TNode<JSReceiver> p_a) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -662,13 +663,13 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
 
   TNode<Number> phi_bb2_5;
   TNode<Number> tmp2;
-  TNode<Oddball> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<Boolean> tmp3;
+  TNode<True> tmp4;
   TNode<BoolT> tmp5;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_5);
     tmp2 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{p_actualStart}, TNode<Number>{phi_bb2_5});
-    tmp3 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp2);
+    tmp3 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp2);
     tmp4 = True_0(state_);
     tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp3}, TNode<HeapObject>{tmp4});
     ca_.Branch(tmp5, &block5, std::vector<compiler::Node*>{phi_bb2_5}, &block6, std::vector<compiler::Node*>{phi_bb2_5});
@@ -708,7 +709,7 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
   return TNode<Object>{p_a};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=246&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=245&c=1
 void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_itemCount, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -743,14 +744,14 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
   TNode<Number> phi_bb2_6;
   TNode<Number> tmp2;
   TNode<Number> tmp3;
-  TNode<Oddball> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Boolean> tmp4;
+  TNode<True> tmp5;
   TNode<BoolT> tmp6;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_6);
     tmp2 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_actualDeleteCount});
     tmp3 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_itemCount});
-    tmp4 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp2);
+    tmp4 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp2);
     tmp5 = True_0(state_);
     tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{tmp5});
     ca_.Branch(tmp6, &block5, std::vector<compiler::Node*>{phi_bb2_6}, &block6, std::vector<compiler::Node*>{phi_bb2_6});
@@ -768,11 +769,11 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
 
   TNode<Number> phi_bb6_6;
   TNode<Smi> tmp9;
-  TNode<Oddball> tmp10;
+  TNode<Boolean> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_6);
     tmp9 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp10 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp3, tmp9);
+    tmp10 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp3, tmp9);
     ca_.Goto(&block7, phi_bb6_6);
   }
 
@@ -808,7 +809,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
   TNode<Number> tmp16;
   TNode<Number> tmp17;
   TNode<Smi> tmp18;
-  TNode<Oddball> tmp19;
+  TNode<Boolean> tmp19;
   TNode<Number> tmp20;
   TNode<Number> tmp21;
   if (block8.is_used()) {
@@ -816,7 +817,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     tmp16 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp17 = CodeStubAssembler(state_).NumberSub(TNode<Number>{phi_bb8_6}, TNode<Number>{tmp16});
     tmp18 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp19 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp17, tmp18);
+    tmp19 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp17, tmp18);
     tmp20 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp21 = CodeStubAssembler(state_).NumberSub(TNode<Number>{phi_bb8_6}, TNode<Number>{tmp20});
     ca_.Goto(&block10, tmp21);
@@ -831,7 +832,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     ca_.Bind(&block11);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=294&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=293&c=1
 void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_itemCount, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -867,8 +868,8 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   TNode<Number> tmp5;
   TNode<Number> tmp6;
   TNode<Number> tmp7;
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Boolean> tmp8;
+  TNode<True> tmp9;
   TNode<BoolT> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_6);
@@ -878,7 +879,7 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
     tmp5 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_itemCount});
     tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp5}, TNode<Number>{tmp6});
-    tmp8 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp4);
+    tmp8 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp4);
     tmp9 = True_0(state_);
     tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
     ca_.Branch(tmp10, &block5, std::vector<compiler::Node*>{phi_bb2_6}, &block6, std::vector<compiler::Node*>{phi_bb2_6});
@@ -896,11 +897,11 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
 
   TNode<Number> phi_bb6_6;
   TNode<Smi> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<Boolean> tmp14;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_6);
     tmp13 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp14 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp7, tmp13);
+    tmp14 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp7, tmp13);
     ca_.Goto(&block7, phi_bb6_6);
   }
 
@@ -923,7 +924,7 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=331&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=330&c=1
 TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_arguments, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_actualStart, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1235,7 +1236,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=138&c=40
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=137&c=40
 TNode<HeapObject> UnsafeCast_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1254,7 +1255,7 @@ TNode<HeapObject> UnsafeCast_HeapObject_0(compiler::CodeAssemblerState* state_, 
   return TNode<HeapObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=154&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=153&c=47
 TNode<Int32T> Convert_int32_ElementsKind_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1271,7 +1272,7 @@ TNode<Int32T> Convert_int32_ElementsKind_0(compiler::CodeAssemblerState* state_,
   return TNode<Int32T>{p_i};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=201&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=200&c=5
 void FastSplice_FixedArray_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSArray> p_a, TNode<Smi> p_length, TNode<Smi> p_newLength, TNode<Smi> p_actualStart, TNode<Smi> p_insertCount, TNode<Smi> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1421,7 +1422,7 @@ void FastSplice_FixedArray_JSAny_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block14);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=205&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=204&c=5
 void FastSplice_FixedDoubleArray_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSArray> p_a, TNode<Smi> p_length, TNode<Smi> p_newLength, TNode<Smi> p_actualStart, TNode<Smi> p_insertCount, TNode<Smi> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1571,7 +1572,7 @@ void FastSplice_FixedDoubleArray_Number_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block14);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=96&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=95&c=7
 void DoMoveElements_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_elements, TNode<Smi> p_dstIndex, TNode<Smi> p_srcIndex, TNode<Smi> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1594,7 +1595,7 @@ void DoMoveElements_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Fix
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=98&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=97&c=7
 void StoreHoles_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_elements, TNode<Smi> p_holeStartIndex, TNode<Smi> p_holeEndIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1638,7 +1639,7 @@ void StoreHoles_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<FixedAr
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=111&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=110&c=11
 void DoCopyElements_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_dstElements, TNode<Smi> p_dstIndex, TNode<FixedArray> p_srcElements, TNode<Smi> p_srcIndex, TNode<Smi> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1661,7 +1662,7 @@ void DoCopyElements_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Fix
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=90&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=89&c=22
 TNode<FixedArrayBase> UnsafeCast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1680,7 +1681,7 @@ TNode<FixedArrayBase> UnsafeCast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler:
   return TNode<FixedArrayBase>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=96&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=95&c=7
 void DoMoveElements_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_dstIndex, TNode<Smi> p_srcIndex, TNode<Smi> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1703,7 +1704,7 @@ void DoMoveElements_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=98&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=97&c=7
 void StoreHoles_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_holeStartIndex, TNode<Smi> p_holeEndIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1747,7 +1748,7 @@ void StoreHoles_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<F
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=111&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=110&c=11
 void DoCopyElements_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_dstElements, TNode<Smi> p_dstIndex, TNode<FixedDoubleArray> p_srcElements, TNode<Smi> p_srcIndex, TNode<Smi> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

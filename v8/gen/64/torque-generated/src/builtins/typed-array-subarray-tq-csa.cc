@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-subarray-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -160,7 +161,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
   TNode<UintPtrT> phi_bb5_8;
   TNode<IntPtrT> tmp6;
   TNode<Object> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<Undefined> tmp8;
   TNode<BoolT> tmp9;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_8);
@@ -188,7 +189,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
   TNode<UintPtrT> phi_bb11_10;
   TNode<IntPtrT> tmp12;
   TNode<Object> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<Undefined> tmp14;
   TNode<BoolT> tmp15;
   TNode<BoolT> tmp16;
   if (block11.is_used()) {
@@ -221,7 +222,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
     ca_.Branch(phi_bb17_15, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp19;
+  TNode<Undefined> tmp19;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp19 = Undefined_0(state_);

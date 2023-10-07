@@ -1,7 +1,7 @@
 class JSCollator;
-// Alias for HeapObject::IsJSCollator() that avoids inlining.
+// Alias for IsJSCollator() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsJSCollator_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSCollator_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1
 template <class D, class P>
@@ -18,32 +18,32 @@ class TorqueGeneratedJSCollator : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSCollator<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
-  inline Foreign icu_collator() const;
+  inline Tagged<Foreign> icu_collator() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
-  inline Foreign icu_collator(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> icu_collator(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
-  inline void set_icu_collator(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_icu_collator(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSFunction)
+  // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
-  inline HeapObject bound_compare() const;
+  inline Tagged<HeapObject> bound_compare() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
-  inline HeapObject bound_compare(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> bound_compare(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
-  inline void set_bound_compare(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_compare(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
-  inline String locale() const;
+  inline Tagged<String> locale() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
-  inline String locale(PtrComprCageBase cage_base) const;
+  inline Tagged<String> locale(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
-  inline void set_locale(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_locale(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSCollator)
@@ -78,6 +78,8 @@ class TorqueGeneratedJSCollator : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSCollator(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSCollator(Address ptr);
 };
 

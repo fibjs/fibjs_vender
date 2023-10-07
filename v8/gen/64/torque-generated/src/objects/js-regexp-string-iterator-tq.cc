@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1
-bool IsJSRegExpStringIterator_NonInline(HeapObject o) {
-  return o.IsJSRegExpStringIterator();
+bool IsJSRegExpStringIterator_NonInline(Tagged<HeapObject> o) {
+  return IsJSRegExpStringIterator(o);
 }
 
 #ifdef VERIFY_HEAP

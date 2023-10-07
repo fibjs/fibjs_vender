@@ -1,8 +1,8 @@
 class AlwaysSharedSpaceJSObject;
 class JSSharedStruct;
-// Alias for HeapObject::IsAlwaysSharedSpaceJSObject() that avoids inlining.
+// Alias for IsAlwaysSharedSpaceJSObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
-V8_EXPORT_PRIVATE bool IsAlwaysSharedSpaceJSObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsAlwaysSharedSpaceJSObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
 template <class D, class P>
@@ -19,10 +19,10 @@ class TorqueGeneratedAlwaysSharedSpaceJSObject : public P {
   using TorqueGeneratedClass = TorqueGeneratedAlwaysSharedSpaceJSObject<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -46,14 +46,16 @@ class TorqueGeneratedAlwaysSharedSpaceJSObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAlwaysSharedSpaceJSObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAlwaysSharedSpaceJSObject(Address ptr);
 };
 
-// Alias for HeapObject::IsJSSharedStruct() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
-V8_EXPORT_PRIVATE bool IsJSSharedStruct_NonInline(HeapObject o);
+// Alias for IsJSSharedStruct() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
+V8_EXPORT_PRIVATE bool IsJSSharedStruct_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
 template <class D, class P>
 class TorqueGeneratedJSSharedStruct : public P {
   static_assert(
@@ -67,17 +69,17 @@ class TorqueGeneratedJSSharedStruct : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSSharedStruct<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSSharedStruct)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
   V8_EXPORT_PRIVATE void JSSharedStructVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -97,6 +99,8 @@ class TorqueGeneratedJSSharedStruct : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSSharedStruct(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSSharedStruct(Address ptr);
 };
 

@@ -1,7 +1,7 @@
 class JSRegExpStringIterator;
-// Alias for HeapObject::IsJSRegExpStringIterator() that avoids inlining.
+// Alias for IsJSRegExpStringIterator() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1
-V8_EXPORT_PRIVATE bool IsJSRegExpStringIterator_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSRegExpStringIterator_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1
 template <class D, class P>
@@ -18,18 +18,18 @@ class TorqueGeneratedJSRegExpStringIterator : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRegExpStringIterator<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=13&c=3
-  inline JSReceiver iterating_reg_exp() const;
+  inline Tagged<JSReceiver> iterating_reg_exp() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=13&c=3
-  inline JSReceiver iterating_reg_exp(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> iterating_reg_exp(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=13&c=3
-  inline void set_iterating_reg_exp(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_iterating_reg_exp(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=15&c=3
-  inline String iterated_string() const;
+  inline Tagged<String> iterated_string() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=15&c=3
-  inline String iterated_string(PtrComprCageBase cage_base) const;
+  inline Tagged<String> iterated_string(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=15&c=3
-  inline void set_iterated_string(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_iterated_string(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=16&c=3
   inline int flags() const;
@@ -37,10 +37,10 @@ class TorqueGeneratedJSRegExpStringIterator : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=11&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRegExpStringIterator)
@@ -75,6 +75,8 @@ class TorqueGeneratedJSRegExpStringIterator : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRegExpStringIterator(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRegExpStringIterator(Address ptr);
 };
 

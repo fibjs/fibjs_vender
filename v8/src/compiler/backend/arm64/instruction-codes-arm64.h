@@ -206,6 +206,7 @@ namespace compiler {
   V(Arm64LdarDecompressTaggedSigned)                 \
   V(Arm64LdarDecompressTagged)                       \
   V(Arm64StlrCompressTagged)                         \
+  V(Arm64StrIndirectPointer)                         \
   V(Arm64LdrDecodeSandboxedPointer)                  \
   V(Arm64StrEncodeSandboxedPointer)                  \
   V(Arm64DmbIsh)                                     \
@@ -307,7 +308,6 @@ namespace compiler {
   V(Arm64I8x16UConvertI16x8)                         \
   V(Arm64I8x16BitMask)                               \
   V(Arm64S128Const)                                  \
-  V(Arm64S128Zero)                                   \
   V(Arm64S128Dup)                                    \
   V(Arm64S128And)                                    \
   V(Arm64S128Or)                                     \

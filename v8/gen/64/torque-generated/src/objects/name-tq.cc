@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
-bool IsName_NonInline(HeapObject o) {
-  return o.IsName();
+bool IsName_NonInline(Tagged<HeapObject> o) {
+  return IsName(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedName<Name, PrimitiveHeapObject>::NameVerify(Isolate* isolate
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=29&c=1
-bool IsSymbol_NonInline(HeapObject o) {
-  return o.IsSymbol();
+bool IsSymbol_NonInline(Tagged<HeapObject> o) {
+  return IsSymbol(o);
 }
 
 #ifdef VERIFY_HEAP

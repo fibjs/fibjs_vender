@@ -1,7 +1,7 @@
 class Foreign;
-// Alias for HeapObject::IsForeign() that avoids inlining.
+// Alias for IsForeign() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsForeign_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsForeign_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1
 template <class D, class P>
@@ -18,10 +18,10 @@ class TorqueGeneratedForeign : public P {
   using TorqueGeneratedClass = TorqueGeneratedForeign<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(Foreign)
@@ -63,6 +63,8 @@ class TorqueGeneratedForeign : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedForeign(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedForeign(Address ptr);
 };
 

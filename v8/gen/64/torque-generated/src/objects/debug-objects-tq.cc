@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=5&c=1
-bool IsBreakPoint_NonInline(HeapObject o) {
-  return o.IsBreakPoint();
+bool IsBreakPoint_NonInline(Tagged<HeapObject> o) {
+  return IsBreakPoint(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedBreakPoint<BreakPoint, Struct>::BreakPointVerify(Isolate* is
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=10&c=1
-bool IsBreakPointInfo_NonInline(HeapObject o) {
-  return o.IsBreakPointInfo();
+bool IsBreakPointInfo_NonInline(Tagged<HeapObject> o) {
+  return IsBreakPointInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedBreakPointInfo<BreakPointInfo, Struct>::BreakPointInfoVerify
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=33&c=1
-bool IsDebugInfo_NonInline(HeapObject o) {
-  return o.IsDebugInfo();
+bool IsDebugInfo_NonInline(Tagged<HeapObject> o) {
+  return IsDebugInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -48,9 +48,9 @@ void TorqueGeneratedDebugInfo<DebugInfo, Struct>::DebugInfoVerify(Isolate* isola
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=1
-bool IsCoverageInfo_NonInline(HeapObject o) {
-  return o.IsCoverageInfo();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=1
+bool IsCoverageInfo_NonInline(Tagged<HeapObject> o) {
+  return IsCoverageInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -62,9 +62,9 @@ void TorqueGeneratedCoverageInfo<CoverageInfo, HeapObject>::CoverageInfoVerify(I
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=76&c=1
-bool IsStackFrameInfo_NonInline(HeapObject o) {
-  return o.IsStackFrameInfo();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=74&c=1
+bool IsStackFrameInfo_NonInline(Tagged<HeapObject> o) {
+  return IsStackFrameInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -76,9 +76,9 @@ void TorqueGeneratedStackFrameInfo<StackFrameInfo, Struct>::StackFrameInfoVerify
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=1
-bool IsErrorStackData_NonInline(HeapObject o) {
-  return o.IsErrorStackData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=115&c=1
+bool IsErrorStackData_NonInline(Tagged<HeapObject> o) {
+  return IsErrorStackData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -90,9 +90,9 @@ void TorqueGeneratedErrorStackData<ErrorStackData, Struct>::ErrorStackDataVerify
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=131&c=1
-bool IsPromiseOnStack_NonInline(HeapObject o) {
-  return o.IsPromiseOnStack();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=129&c=1
+bool IsPromiseOnStack_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseOnStack(o);
 }
 
 #ifdef VERIFY_HEAP

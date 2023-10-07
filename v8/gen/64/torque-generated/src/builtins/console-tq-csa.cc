@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/console-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -106,7 +107,7 @@ USE(parameter3);
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<Undefined> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = Undefined_0(state_);

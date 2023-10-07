@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-bool IsJSV8BreakIterator_NonInline(HeapObject o) {
-  return o.IsJSV8BreakIterator();
+bool IsJSV8BreakIterator_NonInline(Tagged<HeapObject> o) {
+  return IsJSV8BreakIterator(o);
 }
 
 #ifdef VERIFY_HEAP

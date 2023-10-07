@@ -8,16 +8,15 @@ MaybeObject TorqueGeneratedMegaDomHandler<D, P>::accessor() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedMegaDomHandler<D, P>::accessor(PtrComprCageBase cage_base) const {
-  MaybeObject value;
-  value = TaggedField<MaybeObject>::load(cage_base, *this, kAccessorOffset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, kAccessorOffset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
 template<class D, class P>
 void TorqueGeneratedMegaDomHandler<D, P>::set_accessor(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   RELAXED_WRITE_WEAK_FIELD(*this, kAccessorOffset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kAccessorOffset, value, mode);
 }
@@ -32,24 +31,23 @@ MaybeObject TorqueGeneratedMegaDomHandler<D, P>::context() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedMegaDomHandler<D, P>::context(PtrComprCageBase cage_base) const {
-  MaybeObject value;
-  value = TaggedField<MaybeObject>::load(cage_base, *this, kContextOffset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, kContextOffset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedMegaDomHandler<D, P>::set_context(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   RELAXED_WRITE_WEAK_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedMegaDomHandler<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedMegaDomHandler<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

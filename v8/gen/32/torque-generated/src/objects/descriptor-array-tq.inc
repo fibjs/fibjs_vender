@@ -1,8 +1,8 @@
 class EnumCache;
 class DescriptorArray;
-// Alias for HeapObject::IsEnumCache() that avoids inlining.
+// Alias for IsEnumCache() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsEnumCache_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsEnumCache_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=5&c=1
 template <class D, class P>
@@ -19,24 +19,24 @@ class TorqueGeneratedEnumCache : public P {
   using TorqueGeneratedClass = TorqueGeneratedEnumCache<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=6&c=3
-  inline FixedArray keys() const;
+  inline Tagged<FixedArray> keys() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=6&c=3
-  inline FixedArray keys(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> keys(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=6&c=3
-  inline void set_keys(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_keys(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=7&c=3
-  inline FixedArray indices() const;
+  inline Tagged<FixedArray> indices() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=7&c=3
-  inline FixedArray indices(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> indices(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=7&c=3
-  inline void set_indices(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_indices(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(EnumCache)
@@ -81,12 +81,14 @@ class TorqueGeneratedEnumCache : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedEnumCache(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedEnumCache(Address ptr);
 };
 
-// Alias for HeapObject::IsDescriptorArray() that avoids inlining.
+// Alias for IsDescriptorArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
-V8_EXPORT_PRIVATE bool IsDescriptorArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsDescriptorArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
 template <class D, class P>
@@ -118,29 +120,29 @@ class TorqueGeneratedDescriptorArray : public P {
   inline void set_raw_gc_state(uint32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
-  inline EnumCache enum_cache() const;
+  inline Tagged<EnumCache> enum_cache() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
-  inline EnumCache enum_cache(PtrComprCageBase cage_base) const;
+  inline Tagged<EnumCache> enum_cache(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=3
-  inline void set_enum_cache(EnumCache value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_enum_cache(Tagged<EnumCache> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class Name | Undefined)
+  // Torque type: (class Name | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
-  inline PrimitiveHeapObject descriptors_key(int i) const;
+  inline Tagged<PrimitiveHeapObject> descriptors_key(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
-  inline PrimitiveHeapObject descriptors_key(PtrComprCageBase cage_base, int i) const;
+  inline Tagged<PrimitiveHeapObject> descriptors_key(PtrComprCageBase cage_base, int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
-  inline void set_descriptors_key(int i, PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_descriptors_key(int i, Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | Undefined)
+  // Torque type: (Smi | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
-  inline Object descriptors_details(int i) const;
+  inline Tagged<Object> descriptors_details(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
-  inline Object descriptors_details(PtrComprCageBase cage_base, int i) const;
+  inline Tagged<Object> descriptors_details(PtrComprCageBase cage_base, int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
-  inline void set_descriptors_details(int i, Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_descriptors_details(int i, Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | True | False | Null | Undefined | class AccessorInfo | Weak<class Map> | class AccessorPair | class ClassPositions)
+  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | class AccessorInfo | Weak<class Map> | class AccessorPair | class ClassPositions)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
   inline MaybeObject descriptors_value(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=26&c=3
@@ -149,10 +151,10 @@ class TorqueGeneratedDescriptorArray : public P {
   inline void set_descriptors_value(int i, MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(DescriptorArray)
@@ -205,6 +207,8 @@ class TorqueGeneratedDescriptorArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedDescriptorArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedDescriptorArray(Address ptr);
 };
 

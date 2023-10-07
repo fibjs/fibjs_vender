@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-map-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -171,7 +172,8 @@ TF_BUILTIN(ArrayMapPreLoopLazyDeoptContinuation, CodeStubAssembler) {
 
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{parameter2});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<Smi> tmp8;
@@ -476,8 +478,8 @@ TF_BUILTIN(ArrayMapLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb1_8;
-  TNode<Oddball> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Boolean> tmp1;
+  TNode<True> tmp2;
   TNode<BoolT> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_8);
@@ -516,7 +518,7 @@ TF_BUILTIN(ArrayMapLoopContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=180&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=178&c=1
 TorqueStructVector_0 NewVector_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Smi> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -541,7 +543,7 @@ TorqueStructVector_0 NewVector_0(compiler::CodeAssemblerState* state_, TNode<Con
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp2 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{p_length});
-    tmp3 = CodeStubAssembler(state_).AllocateFixedArrayWithHoles(TNode<IntPtrT>{tmp2}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp3 = CodeStubAssembler(state_).AllocateFixedArrayWithHoles(TNode<IntPtrT>{tmp2});
     ca_.Goto(&block4, tmp3);
   }
 
@@ -568,7 +570,7 @@ TorqueStructVector_0 NewVector_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TorqueStructVector_0{TNode<FixedArray>{phi_bb4_2}, TNode<BoolT>{tmp5}, TNode<BoolT>{tmp6}, TNode<BoolT>{tmp7}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=193&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=190&c=1
 TNode<JSArray> FastArrayMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_fastO, TNode<Smi> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<JSArray>* label_Bailout_parameter_0, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1326,7 +1328,7 @@ TNode<JSArray> FastArrayMap_0(compiler::CodeAssemblerState* state_, TNode<Contex
   if (block79.is_used()) {
     ca_.Bind(&block79, &phi_bb79_5, &phi_bb79_7, &phi_bb79_11, &phi_bb79_12, &phi_bb79_13, &phi_bb79_14, &phi_bb79_15, &phi_bb79_18);
     tmp82 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{tmp71});
-    tmp83 = CodeStubAssembler(state_).AllocateFixedDoubleArrayWithHoles(TNode<IntPtrT>{tmp82}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp83 = CodeStubAssembler(state_).AllocateFixedDoubleArrayWithHoles(TNode<IntPtrT>{tmp82});
     tmp84 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp80}, TNode<FixedArrayBase>{tmp5});
     tmp85 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block84, phi_bb79_5, phi_bb79_7, phi_bb79_11, phi_bb79_12, phi_bb79_13, phi_bb79_14, phi_bb79_15, phi_bb79_18, tmp85);
@@ -1714,7 +1716,7 @@ TNode<JSArray> FastArrayMap_0(compiler::CodeAssemblerState* state_, TNode<Contex
   if (block121.is_used()) {
     ca_.Bind(&block121, &phi_bb121_5, &phi_bb121_7, &phi_bb121_11, &phi_bb121_12, &phi_bb121_13);
     tmp128 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{tmp67});
-    tmp129 = CodeStubAssembler(state_).AllocateFixedDoubleArrayWithHoles(TNode<IntPtrT>{tmp128}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp129 = CodeStubAssembler(state_).AllocateFixedDoubleArrayWithHoles(TNode<IntPtrT>{tmp128});
     tmp130 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp126}, TNode<FixedArrayBase>{tmp5});
     tmp131 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block126, phi_bb121_5, phi_bb121_7, phi_bb121_11, phi_bb121_12, phi_bb121_13, tmp131);
@@ -2098,11 +2100,12 @@ TF_BUILTIN(ArrayMap, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp23 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp24 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp23});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp24});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp24);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=137&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=135&c=13
 TNode<Object> UnsafeCast_Smi_OR_HeapNumber_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2121,7 +2124,7 @@ TNode<Object> UnsafeCast_Smi_OR_HeapNumber_OR_TheHole_0(compiler::CodeAssemblerS
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=256&c=37
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-map.tq?l=252&c=37
 TNode<JSArray> Cast_FastJSArrayForRead_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

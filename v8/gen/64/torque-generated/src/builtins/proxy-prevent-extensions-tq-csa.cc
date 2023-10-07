@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-prevent-extensions-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -82,7 +83,7 @@ TF_BUILTIN(ProxyPreventExtensions, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSProxy> parameter1 = UncheckedParameter<JSProxy>(Descriptor::kProxy);
   USE(parameter1);
-  TNode<Oddball> parameter2 = UncheckedParameter<Oddball>(Descriptor::kDoThrow);
+  TNode<Boolean> parameter2 = UncheckedParameter<Boolean>(Descriptor::kDoThrow);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -137,7 +138,7 @@ TF_BUILTIN(ProxyPreventExtensions, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp8;
+  TNode<True> tmp8;
   TNode<BoolT> tmp9;
   if (block17.is_used()) {
     ca_.Bind(&block17);
@@ -156,7 +157,7 @@ TF_BUILTIN(ProxyPreventExtensions, CodeStubAssembler) {
   }
 
   TNode<Object> tmp12;
-  TNode<Oddball> tmp13;
+  TNode<True> tmp13;
   TNode<BoolT> tmp14;
   if (block18.is_used()) {
     ca_.Bind(&block18);
@@ -171,14 +172,14 @@ TF_BUILTIN(ProxyPreventExtensions, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kProxyPreventExtensionsExtensible);
   }
 
-  TNode<Oddball> tmp15;
+  TNode<True> tmp15;
   if (block29.is_used()) {
     ca_.Bind(&block29);
     tmp15 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp15);
   }
 
-  TNode<Oddball> tmp16;
+  TNode<True> tmp16;
   TNode<BoolT> tmp17;
   if (block19.is_used()) {
     ca_.Bind(&block19);
@@ -192,7 +193,7 @@ TF_BUILTIN(ProxyPreventExtensions, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kProxyTrapReturnedFalsish, "preventExtensions");
   }
 
-  TNode<Oddball> tmp18;
+  TNode<False> tmp18;
   if (block31.is_used()) {
     ca_.Bind(&block31);
     tmp18 = False_0(state_);

@@ -1,10 +1,10 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1194&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithSmiElementsEntries(InternalClassWithSmiElements p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithStructElementsEntries(InternalClassWithStructElements p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithStructElementsMoreEntries(InternalClassWithStructElements p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
@@ -19,7 +19,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(Integer
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_InternalClassStructElement_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
@@ -28,7 +28,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceInternalClassWithSmiElementsEntries
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceInternalClassWithSmiElementsEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1194&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithSmiElementsEntries(InternalClassWithSmiElements p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -56,7 +56,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithSmiEl
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceInternalClassWithStructElementsEntries
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceInternalClassWithStructElementsEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithStructElementsEntries(InternalClassWithStructElements p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -84,7 +84,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithStruc
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceInternalClassWithStructElementsMoreEntries
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceInternalClassWithStructElementsMoreEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceInternalClassWithStructElementsMoreEntries(InternalClassWithStructElements p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -194,7 +194,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_o
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_InternalClassStructElement_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_InternalClassStructElement_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_InternalClassStructElement_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);

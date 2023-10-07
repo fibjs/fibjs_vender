@@ -1,55 +1,53 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorHelper<D, P>::underlying_object() const {
+Tagged<JSReceiver> TorqueGeneratedJSIteratorHelper<D, P>::underlying_object() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorHelper::underlying_object(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorHelper<D, P>::underlying_object(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kUnderlyingOffset + 0);
-  DCHECK(value.IsJSReceiver());
+Tagged<JSReceiver> TorqueGeneratedJSIteratorHelper<D, P>::underlying_object(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kUnderlyingOffset + 0);
+  DCHECK(IsJSReceiver(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorHelper<D, P>::set_underlying_object(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver());
+void TorqueGeneratedJSIteratorHelper<D, P>::set_underlying_object(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value));
   WRITE_FIELD(*this, kUnderlyingOffset + 0, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingOffset + 0, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorHelper<D, P>::underlying_next() const {
+Tagged<Object> TorqueGeneratedJSIteratorHelper<D, P>::underlying_next() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorHelper::underlying_next(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorHelper<D, P>::underlying_next(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kUnderlyingOffset + 8);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+Tagged<Object> TorqueGeneratedJSIteratorHelper<D, P>::underlying_next(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kUnderlyingOffset + 8);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorHelper<D, P>::set_underlying_next(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+void TorqueGeneratedJSIteratorHelper<D, P>::set_underlying_next(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   WRITE_FIELD(*this, kUnderlyingOffset + 8, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingOffset + 8, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedJSIteratorHelper<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSIteratorHelper<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -59,56 +57,54 @@ inline TorqueGeneratedJSIteratorHelper<D, P>::TorqueGeneratedJSIteratorHelper(Ad
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorMapHelper<D, P>::mapper() const {
+Tagged<JSReceiver> TorqueGeneratedJSIteratorMapHelper<D, P>::mapper() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorMapHelper::mapper(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorMapHelper<D, P>::mapper(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kMapperOffset);
-  DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+Tagged<JSReceiver> TorqueGeneratedJSIteratorMapHelper<D, P>::mapper(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kMapperOffset);
+  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorMapHelper<D, P>::set_mapper(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+void TorqueGeneratedJSIteratorMapHelper<D, P>::set_mapper(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kMapperOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMapperOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorMapHelper<D, P>::counter() const {
+Tagged<Object> TorqueGeneratedJSIteratorMapHelper<D, P>::counter() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorMapHelper::counter(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorMapHelper<D, P>::counter(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kCounterOffset);
-  DCHECK(value.IsSmi() || value.IsHeapNumber());
+Tagged<Object> TorqueGeneratedJSIteratorMapHelper<D, P>::counter(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kCounterOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorMapHelper<D, P>::set_counter(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsHeapNumber());
+void TorqueGeneratedJSIteratorMapHelper<D, P>::set_counter(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kCounterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCounterOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
 template<class D, class P>
-D TorqueGeneratedJSIteratorMapHelper<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSIteratorMapHelper<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -118,56 +114,54 @@ inline TorqueGeneratedJSIteratorMapHelper<D, P>::TorqueGeneratedJSIteratorMapHel
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorFilterHelper<D, P>::predicate() const {
+Tagged<JSReceiver> TorqueGeneratedJSIteratorFilterHelper<D, P>::predicate() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFilterHelper::predicate(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorFilterHelper<D, P>::predicate(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kPredicateOffset);
-  DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+Tagged<JSReceiver> TorqueGeneratedJSIteratorFilterHelper<D, P>::predicate(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kPredicateOffset);
+  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_predicate(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_predicate(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kPredicateOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPredicateOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorFilterHelper<D, P>::counter() const {
+Tagged<Object> TorqueGeneratedJSIteratorFilterHelper<D, P>::counter() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFilterHelper::counter(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorFilterHelper<D, P>::counter(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kCounterOffset);
-  DCHECK(value.IsSmi() || value.IsHeapNumber());
+Tagged<Object> TorqueGeneratedJSIteratorFilterHelper<D, P>::counter(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kCounterOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_counter(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsHeapNumber());
+void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_counter(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kCounterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCounterOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
 template<class D, class P>
-D TorqueGeneratedJSIteratorFilterHelper<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSIteratorFilterHelper<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -177,32 +171,31 @@ inline TorqueGeneratedJSIteratorFilterHelper<D, P>::TorqueGeneratedJSIteratorFil
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorTakeHelper<D, P>::remaining() const {
+Tagged<Object> TorqueGeneratedJSIteratorTakeHelper<D, P>::remaining() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorTakeHelper::remaining(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorTakeHelper<D, P>::remaining(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kRemainingOffset);
-  DCHECK(value.IsSmi() || value.IsHeapNumber());
+Tagged<Object> TorqueGeneratedJSIteratorTakeHelper<D, P>::remaining(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kRemainingOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorTakeHelper<D, P>::set_remaining(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsHeapNumber());
+void TorqueGeneratedJSIteratorTakeHelper<D, P>::set_remaining(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kRemainingOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRemainingOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
 template<class D, class P>
-D TorqueGeneratedJSIteratorTakeHelper<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSIteratorTakeHelper<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -212,32 +205,31 @@ inline TorqueGeneratedJSIteratorTakeHelper<D, P>::TorqueGeneratedJSIteratorTakeH
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorDropHelper<D, P>::remaining() const {
+Tagged<Object> TorqueGeneratedJSIteratorDropHelper<D, P>::remaining() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorDropHelper::remaining(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorDropHelper<D, P>::remaining(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kRemainingOffset);
-  DCHECK(value.IsSmi() || value.IsHeapNumber());
+Tagged<Object> TorqueGeneratedJSIteratorDropHelper<D, P>::remaining(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kRemainingOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorDropHelper<D, P>::set_remaining(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsHeapNumber());
+void TorqueGeneratedJSIteratorDropHelper<D, P>::set_remaining(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kRemainingOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRemainingOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
 template<class D, class P>
-D TorqueGeneratedJSIteratorDropHelper<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSIteratorDropHelper<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -247,128 +239,123 @@ inline TorqueGeneratedJSIteratorDropHelper<D, P>::TorqueGeneratedJSIteratorDropH
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorFlatMapHelper<D, P>::mapper() const {
+Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::mapper() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFlatMapHelper::mapper(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorFlatMapHelper<D, P>::mapper(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kMapperOffset);
-  DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::mapper(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kMapperOffset);
+  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_mapper(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCallableApiObject() || value.IsCallableJSProxy() || value.IsJSFunction() || value.IsJSBoundFunction() || value.IsJSWrappedFunction());
+void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_mapper(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kMapperOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMapperOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorFlatMapHelper<D, P>::counter() const {
+Tagged<Object> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::counter() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFlatMapHelper::counter(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorFlatMapHelper<D, P>::counter(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kCounterOffset);
-  DCHECK(value.IsSmi() || value.IsHeapNumber());
+Tagged<Object> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::counter(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kCounterOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_counter(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsHeapNumber());
+void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_counter(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kCounterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCounterOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_object() const {
+Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_object() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFlatMapHelper::innerIterator_object(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
 template<class D, class P>
-JSReceiver TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_object(PtrComprCageBase cage_base) const {
-  JSReceiver value;
-  value = TaggedField<JSReceiver>::load(cage_base, *this, kInnerIteratorOffset + 0);
-  DCHECK(value.IsJSReceiver());
+Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_object(PtrComprCageBase cage_base) const {
+  Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kInnerIteratorOffset + 0);
+  DCHECK(IsJSReceiver(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerIterator_object(JSReceiver value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver());
+void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerIterator_object(Tagged<JSReceiver> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value));
   WRITE_FIELD(*this, kInnerIteratorOffset + 0, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInnerIteratorOffset + 0, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_next() const {
+Tagged<Object> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_next() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFlatMapHelper::innerIterator_next(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
 template<class D, class P>
-Object TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_next(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kInnerIteratorOffset + 8);
-  DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+Tagged<Object> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_next(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kInnerIteratorOffset + 8);
+  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerIterator_next(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsSmi() || value.IsHeapNumber() || value.IsBigInt() || value.IsString() || value.IsSymbol() || value.IsTrue() || value.IsFalse() || value.IsNull() || value.IsUndefined());
+void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerIterator_next(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
   WRITE_FIELD(*this, kInnerIteratorOffset + 8, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInnerIteratorOffset + 8, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
 template<class D, class P>
-Oddball TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerAlive() const {
+Tagged<Boolean> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerAlive() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSIteratorFlatMapHelper::innerAlive(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
 template<class D, class P>
-Oddball TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerAlive(PtrComprCageBase cage_base) const {
-  Oddball value;
-  value = TaggedField<Oddball>::load(cage_base, *this, kInnerAliveOffset);
-  DCHECK(value.IsTrue() || value.IsFalse());
+Tagged<Boolean> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerAlive(PtrComprCageBase cage_base) const {
+  Tagged<Boolean> value = TaggedField<Tagged<Boolean>>::load(cage_base, *this, kInnerAliveOffset);
+  DCHECK(IsBoolean(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
 template<class D, class P>
-void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerAlive(Oddball value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsTrue() || value.IsFalse());
+void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerAlive(Tagged<Boolean> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsBoolean(value));
   WRITE_FIELD(*this, kInnerAliveOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInnerAliveOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
 template<class D, class P>
-D TorqueGeneratedJSIteratorFlatMapHelper<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

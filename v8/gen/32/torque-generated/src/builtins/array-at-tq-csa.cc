@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-at-tq-csa.h"
 #include "torque-generated/src/builtins/array-at-tq-csa.h"
@@ -201,7 +202,7 @@ TF_BUILTIN(ArrayPrototypeAt, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp6);
   }
 
-  TNode<Oddball> tmp7;
+  TNode<Undefined> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp7 = Undefined_0(state_);

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-at-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -151,7 +152,7 @@ TF_BUILTIN(StringPrototypeAt, CodeStubAssembler) {
     ca_.Branch(phi_bb9_8, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp11;
+  TNode<Undefined> tmp11;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp11 = Undefined_0(state_);

@@ -4,9 +4,9 @@ class JSIteratorFilterHelper;
 class JSIteratorTakeHelper;
 class JSIteratorDropHelper;
 class JSIteratorFlatMapHelper;
-// Alias for HeapObject::IsJSIteratorHelper() that avoids inlining.
+// Alias for IsJSIteratorHelper() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSIteratorHelper_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSIteratorHelper_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=5&c=1
 template <class D, class P>
@@ -23,25 +23,25 @@ class TorqueGeneratedJSIteratorHelper : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSIteratorHelper<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-  inline JSReceiver underlying_object() const;
+  inline Tagged<JSReceiver> underlying_object() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-  inline JSReceiver underlying_object(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> underlying_object(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-  inline void set_underlying_object(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_underlying_object(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-  inline Object underlying_next() const;
+  inline Tagged<Object> underlying_next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-  inline Object underlying_next(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> underlying_next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-  inline void set_underlying_next(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_underlying_next(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -68,12 +68,14 @@ class TorqueGeneratedJSIteratorHelper : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSIteratorHelper(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSIteratorHelper(Address ptr);
 };
 
-// Alias for HeapObject::IsJSIteratorMapHelper() that avoids inlining.
+// Alias for IsJSIteratorMapHelper() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
-V8_EXPORT_PRIVATE bool IsJSIteratorMapHelper_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSIteratorMapHelper_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
 template <class D, class P>
@@ -91,25 +93,25 @@ class TorqueGeneratedJSIteratorMapHelper : public P {
 
   // Torque type: Callable
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
-  inline JSReceiver mapper() const;
+  inline Tagged<JSReceiver> mapper() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
-  inline JSReceiver mapper(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> mapper(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
-  inline void set_mapper(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_mapper(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
-  inline Object counter() const;
+  inline Tagged<Object> counter() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
-  inline Object counter(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> counter(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
-  inline void set_counter(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_counter(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSIteratorMapHelper)
@@ -141,12 +143,14 @@ class TorqueGeneratedJSIteratorMapHelper : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSIteratorMapHelper(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSIteratorMapHelper(Address ptr);
 };
 
-// Alias for HeapObject::IsJSIteratorFilterHelper() that avoids inlining.
+// Alias for IsJSIteratorFilterHelper() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
-V8_EXPORT_PRIVATE bool IsJSIteratorFilterHelper_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSIteratorFilterHelper_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
 template <class D, class P>
@@ -164,25 +168,25 @@ class TorqueGeneratedJSIteratorFilterHelper : public P {
 
   // Torque type: Callable
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
-  inline JSReceiver predicate() const;
+  inline Tagged<JSReceiver> predicate() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
-  inline JSReceiver predicate(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> predicate(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
-  inline void set_predicate(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_predicate(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
-  inline Object counter() const;
+  inline Tagged<Object> counter() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
-  inline Object counter(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> counter(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
-  inline void set_counter(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_counter(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSIteratorFilterHelper)
@@ -214,12 +218,14 @@ class TorqueGeneratedJSIteratorFilterHelper : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSIteratorFilterHelper(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSIteratorFilterHelper(Address ptr);
 };
 
-// Alias for HeapObject::IsJSIteratorTakeHelper() that avoids inlining.
+// Alias for IsJSIteratorTakeHelper() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
-V8_EXPORT_PRIVATE bool IsJSIteratorTakeHelper_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSIteratorTakeHelper_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
 template <class D, class P>
@@ -237,17 +243,17 @@ class TorqueGeneratedJSIteratorTakeHelper : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
-  inline Object remaining() const;
+  inline Tagged<Object> remaining() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
-  inline Object remaining(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> remaining(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
-  inline void set_remaining(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_remaining(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSIteratorTakeHelper)
@@ -276,12 +282,14 @@ class TorqueGeneratedJSIteratorTakeHelper : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSIteratorTakeHelper(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSIteratorTakeHelper(Address ptr);
 };
 
-// Alias for HeapObject::IsJSIteratorDropHelper() that avoids inlining.
+// Alias for IsJSIteratorDropHelper() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
-V8_EXPORT_PRIVATE bool IsJSIteratorDropHelper_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSIteratorDropHelper_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
 template <class D, class P>
@@ -299,17 +307,17 @@ class TorqueGeneratedJSIteratorDropHelper : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
-  inline Object remaining() const;
+  inline Tagged<Object> remaining() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
-  inline Object remaining(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> remaining(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
-  inline void set_remaining(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_remaining(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSIteratorDropHelper)
@@ -338,12 +346,14 @@ class TorqueGeneratedJSIteratorDropHelper : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSIteratorDropHelper(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSIteratorDropHelper(Address ptr);
 };
 
-// Alias for HeapObject::IsJSIteratorFlatMapHelper() that avoids inlining.
+// Alias for IsJSIteratorFlatMapHelper() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
-V8_EXPORT_PRIVATE bool IsJSIteratorFlatMapHelper_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSIteratorFlatMapHelper_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
 template <class D, class P>
@@ -361,48 +371,47 @@ class TorqueGeneratedJSIteratorFlatMapHelper : public P {
 
   // Torque type: Callable
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
-  inline JSReceiver mapper() const;
+  inline Tagged<JSReceiver> mapper() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
-  inline JSReceiver mapper(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> mapper(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
-  inline void set_mapper(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_mapper(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
-  inline Object counter() const;
+  inline Tagged<Object> counter() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
-  inline Object counter(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> counter(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
-  inline void set_counter(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_counter(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
-  inline JSReceiver innerIterator_object() const;
+  inline Tagged<JSReceiver> innerIterator_object() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
-  inline JSReceiver innerIterator_object(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> innerIterator_object(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
-  inline void set_innerIterator_object(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_innerIterator_object(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
-  inline Object innerIterator_next() const;
+  inline Tagged<Object> innerIterator_next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
-  inline Object innerIterator_next(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> innerIterator_next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
-  inline void set_innerIterator_next(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_innerIterator_next(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: Boolean
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-  inline Oddball innerAlive() const;
+  inline Tagged<Boolean> innerAlive() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-  inline Oddball innerAlive(PtrComprCageBase cage_base) const;
+  inline Tagged<Boolean> innerAlive(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-  inline void set_innerAlive(Oddball value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_innerAlive(Tagged<Boolean> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSIteratorFlatMapHelper)
@@ -440,6 +449,8 @@ class TorqueGeneratedJSIteratorFlatMapHelper : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSIteratorFlatMapHelper(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSIteratorFlatMapHelper(Address ptr);
 };
 

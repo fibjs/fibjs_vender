@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-filter-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -184,7 +185,8 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
     ca_.Bind(&block12);
     tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp10 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp9});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp10});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp10);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<IntPtrT> tmp11;
@@ -294,7 +296,7 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<IntPtrT> phi_bb20_13;
   TNode<JSTypedArray> phi_bb20_15;
   TNode<UintPtrT> phi_bb20_17;
-  TNode<Oddball> tmp26;
+  TNode<Undefined> tmp26;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_11, &phi_bb20_12, &phi_bb20_13, &phi_bb20_15, &phi_bb20_17);
     tmp26 = Undefined_0(state_);

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/primitive-heap-object.tq?l=5&c=1
-bool IsPrimitiveHeapObject_NonInline(HeapObject o) {
-  return o.IsPrimitiveHeapObject();
+bool IsPrimitiveHeapObject_NonInline(Tagged<HeapObject> o) {
+  return IsPrimitiveHeapObject(o);
 }
 
 #ifdef VERIFY_HEAP

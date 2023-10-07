@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -99,7 +100,7 @@ TF_BUILTIN(GetIteratorWithFeedback, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Object> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -278,7 +279,7 @@ void IteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<String> tmp0;
   TNode<Object> tmp1;
       TNode<Object> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<Undefined> tmp4;
   TNode<BoolT> tmp5;
       TNode<Object> tmp7;
   if (block0.is_used()) {
@@ -349,7 +350,7 @@ void IteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Cont
     ca_.Goto(&block3, tmp12, tmp13);
   }
 
-  TNode<Oddball> tmp14;
+  TNode<Null> tmp14;
   TNode<BoolT> tmp15;
       TNode<Object> tmp17;
   if (block9.is_used()) {
@@ -450,7 +451,7 @@ void IteratorClose_0(compiler::CodeAssemblerState* state_, TNode<Context> p_cont
 
   TNode<String> tmp0;
   TNode<Object> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -468,7 +469,7 @@ void IteratorClose_0(compiler::CodeAssemblerState* state_, TNode<Context> p_cont
     ca_.Goto(&block6, tmp4);
   }
 
-  TNode<Oddball> tmp5;
+  TNode<Null> tmp5;
   TNode<BoolT> tmp6;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -537,7 +538,7 @@ USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
@@ -72,8 +73,8 @@
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
-#include "torque-generated/src/builtins/promise-then-tq-csa.h"
 #include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
+#include "torque-generated/src/builtins/promise-then-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 
@@ -190,8 +191,8 @@ TF_BUILTIN(PromiseResolveThenableJob, CodeStubAssembler) {
   }
 
   TNode<JSPromise> tmp15;
-  TNode<Oddball> tmp16;
-  TNode<Oddball> tmp17;
+  TNode<Undefined> tmp16;
+  TNode<Undefined> tmp17;
   TNode<Object> tmp18;
   if (block1.is_used()) {
     ca_.Bind(&block1);
@@ -202,7 +203,7 @@ TF_BUILTIN(PromiseResolveThenableJob, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp18);
   }
 
-  TNode<Oddball> tmp19;
+  TNode<False> tmp19;
   TNode<JSFunction> tmp20;
   TNode<JSFunction> tmp21;
   TNode<JSReceiver> tmp22;
@@ -212,7 +213,7 @@ TF_BUILTIN(PromiseResolveThenableJob, CodeStubAssembler) {
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp19 = False_0(state_);
-    std::tie(tmp20, tmp21) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<Oddball>{tmp19}, TNode<NativeContext>{tmp0}).Flatten();
+    std::tie(tmp20, tmp21) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<Boolean>{tmp19}, TNode<NativeContext>{tmp0}).Flatten();
     compiler::CodeAssemblerExceptionHandlerLabel catch23__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch23__label);
     tmp22 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
@@ -255,7 +256,7 @@ TF_BUILTIN(PromiseResolveThenableJob, CodeStubAssembler) {
   TNode<Object> phi_bb14_11;
   TNode<HeapObject> phi_bb14_12;
   TNode<JSReceiver> tmp30;
-  TNode<Oddball> tmp31;
+  TNode<Undefined> tmp31;
   TNode<Object> tmp32;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_11, &phi_bb14_12);

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -467,7 +468,7 @@ TNode<Object> RegExpPrototypeMatchBody_0(compiler::CodeAssemblerState* state_, T
   TNode<BoolT> phi_bb51_8;
   TNode<String> phi_bb51_9;
   TNode<Object> tmp57;
-  TNode<Oddball> tmp58;
+  TNode<Null> tmp58;
   TNode<BoolT> tmp59;
   if (block51.is_used()) {
     ca_.Bind(&block51, &phi_bb51_5, &phi_bb51_6, &phi_bb51_7, &phi_bb51_8, &phi_bb51_9);
@@ -535,7 +536,7 @@ TNode<Object> RegExpPrototypeMatchBody_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> phi_bb64_7;
   TNode<BoolT> phi_bb64_8;
   TNode<String> phi_bb64_9;
-  TNode<Oddball> tmp66;
+  TNode<Null> tmp66;
   if (block64.is_used()) {
     ca_.Bind(&block64, &phi_bb64_5, &phi_bb64_6, &phi_bb64_7, &phi_bb64_8, &phi_bb64_9);
     tmp66 = Null_0(state_);
@@ -775,7 +776,7 @@ TNode<Object> RegExpPrototypeMatchBody_0(compiler::CodeAssemblerState* state_, T
   return TNode<Object>{phi_bb127_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match.tq?l=123&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match.tq?l=124&c=1
 TNode<Object> FastRegExpPrototypeMatchBody_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_receiver, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -794,7 +795,7 @@ TNode<Object> FastRegExpPrototypeMatchBody_0(compiler::CodeAssemblerState* state
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match.tq?l=128&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match.tq?l=129&c=1
 TNode<Object> SlowRegExpPrototypeMatchBody_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -877,7 +878,7 @@ TF_BUILTIN(RegExpPrototypeMatch, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match.tq?l=25&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match.tq?l=26&c=12
 TNode<BoolT> Is_FastJSRegExp_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

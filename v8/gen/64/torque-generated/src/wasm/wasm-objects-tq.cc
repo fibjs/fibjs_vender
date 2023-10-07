@@ -6,9 +6,9 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=31&c=1
-bool IsWasmInternalFunction_NonInline(HeapObject o) {
-  return o.IsWasmInternalFunction();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=1
+bool IsWasmInternalFunction_NonInline(Tagged<HeapObject> o) {
+  return IsWasmInternalFunction(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedWasmInternalFunction<WasmInternalFunction, HeapObject>::Wasm
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=231&c=1
-bool IsWasmNull_NonInline(HeapObject o) {
-  return o.IsWasmNull();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=236&c=1
+bool IsWasmNull_NonInline(Tagged<HeapObject> o) {
+  return IsWasmNull(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,37 +34,9 @@ void TorqueGeneratedWasmNull<WasmNull, HeapObject>::WasmNullVerify(Isolate* isol
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=1
-bool IsWasmObject_NonInline(HeapObject o) {
-  return o.IsWasmObject();
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedWasmObject<WasmObject, JSReceiver>::WasmObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::WasmObjectVerify(WasmObject::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=215&c=1
-bool IsWasmArray_NonInline(HeapObject o) {
-  return o.IsWasmArray();
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedWasmArray<WasmArray, WasmObject>::WasmArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::WasmArrayVerify(WasmArray::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1
-bool IsWasmApiFunctionRef_NonInline(HeapObject o) {
-  return o.IsWasmApiFunctionRef();
+bool IsWasmApiFunctionRef_NonInline(Tagged<HeapObject> o) {
+  return IsWasmApiFunctionRef(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -76,9 +48,9 @@ void TorqueGeneratedWasmApiFunctionRef<WasmApiFunctionRef, HeapObject>::WasmApiF
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=52&c=1
-bool IsWasmFunctionData_NonInline(HeapObject o) {
-  return o.IsWasmFunctionData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=1
+bool IsWasmFunctionData_NonInline(Tagged<HeapObject> o) {
+  return IsWasmFunctionData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -90,9 +62,9 @@ void TorqueGeneratedWasmFunctionData<WasmFunctionData, HeapObject>::WasmFunction
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=61&c=1
-bool IsWasmExportedFunctionData_NonInline(HeapObject o) {
-  return o.IsWasmExportedFunctionData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1
+bool IsWasmExportedFunctionData_NonInline(Tagged<HeapObject> o) {
+  return IsWasmExportedFunctionData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -104,9 +76,9 @@ void TorqueGeneratedWasmExportedFunctionData<WasmExportedFunctionData, WasmFunct
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=76&c=1
-bool IsWasmJSFunctionData_NonInline(HeapObject o) {
-  return o.IsWasmJSFunctionData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1
+bool IsWasmJSFunctionData_NonInline(Tagged<HeapObject> o) {
+  return IsWasmJSFunctionData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -118,9 +90,9 @@ void TorqueGeneratedWasmJSFunctionData<WasmJSFunctionData, WasmFunctionData>::Wa
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=82&c=1
-bool IsWasmCapiFunctionData_NonInline(HeapObject o) {
-  return o.IsWasmCapiFunctionData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1
+bool IsWasmCapiFunctionData_NonInline(Tagged<HeapObject> o) {
+  return IsWasmCapiFunctionData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -132,9 +104,9 @@ void TorqueGeneratedWasmCapiFunctionData<WasmCapiFunctionData, WasmFunctionData>
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1
-bool IsWasmResumeData_NonInline(HeapObject o) {
-  return o.IsWasmResumeData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1
+bool IsWasmResumeData_NonInline(Tagged<HeapObject> o) {
+  return IsWasmResumeData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -146,9 +118,9 @@ void TorqueGeneratedWasmResumeData<WasmResumeData, HeapObject>::WasmResumeDataVe
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1
-bool IsWasmIndirectFunctionTable_NonInline(HeapObject o) {
-  return o.IsWasmIndirectFunctionTable();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=97&c=1
+bool IsWasmIndirectFunctionTable_NonInline(Tagged<HeapObject> o) {
+  return IsWasmIndirectFunctionTable(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -160,9 +132,9 @@ void TorqueGeneratedWasmIndirectFunctionTable<WasmIndirectFunctionTable, Struct>
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=101&c=1
-bool IsWasmContinuationObject_NonInline(HeapObject o) {
-  return o.IsWasmContinuationObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=1
+bool IsWasmContinuationObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmContinuationObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -174,9 +146,9 @@ void TorqueGeneratedWasmContinuationObject<WasmContinuationObject, HeapObject>::
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=107&c=1
-bool IsWasmSuspenderObject_NonInline(HeapObject o) {
-  return o.IsWasmSuspenderObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=1
+bool IsWasmSuspenderObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmSuspenderObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -188,9 +160,9 @@ void TorqueGeneratedWasmSuspenderObject<WasmSuspenderObject, JSObject>::WasmSusp
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=121&c=1
-bool IsWasmExceptionTag_NonInline(HeapObject o) {
-  return o.IsWasmExceptionTag();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=127&c=1
+bool IsWasmExceptionTag_NonInline(Tagged<HeapObject> o) {
+  return IsWasmExceptionTag(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -202,9 +174,9 @@ void TorqueGeneratedWasmExceptionTag<WasmExceptionTag, Struct>::WasmExceptionTag
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=130&c=1
-bool IsWasmModuleObject_NonInline(HeapObject o) {
-  return o.IsWasmModuleObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=136&c=1
+bool IsWasmModuleObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmModuleObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -216,9 +188,9 @@ void TorqueGeneratedWasmModuleObject<WasmModuleObject, JSObject>::WasmModuleObje
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=135&c=1
-bool IsWasmTableObject_NonInline(HeapObject o) {
-  return o.IsWasmTableObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=1
+bool IsWasmTableObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmTableObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -230,9 +202,9 @@ void TorqueGeneratedWasmTableObject<WasmTableObject, JSObject>::WasmTableObjectV
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=150&c=1
-bool IsWasmMemoryObject_NonInline(HeapObject o) {
-  return o.IsWasmMemoryObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=156&c=1
+bool IsWasmMemoryObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmMemoryObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -244,9 +216,9 @@ void TorqueGeneratedWasmMemoryObject<WasmMemoryObject, JSObject>::WasmMemoryObje
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=157&c=1
-bool IsWasmGlobalObject_NonInline(HeapObject o) {
-  return o.IsWasmGlobalObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=1
+bool IsWasmGlobalObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmGlobalObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -258,9 +230,9 @@ void TorqueGeneratedWasmGlobalObject<WasmGlobalObject, JSObject>::WasmGlobalObje
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=172&c=1
-bool IsWasmTagObject_NonInline(HeapObject o) {
-  return o.IsWasmTagObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=1
+bool IsWasmTagObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmTagObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -272,9 +244,9 @@ void TorqueGeneratedWasmTagObject<WasmTagObject, JSObject>::WasmTagObjectVerify(
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=180&c=1
-bool IsAsmWasmData_NonInline(HeapObject o) {
-  return o.IsAsmWasmData();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=186&c=1
+bool IsAsmWasmData_NonInline(Tagged<HeapObject> o) {
+  return IsAsmWasmData(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -286,9 +258,9 @@ void TorqueGeneratedAsmWasmData<AsmWasmData, Struct>::AsmWasmDataVerify(Isolate*
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=185&c=1
-bool IsWasmTypeInfo_NonInline(HeapObject o) {
-  return o.IsWasmTypeInfo();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1
+bool IsWasmTypeInfo_NonInline(Tagged<HeapObject> o) {
+  return IsWasmTypeInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -300,9 +272,23 @@ void TorqueGeneratedWasmTypeInfo<WasmTypeInfo, HeapObject>::WasmTypeInfoVerify(I
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=211&c=1
-bool IsWasmStruct_NonInline(HeapObject o) {
-  return o.IsWasmStruct();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=1
+bool IsWasmObject_NonInline(Tagged<HeapObject> o) {
+  return IsWasmObject(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedWasmObject<WasmObject, JSReceiver>::WasmObjectVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::WasmObjectVerify(WasmObject::cast(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1
+bool IsWasmStruct_NonInline(Tagged<HeapObject> o) {
+  return IsWasmStruct(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -310,6 +296,20 @@ bool IsWasmStruct_NonInline(HeapObject o) {
 template <>
 void TorqueGeneratedWasmStruct<WasmStruct, WasmObject>::WasmStructVerify(Isolate* isolate) {
   TorqueGeneratedClassVerifiers::WasmStructVerify(WasmStruct::cast(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+bool IsWasmArray_NonInline(Tagged<HeapObject> o) {
+  return IsWasmArray(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedWasmArray<WasmArray, WasmObject>::WasmArrayVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::WasmArrayVerify(WasmArray::cast(*this), isolate);
 }
 
 

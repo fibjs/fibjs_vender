@@ -85,10 +85,10 @@ TorqueStructIteratorRecord LoadJSIteratorFlatMapHelperInnerIterator_0(compiler::
 void StoreJSIteratorFlatMapHelperInnerIterator_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TorqueStructIteratorRecord p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-TNode<Oddball> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o);
+TNode<Boolean> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
-void StoreJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<Oddball> p_v);
+void StoreJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<Boolean> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=5&c=1
 TNode<JSIteratorHelper> DownCastForTorqueClass_JSIteratorHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);

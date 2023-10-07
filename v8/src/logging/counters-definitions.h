@@ -13,9 +13,8 @@ namespace internal {
 // Generic range histograms.
 // HR(name, caption, min, max, num_buckets)
 #define HISTOGRAM_RANGE_LIST(HR)                                               \
-  HR(code_cache_reject_reason, V8.CodeCacheRejectReason, 1, 6, 6)              \
+  HR(code_cache_reject_reason, V8.CodeCacheRejectReason, 1, 9, 9)              \
   HR(errors_thrown_per_context, V8.ErrorsThrownPerContext, 0, 200, 20)         \
-  HR(debug_feature_usage, V8.DebugFeatureUsage, 1, 7, 7)                       \
   HR(incremental_marking_reason, V8.GCIncrementalMarkingReason, 0,             \
      kGarbageCollectionReasonMaxValue, kGarbageCollectionReasonMaxValue + 1)   \
   HR(incremental_marking_sum, V8.GCIncrementalMarkingSum, 0, 10000, 101)       \
@@ -47,14 +46,6 @@ namespace internal {
      100 * KB, GB, 51)                                                         \
   HR(wasm_asm_module_size_bytes, V8.WasmModuleSizeBytes.asm, 1, GB, 51)        \
   HR(wasm_wasm_module_size_bytes, V8.WasmModuleSizeBytes.wasm, 1, GB, 51)      \
-  HR(wasm_asm_min_mem_pages_count, V8.WasmMinMemPagesCount.asm, 1, 2 << 16,    \
-     51)                                                                       \
-  HR(wasm_wasm_min_mem_pages_count, V8.WasmMinMemPagesCount.wasm, 1, 2 << 16,  \
-     51)                                                                       \
-  HR(wasm_wasm_max_mem_pages_count, V8.WasmMaxMemPagesCount.wasm, 1, 2 << 16,  \
-     51)                                                                       \
-  HR(wasm_compile_function_peak_memory_bytes,                                  \
-     V8.WasmCompileFunctionPeakMemoryBytes, 1, GB, 51)                         \
   HR(wasm_compile_huge_function_peak_memory_bytes,                             \
      V8.WasmCompileHugeFunctionPeakMemoryBytes, 1, GB, 51)                     \
   HR(asm_module_size_bytes, V8.AsmModuleSizeBytes, 1, GB, 51)                  \
@@ -101,6 +92,8 @@ namespace internal {
   /* Counted after sweeping the table at the end of mark-compact GC. */        \
   HR(external_pointers_count, V8.SandboxedExternalPointersCount, 0,            \
      kMaxExternalPointers, 101)                                                \
+  HR(code_pointers_count, V8.SandboxedCodePointersCount, 0, kMaxCodePointers,  \
+     101)                                                                      \
   HR(wasm_num_lazy_compilations_5sec, V8.WasmNumLazyCompilations5Sec, 0,       \
      200000, 50)                                                               \
   HR(wasm_num_lazy_compilations_20sec, V8.WasmNumLazyCompilations20Sec, 0,     \

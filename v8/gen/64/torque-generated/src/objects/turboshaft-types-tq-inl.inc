@@ -1,13 +1,13 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTypeElements(TurboshaftWord32SetType p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh(TurboshaftWord64SetType p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(TurboshaftWord64SetType p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements(TurboshaftFloat64SetType p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
@@ -19,10 +19,10 @@ inline intptr_t TqRuntimeConvert_intptr_uint32_0(uint32_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
@@ -31,7 +31,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord32SetTypeElements
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord32SetTypeElements
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTypeElements(TurboshaftWord32SetType p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -59,7 +59,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTyp
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh(TurboshaftWord64SetType p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -87,7 +87,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTyp
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(TurboshaftWord64SetType p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -123,7 +123,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTyp
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements(TurboshaftFloat64SetType p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -207,7 +207,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint32_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint32_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -227,7 +227,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Object 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_float64_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_float64_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -264,8 +264,8 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=13&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -273,10 +273,10 @@ inline TorqueGeneratedTurboshaftType<D, P>::TorqueGeneratedTurboshaftType(Addres
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftType_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftWord32Type<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftWord32Type<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -284,38 +284,36 @@ inline TorqueGeneratedTurboshaftWord32Type<D, P>::TorqueGeneratedTurboshaftWord3
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftWord32Type_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=25&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord32RangeType<D, P>::from() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kFromOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kFromOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=25&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord32RangeType<D, P>::set_from(uint32_t value) {
   this->template WriteField<uint32_t>(kFromOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=26&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord32RangeType<D, P>::to() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kToOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kToOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord32RangeType<D, P>::set_to(uint32_t value) {
   this->template WriteField<uint32_t>(kToOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftWord32RangeType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftWord32RangeType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -323,32 +321,30 @@ inline TorqueGeneratedTurboshaftWord32RangeType<D, P>::TorqueGeneratedTurboshaft
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftWord32RangeType_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=35&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=33&c=9
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord32SetType<D, P>::set_size() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kSetSizeOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kSetSizeOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=35&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=33&c=9
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord32SetType<D, P>::set_set_size(uint32_t value) {
   this->template WriteField<uint32_t>(kSetSizeOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord32SetType<D, P>::elements(int i) const {
-  uint32_t value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->set_size());
   int offset = kElementsOffset + i * kInt32Size;
-  value = this->template ReadField<uint32_t>(offset);
+  uint32_t value = this->template ReadField<uint32_t>(offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord32SetType<D, P>::set_elements(int i, uint32_t value) {
   DCHECK_GE(i, 0);
@@ -357,10 +353,10 @@ void TorqueGeneratedTurboshaftWord32SetType<D, P>::set_elements(int i, uint32_t 
   this->template WriteField<uint32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftWord32SetType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftWord32SetType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -368,10 +364,10 @@ inline TorqueGeneratedTurboshaftWord32SetType<D, P>::TorqueGeneratedTurboshaftWo
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftWord32SetType_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftWord64Type<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftWord64Type<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -379,66 +375,62 @@ inline TorqueGeneratedTurboshaftWord64Type<D, P>::TorqueGeneratedTurboshaftWord6
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftWord64Type_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=46&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64RangeType<D, P>::from_high() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kFromHighOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kFromHighOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=46&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64RangeType<D, P>::set_from_high(uint32_t value) {
   this->template WriteField<uint32_t>(kFromHighOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=47&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64RangeType<D, P>::from_low() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kFromLowOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kFromLowOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=47&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64RangeType<D, P>::set_from_low(uint32_t value) {
   this->template WriteField<uint32_t>(kFromLowOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=48&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64RangeType<D, P>::to_high() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kToHighOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kToHighOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=48&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64RangeType<D, P>::set_to_high(uint32_t value) {
   this->template WriteField<uint32_t>(kToHighOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64RangeType<D, P>::to_low() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kToLowOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kToLowOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64RangeType<D, P>::set_to_low(uint32_t value) {
   this->template WriteField<uint32_t>(kToLowOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftWord64RangeType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftWord64RangeType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -446,32 +438,30 @@ inline TorqueGeneratedTurboshaftWord64RangeType<D, P>::TorqueGeneratedTurboshaft
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftWord64RangeType_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=59&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=56&c=9
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64SetType<D, P>::set_size() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kSetSizeOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kSetSizeOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=59&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=56&c=9
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64SetType<D, P>::set_set_size(uint32_t value) {
   this->template WriteField<uint32_t>(kSetSizeOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64SetType<D, P>::elements_high(int i) const {
-  uint32_t value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->set_size());
   int offset = kElementsHighOffset + i * kInt32Size;
-  value = this->template ReadField<uint32_t>(offset);
+  uint32_t value = this->template ReadField<uint32_t>(offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64SetType<D, P>::set_elements_high(int i, uint32_t value) {
   DCHECK_GE(i, 0);
@@ -480,18 +470,17 @@ void TorqueGeneratedTurboshaftWord64SetType<D, P>::set_elements_high(int i, uint
   this->template WriteField<uint32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftWord64SetType<D, P>::elements_low(int i) const {
-  uint32_t value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->set_size());
   int offset = ElementsLowOffset() + i * kInt32Size;
-  value = this->template ReadField<uint32_t>(offset);
+  uint32_t value = this->template ReadField<uint32_t>(offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftWord64SetType<D, P>::set_elements_low(int i, uint32_t value) {
   DCHECK_GE(i, 0);
@@ -500,13 +489,13 @@ void TorqueGeneratedTurboshaftWord64SetType<D, P>::set_elements_low(int i, uint3
   this->template WriteField<uint32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftWord64SetType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftWord64SetType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
 template<class D, class P>
 int TorqueGeneratedTurboshaftWord64SetType<D, P>::ElementsLowOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(*static_cast<const D*>(this))));
@@ -517,24 +506,23 @@ inline TorqueGeneratedTurboshaftWord64SetType<D, P>::TorqueGeneratedTurboshaftWo
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftWord64SetType_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=65&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftFloat64Type<D, P>::special_values() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kSpecialValuesOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kSpecialValuesOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=65&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftFloat64Type<D, P>::set_special_values(uint32_t value) {
   this->template WriteField<uint32_t>(kSpecialValuesOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftFloat64Type<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftFloat64Type<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -542,52 +530,49 @@ inline TorqueGeneratedTurboshaftFloat64Type<D, P>::TorqueGeneratedTurboshaftFloa
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftFloat64Type_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=72&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftFloat64RangeType<D, P>::_padding() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kPaddingOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kPaddingOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=72&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftFloat64RangeType<D, P>::set__padding(uint32_t value) {
   this->template WriteField<uint32_t>(kPaddingOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=73&c=3
 template<class D, class P>
 double TorqueGeneratedTurboshaftFloat64RangeType<D, P>::min() const {
-  double value;
-  value = this->template ReadField<double>(kMinOffset);
+  double value = this->template ReadField<double>(kMinOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=73&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftFloat64RangeType<D, P>::set_min(double value) {
   this->template WriteField<double>(kMinOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=74&c=3
 template<class D, class P>
 double TorqueGeneratedTurboshaftFloat64RangeType<D, P>::max() const {
-  double value;
-  value = this->template ReadField<double>(kMaxOffset);
+  double value = this->template ReadField<double>(kMaxOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=74&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftFloat64RangeType<D, P>::set_max(double value) {
   this->template WriteField<double>(kMaxOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftFloat64RangeType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftFloat64RangeType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -595,32 +580,30 @@ inline TorqueGeneratedTurboshaftFloat64RangeType<D, P>::TorqueGeneratedTurboshaf
     : P(ptr) {
   SLOW_DCHECK(IsTurboshaftFloat64RangeType_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=84&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=81&c=9
 template<class D, class P>
 uint32_t TorqueGeneratedTurboshaftFloat64SetType<D, P>::set_size() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kSetSizeOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kSetSizeOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=84&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=81&c=9
 template<class D, class P>
 void TorqueGeneratedTurboshaftFloat64SetType<D, P>::set_set_size(uint32_t value) {
   this->template WriteField<uint32_t>(kSetSizeOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 template<class D, class P>
 double TorqueGeneratedTurboshaftFloat64SetType<D, P>::elements(int i) const {
-  double value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->set_size());
   int offset = kElementsOffset + i * kDoubleSize;
-  value = this->template ReadField<double>(offset);
+  double value = this->template ReadField<double>(offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
 template<class D, class P>
 void TorqueGeneratedTurboshaftFloat64SetType<D, P>::set_elements(int i, double value) {
   DCHECK_GE(i, 0);
@@ -629,10 +612,10 @@ void TorqueGeneratedTurboshaftFloat64SetType<D, P>::set_elements(int i, double v
   this->template WriteField<double>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
 template<class D, class P>
-D TorqueGeneratedTurboshaftFloat64SetType<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTurboshaftFloat64SetType<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

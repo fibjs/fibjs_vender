@@ -11,16 +11,15 @@
 #include "src/handles/handles.h"
 #include "src/heap/heap-inl.h"
 #include "src/heap/heap.h"
-#include "src/heap/local-heap.h"
+#include "src/heap/local-heap-inl.h"
 #include "src/heap/parked-scope.h"
 
 namespace v8 {
 namespace internal {
 
-CollectionBarrier::CollectionBarrier(Heap* heap)
-    : heap_(heap),
-      foreground_task_runner_(V8::GetCurrentPlatform()->GetForegroundTaskRunner(
-          reinterpret_cast<v8::Isolate*>(heap->isolate()))) {}
+CollectionBarrier::CollectionBarrier(
+    Heap* heap, std::shared_ptr<v8::TaskRunner> foreground_task_runner)
+    : heap_(heap), foreground_task_runner_(foreground_task_runner) {}
 
 bool CollectionBarrier::WasGCRequested() {
   return collection_requested_.load();
@@ -109,16 +108,23 @@ bool CollectionBarrier::AwaitCollectionBackground(LocalHeap* local_heap) {
         std::make_unique<BackgroundCollectionInterruptTask>(heap_));
   }
 
-  ParkedScope scope(local_heap);
-  base::MutexGuard guard(&mutex_);
+  bool collection_performed = false;
+  local_heap->BlockWhileParked([this, &collection_performed]() {
+    base::MutexGuard guard(&mutex_);
 
-  while (block_for_collection_) {
-    if (shutdown_requested_) return false;
-    cv_wakeup_.Wait(&mutex_);
-  }
+    while (block_for_collection_) {
+      if (shutdown_requested_) {
+        collection_performed = false;
+        return;
+      }
+      cv_wakeup_.Wait(&mutex_);
+    }
 
-  // Collection may have been cancelled while blocking for it.
-  return collection_performed_;
+    // Collection may have been cancelled while blocking for it.
+    collection_performed = collection_performed_;
+  });
+
+  return collection_performed;
 }
 
 void CollectionBarrier::StopTimeToCollectionTimer() {

@@ -1,8 +1,8 @@
 class Name;
 class Symbol;
-// Alias for HeapObject::IsName() that avoids inlining.
+// Alias for IsName() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsName_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsName_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
 template <class D, class P>
@@ -24,10 +24,10 @@ class TorqueGeneratedName : public P {
   inline void set_raw_hash_field(uint32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -54,12 +54,14 @@ class TorqueGeneratedName : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedName(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedName(Address ptr);
 };
 
-// Alias for HeapObject::IsSymbol() that avoids inlining.
+// Alias for IsSymbol() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=29&c=1
-V8_EXPORT_PRIVATE bool IsSymbol_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSymbol_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=29&c=1
 template <class D, class P>
@@ -80,19 +82,19 @@ class TorqueGeneratedSymbol : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=30&c=3
   inline void set_flags(uint32_t value);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=31&c=3
-  inline PrimitiveHeapObject description() const;
+  inline Tagged<PrimitiveHeapObject> description() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=31&c=3
-  inline PrimitiveHeapObject description(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> description(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=31&c=3
-  inline void set_description(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_description(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=29&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=29&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(Symbol)
@@ -137,6 +139,8 @@ class TorqueGeneratedSymbol : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSymbol(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSymbol(Address ptr);
 };
 

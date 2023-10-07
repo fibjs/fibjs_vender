@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/weak-ref-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -98,7 +99,7 @@ USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -182,7 +183,7 @@ TF_BUILTIN(WeakRefDeref, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp3;
   TNode<HeapObject> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -207,7 +208,7 @@ TF_BUILTIN(WeakRefDeref, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=33&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=32&c=19
 TNode<JSWeakRef> UnsafeCast_JSWeakRef_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -226,7 +227,7 @@ TNode<JSWeakRef> UnsafeCast_JSWeakRef_0(compiler::CodeAssemblerState* state_, TN
   return TNode<JSWeakRef>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=47&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=46&c=19
 TNode<JSWeakRef> Cast_JSWeakRef_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -1,23 +1,22 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSDisplayNames<D, P>::internal() const {
+Tagged<Foreign> TorqueGeneratedJSDisplayNames<D, P>::internal() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDisplayNames::internal(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSDisplayNames<D, P>::internal(PtrComprCageBase cage_base) const {
-  Foreign value;
-  value = TaggedField<Foreign>::load(cage_base, *this, kInternalOffset);
-  DCHECK(value.IsForeign());
+Tagged<Foreign> TorqueGeneratedJSDisplayNames<D, P>::internal(PtrComprCageBase cage_base) const {
+  Tagged<Foreign> value = TaggedField<Tagged<Foreign>>::load(cage_base, *this, kInternalOffset);
+  DCHECK(IsForeign(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
 template<class D, class P>
-void TorqueGeneratedJSDisplayNames<D, P>::set_internal(Foreign value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsForeign());
+void TorqueGeneratedJSDisplayNames<D, P>::set_internal(Tagged<Foreign> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsForeign(value));
   WRITE_FIELD(*this, kInternalOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInternalOffset, value, mode);
 }
@@ -25,8 +24,7 @@ void TorqueGeneratedJSDisplayNames<D, P>::set_internal(Foreign value, WriteBarri
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
 template<class D, class P>
 int TorqueGeneratedJSDisplayNames<D, P>::flags() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
+  int value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
   return value;
 }
 
@@ -38,8 +36,8 @@ void TorqueGeneratedJSDisplayNames<D, P>::set_flags(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
 template<class D, class P>
-D TorqueGeneratedJSDisplayNames<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSDisplayNames<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

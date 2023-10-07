@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-sort-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -101,7 +102,7 @@ TNode<Number> CallCompare_0(compiler::CodeAssemblerState* state_, TNode<Context>
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<Object> tmp1;
   TNode<Number> tmp2;
   TNode<BoolT> tmp3;
@@ -739,7 +740,7 @@ TF_BUILTIN(TypedArrayMergeSort, CodeStubAssembler) {
     ca_.Goto(&block8);
   }
 
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     TypedArrayMerge_0(state_, TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter5}, TNode<JSReceiver>{parameter6}, TNode<FixedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<UintPtrT>{tmp3}, TNode<UintPtrT>{parameter3}, TNode<FixedArray>{parameter4});
@@ -748,7 +749,7 @@ TF_BUILTIN(TypedArrayMergeSort, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-sort.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-sort.tq?l=81&c=1
 TNode<JSTypedArray> TypedArraySortCommon_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSTypedArray> p_array, TNode<UintPtrT> p_len, TNode<HeapObject> p_comparefnArg, bool p_isSort) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -799,7 +800,7 @@ TNode<JSTypedArray> TypedArraySortCommon_0(compiler::CodeAssemblerState* state_,
     ca_.Goto(&block1, p_array);
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   TNode<BoolT> tmp3;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -1161,7 +1162,7 @@ TF_BUILTIN(TypedArrayPrototypeSort, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-sort.tq?l=148&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-sort.tq?l=146&c=28
 TNode<Numeric> UnsafeCast_Numeric_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

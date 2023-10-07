@@ -6,10 +6,10 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=12&c=1
 void CallThrowTypeErrorIfStrict_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, MessageTemplate p_message);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=28&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=26&c=10
 TNode<BoolT> Is_Name_AnyName_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Name> p_o);
 
 } // namespace internal

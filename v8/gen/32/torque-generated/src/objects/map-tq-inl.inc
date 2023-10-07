@@ -1,8 +1,7 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=59&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedMap<D, P>::instance_size_in_words() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kInstanceSizeInWordsOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kInstanceSizeInWordsOffset);
   return value;
 }
 
@@ -15,8 +14,7 @@ void TorqueGeneratedMap<D, P>::set_instance_size_in_words(uint8_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=60&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedMap<D, P>::inobject_properties_start_or_constructor_function_index() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kInobjectPropertiesStartOrConstructorFunctionIndexOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kInobjectPropertiesStartOrConstructorFunctionIndexOffset);
   return value;
 }
 
@@ -29,8 +27,7 @@ void TorqueGeneratedMap<D, P>::set_inobject_properties_start_or_constructor_func
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=61&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedMap<D, P>::used_or_unused_instance_size_in_words() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kUsedOrUnusedInstanceSizeInWordsOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kUsedOrUnusedInstanceSizeInWordsOffset);
   return value;
 }
 
@@ -43,8 +40,7 @@ void TorqueGeneratedMap<D, P>::set_used_or_unused_instance_size_in_words(uint8_t
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=62&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedMap<D, P>::visitor_id() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kVisitorIdOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kVisitorIdOffset);
   return value;
 }
 
@@ -57,8 +53,7 @@ void TorqueGeneratedMap<D, P>::set_visitor_id(uint8_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=63&c=3
 template<class D, class P>
 InstanceType TorqueGeneratedMap<D, P>::instance_type() const {
-  InstanceType value;
-  value = this->template ReadField<InstanceType>(kInstanceTypeOffset);
+  InstanceType value = this->template ReadField<InstanceType>(kInstanceTypeOffset);
   return value;
 }
 
@@ -71,8 +66,7 @@ void TorqueGeneratedMap<D, P>::set_instance_type(InstanceType value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=64&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedMap<D, P>::bit_field() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kBitFieldOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kBitFieldOffset);
   return value;
 }
 
@@ -85,8 +79,7 @@ void TorqueGeneratedMap<D, P>::set_bit_field(uint8_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=65&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedMap<D, P>::bit_field2() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kBitField2Offset);
+  uint8_t value = this->template ReadField<uint8_t>(kBitField2Offset);
   return value;
 }
 
@@ -99,8 +92,7 @@ void TorqueGeneratedMap<D, P>::set_bit_field2(uint8_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=66&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedMap<D, P>::bit_field3() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kBitField3Offset);
+  uint32_t value = this->template ReadField<uint32_t>(kBitField3Offset);
   return value;
 }
 
@@ -112,120 +104,115 @@ void TorqueGeneratedMap<D, P>::set_bit_field3(uint32_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedMap<D, P>::prototype() const {
+Tagged<HeapObject> TorqueGeneratedMap<D, P>::prototype() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::prototype(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedMap<D, P>::prototype(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kPrototypeOffset);
-  DCHECK(value.IsJSReceiver() || value.IsNull());
+Tagged<HeapObject> TorqueGeneratedMap<D, P>::prototype(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kPrototypeOffset);
+  DCHECK(IsJSReceiver(value) || IsNull(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_prototype(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSReceiver() || value.IsNull());
+void TorqueGeneratedMap<D, P>::set_prototype(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSReceiver(value) || IsNull(value));
   WRITE_FIELD(*this, kPrototypeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
 template<class D, class P>
-Object TorqueGeneratedMap<D, P>::constructor_or_back_pointer_or_native_context() const {
+Tagged<Object> TorqueGeneratedMap<D, P>::constructor_or_back_pointer_or_native_context() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::constructor_or_back_pointer_or_native_context(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
 template<class D, class P>
-Object TorqueGeneratedMap<D, P>::constructor_or_back_pointer_or_native_context(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kConstructorOrBackPointerOrNativeContextOffset);
-  DCHECK(value.IsHeapObject() || value.IsSmi());
+Tagged<Object> TorqueGeneratedMap<D, P>::constructor_or_back_pointer_or_native_context(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kConstructorOrBackPointerOrNativeContextOffset);
+  DCHECK(IsHeapObject(value) || IsSmi(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_constructor_or_back_pointer_or_native_context(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
+void TorqueGeneratedMap<D, P>::set_constructor_or_back_pointer_or_native_context(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
   WRITE_FIELD(*this, kConstructorOrBackPointerOrNativeContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kConstructorOrBackPointerOrNativeContextOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
 template<class D, class P>
-DescriptorArray TorqueGeneratedMap<D, P>::instance_descriptors() const {
+Tagged<DescriptorArray> TorqueGeneratedMap<D, P>::instance_descriptors() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::instance_descriptors(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
 template<class D, class P>
-DescriptorArray TorqueGeneratedMap<D, P>::instance_descriptors(PtrComprCageBase cage_base) const {
-  DescriptorArray value;
-  value = TaggedField<DescriptorArray>::load(cage_base, *this, kInstanceDescriptorsOffset);
-  DCHECK(value.IsDescriptorArray());
+Tagged<DescriptorArray> TorqueGeneratedMap<D, P>::instance_descriptors(PtrComprCageBase cage_base) const {
+  Tagged<DescriptorArray> value = TaggedField<Tagged<DescriptorArray>>::load(cage_base, *this, kInstanceDescriptorsOffset);
+  DCHECK(IsDescriptorArray(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_instance_descriptors(DescriptorArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsDescriptorArray());
+void TorqueGeneratedMap<D, P>::set_instance_descriptors(Tagged<DescriptorArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsDescriptorArray(value));
   WRITE_FIELD(*this, kInstanceDescriptorsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInstanceDescriptorsOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
 template<class D, class P>
-WeakFixedArray TorqueGeneratedMap<D, P>::dependent_code() const {
+Tagged<WeakFixedArray> TorqueGeneratedMap<D, P>::dependent_code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::dependent_code(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
 template<class D, class P>
-WeakFixedArray TorqueGeneratedMap<D, P>::dependent_code(PtrComprCageBase cage_base) const {
-  WeakFixedArray value;
-  value = TaggedField<WeakFixedArray>::load(cage_base, *this, kDependentCodeOffset);
-  DCHECK(value.IsDependentCode());
+Tagged<WeakFixedArray> TorqueGeneratedMap<D, P>::dependent_code(PtrComprCageBase cage_base) const {
+  Tagged<WeakFixedArray> value = TaggedField<Tagged<WeakFixedArray>>::load(cage_base, *this, kDependentCodeOffset);
+  DCHECK(IsDependentCode(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_dependent_code(WeakFixedArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsDependentCode());
+void TorqueGeneratedMap<D, P>::set_dependent_code(Tagged<WeakFixedArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsDependentCode(value));
   WRITE_FIELD(*this, kDependentCodeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDependentCodeOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
 template<class D, class P>
-Object TorqueGeneratedMap<D, P>::prototype_validity_cell() const {
+Tagged<Object> TorqueGeneratedMap<D, P>::prototype_validity_cell() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::prototype_validity_cell(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
 template<class D, class P>
-Object TorqueGeneratedMap<D, P>::prototype_validity_cell(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kPrototypeValidityCellOffset);
-  DCHECK(value.IsSmi() || value.IsCell());
+Tagged<Object> TorqueGeneratedMap<D, P>::prototype_validity_cell(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kPrototypeValidityCellOffset);
+  DCHECK(IsSmi(value) || IsCell(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_prototype_validity_cell(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsCell());
+void TorqueGeneratedMap<D, P>::set_prototype_validity_cell(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsCell(value));
   WRITE_FIELD(*this, kPrototypeValidityCellOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeValidityCellOffset, value, mode);
 }
@@ -240,24 +227,23 @@ MaybeObject TorqueGeneratedMap<D, P>::transitions_or_prototype_info() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedMap<D, P>::transitions_or_prototype_info(PtrComprCageBase cage_base) const {
-  MaybeObject value;
-  value = TaggedField<MaybeObject>::load(cage_base, *this, kTransitionsOrPrototypeInfoOffset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsTransitionArray()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()) || (value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsPrototypeInfo()));
+  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, kTransitionsOrPrototypeInfoOffset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsTransitionArray(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsPrototypeInfo(value.GetHeapObjectOrSmi())));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 template<class D, class P>
 void TorqueGeneratedMap<D, P>::set_transitions_or_prototype_info(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsTransitionArray()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()) || (value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsPrototypeInfo()));
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsTransitionArray(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsPrototypeInfo(value.GetHeapObjectOrSmi())));
   RELAXED_WRITE_WEAK_FIELD(*this, kTransitionsOrPrototypeInfoOffset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kTransitionsOrPrototypeInfoOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
 template<class D, class P>
-D TorqueGeneratedMap<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedMap<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

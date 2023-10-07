@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
-bool IsMap_NonInline(HeapObject o) {
-  return o.IsMap();
+bool IsMap_NonInline(Tagged<HeapObject> o) {
+  return IsMap(o);
 }
 
 #ifdef VERIFY_HEAP

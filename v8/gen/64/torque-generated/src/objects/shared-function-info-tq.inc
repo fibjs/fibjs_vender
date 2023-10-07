@@ -7,9 +7,9 @@ class UncompiledDataWithPreparseData;
 class UncompiledDataWithoutPreparseDataWithJob;
 class UncompiledDataWithPreparseDataAndJob;
 class OnHeapBasicBlockProfilerData;
-// Alias for HeapObject::IsPreparseData() that avoids inlining.
+// Alias for IsPreparseData() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsPreparseData_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsPreparseData_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1
 template <class D, class P>
@@ -36,10 +36,10 @@ class TorqueGeneratedPreparseData : public P {
   inline void set_children_length(int32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(PreparseData)
@@ -84,12 +84,14 @@ class TorqueGeneratedPreparseData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedPreparseData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedPreparseData(Address ptr);
 };
 
-// Alias for HeapObject::IsInterpreterData() that avoids inlining.
+// Alias for IsInterpreterData() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=11&c=1
-V8_EXPORT_PRIVATE bool IsInterpreterData_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsInterpreterData_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=11&c=1
 template <class D, class P>
@@ -106,24 +108,24 @@ class TorqueGeneratedInterpreterData : public P {
   using TorqueGeneratedClass = TorqueGeneratedInterpreterData<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=12&c=3
-  inline BytecodeArray bytecode_array() const;
+  inline Tagged<BytecodeArray> bytecode_array() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=12&c=3
-  inline BytecodeArray bytecode_array(PtrComprCageBase cage_base) const;
+  inline Tagged<BytecodeArray> bytecode_array(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=12&c=3
-  inline void set_bytecode_array(BytecodeArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bytecode_array(Tagged<BytecodeArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
-  inline Code interpreter_trampoline() const;
+  inline Tagged<Code> interpreter_trampoline() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
-  inline Code interpreter_trampoline(PtrComprCageBase cage_base) const;
+  inline Tagged<Code> interpreter_trampoline(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
-  inline void set_interpreter_trampoline(Code value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_interpreter_trampoline(Tagged<Code> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=11&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=11&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(InterpreterData)
@@ -168,12 +170,14 @@ class TorqueGeneratedInterpreterData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedInterpreterData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedInterpreterData(Address ptr);
 };
 
-// Alias for HeapObject::IsSharedFunctionInfo() that avoids inlining.
+// Alias for IsSharedFunctionInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
-V8_EXPORT_PRIVATE bool IsSharedFunctionInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSharedFunctionInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
 template <class D, class P>
@@ -190,34 +194,34 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   using TorqueGeneratedClass = TorqueGeneratedSharedFunctionInfo<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
-  inline Object function_data() const;
+  inline Tagged<Object> function_data() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
-  inline Object function_data(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> function_data(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
-  inline void set_function_data(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_function_data(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class String | NoSharedNameSentinel | class ScopeInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
-  inline Object name_or_scope_info() const;
+  inline Tagged<Object> name_or_scope_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
-  inline Object name_or_scope_info(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> name_or_scope_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
-  inline void set_name_or_scope_info(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_name_or_scope_info(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
-  inline HeapObject outer_scope_info_or_feedback_metadata() const;
+  inline Tagged<HeapObject> outer_scope_info_or_feedback_metadata() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
-  inline HeapObject outer_scope_info_or_feedback_metadata(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> outer_scope_info_or_feedback_metadata(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
-  inline void set_outer_scope_info_or_feedback_metadata(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_outer_scope_info_or_feedback_metadata(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class DebugInfo | class Script)
+  // Torque type: (class Undefined | class Script)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
-  inline HeapObject script_or_debug_info() const;
+  inline Tagged<HeapObject> script() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
-  inline HeapObject script_or_debug_info(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> script(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
-  inline void set_script_or_debug_info(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_script(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=63&c=3
   inline int16_t length() const;
@@ -254,11 +258,26 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
   inline void set_function_literal_id(int32_t value);
 
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=82&c=3
+  inline int32_t unique_id() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=82&c=3
+  inline void set_unique_id(int32_t value);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=85&c=3
+  inline uint16_t age() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=85&c=3
+  inline void set_age(uint16_t value);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=86&c=3
+  inline uint16_t padding() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=86&c=3
+  inline void set_padding(uint16_t value);
+
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SharedFunctionInfo)
@@ -281,11 +300,11 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   static constexpr int kOuterScopeInfoOrFeedbackMetadataOffset = kNameOrScopeInfoOffsetEnd + 1;
   static constexpr int kOuterScopeInfoOrFeedbackMetadataOffsetEnd = kOuterScopeInfoOrFeedbackMetadataOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
-  static constexpr int kScriptOrDebugInfoOffset = kOuterScopeInfoOrFeedbackMetadataOffsetEnd + 1;
-  static constexpr int kScriptOrDebugInfoOffsetEnd = kScriptOrDebugInfoOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kScriptOrDebugInfoOffsetEnd + 1;
+  static constexpr int kScriptOffset = kOuterScopeInfoOrFeedbackMetadataOffsetEnd + 1;
+  static constexpr int kScriptOffsetEnd = kScriptOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kScriptOffsetEnd + 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=63&c=3
-  static constexpr int kLengthOffset = kScriptOrDebugInfoOffsetEnd + 1;
+  static constexpr int kLengthOffset = kScriptOffsetEnd + 1;
   static constexpr int kLengthOffsetEnd = kLengthOffset + kUInt16Size - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=68&c=3
   static constexpr int kFormalParameterCountOffset = kLengthOffsetEnd + 1;
@@ -305,15 +324,21 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
   static constexpr int kFunctionLiteralIdOffset = kFlagsOffsetEnd + 1;
   static constexpr int kFunctionLiteralIdOffsetEnd = kFunctionLiteralIdOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=84&c=32
-  static constexpr int kOptionalPaddingOffset = kFunctionLiteralIdOffsetEnd + 1;
-  static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + 0 - 1;
-  static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kSize = kOptionalPaddingOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=82&c=3
+  static constexpr int kUniqueIdOffset = kFunctionLiteralIdOffsetEnd + 1;
+  static constexpr int kUniqueIdOffsetEnd = kUniqueIdOffset + kInt32Size - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=85&c=3
+  static constexpr int kAgeOffset = kUniqueIdOffsetEnd + 1;
+  static constexpr int kAgeOffsetEnd = kAgeOffset + kUInt16Size - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=86&c=3
+  static constexpr int kPaddingOffset = kAgeOffsetEnd + 1;
+  static constexpr int kPaddingOffsetEnd = kPaddingOffset + kUInt16Size - 1;
+  static constexpr int kHeaderSize = kPaddingOffsetEnd + 1;
+  static constexpr int kSize = kPaddingOffsetEnd + 1;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
-    DCHECK(kHeaderSize == kSize && kHeaderSize == 56);
+    DCHECK(kHeaderSize == kSize && kHeaderSize == 64);
     int32_t size = kHeaderSize;
     return size;
   }
@@ -333,14 +358,16 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSharedFunctionInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSharedFunctionInfo(Address ptr);
 };
 
-// Alias for HeapObject::IsUncompiledData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
-V8_EXPORT_PRIVATE bool IsUncompiledData_NonInline(HeapObject o);
+// Alias for IsUncompiledData() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
+V8_EXPORT_PRIVATE bool IsUncompiledData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledData : public P {
   static_assert(
@@ -354,44 +381,44 @@ class TorqueGeneratedUncompiledData : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledData<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
-  inline String inferred_name() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
-  inline String inferred_name(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
-  inline void set_inferred_name(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+  inline Tagged<String> inferred_name() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+  inline Tagged<String> inferred_name(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+  inline void set_inferred_name(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=118&c=3
   inline int32_t start_position() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=118&c=3
   inline void set_start_position(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=119&c=3
   inline int32_t end_position() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=119&c=3
   inline void set_end_position(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
   V8_EXPORT_PRIVATE void UncompiledDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
   static constexpr int kInferredNameOffset = P::kHeaderSize;
   static constexpr int kInferredNameOffsetEnd = kInferredNameOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kInferredNameOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=118&c=3
   static constexpr int kStartPositionOffset = kInferredNameOffsetEnd + 1;
   static constexpr int kStartPositionOffsetEnd = kStartPositionOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=119&c=3
   static constexpr int kEndPositionOffset = kStartPositionOffsetEnd + 1;
   static constexpr int kEndPositionOffsetEnd = kEndPositionOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kEndPositionOffsetEnd + 1;
@@ -408,14 +435,16 @@ class TorqueGeneratedUncompiledData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedUncompiledData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedUncompiledData(Address ptr);
 };
 
-// Alias for HeapObject::IsUncompiledDataWithoutPreparseData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
-V8_EXPORT_PRIVATE bool IsUncompiledDataWithoutPreparseData_NonInline(HeapObject o);
+// Alias for IsUncompiledDataWithoutPreparseData() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
+V8_EXPORT_PRIVATE bool IsUncompiledDataWithoutPreparseData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   static_assert(
@@ -429,17 +458,17 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithoutPreparseData<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(UncompiledDataWithoutPreparseData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithoutPreparseDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -450,14 +479,14 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -472,14 +501,16 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedUncompiledDataWithoutPreparseData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedUncompiledDataWithoutPreparseData(Address ptr);
 };
 
-// Alias for HeapObject::IsUncompiledDataWithPreparseData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
-V8_EXPORT_PRIVATE bool IsUncompiledDataWithPreparseData_NonInline(HeapObject o);
+// Alias for IsUncompiledDataWithPreparseData() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
+V8_EXPORT_PRIVATE bool IsUncompiledDataWithPreparseData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   static_assert(
@@ -493,29 +524,29 @@ class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithPreparseData<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
-  inline PreparseData preparse_data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
-  inline PreparseData preparse_data(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
-  inline void set_preparse_data(PreparseData value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
+  inline Tagged<PreparseData> preparse_data() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
+  inline Tagged<PreparseData> preparse_data(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
+  inline void set_preparse_data(Tagged<PreparseData> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(UncompiledDataWithPreparseData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithPreparseDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
   static constexpr int kPreparseDataOffset = P::kHeaderSize;
   static constexpr int kPreparseDataOffsetEnd = kPreparseDataOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kPreparseDataOffsetEnd + 1;
@@ -524,14 +555,14 @@ class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   static constexpr int kHeaderSize = kPreparseDataOffsetEnd + 1;
   static constexpr int kSize = kPreparseDataOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 32);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -546,14 +577,16 @@ class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedUncompiledDataWithPreparseData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedUncompiledDataWithPreparseData(Address ptr);
 };
 
-// Alias for HeapObject::IsUncompiledDataWithoutPreparseDataWithJob() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
-V8_EXPORT_PRIVATE bool IsUncompiledDataWithoutPreparseDataWithJob_NonInline(HeapObject o);
+// Alias for IsUncompiledDataWithoutPreparseDataWithJob() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
+V8_EXPORT_PRIVATE bool IsUncompiledDataWithoutPreparseDataWithJob_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   static_assert(
@@ -567,26 +600,26 @@ class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=140&c=3
   inline Address job() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=140&c=3
   inline void set_job(Address value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(UncompiledDataWithoutPreparseDataWithJob)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithoutPreparseDataWithJobVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=140&c=3
   static constexpr int kJobOffset = P::kHeaderSize;
   static constexpr int kJobOffsetEnd = kJobOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kJobOffsetEnd + 1;
@@ -596,14 +629,14 @@ class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   static constexpr int kHeaderSize = kJobOffsetEnd + 1;
   static constexpr int kSize = kJobOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 32);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -618,14 +651,16 @@ class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob(Address ptr);
 };
 
-// Alias for HeapObject::IsUncompiledDataWithPreparseDataAndJob() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
-V8_EXPORT_PRIVATE bool IsUncompiledDataWithPreparseDataAndJob_NonInline(HeapObject o);
+// Alias for IsUncompiledDataWithPreparseDataAndJob() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
+V8_EXPORT_PRIVATE bool IsUncompiledDataWithPreparseDataAndJob_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   static_assert(
@@ -639,26 +674,26 @@ class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=149&c=3
   inline Address job() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=149&c=3
   inline void set_job(Address value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(UncompiledDataWithPreparseDataAndJob)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithPreparseDataAndJobVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=149&c=3
   static constexpr int kJobOffset = P::kHeaderSize;
   static constexpr int kJobOffsetEnd = kJobOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kJobOffsetEnd + 1;
@@ -668,14 +703,14 @@ class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   static constexpr int kHeaderSize = kJobOffsetEnd + 1;
   static constexpr int kSize = kJobOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 40);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -690,14 +725,16 @@ class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedUncompiledDataWithPreparseDataAndJob(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedUncompiledDataWithPreparseDataAndJob(Address ptr);
 };
 
-// Alias for HeapObject::IsOnHeapBasicBlockProfilerData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
-V8_EXPORT_PRIVATE bool IsOnHeapBasicBlockProfilerData_NonInline(HeapObject o);
+// Alias for IsOnHeapBasicBlockProfilerData() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
+V8_EXPORT_PRIVATE bool IsOnHeapBasicBlockProfilerData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
 template <class D, class P>
 class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   static_assert(
@@ -712,89 +749,89 @@ class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   using TorqueGeneratedClass = TorqueGeneratedOnHeapBasicBlockProfilerData<D,P>;
 
   // Torque type: FixedInt32Array
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
-  inline FixedInt32Array block_ids() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
-  inline FixedInt32Array block_ids(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
-  inline void set_block_ids(FixedInt32Array value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+  inline Tagged<FixedInt32Array> block_ids() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+  inline Tagged<FixedInt32Array> block_ids(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+  inline void set_block_ids(Tagged<FixedInt32Array> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: FixedUInt32Array
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
-  inline FixedUInt32Array counts() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
-  inline FixedUInt32Array counts(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
-  inline void set_counts(FixedUInt32Array value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  inline Tagged<FixedUInt32Array> counts() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  inline Tagged<FixedUInt32Array> counts(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  inline void set_counts(Tagged<FixedUInt32Array> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: PodArrayOfIntegerPairs
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
-  inline PodArray<std::pair<int32_t, int32_t>> branches() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
-  inline PodArray<std::pair<int32_t, int32_t>> branches(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
-  inline void set_branches(PodArray<std::pair<int32_t, int32_t>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
-  inline String name() const;
+  inline Tagged<PodArray<std::pair<int32_t, int32_t>>> branches() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
-  inline String name(PtrComprCageBase cage_base) const;
+  inline Tagged<PodArray<std::pair<int32_t, int32_t>>> branches(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
-  inline void set_name(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_branches(Tagged<PodArray<std::pair<int32_t, int32_t>>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
-  inline String schedule() const;
+  inline Tagged<String> name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
-  inline String schedule(PtrComprCageBase cage_base) const;
+  inline Tagged<String> name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
-  inline void set_schedule(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_name(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
-  inline String code() const;
+  inline Tagged<String> schedule() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
-  inline String code(PtrComprCageBase cage_base) const;
+  inline Tagged<String> schedule(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
-  inline void set_code(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_schedule(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+  inline Tagged<String> code() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+  inline Tagged<String> code(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+  inline void set_code(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=170&c=3
   inline int hash() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=170&c=3
   inline void set_hash(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(OnHeapBasicBlockProfilerData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
   V8_EXPORT_PRIVATE void OnHeapBasicBlockProfilerDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
   static constexpr int kBlockIdsOffset = P::kHeaderSize;
   static constexpr int kBlockIdsOffsetEnd = kBlockIdsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
   static constexpr int kCountsOffset = kBlockIdsOffsetEnd + 1;
   static constexpr int kCountsOffsetEnd = kCountsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
   static constexpr int kBranchesOffset = kCountsOffsetEnd + 1;
   static constexpr int kBranchesOffsetEnd = kBranchesOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
   static constexpr int kNameOffset = kBranchesOffsetEnd + 1;
   static constexpr int kNameOffsetEnd = kNameOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
   static constexpr int kScheduleOffset = kNameOffsetEnd + 1;
   static constexpr int kScheduleOffsetEnd = kScheduleOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
   static constexpr int kCodeOffset = kScheduleOffsetEnd + 1;
   static constexpr int kCodeOffsetEnd = kCodeOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=170&c=3
   static constexpr int kHashOffset = kCodeOffsetEnd + 1;
   static constexpr int kHashOffsetEnd = kHashOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kHashOffsetEnd + 1;
@@ -803,14 +840,14 @@ class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   static constexpr int kHeaderSize = kHashOffsetEnd + 1;
   static constexpr int kSize = kHashOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 64);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -825,6 +862,8 @@ class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedOnHeapBasicBlockProfilerData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedOnHeapBasicBlockProfilerData(Address ptr);
 };
 

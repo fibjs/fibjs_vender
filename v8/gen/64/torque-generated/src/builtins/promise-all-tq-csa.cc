@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-all-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -79,9 +80,9 @@
 #include "torque-generated/src/builtins/promise-all-element-closure-tq-csa.h"
 #include "torque-generated/src/builtins/promise-any-tq-csa.h"
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
+#include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/promise-misc-tq-csa.h"
 #include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
-#include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/fixed-array-tq-csa.h"
@@ -153,8 +154,8 @@ TNode<JSFunction> CreatePromiseAllResolveElementFunction_0(compiler::CodeAssembl
   return TNode<JSFunction>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=60&c=1
-TNode<Context> CreatePromiseResolvingFunctionsContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSPromise> p_promise, TNode<Oddball> p_debugEvent, TNode<NativeContext> p_nativeContext) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=61&c=1
+TNode<Context> CreatePromiseResolvingFunctionsContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSPromise> p_promise, TNode<Boolean> p_debugEvent, TNode<NativeContext> p_nativeContext) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -166,7 +167,7 @@ TNode<Context> CreatePromiseResolvingFunctionsContext_0(compiler::CodeAssemblerS
   TNode<Context> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<False> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
@@ -182,15 +183,15 @@ TNode<Context> CreatePromiseResolvingFunctionsContext_0(compiler::CodeAssemblerS
     InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_JSPromise_JSPromise_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<JSPromise>{p_promise});
     tmp4 = kAlreadyResolvedSlot_0(state_);
     tmp5 = False_0(state_);
-    InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_False_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp4}, TNode<Oddball>{tmp5});
+    InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_False_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp4}, TNode<False>{tmp5});
     tmp6 = kDebugEventSlot_0(state_);
-    InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_Boolean_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp6}, TNode<Oddball>{p_debugEvent});
+    InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_Boolean_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp6}, TNode<Boolean>{p_debugEvent});
     tmp7 = FromConstexpr_intptr_constexpr_intptr_0(state_, Context::Field::MIN_CONTEXT_SLOTS);
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3ull));
     tmp9 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp7}, TNode<IntPtrT>{tmp8});
     tmp10 = FromConstexpr_intptr_constexpr_intptr_0(state_, PromiseBuiltins::PromiseResolvingFunctionContextSlot::kPromiseContextLength);
     tmp11 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp9});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp11}, "static_assert(PromiseResolvingFunctionContextSlot::kPromiseContextLength ==\n      ContextSlot::MIN_CONTEXT_SLOTS + 3) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=77&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp11}, "static_assert(PromiseResolvingFunctionContextSlot::kPromiseContextLength ==\n      ContextSlot::MIN_CONTEXT_SLOTS + 3) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=78&c=3");
     ca_.Goto(&block2);
   }
 
@@ -198,7 +199,7 @@ TNode<Context> CreatePromiseResolvingFunctionsContext_0(compiler::CodeAssemblerS
   return TNode<Context>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=84&c=1
 TNode<BoolT> IsPromiseThenLookupChainIntact_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Map> p_receiverMap) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -466,7 +467,7 @@ void InitContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementCon
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=50&c=16
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=51&c=16
 TorqueStructReference_Map_0 ContextSlot_NativeContext_NativeContext_Map_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -515,7 +516,7 @@ TorqueStructReference_Map_0 ContextSlot_NativeContext_NativeContext_Map_0(compil
   return TorqueStructReference_Map_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=69&c=3
 void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_JSPromise_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSPromise> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -561,8 +562,8 @@ void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionCon
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=71&c=3
-void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_False_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Oddball> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=72&c=3
+void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_False_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<False> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -607,8 +608,8 @@ void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionCon
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=74&c=3
-void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Oddball> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=75&c=3
+void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Boolean> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -653,7 +654,7 @@ void InitContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionCon
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=87&c=33
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=89&c=33
 TorqueStructReference_JSObject_0 NativeContextSlot_JSObject_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -673,7 +674,7 @@ TorqueStructReference_JSObject_0 NativeContextSlot_JSObject_0(compiler::CodeAsse
   return TorqueStructReference_JSObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=378&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=388&c=10
 TNode<Object> GeneratePromiseAll_PromiseAllResolveElementFunctor_PromiseAllRejectElementFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_iterable, TorqueStructPromiseAllResolveElementFunctor_0 p_createResolveElementFunctor, TorqueStructPromiseAllRejectElementFunctor_0 p_createRejectElementFunctor, const char* p_message, bool p_hasResolveAndRejectClosures) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -710,7 +711,7 @@ TNode<Object> GeneratePromiseAll_PromiseAllResolveElementFunctor_PromiseAllRejec
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kCalledOnNonObject, p_message);
   }
 
-  TNode<Oddball> tmp3;
+  TNode<False> tmp3;
   TNode<PromiseCapability> tmp4;
   TNode<JSReceiver> tmp5;
   TNode<Object> tmp6;
@@ -809,7 +810,7 @@ TNode<Object> GeneratePromiseAll_PromiseAllResolveElementFunctor_PromiseAllRejec
   TNode<IntPtrT> tmp21;
   TNode<Object> tmp22;
   TNode<Object> tmp23;
-  TNode<Oddball> tmp24;
+  TNode<Undefined> tmp24;
   TNode<Object> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<HeapObject> tmp27;
@@ -835,7 +836,7 @@ TNode<Object> GeneratePromiseAll_PromiseAllResolveElementFunctor_PromiseAllRejec
   return TNode<Object>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=387&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=397&c=10
 TNode<Object> GeneratePromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAllSettledRejectElementFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_iterable, TorqueStructPromiseAllSettledResolveElementFunctor_0 p_createResolveElementFunctor, TorqueStructPromiseAllSettledRejectElementFunctor_0 p_createRejectElementFunctor, const char* p_message, bool p_hasResolveAndRejectClosures) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -872,7 +873,7 @@ TNode<Object> GeneratePromiseAll_PromiseAllSettledResolveElementFunctor_PromiseA
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kCalledOnNonObject, p_message);
   }
 
-  TNode<Oddball> tmp3;
+  TNode<False> tmp3;
   TNode<PromiseCapability> tmp4;
   TNode<JSReceiver> tmp5;
   TNode<Object> tmp6;
@@ -971,7 +972,7 @@ TNode<Object> GeneratePromiseAll_PromiseAllSettledResolveElementFunctor_PromiseA
   TNode<IntPtrT> tmp21;
   TNode<Object> tmp22;
   TNode<Object> tmp23;
-  TNode<Oddball> tmp24;
+  TNode<Undefined> tmp24;
   TNode<Object> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<HeapObject> tmp27;
@@ -997,7 +998,7 @@ TNode<Object> GeneratePromiseAll_PromiseAllSettledResolveElementFunctor_PromiseA
   return TNode<Object>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=361&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=371&c=12
 TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllRejectElementFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TorqueStructIteratorRecord p_iter, TNode<JSReceiver> p_constructor, TNode<PromiseCapability> p_capability, TNode<Object> p_promiseResolveFunction, TorqueStructPromiseAllResolveElementFunctor_0 p_createResolveElementFunctor, TorqueStructPromiseAllRejectElementFunctor_0 p_createRejectElementFunctor, bool p_hasResolveAndRejectClosures, compiler::CodeAssemblerLabel* label_Reject, compiler::TypedCodeAssemblerVariable<Object>* label_Reject_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1076,9 +1077,10 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   compiler::CodeAssemblerParameterizedLabel<Smi> block79(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block84(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block80(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -1101,7 +1103,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   }
 
   TNode<Symbol> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<True> tmp8;
   TNode<Object> tmp9;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -1349,7 +1351,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   TNode<IntPtrT> tmp61;
   TNode<Object> tmp62;
   TNode<JSReceiver> tmp63;
-  TNode<Oddball> tmp64;
+  TNode<Undefined> tmp64;
   TNode<BoolT> tmp65;
       TNode<Object> tmp67;
   if (block23.is_used()) {
@@ -1942,7 +1944,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   TNode<Smi> phi_bb34_11;
   TNode<JSPromise> tmp147;
       TNode<Object> tmp149;
-  TNode<Oddball> tmp150;
+  TNode<Undefined> tmp150;
       TNode<Object> tmp152;
   if (block34.is_used()) {
     ca_.Bind(&block34, &phi_bb34_11);
@@ -2081,26 +2083,29 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
     ca_.Bind(&block77, &phi_bb77_11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-all.tq", 279});
+      pos_stack.push_back({"src/builtins/promise-all.tq", 284});
       CodeStubAssembler(state_).FailAssert("Torque assert 'remainingElementsCount >= 0' failed", pos_stack);
     }
   }
 
   TNode<Smi> phi_bb76_11;
-  TNode<Smi> tmp171;
-  TNode<BoolT> tmp172;
+  TNode<IntPtrT> tmp171;
+  TNode<Object> tmp172;
+  TNode<IntPtrT> tmp173;
+  TNode<FixedArray> tmp174;
+  TNode<Smi> tmp175;
+  TNode<BoolT> tmp176;
   if (block76.is_used()) {
     ca_.Bind(&block76, &phi_bb76_11);
-    tmp171 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp172 = CodeStubAssembler(state_).SmiGreaterThan(TNode<Smi>{tmp168}, TNode<Smi>{tmp171});
-    ca_.Branch(tmp172, &block78, std::vector<compiler::Node*>{phi_bb76_11}, &block79, std::vector<compiler::Node*>{phi_bb76_11});
+    tmp171 = kPromiseAllResolveElementValuesSlot_0(state_);
+    std::tie(tmp172, tmp173) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp171}).Flatten();
+    tmp174 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp172, tmp173});
+    tmp175 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp176 = CodeStubAssembler(state_).SmiGreaterThan(TNode<Smi>{tmp168}, TNode<Smi>{tmp175});
+    ca_.Branch(tmp176, &block78, std::vector<compiler::Node*>{phi_bb76_11}, &block79, std::vector<compiler::Node*>{phi_bb76_11});
   }
 
   TNode<Smi> phi_bb78_11;
-  TNode<IntPtrT> tmp173;
-  TNode<Object> tmp174;
-  TNode<IntPtrT> tmp175;
-  TNode<FixedArray> tmp176;
   TNode<IntPtrT> tmp177;
   TNode<IntPtrT> tmp178;
   TNode<IntPtrT> tmp179;
@@ -2108,13 +2113,10 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   TNode<BoolT> tmp181;
   if (block78.is_used()) {
     ca_.Bind(&block78, &phi_bb78_11);
-    tmp173 = kPromiseAllResolveElementValuesSlot_0(state_);
-    std::tie(tmp174, tmp175) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp173}).Flatten();
-    tmp176 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp174, tmp175});
     tmp177 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{phi_bb78_11});
     tmp178 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp179 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{tmp177}, TNode<IntPtrT>{tmp178});
-    tmp180 = CodeStubAssembler(state_).LoadAndUntagFixedArrayBaseLength(TNode<FixedArrayBase>{tmp176});
+    tmp180 = CodeStubAssembler(state_).LoadAndUntagFixedArrayBaseLength(TNode<FixedArrayBase>{tmp174});
     tmp181 = CodeStubAssembler(state_).IntPtrLessThan(TNode<IntPtrT>{tmp180}, TNode<IntPtrT>{tmp179});
     ca_.Branch(tmp181, &block81, std::vector<compiler::Node*>{phi_bb78_11}, &block82, std::vector<compiler::Node*>{phi_bb78_11});
   }
@@ -2125,8 +2127,8 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   if (block81.is_used()) {
     ca_.Bind(&block81, &phi_bb81_11);
     tmp182 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp183 = ExtractFixedArray_0(state_, TNode<FixedArray>{tmp176}, TNode<IntPtrT>{tmp182}, TNode<IntPtrT>{tmp180}, TNode<IntPtrT>{tmp179});
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp174, tmp175}, tmp183);
+    tmp183 = ExtractFixedArray_0(state_, TNode<FixedArray>{tmp174}, TNode<IntPtrT>{tmp182}, TNode<IntPtrT>{tmp180}, TNode<IntPtrT>{tmp179});
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp172, tmp173}, tmp183);
     ca_.Goto(&block82, phi_bb81_11);
   }
 
@@ -2140,49 +2142,51 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   TNode<IntPtrT> tmp184;
   TNode<Object> tmp185;
   TNode<IntPtrT> tmp186;
-  TNode<FixedArray> tmp187;
-  TNode<IntPtrT> tmp188;
-  TNode<Object> tmp189;
-  TNode<IntPtrT> tmp190;
-  TNode<Map> tmp191;
-  TNode<BoolT> tmp192;
+  TNode<Map> tmp187;
+  TNode<BoolT> tmp188;
   if (block79.is_used()) {
     ca_.Bind(&block79, &phi_bb79_11);
-    tmp184 = kPromiseAllResolveElementValuesSlot_0(state_);
-    std::tie(tmp185, tmp186) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp184}).Flatten();
-    tmp187 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp185, tmp186});
-    tmp188 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp189, tmp190) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp188}).Flatten();
-    tmp191 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp189, tmp190});
-    tmp192 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
-    ca_.Branch(tmp192, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});
+    tmp184 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
+    std::tie(tmp185, tmp186) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp184}).Flatten();
+    tmp187 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp185, tmp186});
+    tmp188 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
+    ca_.Branch(tmp188, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});
   }
 
   TNode<Smi> phi_bb83_11;
   if (block83.is_used()) {
     ca_.Bind(&block83, &phi_bb83_11);
-    CodeStubAssembler(state_).MakeFixedArrayCOW(TNode<FixedArray>{tmp187});
-    ca_.Goto(&block84, phi_bb83_11);
+    CodeStubAssembler(state_).MakeFixedArrayCOW(TNode<FixedArray>{tmp174});
+    ca_.Goto(&block85, phi_bb83_11);
   }
 
   TNode<Smi> phi_bb84_11;
-  TNode<JSArray> tmp193;
-  TNode<Object> tmp194;
-  TNode<Oddball> tmp195;
-  TNode<Object> tmp196;
+  TNode<FixedArray> tmp189;
   if (block84.is_used()) {
     ca_.Bind(&block84, &phi_bb84_11);
-    tmp193 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp191}, TNode<FixedArrayBase>{tmp187});
-    tmp194 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
-    tmp195 = Undefined_0(state_);
-    tmp196 = CodeStubAssembler(state_).Call(TNode<Context>{p_nativeContext}, TNode<Object>{tmp194}, TNode<Object>{tmp195}, TNode<Object>{tmp193});
-    ca_.Goto(&block80, phi_bb84_11);
+    tmp189 = kEmptyFixedArray_0(state_);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp172, tmp173}, tmp189);
+    ca_.Goto(&block85, phi_bb84_11);
+  }
+
+  TNode<Smi> phi_bb85_11;
+  TNode<JSArray> tmp190;
+  TNode<Object> tmp191;
+  TNode<Undefined> tmp192;
+  TNode<Object> tmp193;
+  if (block85.is_used()) {
+    ca_.Bind(&block85, &phi_bb85_11);
+    tmp190 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp187}, TNode<FixedArrayBase>{tmp174});
+    tmp191 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
+    tmp192 = Undefined_0(state_);
+    tmp193 = CodeStubAssembler(state_).Call(TNode<Context>{p_nativeContext}, TNode<Object>{tmp191}, TNode<Object>{tmp192}, TNode<Object>{tmp190});
+    ca_.Goto(&block80, phi_bb85_11);
   }
 
   TNode<Smi> phi_bb80_11;
   if (block80.is_used()) {
     ca_.Bind(&block80, &phi_bb80_11);
-    ca_.Goto(&block85);
+    ca_.Goto(&block86);
   }
 
   TNode<Object> phi_bb1_0;
@@ -2192,11 +2196,11 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
     ca_.Goto(label_Reject);
   }
 
-    ca_.Bind(&block85);
+    ca_.Bind(&block86);
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=361&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all.tq?l=371&c=12
 TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAllSettledRejectElementFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TorqueStructIteratorRecord p_iter, TNode<JSReceiver> p_constructor, TNode<PromiseCapability> p_capability, TNode<Object> p_promiseResolveFunction, TorqueStructPromiseAllSettledResolveElementFunctor_0 p_createResolveElementFunctor, TorqueStructPromiseAllSettledRejectElementFunctor_0 p_createRejectElementFunctor, bool p_hasResolveAndRejectClosures, compiler::CodeAssemblerLabel* label_Reject, compiler::TypedCodeAssemblerVariable<Object>* label_Reject_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2275,9 +2279,10 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   compiler::CodeAssemblerParameterizedLabel<Smi> block79(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block84(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block80(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -2300,7 +2305,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   }
 
   TNode<Symbol> tmp7;
-  TNode<Oddball> tmp8;
+  TNode<True> tmp8;
   TNode<Object> tmp9;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -2547,7 +2552,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   TNode<JSFunction> tmp60;
   TNode<SharedFunctionInfo> tmp61;
   TNode<JSFunction> tmp62;
-  TNode<Oddball> tmp63;
+  TNode<Undefined> tmp63;
   TNode<BoolT> tmp64;
       TNode<Object> tmp66;
   if (block23.is_used()) {
@@ -3139,7 +3144,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   TNode<Smi> phi_bb34_11;
   TNode<JSPromise> tmp146;
       TNode<Object> tmp148;
-  TNode<Oddball> tmp149;
+  TNode<Undefined> tmp149;
       TNode<Object> tmp151;
   if (block34.is_used()) {
     ca_.Bind(&block34, &phi_bb34_11);
@@ -3278,26 +3283,29 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
     ca_.Bind(&block77, &phi_bb77_11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-all.tq", 279});
+      pos_stack.push_back({"src/builtins/promise-all.tq", 284});
       CodeStubAssembler(state_).FailAssert("Torque assert 'remainingElementsCount >= 0' failed", pos_stack);
     }
   }
 
   TNode<Smi> phi_bb76_11;
-  TNode<Smi> tmp170;
-  TNode<BoolT> tmp171;
+  TNode<IntPtrT> tmp170;
+  TNode<Object> tmp171;
+  TNode<IntPtrT> tmp172;
+  TNode<FixedArray> tmp173;
+  TNode<Smi> tmp174;
+  TNode<BoolT> tmp175;
   if (block76.is_used()) {
     ca_.Bind(&block76, &phi_bb76_11);
-    tmp170 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp171 = CodeStubAssembler(state_).SmiGreaterThan(TNode<Smi>{tmp167}, TNode<Smi>{tmp170});
-    ca_.Branch(tmp171, &block78, std::vector<compiler::Node*>{phi_bb76_11}, &block79, std::vector<compiler::Node*>{phi_bb76_11});
+    tmp170 = kPromiseAllResolveElementValuesSlot_0(state_);
+    std::tie(tmp171, tmp172) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp170}).Flatten();
+    tmp173 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp171, tmp172});
+    tmp174 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp175 = CodeStubAssembler(state_).SmiGreaterThan(TNode<Smi>{tmp167}, TNode<Smi>{tmp174});
+    ca_.Branch(tmp175, &block78, std::vector<compiler::Node*>{phi_bb76_11}, &block79, std::vector<compiler::Node*>{phi_bb76_11});
   }
 
   TNode<Smi> phi_bb78_11;
-  TNode<IntPtrT> tmp172;
-  TNode<Object> tmp173;
-  TNode<IntPtrT> tmp174;
-  TNode<FixedArray> tmp175;
   TNode<IntPtrT> tmp176;
   TNode<IntPtrT> tmp177;
   TNode<IntPtrT> tmp178;
@@ -3305,13 +3313,10 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   TNode<BoolT> tmp180;
   if (block78.is_used()) {
     ca_.Bind(&block78, &phi_bb78_11);
-    tmp172 = kPromiseAllResolveElementValuesSlot_0(state_);
-    std::tie(tmp173, tmp174) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp172}).Flatten();
-    tmp175 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp173, tmp174});
     tmp176 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{phi_bb78_11});
     tmp177 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp178 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{tmp176}, TNode<IntPtrT>{tmp177});
-    tmp179 = CodeStubAssembler(state_).LoadAndUntagFixedArrayBaseLength(TNode<FixedArrayBase>{tmp175});
+    tmp179 = CodeStubAssembler(state_).LoadAndUntagFixedArrayBaseLength(TNode<FixedArrayBase>{tmp173});
     tmp180 = CodeStubAssembler(state_).IntPtrLessThan(TNode<IntPtrT>{tmp179}, TNode<IntPtrT>{tmp178});
     ca_.Branch(tmp180, &block81, std::vector<compiler::Node*>{phi_bb78_11}, &block82, std::vector<compiler::Node*>{phi_bb78_11});
   }
@@ -3322,8 +3327,8 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   if (block81.is_used()) {
     ca_.Bind(&block81, &phi_bb81_11);
     tmp181 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp182 = ExtractFixedArray_0(state_, TNode<FixedArray>{tmp175}, TNode<IntPtrT>{tmp181}, TNode<IntPtrT>{tmp179}, TNode<IntPtrT>{tmp178});
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp173, tmp174}, tmp182);
+    tmp182 = ExtractFixedArray_0(state_, TNode<FixedArray>{tmp173}, TNode<IntPtrT>{tmp181}, TNode<IntPtrT>{tmp179}, TNode<IntPtrT>{tmp178});
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp171, tmp172}, tmp182);
     ca_.Goto(&block82, phi_bb81_11);
   }
 
@@ -3337,49 +3342,51 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   TNode<IntPtrT> tmp183;
   TNode<Object> tmp184;
   TNode<IntPtrT> tmp185;
-  TNode<FixedArray> tmp186;
-  TNode<IntPtrT> tmp187;
-  TNode<Object> tmp188;
-  TNode<IntPtrT> tmp189;
-  TNode<Map> tmp190;
-  TNode<BoolT> tmp191;
+  TNode<Map> tmp186;
+  TNode<BoolT> tmp187;
   if (block79.is_used()) {
     ca_.Bind(&block79, &phi_bb79_11);
-    tmp183 = kPromiseAllResolveElementValuesSlot_0(state_);
-    std::tie(tmp184, tmp185) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_FixedArray_0(state_, TNode<Context>{tmp10}, TNode<IntPtrT>{tmp183}).Flatten();
-    tmp186 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{tmp184, tmp185});
-    tmp187 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp188, tmp189) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp187}).Flatten();
-    tmp190 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp188, tmp189});
-    tmp191 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
-    ca_.Branch(tmp191, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});
+    tmp183 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
+    std::tie(tmp184, tmp185) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp183}).Flatten();
+    tmp186 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp184, tmp185});
+    tmp187 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
+    ca_.Branch(tmp187, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});
   }
 
   TNode<Smi> phi_bb83_11;
   if (block83.is_used()) {
     ca_.Bind(&block83, &phi_bb83_11);
-    CodeStubAssembler(state_).MakeFixedArrayCOW(TNode<FixedArray>{tmp186});
-    ca_.Goto(&block84, phi_bb83_11);
+    CodeStubAssembler(state_).MakeFixedArrayCOW(TNode<FixedArray>{tmp173});
+    ca_.Goto(&block85, phi_bb83_11);
   }
 
   TNode<Smi> phi_bb84_11;
-  TNode<JSArray> tmp192;
-  TNode<Object> tmp193;
-  TNode<Oddball> tmp194;
-  TNode<Object> tmp195;
+  TNode<FixedArray> tmp188;
   if (block84.is_used()) {
     ca_.Bind(&block84, &phi_bb84_11);
-    tmp192 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp190}, TNode<FixedArrayBase>{tmp186});
-    tmp193 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
-    tmp194 = Undefined_0(state_);
-    tmp195 = CodeStubAssembler(state_).Call(TNode<Context>{p_nativeContext}, TNode<Object>{tmp193}, TNode<Object>{tmp194}, TNode<Object>{tmp192});
-    ca_.Goto(&block80, phi_bb84_11);
+    tmp188 = kEmptyFixedArray_0(state_);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp171, tmp172}, tmp188);
+    ca_.Goto(&block85, phi_bb84_11);
+  }
+
+  TNode<Smi> phi_bb85_11;
+  TNode<JSArray> tmp189;
+  TNode<Object> tmp190;
+  TNode<Undefined> tmp191;
+  TNode<Object> tmp192;
+  if (block85.is_used()) {
+    ca_.Bind(&block85, &phi_bb85_11);
+    tmp189 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp186}, TNode<FixedArrayBase>{tmp173});
+    tmp190 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
+    tmp191 = Undefined_0(state_);
+    tmp192 = CodeStubAssembler(state_).Call(TNode<Context>{p_nativeContext}, TNode<Object>{tmp190}, TNode<Object>{tmp191}, TNode<Object>{tmp189});
+    ca_.Goto(&block80, phi_bb85_11);
   }
 
   TNode<Smi> phi_bb80_11;
   if (block80.is_used()) {
     ca_.Bind(&block80, &phi_bb80_11);
-    ca_.Goto(&block85);
+    ca_.Goto(&block86);
   }
 
   TNode<Object> phi_bb1_0;
@@ -3389,7 +3396,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
     ca_.Goto(label_Reject);
   }
 
-    ca_.Bind(&block85);
+    ca_.Bind(&block86);
   return TNode<Object>{tmp1};
 }
 

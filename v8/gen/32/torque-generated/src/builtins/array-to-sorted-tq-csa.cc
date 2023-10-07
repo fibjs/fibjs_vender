@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-sorted-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -109,7 +110,7 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 60);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_sortState, tmp0});
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp1});
-    tmp3 = CodeStubAssembler(state_).AllocateFixedArray(p_elementsKind, TNode<IntPtrT>{tmp2}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp3 = CodeStubAssembler(state_).AllocateFixedArray(p_elementsKind, TNode<IntPtrT>{tmp2});
     tmp4 = UnsafeCast_FixedArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
     tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 52);
     tmp6 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_sortState, tmp5});
@@ -153,7 +154,7 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
   TNode<IntPtrT> tmp19;
   TNode<Object> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Oddball> tmp22;
+  TNode<Undefined> tmp22;
   TNode<Smi> tmp23;
   TNode<Smi> tmp24;
   if (block29.is_used()) {
@@ -192,7 +193,7 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
   return TNode<JSArray>{tmp27};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-sorted.tq?l=37&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-sorted.tq?l=36&c=1
 TNode<JSArray> CopyWorkArrayToNewJSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<SortState> p_sortState, TNode<Smi> p_numberOfNonUndefined) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -301,7 +302,7 @@ TNode<JSArray> CopyWorkArrayToNewJSArray_0(compiler::CodeAssemblerState* state_,
   }
 
   TNode<Smi> phi_bb18_6;
-  TNode<Oddball> tmp24;
+  TNode<Undefined> tmp24;
   TNode<Object> tmp25;
   TNode<Smi> tmp26;
   TNode<Smi> tmp27;
@@ -597,7 +598,7 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-sorted.tq?l=94&c=21
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-sorted.tq?l=93&c=21
 TNode<HeapObject> Cast_Undefined_OR_CallableApiObject_OR_CallableJSProxy_OR_JSFunction_OR_JSBoundFunction_OR_JSWrappedFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

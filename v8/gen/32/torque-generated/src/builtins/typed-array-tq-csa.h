@@ -22,37 +22,37 @@ TorqueStructAttachedJSTypedArrayAndLength_0 EnsureAttachedAndReadLength_0(compil
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=241&c=1
 TorqueStructAttachedJSTypedArrayWitness_0 NewAttachedJSTypedArrayWitness_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=253&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=254&c=1
 ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=256&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=257&c=1
 ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=259&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=260&c=1
 ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=262&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=263&c=1
 ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=265&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=266&c=1
 ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=269&c=1
 ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=271&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=272&c=1
 ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=274&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=275&c=1
 ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=277&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=278&c=1
 ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=280&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=281&c=1
 ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=284&c=1
 ElementsKind KindForArrayType_BigInt64Elements_0(compiler::CodeAssemblerState* state_);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=151&c=14

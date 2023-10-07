@@ -3,12 +3,13 @@ class FixedArray;
 class WeakFixedArray;
 class FixedDoubleArray;
 class ByteArray;
+class ExternalPointerArray;
 class ArrayList;
 class TemplateList;
 class WeakArrayList;
-// Alias for HeapObject::IsFixedArrayBase() that avoids inlining.
+// Alias for IsFixedArrayBase() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsFixedArrayBase_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsFixedArrayBase_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=5&c=1
 template <class D, class P>
@@ -30,10 +31,10 @@ class TorqueGeneratedFixedArrayBase : public P {
   inline void set_length(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -60,12 +61,14 @@ class TorqueGeneratedFixedArrayBase : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFixedArrayBase(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFixedArrayBase(Address ptr);
 };
 
-// Alias for HeapObject::IsFixedArray() that avoids inlining.
+// Alias for IsFixedArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1
-V8_EXPORT_PRIVATE bool IsFixedArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsFixedArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1
 template <class D, class P>
@@ -82,17 +85,17 @@ class TorqueGeneratedFixedArray : public P {
   using TorqueGeneratedClass = TorqueGeneratedFixedArray<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
-  inline Object objects(int i) const;
+  inline Tagged<Object> objects(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
-  inline Object objects(PtrComprCageBase cage_base, int i) const;
+  inline Tagged<Object> objects(PtrComprCageBase cage_base, int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
-  inline void set_objects(int i, Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_objects(int i, Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(FixedArray)
@@ -133,12 +136,14 @@ class TorqueGeneratedFixedArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFixedArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFixedArray(Address ptr);
 };
 
-// Alias for HeapObject::IsWeakFixedArray() that avoids inlining.
+// Alias for IsWeakFixedArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1
-V8_EXPORT_PRIVATE bool IsWeakFixedArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsWeakFixedArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1
 template <class D, class P>
@@ -168,10 +173,10 @@ class TorqueGeneratedWeakFixedArray : public P {
   inline void set_objects(int i, MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(WeakFixedArray)
@@ -215,12 +220,14 @@ class TorqueGeneratedWeakFixedArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedWeakFixedArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedWeakFixedArray(Address ptr);
 };
 
-// Alias for HeapObject::IsFixedDoubleArray() that avoids inlining.
+// Alias for IsFixedDoubleArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
-V8_EXPORT_PRIVATE bool IsFixedDoubleArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsFixedDoubleArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
 template <class D, class P>
@@ -237,10 +244,10 @@ class TorqueGeneratedFixedDoubleArray : public P {
   using TorqueGeneratedClass = TorqueGeneratedFixedDoubleArray<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(FixedDoubleArray)
@@ -281,12 +288,14 @@ class TorqueGeneratedFixedDoubleArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFixedDoubleArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFixedDoubleArray(Address ptr);
 };
 
-// Alias for HeapObject::IsByteArray() that avoids inlining.
+// Alias for IsByteArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1
-V8_EXPORT_PRIVATE bool IsByteArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsByteArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1
 template <class D, class P>
@@ -308,10 +317,10 @@ class TorqueGeneratedByteArray : public P {
   inline void set_bytes(int i, uint8_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ByteArray)
@@ -353,14 +362,84 @@ class TorqueGeneratedByteArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedByteArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedByteArray(Address ptr);
 };
 
-// Alias for HeapObject::IsArrayList() that avoids inlining.
+// Alias for IsExternalPointerArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
-V8_EXPORT_PRIVATE bool IsArrayList_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsExternalPointerArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+template <class D, class P>
+class TorqueGeneratedExternalPointerArray : public P {
+  static_assert(
+      std::is_same<ExternalPointerArray, D>::value,
+      "Use this class as direct base for ExternalPointerArray.");
+  static_assert(
+      std::is_same<FixedArrayBase, P>::value,
+      "Pass in FixedArrayBase as second template parameter for TorqueGeneratedExternalPointerArray.");
+
+ public: 
+  using Super = P;
+  using TorqueGeneratedClass = TorqueGeneratedExternalPointerArray<D,P>;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
+  }
+
+  DECL_PRINTER(ExternalPointerArray)
+
+#ifdef VERIFY_HEAP
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  V8_EXPORT_PRIVATE void ExternalPointerArrayVerify(Isolate* isolate);
+#endif  // VERIFY_HEAP
+
+  static constexpr int kHeaderSize = P::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+  static constexpr int kPointersOffset = P::kHeaderSize;
+  static constexpr int kPointersOffsetEnd = kPointersOffset + 0 - 1;
+  static constexpr int kStartOfWeakFieldsOffset = kPointersOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kPointersOffsetEnd + 1;
+  static constexpr int kStartOfStrongFieldsOffset = kPointersOffsetEnd + 1;
+  static constexpr int kEndOfStrongFieldsOffset = kPointersOffsetEnd + 1;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  V8_INLINE static constexpr int32_t SizeFor(int length) {
+    int32_t size = kHeaderSize;
+    size += length * 8;
+    return size;
+  }
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  V8_INLINE int32_t AllocatedSize() const {
+    return SizeFor(this->length());
+  }
+
+  friend class Factory;
+
+  template <class DAlias = D>
+  constexpr TorqueGeneratedExternalPointerArray() : P() {
+    static_assert(
+        std::is_base_of<TorqueGeneratedExternalPointerArray, DAlias>::value,
+        "class TorqueGeneratedExternalPointerArray should be used as direct base for ExternalPointerArray.");
+  }
+
+ protected:
+  inline explicit constexpr TorqueGeneratedExternalPointerArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
+  inline explicit TorqueGeneratedExternalPointerArray(Address ptr);
+};
+
+// Alias for IsArrayList() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
+V8_EXPORT_PRIVATE bool IsArrayList_NonInline(Tagged<HeapObject> o);
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
 template <class D, class P>
 class TorqueGeneratedArrayList : public P {
   static_assert(
@@ -374,17 +453,17 @@ class TorqueGeneratedArrayList : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedArrayList<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ArrayList)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
   V8_EXPORT_PRIVATE void ArrayListVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -394,14 +473,14 @@ class TorqueGeneratedArrayList : public P {
   static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
   static constexpr int kHeaderSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
   V8_INLINE static constexpr int32_t SizeFor(int length) {
     int32_t size = kHeaderSize;
     size += length * 8;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->length());
   }
@@ -416,14 +495,16 @@ class TorqueGeneratedArrayList : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedArrayList(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedArrayList(Address ptr);
 };
 
-// Alias for HeapObject::IsTemplateList() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
-V8_EXPORT_PRIVATE bool IsTemplateList_NonInline(HeapObject o);
+// Alias for IsTemplateList() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+V8_EXPORT_PRIVATE bool IsTemplateList_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
 template <class D, class P>
 class TorqueGeneratedTemplateList : public P {
   static_assert(
@@ -437,17 +518,17 @@ class TorqueGeneratedTemplateList : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTemplateList<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TemplateList)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
   V8_EXPORT_PRIVATE void TemplateListVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -457,14 +538,14 @@ class TorqueGeneratedTemplateList : public P {
   static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
   static constexpr int kHeaderSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
   V8_INLINE static constexpr int32_t SizeFor(int length) {
     int32_t size = kHeaderSize;
     size += length * 8;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->length());
   }
@@ -479,14 +560,16 @@ class TorqueGeneratedTemplateList : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTemplateList(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTemplateList(Address ptr);
 };
 
-// Alias for HeapObject::IsWeakArrayList() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
-V8_EXPORT_PRIVATE bool IsWeakArrayList_NonInline(HeapObject o);
+// Alias for IsWeakArrayList() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
+V8_EXPORT_PRIVATE bool IsWeakArrayList_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
 template <class D, class P>
 class TorqueGeneratedWeakArrayList : public P {
   static_assert(
@@ -500,61 +583,61 @@ class TorqueGeneratedWeakArrayList : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedWeakArrayList<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=44&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=48&c=9
   inline int capacity() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=44&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=48&c=9
   inline void set_capacity(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=49&c=3
   inline int length() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=49&c=3
   inline void set_length(int value);
 
   // Torque type: MaybeObject
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
   inline MaybeObject objects(int i, RelaxedLoadTag) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
   inline MaybeObject objects(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
   inline void set_objects(int i, MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(WeakArrayList)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
   V8_EXPORT_PRIVATE void WeakArrayListVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=44&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=48&c=9
   static constexpr int kCapacityOffset = P::kHeaderSize;
   static constexpr int kCapacityOffsetEnd = kCapacityOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=45&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=49&c=3
   static constexpr int kLengthOffset = kCapacityOffsetEnd + 1;
   static constexpr int kLengthOffsetEnd = kLengthOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kLengthOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kLengthOffsetEnd + 1;
   static constexpr int kHeaderSize = kLengthOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
   static constexpr int kObjectsOffset = kLengthOffsetEnd + 1;
   static constexpr int kObjectsOffsetEnd = kObjectsOffset + 0 - 1;
   static constexpr int kEndOfWeakFieldsOffset = kObjectsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
   V8_INLINE static constexpr int32_t SizeFor(int capacity) {
     int32_t size = kHeaderSize;
     size += capacity * 8;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->capacity());
   }
@@ -569,6 +652,8 @@ class TorqueGeneratedWeakArrayList : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedWeakArrayList(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedWeakArrayList(Address ptr);
 };
 

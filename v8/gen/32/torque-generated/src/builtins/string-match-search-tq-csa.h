@@ -6,10 +6,10 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=75&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=77&c=10
 TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_receiver, TNode<Object> p_regexp, TorqueStructStringMatchFunctor_0 p_functor, const char* p_methodName);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=83&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=85&c=10
 TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_receiver, TNode<Object> p_regexp, TorqueStructStringSearchFunctor_0 p_functor, const char* p_methodName);
 
 } // namespace internal

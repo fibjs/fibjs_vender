@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=5&c=1
-bool IsCallHandlerInfo_NonInline(HeapObject o) {
-  return o.IsCallHandlerInfo();
+bool IsCallHandlerInfo_NonInline(Tagged<HeapObject> o) {
+  return IsCallHandlerInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedCallHandlerInfo<CallHandlerInfo, HeapObject>::CallHandlerInf
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=21&c=1
-bool IsInterceptorInfo_NonInline(HeapObject o) {
-  return o.IsInterceptorInfo();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=23&c=1
+bool IsInterceptorInfo_NonInline(Tagged<HeapObject> o) {
+  return IsInterceptorInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,9 +34,9 @@ void TorqueGeneratedInterceptorInfo<InterceptorInfo, Struct>::InterceptorInfoVer
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=33&c=1
-bool IsAccessCheckInfo_NonInline(HeapObject o) {
-  return o.IsAccessCheckInfo();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=35&c=1
+bool IsAccessCheckInfo_NonInline(Tagged<HeapObject> o) {
+  return IsAccessCheckInfo(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -48,9 +48,9 @@ void TorqueGeneratedAccessCheckInfo<AccessCheckInfo, Struct>::AccessCheckInfoVer
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=53&c=1
-bool IsAccessorInfo_NonInline(HeapObject o) {
-  return o.IsAccessorInfo();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=55&c=1
+bool IsAccessorInfo_NonInline(Tagged<HeapObject> o) {
+  return IsAccessorInfo(o);
 }
 
 #ifdef VERIFY_HEAP

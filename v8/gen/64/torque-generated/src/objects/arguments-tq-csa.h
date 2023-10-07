@@ -24,58 +24,58 @@ TNode<JSArgumentsObject> NewJSStrictArgumentsObject_0(compiler::CodeAssemblerSta
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=109&c=1
 TNode<JSArgumentsObject> NewJSSloppyArgumentsObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<JSFunction> p_callee);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=121&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=122&c=1
 TNode<JSArgumentsObject> NewJSFastAliasedArgumentsObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length, TNode<JSFunction> p_callee);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=145&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=146&c=1
 TorqueStructParameterMapIterator_0 NewParameterMapIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_formalParameterCount, TNode<IntPtrT> p_mappedCount);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=185&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=186&c=1
 TorqueStructParameterValueIterator_0 NewParameterValueIterator_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_mappedCount, TorqueStructArguments p_arguments);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=194&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=195&c=1
 TNode<JSArray> NewAllArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_argumentCount);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=205&c=1
 TNode<FixedArray> NewRestArgumentsElements_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_formalParameterCount, TNode<IntPtrT> p_argumentCount);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=214&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=216&c=1
 TNode<JSArray> NewRestArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructFrameWithArgumentsInfo_0 p_info);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=224&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=226&c=1
 TNode<FixedArray> NewStrictArgumentsElements_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_argumentCount);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=231&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=233&c=1
 TNode<JSArgumentsObject> NewStrictArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructFrameWithArgumentsInfo_0 p_info);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=238&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=241&c=1
 TNode<FixedArray> NewSloppyArgumentsElements_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_formalParameterCount, TNode<IntPtrT> p_argumentCount);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=251&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=254&c=1
 TNode<JSArgumentsObject> NewSloppyArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructFrameWithArgumentsInfo_0 p_info, TNode<JSFunction> p_callee);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=272&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=276&c=1
 TNode<JSArray> EmitFastNewAllArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_argc);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=278&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=283&c=1
 TNode<JSArray> EmitFastNewRestArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p__f);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=285&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=290&c=1
 TNode<JSArgumentsObject> EmitFastNewStrictArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p__f);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=292&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=297&c=1
 TNode<JSArgumentsObject> EmitFastNewSloppyArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_f);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=335&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=340&c=1
 TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=367&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=371&c=1
 TNode<Object> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=374&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=378&c=1
 TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=381&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=385&c=1
 TNode<Object> SloppyArgumentsStore_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Bailout);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
@@ -135,13 +135,13 @@ TNode<SloppyArgumentsElements> DownCastForTorqueClass_SloppyArgumentsElements_0(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
 TNode<AliasedArgumentsEntry> DownCastForTorqueClass_AliasedArgumentsEntry_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=248&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=251&c=10
 TNode<FixedArray> NewFixedArray_ParameterValueIterator_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_length, TorqueStructParameterValueIterator_0 p_it);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=264&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=268&c=20
 TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ParameterMapIterator_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_length, TNode<Context> p_context, TNode<FixedArray> p_arguments, TorqueStructParameterMapIterator_0 p_it);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=343&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=347&c=9
 TNode<BoolT> OutOfBounds_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_index, TNode<Smi> p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19

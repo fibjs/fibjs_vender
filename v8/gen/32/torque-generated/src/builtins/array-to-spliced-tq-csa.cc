@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-spliced-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -112,7 +113,7 @@ TNode<JSArray> CopyFastPackedArrayForToSpliced_0(compiler::CodeAssemblerState* s
     tmp1 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_actualStartSmi});
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_insertCountSmi});
     tmp3 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_actualDeleteCountSmi});
-    tmp4 = CodeStubAssembler(state_).AllocateFixedArray(p_kind, TNode<IntPtrT>{tmp0}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp4 = CodeStubAssembler(state_).AllocateFixedArray(p_kind, TNode<IntPtrT>{tmp0});
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp6 = CodeStubAssembler(state_).IntPtrGreaterThan(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp5});
     ca_.Branch(tmp6, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -211,7 +212,7 @@ TNode<JSArray> CopyFastPackedArrayForToSpliced_0(compiler::CodeAssemblerState* s
   return TNode<JSArray>{tmp24};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=51&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=50&c=1
 TNode<JSArray> TryFastArrayToSpliced_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSReceiver> p_o, TNode<Number> p_originalLenNumber, TNode<Number> p_newLenNumber, TNode<Number> p_actualStartNumber, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCountNumber, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -447,7 +448,7 @@ TNode<JSArray> TryFastArrayToSpliced_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<JSArray>{phi_bb34_11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=110&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=109&c=1
 TNode<JSArray> GenericArrayToSpliced_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSReceiver> p_o, TNode<Number> p_newLen, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -839,7 +840,7 @@ TF_BUILTIN(ArrayPrototypeToSpliced, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=100&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=99&c=5
 void InsertArgumentsIntoFastPackedArray_FixedArray_JSAny_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_dst, TNode<Smi> p_dstStart, TorqueStructArguments p_args, IntegerLiteral p_argsStart, TNode<Smi> p_insertCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -919,7 +920,7 @@ void InsertArgumentsIntoFastPackedArray_FixedArray_JSAny_0(compiler::CodeAssembl
     ca_.Bind(&block35);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=103&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-spliced.tq?l=102&c=5
 void InsertArgumentsIntoFastPackedArray_FixedDoubleArray_Number_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_dst, TNode<Smi> p_dstStart, TorqueStructArguments p_args, IntegerLiteral p_argsStart, TNode<Smi> p_insertCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

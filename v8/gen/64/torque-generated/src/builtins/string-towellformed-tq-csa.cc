@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-towellformed-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -103,13 +104,15 @@ TF_BUILTIN(StringPrototypeToWellFormed, CodeStubAssembler) {
 
   TNode<String> tmp0;
   TNode<String> tmp1;
-  TNode<BoolT> tmp2;
+  TNode<Uint16T> tmp2;
+  TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "String.prototype.toWellFormed");
     tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
-    tmp2 = Method_String_IsOneByteRepresentation_0(state_, TNode<String>{tmp1});
-    ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
+    tmp2 = Method_String_StringInstanceType_0(state_, TNode<String>{tmp1});
+    tmp3 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 3, 1, uint16_t>>(ca_.UncheckedCast<Word32T>(tmp2)));
+    ca_.Branch(tmp3, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
   if (block1.is_used()) {
@@ -117,65 +120,65 @@ TF_BUILTIN(StringPrototypeToWellFormed, CodeStubAssembler) {
     arguments.PopAndReturn(tmp1);
   }
 
-  TNode<Uint32T> tmp3;
-  TNode<String> tmp4;
-  TNode<BoolT> tmp5;
+  TNode<Uint32T> tmp4;
+  TNode<String> tmp5;
+  TNode<BoolT> tmp6;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp3 = CodeStubAssembler(state_).LoadStringLengthAsWord32(TNode<String>{tmp1});
-    tmp4 = Flatten_0(state_, TNode<String>{tmp1});
-    tmp5 = Method_String_IsOneByteRepresentationUnderneath_0(state_, TNode<String>{tmp4});
-    ca_.Branch(tmp5, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
+    tmp4 = CodeStubAssembler(state_).LoadStringLengthAsWord32(TNode<String>{tmp1});
+    tmp5 = Flatten_0(state_, TNode<String>{tmp1});
+    tmp6 = Method_String_IsOneByteRepresentationUnderneath_0(state_, TNode<String>{tmp5});
+    ca_.Branch(tmp6, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    arguments.PopAndReturn(tmp4);
+    arguments.PopAndReturn(tmp5);
   }
 
-  TNode<BoolT> tmp6;
+  TNode<BoolT> tmp7;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    compiler::CodeAssemblerLabel label7(&ca_);
-    tmp6 = StringBuiltinsAssembler(state_).HasUnpairedSurrogate(TNode<String>{tmp4}, &label7);
+    compiler::CodeAssemblerLabel label8(&ca_);
+    tmp7 = StringBuiltinsAssembler(state_).HasUnpairedSurrogate(TNode<String>{tmp5}, &label8);
     ca_.Goto(&block7);
-    if (label7.is_used()) {
-      ca_.Bind(&label7);
+    if (label8.is_used()) {
+      ca_.Bind(&label8);
       ca_.Goto(&block8);
     }
   }
 
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    ca_.Goto(&block6, tmp4);
+    ca_.Goto(&block6, tmp5);
   }
 
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    ca_.Branch(tmp6, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{tmp4});
+    ca_.Branch(tmp7, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{tmp5});
   }
 
-  TNode<String> tmp8;
+  TNode<String> tmp9;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp8 = AllocateSeqTwoByteString_0(state_, TNode<Uint32T>{tmp3});
-    compiler::CodeAssemblerLabel label9(&ca_);
-    StringBuiltinsAssembler(state_).ReplaceUnpairedSurrogates(TNode<String>{tmp4}, TNode<String>{tmp8}, &label9);
+    tmp9 = AllocateSeqTwoByteString_0(state_, TNode<Uint32T>{tmp4});
+    compiler::CodeAssemblerLabel label10(&ca_);
+    StringBuiltinsAssembler(state_).ReplaceUnpairedSurrogates(TNode<String>{tmp5}, TNode<String>{tmp9}, &label10);
     ca_.Goto(&block11);
-    if (label9.is_used()) {
-      ca_.Bind(&label9);
+    if (label10.is_used()) {
+      ca_.Bind(&label10);
       ca_.Goto(&block12);
     }
   }
 
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    ca_.Goto(&block6, tmp8);
+    ca_.Goto(&block6, tmp9);
   }
 
   if (block11.is_used()) {
     ca_.Bind(&block11);
-    ca_.Goto(&block10, tmp8);
+    ca_.Goto(&block10, tmp9);
   }
 
   TNode<String> phi_bb10_9;
@@ -185,11 +188,11 @@ TF_BUILTIN(StringPrototypeToWellFormed, CodeStubAssembler) {
   }
 
   TNode<String> phi_bb6_9;
-  TNode<String> tmp10;
+  TNode<String> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_9);
-    tmp10 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kStringToWellFormed, parameter0, tmp4)); 
-    arguments.PopAndReturn(tmp10);
+    tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kStringToWellFormed, parameter0, tmp5)); 
+    arguments.PopAndReturn(tmp11);
   }
 }
 

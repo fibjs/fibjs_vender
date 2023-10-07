@@ -173,8 +173,6 @@ class V8_EXPORT_PRIVATE CodeGenerator final : public GapResolver::Assembler {
   void AddProtectedInstructionLanding(uint32_t instr_offset,
                                       uint32_t landing_offset);
 
-  bool wasm_runtime_exception_support() const;
-
   SourcePosition start_source_position() const {
     return start_source_position_;
   }
@@ -184,11 +182,6 @@ class V8_EXPORT_PRIVATE CodeGenerator final : public GapResolver::Assembler {
 
   // Record a safepoint with the given pointer map.
   void RecordSafepoint(ReferenceMap* references);
-
-  DeoptimizationExit* BuildTranslation(Instruction* instr, int pc_offset,
-                                       size_t frame_state_offset,
-                                       size_t immediate_args_count,
-                                       OutputFrameStateCombine state_combine);
 
   Zone* zone() const { return zone_; }
   MacroAssembler* masm() { return &masm_; }
@@ -220,10 +213,6 @@ class V8_EXPORT_PRIVATE CodeGenerator final : public GapResolver::Assembler {
   uint32_t GetStackCheckOffset();
 
   CodeKind code_kind() const { return info_->code_kind(); }
-
-  // Decode trap information out of a wasm trap instruction.
-  template <typename OperandConverter>
-  std::pair<TrapId, size_t> DecodeTrapIdAndFrameStateOffset(Instruction* instr);
 
  private:
   GapResolver* resolver() { return &resolver_; }
@@ -271,6 +260,11 @@ class V8_EXPORT_PRIVATE CodeGenerator final : public GapResolver::Assembler {
   StubCallMode DetermineStubCallMode() const;
 
   CodeGenResult AssembleDeoptimizerCall(DeoptimizationExit* exit);
+
+  DeoptimizationExit* BuildTranslation(Instruction* instr, int pc_offset,
+                                       size_t frame_state_offset,
+                                       size_t immediate_args_count,
+                                       OutputFrameStateCombine state_combine);
 
   // ===========================================================================
   // ============= Architecture-specific code generation methods. ==============
@@ -472,7 +466,7 @@ class V8_EXPORT_PRIVATE CodeGenerator final : public GapResolver::Assembler {
   ZoneDeque<DeoptimizationExit*> deoptimization_exits_;
   ZoneDeque<DeoptimizationLiteral> deoptimization_literals_;
   size_t inlined_function_count_ = 0;
-  TranslationArrayBuilder translations_;
+  FrameTranslationBuilder translations_;
   int handler_table_offset_ = 0;
 
   // Deoptimization exits must be as small as possible, since their count grows
@@ -517,25 +511,6 @@ class V8_EXPORT_PRIVATE CodeGenerator final : public GapResolver::Assembler {
 
   const char* debug_name_ = nullptr;
 };
-
-template <typename OperandConverter>
-std::pair<TrapId, size_t> CodeGenerator::DecodeTrapIdAndFrameStateOffset(
-    Instruction* instr) {
-  OperandConverter i(this, instr);
-
-  size_t frame_state_offset =
-      DeoptFrameStateOffsetField::decode(instr->opcode());
-  // A wasm Trap doesn't encode any deopt arguments as the deopt information is
-  // only used for error stacktrace creation.
-  DCHECK_EQ(0, DeoptImmedArgsCountField::decode(instr->opcode()));
-
-  // The TrapId is the last immediate if the instruction doesn't have a
-  // FrameState. Otherwise it's stored directly before the FrameState immediate.
-  size_t trap_id_offset = frame_state_offset != 0 ? frame_state_offset - 1
-                                                  : instr->InputCount() - 1;
-  TrapId trap_id = static_cast<TrapId>(i.InputInt32(trap_id_offset));
-  return {trap_id, frame_state_offset};
-}
 
 }  // namespace v8::internal::compiler
 

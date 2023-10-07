@@ -108,7 +108,7 @@ class FastApiCallReducer : public Next {
     // Build the actual call.
     const TSCallDescriptor* call_descriptor = TSCallDescriptor::Create(
         Linkage::GetSimplifiedCDescriptor(__ graph_zone(), builder.Build()),
-        __ graph_zone());
+        CanThrow::kNo, __ graph_zone());
     OpIndex c_call_result =
         WrapFastCall(call_descriptor, callee, base::VectorOf(args));
     V<Object> fast_call_result = ConvertReturnValue(c_signature, c_call_result);
@@ -126,7 +126,7 @@ class FastApiCallReducer : public Next {
     if (BIND(handle_error)) {
       // We pass Smi(0) as the value here, although this should never be visible
       // when calling code reacts to `kFailureValue` properly.
-      GOTO(done, FastApiCallOp::kFailureValue, __ SmiTag(0));
+      GOTO(done, FastApiCallOp::kFailureValue, __ TagSmi(0));
     }
 
     BIND(done, state, value);
@@ -448,7 +448,7 @@ class FastApiCallReducer : public Next {
         // contains compensated offset value) will decompress the tagged value.
         // See JSTypedArray::ExternalPointerCompensationForOnHeapArray() for
         // details.
-        base = __ ChangeUint32ToUintPtr(base);
+        base = __ ChangeUint32ToUintPtr(__ TruncateWordPtrToWord32(base));
       }
       data_ptr = __ WordPtrAdd(base, external_pointer);
     }
@@ -498,16 +498,16 @@ class FastApiCallReducer : public Next {
         CFunctionInfo::Int64Representation repr =
             c_signature->GetInt64Representation();
         if (repr == CFunctionInfo::Int64Representation::kBigInt) {
-          return __ ConvertPrimitiveToObject(
-              result, ConvertPrimitiveToObjectOp::Kind::kBigInt,
+          return __ ConvertUntaggedToJSPrimitive(
+              result, ConvertUntaggedToJSPrimitiveOp::JSPrimitiveKind::kBigInt,
               RegisterRepresentation::Word64(),
-              ConvertPrimitiveToObjectOp::InputInterpretation::kSigned,
+              ConvertUntaggedToJSPrimitiveOp::InputInterpretation::kSigned,
               CheckForMinusZeroMode::kDontCheckForMinusZero);
         } else if (repr == CFunctionInfo::Int64Representation::kNumber) {
-          return __ ConvertPrimitiveToObject(
-              result, ConvertPrimitiveToObjectOp::Kind::kNumber,
+          return __ ConvertUntaggedToJSPrimitive(
+              result, ConvertUntaggedToJSPrimitiveOp::JSPrimitiveKind::kNumber,
               RegisterRepresentation::Word64(),
-              ConvertPrimitiveToObjectOp::InputInterpretation::kSigned,
+              ConvertUntaggedToJSPrimitiveOp::InputInterpretation::kSigned,
               CheckForMinusZeroMode::kDontCheckForMinusZero);
         } else {
           UNREACHABLE();
@@ -517,16 +517,16 @@ class FastApiCallReducer : public Next {
         CFunctionInfo::Int64Representation repr =
             c_signature->GetInt64Representation();
         if (repr == CFunctionInfo::Int64Representation::kBigInt) {
-          return __ ConvertPrimitiveToObject(
-              result, ConvertPrimitiveToObjectOp::Kind::kBigInt,
+          return __ ConvertUntaggedToJSPrimitive(
+              result, ConvertUntaggedToJSPrimitiveOp::JSPrimitiveKind::kBigInt,
               RegisterRepresentation::Word64(),
-              ConvertPrimitiveToObjectOp::InputInterpretation::kUnsigned,
+              ConvertUntaggedToJSPrimitiveOp::InputInterpretation::kUnsigned,
               CheckForMinusZeroMode::kDontCheckForMinusZero);
         } else if (repr == CFunctionInfo::Int64Representation::kNumber) {
-          return __ ConvertPrimitiveToObject(
-              result, ConvertPrimitiveToObjectOp::Kind::kNumber,
+          return __ ConvertUntaggedToJSPrimitive(
+              result, ConvertUntaggedToJSPrimitiveOp::JSPrimitiveKind::kNumber,
               RegisterRepresentation::Word64(),
-              ConvertPrimitiveToObjectOp::InputInterpretation::kUnsigned,
+              ConvertUntaggedToJSPrimitiveOp::InputInterpretation::kUnsigned,
               CheckForMinusZeroMode::kDontCheckForMinusZero);
         } else {
           UNREACHABLE();
@@ -587,7 +587,8 @@ class FastApiCallReducer : public Next {
     OpIndex handle =
         __ Call(allocate_and_initialize_external_pointer_table_entry,
                 {isolate_ptr, pointer},
-                TSCallDescriptor::Create(call_descriptor, __ graph_zone()));
+                TSCallDescriptor::Create(call_descriptor, CanThrow::kNo,
+                                         __ graph_zone()));
     __ InitializeField(
         external, AccessBuilder::ForJSExternalObjectPointerHandle(), handle);
 #else

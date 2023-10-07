@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-reversed-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -102,7 +103,7 @@ TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* s
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{p_length});
-    tmp1 = CodeStubAssembler(state_).AllocateFixedArray(ElementsKind::PACKED_DOUBLE_ELEMENTS, TNode<IntPtrT>{tmp0}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp1 = CodeStubAssembler(state_).AllocateFixedArray(ElementsKind::PACKED_DOUBLE_ELEMENTS, TNode<IntPtrT>{tmp0});
     tmp2 = UnsafeCast_FixedDoubleArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp1});
     tmp3 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block4, tmp3);
@@ -195,7 +196,7 @@ TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* s
   return TNode<JSArray>{tmp25};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=81&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=80&c=1
 TNode<JSArray> TryFastArrayToReversed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -563,7 +564,7 @@ TF_BUILTIN(ArrayPrototypeToReversed, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=89&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=88&c=12
 TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedArray> p_elements, TNode<Smi> p_length, bool p_initializeArray) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -582,7 +583,7 @@ TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* st
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{p_length});
-    tmp1 = CodeStubAssembler(state_).AllocateFixedArray(p_kind, TNode<IntPtrT>{tmp0}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp1 = CodeStubAssembler(state_).AllocateFixedArray(p_kind, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, p_initializeArray);
     ca_.Branch(tmp2, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -649,7 +650,7 @@ TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* st
   return TNode<JSArray>{tmp16};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=109&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=108&c=14
 TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_length, bool p_initializeArray) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -668,7 +669,7 @@ TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerSta
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).SmiUntag(TNode<Smi>{p_length});
-    tmp1 = CodeStubAssembler(state_).AllocateFixedArray(p_kind, TNode<IntPtrT>{tmp0}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp1 = CodeStubAssembler(state_).AllocateFixedArray(p_kind, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, p_initializeArray);
     ca_.Branch(tmp2, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -735,7 +736,7 @@ TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerSta
   return TNode<JSArray>{tmp16};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=52&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=51&c=12
 TNode<BoolT> Is_FixedArray_FixedArrayBase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

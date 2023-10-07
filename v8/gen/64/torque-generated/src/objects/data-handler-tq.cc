@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
-bool IsDataHandler_NonInline(HeapObject o) {
-  return o.IsDataHandler();
+bool IsDataHandler_NonInline(Tagged<HeapObject> o) {
+  return IsDataHandler(o);
 }
 
 #ifdef VERIFY_HEAP

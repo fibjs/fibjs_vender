@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/arguments-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -309,7 +310,7 @@ TNode<JSArgumentsObject> NewJSSloppyArgumentsObject_0(compiler::CodeAssemblerSta
   return TNode<JSArgumentsObject>{tmp13};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=121&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=122&c=1
 TNode<JSArgumentsObject> NewJSFastAliasedArgumentsObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length, TNode<JSFunction> p_callee) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -355,7 +356,7 @@ TNode<JSArgumentsObject> NewJSFastAliasedArgumentsObject_0(compiler::CodeAssembl
   return TNode<JSArgumentsObject>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=145&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=146&c=1
 TorqueStructParameterMapIterator_0 NewParameterMapIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_formalParameterCount, TNode<IntPtrT> p_mappedCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -426,7 +427,7 @@ TorqueStructParameterMapIterator_0 NewParameterMapIterator_0(compiler::CodeAssem
   return TorqueStructParameterMapIterator_0{TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp13}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=185&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=186&c=1
 TorqueStructParameterValueIterator_0 NewParameterValueIterator_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_mappedCount, TorqueStructArguments p_arguments) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -443,7 +444,7 @@ TorqueStructParameterValueIterator_0 NewParameterValueIterator_0(compiler::CodeA
   return TorqueStructParameterValueIterator_0{TNode<IntPtrT>{p_mappedCount}, TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{p_mappedCount}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=194&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=195&c=1
 TNode<JSArray> NewAllArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_argumentCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -473,7 +474,7 @@ TNode<JSArray> NewAllArguments_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<JSArray>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=205&c=1
 TNode<FixedArray> NewRestArgumentsElements_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_formalParameterCount, TNode<IntPtrT> p_argumentCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -522,7 +523,7 @@ TNode<FixedArray> NewRestArgumentsElements_0(compiler::CodeAssemblerState* state
   return TNode<FixedArray>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=214&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=216&c=1
 TNode<JSArray> NewRestArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructFrameWithArgumentsInfo_0 p_info) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -549,7 +550,7 @@ TNode<JSArray> NewRestArguments_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<JSArray>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=224&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=226&c=1
 TNode<FixedArray> NewStrictArgumentsElements_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_argumentCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -575,7 +576,7 @@ TNode<FixedArray> NewStrictArgumentsElements_0(compiler::CodeAssemblerState* sta
   return TNode<FixedArray>{tmp5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=231&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=233&c=1
 TNode<JSArgumentsObject> NewStrictArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructFrameWithArgumentsInfo_0 p_info) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -598,7 +599,7 @@ TNode<JSArgumentsObject> NewStrictArguments_0(compiler::CodeAssemblerState* stat
   return TNode<JSArgumentsObject>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=238&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=241&c=1
 TNode<FixedArray> NewSloppyArgumentsElements_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_formalParameterCount, TNode<IntPtrT> p_argumentCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -658,7 +659,7 @@ TNode<FixedArray> NewSloppyArgumentsElements_0(compiler::CodeAssemblerState* sta
   return TNode<FixedArray>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=251&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=254&c=1
 TNode<JSArgumentsObject> NewSloppyArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructFrameWithArgumentsInfo_0 p_info, TNode<JSFunction> p_callee) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -719,7 +720,7 @@ TNode<JSArgumentsObject> NewSloppyArguments_0(compiler::CodeAssemblerState* stat
   return TNode<JSArgumentsObject>{phi_bb1_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=272&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=276&c=1
 TNode<JSArray> EmitFastNewAllArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_frame, TNode<IntPtrT> p_argc) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -738,7 +739,7 @@ TNode<JSArray> EmitFastNewAllArguments_0(compiler::CodeAssemblerState* state_, T
   return TNode<JSArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=278&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=283&c=1
 TNode<JSArray> EmitFastNewRestArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p__f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -761,7 +762,7 @@ TNode<JSArray> EmitFastNewRestArguments_0(compiler::CodeAssemblerState* state_, 
   return TNode<JSArray>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=285&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=290&c=1
 TNode<JSArgumentsObject> EmitFastNewStrictArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p__f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -784,7 +785,7 @@ TNode<JSArgumentsObject> EmitFastNewStrictArguments_0(compiler::CodeAssemblerSta
   return TNode<JSArgumentsObject>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=292&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=297&c=1
 TNode<JSArgumentsObject> EmitFastNewSloppyArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -921,7 +922,7 @@ TF_BUILTIN(FastNewRestArguments, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=335&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=340&c=1
 TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1153,7 +1154,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
   TNode<Object> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<Object> tmp54;
-  TNode<HeapObject> tmp55;
+  TNode<Hole> tmp55;
   TNode<BoolT> tmp56;
   if (block43.is_used()) {
     ca_.Bind(&block43);
@@ -1228,7 +1229,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
   return TorqueStructReference_Object_0{TNode<Object>{phi_bb55_2}, TNode<IntPtrT>{phi_bb55_3}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=367&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=371&c=1
 TNode<Object> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1269,7 +1270,7 @@ TNode<Object> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Object>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=374&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=378&c=1
 TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1297,7 +1298,7 @@ TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<J
     ca_.Goto(label_Bailout);
   }
 
-  TNode<Oddball> tmp3;
+  TNode<True> tmp3;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp3 = True_0(state_);
@@ -1308,7 +1309,7 @@ TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<J
   return TNode<Object>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=381&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=385&c=1
 TNode<Object> SloppyArgumentsStore_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1928,7 +1929,7 @@ TNode<SloppyArgumentsElements> DownCastForTorqueClass_SloppyArgumentsElements_0(
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(194), static_cast<InstanceType>(194))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(195), static_cast<InstanceType>(195))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1971,7 +1972,7 @@ TNode<SloppyArgumentsElements> DownCastForTorqueClass_SloppyArgumentsElements_0(
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(194));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(195));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2005,12 +2006,12 @@ TNode<SloppyArgumentsElements> DownCastForTorqueClass_SloppyArgumentsElements_0(
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(194), static_cast<InstanceType>(194))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(195), static_cast<InstanceType>(195))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(194));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(195));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2191,7 +2192,7 @@ TNode<AliasedArgumentsEntry> DownCastForTorqueClass_AliasedArgumentsEntry_0(comp
   return TNode<AliasedArgumentsEntry>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=248&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=251&c=10
 TNode<FixedArray> NewFixedArray_ParameterValueIterator_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_length, TorqueStructParameterValueIterator_0 p_it) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2280,7 +2281,7 @@ TNode<FixedArray> NewFixedArray_ParameterValueIterator_0(compiler::CodeAssembler
   return TNode<FixedArray>{phi_bb6_7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=264&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=268&c=20
 TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ParameterMapIterator_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_length, TNode<Context> p_context, TNode<FixedArray> p_arguments, TorqueStructParameterMapIterator_0 p_it) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2328,7 +2329,7 @@ TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ParameterMapIterator_0
   return TNode<SloppyArgumentsElements>{tmp12};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=343&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=347&c=9
 TNode<BoolT> OutOfBounds_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_index, TNode<Smi> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

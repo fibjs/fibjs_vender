@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=5&c=1
-bool IsFeedbackCell_NonInline(HeapObject o) {
-  return o.IsFeedbackCell();
+bool IsFeedbackCell_NonInline(Tagged<HeapObject> o) {
+  return IsFeedbackCell(o);
 }
 
 #ifdef VERIFY_HEAP

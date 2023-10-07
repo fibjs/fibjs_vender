@@ -46,3 +46,68 @@ class TorqueGeneratedOddballAsserts {
   static_assert(kSize == D::kSize);
 };
 
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/oddball.tq?l=26&c=1
+template <class D, class P>
+class TorqueGeneratedBooleanAsserts {
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
+  static constexpr int kSize = P::kHeaderSize;
+
+  static_assert(kSize == D::kSize);
+};
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/oddball.tq?l=16&c=1
+template <class D, class P>
+class TorqueGeneratedNullAsserts {
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
+  static constexpr int kSize = P::kHeaderSize;
+
+  static_assert(kSize == D::kSize);
+};
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/oddball.tq?l=21&c=1
+template <class D, class P>
+class TorqueGeneratedUndefinedAsserts {
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
+  static constexpr int kSize = P::kHeaderSize;
+
+  static_assert(kSize == D::kSize);
+};
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/oddball.tq?l=31&c=1
+template <class D, class P>
+class TorqueGeneratedTrueAsserts {
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
+  static constexpr int kSize = P::kHeaderSize;
+
+  static_assert(kSize == D::kSize);
+};
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/oddball.tq?l=36&c=1
+template <class D, class P>
+class TorqueGeneratedFalseAsserts {
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kHeaderSize = P::kHeaderSize;
+  static constexpr int kSize = P::kHeaderSize;
+
+  static_assert(kSize == D::kSize);
+};
+

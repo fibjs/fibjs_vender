@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-set-property-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -80,7 +81,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=12&c=1
 void CallThrowTypeErrorIfStrict_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, MessageTemplate p_message) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -89,8 +90,8 @@ void CallThrowTypeErrorIfStrict_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
-  TNode<Oddball> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Null> tmp1;
+  TNode<Null> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).SmiConstant(p_message);
@@ -155,7 +156,7 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp6;
+  TNode<Undefined> tmp6;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     CallThrowTypeErrorIfStrict_0(state_, TNode<Context>{parameter0}, MessageTemplate::kProxyPrivate);
@@ -218,7 +219,7 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=28&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=26&c=10
 TNode<BoolT> Is_Name_AnyName_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Name> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

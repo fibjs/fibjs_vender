@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-includes-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -94,7 +95,7 @@ TF_BUILTIN(StringPrototypeIncludes, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -123,7 +124,7 @@ TF_BUILTIN(StringPrototypeIncludes, CodeStubAssembler) {
 
   TNode<String> tmp7;
   TNode<Smi> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp9;
   TNode<BoolT> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2);
@@ -160,21 +161,21 @@ TF_BUILTIN(StringPrototypeIncludes, CodeStubAssembler) {
     ca_.Branch(tmp17, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp18;
+  TNode<True> tmp18;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp18 = True_0(state_);
     ca_.Goto(&block7, tmp18);
   }
 
-  TNode<Oddball> tmp19;
+  TNode<False> tmp19;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp19 = False_0(state_);
     ca_.Goto(&block7, tmp19);
   }
 
-  TNode<Oddball> phi_bb7_12;
+  TNode<Boolean> phi_bb7_12;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_12);
     arguments.PopAndReturn(phi_bb7_12);

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1
-bool IsJSArrayIterator_NonInline(HeapObject o) {
-  return o.IsJSArrayIterator();
+bool IsJSArrayIterator_NonInline(Tagged<HeapObject> o) {
+  return IsJSArrayIterator(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedJSArrayIterator<JSArrayIterator, JSObject>::JSArrayIteratorV
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
-bool IsJSArray_NonInline(HeapObject o) {
-  return o.IsJSArray();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=1
+bool IsJSArray_NonInline(Tagged<HeapObject> o) {
+  return IsJSArray(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,9 +34,9 @@ void TorqueGeneratedJSArray<JSArray, JSObject>::JSArrayVerify(Isolate* isolate) 
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=67&c=1
-bool IsTemplateLiteralObject_NonInline(HeapObject o) {
-  return o.IsTemplateLiteralObject();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=68&c=1
+bool IsTemplateLiteralObject_NonInline(Tagged<HeapObject> o) {
+  return IsTemplateLiteralObject(o);
 }
 
 #ifdef VERIFY_HEAP

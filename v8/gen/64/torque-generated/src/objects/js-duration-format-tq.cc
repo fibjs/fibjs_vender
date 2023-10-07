@@ -6,9 +6,9 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1
-bool IsJSDurationFormat_NonInline(HeapObject o) {
-  return o.IsJSDurationFormat();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1
+bool IsJSDurationFormat_NonInline(Tagged<HeapObject> o) {
+  return IsJSDurationFormat(o);
 }
 
 #ifdef VERIFY_HEAP

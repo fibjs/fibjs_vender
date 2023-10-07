@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -75,7 +76,7 @@
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
-#include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
+#include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
 
@@ -227,7 +228,7 @@ TF_BUILTIN(ArrayFrom, CodeStubAssembler) {
   TNode<Object> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<Object> tmp16;
-  TNode<Oddball> tmp17;
+  TNode<Undefined> tmp17;
   TNode<BoolT> tmp18;
   if (block6.is_used()) {
     ca_.Bind(&block6);
@@ -260,7 +261,8 @@ TF_BUILTIN(ArrayFrom, CodeStubAssembler) {
 
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp14});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp14);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<BoolT> tmp22;
@@ -542,7 +544,7 @@ TF_BUILTIN(ArrayFrom, CodeStubAssembler) {
     tmp61 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp62 = Convert_intptr_Number_0(state_, TNode<Number>{tmp29});
     tmp63 = GetFastPackedSmiElementsJSArrayMap_0(state_, TNode<Context>{parameter0});
-    tmp64 = CodeStubAssembler(state_).AllocateJSArray(ElementsKind::PACKED_SMI_ELEMENTS, TNode<Map>{tmp63}, TNode<IntPtrT>{tmp62}, TNode<Smi>{tmp61}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp64 = CodeStubAssembler(state_).AllocateJSArray(ElementsKind::PACKED_SMI_ELEMENTS, TNode<Map>{tmp63}, TNode<IntPtrT>{tmp62}, TNode<Smi>{tmp61});
     ca_.Goto(&block51, phi_bb56_10, tmp64);
   }
 

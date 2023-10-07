@@ -12,28 +12,28 @@ TNode<Smi> FromConstexpr_FrameType_constexpr_FrameType_0(compiler::CodeAssembler
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=21&c=1
 TNode<Smi> Cast_FrameType_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=40&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=41&c=1
 TNode<Object> LoadObjectFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f, int32_t p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=43&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=44&c=1
 TNode<RawPtrT> LoadPointerFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f, int32_t p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=46&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=47&c=1
 TNode<IntPtrT> LoadIntptrFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f, int32_t p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=52&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=53&c=1
 TNode<JSFunction> LoadFunctionFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=62&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=63&c=1
 TNode<RawPtrT> LoadCallerFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=73&c=1
 TNode<IntPtrT> LoadArgCFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=78&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=79&c=1
 TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=96&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=97&c=1
 TNode<Object> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_f);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=103&c=1

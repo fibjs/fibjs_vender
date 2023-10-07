@@ -1,8 +1,8 @@
 class JSProxy;
 class JSProxyRevocableResult;
-// Alias for HeapObject::IsJSProxy() that avoids inlining.
+// Alias for IsJSProxy() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSProxy_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSProxy_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
 template <class D, class P>
@@ -18,27 +18,27 @@ class TorqueGeneratedJSProxy : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSProxy<D,P>;
 
-  // Torque type: (class JSReceiver | Null)
+  // Torque type: (class JSReceiver | class Null)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
-  inline HeapObject target() const;
+  inline Tagged<HeapObject> target() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
-  inline HeapObject target(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> target(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
-  inline void set_target(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_target(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | Null)
+  // Torque type: (class JSReceiver | class Null)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=7&c=3
-  inline HeapObject handler() const;
+  inline Tagged<HeapObject> handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=7&c=3
-  inline HeapObject handler(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=7&c=3
-  inline void set_handler(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_handler(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSProxy)
@@ -83,6 +83,8 @@ class TorqueGeneratedJSProxy : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSProxy(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSProxy(Address ptr);
 };
 
@@ -102,25 +104,25 @@ class TorqueGeneratedJSProxyRevocableResult : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
-  inline Object proxy() const;
+  inline Tagged<Object> proxy() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
-  inline Object proxy(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> proxy(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
-  inline void set_proxy(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_proxy(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=12&c=3
-  inline Object revoke() const;
+  inline Tagged<Object> revoke() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=12&c=3
-  inline Object revoke(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> revoke(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=12&c=3
-  inline void set_revoke(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_revoke(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=10&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=10&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSProxyRevocableResult)
@@ -148,6 +150,8 @@ class TorqueGeneratedJSProxyRevocableResult : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSProxyRevocableResult(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSProxyRevocableResult(Address ptr);
 };
 

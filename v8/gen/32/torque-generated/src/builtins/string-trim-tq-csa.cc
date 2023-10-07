@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-trim-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -428,7 +429,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   return TNode<BoolT>{phi_bb30_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=136&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=137&c=1
 TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructArguments p__arguments, const char* p_methodName, String::TrimMode p_variant) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -939,7 +940,7 @@ TF_BUILTIN(StringPrototypeTrimEnd, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=144&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=145&c=12
 TNode<String> StringTrimBody_char8_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_string, TorqueStructSlice_char8_ConstReference_char8_0 p_slice, String::TrimMode p_variant) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1059,7 +1060,7 @@ TNode<String> StringTrimBody_char8_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<String>{phi_bb1_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=146&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=147&c=12
 TNode<String> StringTrimBody_char16_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_string, TorqueStructSlice_char16_ConstReference_char16_0 p_slice, String::TrimMode p_variant) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1179,7 +1180,7 @@ TNode<String> StringTrimBody_char16_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<String>{phi_bb1_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=120&c=18
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=121&c=18
 TNode<IntPtrT> StringTrimLoop_char8_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructSlice_char8_ConstReference_char8_0 p_stringSlice, TNode<IntPtrT> p_startIndex, TNode<IntPtrT> p_endIndex, TNode<IntPtrT> p_increment) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1300,7 +1301,7 @@ TNode<IntPtrT> StringTrimLoop_char8_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<IntPtrT>{phi_bb17_7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=120&c=18
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=121&c=18
 TNode<IntPtrT> StringTrimLoop_char16_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructSlice_char16_ConstReference_char16_0 p_stringSlice, TNode<IntPtrT> p_startIndex, TNode<IntPtrT> p_endIndex, TNode<IntPtrT> p_increment) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

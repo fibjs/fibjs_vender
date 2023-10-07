@@ -1,7 +1,7 @@
 class Context;
-// Alias for HeapObject::IsContext() that avoids inlining.
+// Alias for IsContext() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsContext_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsContext_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=5&c=1
 template <class D, class P>
@@ -23,17 +23,17 @@ class TorqueGeneratedContext : public P {
   inline void set_length(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
-  inline Object elements(int i) const;
+  inline Tagged<Object> elements(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
-  inline Object elements(PtrComprCageBase cage_base, int i) const;
+  inline Tagged<Object> elements(PtrComprCageBase cage_base, int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
-  inline void set_elements(int i, Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_elements(int i, Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -75,6 +75,8 @@ class TorqueGeneratedContext : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedContext(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedContext(Address ptr);
 };
 

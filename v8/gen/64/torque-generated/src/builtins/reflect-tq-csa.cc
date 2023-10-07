@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -366,11 +367,11 @@ TF_BUILTIN(ReflectDeleteProperty, CodeStubAssembler) {
   }
 
   TNode<Smi> tmp2;
-  TNode<Oddball> tmp3;
+  TNode<Boolean> tmp3;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kSloppy);
-    tmp3 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp0, parameter2, tmp2);
+    tmp3 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp0, parameter2, tmp2);
     CodeStubAssembler(state_).Return(tmp3);
   }
 }
@@ -405,10 +406,10 @@ TF_BUILTIN(ReflectHas, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Reflect.has");
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Boolean> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, parameter2);
+    tmp2 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, parameter2);
     CodeStubAssembler(state_).Return(tmp2);
   }
 }
@@ -455,7 +456,7 @@ TF_BUILTIN(ReflectGetOwnPropertyDescriptor, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/reflect.tq?l=44&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/reflect.tq?l=42&c=9
 TNode<BoolT> Is_WasmObject_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

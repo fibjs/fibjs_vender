@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1
-bool IsJSCollator_NonInline(HeapObject o) {
-  return o.IsJSCollator();
+bool IsJSCollator_NonInline(Tagged<HeapObject> o) {
+  return IsJSCollator(o);
 }
 
 #ifdef VERIFY_HEAP

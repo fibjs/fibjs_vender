@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1
-bool IsJSRawJson_NonInline(HeapObject o) {
-  return o.IsJSRawJson();
+bool IsJSRawJson_NonInline(Tagged<HeapObject> o) {
+  return IsJSRawJson(o);
 }
 
 #ifdef VERIFY_HEAP

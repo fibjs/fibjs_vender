@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1
-bool IsJSNumberFormat_NonInline(HeapObject o) {
-  return o.IsJSNumberFormat();
+bool IsJSNumberFormat_NonInline(Tagged<HeapObject> o) {
+  return IsJSNumberFormat(o);
 }
 
 #ifdef VERIFY_HEAP

@@ -215,6 +215,11 @@ bool PrintRawWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
       os << PrefixName(prefix) << ", ";
     }
 
+    if (WasmOpcodes::IsRelaxedSimdOpcode(opcode)) {
+      // Expand multi-byte opcodes.
+      os << "...";
+      offset += 1;
+    }
     os << RawOpcodeName(opcode) << ",";
 
     if (opcode == kExprLoop || opcode == kExprIf || opcode == kExprBlock ||
@@ -287,6 +292,12 @@ bool PrintRawWasmCode(AccountingAllocator* allocator, const FunctionBody& body,
       case kExprCallIndirect: {
         CallIndirectImmediate imm(&i, i.pc() + 1, Decoder::kNoValidation);
         os << " sig #" << imm.sig_imm.index;
+        CHECK(decoder.Validate(i.pc() + 1, imm));
+        os << ": " << *imm.sig;
+        break;
+      }
+      case kExprCallRef: {
+        SigIndexImmediate imm(&i, i.pc() + 1, Decoder::kNoValidation);
         CHECK(decoder.Validate(i.pc() + 1, imm));
         os << ": " << *imm.sig;
         break;

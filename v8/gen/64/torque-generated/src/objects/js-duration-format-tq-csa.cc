@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/js-duration-format-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -76,7 +77,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1
 TNode<JSDurationFormat> Cast_JSDurationFormat_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -112,7 +113,7 @@ TNode<JSDurationFormat> Cast_JSDurationFormat_0(compiler::CodeAssemblerState* st
   return TNode<JSDurationFormat>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=44&c=3
 TNode<Smi> LoadJSDurationFormatStyleFlags_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -133,7 +134,7 @@ TNode<Smi> LoadJSDurationFormatStyleFlags_0(compiler::CodeAssemblerState* state_
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=44&c=3
 void StoreJSDurationFormatStyleFlags_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -152,7 +153,7 @@ void StoreJSDurationFormatStyleFlags_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=45&c=3
 TNode<Smi> LoadJSDurationFormatDisplayFlags_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -173,7 +174,7 @@ TNode<Smi> LoadJSDurationFormatDisplayFlags_0(compiler::CodeAssemblerState* stat
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=45&c=3
 void StoreJSDurationFormatDisplayFlags_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -192,7 +193,7 @@ void StoreJSDurationFormatDisplayFlags_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=46&c=3
 TNode<Foreign> LoadJSDurationFormatIcuLocale_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -213,7 +214,7 @@ TNode<Foreign> LoadJSDurationFormatIcuLocale_0(compiler::CodeAssemblerState* sta
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=46&c=3
 void StoreJSDurationFormatIcuLocale_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -232,7 +233,7 @@ void StoreJSDurationFormatIcuLocale_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=47&c=3
 TNode<Foreign> LoadJSDurationFormatIcuNumberFormatter_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -253,7 +254,7 @@ TNode<Foreign> LoadJSDurationFormatIcuNumberFormatter_0(compiler::CodeAssemblerS
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=47&c=3
 void StoreJSDurationFormatIcuNumberFormatter_0(compiler::CodeAssemblerState* state_, TNode<JSDurationFormat> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -272,7 +273,7 @@ void StoreJSDurationFormatIcuNumberFormatter_0(compiler::CodeAssemblerState* sta
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1
 TNode<JSDurationFormat> DownCastForTorqueClass_JSDurationFormat_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
-bool IsSourceTextModule_NonInline(HeapObject o) {
-  return o.IsSourceTextModule();
+bool IsSourceTextModule_NonInline(Tagged<HeapObject> o) {
+  return IsSourceTextModule(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedSourceTextModule<SourceTextModule, Module>::SourceTextModule
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
-bool IsModuleRequest_NonInline(HeapObject o) {
-  return o.IsModuleRequest();
+bool IsModuleRequest_NonInline(Tagged<HeapObject> o) {
+  return IsModuleRequest(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedModuleRequest<ModuleRequest, Struct>::ModuleRequestVerify(Is
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
-bool IsSourceTextModuleInfoEntry_NonInline(HeapObject o) {
-  return o.IsSourceTextModuleInfoEntry();
+bool IsSourceTextModuleInfoEntry_NonInline(Tagged<HeapObject> o) {
+  return IsSourceTextModuleInfoEntry(o);
 }
 
 #ifdef VERIFY_HEAP

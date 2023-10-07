@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -118,7 +119,7 @@ TNode<String> kResolveString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).ResolveStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=49&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=47&c=1
 TNode<Context> ExtractHandlerContextInternal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_handler, compiler::CodeAssemblerLabel* label_NotFound) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -227,7 +228,7 @@ TNode<Context> ExtractHandlerContextInternal_0(compiler::CodeAssemblerState* sta
   TNode<Context> tmp12;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_2, &phi_bb16_3);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp12 = CodeStubAssembler(state_).LoadReference<Context>(CodeStubAssembler::Reference{tmp7, tmp11});
     ca_.Goto(&block18);
   }
@@ -249,7 +250,7 @@ TNode<Context> ExtractHandlerContextInternal_0(compiler::CodeAssemblerState* sta
   return TNode<Context>{tmp12};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=70&c=1
 TNode<Context> ExtractHandlerContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_handler) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -292,7 +293,7 @@ TNode<Context> ExtractHandlerContext_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Context>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=82&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=79&c=1
 TNode<Context> ExtractHandlerContext_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_primary, TNode<HeapObject> p_secondary) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -354,7 +355,7 @@ TNode<Context> ExtractHandlerContext_1(compiler::CodeAssemblerState* state_, TNo
   return TNode<Context>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=94&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=91&c=1
 void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<PromiseReaction> p_promiseReaction, TNode<Object> p_argument, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -398,7 +399,7 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kReject)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp4}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=103&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp4}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=100&c=5");
     tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp6 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_promiseReaction, tmp5});
     tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
@@ -414,7 +415,7 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block4, &phi_bb4_3, &phi_bb4_4);
     tmp9 = ExtractHandlerContext_1(state_, TNode<Context>{p_context}, TNode<HeapObject>{phi_bb4_3}, TNode<HeapObject>{phi_bb4_4});
     tmp10 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(PromiseReaction::kSize, PromiseReactionJobTask::kSizeOfAllPromiseReactionJobTasks)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp10}, "static_assert(kPromiseReactionSize ==\n      kPromiseReactionJobTaskSizeOfAllPromiseReactionJobTasks) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=117&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp10}, "static_assert(kPromiseReactionSize ==\n      kPromiseReactionJobTaskSizeOfAllPromiseReactionJobTasks) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=114&c=3");
     if (((CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kFulfill)))) {
       ca_.Goto(&block5);
     } else {
@@ -429,7 +430,7 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
   TNode<PromiseFulfillReactionJobTask> tmp15;
   TNode<IntPtrT> tmp16;
   TNode<IntPtrT> tmp17;
-  TNode<Oddball> tmp18;
+  TNode<Undefined> tmp18;
   TNode<BoolT> tmp19;
   TNode<BoolT> tmp20;
   if (block5.is_used()) {
@@ -443,11 +444,11 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp15, tmp16}, p_argument);
     tmp17 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp15, tmp17}, tmp9);
-    tmp18 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), tmp9, tmp15);
+    tmp18 = ca_.CallStub<Undefined>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), tmp9, tmp15);
     tmp19 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(PromiseReaction::kFulfillHandlerOffset, PromiseReactionJobTask::kHandlerOffset)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp19}, "static_assert(kPromiseReactionFulfillHandlerOffset ==\n        kPromiseReactionJobTaskHandlerOffset) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=128&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp19}, "static_assert(kPromiseReactionFulfillHandlerOffset ==\n        kPromiseReactionJobTaskHandlerOffset) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=125&c=5");
     tmp20 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(PromiseReaction::kPromiseOrCapabilityOffset, PromiseReactionJobTask::kPromiseOrCapabilityOffset)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp20}, "static_assert(kPromiseReactionPromiseOrCapabilityOffset ==\n        kPromiseReactionJobTaskPromiseOrCapabilityOffset) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=131&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp20}, "static_assert(kPromiseReactionPromiseOrCapabilityOffset ==\n        kPromiseReactionJobTaskPromiseOrCapabilityOffset) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=128&c=5");
     ca_.Goto(&block7);
   }
 
@@ -460,12 +461,12 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<IntPtrT> tmp29;
-  TNode<Oddball> tmp30;
+  TNode<Undefined> tmp30;
   TNode<BoolT> tmp31;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp21 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kReject)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp21}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=135&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp21}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=132&c=5");
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     std::tie(tmp23, tmp24) = UnsafeConstCast_Map_0(state_, TorqueStructReference_Map_0{TNode<Object>{p_promiseReaction}, TNode<IntPtrT>{tmp22}, TorqueStructUnsafe_0{}}).Flatten();
     tmp25 = CodeStubAssembler(state_).PromiseRejectReactionJobTaskMapConstant();
@@ -477,9 +478,9 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
     CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{tmp26, tmp28}, tmp9);
     tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp26, tmp29}, phi_bb4_3);
-    tmp30 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), tmp9, tmp26);
+    tmp30 = ca_.CallStub<Undefined>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), tmp9, tmp26);
     tmp31 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(PromiseReaction::kPromiseOrCapabilityOffset, PromiseReactionJobTask::kPromiseOrCapabilityOffset)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp31}, "static_assert(kPromiseReactionPromiseOrCapabilityOffset ==\n        kPromiseReactionJobTaskPromiseOrCapabilityOffset) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=144&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp31}, "static_assert(kPromiseReactionPromiseOrCapabilityOffset ==\n        kPromiseReactionJobTaskPromiseOrCapabilityOffset) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=141&c=5");
     ca_.Goto(&block7);
   }
 
@@ -491,7 +492,7 @@ void MorphAndEnqueuePromiseReaction_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=151&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=148&c=1
 void TriggerPromiseReactions_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_reactions, TNode<Object> p_argument, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -642,7 +643,7 @@ TF_BUILTIN(FulfillPromise, CodeStubAssembler) {
   TNode<Object> tmp1;
   TNode<Object> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<Undefined> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     RunContextPromiseHookResolve_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1});
@@ -666,7 +667,7 @@ TF_BUILTIN(RejectPromise, CodeStubAssembler) {
   USE(parameter1);
   TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kReason);
   USE(parameter2);
-  TNode<Oddball> parameter3 = UncheckedParameter<Oddball>(Descriptor::kDebugEvent);
+  TNode<Boolean> parameter3 = UncheckedParameter<Boolean>(Descriptor::kDebugEvent);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -718,7 +719,7 @@ TF_BUILTIN(RejectPromise, CodeStubAssembler) {
   TNode<Object> tmp7;
   TNode<Object> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Oddball> tmp10;
+  TNode<Undefined> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     RunContextPromiseHookResolve_1(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<Uint32T>{tmp0});
@@ -734,7 +735,7 @@ TF_BUILTIN(RejectPromise, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kPromiseSlot_0(compiler::CodeAssemblerState* state_, PromiseBuiltins::PromiseResolvingFunctionContextSlot p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -755,7 +756,7 @@ TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kProm
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kAlreadyResolvedSlot_0(compiler::CodeAssemblerState* state_, PromiseBuiltins::PromiseResolvingFunctionContextSlot p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -776,7 +777,7 @@ TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kAlre
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kDebugEventSlot_0(compiler::CodeAssemblerState* state_, PromiseBuiltins::PromiseResolvingFunctionContextSlot p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -797,7 +798,7 @@ TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kDebu
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kPromiseContextLength_0(compiler::CodeAssemblerState* state_, PromiseBuiltins::PromiseResolvingFunctionContextSlot p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -818,7 +819,7 @@ TNode<IntPtrT> FromConstexpr_PromiseResolvingFunctionContextSlot_constexpr_kProm
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> kPromiseSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -831,7 +832,7 @@ TNode<IntPtrT> kPromiseSlot_0(compiler::CodeAssemblerState* state_) {
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> kAlreadyResolvedSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -844,7 +845,7 @@ TNode<IntPtrT> kAlreadyResolvedSlot_0(compiler::CodeAssemblerState* state_) {
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=268&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1
 TNode<IntPtrT> kDebugEventSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -857,7 +858,7 @@ TNode<IntPtrT> kDebugEventSlot_0(compiler::CodeAssemblerState* state_) {
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=277&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=273&c=1
 TNode<IntPtrT> FromConstexpr_FunctionContextSlot_constexpr_kCapabilitySlot_0(compiler::CodeAssemblerState* state_, PromiseBuiltins::FunctionContextSlot p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -878,7 +879,7 @@ TNode<IntPtrT> FromConstexpr_FunctionContextSlot_constexpr_kCapabilitySlot_0(com
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=277&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=273&c=1
 TNode<IntPtrT> FromConstexpr_FunctionContextSlot_constexpr_kCapabilitiesContextLength_0(compiler::CodeAssemblerState* state_, PromiseBuiltins::FunctionContextSlot p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -899,7 +900,7 @@ TNode<IntPtrT> FromConstexpr_FunctionContextSlot_constexpr_kCapabilitiesContextL
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=277&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=273&c=1
 TNode<IntPtrT> kCapabilitySlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -912,7 +913,7 @@ TNode<IntPtrT> kCapabilitySlot_0(compiler::CodeAssemblerState* state_) {
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=279&c=1
 TNode<Context> CreatePromiseCapabilitiesExecutorContext_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_nativeContext, TNode<PromiseCapability> p_capability) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -938,7 +939,7 @@ TNode<Context> CreatePromiseCapabilitiesExecutorContext_0(compiler::CodeAssemble
   return TNode<Context>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=296&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=292&c=1
 TNode<PromiseCapability> CreatePromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_promise, TNode<HeapObject> p_resolve, TNode<HeapObject> p_reject) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -979,8 +980,8 @@ TNode<PromiseCapability> CreatePromiseCapability_0(compiler::CodeAssemblerState*
   return TNode<PromiseCapability>{tmp9};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=314&c=1
-TorqueStructPromiseResolvingFunctions CreatePromiseResolvingFunctions_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSPromise> p_promise, TNode<Oddball> p_debugEvent, TNode<NativeContext> p_nativeContext) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=310&c=1
+TorqueStructPromiseResolvingFunctions CreatePromiseResolvingFunctions_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSPromise> p_promise, TNode<Boolean> p_debugEvent, TNode<NativeContext> p_nativeContext) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -998,7 +999,7 @@ TorqueStructPromiseResolvingFunctions CreatePromiseResolvingFunctions_0(compiler
   TNode<JSFunction> tmp8;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CreatePromiseResolvingFunctionsContext_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{p_promise}, TNode<Oddball>{p_debugEvent}, TNode<NativeContext>{p_nativeContext});
+    tmp0 = CreatePromiseResolvingFunctionsContext_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{p_promise}, TNode<Boolean>{p_debugEvent}, TNode<NativeContext>{p_nativeContext});
     tmp1 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
     std::tie(tmp2, tmp3) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp1}).Flatten();
     tmp4 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp2, tmp3});
@@ -1013,8 +1014,8 @@ TorqueStructPromiseResolvingFunctions CreatePromiseResolvingFunctions_0(compiler
   return TorqueStructPromiseResolvingFunctions{TNode<JSFunction>{tmp6}, TNode<JSFunction>{tmp8}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=332&c=1
-TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_constructor, TNode<Oddball> p_debugEvent) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=328&c=1
+TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_constructor, TNode<Boolean> p_debugEvent) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1052,14 +1053,14 @@ TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerStat
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp6 = NewJSPromise_1(state_, TNode<Context>{p_context});
-    std::tie(tmp7, tmp8) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{tmp6}, TNode<Oddball>{p_debugEvent}, TNode<NativeContext>{tmp0}).Flatten();
+    std::tie(tmp7, tmp8) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{tmp6}, TNode<Boolean>{p_debugEvent}, TNode<NativeContext>{tmp0}).Flatten();
     tmp9 = CreatePromiseCapability_0(state_, TNode<HeapObject>{tmp6}, TNode<HeapObject>{tmp7}, TNode<HeapObject>{tmp8});
     ca_.Goto(&block1, tmp9);
   }
 
-  TNode<Oddball> tmp10;
-  TNode<Oddball> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp10;
+  TNode<Undefined> tmp11;
+  TNode<Undefined> tmp12;
   TNode<PromiseCapability> tmp13;
   TNode<Context> tmp14;
   TNode<SharedFunctionInfo> tmp15;
@@ -1093,7 +1094,7 @@ TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerStat
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp13, tmp23}, tmp22);
     tmp24 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp25 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp13, tmp24});
-    tmp26 = Is_Callable_Object_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp25});
+    tmp26 = Is_Callable_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp25});
     tmp27 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp26});
     ca_.Branch(tmp27, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
@@ -1113,7 +1114,7 @@ TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerStat
     ca_.Bind(&block8);
     tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp30 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp13, tmp29});
-    tmp31 = Is_Callable_Object_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp30});
+    tmp31 = Is_Callable_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp30});
     tmp32 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp31});
     ca_.Goto(&block9, tmp32);
   }
@@ -1151,7 +1152,7 @@ TF_BUILTIN(NewPromiseCapability, CodeStubAssembler) {
   USE(parameter0);
   TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kMaybeConstructor);
   USE(parameter1);
-  TNode<Oddball> parameter2 = UncheckedParameter<Oddball>(Descriptor::kDebugEvent);
+  TNode<Boolean> parameter2 = UncheckedParameter<Boolean>(Descriptor::kDebugEvent);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1194,7 +1195,7 @@ TF_BUILTIN(NewPromiseCapability, CodeStubAssembler) {
   TNode<PromiseCapability> tmp4;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp4 = InnerNewPromiseCapability_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(parameter1)}, TNode<Oddball>{parameter2});
+    tmp4 = InnerNewPromiseCapability_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(parameter1)}, TNode<Boolean>{parameter2});
     CodeStubAssembler(state_).Return(tmp4);
   }
 }
@@ -1220,8 +1221,8 @@ TF_BUILTIN(PromiseCapabilityDefaultReject, CodeStubAssembler) {
   TNode<IntPtrT> tmp5;
   TNode<Object> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Boolean> tmp8;
+  TNode<True> tmp9;
   TNode<BoolT> tmp10;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1231,7 +1232,7 @@ TF_BUILTIN(PromiseCapabilityDefaultReject, CodeStubAssembler) {
     tmp4 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{tmp2, tmp3});
     tmp5 = kAlreadyResolvedSlot_0(state_);
     std::tie(tmp6, tmp7) = ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp5}).Flatten();
-    tmp8 = CodeStubAssembler(state_).LoadReference<Oddball>(CodeStubAssembler::Reference{tmp6, tmp7});
+    tmp8 = CodeStubAssembler(state_).LoadReference<Boolean>(CodeStubAssembler::Reference{tmp6, tmp7});
     tmp9 = True_0(state_);
     tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
     ca_.Branch(tmp10, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
@@ -1247,21 +1248,21 @@ TF_BUILTIN(PromiseCapabilityDefaultReject, CodeStubAssembler) {
   TNode<IntPtrT> tmp12;
   TNode<Object> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<True> tmp15;
   TNode<IntPtrT> tmp16;
   TNode<Object> tmp17;
   TNode<IntPtrT> tmp18;
-  TNode<Oddball> tmp19;
+  TNode<Boolean> tmp19;
   TNode<Object> tmp20;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp12 = kAlreadyResolvedSlot_0(state_);
     std::tie(tmp13, tmp14) = ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp12}).Flatten();
     tmp15 = True_0(state_);
-    CodeStubAssembler(state_).StoreReference<Oddball>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp15);
+    CodeStubAssembler(state_).StoreReference<Boolean>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp15);
     tmp16 = kDebugEventSlot_0(state_);
     std::tie(tmp17, tmp18) = ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp16}).Flatten();
-    tmp19 = CodeStubAssembler(state_).LoadReference<Oddball>(CodeStubAssembler::Reference{tmp17, tmp18});
+    tmp19 = CodeStubAssembler(state_).LoadReference<Boolean>(CodeStubAssembler::Reference{tmp17, tmp18});
     tmp20 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kRejectPromise), tmp0, tmp4, parameter2, tmp19);
     CodeStubAssembler(state_).Return(tmp20);
   }
@@ -1288,8 +1289,8 @@ TF_BUILTIN(PromiseCapabilityDefaultResolve, CodeStubAssembler) {
   TNode<IntPtrT> tmp5;
   TNode<Object> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Boolean> tmp8;
+  TNode<True> tmp9;
   TNode<BoolT> tmp10;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1299,7 +1300,7 @@ TF_BUILTIN(PromiseCapabilityDefaultResolve, CodeStubAssembler) {
     tmp4 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{tmp2, tmp3});
     tmp5 = kAlreadyResolvedSlot_0(state_);
     std::tie(tmp6, tmp7) = ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp5}).Flatten();
-    tmp8 = CodeStubAssembler(state_).LoadReference<Oddball>(CodeStubAssembler::Reference{tmp6, tmp7});
+    tmp8 = CodeStubAssembler(state_).LoadReference<Boolean>(CodeStubAssembler::Reference{tmp6, tmp7});
     tmp9 = True_0(state_);
     tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
     ca_.Branch(tmp10, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
@@ -1315,20 +1316,20 @@ TF_BUILTIN(PromiseCapabilityDefaultResolve, CodeStubAssembler) {
   TNode<IntPtrT> tmp12;
   TNode<Object> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<True> tmp15;
   TNode<Object> tmp16;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp12 = kAlreadyResolvedSlot_0(state_);
     std::tie(tmp13, tmp14) = ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp12}).Flatten();
     tmp15 = True_0(state_);
-    CodeStubAssembler(state_).StoreReference<Oddball>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp15);
+    CodeStubAssembler(state_).StoreReference<Boolean>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp15);
     tmp16 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kResolvePromise), tmp0, tmp4, parameter2);
     CodeStubAssembler(state_).Return(tmp16);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=444&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=438&c=1
 void PerformPromiseThenImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSPromise> p_promise, TNode<HeapObject> p_onFulfilled, TNode<HeapObject> p_onRejected, TNode<HeapObject> p_resultPromiseOrCapability) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1424,10 +1425,10 @@ void PerformPromiseThenImpl_0(compiler::CodeAssemblerState* state_, TNode<Contex
 
   TNode<PromiseReactionJobTask> phi_bb7_6;
   TNode<Context> phi_bb7_7;
-  TNode<Oddball> tmp21;
+  TNode<Undefined> tmp21;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_6, &phi_bb7_7);
-    tmp21 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), phi_bb7_7, phi_bb7_6);
+    tmp21 = ca_.CallStub<Undefined>(Builtins::CallableFor(ca_.isolate(), Builtin::kEnqueueMicrotask), phi_bb7_7, phi_bb7_6);
     ca_.Goto(&block4);
   }
 
@@ -1517,12 +1518,12 @@ TF_BUILTIN(PromiseReject, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp7);
   }
 
-  TNode<Oddball> tmp9;
+  TNode<True> tmp9;
   TNode<PromiseCapability> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
   TNode<JSReceiver> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<Undefined> tmp14;
   TNode<Object> tmp15;
   TNode<IntPtrT> tmp16;
   TNode<HeapObject> tmp17;
@@ -1566,7 +1567,7 @@ TF_BUILTIN(PromiseGetCapabilitiesExecutor, CodeStubAssembler) {
   TNode<PromiseCapability> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<Object> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<Undefined> tmp7;
   TNode<BoolT> tmp8;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1590,7 +1591,7 @@ TF_BUILTIN(PromiseGetCapabilitiesExecutor, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp10;
   TNode<Object> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   TNode<BoolT> tmp13;
   if (block4.is_used()) {
     ca_.Bind(&block4);
@@ -1614,7 +1615,7 @@ TF_BUILTIN(PromiseGetCapabilitiesExecutor, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Oddball> tmp16;
+  TNode<Undefined> tmp16;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
@@ -1626,7 +1627,7 @@ TF_BUILTIN(PromiseGetCapabilitiesExecutor, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=542&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=536&c=1
 TNode<BoolT> IsPromiseResolveLookupChainIntact_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSReceiver> p_constructor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1701,7 +1702,7 @@ TNode<BoolT> IsPromiseResolveLookupChainIntact_0(compiler::CodeAssemblerState* s
   return TNode<BoolT>{phi_bb7_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=551&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=546&c=1
 TNode<Object> GetPromiseResolve_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSReceiver> p_constructor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1713,7 +1714,7 @@ TNode<Object> GetPromiseResolve_0(compiler::CodeAssemblerState* state_, TNode<Co
   compiler::CodeAssemblerParameterizedLabel<Object> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
@@ -1761,7 +1762,7 @@ TNode<Object> GetPromiseResolve_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Object>{phi_bb8_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=577&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=573&c=1
 TNode<Object> CallResolve_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_constructor, TNode<Object> p_resolve, TNode<Object> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1772,7 +1773,7 @@ TNode<Object> CallResolve_0(compiler::CodeAssemblerState* state_, TNode<Context>
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1827,7 +1828,7 @@ TF_BUILTIN(PromiseConstructorLazyDeoptContinuation, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<HeapObject> tmp0;
+  TNode<Hole> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1839,7 +1840,7 @@ TF_BUILTIN(PromiseConstructorLazyDeoptContinuation, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   TNode<Object> tmp3;
   if (block4.is_used()) {
     ca_.Bind(&block4);
@@ -1859,7 +1860,7 @@ TF_BUILTIN(PromiseConstructorLazyDeoptContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=121&c=6
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=118&c=6
 TorqueStructReference_Map_0 UnsafeConstCast_Map_0(compiler::CodeAssemblerState* state_, TorqueStructReference_Map_0 p_r) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1879,7 +1880,7 @@ TorqueStructReference_Map_0 UnsafeConstCast_Map_0(compiler::CodeAssemblerState* 
   return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=124&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=121&c=9
 TNode<PromiseFulfillReactionJobTask> UnsafeCast_PromiseFulfillReactionJobTask_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1898,7 +1899,7 @@ TNode<PromiseFulfillReactionJobTask> UnsafeCast_PromiseFulfillReactionJobTask_0(
   return TNode<PromiseFulfillReactionJobTask>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=139&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=136&c=9
 TNode<PromiseRejectReactionJobTask> UnsafeCast_PromiseRejectReactionJobTask_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1917,7 +1918,7 @@ TNode<PromiseRejectReactionJobTask> UnsafeCast_PromiseRejectReactionJobTask_0(co
   return TNode<PromiseRejectReactionJobTask>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=203&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=199&c=7
 TNode<Object> UnsafeCast_Zero_OR_PromiseReaction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1936,7 +1937,7 @@ TNode<Object> UnsafeCast_Zero_OR_PromiseReaction_0(compiler::CodeAssemblerState*
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=291&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=287&c=3
 void InitContextSlot_PromiseCapabilitiesExecutorContext_PromiseCapabilitiesExecutorContext_PromiseCapability_PromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<PromiseCapability> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1982,7 +1983,7 @@ void InitContextSlot_PromiseCapabilitiesExecutorContext_PromiseCapabilitiesExecu
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=320&c=16
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=316&c=16
 TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2002,7 +2003,7 @@ TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState
   return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=337&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=333&c=8
 TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2022,7 +2023,7 @@ TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::Code
   return TorqueStructReference_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=359&c=32
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=355&c=32
 TNode<JSReceiver> UnsafeCast_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2041,54 +2042,7 @@ TNode<JSReceiver> UnsafeCast_Constructor_0(compiler::CodeAssemblerState* state_,
   return TNode<JSReceiver>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=363&c=10
-TNode<BoolT> Is_Callable_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<JSReceiver> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_Callable_1(state_, TNode<Context>{p_context}, TNode<Object>{p_o}, &label1);
-    ca_.Goto(&block4);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block5);
-    }
-  }
-
-  TNode<BoolT> tmp2;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block1, tmp2);
-  }
-
-  TNode<BoolT> tmp3;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block1, tmp3);
-  }
-
-  TNode<BoolT> phi_bb1_2;
-  if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_2);
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<BoolT>{phi_bb1_2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=394&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=389&c=8
 TorqueStructReference_JSPromise_0 ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2137,7 +2091,7 @@ TorqueStructReference_JSPromise_0 ContextSlot_PromiseResolvingFunctionContext_Pr
   return TorqueStructReference_JSPromise_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=397&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=392&c=28
 TorqueStructReference_Boolean_0 ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2186,7 +2140,7 @@ TorqueStructReference_Boolean_0 ContextSlot_PromiseResolvingFunctionContext_Prom
   return TorqueStructReference_Boolean_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=504&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=498&c=23
 TorqueStructReference_JSFunction_0 NativeContextSlot_NativeContext_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2206,7 +2160,7 @@ TorqueStructReference_JSFunction_0 NativeContextSlot_NativeContext_JSFunction_0(
   return TorqueStructReference_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=531&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=525&c=8
 TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseCapabilitiesExecutorContext_PromiseCapabilitiesExecutorContext_PromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

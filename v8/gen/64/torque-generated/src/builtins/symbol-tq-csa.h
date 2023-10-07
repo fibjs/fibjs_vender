@@ -9,7 +9,7 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/symbol.tq?l=9&c=1
 TNode<Symbol> ThisSymbolValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/symbol.tq?l=11&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/symbol.tq?l=12&c=10
 TNode<Symbol> UnsafeCast_Symbol_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 } // namespace internal

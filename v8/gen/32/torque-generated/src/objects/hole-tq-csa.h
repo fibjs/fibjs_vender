@@ -15,12 +15,6 @@ TNode<Float64T> LoadHoleRawNumericValue_0(compiler::CodeAssemblerState* state_, 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=7&c=3
 void StoreHoleRawNumericValue_0(compiler::CodeAssemblerState* state_, TNode<Hole> p_o, TNode<Float64T> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=8&c=3
-TNode<Smi> LoadHoleKind_0(compiler::CodeAssemblerState* state_, TNode<Hole> p_o);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=8&c=3
-void StoreHoleKind_0(compiler::CodeAssemblerState* state_, TNode<Hole> p_o, TNode<Smi> p_v);
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=5&c=1
 TNode<Hole> DownCastForTorqueClass_Hole_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 

@@ -1,40 +1,40 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=31&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=30&c=28
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetPadding(SmallOrderedHashSet p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetDataTable(SmallOrderedHashSet p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=34&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetHashTable(SmallOrderedHashSet p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetChainTable(SmallOrderedHashSet p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=70&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=69&c=28
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapPadding(SmallOrderedHashMap p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapDataTable(SmallOrderedHashMap p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=73&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapHashTable(SmallOrderedHashMap p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapChainTable(SmallOrderedHashMap p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=110&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=109&c=28
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryPadding1(SmallOrderedNameDictionary p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryDataTable(SmallOrderedNameDictionary p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=113&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryHashTable(SmallOrderedNameDictionary p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryChainTable(SmallOrderedNameDictionary p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=577&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=591&c=47
 inline intptr_t TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -49,16 +49,16 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=240&c=1
 inline intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 inline intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
+inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashMapEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameDictionaryEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
@@ -67,7 +67,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetPadding
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetPadding
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=31&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=30&c=28
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetPadding(SmallOrderedHashSet p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -91,7 +91,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetPad
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetDataTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetDataTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetDataTable(SmallOrderedHashSet p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -114,7 +114,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetDat
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp2, tmp3);
   tmp5 = TqRuntimeConvert_intptr_intptr_0(tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x10ull));
-  std::tie(tmp7, tmp8, tmp9) = TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(p_o, tmp6, tmp5);
+  std::tie(tmp7, tmp8, tmp9) = TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(p_o, tmp6, tmp5);
   goto block2;
 
   block2:
@@ -125,7 +125,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetDat
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetHashTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetHashTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=34&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetHashTable(SmallOrderedHashSet p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -161,7 +161,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetHas
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetChainTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashSetChainTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetChainTable(SmallOrderedHashSet p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -203,7 +203,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashSetCha
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapPadding
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapPadding
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=70&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=69&c=28
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapPadding(SmallOrderedHashMap p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -227,7 +227,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapPad
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapDataTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapDataTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapDataTable(SmallOrderedHashMap p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -261,7 +261,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapDat
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapHashTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapHashTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=73&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapHashTable(SmallOrderedHashMap p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -297,7 +297,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapHas
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapChainTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedHashMapChainTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapChainTable(SmallOrderedHashMap p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -339,7 +339,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedHashMapCha
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryPadding1
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryPadding1
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=110&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=109&c=28
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryPadding1(SmallOrderedNameDictionary p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -363,7 +363,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictio
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryDataTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryDataTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryDataTable(SmallOrderedNameDictionary p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -397,7 +397,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictio
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryHashTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryHashTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=113&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryHashTable(SmallOrderedNameDictionary p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -433,7 +433,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictio
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryChainTable
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceSmallOrderedNameDictionaryChainTable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryChainTable(SmallOrderedNameDictionary p_o) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -469,7 +469,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictio
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=577&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=591&c=47
 intptr_t TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -563,7 +563,7 @@ intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=192&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   goto block0;
@@ -576,11 +576,11 @@ intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
-#ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
-#define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
+#ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
+#define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=33&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
+std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -595,11 +595,11 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_JSReceiver_OR_Sm
   return std::make_tuple(tmp0, tmp1, tmp2);
 }
 
-#endif // V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0
+#endif // V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_HashMapEntry_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_HashMapEntry_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashMapEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);
@@ -619,7 +619,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashMapEntry_0(O
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_NameDictionaryEntry_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_NameDictionaryEntry_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=112&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameDictionaryEntry_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Object tmp0{}; USE(tmp0);

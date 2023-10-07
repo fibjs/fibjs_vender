@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=5&c=1
-bool IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(HeapObject o) {
-  return o.IsJSFunctionOrBoundFunctionOrWrappedFunction();
+bool IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(Tagged<HeapObject> o) {
+  return IsJSFunctionOrBoundFunctionOrWrappedFunction(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<JSFunctionOrBound
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=31&c=1
-bool IsJSFunction_NonInline(HeapObject o) {
-  return o.IsJSFunction();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=30&c=1
+bool IsJSFunction_NonInline(Tagged<HeapObject> o) {
+  return IsJSFunction(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,9 +34,9 @@ void TorqueGeneratedJSFunction<JSFunction, JSFunctionOrBoundFunctionOrWrappedFun
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=9&c=1
-bool IsJSBoundFunction_NonInline(HeapObject o) {
-  return o.IsJSBoundFunction();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=8&c=1
+bool IsJSBoundFunction_NonInline(Tagged<HeapObject> o) {
+  return IsJSBoundFunction(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -48,9 +48,9 @@ void TorqueGeneratedJSBoundFunction<JSBoundFunction, JSFunctionOrBoundFunctionOr
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=21&c=1
-bool IsJSWrappedFunction_NonInline(HeapObject o) {
-  return o.IsJSWrappedFunction();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=20&c=1
+bool IsJSWrappedFunction_NonInline(Tagged<HeapObject> o) {
+  return IsJSWrappedFunction(o);
 }
 
 #ifdef VERIFY_HEAP

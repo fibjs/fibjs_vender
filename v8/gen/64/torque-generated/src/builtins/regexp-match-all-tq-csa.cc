@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-match-all-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -84,7 +85,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=12&c=1
 TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_receiver, TNode<Object> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -384,7 +385,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   }
 
   TNode<Object> tmp18;
-  TNode<Oddball> tmp19;
+  TNode<Null> tmp19;
   TNode<BoolT> tmp20;
   if (block12.is_used()) {
     ca_.Bind(&block12);
@@ -420,7 +421,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   TNode<BoolT> tmp25;
   TNode<Smi> tmp26;
   TNode<Object> tmp27;
-  TNode<Oddball> tmp28;
+  TNode<False> tmp28;
   TNode<JSObject> tmp29;
   if (block18.is_used()) {
     ca_.Bind(&block18);
@@ -431,7 +432,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp23}, tmp26);
     tmp27 = UnsafeCast_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb13_6});
     tmp28 = False_0(state_);
-    tmp29 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp27}, TNode<Oddball>{tmp28});
+    tmp29 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp27}, TNode<Boolean>{tmp28});
     CodeStubAssembler(state_).Return(tmp29);
   }
 
@@ -506,12 +507,12 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Goto(&block40);
   }
 
-  TNode<Oddball> tmp54;
+  TNode<False> tmp54;
   TNode<JSObject> tmp55;
   if (block40.is_used()) {
     ca_.Bind(&block40);
     tmp54 = False_0(state_);
-    tmp55 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp30}, TNode<Oddball>{tmp54});
+    tmp55 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp30}, TNode<Boolean>{tmp54});
     CodeStubAssembler(state_).Return(tmp55);
   }
 
@@ -546,12 +547,12 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Goto(&block46);
   }
 
-  TNode<Oddball> tmp66;
+  TNode<False> tmp66;
   TNode<JSObject> tmp67;
   if (block46.is_used()) {
     ca_.Bind(&block46);
     tmp66 = False_0(state_);
-    tmp67 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp56}, TNode<Oddball>{tmp66});
+    tmp67 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp56}, TNode<Boolean>{tmp66});
     CodeStubAssembler(state_).Return(tmp67);
   }
 
@@ -570,14 +571,14 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Goto(&block6);
   }
 
-  TNode<Oddball> tmp72;
-  TNode<Oddball> tmp73;
+  TNode<Undefined> tmp72;
+  TNode<True> tmp73;
   TNode<JSObject> tmp74;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp72 = Undefined_0(state_);
     tmp73 = True_0(state_);
-    tmp74 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp72}, TNode<Oddball>{tmp73});
+    tmp74 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp72}, TNode<Boolean>{tmp73});
     CodeStubAssembler(state_).Return(tmp74);
   }
 }
@@ -620,7 +621,7 @@ TNode<JSRegExp> UnsafeCast_FastJSRegExp_0(compiler::CodeAssemblerState* state_, 
   return TNode<JSRegExp>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=118&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=119&c=20
 TNode<JSRegExpStringIterator> Cast_JSRegExpStringIterator_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -681,7 +682,7 @@ TNode<JSRegExpStringIterator> Cast_JSRegExpStringIterator_1(compiler::CodeAssemb
   return TNode<JSRegExpStringIterator>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=169&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=170&c=23
 TNode<JSArray> UnsafeCast_JSRegExpResult_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -700,7 +701,7 @@ TNode<JSArray> UnsafeCast_JSRegExpResult_0(compiler::CodeAssemblerState* state_,
   return TNode<JSArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=171&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=172&c=26
 TNode<String> UnsafeCast_String_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
-bool IsJSProxy_NonInline(HeapObject o) {
-  return o.IsJSProxy();
+bool IsJSProxy_NonInline(Tagged<HeapObject> o) {
+  return IsJSProxy(o);
 }
 
 #ifdef VERIFY_HEAP

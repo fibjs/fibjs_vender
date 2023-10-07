@@ -6,11 +6,11 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=16&c=1
 TNode<BoolT> IsPromiseSpeciesLookupChainIntact_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_nativeContext, TNode<Map> p_promiseMap);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=69&c=23
-TNode<HeapObject> CastOrDefault_Callable_JSAny_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, TNode<Oddball> p_default);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=67&c=23
+TNode<HeapObject> CastOrDefault_Callable_JSAny_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, TNode<Undefined> p_default);
 
 } // namespace internal
 } // namespace v8

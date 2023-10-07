@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-then-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -79,7 +80,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=16&c=1
 TNode<BoolT> IsPromiseSpeciesLookupChainIntact_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_nativeContext, TNode<Map> p_promiseMap) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -230,7 +231,7 @@ TF_BUILTIN(PromisePrototypeThen, CodeStubAssembler) {
     ca_.Goto(&block6);
   }
 
-  TNode<Oddball> tmp12;
+  TNode<True> tmp12;
   TNode<PromiseCapability> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<HeapObject> tmp15;
@@ -252,17 +253,17 @@ TF_BUILTIN(PromisePrototypeThen, CodeStubAssembler) {
 
   TNode<HeapObject> phi_bb5_6;
   TNode<Object> phi_bb5_7;
-  TNode<Oddball> tmp17;
+  TNode<Undefined> tmp17;
   TNode<HeapObject> tmp18;
-  TNode<Oddball> tmp19;
+  TNode<Undefined> tmp19;
   TNode<HeapObject> tmp20;
   TNode<BoolT> tmp21;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6, &phi_bb5_7);
     tmp17 = Undefined_0(state_);
-    tmp18 = CastOrDefault_Callable_JSAny_Undefined_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Oddball>{tmp17});
+    tmp18 = CastOrDefault_Callable_JSAny_Undefined_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Undefined>{tmp17});
     tmp19 = Undefined_0(state_);
-    tmp20 = CastOrDefault_Callable_JSAny_Undefined_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3}, TNode<Oddball>{tmp19});
+    tmp20 = CastOrDefault_Callable_JSAny_Undefined_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3}, TNode<Undefined>{tmp19});
     PerformPromiseThenImpl_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{tmp0}, TNode<HeapObject>{tmp18}, TNode<HeapObject>{tmp20}, TNode<HeapObject>{phi_bb5_6});
     tmp21 = CodeStubAssembler(state_).HasAsyncEventDelegate();
     ca_.Branch(tmp21, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
@@ -281,8 +282,8 @@ TF_BUILTIN(PromisePrototypeThen, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=69&c=23
-TNode<HeapObject> CastOrDefault_Callable_JSAny_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, TNode<Oddball> p_default) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=67&c=23
+TNode<HeapObject> CastOrDefault_Callable_JSAny_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, TNode<Undefined> p_default) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

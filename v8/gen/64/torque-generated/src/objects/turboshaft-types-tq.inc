@@ -8,9 +8,9 @@ class TurboshaftWord64SetType;
 class TurboshaftFloat64Type;
 class TurboshaftFloat64RangeType;
 class TurboshaftFloat64SetType;
-// Alias for HeapObject::IsTurboshaftType() that avoids inlining.
+// Alias for IsTurboshaftType() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=13&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftType_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTurboshaftType_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=13&c=1
 template <class D, class P>
@@ -27,10 +27,10 @@ class TorqueGeneratedTurboshaftType : public P {
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftType<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=13&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=13&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -54,14 +54,16 @@ class TorqueGeneratedTurboshaftType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftType(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftWord32Type() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftWord32Type_NonInline(HeapObject o);
+// Alias for IsTurboshaftWord32Type() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftWord32Type_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord32Type : public P {
   static_assert(
@@ -75,17 +77,17 @@ class TorqueGeneratedTurboshaftWord32Type : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftWord32Type<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftWord32Type)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
   V8_EXPORT_PRIVATE void TurboshaftWord32TypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -96,14 +98,14 @@ class TorqueGeneratedTurboshaftWord32Type : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 8);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=17&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -118,14 +120,16 @@ class TorqueGeneratedTurboshaftWord32Type : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftWord32Type(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftWord32Type(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftWord32RangeType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftWord32RangeType_NonInline(HeapObject o);
+// Alias for IsTurboshaftWord32RangeType() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftWord32RangeType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord32RangeType : public P {
   static_assert(
@@ -139,34 +143,34 @@ class TorqueGeneratedTurboshaftWord32RangeType : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftWord32RangeType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=25&c=3
   inline uint32_t from() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=25&c=3
   inline void set_from(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=26&c=3
   inline uint32_t to() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=26&c=3
   inline void set_to(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftWord32RangeType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
   V8_EXPORT_PRIVATE void TurboshaftWord32RangeTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=27&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=25&c=3
   static constexpr int kFromOffset = P::kHeaderSize;
   static constexpr int kFromOffsetEnd = kFromOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=28&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=26&c=3
   static constexpr int kToOffset = kFromOffsetEnd + 1;
   static constexpr int kToOffsetEnd = kToOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kToOffsetEnd + 1;
@@ -176,14 +180,14 @@ class TorqueGeneratedTurboshaftWord32RangeType : public P {
   static constexpr int kHeaderSize = kToOffsetEnd + 1;
   static constexpr int kSize = kToOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=23&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -198,14 +202,16 @@ class TorqueGeneratedTurboshaftWord32RangeType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftWord32RangeType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftWord32RangeType(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftWord32SetType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftWord32SetType_NonInline(HeapObject o);
+// Alias for IsTurboshaftWord32SetType() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftWord32SetType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord32SetType : public P {
   static_assert(
@@ -219,35 +225,35 @@ class TorqueGeneratedTurboshaftWord32SetType : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftWord32SetType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=35&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=33&c=9
   inline uint32_t set_size() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=35&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=33&c=9
   inline void set_set_size(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
   inline uint32_t elements(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
   inline void set_elements(int i, uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftWord32SetType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
   V8_EXPORT_PRIVATE void TurboshaftWord32SetTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=35&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=33&c=9
   static constexpr int kSetSizeOffset = P::kHeaderSize;
   static constexpr int kSetSizeOffsetEnd = kSetSizeOffset + kInt32Size - 1;
   static constexpr int kHeaderSize = kSetSizeOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
   static constexpr int kElementsOffset = kSetSizeOffsetEnd + 1;
   static constexpr int kElementsOffsetEnd = kElementsOffset + 0 - 1;
   static constexpr int kStartOfWeakFieldsOffset = kElementsOffsetEnd + 1;
@@ -255,7 +261,7 @@ class TorqueGeneratedTurboshaftWord32SetType : public P {
   static constexpr int kStartOfStrongFieldsOffset = kElementsOffsetEnd + 1;
   static constexpr int kEndOfStrongFieldsOffset = kElementsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
   V8_INLINE static constexpr int32_t SizeFor(int set_size) {
     int32_t size = kHeaderSize;
     size += set_size * 4;
@@ -263,7 +269,7 @@ class TorqueGeneratedTurboshaftWord32SetType : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=31&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->set_size());
   }
@@ -278,14 +284,16 @@ class TorqueGeneratedTurboshaftWord32SetType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftWord32SetType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftWord32SetType(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftWord64Type() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftWord64Type_NonInline(HeapObject o);
+// Alias for IsTurboshaftWord64Type() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftWord64Type_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord64Type : public P {
   static_assert(
@@ -299,17 +307,17 @@ class TorqueGeneratedTurboshaftWord64Type : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftWord64Type<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftWord64Type)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
   V8_EXPORT_PRIVATE void TurboshaftWord64TypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -320,14 +328,14 @@ class TorqueGeneratedTurboshaftWord64Type : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 8);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=39&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -342,14 +350,16 @@ class TorqueGeneratedTurboshaftWord64Type : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftWord64Type(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftWord64Type(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftWord64RangeType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftWord64RangeType_NonInline(HeapObject o);
+// Alias for IsTurboshaftWord64RangeType() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftWord64RangeType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord64RangeType : public P {
   static_assert(
@@ -363,50 +373,50 @@ class TorqueGeneratedTurboshaftWord64RangeType : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftWord64RangeType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=46&c=3
   inline uint32_t from_high() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=46&c=3
   inline void set_from_high(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=47&c=3
   inline uint32_t from_low() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=47&c=3
   inline void set_from_low(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=48&c=3
   inline uint32_t to_high() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=48&c=3
   inline void set_to_high(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
   inline uint32_t to_low() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
   inline void set_to_low(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftWord64RangeType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
   V8_EXPORT_PRIVATE void TurboshaftWord64RangeTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=46&c=3
   static constexpr int kFromHighOffset = P::kHeaderSize;
   static constexpr int kFromHighOffsetEnd = kFromHighOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=50&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=47&c=3
   static constexpr int kFromLowOffset = kFromHighOffsetEnd + 1;
   static constexpr int kFromLowOffsetEnd = kFromLowOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=48&c=3
   static constexpr int kToHighOffset = kFromLowOffsetEnd + 1;
   static constexpr int kToHighOffsetEnd = kToHighOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=49&c=3
   static constexpr int kToLowOffset = kToHighOffsetEnd + 1;
   static constexpr int kToLowOffsetEnd = kToLowOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kToLowOffsetEnd + 1;
@@ -416,14 +426,14 @@ class TorqueGeneratedTurboshaftWord64RangeType : public P {
   static constexpr int kHeaderSize = kToLowOffsetEnd + 1;
   static constexpr int kSize = kToLowOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=45&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -438,14 +448,16 @@ class TorqueGeneratedTurboshaftWord64RangeType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftWord64RangeType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftWord64RangeType(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftWord64SetType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftWord64SetType_NonInline(HeapObject o);
+// Alias for IsTurboshaftWord64SetType() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftWord64SetType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord64SetType : public P {
   static_assert(
@@ -459,50 +471,50 @@ class TorqueGeneratedTurboshaftWord64SetType : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftWord64SetType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=59&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=56&c=9
   inline uint32_t set_size() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=59&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=56&c=9
   inline void set_set_size(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
   inline uint32_t elements_high(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
   inline void set_elements_high(int i, uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
   inline uint32_t elements_low(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
   inline void set_elements_low(int i, uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftWord64SetType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
   V8_EXPORT_PRIVATE void TurboshaftWord64SetTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=59&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=56&c=9
   static constexpr int kSetSizeOffset = P::kHeaderSize;
   static constexpr int kSetSizeOffsetEnd = kSetSizeOffset + kInt32Size - 1;
   static constexpr int kHeaderSize = kSetSizeOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=60&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
   static constexpr int kElementsHighOffset = kSetSizeOffsetEnd + 1;
   static constexpr int kElementsHighOffsetEnd = kElementsHighOffset + 0 - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
   inline int ElementsLowOffset() const;
   static constexpr int kStartOfWeakFieldsOffset = kElementsHighOffsetEnd + 1;
   static constexpr int kEndOfWeakFieldsOffset = kElementsHighOffsetEnd + 1;
   static constexpr int kStartOfStrongFieldsOffset = kElementsHighOffsetEnd + 1;
   static constexpr int kEndOfStrongFieldsOffset = kElementsHighOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
   V8_INLINE static constexpr int32_t SizeFor(int set_size) {
     int32_t size = kHeaderSize;
     size += set_size * 4;
@@ -511,7 +523,7 @@ class TorqueGeneratedTurboshaftWord64SetType : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=55&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->set_size());
   }
@@ -526,14 +538,16 @@ class TorqueGeneratedTurboshaftWord64SetType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftWord64SetType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftWord64SetType(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftFloat64Type() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftFloat64Type_NonInline(HeapObject o);
+// Alias for IsTurboshaftFloat64Type() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftFloat64Type_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftFloat64Type : public P {
   static_assert(
@@ -547,26 +561,26 @@ class TorqueGeneratedTurboshaftFloat64Type : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftFloat64Type<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=65&c=3
   inline uint32_t special_values() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=65&c=3
   inline void set_special_values(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftFloat64Type)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
   V8_EXPORT_PRIVATE void TurboshaftFloat64TypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=65&c=3
   static constexpr int kSpecialValuesOffset = P::kHeaderSize;
   static constexpr int kSpecialValuesOffsetEnd = kSpecialValuesOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kSpecialValuesOffsetEnd + 1;
@@ -576,7 +590,7 @@ class TorqueGeneratedTurboshaftFloat64Type : public P {
   static constexpr int kHeaderSize = kSpecialValuesOffsetEnd + 1;
   static constexpr int kSize = kSpecialValuesOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
     int32_t size = kHeaderSize;
@@ -584,7 +598,7 @@ class TorqueGeneratedTurboshaftFloat64Type : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=64&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -599,14 +613,16 @@ class TorqueGeneratedTurboshaftFloat64Type : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftFloat64Type(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftFloat64Type(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftFloat64RangeType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftFloat64RangeType_NonInline(HeapObject o);
+// Alias for IsTurboshaftFloat64RangeType() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftFloat64RangeType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftFloat64RangeType : public P {
   static_assert(
@@ -620,42 +636,42 @@ class TorqueGeneratedTurboshaftFloat64RangeType : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftFloat64RangeType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=72&c=3
   inline uint32_t _padding() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=72&c=3
   inline void set__padding(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=73&c=3
   inline double min() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=73&c=3
   inline void set_min(double value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=74&c=3
   inline double max() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=74&c=3
   inline void set_max(double value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftFloat64RangeType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
   V8_EXPORT_PRIVATE void TurboshaftFloat64RangeTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=72&c=3
   static constexpr int kPaddingOffset = P::kHeaderSize;
   static constexpr int kPaddingOffsetEnd = kPaddingOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=73&c=3
   static constexpr int kMinOffset = kPaddingOffsetEnd + 1;
   static constexpr int kMinOffsetEnd = kMinOffset + kDoubleSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=74&c=3
   static constexpr int kMaxOffset = kMinOffsetEnd + 1;
   static constexpr int kMaxOffsetEnd = kMaxOffset + kDoubleSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kMaxOffsetEnd + 1;
@@ -665,14 +681,14 @@ class TorqueGeneratedTurboshaftFloat64RangeType : public P {
   static constexpr int kHeaderSize = kMaxOffsetEnd + 1;
   static constexpr int kSize = kMaxOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 32);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=71&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -687,14 +703,16 @@ class TorqueGeneratedTurboshaftFloat64RangeType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftFloat64RangeType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftFloat64RangeType(Address ptr);
 };
 
-// Alias for HeapObject::IsTurboshaftFloat64SetType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
-V8_EXPORT_PRIVATE bool IsTurboshaftFloat64SetType_NonInline(HeapObject o);
+// Alias for IsTurboshaftFloat64SetType() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
+V8_EXPORT_PRIVATE bool IsTurboshaftFloat64SetType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
 template <class D, class P>
 class TorqueGeneratedTurboshaftFloat64SetType : public P {
   static_assert(
@@ -708,35 +726,35 @@ class TorqueGeneratedTurboshaftFloat64SetType : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurboshaftFloat64SetType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=84&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=81&c=9
   inline uint32_t set_size() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=84&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=81&c=9
   inline void set_set_size(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
   inline double elements(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
   inline void set_elements(int i, double value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TurboshaftFloat64SetType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
   V8_EXPORT_PRIVATE void TurboshaftFloat64SetTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=84&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=81&c=9
   static constexpr int kSetSizeOffset = P::kHeaderSize;
   static constexpr int kSetSizeOffsetEnd = kSetSizeOffset + kInt32Size - 1;
   static constexpr int kHeaderSize = kSetSizeOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=85&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
   static constexpr int kElementsOffset = kSetSizeOffsetEnd + 1;
   static constexpr int kElementsOffsetEnd = kElementsOffset + 0 - 1;
   static constexpr int kStartOfWeakFieldsOffset = kElementsOffsetEnd + 1;
@@ -744,14 +762,14 @@ class TorqueGeneratedTurboshaftFloat64SetType : public P {
   static constexpr int kStartOfStrongFieldsOffset = kElementsOffsetEnd + 1;
   static constexpr int kEndOfStrongFieldsOffset = kElementsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
   V8_INLINE static constexpr int32_t SizeFor(int set_size) {
     int32_t size = kHeaderSize;
     size += set_size * 8;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=80&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->set_size());
   }
@@ -766,6 +784,8 @@ class TorqueGeneratedTurboshaftFloat64SetType : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTurboshaftFloat64SetType(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTurboshaftFloat64SetType(Address ptr);
 };
 

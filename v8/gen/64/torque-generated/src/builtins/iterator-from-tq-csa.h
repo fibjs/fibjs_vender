@@ -9,10 +9,10 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=7&c=1
 TNode<JSValidIteratorWrapper> NewJSValidIteratorWrapper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=18&c=1
-TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_obj);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=19&c=1
+TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_obj);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=90&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=95&c=13
 TNode<JSValidIteratorWrapper> Cast_JSValidIteratorWrapper_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 } // namespace internal

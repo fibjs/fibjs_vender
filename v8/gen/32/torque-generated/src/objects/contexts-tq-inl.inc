@@ -139,8 +139,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=13&c=9
 template<class D, class P>
 int TorqueGeneratedContext<D, P>::length() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kLengthOffset).value();
+  int value = TaggedField<Smi>::load(*this, kLengthOffset).value();
   return value;
 }
 
@@ -152,38 +151,37 @@ void TorqueGeneratedContext<D, P>::set_length(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
 template<class D, class P>
-Object TorqueGeneratedContext<D, P>::elements(int i) const {
+Tagged<Object> TorqueGeneratedContext<D, P>::elements(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedContext::elements(cage_base, i);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
 template<class D, class P>
-Object TorqueGeneratedContext<D, P>::elements(PtrComprCageBase cage_base, int i) const {
-  Object value;
+Tagged<Object> TorqueGeneratedContext<D, P>::elements(PtrComprCageBase cage_base, int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kElementsOffset + i * kTaggedSize;
-  value = TaggedField<Object>::load(cage_base, *this, offset);
-  DCHECK(value.IsHeapObject() || value.IsSmi());
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, offset);
+  DCHECK(IsHeapObject(value) || IsSmi(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
 template<class D, class P>
-void TorqueGeneratedContext<D, P>::set_elements(int i, Object value, WriteBarrierMode mode) {
+void TorqueGeneratedContext<D, P>::set_elements(int i, Tagged<Object> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kElementsOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
+  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedContext<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedContext<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

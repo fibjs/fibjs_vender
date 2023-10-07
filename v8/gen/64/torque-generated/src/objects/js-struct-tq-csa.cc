@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/js-struct-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -112,7 +113,7 @@ TNode<AlwaysSharedSpaceJSObject> Cast_AlwaysSharedSpaceJSObject_0(compiler::Code
   return TNode<AlwaysSharedSpaceJSObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
 TNode<JSSharedStruct> Cast_JSSharedStruct_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -293,7 +294,7 @@ TNode<AlwaysSharedSpaceJSObject> DownCastForTorqueClass_AlwaysSharedSpaceJSObjec
   return TNode<AlwaysSharedSpaceJSObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
 TNode<JSSharedStruct> DownCastForTorqueClass_JSSharedStruct_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

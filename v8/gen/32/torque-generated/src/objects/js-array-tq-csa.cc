@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/objects/js-array-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -262,7 +263,7 @@ TNode<JSArrayIterator> CreateArrayIterator_1(compiler::CodeAssemblerState* state
   return TNode<JSArrayIterator>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=1
 TNode<JSArray> Cast_JSArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -298,7 +299,7 @@ TNode<JSArray> Cast_JSArray_0(compiler::CodeAssemblerState* state_, TNode<HeapOb
   return TNode<JSArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=79&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=80&c=1
 TNode<JSArray> NewJSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_map, TNode<FixedArrayBase> p_elements) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -343,7 +344,7 @@ TNode<JSArray> NewJSArray_0(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<JSArray>{tmp11};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=89&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=90&c=1
 TNode<JSArray> NewJSArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -390,7 +391,7 @@ TNode<JSArray> NewJSArray_1(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<JSArray>{tmp12};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=98&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=99&c=1
 TNode<JSArray> NewJSArrayFilledWithZero_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -441,7 +442,7 @@ TNode<JSArray> NewJSArrayFilledWithZero_0(compiler::CodeAssemblerState* state_, 
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp5 = GetFastPackedSmiElementsJSArrayMap_0(state_, TNode<Context>{p_context});
-    tmp6 = CodeStubAssembler(state_).AllocateFixedArray(ElementsKind::PACKED_SMI_ELEMENTS, TNode<IntPtrT>{p_length}, CodeStubAssembler::AllocationFlag::kAllowLargeObjectAllocation);
+    tmp6 = CodeStubAssembler(state_).AllocateFixedArray(ElementsKind::PACKED_SMI_ELEMENTS, TNode<IntPtrT>{p_length});
     tmp7 = UnsafeCast_FixedArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp6});
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     CodeStubAssembler(state_).FillFixedArrayWithSmiZero(ElementsKind::PACKED_SMI_ELEMENTS, TNode<FixedArray>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{p_length});
@@ -460,7 +461,7 @@ TNode<JSArray> NewJSArrayFilledWithZero_0(compiler::CodeAssemblerState* state_, 
   return TNode<JSArray>{phi_bb7_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=148&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=149&c=1
 TNode<Object> LoadElementNoHole_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_a, TNode<Smi> p_index, compiler::CodeAssemblerLabel* label_IfHole) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -518,14 +519,14 @@ TNode<Object> LoadElementNoHole_FixedArray_0(compiler::CodeAssemblerState* state
   TNode<IntPtrT> tmp14;
   TNode<Object> tmp15;
   TNode<Object> tmp16;
-  TNode<HeapObject> tmp17;
+  TNode<Hole> tmp17;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp11 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp7});
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11});
     std::tie(tmp13, tmp14) = NewReference_Object_0(state_, TNode<Object>{tmp4}, TNode<IntPtrT>{tmp12}).Flatten();
     tmp15 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp13, tmp14});
-    tmp16 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp15});
+    tmp16 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp15});
     compiler::CodeAssemblerLabel label18(&ca_);
     tmp17 = Cast_TheHole_0(state_, TNode<Object>{tmp16}, &label18);
     ca_.Goto(&block17);
@@ -554,7 +555,7 @@ TNode<Object> LoadElementNoHole_FixedArray_0(compiler::CodeAssemblerState* state
   return TNode<Object>{ca_.UncheckedCast<Object>(tmp16)};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=164&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=165&c=1
 TNode<Object> LoadElementNoHole_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_a, TNode<Smi> p_index, compiler::CodeAssemblerLabel* label_IfHole) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -642,7 +643,7 @@ TNode<Object> LoadElementNoHole_FixedDoubleArray_0(compiler::CodeAssemblerState*
   return TNode<Object>{tmp17};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=178&c=1
 void TorqueMoveElementsSmi_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_elements, TNode<IntPtrT> p_dstIndex, TNode<IntPtrT> p_srcIndex, TNode<IntPtrT> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -659,7 +660,7 @@ void TorqueMoveElementsSmi_0(compiler::CodeAssemblerState* state_, TNode<FixedAr
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=183&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=184&c=1
 void TorqueMoveElements_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_elements, TNode<IntPtrT> p_dstIndex, TNode<IntPtrT> p_srcIndex, TNode<IntPtrT> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -676,7 +677,7 @@ void TorqueMoveElements_0(compiler::CodeAssemblerState* state_, TNode<FixedArray
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=189&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=190&c=1
 void TorqueMoveElements_1(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_elements, TNode<IntPtrT> p_dstIndex, TNode<IntPtrT> p_srcIndex, TNode<IntPtrT> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -693,7 +694,7 @@ void TorqueMoveElements_1(compiler::CodeAssemblerState* state_, TNode<FixedDoubl
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=199&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=200&c=1
 void TorqueCopyElements_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_dstElements, TNode<IntPtrT> p_dstIndex, TNode<FixedArray> p_srcElements, TNode<IntPtrT> p_srcIndex, TNode<IntPtrT> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -710,7 +711,7 @@ void TorqueCopyElements_0(compiler::CodeAssemblerState* state_, TNode<FixedArray
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=206&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=207&c=1
 void TorqueCopyElements_1(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_dstElements, TNode<IntPtrT> p_dstIndex, TNode<FixedDoubleArray> p_srcElements, TNode<IntPtrT> p_srcIndex, TNode<IntPtrT> p_count) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -727,7 +728,7 @@ void TorqueCopyElements_1(compiler::CodeAssemblerState* state_, TNode<FixedDoubl
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=319&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=320&c=1
 TorqueStructFastJSArrayWitness_0 NewFastJSArrayWitness_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_array) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -760,7 +761,7 @@ TorqueStructFastJSArrayWitness_0 NewFastJSArrayWitness_0(compiler::CodeAssembler
   return TorqueStructFastJSArrayWitness_0{TNode<JSArray>{p_array}, TNode<JSArray>{p_array}, TNode<Map>{tmp4}, TNode<BoolT>{tmp5}, TNode<BoolT>{tmp6}, TNode<BoolT>{tmp7}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=366&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=367&c=1
 TorqueStructFastJSArrayForReadWitness_0 NewFastJSArrayForReadWitness_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_array) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -909,7 +910,7 @@ void StoreJSArrayIteratorKind_0(compiler::CodeAssemblerState* state_, TNode<JSAr
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
 TNode<Number> LoadJSArrayLength_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -930,7 +931,7 @@ TNode<Number> LoadJSArrayLength_0(compiler::CodeAssemblerState* state_, TNode<JS
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=64&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
 void StoreJSArrayLength_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -949,7 +950,7 @@ void StoreJSArrayLength_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=62&c=3
 TNode<BoolT> Method_JSArray_IsEmpty_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_this) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -974,7 +975,7 @@ TNode<BoolT> Method_JSArray_IsEmpty_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<BoolT>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 TNode<JSArray> LoadTemplateLiteralObjectRaw_0(compiler::CodeAssemblerState* state_, TNode<TemplateLiteralObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -995,7 +996,7 @@ TNode<JSArray> LoadTemplateLiteralObjectRaw_0(compiler::CodeAssemblerState* stat
   return TNode<JSArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 void StoreTemplateLiteralObjectRaw_0(compiler::CodeAssemblerState* state_, TNode<TemplateLiteralObject> p_o, TNode<JSArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1014,7 +1015,7 @@ void StoreTemplateLiteralObjectRaw_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
 TNode<Smi> LoadTemplateLiteralObjectFunctionLiteralId_0(compiler::CodeAssemblerState* state_, TNode<TemplateLiteralObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1035,7 +1036,7 @@ TNode<Smi> LoadTemplateLiteralObjectFunctionLiteralId_0(compiler::CodeAssemblerS
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
 void StoreTemplateLiteralObjectFunctionLiteralId_0(compiler::CodeAssemblerState* state_, TNode<TemplateLiteralObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1054,7 +1055,7 @@ void StoreTemplateLiteralObjectFunctionLiteralId_0(compiler::CodeAssemblerState*
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=73&c=3
 TNode<Smi> LoadTemplateLiteralObjectSlotId_0(compiler::CodeAssemblerState* state_, TNode<TemplateLiteralObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1075,7 +1076,7 @@ TNode<Smi> LoadTemplateLiteralObjectSlotId_0(compiler::CodeAssemblerState* state
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=72&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=73&c=3
 void StoreTemplateLiteralObjectSlotId_0(compiler::CodeAssemblerState* state_, TNode<TemplateLiteralObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1260,7 +1261,7 @@ TNode<Smi> SmiTag_IterationKind_0(compiler::CodeAssemblerState* state_, TNode<Ui
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=1
 TNode<JSArray> DownCastForTorqueClass_JSArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

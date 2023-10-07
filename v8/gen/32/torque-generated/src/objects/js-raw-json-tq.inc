@@ -1,7 +1,7 @@
 class JSRawJson;
-// Alias for HeapObject::IsJSRawJson() that avoids inlining.
+// Alias for IsJSRawJson() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1
-V8_EXPORT_PRIVATE bool IsJSRawJson_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSRawJson_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1
 template <class D, class P>
@@ -18,10 +18,10 @@ class TorqueGeneratedJSRawJson : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRawJson<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-raw-json.tq?l=7&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRawJson)
@@ -47,6 +47,8 @@ class TorqueGeneratedJSRawJson : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRawJson(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRawJson(Address ptr);
 };
 

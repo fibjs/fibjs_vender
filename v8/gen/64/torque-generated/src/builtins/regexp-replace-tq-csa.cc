@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -87,7 +88,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=23&c=1
 TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_matchesElements, TNode<IntPtrT> p_matchesCapacity, TNode<String> p_string, TNode<JSReceiver> p_replaceFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -289,7 +290,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
 
   TNode<Smi> phi_bb32_5;
   TNode<IntPtrT> phi_bb32_6;
-  TNode<HeapObject> tmp42;
+  TNode<Hole> tmp42;
   if (block32.is_used()) {
     ca_.Bind(&block32, &phi_bb32_5, &phi_bb32_6);
     compiler::CodeAssemblerLabel label43(&ca_);
@@ -303,7 +304,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
 
   TNode<Smi> phi_bb31_5;
   TNode<IntPtrT> phi_bb31_6;
-  TNode<Oddball> tmp44;
+  TNode<Undefined> tmp44;
   TNode<Object> tmp45;
   TNode<String> tmp46;
   TNode<Object> tmp47;
@@ -401,7 +402,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   return TNode<IntPtrT>{phi_bb45_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=73&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=71&c=1
 TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_matchesElements, TNode<IntPtrT> p_matchesCapacity, TNode<JSReceiver> p_replaceFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -465,7 +466,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   TNode<Object> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
-  TNode<HeapObject> tmp13;
+  TNode<Hole> tmp13;
   TNode<BoolT> tmp14;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_4, &phi_bb12_9, &phi_bb12_10, &phi_bb12_14, &phi_bb12_15);
@@ -554,8 +555,8 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
 
   TNode<IntPtrT> phi_bb26_4;
   TNode<JSReceiver> tmp28;
-  TNode<Oddball> tmp29;
-  TNode<Oddball> tmp30;
+  TNode<Undefined> tmp29;
+  TNode<Undefined> tmp30;
   TNode<Object> tmp31;
   TNode<Object> tmp32;
   TNode<IntPtrT> tmp33;
@@ -633,7 +634,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   return TNode<IntPtrT>{phi_bb36_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=97&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=94&c=1
 TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<JSReceiver> p_replaceFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -653,7 +654,7 @@ TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* st
   TNode<RegExpMatchInfo> tmp1;
   TNode<HeapObject> tmp2;
   TNode<Smi> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<Null> tmp4;
   TNode<BoolT> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -746,7 +747,7 @@ TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* st
   return TNode<String>{phi_bb11_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=134&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=132&c=1
 TNode<String> RegExpReplaceFastString_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<String> p_replaceString) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

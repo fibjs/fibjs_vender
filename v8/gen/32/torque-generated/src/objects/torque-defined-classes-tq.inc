@@ -12,9 +12,9 @@ class InternalClassWithStructElements;
 class ExportedSubClass2;
 class SortState;
 class WasmStringViewIter;
-// Alias for HeapObject::IsStrongDescriptorArray() that avoids inlining.
+// Alias for IsStrongDescriptorArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
-V8_EXPORT_PRIVATE bool IsStrongDescriptorArray_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsStrongDescriptorArray_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
 template <class D, class P>
@@ -33,10 +33,10 @@ class TorqueGeneratedStrongDescriptorArray : public P {
  protected: // not extern or @export
  public:
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(StrongDescriptorArray)
@@ -74,6 +74,8 @@ class TorqueGeneratedStrongDescriptorArray : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedStrongDescriptorArray(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedStrongDescriptorArray(Address ptr);
 };
 
@@ -83,9 +85,9 @@ class StrongDescriptorArray : public TorqueGeneratedStrongDescriptorArray<Strong
   TQ_OBJECT_CONSTRUCTORS(StrongDescriptorArray)
 };
 
-// Alias for HeapObject::IsInternalClass() that avoids inlining.
+// Alias for IsInternalClass() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
-V8_EXPORT_PRIVATE bool IsInternalClass_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsInternalClass_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
 template <class D, class P>
@@ -109,18 +111,18 @@ class TorqueGeneratedInternalClass : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
-  inline Object b() const;
+  inline Tagged<Object> b() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
-  inline Object b(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> b(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
-  inline void set_b(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_b(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
  public:
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(InternalClass)
@@ -165,6 +167,8 @@ class TorqueGeneratedInternalClass : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedInternalClass(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedInternalClass(Address ptr);
 };
 
@@ -174,9 +178,9 @@ class InternalClass : public TorqueGeneratedInternalClass<InternalClass, HeapObj
   TQ_OBJECT_CONSTRUCTORS(InternalClass)
 };
 
-// Alias for HeapObject::IsSmiPair() that avoids inlining.
+// Alias for IsSmiPair() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
-V8_EXPORT_PRIVATE bool IsSmiPair_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSmiPair_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
 template <class D, class P>
@@ -205,10 +209,10 @@ class TorqueGeneratedSmiPair : public P {
 
  public:
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SmiPair)
@@ -253,6 +257,8 @@ class TorqueGeneratedSmiPair : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSmiPair(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSmiPair(Address ptr);
 };
 
@@ -262,9 +268,9 @@ class SmiPair : public TorqueGeneratedSmiPair<SmiPair, HeapObject> {
   TQ_OBJECT_CONSTRUCTORS(SmiPair)
 };
 
-// Alias for HeapObject::IsSmiBox() that avoids inlining.
+// Alias for IsSmiBox() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
-V8_EXPORT_PRIVATE bool IsSmiBox_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSmiBox_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
 template <class D, class P>
@@ -293,10 +299,10 @@ class TorqueGeneratedSmiBox : public P {
 
  public:
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SmiBox)
@@ -341,6 +347,8 @@ class TorqueGeneratedSmiBox : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSmiBox(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSmiBox(Address ptr);
 };
 
@@ -350,9 +358,9 @@ class SmiBox : public TorqueGeneratedSmiBox<SmiBox, HeapObject> {
   TQ_OBJECT_CONSTRUCTORS(SmiBox)
 };
 
-// Alias for HeapObject::IsExportedSubClassBase() that avoids inlining.
+// Alias for IsExportedSubClassBase() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
-V8_EXPORT_PRIVATE bool IsExportedSubClassBase_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsExportedSubClassBase_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
 template <class D, class P>
@@ -369,24 +377,24 @@ class TorqueGeneratedExportedSubClassBase : public P {
   using TorqueGeneratedClass = TorqueGeneratedExportedSubClassBase<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1179&c=3
-  inline HeapObject a() const;
+  inline Tagged<HeapObject> a() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1179&c=3
-  inline HeapObject a(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> a(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1179&c=3
-  inline void set_a(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_a(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1180&c=3
-  inline HeapObject b() const;
+  inline Tagged<HeapObject> b() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1180&c=3
-  inline HeapObject b(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> b(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1180&c=3
-  inline void set_b(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_b(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ExportedSubClassBase)
@@ -431,6 +439,8 @@ class TorqueGeneratedExportedSubClassBase : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedExportedSubClassBase(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedExportedSubClassBase(Address ptr);
 };
 
@@ -440,9 +450,9 @@ class ExportedSubClassBase : public TorqueGeneratedExportedSubClassBase<Exported
   TQ_OBJECT_CONSTRUCTORS(ExportedSubClassBase)
 };
 
-// Alias for HeapObject::IsExportedSubClass() that avoids inlining.
+// Alias for IsExportedSubClass() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
-V8_EXPORT_PRIVATE bool IsExportedSubClass_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsExportedSubClass_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
 template <class D, class P>
@@ -474,10 +484,10 @@ class TorqueGeneratedExportedSubClass : public P {
   inline void set_e_field(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ExportedSubClass)
@@ -525,6 +535,8 @@ class TorqueGeneratedExportedSubClass : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedExportedSubClass(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedExportedSubClass(Address ptr);
 };
 
@@ -534,9 +546,9 @@ class ExportedSubClass : public TorqueGeneratedExportedSubClass<ExportedSubClass
   TQ_OBJECT_CONSTRUCTORS(ExportedSubClass)
 };
 
-// Alias for HeapObject::IsAbstractInternalClass() that avoids inlining.
+// Alias for IsAbstractInternalClass() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
-V8_EXPORT_PRIVATE bool IsAbstractInternalClass_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsAbstractInternalClass_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
 template <class D, class P>
@@ -555,10 +567,10 @@ class TorqueGeneratedAbstractInternalClass : public P {
  protected: // not extern or @export
  public:
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(AbstractInternalClass)
@@ -584,6 +596,8 @@ class TorqueGeneratedAbstractInternalClass : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAbstractInternalClass(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAbstractInternalClass(Address ptr);
 };
 
@@ -592,11 +606,11 @@ class AbstractInternalClass : public TorqueGeneratedAbstractInternalClass<Abstra
   TQ_OBJECT_CONSTRUCTORS(AbstractInternalClass)
 };
 
-// Alias for HeapObject::IsAbstractInternalClassSubclass1() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
-V8_EXPORT_PRIVATE bool IsAbstractInternalClassSubclass1_NonInline(HeapObject o);
+// Alias for IsAbstractInternalClassSubclass1() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
+V8_EXPORT_PRIVATE bool IsAbstractInternalClassSubclass1_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
 template <class D, class P>
 class TorqueGeneratedAbstractInternalClassSubclass1 : public P {
   static_assert(
@@ -612,17 +626,17 @@ class TorqueGeneratedAbstractInternalClassSubclass1 : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(AbstractInternalClassSubclass1)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
   V8_EXPORT_PRIVATE void AbstractInternalClassSubclass1Verify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -633,14 +647,14 @@ class TorqueGeneratedAbstractInternalClassSubclass1 : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 4);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -655,6 +669,8 @@ class TorqueGeneratedAbstractInternalClassSubclass1 : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAbstractInternalClassSubclass1(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAbstractInternalClassSubclass1(Address ptr);
 };
 
@@ -664,11 +680,11 @@ class AbstractInternalClassSubclass1 : public TorqueGeneratedAbstractInternalCla
   TQ_OBJECT_CONSTRUCTORS(AbstractInternalClassSubclass1)
 };
 
-// Alias for HeapObject::IsAbstractInternalClassSubclass2() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
-V8_EXPORT_PRIVATE bool IsAbstractInternalClassSubclass2_NonInline(HeapObject o);
+// Alias for IsAbstractInternalClassSubclass2() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
+V8_EXPORT_PRIVATE bool IsAbstractInternalClassSubclass2_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
 template <class D, class P>
 class TorqueGeneratedAbstractInternalClassSubclass2 : public P {
   static_assert(
@@ -684,17 +700,17 @@ class TorqueGeneratedAbstractInternalClassSubclass2 : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(AbstractInternalClassSubclass2)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
   V8_EXPORT_PRIVATE void AbstractInternalClassSubclass2Verify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -705,14 +721,14 @@ class TorqueGeneratedAbstractInternalClassSubclass2 : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 4);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1189&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -727,6 +743,8 @@ class TorqueGeneratedAbstractInternalClassSubclass2 : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAbstractInternalClassSubclass2(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAbstractInternalClassSubclass2(Address ptr);
 };
 
@@ -736,11 +754,11 @@ class AbstractInternalClassSubclass2 : public TorqueGeneratedAbstractInternalCla
   TQ_OBJECT_CONSTRUCTORS(AbstractInternalClassSubclass2)
 };
 
-// Alias for HeapObject::IsInternalClassWithSmiElements() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
-V8_EXPORT_PRIVATE bool IsInternalClassWithSmiElements_NonInline(HeapObject o);
+// Alias for IsInternalClassWithSmiElements() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
+V8_EXPORT_PRIVATE bool IsInternalClassWithSmiElements_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
 template <class D, class P>
 class TorqueGeneratedInternalClassWithSmiElements : public P {
   static_assert(
@@ -755,61 +773,61 @@ class TorqueGeneratedInternalClassWithSmiElements : public P {
   using TorqueGeneratedClass = TorqueGeneratedInternalClassWithSmiElements<D,P>;
 
  protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
   inline int data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
   inline void set_data(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-  inline Oddball object() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-  inline Oddball object(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-  inline void set_object(Oddball value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
+  inline Tagged<Oddball> object() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
+  inline Tagged<Oddball> object(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
+  inline void set_object(Tagged<Oddball> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1194&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
   inline int entries(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1194&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
   inline void set_entries(int i, int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(InternalClassWithSmiElements)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
   V8_EXPORT_PRIVATE void InternalClassWithSmiElementsVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
   static constexpr int kDataOffset = P::kHeaderSize;
   static constexpr int kDataOffsetEnd = kDataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
   static constexpr int kObjectOffset = kDataOffsetEnd + 1;
   static constexpr int kObjectOffsetEnd = kObjectOffset + kTaggedSize - 1;
   static constexpr int kHeaderSize = kObjectOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1194&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
   static constexpr int kEntriesOffset = kObjectOffsetEnd + 1;
   static constexpr int kEntriesOffsetEnd = kEntriesOffset + 0 - 1;
   static constexpr int kEndOfStrongFieldsOffset = kEntriesOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
   static constexpr int kEndOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
   V8_INLINE static constexpr int32_t SizeFor(int length) {
     int32_t size = kHeaderSize;
     size += length * 4;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->length());
   }
@@ -824,6 +842,8 @@ class TorqueGeneratedInternalClassWithSmiElements : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedInternalClassWithSmiElements(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedInternalClassWithSmiElements(Address ptr);
 };
 
@@ -833,11 +853,11 @@ class InternalClassWithSmiElements : public TorqueGeneratedInternalClassWithSmiE
   TQ_OBJECT_CONSTRUCTORS(InternalClassWithSmiElements)
 };
 
-// Alias for HeapObject::IsInternalClassWithStructElements() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
-V8_EXPORT_PRIVATE bool IsInternalClassWithStructElements_NonInline(HeapObject o);
+// Alias for IsInternalClassWithStructElements() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+V8_EXPORT_PRIVATE bool IsInternalClassWithStructElements_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
 template <class D, class P>
 class TorqueGeneratedInternalClassWithStructElements : public P {
   static_assert(
@@ -852,90 +872,90 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
   using TorqueGeneratedClass = TorqueGeneratedInternalClassWithStructElements<D,P>;
 
  protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline int32_t dummy1() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline void set_dummy1(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
   inline int32_t dummy2() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
   inline void set_dummy2(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
   inline int count() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
   inline void set_count(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
   inline int data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
   inline void set_data(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
-  inline Object object() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
-  inline Object object(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
-  inline void set_object(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  inline Tagged<Object> object() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  inline Tagged<Object> object(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  inline void set_object(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
   inline int entries(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
   inline void set_entries(int i, int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
   inline int more_entries_a(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
   inline void set_more_entries_a(int i, int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
   inline int more_entries_b(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
   inline void set_more_entries_b(int i, int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(InternalClassWithStructElements)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
   V8_EXPORT_PRIVATE void InternalClassWithStructElementsVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   static constexpr int kDummy1Offset = P::kHeaderSize;
   static constexpr int kDummy1OffsetEnd = kDummy1Offset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
   static constexpr int kDummy2Offset = kDummy1OffsetEnd + 1;
   static constexpr int kDummy2OffsetEnd = kDummy2Offset + kInt32Size - 1;
   static constexpr int kStartOfStrongFieldsOffset = kDummy2OffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
   static constexpr int kCountOffset = kDummy2OffsetEnd + 1;
   static constexpr int kCountOffsetEnd = kCountOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
   static constexpr int kDataOffset = kCountOffsetEnd + 1;
   static constexpr int kDataOffsetEnd = kDataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
   static constexpr int kObjectOffset = kDataOffsetEnd + 1;
   static constexpr int kObjectOffsetEnd = kObjectOffset + kTaggedSize - 1;
   static constexpr int kHeaderSize = kObjectOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
   static constexpr int kEntriesOffset = kObjectOffsetEnd + 1;
   static constexpr int kEntriesOffsetEnd = kEntriesOffset + 0 - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1209&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
   inline int MoreEntriesOffset() const;
   static constexpr int kEndOfStrongFieldsOffset = kEntriesOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
   static constexpr int kEndOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
   V8_INLINE static constexpr int32_t SizeFor(int count) {
     int32_t size = kHeaderSize;
     size += count * 4;
@@ -943,7 +963,7 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->count());
   }
@@ -958,6 +978,8 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedInternalClassWithStructElements(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedInternalClassWithStructElements(Address ptr);
 };
 
@@ -967,11 +989,11 @@ class InternalClassWithStructElements : public TorqueGeneratedInternalClassWithS
   TQ_OBJECT_CONSTRUCTORS(InternalClassWithStructElements)
 };
 
-// Alias for HeapObject::IsExportedSubClass2() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
-V8_EXPORT_PRIVATE bool IsExportedSubClass2_NonInline(HeapObject o);
+// Alias for IsExportedSubClass2() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+V8_EXPORT_PRIVATE bool IsExportedSubClass2_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
 template <class D, class P>
 class TorqueGeneratedExportedSubClass2 : public P {
   static_assert(
@@ -985,43 +1007,43 @@ class TorqueGeneratedExportedSubClass2 : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedExportedSubClass2<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1284&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
   inline int32_t x_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1284&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
   inline void set_x_field(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
   inline int32_t y_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
   inline void set_y_field(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
   inline int z_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
   inline void set_z_field(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ExportedSubClass2)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
   V8_EXPORT_PRIVATE void ExportedSubClass2Verify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1284&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
   static constexpr int kXFieldOffset = P::kHeaderSize;
   static constexpr int kXFieldOffsetEnd = kXFieldOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
   static constexpr int kYFieldOffset = kXFieldOffsetEnd + 1;
   static constexpr int kYFieldOffsetEnd = kYFieldOffset + kInt32Size - 1;
   static constexpr int kStartOfStrongFieldsOffset = kYFieldOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
   static constexpr int kZFieldOffset = kYFieldOffsetEnd + 1;
   static constexpr int kZFieldOffsetEnd = kZFieldOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kZFieldOffsetEnd + 1;
@@ -1030,14 +1052,14 @@ class TorqueGeneratedExportedSubClass2 : public P {
   static constexpr int kHeaderSize = kZFieldOffsetEnd + 1;
   static constexpr int kSize = kZFieldOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1282&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -1052,6 +1074,8 @@ class TorqueGeneratedExportedSubClass2 : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedExportedSubClass2(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedExportedSubClass2(Address ptr);
 };
 
@@ -1061,9 +1085,9 @@ class ExportedSubClass2 : public TorqueGeneratedExportedSubClass2<ExportedSubCla
   TQ_OBJECT_CONSTRUCTORS(ExportedSubClass2)
 };
 
-// Alias for HeapObject::IsSortState() that avoids inlining.
+// Alias for IsSortState() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1
-V8_EXPORT_PRIVATE bool IsSortState_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSortState_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1
 template <class D, class P>
@@ -1081,34 +1105,34 @@ class TorqueGeneratedSortState : public P {
 
  protected: // not extern or @export
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=47&c=3
-  inline JSReceiver receiver() const;
+  inline Tagged<JSReceiver> receiver() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=47&c=3
-  inline JSReceiver receiver(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> receiver(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=47&c=3
-  inline void set_receiver(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_receiver(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=52&c=3
-  inline Map initialReceiverMap() const;
+  inline Tagged<Map> initialReceiverMap() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=52&c=3
-  inline Map initialReceiverMap(PtrComprCageBase cage_base) const;
+  inline Tagged<Map> initialReceiverMap(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=52&c=3
-  inline void set_initialReceiverMap(Map value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_initialReceiverMap(Tagged<Map> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
-  inline Object initialReceiverLength() const;
+  inline Tagged<Object> initialReceiverLength() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
-  inline Object initialReceiverLength(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> initialReceiverLength(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
-  inline void set_initialReceiverLength(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_initialReceiverLength(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | CallableApiObject | CallableJSProxy | class JSFunction | class JSBoundFunction | class JSWrappedFunction)
+  // Torque type: (class Undefined | CallableApiObject | CallableJSProxy | class JSFunction | class JSBoundFunction | class JSWrappedFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
-  inline HeapObject userCmpFn() const;
+  inline Tagged<HeapObject> userCmpFn() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
-  inline HeapObject userCmpFn(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> userCmpFn(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
-  inline void set_userCmpFn(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_userCmpFn(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=61&c=3
   inline int sortComparePtr() const;
@@ -1146,25 +1170,25 @@ class TorqueGeneratedSortState : public P {
   inline void set_pendingRunsSize(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=87&c=3
-  inline FixedArray pendingRuns() const;
+  inline Tagged<FixedArray> pendingRuns() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=87&c=3
-  inline FixedArray pendingRuns(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> pendingRuns(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=87&c=3
-  inline void set_pendingRuns(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_pendingRuns(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=92&c=3
-  inline FixedArray workArray() const;
+  inline Tagged<FixedArray> workArray() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=92&c=3
-  inline FixedArray workArray(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> workArray(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=92&c=3
-  inline void set_workArray(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_workArray(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=95&c=3
-  inline FixedArray tempArray() const;
+  inline Tagged<FixedArray> tempArray() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=95&c=3
-  inline FixedArray tempArray(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> tempArray(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=95&c=3
-  inline void set_tempArray(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_tempArray(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=98&c=3
   inline int sortLength() const;
@@ -1178,10 +1202,10 @@ class TorqueGeneratedSortState : public P {
 
  public:
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SortState)
@@ -1268,6 +1292,8 @@ class TorqueGeneratedSortState : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSortState(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSortState(Address ptr);
 };
 
@@ -1277,11 +1303,11 @@ class SortState : public TorqueGeneratedSortState<SortState, HeapObject> {
   TQ_OBJECT_CONSTRUCTORS(SortState)
 };
 
-// Alias for HeapObject::IsWasmStringViewIter() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
-V8_EXPORT_PRIVATE bool IsWasmStringViewIter_NonInline(HeapObject o);
+// Alias for IsWasmStringViewIter() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+V8_EXPORT_PRIVATE bool IsWasmStringViewIter_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
 template <class D, class P>
 class TorqueGeneratedWasmStringViewIter : public P {
   static_assert(
@@ -1296,42 +1322,42 @@ class TorqueGeneratedWasmStringViewIter : public P {
   using TorqueGeneratedClass = TorqueGeneratedWasmStringViewIter<D,P>;
 
  protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
-  inline String string() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
-  inline String string(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
-  inline void set_string(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  inline Tagged<String> string() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  inline Tagged<String> string(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  inline void set_string(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
   inline uint32_t offset() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
   inline void set_offset(uint32_t value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
-  V8_INLINE static D cast(Object object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(WasmStringViewIter)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
   V8_EXPORT_PRIVATE void WasmStringViewIterVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
   static constexpr int kStringOffset = P::kHeaderSize;
   static constexpr int kStringOffsetEnd = kStringOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kStringOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
   static constexpr int kOffsetOffset = kStringOffsetEnd + 1;
   static constexpr int kOffsetOffsetEnd = kOffsetOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=31
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=233&c=31
   static constexpr int kOptionalPaddingOffset = kOffsetOffsetEnd + 1;
   static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + 0 - 1;
   static constexpr int kStartOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
@@ -1339,14 +1365,14 @@ class TorqueGeneratedWasmStringViewIter : public P {
   static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
   static constexpr int kSize = kOptionalPaddingOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=223&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -1361,6 +1387,8 @@ class TorqueGeneratedWasmStringViewIter : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedWasmStringViewIter(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedWasmStringViewIter(Address ptr);
 };
 

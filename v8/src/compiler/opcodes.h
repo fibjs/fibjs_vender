@@ -556,7 +556,9 @@
   V(Null)                          \
   V(RttCanon)                      \
   V(WasmTypeCast)                  \
+  V(WasmTypeCastAbstract)          \
   V(WasmTypeCheck)                 \
+  V(WasmTypeCheckAbstract)         \
   V(WasmExternInternalize)         \
   V(WasmExternExternalize)         \
   V(WasmStructGet)                 \
@@ -1144,6 +1146,7 @@
   V(F32x8Min)                      \
   V(F32x8Max)                      \
   V(I64x4Ne)                       \
+  V(I64x4GeS)                      \
   V(I32x8Ne)                       \
   V(I32x8GtU)                      \
   V(I32x8GeS)                      \
@@ -1156,8 +1159,10 @@
   V(I8x32GtU)                      \
   V(I8x32GeS)                      \
   V(I8x32GeU)                      \
+  V(I32x8UConvertF32x8)            \
   V(F64x4ConvertI32x4S)            \
   V(F32x8SConvertI32x8)            \
+  V(F32x8UConvertI32x8)            \
   V(F32x4DemoteF64x4)              \
   V(I64x4SConvertI32x4)            \
   V(I64x4UConvertI32x4)            \
@@ -1195,7 +1200,12 @@
   V(I32x8ExtMulI16x8U)             \
   V(I16x16ExtMulI8x16S)            \
   V(I16x16ExtMulI8x16U)            \
+  V(I32x8ExtAddPairwiseI16x16S)    \
+  V(I32x8ExtAddPairwiseI16x16U)    \
+  V(I16x16ExtAddPairwiseI8x32S)    \
+  V(I16x16ExtAddPairwiseI8x32U)    \
   V(ExtractF128)                   \
+  V(S256Const)                     \
   V(S256Zero)                      \
   V(S256Not)                       \
   V(S256And)                       \
@@ -1206,7 +1216,12 @@
   V(I64x4Splat)                    \
   V(I32x8Splat)                    \
   V(I16x16Splat)                   \
-  V(I8x32Splat)
+  V(I8x32Splat)                    \
+  V(F64x4Pmin)                     \
+  V(F64x4Pmax)                     \
+  V(F64x4Splat)                    \
+  V(F32x8Splat)                    \
+  V(I8x32Shuffle)
 
 #define VALUE_OP_LIST(V)     \
   COMMON_OP_LIST(V)          \

@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
-bool IsCallSiteInfo_NonInline(HeapObject o) {
-  return o.IsCallSiteInfo();
+bool IsCallSiteInfo_NonInline(Tagged<HeapObject> o) {
+  return IsCallSiteInfo(o);
 }
 
 #ifdef VERIFY_HEAP

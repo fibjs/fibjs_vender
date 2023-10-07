@@ -1,23 +1,22 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
 template<class D, class P>
-JSArrayBuffer TorqueGeneratedJSArrayBufferView<D, P>::buffer() const {
+Tagged<JSArrayBuffer> TorqueGeneratedJSArrayBufferView<D, P>::buffer() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSArrayBufferView::buffer(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
 template<class D, class P>
-JSArrayBuffer TorqueGeneratedJSArrayBufferView<D, P>::buffer(PtrComprCageBase cage_base) const {
-  JSArrayBuffer value;
-  value = TaggedField<JSArrayBuffer>::load(cage_base, *this, kBufferOffset);
-  DCHECK(value.IsJSArrayBuffer());
+Tagged<JSArrayBuffer> TorqueGeneratedJSArrayBufferView<D, P>::buffer(PtrComprCageBase cage_base) const {
+  Tagged<JSArrayBuffer> value = TaggedField<Tagged<JSArrayBuffer>>::load(cage_base, *this, kBufferOffset);
+  DCHECK(IsJSArrayBuffer(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
 template<class D, class P>
-void TorqueGeneratedJSArrayBufferView<D, P>::set_buffer(JSArrayBuffer value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsJSArrayBuffer());
+void TorqueGeneratedJSArrayBufferView<D, P>::set_buffer(Tagged<JSArrayBuffer> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsJSArrayBuffer(value));
   WRITE_FIELD(*this, kBufferOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBufferOffset, value, mode);
 }
@@ -25,8 +24,7 @@ void TorqueGeneratedJSArrayBufferView<D, P>::set_buffer(JSArrayBuffer value, Wri
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=3
 template<class D, class P>
 uintptr_t TorqueGeneratedJSArrayBufferView<D, P>::raw_byte_offset() const {
-  uintptr_t value;
-  value = this->template ReadField<uintptr_t>(kRawByteOffsetOffset);
+  uintptr_t value = this->template ReadField<uintptr_t>(kRawByteOffsetOffset);
   return value;
 }
 
@@ -39,8 +37,7 @@ void TorqueGeneratedJSArrayBufferView<D, P>::set_raw_byte_offset(uintptr_t value
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
 template<class D, class P>
 uintptr_t TorqueGeneratedJSArrayBufferView<D, P>::raw_byte_length() const {
-  uintptr_t value;
-  value = this->template ReadField<uintptr_t>(kRawByteLengthOffset);
+  uintptr_t value = this->template ReadField<uintptr_t>(kRawByteLengthOffset);
   return value;
 }
 
@@ -53,8 +50,7 @@ void TorqueGeneratedJSArrayBufferView<D, P>::set_raw_byte_length(uintptr_t value
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=70&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedJSArrayBufferView<D, P>::bit_field() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kBitFieldOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kBitFieldOffset);
   return value;
 }
 
@@ -67,8 +63,7 @@ void TorqueGeneratedJSArrayBufferView<D, P>::set_bit_field(uint32_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=72&c=28
 template<class D, class P>
 uint32_t TorqueGeneratedJSArrayBufferView<D, P>::optional_padding() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
   return value;
 }
 
@@ -80,8 +75,8 @@ void TorqueGeneratedJSArrayBufferView<D, P>::set_optional_padding(uint32_t value
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
 template<class D, class P>
-D TorqueGeneratedJSArrayBufferView<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSArrayBufferView<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -92,8 +87,7 @@ inline TorqueGeneratedJSArrayBufferView<D, P>::TorqueGeneratedJSArrayBufferView(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
 template<class D, class P>
 uintptr_t TorqueGeneratedJSTypedArray<D, P>::raw_length() const {
-  uintptr_t value;
-  value = this->template ReadField<uintptr_t>(kRawLengthOffset);
+  uintptr_t value = this->template ReadField<uintptr_t>(kRawLengthOffset);
   return value;
 }
 
@@ -106,8 +100,7 @@ void TorqueGeneratedJSTypedArray<D, P>::set_raw_length(uintptr_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=113&c=3
 template<class D, class P>
 Address TorqueGeneratedJSTypedArray<D, P>::external_pointer() const {
-  Address value;
-  value = this->template ReadField<Address>(kExternalPointerOffset);
+  Address value = this->template ReadField<Address>(kExternalPointerOffset);
   return value;
 }
 
@@ -119,32 +112,31 @@ void TorqueGeneratedJSTypedArray<D, P>::set_external_pointer(Address value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
 template<class D, class P>
-Object TorqueGeneratedJSTypedArray<D, P>::base_pointer() const {
+Tagged<Object> TorqueGeneratedJSTypedArray<D, P>::base_pointer() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTypedArray::base_pointer(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
 template<class D, class P>
-Object TorqueGeneratedJSTypedArray<D, P>::base_pointer(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kBasePointerOffset);
-  DCHECK(value.IsSmi() || value.IsByteArray());
+Tagged<Object> TorqueGeneratedJSTypedArray<D, P>::base_pointer(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kBasePointerOffset);
+  DCHECK(IsSmi(value) || IsByteArray(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
 template<class D, class P>
-void TorqueGeneratedJSTypedArray<D, P>::set_base_pointer(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSmi() || value.IsByteArray());
+void TorqueGeneratedJSTypedArray<D, P>::set_base_pointer(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsByteArray(value));
   WRITE_FIELD(*this, kBasePointerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBasePointerOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
 template<class D, class P>
-D TorqueGeneratedJSTypedArray<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSTypedArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -154,24 +146,23 @@ inline TorqueGeneratedJSTypedArray<D, P>::TorqueGeneratedJSTypedArray(Address pt
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
 template<class D, class P>
-Object TorqueGeneratedJSArrayBuffer<D, P>::detach_key() const {
+Tagged<Object> TorqueGeneratedJSArrayBuffer<D, P>::detach_key() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSArrayBuffer::detach_key(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
 template<class D, class P>
-Object TorqueGeneratedJSArrayBuffer<D, P>::detach_key(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kDetachKeyOffset);
-  DCHECK(value.IsHeapObject() || value.IsSmi());
+Tagged<Object> TorqueGeneratedJSArrayBuffer<D, P>::detach_key(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kDetachKeyOffset);
+  DCHECK(IsHeapObject(value) || IsSmi(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
 template<class D, class P>
-void TorqueGeneratedJSArrayBuffer<D, P>::set_detach_key(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
+void TorqueGeneratedJSArrayBuffer<D, P>::set_detach_key(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
   WRITE_FIELD(*this, kDetachKeyOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDetachKeyOffset, value, mode);
 }
@@ -179,8 +170,7 @@ void TorqueGeneratedJSArrayBuffer<D, P>::set_detach_key(Object value, WriteBarri
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=17&c=3
 template<class D, class P>
 uintptr_t TorqueGeneratedJSArrayBuffer<D, P>::raw_byte_length() const {
-  uintptr_t value;
-  value = this->template ReadField<uintptr_t>(kRawByteLengthOffset);
+  uintptr_t value = this->template ReadField<uintptr_t>(kRawByteLengthOffset);
   return value;
 }
 
@@ -193,8 +183,7 @@ void TorqueGeneratedJSArrayBuffer<D, P>::set_raw_byte_length(uintptr_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=19&c=3
 template<class D, class P>
 uintptr_t TorqueGeneratedJSArrayBuffer<D, P>::raw_max_byte_length() const {
-  uintptr_t value;
-  value = this->template ReadField<uintptr_t>(kRawMaxByteLengthOffset);
+  uintptr_t value = this->template ReadField<uintptr_t>(kRawMaxByteLengthOffset);
   return value;
 }
 
@@ -207,8 +196,7 @@ void TorqueGeneratedJSArrayBuffer<D, P>::set_raw_max_byte_length(uintptr_t value
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=21&c=3
 template<class D, class P>
 Address TorqueGeneratedJSArrayBuffer<D, P>::backing_store() const {
-  Address value;
-  value = this->template ReadField<Address>(kBackingStoreOffset);
+  Address value = this->template ReadField<Address>(kBackingStoreOffset);
   return value;
 }
 
@@ -221,8 +209,7 @@ void TorqueGeneratedJSArrayBuffer<D, P>::set_backing_store(Address value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=23&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedJSArrayBuffer<D, P>::bit_field() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kBitFieldOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kBitFieldOffset);
   return value;
 }
 
@@ -235,8 +222,7 @@ void TorqueGeneratedJSArrayBuffer<D, P>::set_bit_field(uint32_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=25&c=28
 template<class D, class P>
 uint32_t TorqueGeneratedJSArrayBuffer<D, P>::optional_padding() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
   return value;
 }
 
@@ -248,8 +234,8 @@ void TorqueGeneratedJSArrayBuffer<D, P>::set_optional_padding(uint32_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
 template<class D, class P>
-D TorqueGeneratedJSArrayBuffer<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSArrayBuffer<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -260,8 +246,7 @@ inline TorqueGeneratedJSArrayBuffer<D, P>::TorqueGeneratedJSArrayBuffer(Address 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
 template<class D, class P>
 Address TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::data_pointer() const {
-  Address value;
-  value = this->template ReadField<Address>(kDataPointerOffset);
+  Address value = this->template ReadField<Address>(kDataPointerOffset);
   return value;
 }
 
@@ -273,8 +258,8 @@ void TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::set_data_pointer(Address 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
 template<class D, class P>
-D TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -284,8 +269,8 @@ inline TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::TorqueGeneratedJSDataVi
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
 template<class D, class P>
-D TorqueGeneratedJSDataView<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSDataView<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -295,8 +280,8 @@ inline TorqueGeneratedJSDataView<D, P>::TorqueGeneratedJSDataView(Address ptr)
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
 template<class D, class P>
-D TorqueGeneratedJSRabGsabDataView<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSRabGsabDataView<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

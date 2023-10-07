@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -132,14 +133,14 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp7;
+  TNode<False> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp7 = False_0(state_);
     CodeStubAssembler(state_).Return(tmp7);
   }
 
-  TNode<Oddball> tmp8;
+  TNode<True> tmp8;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp8 = True_0(state_);
@@ -147,9 +148,9 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
   }
 
   TNode<Object> tmp9;
-  TNode<Oddball> tmp10;
+  TNode<Null> tmp10;
   TNode<BoolT> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<Boolean> tmp12;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp9 = RegExpExec_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<String>{tmp2});
@@ -185,14 +186,14 @@ TF_BUILTIN(RegExpPrototypeTestFast, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<False> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp2 = False_0(state_);
     CodeStubAssembler(state_).Return(tmp2);
   }
 
-  TNode<Oddball> tmp3;
+  TNode<True> tmp3;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp3 = True_0(state_);

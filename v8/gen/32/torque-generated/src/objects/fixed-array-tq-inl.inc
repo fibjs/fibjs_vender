@@ -10,7 +10,10 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceFixedDoubleArra
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=29&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceByteArrayBytes(ByteArray p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceExternalPointerArrayPointers(ExternalPointerArray p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceWeakArrayListObjects(WeakArrayList p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
@@ -33,6 +36,9 @@ inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_o
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=29&c=3
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint8_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ExternalPointer_0(Object p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
@@ -149,10 +155,38 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceByteArrayBytes(ByteArr
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFieldSliceByteArrayBytes
+#ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceExternalPointerArrayPointers
+#define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceExternalPointerArrayPointers
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceExternalPointerArrayPointers(ExternalPointerArray p_o) {
+  DisallowGarbageCollection no_gc;
+  intptr_t tmp0{}; USE(tmp0);
+  Smi tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  intptr_t tmp3{}; USE(tmp3);
+  Object tmp4{}; USE(tmp4);
+  intptr_t tmp5{}; USE(tmp5);
+  intptr_t tmp6{}; USE(tmp6);
+  goto block0;
+
+  block0:
+  tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
+  tmp1 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp0));
+  tmp2 = TqRuntimeConvert_intptr_Smi_0(tmp1);
+  tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x8ull));
+  std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_ExternalPointer_0(p_o, tmp3, tmp2);
+  goto block2;
+
+  block2:
+  return std::make_tuple(tmp4, tmp5, tmp6);
+}
+
+#endif // V8_INTERNAL_DEFINED_TqRuntimeFieldSliceExternalPointerArrayPointers
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceWeakArrayListObjects
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceWeakArrayListObjects
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceWeakArrayListObjects(WeakArrayList p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -311,6 +345,26 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint8_0(Object p
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint8_0
+#ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_ExternalPointer_0
+#define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_ExternalPointer_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ExternalPointer_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+  DisallowGarbageCollection no_gc;
+  Object tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return std::make_tuple(tmp0, tmp1, tmp2);
+}
+
+#endif // V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_ExternalPointer_0
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
 
@@ -332,8 +386,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=8&c=9
 template<class D, class P>
 int TorqueGeneratedFixedArrayBase<D, P>::length() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kLengthOffset).value();
+  int value = TaggedField<Smi>::load(*this, kLengthOffset).value();
   return value;
 }
 
@@ -345,8 +398,8 @@ void TorqueGeneratedFixedArrayBase<D, P>::set_length(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedFixedArrayBase<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedFixedArrayBase<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -356,38 +409,37 @@ inline TorqueGeneratedFixedArrayBase<D, P>::TorqueGeneratedFixedArrayBase(Addres
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
 template<class D, class P>
-Object TorqueGeneratedFixedArray<D, P>::objects(int i) const {
+Tagged<Object> TorqueGeneratedFixedArray<D, P>::objects(int i) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFixedArray::objects(cage_base, i);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
 template<class D, class P>
-Object TorqueGeneratedFixedArray<D, P>::objects(PtrComprCageBase cage_base, int i) const {
-  Object value;
+Tagged<Object> TorqueGeneratedFixedArray<D, P>::objects(PtrComprCageBase cage_base, int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kObjectsOffset + i * kTaggedSize;
-  value = TaggedField<Object>::load(cage_base, *this, offset);
-  DCHECK(value.IsHeapObject() || value.IsSmi());
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, offset);
+  DCHECK(IsHeapObject(value) || IsSmi(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=13&c=3
 template<class D, class P>
-void TorqueGeneratedFixedArray<D, P>::set_objects(int i, Object value, WriteBarrierMode mode) {
+void TorqueGeneratedFixedArray<D, P>::set_objects(int i, Tagged<Object> value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kObjectsOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
+  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
   WRITE_FIELD(*this, offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1
 template<class D, class P>
-D TorqueGeneratedFixedArray<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedFixedArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -398,8 +450,7 @@ inline TorqueGeneratedFixedArray<D, P>::TorqueGeneratedFixedArray(Address ptr)
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=24&c=9
 template<class D, class P>
 int TorqueGeneratedWeakFixedArray<D, P>::length() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kLengthOffset).value();
+  int value = TaggedField<Smi>::load(*this, kLengthOffset).value();
   return value;
 }
 
@@ -419,12 +470,11 @@ MaybeObject TorqueGeneratedWeakFixedArray<D, P>::objects(int i, RelaxedLoadTag) 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=25&c=19
 template<class D, class P>
 MaybeObject TorqueGeneratedWeakFixedArray<D, P>::objects(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const {
-  MaybeObject value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kObjectsOffset + i * kTaggedSize;
-  value = TaggedField<MaybeObject>::Relaxed_Load(cage_base, *this, offset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  MaybeObject value = TaggedField<MaybeObject>::Relaxed_Load(cage_base, *this, offset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   return value;
 }
 
@@ -434,15 +484,15 @@ void TorqueGeneratedWeakFixedArray<D, P>::set_objects(int i, MaybeObject value, 
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kObjectsOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   RELAXED_WRITE_WEAK_FIELD(*this, offset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, offset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1
 template<class D, class P>
-D TorqueGeneratedWeakFixedArray<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedWeakFixedArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -452,8 +502,8 @@ inline TorqueGeneratedWeakFixedArray<D, P>::TorqueGeneratedWeakFixedArray(Addres
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1
 template<class D, class P>
-D TorqueGeneratedFixedDoubleArray<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedFixedDoubleArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -464,11 +514,10 @@ inline TorqueGeneratedFixedDoubleArray<D, P>::TorqueGeneratedFixedDoubleArray(Ad
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=29&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedByteArray<D, P>::bytes(int i) const {
-  uint8_t value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kBytesOffset + i * kUInt8Size;
-  value = this->template ReadField<uint8_t>(offset);
+  uint8_t value = this->template ReadField<uint8_t>(offset);
   return value;
 }
 
@@ -483,8 +532,8 @@ void TorqueGeneratedByteArray<D, P>::set_bytes(int i, uint8_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1
 template<class D, class P>
-D TorqueGeneratedByteArray<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedByteArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -494,8 +543,19 @@ inline TorqueGeneratedByteArray<D, P>::TorqueGeneratedByteArray(Address ptr)
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1
 template<class D, class P>
-D TorqueGeneratedArrayList<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedExternalPointerArray<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
+}
+
+template<class D, class P>
+inline TorqueGeneratedExternalPointerArray<D, P>::TorqueGeneratedExternalPointerArray(Address ptr)
+    : P(ptr) {
+  SLOW_DCHECK(IsExternalPointerArray_NonInline(*this));
+}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=38&c=1
+template<class D, class P>
+Tagged<D> TorqueGeneratedArrayList<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -503,10 +563,10 @@ inline TorqueGeneratedArrayList<D, P>::TorqueGeneratedArrayList(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsArrayList_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=37&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
 template<class D, class P>
-D TorqueGeneratedTemplateList<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedTemplateList<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -514,68 +574,65 @@ inline TorqueGeneratedTemplateList<D, P>::TorqueGeneratedTemplateList(Address pt
     : P(ptr) {
   SLOW_DCHECK(IsTemplateList_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=44&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=48&c=9
 template<class D, class P>
 int TorqueGeneratedWeakArrayList<D, P>::capacity() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kCapacityOffset).value();
+  int value = TaggedField<Smi>::load(*this, kCapacityOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=44&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=48&c=9
 template<class D, class P>
 void TorqueGeneratedWeakArrayList<D, P>::set_capacity(int value) {
   WRITE_FIELD(*this, kCapacityOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=49&c=3
 template<class D, class P>
 int TorqueGeneratedWeakArrayList<D, P>::length() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kLengthOffset).value();
+  int value = TaggedField<Smi>::load(*this, kLengthOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=49&c=3
 template<class D, class P>
 void TorqueGeneratedWeakArrayList<D, P>::set_length(int value) {
   WRITE_FIELD(*this, kLengthOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
 template<class D, class P>
 MaybeObject TorqueGeneratedWeakArrayList<D, P>::objects(int i, RelaxedLoadTag) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedWeakArrayList::objects(cage_base, i, kRelaxedLoad);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
 template<class D, class P>
 MaybeObject TorqueGeneratedWeakArrayList<D, P>::objects(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const {
-  MaybeObject value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->capacity());
   int offset = kObjectsOffset + i * kTaggedSize;
-  value = TaggedField<MaybeObject>::Relaxed_Load(cage_base, *this, offset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  MaybeObject value = TaggedField<MaybeObject>::Relaxed_Load(cage_base, *this, offset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=19
 template<class D, class P>
 void TorqueGeneratedWeakArrayList<D, P>::set_objects(int i, MaybeObject value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->capacity());
   int offset = kObjectsOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   RELAXED_WRITE_WEAK_FIELD(*this, offset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=42&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1
 template<class D, class P>
-D TorqueGeneratedWeakArrayList<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedWeakArrayList<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

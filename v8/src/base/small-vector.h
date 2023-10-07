@@ -28,8 +28,8 @@ class SmallVector {
  public:
   static constexpr size_t kInlineSize = kSize;
 
-  explicit SmallVector(const Allocator& allocator = Allocator())
-      : allocator_(allocator) {}
+  SmallVector() = default;
+  explicit SmallVector(const Allocator& allocator) : allocator_(allocator) {}
   explicit V8_INLINE SmallVector(size_t size,
                                  const Allocator& allocator = Allocator())
       : allocator_(allocator) {
@@ -63,6 +63,7 @@ class SmallVector {
   }
 
   ~SmallVector() {
+    static_assert(std::is_trivially_destructible_v<T>);
     if (is_big()) FreeDynamicStorage();
   }
 
@@ -169,7 +170,7 @@ class SmallVector {
     resize_no_init(old_size + count);
     pos = begin_ + offset;
     T* old_end = begin_ + old_size;
-    DCHECK_LT(old_end, end_);
+    DCHECK_LE(old_end, end_);
     std::move_backward(pos, old_end, end_);
     std::fill_n(pos, count, value);
     return pos;
@@ -183,7 +184,7 @@ class SmallVector {
     resize_no_init(old_size + count);
     pos = begin_ + offset;
     T* old_end = begin_ + old_size;
-    DCHECK_LT(old_end, end_);
+    DCHECK_LE(old_end, end_);
     std::move_backward(pos, old_end, end_);
     std::copy(begin, end, pos);
     return pos;

@@ -4,8 +4,9 @@ var path = require("path");
 var opts = [
     // "v8_enable_i18n_support=false",
     "v8_enable_turbofan=true",
+    "cppgc_enable_caged_heap=false",
     "v8_use_external_startup_data=false",
-    // "v8_use_libm_trig_functions=false",
+    "v8_use_libm_trig_functions=false",
     "v8_enable_pointer_compression=false",
     "v8_enable_short_builtin_calls=false",
     "v8_enable_lazy_source_positions=false",
@@ -15,8 +16,10 @@ var opts = [
     "v8_enable_system_instrumentation=false",
     "v8_deprecation_warnings=false",
     "v8_enable_sandbox=false",
+    "v8_enable_lite_mode=false",
     "v8_control_flow_integrity=false",
     "v8_enable_gdbjit=false",
+    "v8_enable_webassembly=true",
     "v8_use_zlib=false"
 ]
 

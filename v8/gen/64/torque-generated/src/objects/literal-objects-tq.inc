@@ -1,8 +1,8 @@
 class ArrayBoilerplateDescription;
 class RegExpBoilerplateDescription;
-// Alias for HeapObject::IsArrayBoilerplateDescription() that avoids inlining.
+// Alias for IsArrayBoilerplateDescription() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsArrayBoilerplateDescription_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsArrayBoilerplateDescription_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1
 template <class D, class P>
@@ -24,17 +24,17 @@ class TorqueGeneratedArrayBoilerplateDescription : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=7&c=3
-  inline FixedArrayBase constant_elements() const;
+  inline Tagged<FixedArrayBase> constant_elements() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=7&c=3
-  inline FixedArrayBase constant_elements(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArrayBase> constant_elements(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=7&c=3
-  inline void set_constant_elements(FixedArrayBase value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_constant_elements(Tagged<FixedArrayBase> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ArrayBoilerplateDescription)
@@ -79,12 +79,14 @@ class TorqueGeneratedArrayBoilerplateDescription : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedArrayBoilerplateDescription(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedArrayBoilerplateDescription(Address ptr);
 };
 
-// Alias for HeapObject::IsRegExpBoilerplateDescription() that avoids inlining.
+// Alias for IsRegExpBoilerplateDescription() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=10&c=1
-V8_EXPORT_PRIVATE bool IsRegExpBoilerplateDescription_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsRegExpBoilerplateDescription_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=10&c=1
 template <class D, class P>
@@ -101,18 +103,18 @@ class TorqueGeneratedRegExpBoilerplateDescription : public P {
   using TorqueGeneratedClass = TorqueGeneratedRegExpBoilerplateDescription<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=11&c=3
-  inline FixedArray data() const;
+  inline Tagged<FixedArray> data() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=11&c=3
-  inline FixedArray data(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> data(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=11&c=3
-  inline void set_data(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_data(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=12&c=3
-  inline String source() const;
+  inline Tagged<String> source() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=12&c=3
-  inline String source(PtrComprCageBase cage_base) const;
+  inline Tagged<String> source(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=12&c=3
-  inline void set_source(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=13&c=3
   inline int flags() const;
@@ -120,10 +122,10 @@ class TorqueGeneratedRegExpBoilerplateDescription : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=10&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=10&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(RegExpBoilerplateDescription)
@@ -171,6 +173,8 @@ class TorqueGeneratedRegExpBoilerplateDescription : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedRegExpBoilerplateDescription(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedRegExpBoilerplateDescription(Address ptr);
 };
 

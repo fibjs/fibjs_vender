@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-findlastindex-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -175,7 +176,7 @@ tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   }
 
   TNode<JSTypedArray> phi_bb8_6;
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_6);
     tmp12 = Undefined_0(state_);
@@ -301,7 +302,8 @@ TF_BUILTIN(TypedArrayPrototypeFindLastIndex, CodeStubAssembler) {
     ca_.Bind(&block12);
     tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp10 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp9});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp10});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp10);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<IntPtrT> tmp11;

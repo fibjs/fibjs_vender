@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-pad-tq-csa.h"
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
@@ -203,7 +204,7 @@ TNode<String> StringPad_0(compiler::CodeAssemblerState* state_, TNode<Context> p
 
   TNode<IntPtrT> tmp15;
   TNode<Object> tmp16;
-  TNode<Oddball> tmp17;
+  TNode<Undefined> tmp17;
   TNode<BoolT> tmp18;
   if (block14.is_used()) {
     ca_.Bind(&block14);

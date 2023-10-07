@@ -1,7 +1,7 @@
 class TemplateObjectDescription;
-// Alias for HeapObject::IsTemplateObjectDescription() that avoids inlining.
+// Alias for IsTemplateObjectDescription() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsTemplateObjectDescription_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsTemplateObjectDescription_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=5&c=1
 template <class D, class P>
@@ -18,24 +18,24 @@ class TorqueGeneratedTemplateObjectDescription : public P {
   using TorqueGeneratedClass = TorqueGeneratedTemplateObjectDescription<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=6&c=3
-  inline FixedArray raw_strings() const;
+  inline Tagged<FixedArray> raw_strings() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=6&c=3
-  inline FixedArray raw_strings(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> raw_strings(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=6&c=3
-  inline void set_raw_strings(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_raw_strings(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=7&c=3
-  inline FixedArray cooked_strings() const;
+  inline Tagged<FixedArray> cooked_strings() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=7&c=3
-  inline FixedArray cooked_strings(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> cooked_strings(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=7&c=3
-  inline void set_cooked_strings(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cooked_strings(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(TemplateObjectDescription)
@@ -80,6 +80,8 @@ class TorqueGeneratedTemplateObjectDescription : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedTemplateObjectDescription(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedTemplateObjectDescription(Address ptr);
 };
 

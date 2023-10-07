@@ -1,4 +1,4 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
 inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceFeedbackVectorRawFeedbackSlots(FeedbackVector p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
@@ -19,7 +19,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceFeedbackVectorRawFeedbackSlots
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceFeedbackVectorRawFeedbackSlots
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
 std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceFeedbackVectorRawFeedbackSlots(FeedbackVector p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -136,206 +136,196 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_intptr_0
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=9
 template<class D, class P>
 int32_t TorqueGeneratedFeedbackVector<D, P>::length() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kLengthOffset);
+  int32_t value = this->template ReadField<int32_t>(kLengthOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=37&c=9
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_length(int32_t value) {
   this->template WriteField<int32_t>(kLengthOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
 template<class D, class P>
 int32_t TorqueGeneratedFeedbackVector<D, P>::invocation_count() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kInvocationCountOffset);
+  int32_t value = this->template ReadField<int32_t>(kInvocationCountOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=36&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_invocation_count(int32_t value) {
   this->template WriteField<int32_t>(kInvocationCountOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedFeedbackVector<D, P>::placeholder0() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kPlaceholder0Offset);
+  uint8_t value = this->template ReadField<uint8_t>(kPlaceholder0Offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=39&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_placeholder0(uint8_t value) {
   this->template WriteField<uint8_t>(kPlaceholder0Offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedFeedbackVector<D, P>::osr_state() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kOsrStateOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kOsrStateOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_osr_state(uint8_t value) {
   this->template WriteField<uint8_t>(kOsrStateOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
 template<class D, class P>
 uint16_t TorqueGeneratedFeedbackVector<D, P>::flags() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kFlagsOffset);
+  uint16_t value = this->template ReadField<uint16_t>(kFlagsOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_flags(uint16_t value) {
   this->template WriteField<uint16_t>(kFlagsOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
 template<class D, class P>
-SharedFunctionInfo TorqueGeneratedFeedbackVector<D, P>::shared_function_info() const {
+Tagged<SharedFunctionInfo> TorqueGeneratedFeedbackVector<D, P>::shared_function_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackVector::shared_function_info(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
 template<class D, class P>
-SharedFunctionInfo TorqueGeneratedFeedbackVector<D, P>::shared_function_info(PtrComprCageBase cage_base) const {
-  SharedFunctionInfo value;
-  value = TaggedField<SharedFunctionInfo>::load(cage_base, *this, kSharedFunctionInfoOffset);
-  DCHECK(value.IsSharedFunctionInfo());
+Tagged<SharedFunctionInfo> TorqueGeneratedFeedbackVector<D, P>::shared_function_info(PtrComprCageBase cage_base) const {
+  Tagged<SharedFunctionInfo> value = TaggedField<Tagged<SharedFunctionInfo>>::load(cage_base, *this, kSharedFunctionInfoOffset);
+  DCHECK(IsSharedFunctionInfo(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
 template<class D, class P>
-void TorqueGeneratedFeedbackVector<D, P>::set_shared_function_info(SharedFunctionInfo value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsSharedFunctionInfo());
+void TorqueGeneratedFeedbackVector<D, P>::set_shared_function_info(Tagged<SharedFunctionInfo> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSharedFunctionInfo(value));
   WRITE_FIELD(*this, kSharedFunctionInfoOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSharedFunctionInfoOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
 template<class D, class P>
-ClosureFeedbackCellArray TorqueGeneratedFeedbackVector<D, P>::closure_feedback_cell_array() const {
+Tagged<ClosureFeedbackCellArray> TorqueGeneratedFeedbackVector<D, P>::closure_feedback_cell_array() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackVector::closure_feedback_cell_array(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
 template<class D, class P>
-ClosureFeedbackCellArray TorqueGeneratedFeedbackVector<D, P>::closure_feedback_cell_array(PtrComprCageBase cage_base) const {
-  ClosureFeedbackCellArray value;
-  value = TaggedField<ClosureFeedbackCellArray>::load(cage_base, *this, kClosureFeedbackCellArrayOffset);
-  DCHECK(value.IsClosureFeedbackCellArray());
+Tagged<ClosureFeedbackCellArray> TorqueGeneratedFeedbackVector<D, P>::closure_feedback_cell_array(PtrComprCageBase cage_base) const {
+  Tagged<ClosureFeedbackCellArray> value = TaggedField<Tagged<ClosureFeedbackCellArray>>::load(cage_base, *this, kClosureFeedbackCellArrayOffset);
+  DCHECK(IsClosureFeedbackCellArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
 template<class D, class P>
-void TorqueGeneratedFeedbackVector<D, P>::set_closure_feedback_cell_array(ClosureFeedbackCellArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsClosureFeedbackCellArray());
+void TorqueGeneratedFeedbackVector<D, P>::set_closure_feedback_cell_array(Tagged<ClosureFeedbackCellArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsClosureFeedbackCellArray(value));
   WRITE_FIELD(*this, kClosureFeedbackCellArrayOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kClosureFeedbackCellArrayOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
 template<class D, class P>
-FeedbackCell TorqueGeneratedFeedbackVector<D, P>::parent_feedback_cell() const {
+Tagged<FeedbackCell> TorqueGeneratedFeedbackVector<D, P>::parent_feedback_cell() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackVector::parent_feedback_cell(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
 template<class D, class P>
-FeedbackCell TorqueGeneratedFeedbackVector<D, P>::parent_feedback_cell(PtrComprCageBase cage_base) const {
-  FeedbackCell value;
-  value = TaggedField<FeedbackCell>::load(cage_base, *this, kParentFeedbackCellOffset);
-  DCHECK(value.IsFeedbackCell());
+Tagged<FeedbackCell> TorqueGeneratedFeedbackVector<D, P>::parent_feedback_cell(PtrComprCageBase cage_base) const {
+  Tagged<FeedbackCell> value = TaggedField<Tagged<FeedbackCell>>::load(cage_base, *this, kParentFeedbackCellOffset);
+  DCHECK(IsFeedbackCell(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=3
 template<class D, class P>
-void TorqueGeneratedFeedbackVector<D, P>::set_parent_feedback_cell(FeedbackCell value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsFeedbackCell());
+void TorqueGeneratedFeedbackVector<D, P>::set_parent_feedback_cell(Tagged<FeedbackCell> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsFeedbackCell(value));
   WRITE_FIELD(*this, kParentFeedbackCellOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kParentFeedbackCellOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedFeedbackVector<D, P>::maybe_optimized_code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackVector::maybe_optimized_code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedFeedbackVector<D, P>::maybe_optimized_code(PtrComprCageBase cage_base) const {
-  MaybeObject value;
-  value = TaggedField<MaybeObject>::load(cage_base, *this, kMaybeOptimizedCodeOffset);
-  DCHECK(value.IsCleared() || (value.IsWeak() && value.GetHeapObjectOrSmi().IsCode()));
+  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, kMaybeOptimizedCodeOffset);
+  DCHECK(value.IsCleared() || (value.IsWeak() && IsCode(value.GetHeapObjectOrSmi())));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=45&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=47&c=3
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_maybe_optimized_code(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (value.IsWeak() && value.GetHeapObjectOrSmi().IsCode()));
+  SLOW_DCHECK(value.IsCleared() || (value.IsWeak() && IsCode(value.GetHeapObjectOrSmi())));
   RELAXED_WRITE_WEAK_FIELD(*this, kMaybeOptimizedCodeOffset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kMaybeOptimizedCodeOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
 template<class D, class P>
 MaybeObject TorqueGeneratedFeedbackVector<D, P>::raw_feedback_slots(int i, RelaxedLoadTag) const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedFeedbackVector::raw_feedback_slots(cage_base, i, kRelaxedLoad);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
 template<class D, class P>
 MaybeObject TorqueGeneratedFeedbackVector<D, P>::raw_feedback_slots(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const {
-  MaybeObject value;
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kRawFeedbackSlotsOffset + i * kTaggedSize;
-  value = TaggedField<MaybeObject>::Relaxed_Load(cage_base, *this, offset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  MaybeObject value = TaggedField<MaybeObject>::Relaxed_Load(cage_base, *this, offset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=48&c=19
 template<class D, class P>
 void TorqueGeneratedFeedbackVector<D, P>::set_raw_feedback_slots(int i, MaybeObject value, WriteBarrierMode mode) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, this ->length());
   int offset = kRawFeedbackSlotsOffset + i * kTaggedSize;
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsHeapObject()) || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsSmi()) || value.IsWeak());
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsHeapObject(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || value.IsWeak());
   RELAXED_WRITE_WEAK_FIELD(*this, offset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, offset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=33&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1
 template<class D, class P>
-D TorqueGeneratedFeedbackVector<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedFeedbackVector<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

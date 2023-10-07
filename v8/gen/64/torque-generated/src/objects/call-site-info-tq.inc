@@ -1,7 +1,7 @@
 class CallSiteInfo;
-// Alias for HeapObject::IsCallSiteInfo() that avoids inlining.
+// Alias for IsCallSiteInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
-V8_EXPORT_PRIVATE bool IsCallSiteInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsCallSiteInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
 template <class D, class P>
@@ -19,26 +19,26 @@ class TorqueGeneratedCallSiteInfo : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
-  inline Object receiver_or_instance() const;
+  inline Tagged<Object> receiver_or_instance() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
-  inline Object receiver_or_instance(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> receiver_or_instance(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=3
-  inline void set_receiver_or_instance(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_receiver_or_instance(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
-  inline Object function() const;
+  inline Tagged<Object> function() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
-  inline Object function(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> function(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=20&c=3
-  inline void set_function(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_function(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
-  inline HeapObject code_object() const;
+  inline Tagged<HeapObject> code_object() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
-  inline HeapObject code_object(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> code_object(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=21&c=3
-  inline void set_code_object(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_code_object(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=22&c=3
   inline int code_offset_or_source_position() const;
@@ -51,17 +51,17 @@ class TorqueGeneratedCallSiteInfo : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
-  inline FixedArray parameters() const;
+  inline Tagged<FixedArray> parameters() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
-  inline FixedArray parameters(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> parameters(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
-  inline void set_parameters(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_parameters(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(CallSiteInfo)
@@ -118,6 +118,8 @@ class TorqueGeneratedCallSiteInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedCallSiteInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedCallSiteInfo(Address ptr);
 };
 

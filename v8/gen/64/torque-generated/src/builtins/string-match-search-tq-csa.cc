@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-match-search-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -118,7 +119,7 @@ TF_BUILTIN(StringPrototypeSearch, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=75&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=77&c=10
 TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_receiver, TNode<Object> p_regexp, TorqueStructStringMatchFunctor_0 p_functor, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -200,7 +201,7 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
     ca_.Goto(&block1, tmp8);
   }
 
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp9;
   TNode<BoolT> tmp10;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -209,7 +210,7 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
     ca_.Branch(tmp10, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp11;
+  TNode<Null> tmp11;
   TNode<BoolT> tmp12;
   if (block14.is_used()) {
     ca_.Bind(&block14);
@@ -285,7 +286,7 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
   return TNode<Object>{phi_bb23_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=83&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=85&c=10
 TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_receiver, TNode<Object> p_regexp, TorqueStructStringSearchFunctor_0 p_functor, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -367,7 +368,7 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
     ca_.Goto(&block1, tmp8);
   }
 
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp9;
   TNode<BoolT> tmp10;
   if (block3.is_used()) {
     ca_.Bind(&block3);
@@ -376,7 +377,7 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
     ca_.Branch(tmp10, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp11;
+  TNode<Null> tmp11;
   TNode<BoolT> tmp12;
   if (block14.is_used()) {
     ca_.Bind(&block14);

@@ -1,7 +1,7 @@
 class FreeSpace;
-// Alias for HeapObject::IsFreeSpace() that avoids inlining.
+// Alias for IsFreeSpace() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsFreeSpace_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsFreeSpace_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
 template <class D, class P>
@@ -31,10 +31,10 @@ class TorqueGeneratedFreeSpace : public P {
   inline void set_next(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(FreeSpace)
@@ -79,6 +79,8 @@ class TorqueGeneratedFreeSpace : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedFreeSpace(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedFreeSpace(Address ptr);
 };
 

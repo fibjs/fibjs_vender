@@ -1,7 +1,7 @@
 class RegExpMatchInfo;
-// Alias for HeapObject::IsRegExpMatchInfo() that avoids inlining.
+// Alias for IsRegExpMatchInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/regexp-match-info.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsRegExpMatchInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsRegExpMatchInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/regexp-match-info.tq?l=5&c=1
 template <class D, class P>
@@ -18,10 +18,10 @@ class TorqueGeneratedRegExpMatchInfo : public P {
   using TorqueGeneratedClass = TorqueGeneratedRegExpMatchInfo<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/regexp-match-info.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/regexp-match-info.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(RegExpMatchInfo)
@@ -59,6 +59,8 @@ class TorqueGeneratedRegExpMatchInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedRegExpMatchInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedRegExpMatchInfo(Address ptr);
 };
 

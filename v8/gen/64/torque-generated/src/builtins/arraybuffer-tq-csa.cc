@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/arraybuffer-tq-csa.h"
 #include "torque-generated/src/builtins/arraybuffer-tq-csa.h"
@@ -277,14 +278,14 @@ TF_BUILTIN(ArrayBufferPrototypeGetResizable, CodeStubAssembler) {
     ca_.Branch(tmp5, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp6;
+  TNode<True> tmp6;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp6 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp6);
   }
 
-  TNode<Oddball> tmp7;
+  TNode<False> tmp7;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp7 = False_0(state_);
@@ -347,14 +348,14 @@ TF_BUILTIN(ArrayBufferPrototypeGetDetached, CodeStubAssembler) {
     ca_.Branch(tmp5, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp6;
+  TNode<True> tmp6;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp6 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp6);
   }
 
-  TNode<Oddball> tmp7;
+  TNode<False> tmp7;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp7 = False_0(state_);
@@ -477,14 +478,14 @@ TF_BUILTIN(SharedArrayBufferPrototypeGetGrowable, CodeStubAssembler) {
     ca_.Branch(tmp6, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp7;
+  TNode<True> tmp7;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp7 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp7);
   }
 
-  TNode<Oddball> tmp8;
+  TNode<False> tmp8;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp8 = False_0(state_);
@@ -538,14 +539,14 @@ TF_BUILTIN(ArrayBufferIsView, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Oddball> tmp4;
+  TNode<True> tmp4;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp4 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp4);
   }
 
-  TNode<Oddball> tmp5;
+  TNode<False> tmp5;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp5 = False_0(state_);
@@ -614,7 +615,7 @@ TNode<JSArrayBuffer> Cast_JSArrayBuffer_1(compiler::CodeAssemblerState* state_, 
   return TNode<JSArrayBuffer>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/arraybuffer.tq?l=150&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/arraybuffer.tq?l=149&c=5
 TNode<JSArrayBufferView> Cast_JSArrayBufferView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

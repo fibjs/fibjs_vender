@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -78,7 +79,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=6&c=1
-TNode<Oddball> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method) {
+TNode<Boolean> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -86,7 +87,7 @@ TNode<Oddball> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block0);
 
   TNode<Object> tmp0;
-  TNode<Oddball> tmp1;
+  TNode<Boolean> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).ToThisValue(TNode<Context>{p_context}, TNode<Object>{p_receiver}, PrimitiveType::kBoolean, p_method);
@@ -95,7 +96,7 @@ TNode<Oddball> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Co
   }
 
     ca_.Bind(&block2);
-  return TNode<Oddball>{tmp1};
+  return TNode<Boolean>{tmp1};
 }
 
 TF_BUILTIN(BooleanConstructor, CodeStubAssembler) {
@@ -121,8 +122,8 @@ USE(parameter3);
   TNode<IntPtrT> tmp0;
   TNode<Object> tmp1;
   TNode<BoolT> tmp2;
-  TNode<Oddball> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<Boolean> tmp3;
+  TNode<Undefined> tmp4;
   TNode<BoolT> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -166,7 +167,7 @@ TF_BUILTIN(BooleanPrototypeToString, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Boolean> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<String> tmp2;
   if (block0.is_used()) {
@@ -187,7 +188,7 @@ TF_BUILTIN(BooleanPrototypeValueOf, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Boolean> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = ThisBooleanValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Boolean.prototype.valueOf");
@@ -195,15 +196,15 @@ TF_BUILTIN(BooleanPrototypeValueOf, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=8&c=10
-TNode<Oddball> UnsafeCast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=9&c=10
+TNode<Boolean> UnsafeCast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Boolean> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = TORQUE_CAST(TNode<Object>{p_o});
@@ -211,7 +212,7 @@ TNode<Oddball> UnsafeCast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<
   }
 
     ca_.Bind(&block6);
-  return TNode<Oddball>{tmp0};
+  return TNode<Boolean>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=22&c=37

@@ -1,9 +1,9 @@
 class JSSynchronizationPrimitive;
 class JSAtomicsMutex;
 class JSAtomicsCondition;
-// Alias for HeapObject::IsJSSynchronizationPrimitive() that avoids inlining.
+// Alias for IsJSSynchronizationPrimitive() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSSynchronizationPrimitive_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSSynchronizationPrimitive_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
 template <class D, class P>
@@ -25,10 +25,10 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
   inline void set_state(uintptr_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -55,12 +55,14 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSSynchronizationPrimitive(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSSynchronizationPrimitive(Address ptr);
 };
 
-// Alias for HeapObject::IsJSAtomicsMutex() that avoids inlining.
+// Alias for IsJSAtomicsMutex() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
-V8_EXPORT_PRIVATE bool IsJSAtomicsMutex_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSAtomicsMutex_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
 template <class D, class P>
@@ -87,10 +89,10 @@ class TorqueGeneratedJSAtomicsMutex : public P {
   inline void set_optional_padding(uint32_t value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSAtomicsMutex)
@@ -122,12 +124,14 @@ class TorqueGeneratedJSAtomicsMutex : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSAtomicsMutex(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSAtomicsMutex(Address ptr);
 };
 
-// Alias for HeapObject::IsJSAtomicsCondition() that avoids inlining.
+// Alias for IsJSAtomicsCondition() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
-V8_EXPORT_PRIVATE bool IsJSAtomicsCondition_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSAtomicsCondition_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
 template <class D, class P>
@@ -144,10 +148,10 @@ class TorqueGeneratedJSAtomicsCondition : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSAtomicsCondition<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSAtomicsCondition)
@@ -173,6 +177,8 @@ class TorqueGeneratedJSAtomicsCondition : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSAtomicsCondition(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSAtomicsCondition(Address ptr);
 };
 

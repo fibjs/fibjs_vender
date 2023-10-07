@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -201,7 +202,7 @@ TNode<Object> LoadElementOrUndefined_0(compiler::CodeAssemblerState* state_, TNo
     tmp8 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp7});
     std::tie(tmp9, tmp10) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
     tmp11 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp9, tmp10});
-    tmp12 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_True_OR_False_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp11});
+    tmp12 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp11});
     tmp13 = ReplaceTheHoleWithUndefined_0(state_, TNode<Object>{tmp12});
     ca_.Goto(&block10);
   }
@@ -265,7 +266,7 @@ TNode<Object> LoadElementOrUndefined_1(compiler::CodeAssemblerState* state_, TNo
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Oddball> tmp13;
+  TNode<Undefined> tmp13;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp13 = Undefined_0(state_);
@@ -289,7 +290,7 @@ TNode<Object> LoadElementOrUndefined_1(compiler::CodeAssemblerState* state_, TNo
   return TNode<Object>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=47&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=48&c=1
 void StoreArrayHole_0(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_k) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -340,7 +341,7 @@ void StoreArrayHole_0(compiler::CodeAssemblerState* state_, TNode<FixedDoubleArr
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=51&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=52&c=1
 void StoreArrayHole_1(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_elements, TNode<Smi> p_k) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -371,7 +372,7 @@ void StoreArrayHole_1(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_
   TNode<IntPtrT> tmp8;
   TNode<Object> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<HeapObject> tmp11;
+  TNode<Hole> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp7 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp3});
@@ -390,7 +391,7 @@ void StoreArrayHole_1(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=62&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=64&c=1
 void EnsureArrayLengthWritable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_map, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -489,7 +490,7 @@ void EnsureArrayLengthWritable_0(compiler::CodeAssemblerState* state_, TNode<Con
     ca_.Bind(&block19);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array.tq?l=85&c=1
 TNode<JSArray> CreateJSArrayWithElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_array) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

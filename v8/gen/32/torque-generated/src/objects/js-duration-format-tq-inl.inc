@@ -1,83 +1,79 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=44&c=3
 template<class D, class P>
 int TorqueGeneratedJSDurationFormat<D, P>::style_flags() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kStyleFlagsOffset).value();
+  int value = TaggedField<Smi>::load(*this, kStyleFlagsOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=40&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=44&c=3
 template<class D, class P>
 void TorqueGeneratedJSDurationFormat<D, P>::set_style_flags(int value) {
   WRITE_FIELD(*this, kStyleFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=45&c=3
 template<class D, class P>
 int TorqueGeneratedJSDurationFormat<D, P>::display_flags() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kDisplayFlagsOffset).value();
+  int value = TaggedField<Smi>::load(*this, kDisplayFlagsOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=45&c=3
 template<class D, class P>
 void TorqueGeneratedJSDurationFormat<D, P>::set_display_flags(int value) {
   WRITE_FIELD(*this, kDisplayFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=46&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSDurationFormat<D, P>::icu_locale() const {
+Tagged<Foreign> TorqueGeneratedJSDurationFormat<D, P>::icu_locale() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDurationFormat::icu_locale(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=46&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSDurationFormat<D, P>::icu_locale(PtrComprCageBase cage_base) const {
-  Foreign value;
-  value = TaggedField<Foreign>::load(cage_base, *this, kIcuLocaleOffset);
-  DCHECK(value.IsForeign());
+Tagged<Foreign> TorqueGeneratedJSDurationFormat<D, P>::icu_locale(PtrComprCageBase cage_base) const {
+  Tagged<Foreign> value = TaggedField<Tagged<Foreign>>::load(cage_base, *this, kIcuLocaleOffset);
+  DCHECK(IsForeign(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=42&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=46&c=3
 template<class D, class P>
-void TorqueGeneratedJSDurationFormat<D, P>::set_icu_locale(Foreign value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsForeign());
+void TorqueGeneratedJSDurationFormat<D, P>::set_icu_locale(Tagged<Foreign> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsForeign(value));
   WRITE_FIELD(*this, kIcuLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuLocaleOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=47&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSDurationFormat<D, P>::icu_number_formatter() const {
+Tagged<Foreign> TorqueGeneratedJSDurationFormat<D, P>::icu_number_formatter() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDurationFormat::icu_number_formatter(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=47&c=3
 template<class D, class P>
-Foreign TorqueGeneratedJSDurationFormat<D, P>::icu_number_formatter(PtrComprCageBase cage_base) const {
-  Foreign value;
-  value = TaggedField<Foreign>::load(cage_base, *this, kIcuNumberFormatterOffset);
-  DCHECK(value.IsForeign());
+Tagged<Foreign> TorqueGeneratedJSDurationFormat<D, P>::icu_number_formatter(PtrComprCageBase cage_base) const {
+  Tagged<Foreign> value = TaggedField<Tagged<Foreign>>::load(cage_base, *this, kIcuNumberFormatterOffset);
+  DCHECK(IsForeign(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=47&c=3
 template<class D, class P>
-void TorqueGeneratedJSDurationFormat<D, P>::set_icu_number_formatter(Foreign value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsForeign());
+void TorqueGeneratedJSDurationFormat<D, P>::set_icu_number_formatter(Tagged<Foreign> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsForeign(value));
   WRITE_FIELD(*this, kIcuNumberFormatterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuNumberFormatterOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=39&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1
 template<class D, class P>
-D TorqueGeneratedJSDurationFormat<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedJSDurationFormat<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

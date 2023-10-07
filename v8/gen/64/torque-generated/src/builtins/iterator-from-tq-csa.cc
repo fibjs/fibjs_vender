@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/iterator-from-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -137,8 +138,8 @@ TNode<JSValidIteratorWrapper> NewJSValidIteratorWrapper_0(compiler::CodeAssemble
   return TNode<JSValidIteratorWrapper>{tmp16};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=18&c=1
-TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_obj) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=19&c=1
+TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_obj) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -219,7 +220,7 @@ TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<HeapObject> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -248,11 +249,9 @@ TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
     }
   }
 
-  TNode<JSReceiver> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp4 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp0});
-    ca_.Goto(&block1, tmp4);
+    ca_.Goto(&block1, tmp0);
   }
 
   if (block8.is_used()) {
@@ -265,33 +264,33 @@ TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
     ca_.Goto(&block1, tmp2);
   }
 
-  TNode<JSReceiver> phi_bb1_3;
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<JSFunction> tmp7;
-  TNode<Object> tmp8;
-  TNode<Oddball> tmp9;
-  TNode<BoolT> tmp10;
+  TNode<HeapObject> phi_bb1_3;
+  TNode<JSReceiver> tmp4;
+  TNode<Object> tmp5;
+  TNode<JSFunction> tmp6;
+  TNode<Object> tmp7;
+  TNode<True> tmp8;
+  TNode<BoolT> tmp9;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
-    std::tie(tmp5, tmp6) = GetIteratorFlattenable_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{phi_bb1_3}).Flatten();
-    tmp7 = GetIteratorFunction_0(state_, TNode<Context>{parameter0});
-    tmp8 = CodeStubAssembler(state_).OrdinaryHasInstance(TNode<Context>{parameter0}, TNode<Object>{tmp7}, TNode<Object>{tmp5});
-    tmp9 = True_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp8}, TNode<HeapObject>{tmp9});
-    ca_.Branch(tmp10, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+    std::tie(tmp4, tmp5) = GetIteratorFlattenable_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{phi_bb1_3}).Flatten();
+    tmp6 = GetIteratorFunction_0(state_, TNode<Context>{parameter0});
+    tmp7 = CodeStubAssembler(state_).OrdinaryHasInstance(TNode<Context>{parameter0}, TNode<Object>{tmp6}, TNode<Object>{tmp4});
+    tmp8 = True_0(state_);
+    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp7}, TNode<HeapObject>{tmp8});
+    ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    CodeStubAssembler(state_).Return(tmp5);
+    CodeStubAssembler(state_).Return(tmp4);
   }
 
-  TNode<JSValidIteratorWrapper> tmp11;
+  TNode<JSValidIteratorWrapper> tmp10;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp11 = NewJSValidIteratorWrapper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    CodeStubAssembler(state_).Return(tmp11);
+    tmp10 = NewJSValidIteratorWrapper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<Object>{tmp5}});
+    CodeStubAssembler(state_).Return(tmp10);
   }
 }
 
@@ -393,14 +392,14 @@ TF_BUILTIN(WrapForValidIteratorPrototypeReturn, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp8;
+  TNode<True> tmp9;
   TNode<JSObject> tmp10;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp8 = Undefined_0(state_);
     tmp9 = True_0(state_);
-    tmp10 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp8}, TNode<Oddball>{tmp9});
+    tmp10 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp8}, TNode<Boolean>{tmp9});
     CodeStubAssembler(state_).Return(tmp10);
   }
 
@@ -412,7 +411,7 @@ TF_BUILTIN(WrapForValidIteratorPrototypeReturn, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=90&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=95&c=13
 TNode<JSValidIteratorWrapper> Cast_JSValidIteratorWrapper_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

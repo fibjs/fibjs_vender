@@ -169,7 +169,7 @@ struct WordOperationTyper {
     std::pair<word_t, word_t> x = MakeRange(lhs);
     std::pair<word_t, word_t> y = MakeRange(rhs);
 
-    if (is_wrapping(x) && is_wrapping(y)) {
+    if (!is_wrapping(x) && !is_wrapping(y)) {
       return type_t::Range(x.first - y.second, x.second - y.first, zone);
     }
 
@@ -408,7 +408,11 @@ struct FloatOperationTyper {
   static type_t Range(float_t min, float_t max, uint32_t special_values,
                       Zone* zone) {
     DCHECK_LE(min, max);
-    if (min == max) return Set({min}, special_values, zone);
+    DCHECK_IMPLIES(detail::is_minus_zero(min),
+                   (special_values & type_t::kMinusZero));
+    DCHECK_IMPLIES(detail::is_minus_zero(max),
+                   (special_values & type_t::kMinusZero));
+    if (min == max) return Set({min + float_t{0}}, special_values, zone);
     return type_t::Range(min, max, special_values, zone);
   }
 
@@ -676,12 +680,12 @@ struct FloatOperationTyper {
       }
       if V8_UNLIKELY (IsMinusZero(b)) {
         // +-0 / -0 ==> NaN
-        if (a == 0) return nan_v<Bits>;
+        if (a == 0 || std::isnan(a)) return nan_v<Bits>;
         return a > 0 ? -inf : inf;
       }
       if V8_UNLIKELY (b == 0) {
         // +-0 / 0 ==> NaN
-        if (a == 0) return nan_v<Bits>;
+        if (a == 0 || std::isnan(a)) return nan_v<Bits>;
         return a > 0 ? inf : -inf;
       }
       return a / b;
@@ -897,6 +901,10 @@ struct FloatOperationTyper {
       return type_t::NaN();
     }
     bool maybe_nan = l.has_nan() || r.has_nan();
+    // +-1 ** +-Infinity => NaN.
+    if (r.Contains(-inf) || r.Contains(inf)) {
+      if (l.Contains(1) || l.Contains(-1)) maybe_nan = true;
+    }
 
     // a ** b produces NaN if a < 0 && b is fraction.
     if (l.min() < 0.0 && !IsIntegerSet(r)) maybe_nan = true;
@@ -1137,6 +1145,7 @@ class Typer {
 
       case RegisterRepresentation::Tagged():
       case RegisterRepresentation::Compressed():
+      case RegisterRepresentation::Simd128():
         // TODO(nicohartmann@): Support these representations.
         return Type::Any();
     }
@@ -1399,6 +1408,7 @@ class Typer {
         return TypeFloat64Comparison(lhs, rhs, kind, zone);
       case RegisterRepresentation::Tagged():
       case RegisterRepresentation::Compressed():
+      case RegisterRepresentation::Simd128():
         if (lhs.IsNone() || rhs.IsNone()) return Type::None();
         // TODO(nicohartmann@): Support those cases.
         return Word32Type::Set({0, 1}, zone);

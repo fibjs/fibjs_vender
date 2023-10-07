@@ -1,7 +1,7 @@
 class JSRelativeTimeFormat;
-// Alias for HeapObject::IsJSRelativeTimeFormat() that avoids inlining.
+// Alias for IsJSRelativeTimeFormat() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1
-V8_EXPORT_PRIVATE bool IsJSRelativeTimeFormat_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSRelativeTimeFormat_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1
 template <class D, class P>
@@ -18,25 +18,25 @@ class TorqueGeneratedJSRelativeTimeFormat : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRelativeTimeFormat<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
-  inline String locale() const;
+  inline Tagged<String> locale() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
-  inline String locale(PtrComprCageBase cage_base) const;
+  inline Tagged<String> locale(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
-  inline void set_locale(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_locale(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
-  inline String numberingSystem() const;
+  inline Tagged<String> numberingSystem() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
-  inline String numberingSystem(PtrComprCageBase cage_base) const;
+  inline Tagged<String> numberingSystem(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
-  inline void set_numberingSystem(String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_numberingSystem(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
-  inline Foreign icu_formatter() const;
+  inline Tagged<Foreign> icu_formatter() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
-  inline Foreign icu_formatter(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> icu_formatter(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
-  inline void set_icu_formatter(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_icu_formatter(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=17&c=3
   inline int flags() const;
@@ -44,10 +44,10 @@ class TorqueGeneratedJSRelativeTimeFormat : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=13&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSRelativeTimeFormat)
@@ -85,6 +85,8 @@ class TorqueGeneratedJSRelativeTimeFormat : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSRelativeTimeFormat(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSRelativeTimeFormat(Address ptr);
 };
 

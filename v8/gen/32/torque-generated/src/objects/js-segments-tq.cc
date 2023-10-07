@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1
-bool IsJSSegments_NonInline(HeapObject o) {
-  return o.IsJSSegments();
+bool IsJSSegments_NonInline(Tagged<HeapObject> o) {
+  return IsJSSegments(o);
 }
 
 #ifdef VERIFY_HEAP

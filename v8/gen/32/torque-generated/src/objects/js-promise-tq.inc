@@ -1,7 +1,7 @@
 class JSPromise;
-// Alias for HeapObject::IsJSPromise() that avoids inlining.
+// Alias for IsJSPromise() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=13&c=1
-V8_EXPORT_PRIVATE bool IsJSPromise_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSPromise_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=13&c=1
 template <class D, class P>
@@ -17,13 +17,13 @@ class TorqueGeneratedJSPromise : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSPromise<D,P>;
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | True | False | Null | Undefined | class PromiseReaction)
+  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | class PromiseReaction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=35&c=3
-  inline Object reactions_or_result() const;
+  inline Tagged<Object> reactions_or_result() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=35&c=3
-  inline Object reactions_or_result(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> reactions_or_result(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=35&c=3
-  inline void set_reactions_or_result(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_reactions_or_result(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=36&c=3
   inline int flags() const;
@@ -31,10 +31,10 @@ class TorqueGeneratedJSPromise : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=13&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-promise.tq?l=13&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSPromise)
@@ -66,6 +66,8 @@ class TorqueGeneratedJSPromise : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSPromise(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSPromise(Address ptr);
 };
 

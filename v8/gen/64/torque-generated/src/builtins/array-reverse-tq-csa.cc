@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-reverse-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -184,7 +185,7 @@ TorqueStructfloat64_or_hole_0 LoadElement_FixedDoubleArray_float64_or_hole_0(com
   return TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp12}, TNode<Float64T>{tmp13}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=25&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=26&c=1
 void StoreElement_FixedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, TNode<Object> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -234,7 +235,7 @@ void StoreElement_FixedArray_Object_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=33&c=1
 void StoreElement_FixedDoubleArray_float64_or_hole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<Smi> p_index, TorqueStructfloat64_or_hole_0 p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -284,7 +285,7 @@ void StoreElement_FixedDoubleArray_float64_or_hole_0(compiler::CodeAssemblerStat
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=55&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=58&c=1
 TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -342,16 +343,16 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<Number> phi_bb2_4;
   TNode<Number> phi_bb2_5;
-  TNode<Oddball> tmp6;
-  TNode<Oddball> tmp7;
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp6;
+  TNode<Undefined> tmp7;
+  TNode<Boolean> tmp8;
+  TNode<True> tmp9;
   TNode<BoolT> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_4, &phi_bb2_5);
     tmp6 = Undefined_0(state_);
     tmp7 = Undefined_0(state_);
-    tmp8 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb2_4);
+    tmp8 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb2_4);
     tmp9 = True_0(state_);
     tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
     ca_.Branch(tmp10, &block5, std::vector<compiler::Node*>{phi_bb2_4, phi_bb2_5}, &block6, std::vector<compiler::Node*>{phi_bb2_4, phi_bb2_5, tmp6});
@@ -369,12 +370,12 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Number> phi_bb6_4;
   TNode<Number> phi_bb6_5;
   TNode<Object> phi_bb6_6;
-  TNode<Oddball> tmp12;
-  TNode<Oddball> tmp13;
+  TNode<Boolean> tmp12;
+  TNode<True> tmp13;
   TNode<BoolT> tmp14;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_4, &phi_bb6_5, &phi_bb6_6);
-    tmp12 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb6_5);
+    tmp12 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb6_5);
     tmp13 = True_0(state_);
     tmp14 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp12}, TNode<HeapObject>{tmp13});
     ca_.Branch(tmp14, &block7, std::vector<compiler::Node*>{phi_bb6_4, phi_bb6_5}, &block8, std::vector<compiler::Node*>{phi_bb6_4, phi_bb6_5, tmp7});
@@ -392,7 +393,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Number> phi_bb8_4;
   TNode<Number> phi_bb8_5;
   TNode<Object> phi_bb8_7;
-  TNode<Oddball> tmp16;
+  TNode<True> tmp16;
   TNode<BoolT> tmp17;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_4, &phi_bb8_5, &phi_bb8_7);
@@ -403,7 +404,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<Number> phi_bb11_4;
   TNode<Number> phi_bb11_5;
-  TNode<Oddball> tmp18;
+  TNode<True> tmp18;
   TNode<BoolT> tmp19;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_4, &phi_bb11_5);
@@ -442,7 +443,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<Number> phi_bb10_4;
   TNode<Number> phi_bb10_5;
-  TNode<Oddball> tmp23;
+  TNode<False> tmp23;
   TNode<BoolT> tmp24;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_4, &phi_bb10_5);
@@ -453,7 +454,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<Number> phi_bb17_4;
   TNode<Number> phi_bb17_5;
-  TNode<Oddball> tmp25;
+  TNode<True> tmp25;
   TNode<BoolT> tmp26;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_4, &phi_bb17_5);
@@ -483,18 +484,18 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Number> phi_bb15_5;
   TNode<Object> tmp28;
   TNode<Smi> tmp29;
-  TNode<Oddball> tmp30;
+  TNode<Boolean> tmp30;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_4, &phi_bb15_5);
     tmp28 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, tmp0, phi_bb15_4, phi_bb8_7);
     tmp29 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp30 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, phi_bb15_5, tmp29);
+    tmp30 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, phi_bb15_5, tmp29);
     ca_.Goto(&block20, phi_bb15_4, phi_bb15_5);
   }
 
   TNode<Number> phi_bb16_4;
   TNode<Number> phi_bb16_5;
-  TNode<Oddball> tmp31;
+  TNode<True> tmp31;
   TNode<BoolT> tmp32;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_4, &phi_bb16_5);
@@ -505,7 +506,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<Number> phi_bb23_4;
   TNode<Number> phi_bb23_5;
-  TNode<Oddball> tmp33;
+  TNode<False> tmp33;
   TNode<BoolT> tmp34;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_4, &phi_bb23_5);
@@ -534,12 +535,12 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Number> phi_bb21_4;
   TNode<Number> phi_bb21_5;
   TNode<Smi> tmp36;
-  TNode<Oddball> tmp37;
+  TNode<Boolean> tmp37;
   TNode<Object> tmp38;
   if (block21.is_used()) {
     ca_.Bind(&block21, &phi_bb21_4, &phi_bb21_5);
     tmp36 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp37 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, phi_bb21_4, tmp36);
+    tmp37 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, phi_bb21_4, tmp36);
     tmp38 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, tmp0, phi_bb21_5, phi_bb6_6);
     ca_.Goto(&block22, phi_bb21_4, phi_bb21_5);
   }
@@ -584,7 +585,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=130&c=1
 void TryFastPackedArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -867,7 +868,7 @@ TF_BUILTIN(ArrayPrototypeReverse, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=129&c=30
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=132&c=30
 TNode<JSArray> Cast_FastJSArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -928,7 +929,7 @@ TNode<JSArray> Cast_FastJSArray_1(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<JSArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=135&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=138&c=5
 void FastArrayReverse_FixedArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -990,7 +991,7 @@ void FastArrayReverse_FixedArray_Object_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=137&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-reverse.tq?l=140&c=5
 void FastArrayReverse_FixedDoubleArray_float64_or_hole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_elements, TNode<Smi> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

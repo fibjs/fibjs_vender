@@ -1,7 +1,7 @@
 class JSSegments;
-// Alias for HeapObject::IsJSSegments() that avoids inlining.
+// Alias for IsJSSegments() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1
-V8_EXPORT_PRIVATE bool IsJSSegments_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSSegments_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1
 template <class D, class P>
@@ -18,18 +18,18 @@ class TorqueGeneratedJSSegments : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSSegments<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
-  inline Foreign icu_break_iterator() const;
+  inline Tagged<Foreign> icu_break_iterator() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
-  inline Foreign icu_break_iterator(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> icu_break_iterator(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
-  inline void set_icu_break_iterator(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_icu_break_iterator(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  inline Foreign unicode_string() const;
+  inline Tagged<Foreign> unicode_string() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  inline Foreign unicode_string(PtrComprCageBase cage_base) const;
+  inline Tagged<Foreign> unicode_string(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  inline void set_unicode_string(Foreign value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
   inline int flags() const;
@@ -37,10 +37,10 @@ class TorqueGeneratedJSSegments : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSSegments)
@@ -75,6 +75,8 @@ class TorqueGeneratedJSSegments : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSSegments(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSSegments(Address ptr);
 };
 

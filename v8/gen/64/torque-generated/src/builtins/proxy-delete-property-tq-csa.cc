@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-delete-property-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -140,10 +141,10 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp9;
+  TNode<Boolean> tmp9;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp9 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp6, parameter2, parameter3);
+    tmp9 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp6, parameter2, parameter3);
     CodeStubAssembler(state_).Return(tmp9);
   }
 
@@ -174,14 +175,14 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kProxyTrapReturnedFalsishFor, TNode<Object>{tmp15}, TNode<Object>{parameter2});
   }
 
-  TNode<Oddball> tmp16;
+  TNode<False> tmp16;
   if (block33.is_used()) {
     ca_.Bind(&block33);
     tmp16 = False_0(state_);
     CodeStubAssembler(state_).Return(tmp16);
   }
 
-  TNode<Oddball> tmp17;
+  TNode<True> tmp17;
   if (block31.is_used()) {
     ca_.Bind(&block31);
     ProxiesCodeStubAssembler(state_).CheckDeleteTrapResult(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp6}, TNode<JSProxy>{parameter1}, TNode<Name>{parameter2});

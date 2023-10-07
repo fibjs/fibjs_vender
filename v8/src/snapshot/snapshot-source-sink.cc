@@ -18,8 +18,8 @@ void SnapshotByteSink::PutN(int number_of_bytes, const uint8_t v,
   data_.insert(data_.end(), number_of_bytes, v);
 }
 
-void SnapshotByteSink::PutInt(uintptr_t integer, const char* description) {
-  DCHECK_LT(integer, 1 << 30);
+void SnapshotByteSink::PutUint30(uint32_t integer, const char* description) {
+  CHECK_LT(integer, 1UL << 30);
   integer <<= 2;
   int bytes = 1;
   if (integer > 0xFF) bytes = 2;
@@ -34,6 +34,9 @@ void SnapshotByteSink::PutInt(uintptr_t integer, const char* description) {
 
 void SnapshotByteSink::PutRaw(const uint8_t* data, int number_of_bytes,
                               const char* description) {
+#ifdef MEMORY_SANITIZER
+  __msan_check_mem_is_initialized(data, number_of_bytes);
+#endif
   data_.insert(data_.end(), data, data + number_of_bytes);
 }
 
@@ -42,8 +45,8 @@ void SnapshotByteSink::Append(const SnapshotByteSink& other) {
 }
 
 int SnapshotByteSource::GetBlob(const uint8_t** data) {
-  int size = GetInt();
-  CHECK(position_ + size <= length_);
+  int size = GetUint30();
+  CHECK_LE(position_ + size, length_);
   *data = &data_[position_];
   Advance(size);
   return size;

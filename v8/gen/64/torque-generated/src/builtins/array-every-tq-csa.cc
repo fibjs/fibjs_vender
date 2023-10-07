@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -171,8 +172,8 @@ TF_BUILTIN(ArrayEveryLoopEagerDeoptContinuation, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp8;
+  TNode<Undefined> tmp9;
   TNode<Object> tmp10;
   if (block15.is_used()) {
     ca_.Bind(&block15);
@@ -289,7 +290,7 @@ TF_BUILTIN(ArrayEveryLoopLazyDeoptContinuation, CodeStubAssembler) {
     ca_.Branch(tmp9, &block17, std::vector<compiler::Node*>{}, &block18, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp10;
+  TNode<False> tmp10;
   if (block17.is_used()) {
     ca_.Bind(&block17);
     tmp10 = False_0(state_);
@@ -298,8 +299,8 @@ TF_BUILTIN(ArrayEveryLoopLazyDeoptContinuation, CodeStubAssembler) {
 
   TNode<Number> tmp11;
   TNode<Number> tmp12;
-  TNode<Oddball> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<Undefined> tmp13;
+  TNode<Undefined> tmp14;
   TNode<Object> tmp15;
   if (block18.is_used()) {
     ca_.Bind(&block18);
@@ -356,8 +357,8 @@ TF_BUILTIN(ArrayEveryLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb1_9;
-  TNode<Oddball> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Boolean> tmp1;
+  TNode<True> tmp2;
   TNode<BoolT> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_9);
@@ -382,7 +383,7 @@ TF_BUILTIN(ArrayEveryLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb7_9;
-  TNode<Oddball> tmp8;
+  TNode<False> tmp8;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_9);
     tmp8 = False_0(state_);
@@ -406,7 +407,7 @@ TF_BUILTIN(ArrayEveryLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb2_9;
-  TNode<Oddball> tmp11;
+  TNode<True> tmp11;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_9);
     tmp11 = True_0(state_);
@@ -414,7 +415,7 @@ TF_BUILTIN(ArrayEveryLoopContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-every.tq?l=86&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-every.tq?l=84&c=1
 TNode<Object> FastArrayEvery_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -662,7 +663,7 @@ TNode<Object> FastArrayEvery_0(compiler::CodeAssemblerState* state_, TNode<Conte
   }
 
   TNode<Smi> phi_bb36_5;
-  TNode<Oddball> tmp26;
+  TNode<False> tmp26;
   if (block36.is_used()) {
     ca_.Bind(&block36, &phi_bb36_5);
     tmp26 = False_0(state_);
@@ -687,7 +688,7 @@ TNode<Object> FastArrayEvery_0(compiler::CodeAssemblerState* state_, TNode<Conte
 
   TNode<Smi> phi_bb12_5;
   TNode<JSArray> phi_bb12_9;
-  TNode<Oddball> tmp29;
+  TNode<True> tmp29;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_5, &phi_bb12_9);
     tmp29 = True_0(state_);
@@ -791,8 +792,8 @@ TF_BUILTIN(ArrayEvery, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<Undefined> tmp14;
+  TNode<Undefined> tmp15;
   TNode<Object> tmp16;
   if (block10.is_used()) {
     ca_.Bind(&block10);
@@ -813,11 +814,12 @@ TF_BUILTIN(ArrayEvery, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp17 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp18 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp17});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp18});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp18);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-every.tq?l=17&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-every.tq?l=16&c=22
 TNode<JSReceiver> Cast_JSReceiver_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -878,7 +880,7 @@ TNode<JSReceiver> Cast_JSReceiver_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<JSReceiver>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-every.tq?l=18&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-every.tq?l=17&c=22
 TNode<JSReceiver> Cast_Callable_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

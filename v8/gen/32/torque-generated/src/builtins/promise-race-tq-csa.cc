@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-race-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -159,13 +160,13 @@ TF_BUILTIN(PromiseRace, CodeStubAssembler) {
     ca_.Bind(&block6);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-race.tq", 18});
+      pos_stack.push_back({"src/builtins/promise-race.tq", 17});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Is<NativeContext>(context)' failed", pos_stack);
     }
   }
 
   TNode<NativeContext> tmp3;
-  TNode<Oddball> tmp4;
+  TNode<False> tmp4;
   TNode<PromiseCapability> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<Object> tmp7;
@@ -192,7 +193,7 @@ TF_BUILTIN(PromiseRace, CodeStubAssembler) {
   }
 
   TNode<Symbol> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<True> tmp15;
   TNode<Object> tmp16;
   if (block11.is_used()) {
     ca_.Bind(&block11);
@@ -618,7 +619,7 @@ TF_BUILTIN(PromiseRace, CodeStubAssembler) {
 
   TNode<Object> phi_bb14_10;
   TNode<Object> tmp88;
-  TNode<Oddball> tmp89;
+  TNode<Undefined> tmp89;
   TNode<Object> tmp90;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_10);
@@ -629,7 +630,7 @@ TF_BUILTIN(PromiseRace, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-race.tq?l=89&c=33
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-race.tq?l=88&c=33
 TNode<BoolT> Is_JSPromise_JSReceiver_OR_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

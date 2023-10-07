@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-get-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -156,7 +157,7 @@ TF_BUILTIN(ProxyGetPrototypeOf, CodeStubAssembler) {
     ca_.Branch(tmp11, &block22, std::vector<compiler::Node*>{}, &block23, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp12;
+  TNode<Null> tmp12;
   TNode<BoolT> tmp13;
   if (block22.is_used()) {
     ca_.Bind(&block22);
@@ -184,7 +185,7 @@ TF_BUILTIN(ProxyGetPrototypeOf, CodeStubAssembler) {
   }
 
   TNode<Object> tmp15;
-  TNode<Oddball> tmp16;
+  TNode<True> tmp16;
   TNode<BoolT> tmp17;
   if (block21.is_used()) {
     ca_.Bind(&block21);

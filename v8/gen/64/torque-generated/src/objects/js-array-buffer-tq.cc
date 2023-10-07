@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
-bool IsJSArrayBufferView_NonInline(HeapObject o) {
-  return o.IsJSArrayBufferView();
+bool IsJSArrayBufferView_NonInline(Tagged<HeapObject> o) {
+  return IsJSArrayBufferView(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedJSArrayBufferView<JSArrayBufferView, JSObjectWithEmbedderSlo
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
-bool IsJSTypedArray_NonInline(HeapObject o) {
-  return o.IsJSTypedArray();
+bool IsJSTypedArray_NonInline(Tagged<HeapObject> o) {
+  return IsJSTypedArray(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -35,8 +35,8 @@ void TorqueGeneratedJSTypedArray<JSTypedArray, JSArrayBufferView>::JSTypedArrayV
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
-bool IsJSArrayBuffer_NonInline(HeapObject o) {
-  return o.IsJSArrayBuffer();
+bool IsJSArrayBuffer_NonInline(Tagged<HeapObject> o) {
+  return IsJSArrayBuffer(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -49,8 +49,8 @@ void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSObjectWithEmbedderSlots>::JSA
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-bool IsJSDataViewOrRabGsabDataView_NonInline(HeapObject o) {
-  return o.IsJSDataViewOrRabGsabDataView();
+bool IsJSDataViewOrRabGsabDataView_NonInline(Tagged<HeapObject> o) {
+  return IsJSDataViewOrRabGsabDataView(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -63,8 +63,8 @@ void TorqueGeneratedJSDataViewOrRabGsabDataView<JSDataViewOrRabGsabDataView, JSA
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
-bool IsJSDataView_NonInline(HeapObject o) {
-  return o.IsJSDataView();
+bool IsJSDataView_NonInline(Tagged<HeapObject> o) {
+  return IsJSDataView(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -77,8 +77,8 @@ void TorqueGeneratedJSDataView<JSDataView, JSDataViewOrRabGsabDataView>::JSDataV
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
-bool IsJSRabGsabDataView_NonInline(HeapObject o) {
-  return o.IsJSRabGsabDataView();
+bool IsJSRabGsabDataView_NonInline(Tagged<HeapObject> o) {
+  return IsJSRabGsabDataView(o);
 }
 
 #ifdef VERIFY_HEAP

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-some-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -88,7 +89,7 @@ const char* kBuiltinNameSome_0(compiler::CodeAssemblerState* state_) {
   return "%TypedArray%.prototype.some";}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-some.tq?l=11&c=1
-TNode<Oddball> SomeAllElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedArrayAndLength, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg) {
+TNode<Boolean> SomeAllElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedArrayAndLength, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -103,8 +104,8 @@ TNode<Oddball> SomeAllElements_0(compiler::CodeAssemblerState* state_, TNode<Con
   compiler::CodeAssemblerParameterizedLabel<UintPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<UintPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSTypedArray, UintPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSTypedArray> tmp0;
@@ -185,7 +186,7 @@ tmp9 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Callab
 
   TNode<JSTypedArray> phi_bb9_6;
   TNode<UintPtrT> phi_bb9_8;
-  TNode<Oddball> tmp10;
+  TNode<Undefined> tmp10;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_6, &phi_bb9_8);
     tmp10 = Undefined_0(state_);
@@ -207,7 +208,7 @@ tmp9 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Callab
   }
 
   TNode<UintPtrT> phi_bb17_8;
-  TNode<Oddball> tmp14;
+  TNode<True> tmp14;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_8);
     tmp14 = True_0(state_);
@@ -226,22 +227,22 @@ tmp9 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Callab
 
   TNode<JSTypedArray> phi_bb3_6;
   TNode<UintPtrT> phi_bb3_8;
-  TNode<Oddball> tmp17;
+  TNode<False> tmp17;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_6, &phi_bb3_8);
     tmp17 = False_0(state_);
     ca_.Goto(&block1, tmp17);
   }
 
-  TNode<Oddball> phi_bb1_5;
+  TNode<Boolean> phi_bb1_5;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_5);
     ca_.Goto(&block19, phi_bb1_5);
   }
 
-  TNode<Oddball> phi_bb19_5;
+  TNode<Boolean> phi_bb19_5;
     ca_.Bind(&block19, &phi_bb19_5);
-  return TNode<Oddball>{phi_bb19_5};
+  return TNode<Boolean>{phi_bb19_5};
 }
 
 TF_BUILTIN(TypedArrayPrototypeSome, CodeStubAssembler) {
@@ -321,12 +322,13 @@ TF_BUILTIN(TypedArrayPrototypeSome, CodeStubAssembler) {
     ca_.Bind(&block12);
     tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp10 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp9});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp10});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp10);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
-  TNode<Oddball> tmp13;
+  TNode<Boolean> tmp13;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp11 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));

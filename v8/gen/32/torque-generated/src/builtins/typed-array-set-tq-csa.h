@@ -8,10 +8,10 @@ namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=8&c=1
 const char* kBuiltinNameSet_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=112&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=111&c=1
 void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<JSTypedArray> p_target, TNode<UintPtrT> p_targetLength, TNode<Object> p_arrayArg, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=173&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=171&c=1
 void TypedArrayPrototypeSetTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedTargetAndLength, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedSourceAndLength, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds);
 
 } // namespace internal

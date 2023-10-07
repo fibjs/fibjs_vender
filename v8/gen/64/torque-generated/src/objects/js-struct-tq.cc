@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=8&c=1
-bool IsAlwaysSharedSpaceJSObject_NonInline(HeapObject o) {
-  return o.IsAlwaysSharedSpaceJSObject();
+bool IsAlwaysSharedSpaceJSObject_NonInline(Tagged<HeapObject> o) {
+  return IsAlwaysSharedSpaceJSObject(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedAlwaysSharedSpaceJSObject<AlwaysSharedSpaceJSObject, JSObjec
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=12&c=1
-bool IsJSSharedStruct_NonInline(HeapObject o) {
-  return o.IsJSSharedStruct();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-struct.tq?l=11&c=1
+bool IsJSSharedStruct_NonInline(Tagged<HeapObject> o) {
+  return IsJSSharedStruct(o);
 }
 
 #ifdef VERIFY_HEAP

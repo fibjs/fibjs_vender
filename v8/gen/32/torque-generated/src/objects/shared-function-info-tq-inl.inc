@@ -1,8 +1,7 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=7&c=3
 template<class D, class P>
 int32_t TorqueGeneratedPreparseData<D, P>::data_length() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kDataLengthOffset);
+  int32_t value = this->template ReadField<int32_t>(kDataLengthOffset);
   return value;
 }
 
@@ -15,8 +14,7 @@ void TorqueGeneratedPreparseData<D, P>::set_data_length(int32_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=8&c=3
 template<class D, class P>
 int32_t TorqueGeneratedPreparseData<D, P>::children_length() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kChildrenLengthOffset);
+  int32_t value = this->template ReadField<int32_t>(kChildrenLengthOffset);
   return value;
 }
 
@@ -28,8 +26,8 @@ void TorqueGeneratedPreparseData<D, P>::set_children_length(int32_t value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedPreparseData<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedPreparseData<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -39,56 +37,54 @@ inline TorqueGeneratedPreparseData<D, P>::TorqueGeneratedPreparseData(Address pt
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=12&c=3
 template<class D, class P>
-BytecodeArray TorqueGeneratedInterpreterData<D, P>::bytecode_array() const {
+Tagged<BytecodeArray> TorqueGeneratedInterpreterData<D, P>::bytecode_array() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedInterpreterData::bytecode_array(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=12&c=3
 template<class D, class P>
-BytecodeArray TorqueGeneratedInterpreterData<D, P>::bytecode_array(PtrComprCageBase cage_base) const {
-  BytecodeArray value;
-  value = TaggedField<BytecodeArray>::load(cage_base, *this, kBytecodeArrayOffset);
-  DCHECK(value.IsBytecodeArray());
+Tagged<BytecodeArray> TorqueGeneratedInterpreterData<D, P>::bytecode_array(PtrComprCageBase cage_base) const {
+  Tagged<BytecodeArray> value = TaggedField<Tagged<BytecodeArray>>::load(cage_base, *this, kBytecodeArrayOffset);
+  DCHECK(IsBytecodeArray(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=12&c=3
 template<class D, class P>
-void TorqueGeneratedInterpreterData<D, P>::set_bytecode_array(BytecodeArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsBytecodeArray());
+void TorqueGeneratedInterpreterData<D, P>::set_bytecode_array(Tagged<BytecodeArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsBytecodeArray(value));
   WRITE_FIELD(*this, kBytecodeArrayOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBytecodeArrayOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
 template<class D, class P>
-Code TorqueGeneratedInterpreterData<D, P>::interpreter_trampoline() const {
+Tagged<Code> TorqueGeneratedInterpreterData<D, P>::interpreter_trampoline() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedInterpreterData::interpreter_trampoline(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
 template<class D, class P>
-Code TorqueGeneratedInterpreterData<D, P>::interpreter_trampoline(PtrComprCageBase cage_base) const {
-  Code value;
-  value = TaggedField<Code>::load(cage_base, *this, kInterpreterTrampolineOffset);
-  DCHECK(value.IsCode());
+Tagged<Code> TorqueGeneratedInterpreterData<D, P>::interpreter_trampoline(PtrComprCageBase cage_base) const {
+  Tagged<Code> value = TaggedField<Tagged<Code>>::load(cage_base, *this, kInterpreterTrampolineOffset);
+  DCHECK(IsCode(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=3
 template<class D, class P>
-void TorqueGeneratedInterpreterData<D, P>::set_interpreter_trampoline(Code value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCode());
+void TorqueGeneratedInterpreterData<D, P>::set_interpreter_trampoline(Tagged<Code> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsCode(value));
   WRITE_FIELD(*this, kInterpreterTrampolineOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInterpreterTrampolineOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=11&c=1
 template<class D, class P>
-D TorqueGeneratedInterpreterData<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedInterpreterData<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -98,105 +94,100 @@ inline TorqueGeneratedInterpreterData<D, P>::TorqueGeneratedInterpreterData(Addr
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
 template<class D, class P>
-Object TorqueGeneratedSharedFunctionInfo<D, P>::function_data() const {
+Tagged<Object> TorqueGeneratedSharedFunctionInfo<D, P>::function_data() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSharedFunctionInfo::function_data(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
 template<class D, class P>
-Object TorqueGeneratedSharedFunctionInfo<D, P>::function_data(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kFunctionDataOffset);
-  DCHECK(value.IsHeapObject() || value.IsSmi());
+Tagged<Object> TorqueGeneratedSharedFunctionInfo<D, P>::function_data(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kFunctionDataOffset);
+  DCHECK(IsHeapObject(value) || IsSmi(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=54&c=22
 template<class D, class P>
-void TorqueGeneratedSharedFunctionInfo<D, P>::set_function_data(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_function_data(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
   WRITE_FIELD(*this, kFunctionDataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFunctionDataOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
 template<class D, class P>
-Object TorqueGeneratedSharedFunctionInfo<D, P>::name_or_scope_info() const {
+Tagged<Object> TorqueGeneratedSharedFunctionInfo<D, P>::name_or_scope_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSharedFunctionInfo::name_or_scope_info(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
 template<class D, class P>
-Object TorqueGeneratedSharedFunctionInfo<D, P>::name_or_scope_info(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kNameOrScopeInfoOffset);
-  DCHECK(value.IsString() || value.IsNoSharedNameSentinel() || value.IsScopeInfo());
+Tagged<Object> TorqueGeneratedSharedFunctionInfo<D, P>::name_or_scope_info(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kNameOrScopeInfoOffset);
+  DCHECK(IsString(value) || IsNoSharedNameSentinel(value) || IsScopeInfo(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=55&c=3
 template<class D, class P>
-void TorqueGeneratedSharedFunctionInfo<D, P>::set_name_or_scope_info(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString() || value.IsNoSharedNameSentinel() || value.IsScopeInfo());
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_name_or_scope_info(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value) || IsNoSharedNameSentinel(value) || IsScopeInfo(value));
   WRITE_FIELD(*this, kNameOrScopeInfoOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNameOrScopeInfoOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedSharedFunctionInfo<D, P>::outer_scope_info_or_feedback_metadata() const {
+Tagged<HeapObject> TorqueGeneratedSharedFunctionInfo<D, P>::outer_scope_info_or_feedback_metadata() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedSharedFunctionInfo::outer_scope_info_or_feedback_metadata(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedSharedFunctionInfo<D, P>::outer_scope_info_or_feedback_metadata(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kOuterScopeInfoOrFeedbackMetadataOffset);
-  DCHECK(value.IsHeapObject());
+Tagged<HeapObject> TorqueGeneratedSharedFunctionInfo<D, P>::outer_scope_info_or_feedback_metadata(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kOuterScopeInfoOrFeedbackMetadataOffset);
+  DCHECK(IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=56&c=3
 template<class D, class P>
-void TorqueGeneratedSharedFunctionInfo<D, P>::set_outer_scope_info_or_feedback_metadata(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsHeapObject());
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_outer_scope_info_or_feedback_metadata(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsHeapObject(value));
   WRITE_FIELD(*this, kOuterScopeInfoOrFeedbackMetadataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kOuterScopeInfoOrFeedbackMetadataOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedSharedFunctionInfo<D, P>::script_or_debug_info() const {
+Tagged<HeapObject> TorqueGeneratedSharedFunctionInfo<D, P>::script() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedSharedFunctionInfo::script_or_debug_info(cage_base);
+  return TorqueGeneratedSharedFunctionInfo::script(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedSharedFunctionInfo<D, P>::script_or_debug_info(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kScriptOrDebugInfoOffset);
-  DCHECK(value.IsUndefined() || value.IsDebugInfo() || value.IsScript());
+Tagged<HeapObject> TorqueGeneratedSharedFunctionInfo<D, P>::script(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kScriptOffset);
+  DCHECK(IsUndefined(value) || IsScript(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=57&c=3
 template<class D, class P>
-void TorqueGeneratedSharedFunctionInfo<D, P>::set_script_or_debug_info(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsUndefined() || value.IsDebugInfo() || value.IsScript());
-  WRITE_FIELD(*this, kScriptOrDebugInfoOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kScriptOrDebugInfoOffset, value, mode);
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_script(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsUndefined(value) || IsScript(value));
+  WRITE_FIELD(*this, kScriptOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kScriptOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=63&c=3
 template<class D, class P>
 int16_t TorqueGeneratedSharedFunctionInfo<D, P>::length() const {
-  int16_t value;
-  value = this->template ReadField<int16_t>(kLengthOffset);
+  int16_t value = this->template ReadField<int16_t>(kLengthOffset);
   return value;
 }
 
@@ -209,8 +200,7 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_length(int16_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=68&c=3
 template<class D, class P>
 uint16_t TorqueGeneratedSharedFunctionInfo<D, P>::formal_parameter_count() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kFormalParameterCountOffset);
+  uint16_t value = this->template ReadField<uint16_t>(kFormalParameterCountOffset);
   return value;
 }
 
@@ -223,8 +213,7 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_formal_parameter_count(uint16_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=69&c=3
 template<class D, class P>
 uint16_t TorqueGeneratedSharedFunctionInfo<D, P>::function_token_offset() const {
-  uint16_t value;
-  value = this->template ReadField<uint16_t>(kFunctionTokenOffsetOffset);
+  uint16_t value = this->template ReadField<uint16_t>(kFunctionTokenOffsetOffset);
   return value;
 }
 
@@ -237,8 +226,7 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_function_token_offset(uint16_t
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=72&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedSharedFunctionInfo<D, P>::expected_nof_properties() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kExpectedNofPropertiesOffset);
+  uint8_t value = this->template ReadField<uint8_t>(kExpectedNofPropertiesOffset);
   return value;
 }
 
@@ -251,8 +239,7 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_expected_nof_properties(uint8_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=73&c=3
 template<class D, class P>
 uint8_t TorqueGeneratedSharedFunctionInfo<D, P>::flags2() const {
-  uint8_t value;
-  value = this->template ReadField<uint8_t>(kFlags2Offset);
+  uint8_t value = this->template ReadField<uint8_t>(kFlags2Offset);
   return value;
 }
 
@@ -265,8 +252,7 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_flags2(uint8_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
 template<class D, class P>
 uint32_t TorqueGeneratedSharedFunctionInfo<D, P>::flags() const {
-  uint32_t value;
-  value = this->template ReadField<uint32_t>(kFlagsOffset);
+  uint32_t value = this->template ReadField<uint32_t>(kFlagsOffset);
   return value;
 }
 
@@ -279,8 +265,7 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_flags(uint32_t value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
 template<class D, class P>
 int32_t TorqueGeneratedSharedFunctionInfo<D, P>::function_literal_id() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kFunctionLiteralIdOffset);
+  int32_t value = this->template ReadField<int32_t>(kFunctionLiteralIdOffset);
   return value;
 }
 
@@ -290,10 +275,49 @@ void TorqueGeneratedSharedFunctionInfo<D, P>::set_function_literal_id(int32_t va
   this->template WriteField<int32_t>(kFunctionLiteralIdOffset, value);
 }
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=82&c=3
+template<class D, class P>
+int32_t TorqueGeneratedSharedFunctionInfo<D, P>::unique_id() const {
+  int32_t value = this->template ReadField<int32_t>(kUniqueIdOffset);
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=82&c=3
+template<class D, class P>
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_unique_id(int32_t value) {
+  this->template WriteField<int32_t>(kUniqueIdOffset, value);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=85&c=3
+template<class D, class P>
+uint16_t TorqueGeneratedSharedFunctionInfo<D, P>::age() const {
+  uint16_t value = this->template ReadField<uint16_t>(kAgeOffset);
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=85&c=3
+template<class D, class P>
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_age(uint16_t value) {
+  this->template WriteField<uint16_t>(kAgeOffset, value);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=86&c=3
+template<class D, class P>
+uint16_t TorqueGeneratedSharedFunctionInfo<D, P>::padding() const {
+  uint16_t value = this->template ReadField<uint16_t>(kPaddingOffset);
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=86&c=3
+template<class D, class P>
+void TorqueGeneratedSharedFunctionInfo<D, P>::set_padding(uint16_t value) {
+  this->template WriteField<uint16_t>(kPaddingOffset, value);
+}
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
 template<class D, class P>
-D TorqueGeneratedSharedFunctionInfo<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedSharedFunctionInfo<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -301,62 +325,59 @@ inline TorqueGeneratedSharedFunctionInfo<D, P>::TorqueGeneratedSharedFunctionInf
     : P(ptr) {
   SLOW_DCHECK(IsSharedFunctionInfo_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
 template<class D, class P>
-String TorqueGeneratedUncompiledData<D, P>::inferred_name() const {
+Tagged<String> TorqueGeneratedUncompiledData<D, P>::inferred_name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedUncompiledData::inferred_name(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
 template<class D, class P>
-String TorqueGeneratedUncompiledData<D, P>::inferred_name(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kInferredNameOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedUncompiledData<D, P>::inferred_name(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kInferredNameOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
 template<class D, class P>
-void TorqueGeneratedUncompiledData<D, P>::set_inferred_name(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedUncompiledData<D, P>::set_inferred_name(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kInferredNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInferredNameOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=118&c=3
 template<class D, class P>
 int32_t TorqueGeneratedUncompiledData<D, P>::start_position() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kStartPositionOffset);
+  int32_t value = this->template ReadField<int32_t>(kStartPositionOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=118&c=3
 template<class D, class P>
 void TorqueGeneratedUncompiledData<D, P>::set_start_position(int32_t value) {
   this->template WriteField<int32_t>(kStartPositionOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=119&c=3
 template<class D, class P>
 int32_t TorqueGeneratedUncompiledData<D, P>::end_position() const {
-  int32_t value;
-  value = this->template ReadField<int32_t>(kEndPositionOffset);
+  int32_t value = this->template ReadField<int32_t>(kEndPositionOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=119&c=3
 template<class D, class P>
 void TorqueGeneratedUncompiledData<D, P>::set_end_position(int32_t value) {
   this->template WriteField<int32_t>(kEndPositionOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
 template<class D, class P>
-D TorqueGeneratedUncompiledData<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedUncompiledData<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -364,10 +385,10 @@ inline TorqueGeneratedUncompiledData<D, P>::TorqueGeneratedUncompiledData(Addres
     : P(ptr) {
   SLOW_DCHECK(IsUncompiledData_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=120&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
 template<class D, class P>
-D TorqueGeneratedUncompiledDataWithoutPreparseData<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedUncompiledDataWithoutPreparseData<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -375,34 +396,33 @@ inline TorqueGeneratedUncompiledDataWithoutPreparseData<D, P>::TorqueGeneratedUn
     : P(ptr) {
   SLOW_DCHECK(IsUncompiledDataWithoutPreparseData_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
 template<class D, class P>
-PreparseData TorqueGeneratedUncompiledDataWithPreparseData<D, P>::preparse_data() const {
+Tagged<PreparseData> TorqueGeneratedUncompiledDataWithPreparseData<D, P>::preparse_data() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedUncompiledDataWithPreparseData::preparse_data(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
 template<class D, class P>
-PreparseData TorqueGeneratedUncompiledDataWithPreparseData<D, P>::preparse_data(PtrComprCageBase cage_base) const {
-  PreparseData value;
-  value = TaggedField<PreparseData>::load(cage_base, *this, kPreparseDataOffset);
-  DCHECK(value.IsPreparseData());
+Tagged<PreparseData> TorqueGeneratedUncompiledDataWithPreparseData<D, P>::preparse_data(PtrComprCageBase cage_base) const {
+  Tagged<PreparseData> value = TaggedField<Tagged<PreparseData>>::load(cage_base, *this, kPreparseDataOffset);
+  DCHECK(IsPreparseData(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=130&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=131&c=3
 template<class D, class P>
-void TorqueGeneratedUncompiledDataWithPreparseData<D, P>::set_preparse_data(PreparseData value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsPreparseData());
+void TorqueGeneratedUncompiledDataWithPreparseData<D, P>::set_preparse_data(Tagged<PreparseData> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsPreparseData(value));
   WRITE_FIELD(*this, kPreparseDataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPreparseDataOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=126&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
 template<class D, class P>
-D TorqueGeneratedUncompiledDataWithPreparseData<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedUncompiledDataWithPreparseData<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -410,24 +430,23 @@ inline TorqueGeneratedUncompiledDataWithPreparseData<D, P>::TorqueGeneratedUncom
     : P(ptr) {
   SLOW_DCHECK(IsUncompiledDataWithPreparseData_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=140&c=3
 template<class D, class P>
 Address TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D, P>::job() const {
-  Address value;
-  value = this->template ReadField<Address>(kJobOffset);
+  Address value = this->template ReadField<Address>(kJobOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=139&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=140&c=3
 template<class D, class P>
 void TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D, P>::set_job(Address value) {
   this->template WriteField<Address>(kJobOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
 template<class D, class P>
-D TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -435,24 +454,23 @@ inline TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D, P>::TorqueGene
     : P(ptr) {
   SLOW_DCHECK(IsUncompiledDataWithoutPreparseDataWithJob_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=149&c=3
 template<class D, class P>
 Address TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D, P>::job() const {
-  Address value;
-  value = this->template ReadField<Address>(kJobOffset);
+  Address value = this->template ReadField<Address>(kJobOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=149&c=3
 template<class D, class P>
 void TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D, P>::set_job(Address value) {
   this->template WriteField<Address>(kJobOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=142&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
 template<class D, class P>
-D TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -460,168 +478,161 @@ inline TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D, P>::TorqueGenerate
     : P(ptr) {
   SLOW_DCHECK(IsUncompiledDataWithPreparseDataAndJob_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
 template<class D, class P>
-FixedInt32Array TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::block_ids() const {
+Tagged<FixedInt32Array> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::block_ids() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedOnHeapBasicBlockProfilerData::block_ids(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
 template<class D, class P>
-FixedInt32Array TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::block_ids(PtrComprCageBase cage_base) const {
-  FixedInt32Array value;
-  value = TaggedField<FixedInt32Array>::load(cage_base, *this, kBlockIdsOffset);
-  DCHECK(value.IsByteArray());
+Tagged<FixedInt32Array> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::block_ids(PtrComprCageBase cage_base) const {
+  Tagged<FixedInt32Array> value = TaggedField<Tagged<FixedInt32Array>>::load(cage_base, *this, kBlockIdsOffset);
+  DCHECK(IsByteArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
 template<class D, class P>
-void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_block_ids(FixedInt32Array value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsByteArray());
+void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_block_ids(Tagged<FixedInt32Array> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsByteArray(value));
   WRITE_FIELD(*this, kBlockIdsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBlockIdsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
 template<class D, class P>
-FixedUInt32Array TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::counts() const {
+Tagged<FixedUInt32Array> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::counts() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedOnHeapBasicBlockProfilerData::counts(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
 template<class D, class P>
-FixedUInt32Array TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::counts(PtrComprCageBase cage_base) const {
-  FixedUInt32Array value;
-  value = TaggedField<FixedUInt32Array>::load(cage_base, *this, kCountsOffset);
-  DCHECK(value.IsByteArray());
+Tagged<FixedUInt32Array> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::counts(PtrComprCageBase cage_base) const {
+  Tagged<FixedUInt32Array> value = TaggedField<Tagged<FixedUInt32Array>>::load(cage_base, *this, kCountsOffset);
+  DCHECK(IsByteArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=164&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
 template<class D, class P>
-void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_counts(FixedUInt32Array value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsByteArray());
+void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_counts(Tagged<FixedUInt32Array> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsByteArray(value));
   WRITE_FIELD(*this, kCountsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCountsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
 template<class D, class P>
-PodArray<std::pair<int32_t, int32_t>> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::branches() const {
+Tagged<PodArray<std::pair<int32_t, int32_t>>> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::branches() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedOnHeapBasicBlockProfilerData::branches(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
 template<class D, class P>
-PodArray<std::pair<int32_t, int32_t>> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::branches(PtrComprCageBase cage_base) const {
-  PodArray<std::pair<int32_t, int32_t>> value;
-  value = TaggedField<PodArray<std::pair<int32_t, int32_t>>>::load(cage_base, *this, kBranchesOffset);
-  DCHECK(value.IsByteArray());
+Tagged<PodArray<std::pair<int32_t, int32_t>>> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::branches(PtrComprCageBase cage_base) const {
+  Tagged<PodArray<std::pair<int32_t, int32_t>>> value = TaggedField<Tagged<PodArray<std::pair<int32_t, int32_t>>>>::load(cage_base, *this, kBranchesOffset);
+  DCHECK(IsByteArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
 template<class D, class P>
-void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_branches(PodArray<std::pair<int32_t, int32_t>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsByteArray());
+void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_branches(Tagged<PodArray<std::pair<int32_t, int32_t>>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsByteArray(value));
   WRITE_FIELD(*this, kBranchesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBranchesOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
 template<class D, class P>
-String TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::name() const {
+Tagged<String> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedOnHeapBasicBlockProfilerData::name(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
 template<class D, class P>
-String TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::name(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kNameOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::name(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kNameOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
 template<class D, class P>
-void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_name(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_name(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNameOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
 template<class D, class P>
-String TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::schedule() const {
+Tagged<String> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::schedule() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedOnHeapBasicBlockProfilerData::schedule(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
 template<class D, class P>
-String TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::schedule(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kScheduleOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::schedule(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kScheduleOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=167&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
 template<class D, class P>
-void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_schedule(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_schedule(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kScheduleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kScheduleOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
 template<class D, class P>
-String TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::code() const {
+Tagged<String> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedOnHeapBasicBlockProfilerData::code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
 template<class D, class P>
-String TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::code(PtrComprCageBase cage_base) const {
-  String value;
-  value = TaggedField<String>::load(cage_base, *this, kCodeOffset);
-  DCHECK(value.IsString());
+Tagged<String> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::code(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kCodeOffset);
+  DCHECK(IsString(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
 template<class D, class P>
-void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_code(String value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString());
+void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_code(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kCodeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCodeOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=170&c=3
 template<class D, class P>
 int TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::hash() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kHashOffset).value();
+  int value = TaggedField<Smi>::load(*this, kHashOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=170&c=3
 template<class D, class P>
 void TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::set_hash(int value) {
   WRITE_FIELD(*this, kHashOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
 template<class D, class P>
-D TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedOnHeapBasicBlockProfilerData<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

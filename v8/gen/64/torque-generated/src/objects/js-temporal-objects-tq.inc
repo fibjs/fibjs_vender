@@ -8,9 +8,9 @@ class JSTemporalPlainTime;
 class JSTemporalPlainYearMonth;
 class JSTemporalTimeZone;
 class JSTemporalZonedDateTime;
-// Alias for HeapObject::IsJSTemporalCalendar() that avoids inlining.
+// Alias for IsJSTemporalCalendar() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalCalendar_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalCalendar_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
 template <class D, class P>
@@ -32,10 +32,10 @@ class TorqueGeneratedJSTemporalCalendar : public P {
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalCalendar)
@@ -64,12 +64,14 @@ class TorqueGeneratedJSTemporalCalendar : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalCalendar(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalCalendar(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalDuration() that avoids inlining.
+// Alias for IsJSTemporalDuration() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalDuration_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalDuration_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
 template <class D, class P>
@@ -87,89 +89,89 @@ class TorqueGeneratedJSTemporalDuration : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  inline Object years() const;
+  inline Tagged<Object> years() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  inline Object years(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> years(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  inline void set_years(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_years(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  inline Object months() const;
+  inline Tagged<Object> months() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  inline Object months(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> months(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  inline void set_months(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_months(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  inline Object weeks() const;
+  inline Tagged<Object> weeks() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  inline Object weeks(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> weeks(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  inline void set_weeks(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_weeks(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  inline Object days() const;
+  inline Tagged<Object> days() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  inline Object days(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> days(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  inline void set_days(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_days(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  inline Object hours() const;
+  inline Tagged<Object> hours() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  inline Object hours(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> hours(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  inline void set_hours(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_hours(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  inline Object minutes() const;
+  inline Tagged<Object> minutes() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  inline Object minutes(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> minutes(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  inline void set_minutes(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_minutes(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  inline Object seconds() const;
+  inline Tagged<Object> seconds() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  inline Object seconds(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> seconds(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  inline void set_seconds(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_seconds(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  inline Object milliseconds() const;
+  inline Tagged<Object> milliseconds() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  inline Object milliseconds(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> milliseconds(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  inline void set_milliseconds(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_milliseconds(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  inline Object microseconds() const;
+  inline Tagged<Object> microseconds() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  inline Object microseconds(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> microseconds(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  inline void set_microseconds(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_microseconds(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  inline Object nanoseconds() const;
+  inline Tagged<Object> nanoseconds() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  inline Object nanoseconds(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> nanoseconds(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  inline void set_nanoseconds(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_nanoseconds(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalDuration)
@@ -225,12 +227,14 @@ class TorqueGeneratedJSTemporalDuration : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalDuration(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalDuration(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalInstant() that avoids inlining.
+// Alias for IsJSTemporalInstant() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalInstant_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalInstant_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
 template <class D, class P>
@@ -248,17 +252,17 @@ class TorqueGeneratedJSTemporalInstant : public P {
 
   // Torque type: BigInt
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  inline BigInt nanoseconds() const;
+  inline Tagged<BigInt> nanoseconds() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  inline BigInt nanoseconds(PtrComprCageBase cage_base) const;
+  inline Tagged<BigInt> nanoseconds(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  inline void set_nanoseconds(BigInt value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_nanoseconds(Tagged<BigInt> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalInstant)
@@ -287,12 +291,14 @@ class TorqueGeneratedJSTemporalInstant : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalInstant(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalInstant(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalPlainDateTime() that avoids inlining.
+// Alias for IsJSTemporalPlainDateTime() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalPlainDateTime_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalPlainDateTime_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
 template <class D, class P>
@@ -324,17 +330,17 @@ class TorqueGeneratedJSTemporalPlainDateTime : public P {
   inline void set_second_parts(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  inline JSReceiver calendar() const;
+  inline Tagged<JSReceiver> calendar() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  inline JSReceiver calendar(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  inline void set_calendar(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalPlainDateTime)
@@ -372,12 +378,14 @@ class TorqueGeneratedJSTemporalPlainDateTime : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalPlainDateTime(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalPlainDateTime(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalPlainDate() that avoids inlining.
+// Alias for IsJSTemporalPlainDate() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalPlainDate_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalPlainDate_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
 template <class D, class P>
@@ -399,17 +407,17 @@ class TorqueGeneratedJSTemporalPlainDate : public P {
   inline void set_year_month_day(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  inline JSReceiver calendar() const;
+  inline Tagged<JSReceiver> calendar() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  inline JSReceiver calendar(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  inline void set_calendar(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalPlainDate)
@@ -441,12 +449,14 @@ class TorqueGeneratedJSTemporalPlainDate : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalPlainDate(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalPlainDate(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalPlainMonthDay() that avoids inlining.
+// Alias for IsJSTemporalPlainMonthDay() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalPlainMonthDay_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalPlainMonthDay_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
 template <class D, class P>
@@ -468,17 +478,17 @@ class TorqueGeneratedJSTemporalPlainMonthDay : public P {
   inline void set_year_month_day(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  inline JSReceiver calendar() const;
+  inline Tagged<JSReceiver> calendar() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  inline JSReceiver calendar(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  inline void set_calendar(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalPlainMonthDay)
@@ -510,12 +520,14 @@ class TorqueGeneratedJSTemporalPlainMonthDay : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalPlainMonthDay(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalPlainMonthDay(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalPlainTime() that avoids inlining.
+// Alias for IsJSTemporalPlainTime() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalPlainTime_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalPlainTime_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
 template <class D, class P>
@@ -542,17 +554,17 @@ class TorqueGeneratedJSTemporalPlainTime : public P {
   inline void set_second_parts(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  inline JSReceiver calendar() const;
+  inline Tagged<JSReceiver> calendar() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  inline JSReceiver calendar(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  inline void set_calendar(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalPlainTime)
@@ -587,12 +599,14 @@ class TorqueGeneratedJSTemporalPlainTime : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalPlainTime(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalPlainTime(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalPlainYearMonth() that avoids inlining.
+// Alias for IsJSTemporalPlainYearMonth() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalPlainYearMonth_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalPlainYearMonth_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
 template <class D, class P>
@@ -614,17 +628,17 @@ class TorqueGeneratedJSTemporalPlainYearMonth : public P {
   inline void set_year_month_day(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  inline JSReceiver calendar() const;
+  inline Tagged<JSReceiver> calendar() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  inline JSReceiver calendar(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  inline void set_calendar(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalPlainYearMonth)
@@ -656,12 +670,14 @@ class TorqueGeneratedJSTemporalPlainYearMonth : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalPlainYearMonth(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalPlainYearMonth(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalTimeZone() that avoids inlining.
+// Alias for IsJSTemporalTimeZone() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalTimeZone_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalTimeZone_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
 template <class D, class P>
@@ -688,10 +704,10 @@ class TorqueGeneratedJSTemporalTimeZone : public P {
   inline void set_details(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalTimeZone)
@@ -723,12 +739,14 @@ class TorqueGeneratedJSTemporalTimeZone : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalTimeZone(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalTimeZone(Address ptr);
 };
 
-// Alias for HeapObject::IsJSTemporalZonedDateTime() that avoids inlining.
+// Alias for IsJSTemporalZonedDateTime() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalZonedDateTime_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSTemporalZonedDateTime_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
 template <class D, class P>
@@ -746,31 +764,31 @@ class TorqueGeneratedJSTemporalZonedDateTime : public P {
 
   // Torque type: BigInt
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  inline BigInt nanoseconds() const;
+  inline Tagged<BigInt> nanoseconds() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  inline BigInt nanoseconds(PtrComprCageBase cage_base) const;
+  inline Tagged<BigInt> nanoseconds(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  inline void set_nanoseconds(BigInt value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_nanoseconds(Tagged<BigInt> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  inline JSReceiver time_zone() const;
+  inline Tagged<JSReceiver> time_zone() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  inline JSReceiver time_zone(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> time_zone(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  inline void set_time_zone(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_time_zone(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  inline JSReceiver calendar() const;
+  inline Tagged<JSReceiver> calendar() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  inline JSReceiver calendar(PtrComprCageBase cage_base) const;
+  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  inline void set_calendar(JSReceiver value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSTemporalZonedDateTime)
@@ -805,6 +823,8 @@ class TorqueGeneratedJSTemporalZonedDateTime : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSTemporalZonedDateTime(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSTemporalZonedDateTime(Address ptr);
 };
 

@@ -1,63 +1,63 @@
 class Context::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return Context::unchecked_cast(raw_object).AllocatedSize();
+    return Context::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class FixedArray::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return FixedArray::unchecked_cast(raw_object).AllocatedSize();
+    return FixedArray::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class WeakFixedArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return WeakFixedArray::unchecked_cast(raw_object).AllocatedSize();
+    return WeakFixedArray::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class SloppyArgumentsElements::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return SloppyArgumentsElements::unchecked_cast(raw_object).AllocatedSize();
+    return SloppyArgumentsElements::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class ScopeInfo::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return ScopeInfo::unchecked_cast(raw_object).AllocatedSize();
+    return ScopeInfo::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class DescriptorArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<16> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return DescriptorArray::unchecked_cast(raw_object).AllocatedSize();
+    return DescriptorArray::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class StrongDescriptorArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<16> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return StrongDescriptorArray::unchecked_cast(raw_object).AllocatedSize();
+    return StrongDescriptorArray::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class FeedbackVector::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<24> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return FeedbackVector::unchecked_cast(raw_object).AllocatedSize();
+    return FeedbackVector::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class WeakArrayList::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return WeakArrayList::unchecked_cast(raw_object).AllocatedSize();
+    return WeakArrayList::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
@@ -77,11 +77,6 @@ class UncompiledDataWithoutPreparseData::BodyDescriptor final : public FixedRang
 };
 class UncompiledDataWithPreparseData::BodyDescriptor final : public BodyDescriptorBase {
  public:
-  static bool IsValidSlot(Map map, HeapObject obj, int offset) {
-      bool valid_slots[] = {1,1,0,1,};
-      return valid_slots[static_cast<unsigned int>(offset)/kTaggedSize];
-  }
-
   template <typename ObjectVisitor>
   static inline void IterateBody(Map map, HeapObject obj, int object_size, ObjectVisitor* v) {
     IteratePointer(obj, 8, v);
@@ -102,11 +97,6 @@ class UncompiledDataWithoutPreparseDataWithJob::BodyDescriptor final : public Fi
 };
 class UncompiledDataWithPreparseDataAndJob::BodyDescriptor final : public BodyDescriptorBase {
  public:
-  static bool IsValidSlot(Map map, HeapObject obj, int offset) {
-      bool valid_slots[] = {1,1,0,1,0,};
-      return valid_slots[static_cast<unsigned int>(offset)/kTaggedSize];
-  }
-
   template <typename ObjectVisitor>
   static inline void IterateBody(Map map, HeapObject obj, int object_size, ObjectVisitor* v) {
     IteratePointer(obj, 8, v);
@@ -135,14 +125,14 @@ class ConsString::BodyDescriptor final : public SuffixRangeBodyDescriptor<16> {
 class SeqOneByteString::BodyDescriptor final : public DataOnlyBodyDescriptor {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return SeqOneByteString::unchecked_cast(raw_object).AllocatedSize();
+    return SeqOneByteString::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class SeqTwoByteString::BodyDescriptor final : public DataOnlyBodyDescriptor {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return SeqTwoByteString::unchecked_cast(raw_object).AllocatedSize();
+    return SeqTwoByteString::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
@@ -212,7 +202,7 @@ class TurboshaftWord32RangeType::BodyDescriptor final : public DataOnlyBodyDescr
 class TurboshaftWord32SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return TurboshaftWord32SetType::unchecked_cast(raw_object).AllocatedSize();
+    return TurboshaftWord32SetType::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
@@ -233,7 +223,7 @@ class TurboshaftWord64RangeType::BodyDescriptor final : public DataOnlyBodyDescr
 class TurboshaftWord64SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return TurboshaftWord64SetType::unchecked_cast(raw_object).AllocatedSize();
+    return TurboshaftWord64SetType::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
@@ -254,7 +244,7 @@ class TurboshaftFloat64RangeType::BodyDescriptor final : public DataOnlyBodyDesc
 class TurboshaftFloat64SetType::BodyDescriptor final : public DataOnlyBodyDescriptor {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return TurboshaftFloat64SetType::unchecked_cast(raw_object).AllocatedSize();
+    return TurboshaftFloat64SetType::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
@@ -288,11 +278,6 @@ class ExportedSubClassBase::BodyDescriptor final : public SuffixRangeBodyDescrip
 };
 class ExportedSubClass::BodyDescriptor final : public BodyDescriptorBase {
  public:
-  static bool IsValidSlot(Map map, HeapObject obj, int offset) {
-      bool valid_slots[] = {1,1,1,0,1,};
-      return valid_slots[static_cast<unsigned int>(offset)/kTaggedSize];
-  }
-
   template <typename ObjectVisitor>
   static inline void IterateBody(Map map, HeapObject obj, int object_size, ObjectVisitor* v) {
     IteratePointers(obj, 8, 24, v);
@@ -321,24 +306,19 @@ class AbstractInternalClassSubclass2::BodyDescriptor final : public DataOnlyBody
 class InternalClassWithSmiElements::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return InternalClassWithSmiElements::unchecked_cast(raw_object).AllocatedSize();
+    return InternalClassWithSmiElements::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class InternalClassWithStructElements::BodyDescriptor final : public SuffixRangeBodyDescriptor<16> {
  public:
   static inline int SizeOf(Map map, HeapObject raw_object) {
-    return InternalClassWithStructElements::unchecked_cast(raw_object).AllocatedSize();
+    return InternalClassWithStructElements::unchecked_cast(raw_object)->AllocatedSize();
   }
 
 };
 class ExportedSubClass2::BodyDescriptor final : public BodyDescriptorBase {
  public:
-  static bool IsValidSlot(Map map, HeapObject obj, int offset) {
-      bool valid_slots[] = {1,1,1,0,1,};
-      return valid_slots[static_cast<unsigned int>(offset)/kTaggedSize];
-  }
-
   template <typename ObjectVisitor>
   static inline void IterateBody(Map map, HeapObject obj, int object_size, ObjectVisitor* v) {
     IteratePointers(obj, 8, 24, v);

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-isarray-tq-csa.h"
 #include "torque-generated/src/builtins/array-isarray-tq-csa.h"
@@ -113,14 +114,14 @@ TF_BUILTIN(ArrayIsArray, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp4;
+  TNode<True> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = True_0(state_);
     CodeStubAssembler(state_).Return(tmp4);
   }
 
-  TNode<Oddball> tmp5;
+  TNode<False> tmp5;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp5 = False_0(state_);

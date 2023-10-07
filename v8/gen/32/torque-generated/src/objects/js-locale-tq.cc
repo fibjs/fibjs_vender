@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1
-bool IsJSLocale_NonInline(HeapObject o) {
-  return o.IsJSLocale();
+bool IsJSLocale_NonInline(Tagged<HeapObject> o) {
+  return IsJSLocale(o);
 }
 
 #ifdef VERIFY_HEAP

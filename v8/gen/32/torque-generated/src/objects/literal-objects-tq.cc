@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1
-bool IsArrayBoilerplateDescription_NonInline(HeapObject o) {
-  return o.IsArrayBoilerplateDescription();
+bool IsArrayBoilerplateDescription_NonInline(Tagged<HeapObject> o) {
+  return IsArrayBoilerplateDescription(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -21,8 +21,8 @@ void TorqueGeneratedArrayBoilerplateDescription<ArrayBoilerplateDescription, Str
 
 #endif  // VERIFY_HEAP
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=10&c=1
-bool IsRegExpBoilerplateDescription_NonInline(HeapObject o) {
-  return o.IsRegExpBoilerplateDescription();
+bool IsRegExpBoilerplateDescription_NonInline(Tagged<HeapObject> o) {
+  return IsRegExpBoilerplateDescription(o);
 }
 
 #ifdef VERIFY_HEAP

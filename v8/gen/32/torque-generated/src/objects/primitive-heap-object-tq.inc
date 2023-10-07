@@ -1,7 +1,7 @@
 class PrimitiveHeapObject;
-// Alias for HeapObject::IsPrimitiveHeapObject() that avoids inlining.
+// Alias for IsPrimitiveHeapObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/primitive-heap-object.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsPrimitiveHeapObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsPrimitiveHeapObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/primitive-heap-object.tq?l=5&c=1
 template <class D, class P>
@@ -18,10 +18,10 @@ class TorqueGeneratedPrimitiveHeapObject : public P {
   using TorqueGeneratedClass = TorqueGeneratedPrimitiveHeapObject<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/primitive-heap-object.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/primitive-heap-object.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -45,6 +45,8 @@ class TorqueGeneratedPrimitiveHeapObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedPrimitiveHeapObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedPrimitiveHeapObject(Address ptr);
 };
 

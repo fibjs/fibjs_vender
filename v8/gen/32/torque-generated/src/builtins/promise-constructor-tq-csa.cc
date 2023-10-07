@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
@@ -82,7 +83,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=29&c=1
 TNode<BoolT> HasAccessCheckFailed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_promiseFun, TNode<Object> p_executor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -158,7 +159,7 @@ USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Oddball> tmp0;
+  TNode<Undefined> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -226,7 +227,7 @@ USE(parameter2);
   TNode<JSReceiver> tmp12;
   TNode<JSObject> tmp13;
   TNode<JSPromise> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<Undefined> tmp15;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp12 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
@@ -253,18 +254,18 @@ USE(parameter2);
     ca_.Goto(&block11);
   }
 
-  TNode<Oddball> tmp18;
+  TNode<True> tmp18;
   TNode<JSFunction> tmp19;
   TNode<JSFunction> tmp20;
   TNode<JSReceiver> tmp21;
       TNode<Object> tmp23;
-  TNode<Oddball> tmp24;
+  TNode<Undefined> tmp24;
   TNode<Object> tmp25;
       TNode<Object> tmp27;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp18 = True_0(state_);
-    std::tie(tmp19, tmp20) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{phi_bb9_5}, TNode<Oddball>{tmp18}, TNode<NativeContext>{parameter0}).Flatten();
+    std::tie(tmp19, tmp20) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{phi_bb9_5}, TNode<Boolean>{tmp18}, TNode<NativeContext>{parameter0}).Flatten();
     compiler::CodeAssemblerExceptionHandlerLabel catch22__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch22__label);
     tmp21 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
@@ -307,7 +308,7 @@ USE(parameter2);
 
   TNode<Object> phi_bb13_11;
   TNode<HeapObject> phi_bb13_12;
-  TNode<Oddball> tmp30;
+  TNode<Undefined> tmp30;
   TNode<Object> tmp31;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_11, &phi_bb13_12);
@@ -358,13 +359,13 @@ TF_BUILTIN(PromisePrototypeCatch, CodeStubAssembler) {
     ca_.Bind(&block2);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-constructor.tq", 105});
+      pos_stack.push_back({"src/builtins/promise-constructor.tq", 100});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Is<NativeContext>(context)' failed", pos_stack);
     }
   }
 
   TNode<NativeContext> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   TNode<Object> tmp3;
   TNode<Object> tmp4;
   if (block1.is_used()) {
@@ -377,7 +378,7 @@ TF_BUILTIN(PromisePrototypeCatch, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=74&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=70&c=14
 TNode<JSPromise> UnsafeCast_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -396,7 +397,7 @@ TNode<JSPromise> UnsafeCast_JSPromise_0(compiler::CodeAssemblerState* state_, TN
   return TNode<JSPromise>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=105&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=100&c=9
 TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -443,7 +444,7 @@ TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=106&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=101&c=25
 TNode<NativeContext> UnsafeCast_NativeContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

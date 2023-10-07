@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=5&c=1
-bool IsPromiseCapability_NonInline(HeapObject o) {
-  return o.IsPromiseCapability();
+bool IsPromiseCapability_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseCapability(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -20,9 +20,9 @@ void TorqueGeneratedPromiseCapability<PromiseCapability, Struct>::PromiseCapabil
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=27&c=1
-bool IsPromiseReaction_NonInline(HeapObject o) {
-  return o.IsPromiseReaction();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=31&c=1
+bool IsPromiseReaction_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseReaction(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -34,9 +34,9 @@ void TorqueGeneratedPromiseReaction<PromiseReaction, Struct>::PromiseReactionVer
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=49&c=1
-bool IsPromiseReactionJobTask_NonInline(HeapObject o) {
-  return o.IsPromiseReactionJobTask();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=53&c=1
+bool IsPromiseReactionJobTask_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseReactionJobTask(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -48,9 +48,9 @@ void TorqueGeneratedPromiseReactionJobTask<PromiseReactionJobTask, Microtask>::P
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=60&c=1
-bool IsPromiseFulfillReactionJobTask_NonInline(HeapObject o) {
-  return o.IsPromiseFulfillReactionJobTask();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=64&c=1
+bool IsPromiseFulfillReactionJobTask_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseFulfillReactionJobTask(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -62,9 +62,9 @@ void TorqueGeneratedPromiseFulfillReactionJobTask<PromiseFulfillReactionJobTask,
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=62&c=1
-bool IsPromiseRejectReactionJobTask_NonInline(HeapObject o) {
-  return o.IsPromiseRejectReactionJobTask();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=66&c=1
+bool IsPromiseRejectReactionJobTask_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseRejectReactionJobTask(o);
 }
 
 #ifdef VERIFY_HEAP
@@ -76,9 +76,9 @@ void TorqueGeneratedPromiseRejectReactionJobTask<PromiseRejectReactionJobTask, P
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=64&c=1
-bool IsPromiseResolveThenableJobTask_NonInline(HeapObject o) {
-  return o.IsPromiseResolveThenableJobTask();
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=68&c=1
+bool IsPromiseResolveThenableJobTask_NonInline(Tagged<HeapObject> o) {
+  return IsPromiseResolveThenableJobTask(o);
 }
 
 #ifdef VERIFY_HEAP

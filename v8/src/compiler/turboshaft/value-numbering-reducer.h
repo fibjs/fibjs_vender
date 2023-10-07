@@ -82,14 +82,18 @@ class ValueNumberingReducer : public Next {
  public:
   TURBOSHAFT_REDUCER_BOILERPLATE()
 
-#define EMIT_OP(Name)                                                 \
-  template <class... Args>                                            \
-  OpIndex Reduce##Name(Args... args) {                                \
-    OpIndex next_index = Asm().output_graph().next_operation_index(); \
-    USE(next_index);                                                  \
-    OpIndex result = Next::Reduce##Name(args...);                     \
-    DCHECK_EQ(next_index, result);                                    \
-    return AddOrFind<Name##Op>(result);                               \
+#define EMIT_OP(Name)                                                      \
+  template <class... Args>                                                 \
+  OpIndex Reduce##Name(Args... args) {                                     \
+    OpIndex next_index = Asm().output_graph().next_operation_index();      \
+    USE(next_index);                                                       \
+    OpIndex result = Next::Reduce##Name(args...);                          \
+    if (ShouldSkipOptimizationStep()) return result;                       \
+    /* Throwing operations have a non-trivial lowering, so they don't work \
+     * with value numbering. */                                            \
+    if constexpr (MayThrow(Opcode::k##Name)) return result;                \
+    DCHECK_EQ(next_index, result);                                         \
+    return AddOrFind<Name##Op>(result);                                    \
   }
   TURBOSHAFT_OPERATION_LIST(EMIT_OP)
 #undef EMIT_OP
@@ -132,8 +136,11 @@ class ValueNumberingReducer : public Next {
   template <class Op>
   OpIndex AddOrFind(OpIndex op_idx) {
     const Op& op = Asm().output_graph().Get(op_idx).template Cast<Op>();
-    if (std::is_same<Op, PendingLoopPhiOp>::value ||
-        !op.Properties().can_be_eliminated) {
+    if (std::is_same_v<Op, PendingLoopPhiOp> || op.IsBlockTerminator() ||
+        (!op.Effects().repetition_is_eliminatable() &&
+         !std::is_same_v<Op, DeoptimizeIfOp>)) {
+      // GVNing DeoptimizeIf is safe, despite its lack of
+      // repetition_is_eliminatable.
       return op_idx;
     }
     RehashIfNeeded();
@@ -156,7 +163,7 @@ class ValueNumberingReducer : public Next {
         if (entry_op.Is<Op>() &&
             (!same_block_only ||
              entry.block == Asm().current_block()->index()) &&
-            entry_op.Cast<Op>() == op) {
+            entry_op.Cast<Op>().EqualsForGVN(op)) {
           Next::RemoveLast(op_idx);
           return entry.value;
         }
@@ -183,8 +190,7 @@ class ValueNumberingReducer : public Next {
   void RehashIfNeeded() {
     if (V8_LIKELY(table_.size() - (table_.size() / 4) > entry_count_)) return;
     base::Vector<Entry> new_table = table_ =
-        Asm().phase_zone()->template NewVector<Entry>(table_.size() * 2,
-                                                      Entry());
+        Asm().phase_zone()->template NewVector<Entry>(table_.size() * 2);
     size_t mask = mask_ = table_.size() - 1;
 
     for (size_t depth_idx = 0; depth_idx < depths_heads_.size(); depth_idx++) {
@@ -259,8 +265,7 @@ class ValueNumberingReducer : public Next {
   ZoneVector<Block*> dominator_path_{Asm().phase_zone()};
   base::Vector<Entry> table_ = Asm().phase_zone()->template NewVector<Entry>(
       base::bits::RoundUpToPowerOfTwo(
-          std::max<size_t>(128, Asm().input_graph().op_id_capacity() / 2)),
-      Entry());
+          std::max<size_t>(128, Asm().input_graph().op_id_capacity() / 2)));
   size_t mask_ = table_.size() - 1;
   size_t entry_count_ = 0;
   ZoneVector<Entry*> depths_heads_{Asm().phase_zone()};

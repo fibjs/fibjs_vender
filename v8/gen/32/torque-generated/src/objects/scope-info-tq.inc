@@ -1,7 +1,7 @@
 class ScopeInfo;
-// Alias for HeapObject::IsScopeInfo() that avoids inlining.
+// Alias for IsScopeInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
-V8_EXPORT_PRIVATE bool IsScopeInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsScopeInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
 template <class D, class P>
@@ -33,18 +33,18 @@ class TorqueGeneratedScopeInfo : public P {
   inline void set_context_local_count(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-  inline String context_local_names(int i) const;
+  inline Tagged<String> context_local_names(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-  inline String context_local_names(PtrComprCageBase cage_base, int i) const;
+  inline Tagged<String> context_local_names(PtrComprCageBase cage_base, int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-  inline void set_context_local_names(int i, String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_context_local_names(int i, Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-  inline NameToIndexHashTable context_local_names_hashtable() const;
+  inline Tagged<NameToIndexHashTable> context_local_names_hashtable() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-  inline NameToIndexHashTable context_local_names_hashtable(PtrComprCageBase cage_base) const;
+  inline Tagged<NameToIndexHashTable> context_local_names_hashtable(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-  inline void set_context_local_names_hashtable(NameToIndexHashTable value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_context_local_names_hashtable(Tagged<NameToIndexHashTable> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
   inline int context_local_infos(int i) const;
@@ -58,24 +58,24 @@ class TorqueGeneratedScopeInfo : public P {
 
   // Torque type: (class String | Zero)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-  inline Object function_variable_info_name() const;
+  inline Tagged<Object> function_variable_info_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-  inline Object function_variable_info_name(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> function_variable_info_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-  inline void set_function_variable_info_name(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_function_variable_info_name(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
   inline int function_variable_info_context_or_stack_slot_index() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
   inline void set_function_variable_info_context_or_stack_slot_index(int value);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-  inline PrimitiveHeapObject inferred_function_name() const;
+  inline Tagged<PrimitiveHeapObject> inferred_function_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-  inline PrimitiveHeapObject inferred_function_name(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> inferred_function_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-  inline void set_inferred_function_name(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_inferred_function_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
   inline int position_info_start() const;
@@ -89,26 +89,26 @@ class TorqueGeneratedScopeInfo : public P {
 
   // Torque type: (TheHole | class ScopeInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-  inline HeapObject outer_scope_info() const;
+  inline Tagged<HeapObject> outer_scope_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-  inline HeapObject outer_scope_info(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> outer_scope_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-  inline void set_outer_scope_info(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_outer_scope_info(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-  inline FixedArray locals_block_list() const;
+  inline Tagged<FixedArray> locals_block_list() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-  inline FixedArray locals_block_list(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> locals_block_list(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-  inline void set_locals_block_list(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_locals_block_list(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: SourceTextModuleInfo
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-  inline FixedArray module_info() const;
+  inline Tagged<FixedArray> module_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-  inline FixedArray module_info(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> module_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-  inline void set_module_info(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module_info(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
   inline int module_variable_count() const;
@@ -116,11 +116,11 @@ class TorqueGeneratedScopeInfo : public P {
   inline void set_module_variable_count(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-  inline String module_variables_name(int i) const;
+  inline Tagged<String> module_variables_name(int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-  inline String module_variables_name(PtrComprCageBase cage_base, int i) const;
+  inline Tagged<String> module_variables_name(PtrComprCageBase cage_base, int i) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-  inline void set_module_variables_name(int i, String value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module_variables_name(int i, Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
   inline int module_variables_index(int i) const;
@@ -133,10 +133,10 @@ class TorqueGeneratedScopeInfo : public P {
   inline void set_module_variables_properties(int i, int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ScopeInfo)
@@ -200,6 +200,8 @@ class TorqueGeneratedScopeInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedScopeInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedScopeInfo(Address ptr);
 };
 

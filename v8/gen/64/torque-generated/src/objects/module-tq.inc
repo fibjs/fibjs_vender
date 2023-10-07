@@ -1,9 +1,9 @@
 class Module;
 class JSModuleNamespace;
 class ScriptOrModule;
-// Alias for HeapObject::IsModule() that avoids inlining.
+// Alias for IsModule() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsModule_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsModule_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
 template <class D, class P>
@@ -21,11 +21,11 @@ class TorqueGeneratedModule : public P {
 
   // Torque type: ObjectHashTable
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=8&c=3
-  inline ObjectHashTable exports() const;
+  inline Tagged<ObjectHashTable> exports() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=8&c=3
-  inline ObjectHashTable exports(PtrComprCageBase cage_base) const;
+  inline Tagged<ObjectHashTable> exports(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=8&c=3
-  inline void set_exports(ObjectHashTable value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_exports(Tagged<ObjectHashTable> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=10&c=3
   inline int hash() const;
@@ -37,34 +37,34 @@ class TorqueGeneratedModule : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=11&c=3
   inline void set_status(int value);
 
-  // Torque type: (Undefined | class JSModuleNamespace)
+  // Torque type: (class Undefined | class JSModuleNamespace)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-  inline HeapObject module_namespace() const;
+  inline Tagged<HeapObject> module_namespace() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-  inline HeapObject module_namespace(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> module_namespace(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-  inline void set_module_namespace(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module_namespace(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=14&c=3
-  inline Object exception() const;
+  inline Tagged<Object> exception() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=14&c=3
-  inline Object exception(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> exception(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=14&c=3
-  inline void set_exception(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_exception(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class JSPromise)
+  // Torque type: (class Undefined | class JSPromise)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-  inline HeapObject top_level_capability() const;
+  inline Tagged<HeapObject> top_level_capability() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-  inline HeapObject top_level_capability(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> top_level_capability(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-  inline void set_top_level_capability(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_top_level_capability(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
 #ifdef VERIFY_HEAP
@@ -106,12 +106,14 @@ class TorqueGeneratedModule : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedModule(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedModule(Address ptr);
 };
 
-// Alias for HeapObject::IsJSModuleNamespace() that avoids inlining.
+// Alias for IsJSModuleNamespace() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
-V8_EXPORT_PRIVATE bool IsJSModuleNamespace_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSModuleNamespace_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
 template <class D, class P>
@@ -128,17 +130,17 @@ class TorqueGeneratedJSModuleNamespace : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSModuleNamespace<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=21&c=3
-  inline Module module() const;
+  inline Tagged<Module> module() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=21&c=3
-  inline Module module(PtrComprCageBase cage_base) const;
+  inline Tagged<Module> module(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=21&c=3
-  inline void set_module(Module value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module(Tagged<Module> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSModuleNamespace)
@@ -167,12 +169,14 @@ class TorqueGeneratedJSModuleNamespace : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSModuleNamespace(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSModuleNamespace(Address ptr);
 };
 
-// Alias for HeapObject::IsScriptOrModule() that avoids inlining.
+// Alias for IsScriptOrModule() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
-V8_EXPORT_PRIVATE bool IsScriptOrModule_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsScriptOrModule_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
 template <class D, class P>
@@ -189,24 +193,24 @@ class TorqueGeneratedScriptOrModule : public P {
   using TorqueGeneratedClass = TorqueGeneratedScriptOrModule<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=25&c=3
-  inline Object resource_name() const;
+  inline Tagged<Object> resource_name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=25&c=3
-  inline Object resource_name(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> resource_name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=25&c=3
-  inline void set_resource_name(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_resource_name(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=26&c=3
-  inline FixedArray host_defined_options() const;
+  inline Tagged<FixedArray> host_defined_options() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=26&c=3
-  inline FixedArray host_defined_options(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> host_defined_options(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=26&c=3
-  inline void set_host_defined_options(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_host_defined_options(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(ScriptOrModule)
@@ -251,6 +255,8 @@ class TorqueGeneratedScriptOrModule : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedScriptOrModule(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedScriptOrModule(Address ptr);
 };
 

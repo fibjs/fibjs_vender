@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-findindex-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -397,7 +398,7 @@ TF_BUILTIN(ArrayFindIndexLoopContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-findindex.tq?l=93&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-findindex.tq?l=90&c=1
 TNode<Number> FastArrayFindIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -649,7 +650,7 @@ TNode<Number> FastArrayFindIndex_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<Smi> phi_bb27_5;
   TNode<Smi> phi_bb27_14;
   TNode<Smi> phi_bb27_17;
-  TNode<Oddball> tmp23;
+  TNode<Undefined> tmp23;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5, &phi_bb27_14, &phi_bb27_17);
     tmp23 = Undefined_0(state_);
@@ -809,11 +810,12 @@ TF_BUILTIN(ArrayPrototypeFindIndex, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp16 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp15});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp16});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp16);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-findindex.tq?l=90&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-findindex.tq?l=87&c=10
 TNode<Smi> Convert_Smi_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

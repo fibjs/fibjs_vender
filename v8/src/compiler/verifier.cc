@@ -1259,7 +1259,7 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       CheckTypeIs(node, Type::Boolean());
       break;
     case IrOpcode::kNumberIsFloat64Hole:
-      CheckValueInputIs(node, 0, Type::NumberOrHole());
+      CheckValueInputIs(node, 0, Type::NumberOrTheHole());
       CheckTypeIs(node, Type::Boolean());
       break;
     case IrOpcode::kNumberIsFinite:
@@ -1582,7 +1582,7 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       CheckTypeIs(node, Type::Number());
       break;
     case IrOpcode::kCheckFloat64Hole:
-      CheckValueInputIs(node, 0, Type::NumberOrHole());
+      CheckValueInputIs(node, 0, Type::NumberOrTheHole());
       CheckTypeIs(node, Type::NumberOrUndefined());
       break;
     case IrOpcode::kCheckNotTaggedHole:
@@ -1706,7 +1706,9 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
       CheckValueInputIs(node, 0, Type::Any());  // callee
       break;
     case IrOpcode::kWasmTypeCheck:
+    case IrOpcode::kWasmTypeCheckAbstract:
     case IrOpcode::kWasmTypeCast:
+    case IrOpcode::kWasmTypeCastAbstract:
     case IrOpcode::kRttCanon:
     case IrOpcode::kNull:
     case IrOpcode::kIsNull:
@@ -1722,7 +1724,7 @@ void Verifier::Visitor::Check(Node* node, const AllNodes& all) {
     case IrOpcode::kWasmArrayInitializeLength:
     case IrOpcode::kStringAsWtf16:
     case IrOpcode::kStringPrepareForGetCodeunit:
-      // TODO(manoskouk): What are the constraints here?
+      // TODO(7748): What are the constraints here?
       break;
 #endif  // V8_ENABLE_WEBASSEMBLY
 

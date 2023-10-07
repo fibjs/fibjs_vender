@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-slice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -102,7 +103,7 @@ TF_BUILTIN(StringPrototypeSlice, CodeStubAssembler) {
   TNode<UintPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Object> tmp4;
-  TNode<Oddball> tmp5;
+  TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -133,7 +134,7 @@ TF_BUILTIN(StringPrototypeSlice, CodeStubAssembler) {
   TNode<UintPtrT> phi_bb3_9;
   TNode<IntPtrT> tmp9;
   TNode<Object> tmp10;
-  TNode<Oddball> tmp11;
+  TNode<Undefined> tmp11;
   TNode<BoolT> tmp12;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_9);

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -84,7 +85,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
   USE(parameter1);
   TNode<HeapObject> parameter2 = UncheckedParameter<HeapObject>(Descriptor::kProto);
   USE(parameter2);
-  TNode<Oddball> parameter3 = UncheckedParameter<Oddball>(Descriptor::kDoThrow);
+  TNode<Boolean> parameter3 = UncheckedParameter<Boolean>(Descriptor::kDoThrow);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -141,7 +142,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp8;
+  TNode<True> tmp8;
   TNode<BoolT> tmp9;
   if (block24.is_used()) {
     ca_.Bind(&block24);
@@ -161,7 +162,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
     ca_.Branch(tmp12, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp13;
+  TNode<True> tmp13;
   TNode<BoolT> tmp14;
   if (block25.is_used()) {
     ca_.Bind(&block25);
@@ -175,7 +176,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kProxyTrapReturnedFalsishFor, "setPrototypeOf");
   }
 
-  TNode<Oddball> tmp15;
+  TNode<False> tmp15;
   if (block28.is_used()) {
     ca_.Bind(&block28);
     tmp15 = False_0(state_);
@@ -183,7 +184,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
   }
 
   TNode<Object> tmp16;
-  TNode<Oddball> tmp17;
+  TNode<True> tmp17;
   TNode<BoolT> tmp18;
   if (block26.is_used()) {
     ca_.Bind(&block26);
@@ -193,7 +194,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
     ca_.Branch(tmp18, &block36, std::vector<compiler::Node*>{}, &block37, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp19;
+  TNode<True> tmp19;
   if (block36.is_used()) {
     ca_.Bind(&block36);
     tmp19 = True_0(state_);
@@ -209,7 +210,7 @@ TF_BUILTIN(ProxySetPrototypeOf, CodeStubAssembler) {
     ca_.Branch(tmp21, &block38, std::vector<compiler::Node*>{}, &block39, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp22;
+  TNode<True> tmp22;
   if (block38.is_used()) {
     ca_.Bind(&block38);
     tmp22 = True_0(state_);

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/internal-coverage-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -77,7 +78,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal-coverage.tq?l=9&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal-coverage.tq?l=11&c=1
 TNode<CoverageInfo> GetCoverageInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_function, compiler::CodeAssemblerLabel* label_IfNoCoverageInfo) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -85,75 +86,41 @@ TNode<CoverageInfo> GetCoverageInfo_0(compiler::CodeAssemblerState* state_, TNod
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
   TNode<SharedFunctionInfo> tmp1;
-  TNode<IntPtrT> tmp2;
-  TNode<HeapObject> tmp3;
-  TNode<DebugInfo> tmp4;
+  TNode<Object> tmp2;
+  TNode<CoverageInfo> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp1 = CodeStubAssembler(state_).LoadReference<SharedFunctionInfo>(CodeStubAssembler::Reference{p_function, tmp0});
-    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp3 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp1, tmp2});
-    compiler::CodeAssemblerLabel label5(&ca_);
-    tmp4 = Cast_DebugInfo_0(state_, TNode<HeapObject>{tmp3}, &label5);
+    tmp2 = CodeStubAssembler(state_).GetCoverageInfo(TNode<SharedFunctionInfo>{tmp1});
+    compiler::CodeAssemblerLabel label4(&ca_);
+    tmp3 = Cast_CoverageInfo_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp2}, &label4);
     ca_.Goto(&block5);
-    if (label5.is_used()) {
-      ca_.Bind(&label5);
+    if (label4.is_used()) {
+      ca_.Bind(&label4);
       ca_.Goto(&block6);
     }
   }
 
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    ca_.Goto(&block1);
-  }
-
-  TNode<IntPtrT> tmp6;
-  TNode<Smi> tmp7;
-  TNode<BoolT> tmp8;
-  TNode<BoolT> tmp9;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 28);
-    tmp7 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp4, tmp6});
-    tmp8 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<bool, 3, 1, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp7))));
-    tmp9 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp8});
-    ca_.Branch(tmp9, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
-  }
-
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    ca_.Goto(&block1);
-  }
-
-  TNode<IntPtrT> tmp10;
-  TNode<HeapObject> tmp11;
-  TNode<CoverageInfo> tmp12;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp11 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp4, tmp10});
-    tmp12 = UnsafeCast_CoverageInfo_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp11});
-    ca_.Goto(&block9);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
     ca_.Goto(label_IfNoCoverageInfo);
   }
 
-    ca_.Bind(&block9);
-  return TNode<CoverageInfo>{tmp12};
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    ca_.Goto(&block7);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<CoverageInfo>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal-coverage.tq?l=19&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal-coverage.tq?l=20&c=1
 void IncrementBlockCount_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<CoverageInfo> p_coverageInfo, TNode<Smi> p_slot) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -236,14 +203,14 @@ TF_BUILTIN(IncBlockCounter, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp2;
+  TNode<Undefined> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp2 = Undefined_0(state_);
     CodeStubAssembler(state_).Return(tmp2);
   }
 
-  TNode<Oddball> tmp3;
+  TNode<Undefined> tmp3;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     IncrementBlockCount_0(state_, TNode<Context>{parameter0}, TNode<CoverageInfo>{tmp0}, TNode<Smi>{parameter2});
@@ -252,23 +219,65 @@ TF_BUILTIN(IncBlockCounter, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal-coverage.tq?l=16&c=10
-TNode<CoverageInfo> UnsafeCast_CoverageInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal-coverage.tq?l=15&c=24
+TNode<CoverageInfo> Cast_CoverageInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<CoverageInfo> tmp0;
+  TNode<HeapObject> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
-    ca_.Goto(&block6);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{p_o}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
   }
 
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(&block1);
+  }
+
+  TNode<CoverageInfo> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    compiler::CodeAssemblerLabel label3(&ca_);
+    tmp2 = Cast_CoverageInfo_0(state_, TNode<HeapObject>{tmp0}, &label3);
+    ca_.Goto(&block5);
+    if (label3.is_used()) {
+      ca_.Bind(&label3);
+      ca_.Goto(&block6);
+    }
+  }
+
+  if (block6.is_used()) {
     ca_.Bind(&block6);
-  return TNode<CoverageInfo>{tmp0};
+    ca_.Goto(&block1);
+  }
+
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<CoverageInfo>{tmp2};
 }
 
 } // namespace internal

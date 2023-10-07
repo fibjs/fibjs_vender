@@ -1,71 +1,68 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedPrototypeInfo<D, P>::module_namespace() const {
+Tagged<HeapObject> TorqueGeneratedPrototypeInfo<D, P>::module_namespace() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPrototypeInfo::module_namespace(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
 template<class D, class P>
-HeapObject TorqueGeneratedPrototypeInfo<D, P>::module_namespace(PtrComprCageBase cage_base) const {
-  HeapObject value;
-  value = TaggedField<HeapObject>::load(cage_base, *this, kModuleNamespaceOffset);
-  DCHECK(value.IsUndefined() || value.IsJSModuleNamespace());
+Tagged<HeapObject> TorqueGeneratedPrototypeInfo<D, P>::module_namespace(PtrComprCageBase cage_base) const {
+  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kModuleNamespaceOffset);
+  DCHECK(IsUndefined(value) || IsJSModuleNamespace(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
 template<class D, class P>
-void TorqueGeneratedPrototypeInfo<D, P>::set_module_namespace(HeapObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsUndefined() || value.IsJSModuleNamespace());
+void TorqueGeneratedPrototypeInfo<D, P>::set_module_namespace(Tagged<HeapObject> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsUndefined(value) || IsJSModuleNamespace(value));
   WRITE_FIELD(*this, kModuleNamespaceOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kModuleNamespaceOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
 template<class D, class P>
-Object TorqueGeneratedPrototypeInfo<D, P>::prototype_users() const {
+Tagged<Object> TorqueGeneratedPrototypeInfo<D, P>::prototype_users() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPrototypeInfo::prototype_users(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
 template<class D, class P>
-Object TorqueGeneratedPrototypeInfo<D, P>::prototype_users(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kPrototypeUsersOffset);
-  DCHECK(value.IsZero() || value.IsWeakArrayList());
+Tagged<Object> TorqueGeneratedPrototypeInfo<D, P>::prototype_users(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kPrototypeUsersOffset);
+  DCHECK(IsZero(value) || IsWeakArrayList(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
 template<class D, class P>
-void TorqueGeneratedPrototypeInfo<D, P>::set_prototype_users(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsZero() || value.IsWeakArrayList());
+void TorqueGeneratedPrototypeInfo<D, P>::set_prototype_users(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsZero(value) || IsWeakArrayList(value));
   WRITE_FIELD(*this, kPrototypeUsersOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeUsersOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
 template<class D, class P>
-Object TorqueGeneratedPrototypeInfo<D, P>::prototype_chain_enum_cache() const {
+Tagged<Object> TorqueGeneratedPrototypeInfo<D, P>::prototype_chain_enum_cache() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPrototypeInfo::prototype_chain_enum_cache(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
 template<class D, class P>
-Object TorqueGeneratedPrototypeInfo<D, P>::prototype_chain_enum_cache(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kPrototypeChainEnumCacheOffset);
-  DCHECK(value.IsUndefined() || value.IsFixedArray() || value.IsZero());
+Tagged<Object> TorqueGeneratedPrototypeInfo<D, P>::prototype_chain_enum_cache(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kPrototypeChainEnumCacheOffset);
+  DCHECK(IsUndefined(value) || IsFixedArray(value) || IsZero(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
 template<class D, class P>
-void TorqueGeneratedPrototypeInfo<D, P>::set_prototype_chain_enum_cache(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsUndefined() || value.IsFixedArray() || value.IsZero());
+void TorqueGeneratedPrototypeInfo<D, P>::set_prototype_chain_enum_cache(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsUndefined(value) || IsFixedArray(value) || IsZero(value));
   WRITE_FIELD(*this, kPrototypeChainEnumCacheOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeChainEnumCacheOffset, value, mode);
 }
@@ -73,8 +70,7 @@ void TorqueGeneratedPrototypeInfo<D, P>::set_prototype_chain_enum_cache(Object v
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=24&c=3
 template<class D, class P>
 int TorqueGeneratedPrototypeInfo<D, P>::registry_slot() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kRegistrySlotOffset).value();
+  int value = TaggedField<Smi>::load(*this, kRegistrySlotOffset).value();
   return value;
 }
 
@@ -87,8 +83,7 @@ void TorqueGeneratedPrototypeInfo<D, P>::set_registry_slot(int value) {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=26&c=3
 template<class D, class P>
 int TorqueGeneratedPrototypeInfo<D, P>::bit_field() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kBitFieldOffset).value();
+  int value = TaggedField<Smi>::load(*this, kBitFieldOffset).value();
   return value;
 }
 
@@ -108,24 +103,23 @@ MaybeObject TorqueGeneratedPrototypeInfo<D, P>::object_create_map() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
 template<class D, class P>
 MaybeObject TorqueGeneratedPrototypeInfo<D, P>::object_create_map(PtrComprCageBase cage_base) const {
-  MaybeObject value;
-  value = TaggedField<MaybeObject>::load(cage_base, *this, kObjectCreateMapOffset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUndefined()) || (value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()));
+  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, kObjectCreateMapOffset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsUndefined(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
 template<class D, class P>
 void TorqueGeneratedPrototypeInfo<D, P>::set_object_create_map(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && value.GetHeapObjectOrSmi().IsUndefined()) || (value.IsWeak() && value.GetHeapObjectOrSmi().IsMap()));
+  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsUndefined(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())));
   RELAXED_WRITE_WEAK_FIELD(*this, kObjectCreateMapOffset, value);
   CONDITIONAL_WEAK_WRITE_BARRIER(*this, kObjectCreateMapOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
 template<class D, class P>
-D TorqueGeneratedPrototypeInfo<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedPrototypeInfo<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

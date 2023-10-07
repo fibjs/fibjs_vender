@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-copywithin-tq-csa.h"
 #include "torque-generated/src/builtins/array-at-tq-csa.h"
@@ -171,7 +172,7 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   TNode<Number> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<Object> tmp11;
-  TNode<Oddball> tmp12;
+  TNode<Undefined> tmp12;
   TNode<BoolT> tmp13;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -285,12 +286,12 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   TNode<Number> phi_bb8_9;
   TNode<Number> phi_bb8_11;
   TNode<Number> phi_bb8_14;
-  TNode<Oddball> tmp35;
-  TNode<Oddball> tmp36;
+  TNode<Boolean> tmp35;
+  TNode<True> tmp36;
   TNode<BoolT> tmp37;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_9, &phi_bb8_11, &phi_bb8_14);
-    tmp35 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, phi_bb8_11);
+    tmp35 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, phi_bb8_11);
     tmp36 = True_0(state_);
     tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp35}, TNode<HeapObject>{tmp36});
     ca_.Branch(tmp37, &block11, std::vector<compiler::Node*>{phi_bb8_9, phi_bb8_11, phi_bb8_14}, &block12, std::vector<compiler::Node*>{phi_bb8_9, phi_bb8_11, phi_bb8_14});
@@ -312,11 +313,11 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   TNode<Number> phi_bb12_11;
   TNode<Number> phi_bb12_14;
   TNode<Smi> tmp40;
-  TNode<Oddball> tmp41;
+  TNode<Boolean> tmp41;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_9, &phi_bb12_11, &phi_bb12_14);
     tmp40 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp41 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp0, phi_bb12_9, tmp40);
+    tmp41 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp0, phi_bb12_9, tmp40);
     ca_.Goto(&block13, phi_bb12_9, phi_bb12_11, phi_bb12_14);
   }
 

@@ -31,10 +31,16 @@ const TSCallDescriptor* CreateAllocateBuiltinDescriptor(Zone* zone);
 // We can do write barrier elimination across loops if the loop does not contain
 // any potentially allocating operations.
 struct MemoryAnalyzer {
+  enum class AllocationFolding { kDoAllocationFolding, kDontAllocationFolding };
+
   Zone* phase_zone;
   const Graph& input_graph;
-  MemoryAnalyzer(Zone* phase_zone, const Graph& input_graph)
-      : phase_zone(phase_zone), input_graph(input_graph) {}
+  AllocationFolding allocation_folding;
+  MemoryAnalyzer(Zone* phase_zone, const Graph& input_graph,
+                 AllocationFolding allocation_folding)
+      : phase_zone(phase_zone),
+        input_graph(input_graph),
+        allocation_folding(allocation_folding) {}
 
   struct BlockState {
     const AllocateOp* last_allocation = nullptr;
@@ -97,7 +103,11 @@ class MemoryOptimizationReducer : public Next {
   TURBOSHAFT_REDUCER_BOILERPLATE()
 
   void Analyze() {
-    analyzer_.emplace(Asm().phase_zone(), Asm().input_graph());
+    analyzer_.emplace(
+        Asm().phase_zone(), Asm().input_graph(),
+        PipelineData::Get().info()->allocation_folding()
+            ? MemoryAnalyzer::AllocationFolding::kDoAllocationFolding
+            : MemoryAnalyzer::AllocationFolding::kDontAllocationFolding);
     analyzer_->Run();
     Next::Analyze();
   }
@@ -117,8 +127,7 @@ class MemoryOptimizationReducer : public Next {
                              maybe_initializing_or_transitioning);
   }
 
-  OpIndex REDUCE(Allocate)(OpIndex size, AllocationType type,
-                           AllowLargeObjects allow_large_objects) {
+  OpIndex REDUCE(Allocate)(OpIndex size, AllocationType type) {
     DCHECK_EQ(type, any_of(AllocationType::kYoung, AllocationType::kOld));
 
     if (v8_flags.single_generation && type == AllocationType::kYoung) {
@@ -129,35 +138,29 @@ class MemoryOptimizationReducer : public Next {
         type == AllocationType::kYoung
             ? ExternalReference::new_space_allocation_top_address(isolate_)
             : ExternalReference::old_space_allocation_top_address(isolate_));
-    Variable top =
-        Asm().NewFreshVariable(RegisterRepresentation::PointerSized());
-    Asm().Set(top, Asm().LoadOffHeap(top_address,
-                                     MemoryRepresentation::PointerSized()));
 
     if (analyzer_->IsFoldedAllocation(Asm().current_operation_origin())) {
-      Asm().StoreOffHeap(top_address, Asm().PointerAdd(Asm().Get(top), size),
+      DCHECK_NE(Asm().GetVariable(top(type)), OpIndex::Invalid());
+      OpIndex obj_addr = Asm().GetVariable(top(type));
+      Asm().SetVariable(top(type),
+                        Asm().PointerAdd(Asm().GetVariable(top(type)), size));
+      Asm().StoreOffHeap(top_address, Asm().GetVariable(top(type)),
                          MemoryRepresentation::PointerSized());
-      return Asm().BitcastWordToTagged(Asm().PointerAdd(
-          Asm().Get(top), Asm().IntPtrConstant(kHeapObjectTag)));
+      return Asm().BitcastWordPtrToTagged(
+          Asm().PointerAdd(obj_addr, Asm().IntPtrConstant(kHeapObjectTag)));
     }
+
+    Asm().SetVariable(
+        top(type),
+        Asm().LoadOffHeap(top_address, MemoryRepresentation::PointerSized()));
 
     OpIndex allocate_builtin;
     if (type == AllocationType::kYoung) {
-      if (allow_large_objects == AllowLargeObjects::kTrue) {
-        allocate_builtin =
-            Asm().BuiltinCode(Builtin::kAllocateInYoungGeneration, isolate_);
-      } else {
-        allocate_builtin = Asm().BuiltinCode(
-            Builtin::kAllocateRegularInYoungGeneration, isolate_);
-      }
+      allocate_builtin =
+          Asm().BuiltinCode(Builtin::kAllocateInYoungGeneration, isolate_);
     } else {
-      if (allow_large_objects == AllowLargeObjects::kTrue) {
-        allocate_builtin =
-            Asm().BuiltinCode(Builtin::kAllocateInOldGeneration, isolate_);
-      } else {
-        allocate_builtin = Asm().BuiltinCode(
-            Builtin::kAllocateRegularInOldGeneration, isolate_);
-      }
+      allocate_builtin =
+          Asm().BuiltinCode(Builtin::kAllocateInOldGeneration, isolate_);
     }
 
     Block* call_runtime = Asm().NewBlock();
@@ -177,17 +180,17 @@ class MemoryOptimizationReducer : public Next {
       reservation_size = size;
     }
     // Check if we can do bump pointer allocation here.
-    bool reachable = true;
-    if (allow_large_objects == AllowLargeObjects::kTrue) {
-      reachable = Asm().GotoIfNot(
-          Asm().UintPtrLessThan(
-              size, Asm().IntPtrConstant(kMaxRegularHeapObjectSize)),
-          call_runtime, BranchHint::kTrue);
-    }
+    bool reachable =
+        Asm().GotoIfNot(
+            Asm().UintPtrLessThan(
+                size, Asm().IntPtrConstant(kMaxRegularHeapObjectSize)),
+            call_runtime,
+            BranchHint::kTrue) != ConditionalGotoStatus::kGotoDestination;
     if (reachable) {
       Asm().Branch(
           Asm().UintPtrLessThan(
-              Asm().PointerAdd(Asm().Get(top), reservation_size), limit),
+              Asm().PointerAdd(Asm().GetVariable(top(type)), reservation_size),
+              limit),
           done, call_runtime, BranchHint::kTrue);
     }
 
@@ -195,17 +198,21 @@ class MemoryOptimizationReducer : public Next {
     if (Asm().Bind(call_runtime)) {
       OpIndex allocated = Asm().Call(allocate_builtin, {reservation_size},
                                      AllocateBuiltinDescriptor());
-      Asm().Set(top, Asm().PointerSub(Asm().BitcastTaggedToWord(allocated),
-                                      Asm().IntPtrConstant(kHeapObjectTag)));
+      Asm().SetVariable(top(type),
+                        Asm().PointerSub(Asm().BitcastTaggedToWord(allocated),
+                                         Asm().IntPtrConstant(kHeapObjectTag)));
       Asm().Goto(done);
     }
 
     Asm().BindReachable(done);
     // Compute the new top and write it back.
-    Asm().StoreOffHeap(top_address, Asm().PointerAdd(Asm().Get(top), size),
+    OpIndex obj_addr = Asm().GetVariable(top(type));
+    Asm().SetVariable(top(type),
+                      Asm().PointerAdd(Asm().GetVariable(top(type)), size));
+    Asm().StoreOffHeap(top_address, Asm().GetVariable(top(type)),
                        MemoryRepresentation::PointerSized());
-    return Asm().BitcastWordToTagged(
-        Asm().PointerAdd(Asm().Get(top), Asm().IntPtrConstant(kHeapObjectTag)));
+    return Asm().BitcastWordPtrToTagged(
+        Asm().PointerAdd(obj_addr, Asm().IntPtrConstant(kHeapObjectTag)));
   }
 
   OpIndex REDUCE(DecodeExternalPointer)(OpIndex handle,
@@ -230,7 +237,7 @@ class MemoryOptimizationReducer : public Next {
             : Asm().ExternalConstant(
                   ExternalReference::external_pointer_table_address(isolate_));
     OpIndex table = Asm().LoadOffHeap(
-        table_address, Internals::kExternalPointerTableBufferOffset,
+        table_address, Internals::kExternalPointerTableBasePointerOffset,
         MemoryRepresentation::PointerSized());
     OpIndex index = Asm().ShiftRightLogical(handle, kExternalPointerIndexShift,
                                             WordRepresentation::Word32());
@@ -248,6 +255,18 @@ class MemoryOptimizationReducer : public Next {
   base::Optional<MemoryAnalyzer> analyzer_;
   Isolate* isolate_ = PipelineData::Get().isolate();
   const TSCallDescriptor* allocate_builtin_descriptor_ = nullptr;
+  base::Optional<Variable> top_[2];
+
+  static_assert(static_cast<int>(AllocationType::kYoung) == 0);
+  static_assert(static_cast<int>(AllocationType::kOld) == 1);
+  Variable top(AllocationType type) {
+    DCHECK(type == AllocationType::kYoung || type == AllocationType::kOld);
+    if (V8_UNLIKELY(!top_[static_cast<int>(type)].has_value())) {
+      top_[static_cast<int>(type)].emplace(Asm().NewLoopInvariantVariable(
+          RegisterRepresentation::PointerSized()));
+    }
+    return top_[static_cast<int>(type)].value();
+  }
 
   const TSCallDescriptor* AllocateBuiltinDescriptor() {
     if (allocate_builtin_descriptor_ == nullptr) {

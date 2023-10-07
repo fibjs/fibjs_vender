@@ -1,23 +1,22 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=3
 template<class D, class P>
-Name TorqueGeneratedPropertyCell<D, P>::name() const {
+Tagged<Name> TorqueGeneratedPropertyCell<D, P>::name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPropertyCell::name(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=3
 template<class D, class P>
-Name TorqueGeneratedPropertyCell<D, P>::name(PtrComprCageBase cage_base) const {
-  Name value;
-  value = TaggedField<Name>::load(cage_base, *this, kNameOffset);
-  DCHECK(value.IsString() || value.IsPublicSymbol() || value.IsPrivateSymbol());
+Tagged<Name> TorqueGeneratedPropertyCell<D, P>::name(PtrComprCageBase cage_base) const {
+  Tagged<Name> value = TaggedField<Tagged<Name>>::load(cage_base, *this, kNameOffset);
+  DCHECK(IsString(value) || IsPublicSymbol(value) || IsPrivateSymbol(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=3
 template<class D, class P>
-void TorqueGeneratedPropertyCell<D, P>::set_name(Name value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsString() || value.IsPublicSymbol() || value.IsPrivateSymbol());
+void TorqueGeneratedPropertyCell<D, P>::set_name(Tagged<Name> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value) || IsPublicSymbol(value) || IsPrivateSymbol(value));
   WRITE_FIELD(*this, kNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNameOffset, value, mode);
 }
@@ -25,8 +24,7 @@ void TorqueGeneratedPropertyCell<D, P>::set_name(Name value, WriteBarrierMode mo
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=7&c=3
 template<class D, class P>
 int TorqueGeneratedPropertyCell<D, P>::property_details_raw() const {
-  int value;
-  value = TaggedField<Smi>::load(*this, kPropertyDetailsRawOffset).value();
+  int value = TaggedField<Smi>::load(*this, kPropertyDetailsRawOffset).value();
   return value;
 }
 
@@ -38,56 +36,54 @@ void TorqueGeneratedPropertyCell<D, P>::set_property_details_raw(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=8&c=3
 template<class D, class P>
-Object TorqueGeneratedPropertyCell<D, P>::value() const {
+Tagged<Object> TorqueGeneratedPropertyCell<D, P>::value() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPropertyCell::value(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=8&c=3
 template<class D, class P>
-Object TorqueGeneratedPropertyCell<D, P>::value(PtrComprCageBase cage_base) const {
-  Object value;
-  value = TaggedField<Object>::load(cage_base, *this, kValueOffset);
-  DCHECK(value.IsHeapObject() || value.IsSmi());
+Tagged<Object> TorqueGeneratedPropertyCell<D, P>::value(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kValueOffset);
+  DCHECK(IsHeapObject(value) || IsSmi(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=8&c=3
 template<class D, class P>
-void TorqueGeneratedPropertyCell<D, P>::set_value(Object value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsHeapObject() || value.IsSmi());
+void TorqueGeneratedPropertyCell<D, P>::set_value(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=9&c=3
 template<class D, class P>
-WeakFixedArray TorqueGeneratedPropertyCell<D, P>::dependent_code() const {
+Tagged<WeakFixedArray> TorqueGeneratedPropertyCell<D, P>::dependent_code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedPropertyCell::dependent_code(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=9&c=3
 template<class D, class P>
-WeakFixedArray TorqueGeneratedPropertyCell<D, P>::dependent_code(PtrComprCageBase cage_base) const {
-  WeakFixedArray value;
-  value = TaggedField<WeakFixedArray>::load(cage_base, *this, kDependentCodeOffset);
-  DCHECK(value.IsDependentCode());
+Tagged<WeakFixedArray> TorqueGeneratedPropertyCell<D, P>::dependent_code(PtrComprCageBase cage_base) const {
+  Tagged<WeakFixedArray> value = TaggedField<Tagged<WeakFixedArray>>::load(cage_base, *this, kDependentCodeOffset);
+  DCHECK(IsDependentCode(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=9&c=3
 template<class D, class P>
-void TorqueGeneratedPropertyCell<D, P>::set_dependent_code(WeakFixedArray value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsDependentCode());
+void TorqueGeneratedPropertyCell<D, P>::set_dependent_code(Tagged<WeakFixedArray> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsDependentCode(value));
   WRITE_FIELD(*this, kDependentCodeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDependentCodeOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1
 template<class D, class P>
-D TorqueGeneratedPropertyCell<D, P>::cast(Object object) {
-    return D(object.ptr());
+Tagged<D> TorqueGeneratedPropertyCell<D, P>::cast(Tagged<Object> object) {
+    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

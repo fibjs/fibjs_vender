@@ -15,9 +15,6 @@ namespace internal {
 class ByteArray;
 class CallInterfaceDescriptor;
 class Callable;
-template <typename T>
-class Handle;
-class Isolate;
 
 // Forward declarations.
 class BytecodeOffset;
@@ -129,12 +126,23 @@ class Builtins {
   static BytecodeOffset GetContinuationBytecodeOffset(Builtin builtin);
   static Builtin GetBuiltinFromBytecodeOffset(BytecodeOffset);
 
-  static constexpr Builtin GetRecordWriteStub(SaveFPRegsMode fp_mode) {
-    switch (fp_mode) {
-      case SaveFPRegsMode::kIgnore:
-        return Builtin::kRecordWriteIgnoreFP;
-      case SaveFPRegsMode::kSave:
-        return Builtin::kRecordWriteSaveFP;
+  static constexpr Builtin GetRecordWriteStub(
+      SaveFPRegsMode fp_mode, PointerType type = PointerType::kDirect) {
+    switch (type) {
+      case PointerType::kDirect:
+        switch (fp_mode) {
+          case SaveFPRegsMode::kIgnore:
+            return Builtin::kRecordWriteIgnoreFP;
+          case SaveFPRegsMode::kSave:
+            return Builtin::kRecordWriteSaveFP;
+        }
+      case PointerType::kIndirect:
+        switch (fp_mode) {
+          case SaveFPRegsMode::kIgnore:
+            return Builtin::kIndirectPointerBarrierIgnoreFP;
+          case SaveFPRegsMode::kSave:
+            return Builtin::kIndirectPointerBarrierSaveFP;
+        }
     }
   }
 
@@ -155,9 +163,9 @@ class Builtins {
   Handle<Code> OrdinaryToPrimitive(OrdinaryToPrimitiveHint hint);
 
   // Used by CreateOffHeapTrampolines in isolate.cc.
-  void set_code(Builtin builtin, Code code);
+  void set_code(Builtin builtin, Tagged<Code> code);
 
-  V8_EXPORT_PRIVATE Code code(Builtin builtin);
+  V8_EXPORT_PRIVATE Tagged<Code> code(Builtin builtin);
   V8_EXPORT_PRIVATE Handle<Code> code_handle(Builtin builtin);
 
   static CallInterfaceDescriptor CallInterfaceDescriptorFor(Builtin builtin);
@@ -185,7 +193,7 @@ class Builtins {
 
   // True, iff the given code object is a builtin. Note that this does not
   // necessarily mean that its kind is InstructionStream::BUILTIN.
-  static bool IsBuiltin(const Code code);
+  static bool IsBuiltin(const Tagged<Code> code);
 
   // As above, but safe to access off the main thread since the check is done
   // by handle location. Similar to Heap::IsRootHandle.
@@ -203,7 +211,7 @@ class Builtins {
   }
 
   // True, iff the given code object is a builtin with off-heap embedded code.
-  static bool IsIsolateIndependentBuiltin(Code code);
+  static bool IsIsolateIndependentBuiltin(Tagged<Code> code);
 
   static void InitializeIsolateDataTables(Isolate* isolate);
 
@@ -226,7 +234,8 @@ class Builtins {
   static void Generate_Adaptor(MacroAssembler* masm, Address builtin_address);
 
   static void Generate_CEntry(MacroAssembler* masm, int result_size,
-                              ArgvMode argv_mode, bool builtin_exit_frame);
+                              ArgvMode argv_mode, bool builtin_exit_frame,
+                              bool switch_to_central_stack);
 
   static bool AllowDynamicFunction(Isolate* isolate, Handle<JSFunction> target,
                                    Handle<JSObject> target_global_proxy);
@@ -252,12 +261,22 @@ class Builtins {
     return js_entry_handler_offset_;
   }
 
+  int jspi_prompt_handler_offset() const {
+    DCHECK_NE(jspi_prompt_handler_offset_, 0);
+    return jspi_prompt_handler_offset_;
+  }
+
   void SetJSEntryHandlerOffset(int offset) {
     // Check the stored offset is either uninitialized or unchanged (we
     // generate multiple variants of this builtin but they should all have the
     // same handler offset).
     CHECK(js_entry_handler_offset_ == 0 || js_entry_handler_offset_ == offset);
     js_entry_handler_offset_ = offset;
+  }
+
+  void SetJSPIPromptHandlerOffset(int offset) {
+    CHECK_EQ(jspi_prompt_handler_offset_, 0);
+    jspi_prompt_handler_offset_ = offset;
   }
 
   // Returns given builtin's slot in the main builtin table.
@@ -280,6 +299,9 @@ class Builtins {
                                                      CallOrConstructMode mode,
                                                      Handle<Code> code);
 
+  static void Generate_MaglevFunctionEntryStackCheck(MacroAssembler* masm,
+                                                     bool save_new_target);
+
   enum class InterpreterEntryTrampolineMode {
     // The version of InterpreterEntryTrampoline used by default.
     kDefault,
@@ -299,6 +321,9 @@ class Builtins {
   static void Generate_InterpreterPushArgsThenConstructImpl(
       MacroAssembler* masm, InterpreterPushArgsMode mode);
 
+  static void Generate_CallApiCallbackImpl(MacroAssembler* masm,
+                                           CallApiCallbackMode mode);
+
 #define DECLARE_ASM(Name, ...) \
   static void Generate_##Name(MacroAssembler* masm);
 #define DECLARE_TF(Name, ...) \
@@ -317,6 +342,9 @@ class Builtins {
   // label) in JSEntry and its variants. It's used to generate the handler table
   // during codegen (mksnapshot-only).
   int js_entry_handler_offset_ = 0;
+  // Do the same for the JSPI prompt, which catches uncaught exceptions and
+  // rejects the corresponding promise.
+  int jspi_prompt_handler_offset_ = 0;
 
   friend class SetupIsolateDelegate;
 };

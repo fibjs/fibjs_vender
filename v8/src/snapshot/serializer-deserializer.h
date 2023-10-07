@@ -29,14 +29,14 @@ class SerializerDeserializer : public RootVisitor {
     kAnySlot,
     kMapSlot,
   };
-  static bool CanBeDeferred(HeapObject o, SlotType slot_type);
+  static bool CanBeDeferred(Tagged<HeapObject> o, SlotType slot_type);
 
   void RestoreExternalReferenceRedirector(Isolate* isolate,
-                                          AccessorInfo accessor_info);
-  void RestoreExternalReferenceRedirector(Isolate* isolate,
-                                          CallHandlerInfo call_handler_info);
+                                          Tagged<AccessorInfo> accessor_info);
+  void RestoreExternalReferenceRedirector(
+      Isolate* isolate, Tagged<CallHandlerInfo> call_handler_info);
 
-// clang-format off
+  // clang-format off
 #define UNUSED_SERIALIZER_BYTE_CODES(V)                           \
   /* Free range 0x10..0x1f */                                     \
   V(0x1b) V(0x1c) V(0x1d) V(0x1e) V(0x1f)                         \
@@ -101,8 +101,6 @@ class SerializerDeserializer : public RootVisitor {
     kRootArray,
     // Object provided in the attached list.
     kAttachedReference,
-    // Object in the read-only object cache.
-    kReadOnlyObjectCache,
     // Object in the shared heap object cache.
     kSharedHeapObjectCache,
     // Do nothing, used for padding.
@@ -149,6 +147,10 @@ class SerializerDeserializer : public RootVisitor {
     // register as the pending field. We could either hack around this, or
     // simply introduce this new bytecode.
     kNewMetaMap,
+    // When the sandbox is enabled, a prefix indicating that the following
+    // object is referenced through an indirect pointer, i.e. through an entry
+    // in a pointer table.
+    kIndirectPointerPrefix,
 
     //
     // ---------- byte code range 0x40..0x7f ----------
@@ -261,16 +263,6 @@ class SerializerDeserializer : public RootVisitor {
   // This backing store reference value represents empty backing stores during
   // serialization/deserialization.
   static const uint32_t kEmptyBackingStoreRefSentinel = 0;
-};
-
-class HeapImageSerializer {
- public:
-  enum Bytecode {
-    kReadOnlyPage,
-    kReadOnlySegment,
-    kFinalizeReadOnlyPage,
-    kSynchronize,
-  };
 };
 
 }  // namespace internal

@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/builtins-bigint-tq-csa.h"
 #include "torque-generated/src/builtins/array-findindex-tq-csa.h"
@@ -270,7 +271,7 @@ TNode<BigInt> AllocateEmptyBigIntNoThrow_0(compiler::CodeAssemblerState* state_,
   return TNode<BigInt>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=89&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=90&c=1
 TNode<BigInt> AllocateEmptyBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_sign, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -306,7 +307,7 @@ TNode<BigInt> AllocateEmptyBigInt_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BigInt>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=98&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=99&c=1
 TNode<Int32T> MutableBigIntAbsoluteCompare_0(compiler::CodeAssemblerState* state_, TNode<BigInt> p_x, TNode<BigInt> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -325,7 +326,7 @@ TNode<Int32T> MutableBigIntAbsoluteCompare_0(compiler::CodeAssemblerState* state
   return TNode<Int32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=102&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=103&c=1
 TNode<BigInt> MutableBigIntAbsoluteSub_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, TNode<Uint32T> p_resultSign) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -416,7 +417,7 @@ TNode<BigInt> MutableBigIntAbsoluteSub_0(compiler::CodeAssemblerState* state_, T
   return TNode<BigInt>{phi_bb18_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=123&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=125&c=1
 TNode<BigInt> MutableBigIntAbsoluteAdd_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_xBigint, TNode<BigInt> p_yBigint, TNode<Uint32T> p_resultSign, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -546,7 +547,7 @@ TNode<BigInt> MutableBigIntAbsoluteAdd_0(compiler::CodeAssemblerState* state_, T
   return TNode<BigInt>{phi_bb19_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=158&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=160&c=1
 TNode<BigInt> BigIntAddImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -749,7 +750,7 @@ TF_BUILTIN(BigIntAdd, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=200&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=202&c=1
 TNode<BigInt> BigIntSubtractImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -952,7 +953,7 @@ TF_BUILTIN(BigIntSubtract, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=242&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=244&c=1
 TNode<BigInt> BigIntMultiplyImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig, compiler::CodeAssemblerLabel* label_TerminationRequested) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1225,7 +1226,7 @@ TF_BUILTIN(BigIntMultiply, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=302&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=304&c=1
 TNode<BigInt> BigIntDivideImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntDivZero, compiler::CodeAssemblerLabel* label_TerminationRequested) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1601,7 +1602,7 @@ TF_BUILTIN(BigIntDivide, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=369&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=371&c=1
 TNode<BigInt> BigIntModulusImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntDivZero, compiler::CodeAssemblerLabel* label_TerminationRequested) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1898,7 +1899,7 @@ TF_BUILTIN(BigIntModulus, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=433&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=435&c=1
 TNode<BigInt> BigIntBitwiseAndImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2346,7 +2347,7 @@ TF_BUILTIN(BigIntBitwiseAnd, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=500&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=502&c=1
 TNode<BigInt> BigIntBitwiseOrImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2733,7 +2734,7 @@ TF_BUILTIN(BigIntBitwiseOr, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=559&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=561&c=1
 TNode<BigInt> BigIntBitwiseXorImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3233,7 +3234,7 @@ TF_BUILTIN(BigIntBitwiseXor, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=628&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=630&c=1
 TNode<BigInt> MutableBigIntLeftShiftByAbsolute_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3432,7 +3433,7 @@ TNode<BigInt> MutableBigIntLeftShiftByAbsolute_0(compiler::CodeAssemblerState* s
   return TNode<BigInt>{phi_bb18_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=667&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=670&c=1
 TNode<BigInt> RightShiftByMaximum_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_sign) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3493,7 +3494,7 @@ TNode<BigInt> RightShiftByMaximum_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BigInt>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=677&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=680&c=1
 TNode<BigInt> MutableBigIntRightShiftByAbsolute_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3658,7 +3659,7 @@ TNode<BigInt> MutableBigIntRightShiftByAbsolute_0(compiler::CodeAssemblerState* 
   return TNode<BigInt>{phi_bb16_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=718&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=721&c=1
 TNode<BigInt> BigIntShiftLeftImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3722,7 +3723,7 @@ TNode<BigInt> BigIntShiftLeftImpl_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BigInt>{phi_bb8_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=727&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=730&c=1
 TNode<BigInt> BigIntShiftRightImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y, compiler::CodeAssemblerLabel* label_BigIntTooBig) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4052,7 +4053,7 @@ TF_BUILTIN(BigIntEqual, CodeStubAssembler) {
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<False> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = False_0(state_);
@@ -4070,7 +4071,7 @@ TF_BUILTIN(BigIntEqual, CodeStubAssembler) {
     ca_.Branch(tmp6, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp7;
+  TNode<False> tmp7;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp7 = False_0(state_);
@@ -4105,7 +4106,7 @@ TF_BUILTIN(BigIntEqual, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> phi_bb9_5;
-  TNode<Oddball> tmp13;
+  TNode<False> tmp13;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_5);
     tmp13 = False_0(state_);
@@ -4123,7 +4124,7 @@ TF_BUILTIN(BigIntEqual, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> phi_bb6_5;
-  TNode<Oddball> tmp16;
+  TNode<True> tmp16;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_5);
     tmp16 = True_0(state_);
@@ -4131,7 +4132,7 @@ TF_BUILTIN(BigIntEqual, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=806&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=810&c=1
 TNode<IntPtrT> BigIntCompareAbsolute_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4261,7 +4262,7 @@ TNode<IntPtrT> BigIntCompareAbsolute_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{phi_bb14_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=827&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=831&c=1
 TNode<IntPtrT> BigIntCompare_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<BigInt> p_x, TNode<BigInt> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4370,7 +4371,7 @@ TF_BUILTIN(BigIntLessThan, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4384,21 +4385,21 @@ TF_BUILTIN(BigIntLessThan, CodeStubAssembler) {
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<True> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = True_0(state_);
     ca_.Goto(&block3, tmp3);
   }
 
-  TNode<Oddball> tmp4;
+  TNode<False> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = False_0(state_);
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Oddball> phi_bb3_3;
+  TNode<Boolean> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4416,7 +4417,7 @@ TF_BUILTIN(BigIntGreaterThan, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4430,21 +4431,21 @@ TF_BUILTIN(BigIntGreaterThan, CodeStubAssembler) {
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<True> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = True_0(state_);
     ca_.Goto(&block3, tmp3);
   }
 
-  TNode<Oddball> tmp4;
+  TNode<False> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = False_0(state_);
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Oddball> phi_bb3_3;
+  TNode<Boolean> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4462,7 +4463,7 @@ TF_BUILTIN(BigIntLessThanOrEqual, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4476,21 +4477,21 @@ TF_BUILTIN(BigIntLessThanOrEqual, CodeStubAssembler) {
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<True> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = True_0(state_);
     ca_.Goto(&block3, tmp3);
   }
 
-  TNode<Oddball> tmp4;
+  TNode<False> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = False_0(state_);
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Oddball> phi_bb3_3;
+  TNode<Boolean> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4508,7 +4509,7 @@ TF_BUILTIN(BigIntGreaterThanOrEqual, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Oddball> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4522,21 +4523,21 @@ TF_BUILTIN(BigIntGreaterThanOrEqual, CodeStubAssembler) {
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp3;
+  TNode<True> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = True_0(state_);
     ca_.Goto(&block3, tmp3);
   }
 
-  TNode<Oddball> tmp4;
+  TNode<False> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = False_0(state_);
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Oddball> phi_bb3_3;
+  TNode<Boolean> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4616,7 +4617,7 @@ TF_BUILTIN(BigIntUnaryMinus, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=189&c=15
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=191&c=15
 TNode<BigInt> Cast_BigInt_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

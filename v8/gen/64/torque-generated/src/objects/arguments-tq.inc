@@ -3,9 +3,9 @@ class JSSloppyArgumentsObject;
 class JSStrictArgumentsObject;
 class SloppyArgumentsElements;
 class AliasedArgumentsEntry;
-// Alias for HeapObject::IsJSArgumentsObject() that avoids inlining.
+// Alias for IsJSArgumentsObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
-V8_EXPORT_PRIVATE bool IsJSArgumentsObject_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsJSArgumentsObject_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
 template <class D, class P>
@@ -22,10 +22,10 @@ class TorqueGeneratedJSArgumentsObject : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSArgumentsObject<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSArgumentsObject)
@@ -51,6 +51,8 @@ class TorqueGeneratedJSArgumentsObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSArgumentsObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSArgumentsObject(Address ptr);
 };
 
@@ -70,25 +72,25 @@ class TorqueGeneratedJSSloppyArgumentsObject : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
-  inline Object length() const;
+  inline Tagged<Object> length() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
-  inline Object length(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> length(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
-  inline void set_length(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_length(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
-  inline Object callee() const;
+  inline Tagged<Object> callee() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
-  inline Object callee(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> callee(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
-  inline void set_callee(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_callee(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=17&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=17&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSSloppyArgumentsObject)
@@ -116,6 +118,8 @@ class TorqueGeneratedJSSloppyArgumentsObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSSloppyArgumentsObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSSloppyArgumentsObject(Address ptr);
 };
 
@@ -135,17 +139,17 @@ class TorqueGeneratedJSStrictArgumentsObject : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
-  inline Object length() const;
+  inline Tagged<Object> length() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
-  inline Object length(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> length(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
-  inline void set_length(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_length(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=23&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=23&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(JSStrictArgumentsObject)
@@ -170,12 +174,14 @@ class TorqueGeneratedJSStrictArgumentsObject : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedJSStrictArgumentsObject(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedJSStrictArgumentsObject(Address ptr);
 };
 
-// Alias for HeapObject::IsSloppyArgumentsElements() that avoids inlining.
+// Alias for IsSloppyArgumentsElements() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-V8_EXPORT_PRIVATE bool IsSloppyArgumentsElements_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsSloppyArgumentsElements_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
 template <class D, class P>
@@ -192,32 +198,32 @@ class TorqueGeneratedSloppyArgumentsElements : public P {
   using TorqueGeneratedClass = TorqueGeneratedSloppyArgumentsElements<D,P>;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  inline Context context() const;
+  inline Tagged<Context> context() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  inline Context context(PtrComprCageBase cage_base) const;
+  inline Tagged<Context> context(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  inline void set_context(Context value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_context(Tagged<Context> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  inline FixedArray arguments() const;
+  inline Tagged<FixedArray> arguments() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  inline FixedArray arguments(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> arguments(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  inline void set_arguments(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_arguments(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  inline Object mapped_entries(int i, RelaxedLoadTag) const;
+  inline Tagged<Object> mapped_entries(int i, RelaxedLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  inline Object mapped_entries(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const;
+  inline Tagged<Object> mapped_entries(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  inline void set_mapped_entries(int i, Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_mapped_entries(int i, Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(SloppyArgumentsElements)
@@ -264,6 +270,8 @@ class TorqueGeneratedSloppyArgumentsElements : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedSloppyArgumentsElements(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedSloppyArgumentsElements(Address ptr);
 };
 
@@ -273,9 +281,9 @@ class SloppyArgumentsElements : public TorqueGeneratedSloppyArgumentsElements<Sl
   TQ_OBJECT_CONSTRUCTORS(SloppyArgumentsElements)
 };
 
-// Alias for HeapObject::IsAliasedArgumentsEntry() that avoids inlining.
+// Alias for IsAliasedArgumentsEntry() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
-V8_EXPORT_PRIVATE bool IsAliasedArgumentsEntry_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsAliasedArgumentsEntry_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
 template <class D, class P>
@@ -297,10 +305,10 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
   inline void set_aliased_context_slot(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(AliasedArgumentsEntry)
@@ -342,6 +350,8 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedAliasedArgumentsEntry(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedAliasedArgumentsEntry(Address ptr);
 };
 

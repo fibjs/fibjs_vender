@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-lastindexof-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -115,7 +116,7 @@ TNode<Object> LoadWithHoleCheck_FixedArray_0(compiler::CodeAssemblerState* state
   TNode<Object> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
-  TNode<HeapObject> tmp13;
+  TNode<Hole> tmp13;
   TNode<BoolT> tmp14;
   if (block7.is_used()) {
     ca_.Bind(&block7);
@@ -444,12 +445,12 @@ TNode<Object> GenericArrayLastIndexOf_0(compiler::CodeAssemblerState* state_, TN
   }
 
   TNode<Number> phi_bb2_4;
-  TNode<Oddball> tmp2;
-  TNode<Oddball> tmp3;
+  TNode<Boolean> tmp2;
+  TNode<True> tmp3;
   TNode<BoolT> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_4);
-    tmp2 = ca_.CallStub<Oddball>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_object, phi_bb2_4);
+    tmp2 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_object, phi_bb2_4);
     tmp3 = True_0(state_);
     tmp4 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp2}, TNode<HeapObject>{tmp3});
     ca_.Branch(tmp4, &block5, std::vector<compiler::Node*>{phi_bb2_4}, &block6, std::vector<compiler::Node*>{phi_bb2_4});
@@ -457,8 +458,8 @@ TNode<Object> GenericArrayLastIndexOf_0(compiler::CodeAssemblerState* state_, TN
 
   TNode<Number> phi_bb5_4;
   TNode<Object> tmp5;
-  TNode<Oddball> tmp6;
-  TNode<Oddball> tmp7;
+  TNode<Boolean> tmp6;
+  TNode<True> tmp7;
   TNode<BoolT> tmp8;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_4);
@@ -664,8 +665,8 @@ TNode<Smi> FastArrayLastIndexOf_FixedArray_0(compiler::CodeAssemblerState* state
 
   TNode<Smi> phi_bb9_5;
   TNode<Smi> phi_bb9_7;
-  TNode<Oddball> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<Boolean> tmp13;
+  TNode<True> tmp14;
   TNode<BoolT> tmp15;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_5, &phi_bb9_7);
@@ -801,8 +802,8 @@ TNode<Smi> FastArrayLastIndexOf_FixedDoubleArray_0(compiler::CodeAssemblerState*
 
   TNode<Smi> phi_bb9_5;
   TNode<Smi> phi_bb9_7;
-  TNode<Oddball> tmp13;
-  TNode<Oddball> tmp14;
+  TNode<Boolean> tmp13;
+  TNode<True> tmp14;
   TNode<BoolT> tmp15;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_5, &phi_bb9_7);

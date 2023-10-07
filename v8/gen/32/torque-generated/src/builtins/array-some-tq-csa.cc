@@ -65,6 +65,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-some-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -171,8 +172,8 @@ TF_BUILTIN(ArraySomeLoopEagerDeoptContinuation, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Oddball> tmp8;
-  TNode<Oddball> tmp9;
+  TNode<Undefined> tmp8;
+  TNode<Undefined> tmp9;
   TNode<Object> tmp10;
   if (block15.is_used()) {
     ca_.Bind(&block15);
@@ -287,7 +288,7 @@ TF_BUILTIN(ArraySomeLoopLazyDeoptContinuation, CodeStubAssembler) {
     ca_.Branch(tmp8, &block17, std::vector<compiler::Node*>{}, &block18, std::vector<compiler::Node*>{});
   }
 
-  TNode<Oddball> tmp9;
+  TNode<True> tmp9;
   if (block17.is_used()) {
     ca_.Bind(&block17);
     tmp9 = True_0(state_);
@@ -296,8 +297,8 @@ TF_BUILTIN(ArraySomeLoopLazyDeoptContinuation, CodeStubAssembler) {
 
   TNode<Number> tmp10;
   TNode<Number> tmp11;
-  TNode<Oddball> tmp12;
-  TNode<Oddball> tmp13;
+  TNode<Undefined> tmp12;
+  TNode<Undefined> tmp13;
   TNode<Object> tmp14;
   if (block18.is_used()) {
     ca_.Bind(&block18);
@@ -354,8 +355,8 @@ TF_BUILTIN(ArraySomeLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb1_9;
-  TNode<Oddball> tmp1;
-  TNode<Oddball> tmp2;
+  TNode<Boolean> tmp1;
+  TNode<True> tmp2;
   TNode<BoolT> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_9);
@@ -378,7 +379,7 @@ TF_BUILTIN(ArraySomeLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb7_9;
-  TNode<Oddball> tmp7;
+  TNode<True> tmp7;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_9);
     tmp7 = True_0(state_);
@@ -402,7 +403,7 @@ TF_BUILTIN(ArraySomeLoopContinuation, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb2_9;
-  TNode<Oddball> tmp10;
+  TNode<False> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_9);
     tmp10 = False_0(state_);
@@ -410,7 +411,7 @@ TF_BUILTIN(ArraySomeLoopContinuation, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-some.tq?l=86&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-some.tq?l=84&c=1
 TNode<Object> FastArraySome_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Smi>* label_Bailout_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -656,7 +657,7 @@ TNode<Object> FastArraySome_0(compiler::CodeAssemblerState* state_, TNode<Contex
   }
 
   TNode<Smi> phi_bb36_5;
-  TNode<Oddball> tmp25;
+  TNode<True> tmp25;
   if (block36.is_used()) {
     ca_.Bind(&block36, &phi_bb36_5);
     tmp25 = True_0(state_);
@@ -681,7 +682,7 @@ TNode<Object> FastArraySome_0(compiler::CodeAssemblerState* state_, TNode<Contex
 
   TNode<Smi> phi_bb12_5;
   TNode<JSArray> phi_bb12_9;
-  TNode<Oddball> tmp28;
+  TNode<False> tmp28;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_5, &phi_bb12_9);
     tmp28 = False_0(state_);
@@ -785,8 +786,8 @@ TF_BUILTIN(ArraySome, CodeStubAssembler) {
     }
   }
 
-  TNode<Oddball> tmp14;
-  TNode<Oddball> tmp15;
+  TNode<Undefined> tmp14;
+  TNode<Undefined> tmp15;
   TNode<Object> tmp16;
   if (block10.is_used()) {
     ca_.Bind(&block10);
@@ -807,7 +808,8 @@ TF_BUILTIN(ArraySome, CodeStubAssembler) {
     ca_.Bind(&block2);
     tmp17 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp18 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp17});
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, TNode<Object>{tmp18});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp18);
+    CodeStubAssembler(state_).Unreachable();
   }
 }
 

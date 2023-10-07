@@ -42,7 +42,7 @@ const skip_list = [
 
     "^src/diagnostics/unwinding-info-win64.cc",
 
-    "^src/compiler/revectorizer.cc",
+    // "^src/compiler/revectorizer.cc",
     "^src/compiler/turbofan-disabled.cc",
 
     "^src/d8/",
@@ -182,7 +182,7 @@ function gen_list(arch, os) {
             skip_name("^src/base/platform/platform-posix-time.cc");
 
             src_list = util.difference(src_list, mac_list, posix_list, android_list, fuchsia_list);
-            skip_name("^src/diagnostics/etw-jit-win.cc")
+            // skip_name("^src/diagnostics/etw-jit-win.cc")
 
             if (arch == "i386") {
                 skip_name("^src/heap/base/asm/ia32/push_registers_asm.cc")

@@ -1,7 +1,7 @@
 class Script;
-// Alias for HeapObject::IsScript() that avoids inlining.
+// Alias for IsScript() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
-V8_EXPORT_PRIVATE bool IsScript_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsScript_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
 template <class D, class P>
@@ -17,20 +17,20 @@ class TorqueGeneratedScript : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedScript<D,P>;
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
-  inline PrimitiveHeapObject source() const;
+  inline Tagged<PrimitiveHeapObject> source() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
-  inline PrimitiveHeapObject source(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> source(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
-  inline void set_source(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
-  inline Object name() const;
+  inline Tagged<Object> name() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
-  inline Object name(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> name(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
-  inline void set_name(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_name(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
   inline int line_offset() const;
@@ -42,13 +42,13 @@ class TorqueGeneratedScript : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
   inline void set_column_offset(int value);
 
-  // Torque type: (Smi | class Symbol | Undefined)
+  // Torque type: (Smi | class Symbol | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
-  inline Object context_data() const;
+  inline Tagged<Object> context_data() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
-  inline Object context_data(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> context_data(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
-  inline void set_context_data(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_context_data(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
   inline int script_type() const;
@@ -57,89 +57,89 @@ class TorqueGeneratedScript : public P {
 
   // Torque type: (Smi | class FixedArray)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
-  inline Object line_ends() const;
+  inline Tagged<Object> line_ends() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
-  inline Object line_ends(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> line_ends(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
-  inline void set_line_ends(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_line_ends(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
   inline int id() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
   inline void set_id(int value);
 
-  // Torque type: (Undefined | class FixedArray | class SharedFunctionInfo)
+  // Torque type: (class Undefined | class FixedArray | class SharedFunctionInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-  inline HeapObject eval_from_shared_or_wrapped_arguments() const;
+  inline Tagged<HeapObject> eval_from_shared_or_wrapped_arguments() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-  inline HeapObject eval_from_shared_or_wrapped_arguments(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> eval_from_shared_or_wrapped_arguments(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
-  inline void set_eval_from_shared_or_wrapped_arguments(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_eval_from_shared_or_wrapped_arguments(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class Foreign)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
-  inline Object eval_from_position() const;
+  inline Tagged<Object> eval_from_position() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
-  inline Object eval_from_position(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> eval_from_position(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
-  inline void set_eval_from_position(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_eval_from_position(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class WeakFixedArray | class WeakArrayList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
-  inline HeapObject shared_function_infos() const;
+  inline Tagged<HeapObject> shared_function_infos() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
-  inline HeapObject shared_function_infos(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> shared_function_infos(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
-  inline void set_shared_function_infos(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_shared_function_infos(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class ArrayList)
+  // Torque type: (class Undefined | class ArrayList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
-  inline HeapObject compiled_lazy_function_positions() const;
+  inline Tagged<HeapObject> compiled_lazy_function_positions() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
-  inline HeapObject compiled_lazy_function_positions(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> compiled_lazy_function_positions(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
-  inline void set_compiled_lazy_function_positions(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_compiled_lazy_function_positions(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
   inline int flags() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
   inline void set_flags(int value);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
-  inline PrimitiveHeapObject source_url() const;
+  inline Tagged<PrimitiveHeapObject> source_url() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
-  inline PrimitiveHeapObject source_url(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> source_url(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
-  inline void set_source_url(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source_url(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
-  inline Object source_mapping_url() const;
+  inline Tagged<Object> source_mapping_url() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
-  inline Object source_mapping_url(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> source_mapping_url(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
-  inline void set_source_mapping_url(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source_mapping_url(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
-  inline FixedArray host_defined_options() const;
+  inline Tagged<FixedArray> host_defined_options() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
-  inline FixedArray host_defined_options(PtrComprCageBase cage_base) const;
+  inline Tagged<FixedArray> host_defined_options(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
-  inline void set_host_defined_options(FixedArray value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_host_defined_options(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class String | Undefined)
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
-  inline PrimitiveHeapObject source_hash() const;
+  inline Tagged<PrimitiveHeapObject> source_hash() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
-  inline PrimitiveHeapObject source_hash(PtrComprCageBase cage_base) const;
+  inline Tagged<PrimitiveHeapObject> source_hash(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
-  inline void set_source_hash(PrimitiveHeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_source_hash(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(Script)
@@ -229,6 +229,8 @@ class TorqueGeneratedScript : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedScript(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedScript(Address ptr);
 };
 

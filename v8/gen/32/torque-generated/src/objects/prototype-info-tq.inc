@@ -1,7 +1,7 @@
 class PrototypeInfo;
-// Alias for HeapObject::IsPrototypeInfo() that avoids inlining.
+// Alias for IsPrototypeInfo() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
-V8_EXPORT_PRIVATE bool IsPrototypeInfo_NonInline(HeapObject o);
+V8_EXPORT_PRIVATE bool IsPrototypeInfo_NonInline(Tagged<HeapObject> o);
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
 template <class D, class P>
@@ -17,29 +17,29 @@ class TorqueGeneratedPrototypeInfo : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedPrototypeInfo<D,P>;
 
-  // Torque type: (Undefined | class JSModuleNamespace)
+  // Torque type: (class Undefined | class JSModuleNamespace)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
-  inline HeapObject module_namespace() const;
+  inline Tagged<HeapObject> module_namespace() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
-  inline HeapObject module_namespace(PtrComprCageBase cage_base) const;
+  inline Tagged<HeapObject> module_namespace(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
-  inline void set_module_namespace(HeapObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module_namespace(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Zero | class WeakArrayList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
-  inline Object prototype_users() const;
+  inline Tagged<Object> prototype_users() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
-  inline Object prototype_users(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> prototype_users(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
-  inline void set_prototype_users(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_users(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Undefined | class FixedArray | Zero)
+  // Torque type: (class Undefined | class FixedArray | Zero)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
-  inline Object prototype_chain_enum_cache() const;
+  inline Tagged<Object> prototype_chain_enum_cache() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
-  inline Object prototype_chain_enum_cache(PtrComprCageBase cage_base) const;
+  inline Tagged<Object> prototype_chain_enum_cache(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
-  inline void set_prototype_chain_enum_cache(Object value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_chain_enum_cache(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=24&c=3
   inline int registry_slot() const;
@@ -51,7 +51,7 @@ class TorqueGeneratedPrototypeInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=26&c=3
   inline void set_bit_field(int value);
 
-  // Torque type: (Undefined | Weak<class Map>)
+  // Torque type: (class Undefined | Weak<class Map>)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
   inline MaybeObject object_create_map() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
@@ -60,10 +60,10 @@ class TorqueGeneratedPrototypeInfo : public P {
   inline void set_object_create_map(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
-  V8_INLINE static D cast(Object object);
+  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
-  V8_INLINE static D unchecked_cast(Object object) {
-    return base::bit_cast<D>(object);
+  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
+    return Tagged<D>::unchecked_cast(object);
   }
 
   DECL_PRINTER(PrototypeInfo)
@@ -120,6 +120,8 @@ class TorqueGeneratedPrototypeInfo : public P {
   }
 
  protected:
+  inline explicit constexpr TorqueGeneratedPrototypeInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedPrototypeInfo(Address ptr);
 };
 

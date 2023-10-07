@@ -7,8 +7,8 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/heap-number.tq?l=5&c=1
-bool IsHeapNumber_NonInline(HeapObject o) {
-  return o.IsHeapNumber();
+bool IsHeapNumber_NonInline(Tagged<HeapObject> o) {
+  return IsHeapNumber(o);
 }
 
 #ifdef VERIFY_HEAP

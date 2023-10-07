@@ -9,12 +9,12 @@ namespace v8::internal {
 #ifdef V8_COMPRESS_POINTERS
 
 #ifdef V8_COMPRESS_POINTERS_IN_SHARED_CAGE
-#define THREAD_LOCAL_IF_MULTICAGE
+#define THREAD_LOCAL_IF_MULTICAGE uintptr_t
 #else
-#define THREAD_LOCAL_IF_MULTICAGE thread_local
+#define THREAD_LOCAL_IF_MULTICAGE exlib::fiber_local<uintptr_t>
 #endif  // V8_COMPRESS_POINTERS_IN_SHARED_CAGE
 
-THREAD_LOCAL_IF_MULTICAGE uintptr_t V8HeapCompressionScheme::base_ =
+THREAD_LOCAL_IF_MULTICAGE V8HeapCompressionScheme::base_ =
     kNullAddress;
 
 // static
@@ -27,7 +27,7 @@ void V8HeapCompressionScheme::set_base_non_inlined(Address base) {
 
 #ifdef V8_EXTERNAL_CODE_SPACE
 
-THREAD_LOCAL_IF_MULTICAGE uintptr_t ExternalCodeCompressionScheme::base_ =
+THREAD_LOCAL_IF_MULTICAGE ExternalCodeCompressionScheme::base_ =
     kNullAddress;
 
 // static
