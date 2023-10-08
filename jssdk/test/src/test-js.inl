@@ -269,7 +269,7 @@ TEST(ENG(api), scope)
 
     rt->gc();
 
-    ASSERT_DOUBLE_EQ(100.5, v1.get("key1").toNumber());
+    ASSERT_DOUBLE_EQ((double)100.5, v1.get("key1").toNumber());
     ASSERT_TRUE(v1.isObject());
 }
 
