@@ -799,7 +799,7 @@
                             UPRV_HAS_DECLSPEC_ATTRIBUTE(__dllimport__))
 #   define U_EXPORT
 #elif defined(__GNUC__)
-#   define U_EXPORT __attribute__((visibility("default")))
+#   define U_EXPORT
 #elif (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x550) \
    || (defined(__SUNPRO_C) && __SUNPRO_C >= 0x550) 
 #   define U_EXPORT __global
