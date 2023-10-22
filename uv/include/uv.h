@@ -41,14 +41,14 @@ extern "C" {
 #   define UV_EXTERN __declspec(dllimport)
 # else
     /* Building static library. */
-#   define UV_EXTERN /* nothing */
+#   define UV_EXTERN __declspec(dllexport)
 # endif
 #elif __GNUC__ >= 4
-# define UV_EXTERN
+# define UV_EXTERN __attribute__((visibility("default"))) __attribute__((used))
 #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550) /* Sun Studio >= 8 */
 # define UV_EXTERN __global
 #else
-# define UV_EXTERN /* nothing */
+# define UV_EXTERN
 #endif
 
 #include "uv/errno.h"
