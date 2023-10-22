@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-if((NOT(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows") OR MSVC) AND ${ARCH} STREQUAL "amd64")
+if((NOT(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows") OR MSVC) AND ${ARCH} STREQUAL "x64")
     add_definitions(-DUSE_ASM_LIB=1)
 
     if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")

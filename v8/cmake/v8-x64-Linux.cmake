@@ -485,8 +485,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/test/torque/test-torque-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq.cc
-	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-amd64-Windows.asm
-	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-amd64-Windows.cc
+	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-x64-Linux.S
+	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-x64-Linux.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/condition-variable.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/mutex.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform-fiber.cc
@@ -512,7 +512,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/bounded-page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/cpu.cc
 	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace.cc
-	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_win.cc
+	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_posix.cc
 	${PROJECT_SOURCE_DIR}/src/base/division-by-constant.cc
 	${PROJECT_SOURCE_DIR}/src/base/emulated-virtual-address-subspace.cc
 	${PROJECT_SOURCE_DIR}/src/base/file-utils.cc
@@ -529,6 +529,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/once.cc
 	${PROJECT_SOURCE_DIR}/src/base/page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/memory-protection-key.cc
+	${PROJECT_SOURCE_DIR}/src/base/platform/platform-linux.cc
+	${PROJECT_SOURCE_DIR}/src/base/platform/platform-posix-time.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/time.cc
 	${PROJECT_SOURCE_DIR}/src/base/region-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/sanitizer/lsan-page-allocator.cc
@@ -861,13 +863,11 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/diagnostics/compilation-statistics.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/disassembler.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/eh-frame.cc
-	${PROJECT_SOURCE_DIR}/src/diagnostics/etw-jit-win.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/gdb-jit.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/objects-debug.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/objects-printer.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/perf-jit.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/unwinder.cc
-	${PROJECT_SOURCE_DIR}/src/diagnostics/unwinding-info-win64.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/x64/disasm-x64.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/x64/eh-frame-x64.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/x64/unwinder-x64.cc
@@ -907,7 +907,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/allocation-observer.cc
 	${PROJECT_SOURCE_DIR}/src/heap/array-buffer-sweeper.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/active-system-pages.cc
-	${PROJECT_SOURCE_DIR}/src/heap/base/asm/x64/push_registers_masm.asm
+	${PROJECT_SOURCE_DIR}/src/heap/base/asm/x64/push_registers_asm.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/incremental-marking-schedule.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/stack.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/worklist.cc
@@ -1316,9 +1316,9 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/tracing/trace-event.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/traced-value.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/tracing-category-observer.cc
-	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-inside-win.cc
+	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-inside-posix.cc
 	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-inside.cc
-	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-outside-win.cc
+	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-outside-posix.cc
 	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-outside.cc
 	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-shared.cc
 	${PROJECT_SOURCE_DIR}/src/utils/address-map.cc

@@ -17,9 +17,9 @@ void fiber_proc(void* p)
     exlib::string fname;
 
 #if V8_TARGET_ARCH_X64
-    fname = "amd64";
+    fname = "x64";
 #elif V8_TARGET_ARCH_IA32
-    fname = "i386";
+    fname = "x86";
 #elif V8_TARGET_ARCH_ARM64
     fname = "arm64";
 #elif V8_TARGET_ARCH_ARM

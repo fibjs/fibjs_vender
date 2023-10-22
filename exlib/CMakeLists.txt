@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 if(NOT ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     enable_language(ASM)
 
-    if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux" AND ${ARCH} STREQUAL "i386")
+    if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux" AND ${ARCH} STREQUAL "x86")
         file(GLOB src_list "src/*.c*" "src/*.S")
     else()
         file(GLOB src_list "src/*.c*")

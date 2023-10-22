@@ -3,8 +3,8 @@ var path = require('path');
 var util = require('util');
 
 const arch_bits = {
-    i386: 32,
-    amd64: 64,
+    x86: 32,
+    x64: 64,
     arm: 32,
     arm64: 64,
     mips64: 64,
@@ -15,8 +15,8 @@ const arch_bits = {
 }
 
 const arch_opts = {
-    amd64: "V8_TARGET_ARCH_X64",
-    i386: "V8_TARGET_ARCH_IA32",
+    x64: "V8_TARGET_ARCH_X64",
+    x86: "V8_TARGET_ARCH_IA32",
     arm: "V8_TARGET_ARCH_ARM",
     arm64: "V8_TARGET_ARCH_ARM64",
     mips64: "V8_TARGET_ARCH_MIPS64",
@@ -126,7 +126,7 @@ function gen_list(arch, os) {
     function filter_arch() {
         var arm_list = get_list("/arm/");
         var arm64_list = get_list("/arm64/");
-        var i386_list = get_list("/ia32/");
+        var x86_list = get_list("/ia32/");
         var loong64_list = get_list("/loong64/");
         var mips64_list = get_list("/mips64/");
         var ppc_list = get_list("/ppc/");
@@ -135,16 +135,16 @@ function gen_list(arch, os) {
         var x86_shared_list = get_list("/shared-ia32-x64/");
         var x64_list = get_list("/x64/");
 
-        src_list = util.difference(src_list, arm_list, arm64_list, i386_list,
+        src_list = util.difference(src_list, arm_list, arm64_list, x86_list,
             loong64_list, mips64_list, ppc_list, riscv_list, s390_list,
             x86_shared_list, x64_list);
 
         switch (arch) {
-            case "amd64":
+            case "x64":
                 src_list = src_list.concat(x64_list, x86_shared_list);
                 break;
-            case "i386":
-                src_list = src_list.concat(i386_list, x86_shared_list);
+            case "x86":
+                src_list = src_list.concat(x86_list, x86_shared_list);
                 break;
             case "arm64":
                 src_list = src_list.concat(arm64_list);
@@ -184,7 +184,7 @@ function gen_list(arch, os) {
             src_list = util.difference(src_list, mac_list, posix_list, android_list, fuchsia_list);
             // skip_name("^src/diagnostics/etw-jit-win.cc")
 
-            if (arch == "i386") {
+            if (arch == "x86") {
                 skip_name("^src/heap/base/asm/ia32/push_registers_asm.cc")
                 src_list.push("src/heap/base/asm/ia32/push_registers_masm.asm")
             } else {
@@ -193,7 +193,7 @@ function gen_list(arch, os) {
                     "src/diagnostics/unwinding-info-win64.cc"
                 );
 
-                if (arch == "amd64") {
+                if (arch == "x64") {
                     src_list.push("src/trap-handler/handler-inside-win.cc");
 
                     skip_name("^src/heap/base/asm/x64/push_registers_asm.cc")
@@ -276,8 +276,8 @@ function gen_list(arch, os) {
     console.log(`v8-${arch}-${os}.cmake generated`);
 }
 
-gen_list("amd64", "Linux");
-gen_list("i386", "Linux");
+gen_list("x64", "Linux");
+gen_list("x86", "Linux");
 gen_list("arm64", "Linux");
 gen_list("arm", "Linux");
 gen_list("mips64", "Linux");
@@ -285,17 +285,17 @@ gen_list("ppc64", "Linux");
 gen_list("riscv64", "Linux");
 gen_list("loong64", "Linux");
 
-gen_list("amd64", "Darwin");
+gen_list("x64", "Darwin");
 gen_list("arm64", "Darwin");
 
 gen_list("arm64", "iPhone");
-gen_list("amd64", "iPhone");
+gen_list("x64", "iPhone");
 
-gen_list("amd64", "Windows");
-gen_list("i386", "Windows");
+gen_list("x64", "Windows");
+gen_list("x86", "Windows");
 gen_list("arm64", "Windows");
 
-gen_list("amd64", "Android");
-gen_list("i386", "Android");
+gen_list("x64", "Android");
+gen_list("x86", "Android");
 gen_list("arm64", "Android");
 gen_list("arm", "Android");

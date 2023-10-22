@@ -485,8 +485,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/test/torque/test-torque-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq.cc
-	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-amd64-Linux.S
-	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-amd64-Linux.cc
+	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-x64-Linux.S
+	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-x64-Linux.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/condition-variable.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/mutex.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform-fiber.cc

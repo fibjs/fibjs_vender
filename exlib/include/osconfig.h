@@ -56,15 +56,15 @@
 #endif
 
 #if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(_X86_) || defined(x86)
-#ifndef i386
-#define i386
+#ifndef x86
+#define x86
 #define ARCH_BITS 32
 #endif
 #endif
 
 #if defined(__amd64) || defined(__x86_64__) || defined(_M_X64)
-#ifndef amd64
-#define amd64
+#ifndef x64
+#define x64
 #define ARCH_BITS 64
 #endif
 #endif

@@ -44,20 +44,8 @@ else
 fi
 echo "TAG_EXISTED=$TAG_EXISTED" >> $GITHUB_OUTPUT
 
-case "${TARGET_ARCH}" in
-    i386)
-        DIST_ARCH=x86
-        SNAPSHOT_ARCH=ia32
-        ;;
-    amd64)
-        DIST_ARCH=x64
-        SNAPSHOT_ARCH=x64
-        ;;
-    *)
-        DIST_ARCH=$TARGET_ARCH
-        SNAPSHOT_ARCH=$TARGET_ARCH
-        ;;
-esac
+DIST_ARCH=$TARGET_ARCH
+SNAPSHOT_ARCH=$TARGET_ARCH
 
 if [[ "$RUNNER_OS" == "Linux" ]]; then
     export TARGET_OS_NAME="Linux";

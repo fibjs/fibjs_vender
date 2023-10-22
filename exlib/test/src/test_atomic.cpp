@@ -34,7 +34,7 @@ TEST(exlib_atomic, compare_exchange)
     GTEST_ASSERT_EQ(b1, 100);
 }
 
-#if defined(i386) && defined(Linux)
+#if defined(x86) && defined(Linux)
 
 extern "C" void _atomic_load(int size, const void* ptr, void* ret, int memorder);
 

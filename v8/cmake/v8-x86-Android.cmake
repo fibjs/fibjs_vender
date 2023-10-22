@@ -485,8 +485,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/test/torque/test-torque-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/third_party/v8/builtins/array-sort-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/third_party/v8/builtins/array-sort-tq.cc
-	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-i386-Linux.S
-	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-i386-Linux.cc
+	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-x86-Linux.S
+	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-x86-Linux.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/condition-variable.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/mutex.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform-fiber.cc
@@ -512,7 +512,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/bounded-page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/cpu.cc
 	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace.cc
-	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_posix.cc
+	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_android.cc
 	${PROJECT_SOURCE_DIR}/src/base/division-by-constant.cc
 	${PROJECT_SOURCE_DIR}/src/base/emulated-virtual-address-subspace.cc
 	${PROJECT_SOURCE_DIR}/src/base/file-utils.cc

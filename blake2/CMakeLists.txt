@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-if(${ARCH} STREQUAL "amd64")
+if(${ARCH} STREQUAL "x64")
     add_definitions(-D__SSE2__)
     file(GLOB_RECURSE src_list "sse/*.c")
 elseif(${ARCH} STREQUAL "arm64")

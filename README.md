@@ -128,24 +128,24 @@ brew install cmake
 在 macOS 下可以直接编译:
 
 ```bash
-./build -j8 amd64
-./build -j8 i386
+./build -j8 x64
+./build -j8 x86
 ```
 
 ### Linux
 
-在 Linux 下, 我们使用 docker 来编译, 如下就是编译 amd64/release 版本的 fibjs_vender:
+在 Linux 下, 我们使用 docker 来编译, 如下就是编译 x64/release 版本的 fibjs_vender:
 
 ```bash
 DIR=`pwd`;
 docker run -t \
-     -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "cd /home/ci; sh build -j2 amd64 release"
+     -v ${DIR}:/home/ci fibjs/build-env:clang /bin/sh -c "cd /home/ci; sh build -j2 x64 release"
 ```
 
 传入对应的参数, 在 Linux 下就可以直接进行交叉编译:
 
 ```bash
-sh build -j2 [amd64|i386|arm|arm64|mips|mips64] [debug|release]
+sh build -j2 [x64|x86|arm|arm64|mips|mips64] [debug|release]
 ```
 
 使用对应的架构参数来向 docker 指定你希望的编译目标架构.
@@ -156,8 +156,8 @@ sh build -j2 [amd64|i386|arm|arm64|mips|mips64] [debug|release]
 
 |编译选项|含义|适用平台|
 |--|--|--|
-| amd64 | 编译到 x86_64 架构 | Windows / Linux / Darwin
-| i386 | 编译到 x86 架构 | Windows / Linux / Darwin
+| x64 | 编译到 x86_64 架构 | Windows / Linux / Darwin
+| x86 | 编译到 x86 架构 | Windows / Linux / Darwin
 | release | 编译 release 版本 | Windows / Linux / Darwin
 | debug | 编译 debug 版本 | Windows / Linux / Darwin
 | clean | 清理已生成的中间产物, 库文件和二进制文件 | Windows / Linux / Darwin

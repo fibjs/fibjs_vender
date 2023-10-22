@@ -7,7 +7,7 @@ usage()
 	echo "Options:"
 	echo "  release, debug: "
 	echo "      Specifies the build type."
-	echo "  i386, amd64, arm, arm64, mips, mips64, ppc, ppc64:"
+	echo "  x86, x64, arm, arm64, mips, mips64, ppc, ppc64:"
 	echo "      Specifies the architecture for code generation."
 	echo "  -e:"
 	echo "      Specifies the binary to execute."
@@ -26,7 +26,7 @@ BUILD_JOBS=2
 for i in "$@"
 do
     case $i in
-        i386|amd64|arm|arm64|mips|mips64|ppc|ppc64) TARGET_ARCH=$i
+        x86|x64|arm|arm64|mips|mips64|ppc|ppc64) TARGET_ARCH=$i
             ;;
         release|debug) BUILD_TYPE=$i
             ;;
@@ -68,7 +68,7 @@ case $TARGET_ARCH in
     ppc64) export QEMU_LD_PREFIX="/usr/powerpc64le-linux-gnu"
         exec;
         ;;
-    i386|amd64)
+    x86|x64)
         exec;
         ;;
     *) echo "illegal arch $TARGET_ARCH"

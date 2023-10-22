@@ -1,492 +1,492 @@
-add_definitions(-DV8_TARGET_ARCH_IA32)
+add_definitions(-DV8_TARGET_ARCH_X64)
 
 set(src_list
-	${PROJECT_SOURCE_DIR}/gen/32/src/regexp/special-case.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/class-debug-readers.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/class-verifiers.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/debug-macros.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/enum-verifiers.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/exported-macros-assembler.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/factory.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/objects-printer.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/aggregate-error-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/aggregate-error-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-at-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-at-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-concat-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-concat-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-copywithin-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-copywithin-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-every-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-every-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-filter-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-filter-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-find-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-find-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-findindex-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-findindex-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-findlast-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-findlast-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-findlastindex-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-findlastindex-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-foreach-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-foreach-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-from-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-from-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-isarray-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-isarray-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-join-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-join-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-lastindexof-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-lastindexof-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-map-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-map-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-of-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-of-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-reduce-right-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-reduce-right-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-reduce-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-reduce-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-reverse-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-reverse-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-shift-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-shift-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-slice-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-slice-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-some-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-some-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-splice-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-splice-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-to-reversed-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-to-reversed-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-to-sorted-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-to-sorted-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-to-spliced-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-to-spliced-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-unshift-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-unshift-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-with-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/array-with-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/arraybuffer-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/arraybuffer-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/base-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/base-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/boolean-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/boolean-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/builtins-bigint-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/builtins-bigint-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/builtins-string-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/builtins-string-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/cast-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/cast-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/collections-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/collections-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/console-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/console-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/constructor-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/constructor-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/conversion-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/conversion-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/convert-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/convert-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/data-view-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/data-view-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/finalization-registry-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/finalization-registry-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/frame-arguments-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/frame-arguments-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/frames-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/frames-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/function-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/function-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/growable-fixed-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/growable-fixed-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/ic-callable-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/ic-callable-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/ic-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/ic-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/internal-coverage-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/internal-coverage-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/internal-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/internal-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/iterator-from-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/iterator-from-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/iterator-helpers-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/iterator-helpers-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/iterator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/iterator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/js-to-wasm-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/js-to-wasm-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/map-groupby-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/map-groupby-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/math-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/math-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/number-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/number-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/object-fromentries-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/object-fromentries-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/object-groupby-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/object-groupby-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/object-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/object-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-abstract-operations-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-abstract-operations-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-all-element-closure-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-all-element-closure-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-all-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-all-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-any-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-any-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-constructor-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-constructor-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-finally-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-finally-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-jobs-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-jobs-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-misc-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-misc-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-race-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-race-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-reaction-job-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-reaction-job-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-resolve-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-resolve-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-then-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-then-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-withresolvers-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/promise-withresolvers-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-constructor-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-constructor-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-delete-property-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-delete-property-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-get-property-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-get-property-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-get-prototype-of-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-get-prototype-of-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-has-property-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-has-property-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-is-extensible-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-is-extensible-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-prevent-extensions-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-prevent-extensions-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-revocable-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-revocable-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-revoke-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-revoke-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-set-property-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-set-property-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-set-prototype-of-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/proxy-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/reflect-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/reflect-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-exec-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-exec-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-match-all-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-match-all-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-match-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-match-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-replace-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-replace-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-search-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-search-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-source-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-source-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-split-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-split-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-test-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-test-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/regexp-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-difference-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-difference-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-intersection-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-intersection-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-is-disjoint-from-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-is-disjoint-from-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-is-subset-of-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-is-subset-of-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-is-superset-of-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-is-superset-of-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-symmetric-difference-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-symmetric-difference-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-union-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/set-union-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-at-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-at-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-endswith-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-endswith-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-html-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-html-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-includes-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-includes-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-indexof-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-indexof-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-iswellformed-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-iswellformed-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-iterator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-iterator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-match-search-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-match-search-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-pad-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-pad-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-repeat-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-repeat-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-replaceall-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-replaceall-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-slice-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-slice-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-startswith-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-startswith-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-substr-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-substr-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-substring-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-substring-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-towellformed-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-towellformed-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-trim-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/string-trim-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/symbol-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/symbol-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/torque-internal-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/torque-internal-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-at-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-at-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-createtypedarray-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-createtypedarray-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-entries-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-entries-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-every-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-every-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-filter-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-filter-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-find-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-find-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-findindex-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-findindex-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-findlast-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-findlast-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-findlastindex-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-findlastindex-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-foreach-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-foreach-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-from-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-from-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-keys-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-keys-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-of-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-of-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-reduce-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-reduce-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-reduceright-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-reduceright-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-set-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-set-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-slice-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-slice-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-some-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-some-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-sort-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-sort-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-subarray-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-subarray-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-to-reversed-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-to-reversed-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-to-sorted-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-to-sorted-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-values-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-values-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-with-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/typed-array-with-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/wasm-strings-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/wasm-strings-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/wasm-to-js-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/wasm-to-js-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/wasm-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/wasm-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/weak-ref-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/builtins/weak-ref-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/debug/debug-wasm-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/debug/debug-wasm-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/ic/handler-configuration-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/ic/handler-configuration-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/allocation-site-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/allocation-site-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/api-callbacks-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/api-callbacks-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/arguments-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/arguments-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/bigint-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/bigint-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/bytecode-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/bytecode-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/call-site-info-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/call-site-info-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/cell-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/cell-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/contexts-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/contexts-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/data-handler-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/data-handler-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/debug-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/debug-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/descriptor-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/descriptor-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/embedder-data-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/embedder-data-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/feedback-cell-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/feedback-cell-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/feedback-vector-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/feedback-vector-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/fixed-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/fixed-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/foreign-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/foreign-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/free-space-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/free-space-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/heap-number-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/heap-number-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/heap-object-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/heap-object-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/hole-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/hole-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/intl-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/intl-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-array-buffer-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-array-buffer-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-atomics-synchronization-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-atomics-synchronization-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-break-iterator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-break-iterator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-collator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-collator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-collection-iterator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-collection-iterator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-collection-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-collection-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-date-time-format-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-date-time-format-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-display-names-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-display-names-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-duration-format-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-duration-format-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-function-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-function-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-generator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-generator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-iterator-helpers-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-iterator-helpers-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-list-format-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-list-format-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-locale-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-locale-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-number-format-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-number-format-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-plural-rules-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-plural-rules-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-promise-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-promise-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-proxy-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-proxy-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-raw-json-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-raw-json-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-regexp-string-iterator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-regexp-string-iterator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-regexp-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-regexp-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-relative-time-format-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-relative-time-format-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-segment-iterator-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-segment-iterator-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-segmenter-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-segmenter-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-segments-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-segments-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-shadow-realm-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-shadow-realm-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-shared-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-shared-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-struct-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-struct-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-temporal-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-temporal-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-weak-refs-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/js-weak-refs-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/literal-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/literal-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/map-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/map-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/megadom-handler-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/megadom-handler-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/microtask-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/microtask-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/module-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/module-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/name-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/name-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/oddball-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/oddball-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/ordered-hash-table-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/ordered-hash-table-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/primitive-heap-object-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/primitive-heap-object-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/promise-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/promise-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/property-array-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/property-array-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/property-cell-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/property-cell-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/property-descriptor-object-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/property-descriptor-object-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/prototype-info-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/prototype-info-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/regexp-match-info-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/regexp-match-info-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/scope-info-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/scope-info-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/script-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/script-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/shared-function-info-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/shared-function-info-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/source-text-module-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/source-text-module-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/string-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/string-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/struct-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/struct-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/swiss-hash-table-helpers-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/swiss-hash-table-helpers-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/swiss-name-dictionary-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/swiss-name-dictionary-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/synthetic-module-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/synthetic-module-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/template-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/template-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/templates-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/templates-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/torque-defined-classes-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/torque-defined-classes-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/turbofan-types-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/turbofan-types-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/turboshaft-types-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/objects/turboshaft-types-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/wasm/wasm-objects-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/src/wasm/wasm-objects-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/test/torque/test-torque-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/test/torque/test-torque-tq.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/third_party/v8/builtins/array-sort-tq-csa.cc
-	${PROJECT_SOURCE_DIR}/gen/32/torque-generated/third_party/v8/builtins/array-sort-tq.cc
-	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-i386-Linux.S
-	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-i386-Linux.cc
+	${PROJECT_SOURCE_DIR}/gen/64/src/regexp/special-case.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/class-debug-readers.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/class-verifiers.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/debug-macros.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/enum-verifiers.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/exported-macros-assembler.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/factory.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/objects-printer.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/aggregate-error-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/aggregate-error-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-at-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-at-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-concat-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-concat-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-copywithin-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-copywithin-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-every-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-every-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-filter-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-filter-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-find-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-find-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findindex-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findindex-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlast-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlast-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlastindex-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlastindex-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-foreach-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-foreach-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-isarray-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-isarray-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-join-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-join-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-lastindexof-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-lastindexof-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-map-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-map-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-of-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-of-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-reduce-right-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-reduce-right-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-reduce-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-reduce-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-reverse-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-reverse-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-shift-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-shift-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-slice-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-slice-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-some-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-some-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-splice-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-splice-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-to-reversed-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-to-reversed-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-to-sorted-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-to-sorted-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-to-spliced-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-to-spliced-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-unshift-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-unshift-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-with-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-with-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/arraybuffer-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/arraybuffer-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/base-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/base-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/boolean-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/boolean-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/builtins-bigint-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/builtins-bigint-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/builtins-string-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/builtins-string-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/cast-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/cast-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/collections-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/collections-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/console-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/console-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/constructor-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/constructor-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/conversion-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/conversion-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/convert-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/convert-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/data-view-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/data-view-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/finalization-registry-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/finalization-registry-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/frame-arguments-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/frame-arguments-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/frames-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/frames-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/function-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/function-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/growable-fixed-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/growable-fixed-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/ic-callable-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/ic-callable-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/ic-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/ic-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/internal-coverage-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/internal-coverage-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/internal-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/internal-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-from-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-from-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-helpers-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-helpers-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/js-to-wasm-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/js-to-wasm-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/map-groupby-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/map-groupby-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/math-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/math-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/number-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/number-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/object-fromentries-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/object-fromentries-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/object-groupby-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/object-groupby-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/object-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/object-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-abstract-operations-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-abstract-operations-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-all-element-closure-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-all-element-closure-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-all-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-all-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-any-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-any-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-constructor-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-constructor-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-finally-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-finally-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-jobs-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-jobs-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-misc-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-misc-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-race-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-race-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-reaction-job-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-reaction-job-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-resolve-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-resolve-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-then-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-then-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-withresolvers-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-withresolvers-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-constructor-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-constructor-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-delete-property-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-delete-property-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-get-property-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-get-property-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-get-prototype-of-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-get-prototype-of-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-has-property-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-has-property-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-is-extensible-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-is-extensible-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-prevent-extensions-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-prevent-extensions-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-revocable-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-revocable-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-revoke-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-revoke-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-set-property-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-set-property-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-set-prototype-of-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-set-prototype-of-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/reflect-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/reflect-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-exec-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-exec-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-match-all-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-match-all-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-match-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-match-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-replace-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-replace-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-search-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-search-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-source-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-source-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-split-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-split-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-test-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-test-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/regexp-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-difference-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-difference-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-intersection-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-intersection-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-is-disjoint-from-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-is-disjoint-from-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-is-subset-of-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-is-subset-of-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-is-superset-of-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-is-superset-of-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-symmetric-difference-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-symmetric-difference-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-union-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/set-union-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-at-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-at-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-endswith-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-endswith-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-html-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-html-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-includes-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-includes-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-indexof-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-indexof-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iswellformed-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iswellformed-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-match-search-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-match-search-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-pad-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-pad-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-repeat-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-repeat-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-replaceall-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-replaceall-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-slice-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-slice-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-startswith-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-startswith-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substr-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substr-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substring-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-substring-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-towellformed-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-towellformed-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-trim-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-trim-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/symbol-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/symbol-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/torque-internal-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/torque-internal-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-at-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-at-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-createtypedarray-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-createtypedarray-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-entries-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-entries-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-every-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-every-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-filter-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-filter-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-find-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-find-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-findindex-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-findindex-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-findlast-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-findlast-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-findlastindex-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-findlastindex-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-foreach-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-foreach-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-from-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-from-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-keys-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-keys-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-of-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-of-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-reduce-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-reduce-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-reduceright-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-reduceright-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-set-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-set-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-slice-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-slice-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-some-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-some-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-sort-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-sort-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-subarray-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-subarray-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-to-reversed-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-to-reversed-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-to-sorted-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-to-sorted-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-values-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-values-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-with-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/typed-array-with-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/wasm-strings-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/wasm-strings-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/wasm-to-js-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/wasm-to-js-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/wasm-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/wasm-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/weak-ref-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/weak-ref-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/debug/debug-wasm-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/debug/debug-wasm-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/ic/handler-configuration-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/ic/handler-configuration-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/allocation-site-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/allocation-site-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/api-callbacks-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/api-callbacks-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/arguments-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/arguments-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/bigint-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/bigint-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/bytecode-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/bytecode-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/call-site-info-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/call-site-info-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/cell-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/cell-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/contexts-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/contexts-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/data-handler-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/data-handler-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/debug-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/debug-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/descriptor-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/descriptor-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/embedder-data-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/embedder-data-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/feedback-cell-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/feedback-cell-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/feedback-vector-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/feedback-vector-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/fixed-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/fixed-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/foreign-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/foreign-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/free-space-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/free-space-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-number-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-number-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-object-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/heap-object-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/hole-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/hole-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/intl-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/intl-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-buffer-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-buffer-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-atomics-synchronization-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-atomics-synchronization-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-break-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-break-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-collection-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-date-time-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-date-time-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-display-names-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-display-names-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-duration-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-duration-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-function-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-function-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-generator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-generator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-iterator-helpers-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-iterator-helpers-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-list-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-list-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-locale-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-locale-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-number-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-number-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-plural-rules-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-plural-rules-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-promise-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-promise-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-proxy-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-proxy-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-raw-json-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-raw-json-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-string-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-string-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-regexp-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-relative-time-format-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-relative-time-format-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segment-iterator-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segment-iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segmenter-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segmenter-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segments-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-segments-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shadow-realm-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shadow-realm-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shared-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-shared-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-struct-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-struct-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-temporal-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-temporal-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-weak-refs-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-weak-refs-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/literal-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/literal-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/map-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/map-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/megadom-handler-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/megadom-handler-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/microtask-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/microtask-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/module-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/module-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/name-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/name-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/oddball-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/oddball-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/ordered-hash-table-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/ordered-hash-table-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/primitive-heap-object-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/primitive-heap-object-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/promise-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/promise-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/property-array-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/property-array-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/property-cell-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/property-cell-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/property-descriptor-object-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/property-descriptor-object-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/prototype-info-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/prototype-info-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/regexp-match-info-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/regexp-match-info-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/scope-info-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/scope-info-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/script-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/script-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/shared-function-info-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/shared-function-info-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/source-text-module-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/source-text-module-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/string-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/string-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/struct-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/struct-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/swiss-hash-table-helpers-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/swiss-hash-table-helpers-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/swiss-name-dictionary-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/swiss-name-dictionary-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/synthetic-module-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/synthetic-module-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/template-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/template-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/templates-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/templates-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/torque-defined-classes-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/torque-defined-classes-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turbofan-types-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turbofan-types-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turboshaft-types-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turboshaft-types-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/wasm/wasm-objects-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/wasm/wasm-objects-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/test/torque/test-torque-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/test/torque/test-torque-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq.cc
+	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-x64-Windows.asm
+	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-x64-Windows.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/condition-variable.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/mutex.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform-fiber.cc
@@ -512,7 +512,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/bounded-page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/cpu.cc
 	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace.cc
-	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_android.cc
+	${PROJECT_SOURCE_DIR}/src/base/debug/stack_trace_win.cc
 	${PROJECT_SOURCE_DIR}/src/base/division-by-constant.cc
 	${PROJECT_SOURCE_DIR}/src/base/emulated-virtual-address-subspace.cc
 	${PROJECT_SOURCE_DIR}/src/base/file-utils.cc
@@ -529,8 +529,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/once.cc
 	${PROJECT_SOURCE_DIR}/src/base/page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/memory-protection-key.cc
-	${PROJECT_SOURCE_DIR}/src/base/platform/platform-linux.cc
-	${PROJECT_SOURCE_DIR}/src/base/platform/platform-posix-time.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/time.cc
 	${PROJECT_SOURCE_DIR}/src/base/region-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/sanitizer/lsan-page-allocator.cc
@@ -625,9 +623,9 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/constants-table-builder.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/growable-fixed-array-gen.cc
-	${PROJECT_SOURCE_DIR}/src/builtins/ia32/builtins-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/profile-data-reader.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/setup-builtins-internal.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/x64/builtins-x64.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/aligned-slot-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/assembler.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/bailout-reason.cc
@@ -644,9 +642,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/codegen/external-reference.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/flush-instruction-cache.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/handler-table.cc
-	${PROJECT_SOURCE_DIR}/src/codegen/ia32/assembler-ia32.cc
-	${PROJECT_SOURCE_DIR}/src/codegen/ia32/cpu-ia32.cc
-	${PROJECT_SOURCE_DIR}/src/codegen/ia32/macro-assembler-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/interface-descriptors.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/machine-type.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/macro-assembler-base.cc
@@ -662,6 +657,9 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/codegen/tick-counter.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/tnode.cc
 	${PROJECT_SOURCE_DIR}/src/codegen/unoptimized-compilation-info.cc
+	${PROJECT_SOURCE_DIR}/src/codegen/x64/assembler-x64.cc
+	${PROJECT_SOURCE_DIR}/src/codegen/x64/cpu-x64.cc
+	${PROJECT_SOURCE_DIR}/src/codegen/x64/macro-assembler-x64.cc
 	${PROJECT_SOURCE_DIR}/src/common/assert-scope.cc
 	${PROJECT_SOURCE_DIR}/src/common/code-memory-access.cc
 	${PROJECT_SOURCE_DIR}/src/common/ptr-compr.cc
@@ -675,9 +673,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/code-generator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/frame-elider.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/gap-resolver.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/backend/ia32/code-generator-ia32.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/backend/ia32/instruction-scheduler-ia32.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/backend/ia32/instruction-selector-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/instruction-scheduler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/instruction-selector.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/instruction.cc
@@ -687,6 +682,10 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/register-allocator-verifier.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/register-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/spill-placer.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/backend/x64/code-generator-x64.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/backend/x64/instruction-scheduler-x64.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/backend/x64/instruction-selector-x64.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/backend/x64/unwinding-info-writer-x64.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/basic-block-instrumentor.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/branch-condition-duplicator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/branch-elimination.cc
@@ -855,20 +854,23 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/deoptimizer/deoptimizer-cfi-builtins.cc
 	${PROJECT_SOURCE_DIR}/src/deoptimizer/deoptimizer.cc
 	${PROJECT_SOURCE_DIR}/src/deoptimizer/frame-translation-builder.cc
-	${PROJECT_SOURCE_DIR}/src/deoptimizer/ia32/deoptimizer-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/deoptimizer/materialized-object-store.cc
 	${PROJECT_SOURCE_DIR}/src/deoptimizer/translated-state.cc
+	${PROJECT_SOURCE_DIR}/src/deoptimizer/x64/deoptimizer-x64.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/basic-block-profiler.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/compilation-statistics.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/disassembler.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/eh-frame.cc
+	${PROJECT_SOURCE_DIR}/src/diagnostics/etw-jit-win.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/gdb-jit.cc
-	${PROJECT_SOURCE_DIR}/src/diagnostics/ia32/disasm-ia32.cc
-	${PROJECT_SOURCE_DIR}/src/diagnostics/ia32/unwinder-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/objects-debug.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/objects-printer.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/perf-jit.cc
 	${PROJECT_SOURCE_DIR}/src/diagnostics/unwinder.cc
+	${PROJECT_SOURCE_DIR}/src/diagnostics/unwinding-info-win64.cc
+	${PROJECT_SOURCE_DIR}/src/diagnostics/x64/disasm-x64.cc
+	${PROJECT_SOURCE_DIR}/src/diagnostics/x64/eh-frame-x64.cc
+	${PROJECT_SOURCE_DIR}/src/diagnostics/x64/unwinder-x64.cc
 	${PROJECT_SOURCE_DIR}/src/execution/arguments.cc
 	${PROJECT_SOURCE_DIR}/src/execution/clobber-registers.cc
 	${PROJECT_SOURCE_DIR}/src/execution/embedder-state.cc
@@ -876,7 +878,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/execution/execution.cc
 	${PROJECT_SOURCE_DIR}/src/execution/frames.cc
 	${PROJECT_SOURCE_DIR}/src/execution/futex-emulation.cc
-	${PROJECT_SOURCE_DIR}/src/execution/ia32/frame-constants-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/execution/interrupts-scope.cc
 	${PROJECT_SOURCE_DIR}/src/execution/isolate.cc
 	${PROJECT_SOURCE_DIR}/src/execution/local-isolate.cc
@@ -889,6 +890,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/execution/thread-local-top.cc
 	${PROJECT_SOURCE_DIR}/src/execution/tiering-manager.cc
 	${PROJECT_SOURCE_DIR}/src/execution/v8threads.cc
+	${PROJECT_SOURCE_DIR}/src/execution/x64/frame-constants-x64.cc
 	${PROJECT_SOURCE_DIR}/src/extensions/cputracemark-extension.cc
 	${PROJECT_SOURCE_DIR}/src/extensions/externalize-string-extension.cc
 	${PROJECT_SOURCE_DIR}/src/extensions/gc-extension.cc
@@ -905,7 +907,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/allocation-observer.cc
 	${PROJECT_SOURCE_DIR}/src/heap/array-buffer-sweeper.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/active-system-pages.cc
-	${PROJECT_SOURCE_DIR}/src/heap/base/asm/ia32/push_registers_asm.cc
+	${PROJECT_SOURCE_DIR}/src/heap/base/asm/x64/push_registers_masm.asm
 	${PROJECT_SOURCE_DIR}/src/heap/base/incremental-marking-schedule.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/stack.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/worklist.cc
@@ -1189,7 +1191,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/regexp/experimental/experimental-compiler.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/experimental/experimental-interpreter.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/experimental/experimental.cc
-	${PROJECT_SOURCE_DIR}/src/regexp/ia32/regexp-macro-assembler-ia32.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/regexp-ast.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/regexp-bytecode-generator.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/regexp-bytecode-peephole.cc
@@ -1205,6 +1206,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/regexp/regexp-stack.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/regexp-utils.cc
 	${PROJECT_SOURCE_DIR}/src/regexp/regexp.cc
+	${PROJECT_SOURCE_DIR}/src/regexp/x64/regexp-macro-assembler-x64.cc
 	${PROJECT_SOURCE_DIR}/src/roots/roots.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-array.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-atomics.cc
@@ -1314,9 +1316,9 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/tracing/trace-event.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/traced-value.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/tracing-category-observer.cc
-	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-inside-posix.cc
+	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-inside-win.cc
 	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-inside.cc
-	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-outside-posix.cc
+	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-outside-win.cc
 	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-outside.cc
 	${PROJECT_SOURCE_DIR}/src/trap-handler/handler-shared.cc
 	${PROJECT_SOURCE_DIR}/src/utils/address-map.cc

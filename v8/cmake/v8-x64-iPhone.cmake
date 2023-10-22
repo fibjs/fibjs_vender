@@ -485,8 +485,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/test/torque/test-torque-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/third_party/v8/builtins/array-sort-tq.cc
-	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-amd64-Linux.S
-	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-amd64-Linux.cc
+	${PROJECT_SOURCE_DIR}/patch/snapshot/embedded-x64-Darwin.S
+	${PROJECT_SOURCE_DIR}/patch/snapshot/snapshot-x64-Darwin.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/condition-variable.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/mutex.cc
 	${PROJECT_SOURCE_DIR}/patch/src/base/platform/platform-fiber.cc
@@ -529,7 +529,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/once.cc
 	${PROJECT_SOURCE_DIR}/src/base/page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/memory-protection-key.cc
-	${PROJECT_SOURCE_DIR}/src/base/platform/platform-linux.cc
+	${PROJECT_SOURCE_DIR}/src/base/platform/platform-darwin.cc
+	${PROJECT_SOURCE_DIR}/src/base/platform/platform-ios.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/platform-posix-time.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/time.cc
 	${PROJECT_SOURCE_DIR}/src/base/region-allocator.cc
