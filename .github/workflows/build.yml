@@ -178,10 +178,18 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          bash .github/workflows/build.sh
+          set -ev
+          HOST_OS=`uname`
+          if [[ "$HOST_OS" == "Windows" ]]; then
+              build -j2 ${TARGET_ARCH}
+          else
+            if [[ "$HOST_OS" == "Linux" ]] && [[ "$BUILD_TARGET" == "" ]]; then
+              BUILD_TARGET="linux"
+            fi
+            bash build -j2 ${TARGET_ARCH} ${BUILD_TARGET}
+          fi
         env:
           TARGET_ARCH: ${{ matrix.target_arch }}
-          BUILD_TYPE: ${{ matrix.build_type }}
           BUILD_TARGET: ${{ matrix.build_target }}
 
       - name: Package

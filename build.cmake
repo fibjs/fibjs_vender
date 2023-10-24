@@ -1,11 +1,4 @@
 set(WORK_ROOT $ENV{WORK_ROOT})
-if(NOT WORK_ROOT)
-    if(EXISTS "../build")
-        set(WORK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
-    else()
-        set(WORK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.dist")
-    endif()
-endif()
 
 if("${CLEAN_BUILD}" STREQUAL "true")
     file(REMOVE_RECURSE ${WORK_ROOT}/out)
