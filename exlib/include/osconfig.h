@@ -56,8 +56,8 @@
 #endif
 
 #if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(_X86_) || defined(x86)
-#ifndef x86
-#define x86
+#ifndef ia32
+#define ia32
 #define ARCH_BITS 32
 #endif
 #endif

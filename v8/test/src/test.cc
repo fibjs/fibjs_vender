@@ -19,7 +19,7 @@ void fiber_proc(void* p)
 #if V8_TARGET_ARCH_X64
     fname = "x64";
 #elif V8_TARGET_ARCH_IA32
-    fname = "x86";
+    fname = "ia32";
 #elif V8_TARGET_ARCH_ARM64
     fname = "arm64";
 #elif V8_TARGET_ARCH_ARM

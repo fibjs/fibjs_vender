@@ -3,7 +3,7 @@ var path = require('path');
 var util = require('util');
 
 const arch_bits = {
-    x86: 32,
+    ia32: 32,
     x64: 64,
     arm: 32,
     arm64: 64,
@@ -16,7 +16,7 @@ const arch_bits = {
 
 const arch_opts = {
     x64: "V8_TARGET_ARCH_X64",
-    x86: "V8_TARGET_ARCH_IA32",
+    ia32: "V8_TARGET_ARCH_IA32",
     arm: "V8_TARGET_ARCH_ARM",
     arm64: "V8_TARGET_ARCH_ARM64",
     mips64: "V8_TARGET_ARCH_MIPS64",
@@ -126,25 +126,25 @@ function gen_list(arch, os) {
     function filter_arch() {
         var arm_list = get_list("/arm/");
         var arm64_list = get_list("/arm64/");
-        var x86_list = get_list("/ia32/");
+        var ia32_list = get_list("/ia32/");
         var loong64_list = get_list("/loong64/");
         var mips64_list = get_list("/mips64/");
         var ppc_list = get_list("/ppc/");
         var riscv_list = get_list("/riscv/");
         var s390_list = get_list("/s390/");
-        var x86_shared_list = get_list("/shared-ia32-x64/");
+        var ia32_shared_list = get_list("/shared-ia32-x64/");
         var x64_list = get_list("/x64/");
 
-        src_list = util.difference(src_list, arm_list, arm64_list, x86_list,
+        src_list = util.difference(src_list, arm_list, arm64_list, ia32_list,
             loong64_list, mips64_list, ppc_list, riscv_list, s390_list,
-            x86_shared_list, x64_list);
+            ia32_shared_list, x64_list);
 
         switch (arch) {
             case "x64":
-                src_list = src_list.concat(x64_list, x86_shared_list);
+                src_list = src_list.concat(x64_list, ia32_shared_list);
                 break;
-            case "x86":
-                src_list = src_list.concat(x86_list, x86_shared_list);
+            case "ia32":
+                src_list = src_list.concat(ia32_list, ia32_shared_list);
                 break;
             case "arm64":
                 src_list = src_list.concat(arm64_list);
@@ -184,7 +184,7 @@ function gen_list(arch, os) {
             src_list = util.difference(src_list, mac_list, posix_list, android_list, fuchsia_list);
             // skip_name("^src/diagnostics/etw-jit-win.cc")
 
-            if (arch == "x86") {
+            if (arch == "ia32") {
                 skip_name("^src/heap/base/asm/ia32/push_registers_asm.cc")
                 src_list.push("src/heap/base/asm/ia32/push_registers_masm.asm")
             } else {
@@ -277,7 +277,7 @@ function gen_list(arch, os) {
 }
 
 gen_list("x64", "Linux");
-gen_list("x86", "Linux");
+gen_list("ia32", "Linux");
 gen_list("arm64", "Linux");
 gen_list("arm", "Linux");
 gen_list("mips64", "Linux");
@@ -292,10 +292,10 @@ gen_list("arm64", "iPhone");
 gen_list("x64", "iPhone");
 
 gen_list("x64", "Windows");
-gen_list("x86", "Windows");
+gen_list("ia32", "Windows");
 gen_list("arm64", "Windows");
 
 gen_list("x64", "Android");
-gen_list("x86", "Android");
+gen_list("ia32", "Android");
 gen_list("arm64", "Android");
 gen_list("arm", "Android");

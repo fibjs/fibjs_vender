@@ -36,10 +36,10 @@ jobs:
             target_arch: x64
             build_type: debug
           - os: ubuntu-20.04
-            target_arch: x86
+            target_arch: ia32
             build_type: release
           - os: ubuntu-20.04
-            target_arch: x86
+            target_arch: ia32
             build_type: debug
           - os: ubuntu-20.04
             target_arch: arm64
@@ -83,7 +83,7 @@ jobs:
             build_type: release
           - os: ubuntu-20.04
             build_target: alpine
-            target_arch: x86
+            target_arch: ia32
             build_type: release
           - os: ubuntu-20.04
             build_target: alpine
@@ -95,7 +95,7 @@ jobs:
             build_type: release
           - os: ubuntu-20.04
             build_target: android
-            target_arch: x86
+            target_arch: ia32
             build_type: release
           - os: ubuntu-20.04
             build_target: android
@@ -112,10 +112,10 @@ jobs:
             target_arch: x64
             build_type: debug
           - os: windows-2022
-            target_arch: x86
+            target_arch: ia32
             build_type: release
           - os: windows-2022
-            target_arch: x86
+            target_arch: ia32
             build_type: debug
           - os: windows-2022
             target_arch: arm64

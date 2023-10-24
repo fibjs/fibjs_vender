@@ -129,7 +129,7 @@ brew install cmake
 
 ```bash
 ./build -j8 x64
-./build -j8 x86
+./build -j8 ia32
 ```
 
 ### Linux
@@ -145,7 +145,7 @@ docker run -t \
 传入对应的参数, 在 Linux 下就可以直接进行交叉编译:
 
 ```bash
-sh build -j2 [x64|x86|arm|arm64|mips|mips64] [debug|release]
+sh build -j2 [x64|ia32|arm|arm64|mips|mips64] [debug|release]
 ```
 
 使用对应的架构参数来向 docker 指定你希望的编译目标架构.
@@ -156,8 +156,8 @@ sh build -j2 [x64|x86|arm|arm64|mips|mips64] [debug|release]
 
 |编译选项|含义|适用平台|
 |--|--|--|
-| x64 | 编译到 x86_64 架构 | Windows / Linux / Darwin
-| x86 | 编译到 x86 架构 | Windows / Linux / Darwin
+| x64 | 编译到 x64 架构 | Windows / Linux / Darwin
+| ia32 | 编译到 ia32 架构 | Windows / Linux / Darwin
 | release | 编译 release 版本 | Windows / Linux / Darwin
 | debug | 编译 debug 版本 | Windows / Linux / Darwin
 | clean | 清理已生成的中间产物, 库文件和二进制文件 | Windows / Linux / Darwin
