@@ -181,15 +181,16 @@ jobs:
           set -ev
           HOST_OS=`uname`
           if [[ "$HOST_OS" == "Windows" ]]; then
-              build -j2 ${TARGET_ARCH}
+              build -j2 ${TARGET_ARCH} ${BUILD_TYPE}
           else
             if [[ "$HOST_OS" == "Linux" ]] && [[ "$BUILD_TARGET" == "" ]]; then
               BUILD_TARGET="linux"
             fi
-            bash build -j2 ${TARGET_ARCH} ${BUILD_TARGET}
+            bash build -j2 ${TARGET_ARCH} ${BUILD_TARGET} ${BUILD_TYPE}
           fi
         env:
           TARGET_ARCH: ${{ matrix.target_arch }}
+          BUILD_TYPE: ${{ matrix.build_type }}
           BUILD_TARGET: ${{ matrix.build_target }}
 
       - name: Package
