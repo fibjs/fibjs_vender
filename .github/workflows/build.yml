@@ -175,4 +175,4 @@ jobs:
           
       - name: Test
         shell: bash
-        run: . ./bin/${HOST_OS}_${BUILD_ARCH}_${BUILD_TYPE}/jssdk_test
+        run: . ./vender/.github/workflows/test.sh
