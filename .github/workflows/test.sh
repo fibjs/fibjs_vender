@@ -7,11 +7,7 @@ if [[ $HOST_OS == 'Linux' ]]; then
     CUR=`pwd`
 
     if [[ "$BUILD_TARGET" == "linux" ]]; then
-        if [[ $BUILD_ARCH == 'x64' ]]; then
-            docker run -t --rm -v ${CUR}:${CUR} ubuntu:12.04 bash -c "cd ${CUR}; $DIST_EXEC"
-        else
-            docker run -t --rm -v ${CUR}:${CUR} fibjs/${BUILD_TARGET}-build-env:${BUILD_ARCH} bash -c "cd ${CUR}; $DIST_EXEC"
-        fi
+        docker run -t --rm -v ${CUR}:${CUR} fibjs/${BUILD_TARGET}-build-env:${BUILD_ARCH} bash -c "cd ${CUR}; $DIST_EXEC"
     else
         docker run -t --rm -v ${CUR}:${CUR} fibjs/${BUILD_TARGET}-test-env:${BUILD_ARCH} bash -c "cd ${CUR}; $DIST_EXEC"
     fi
