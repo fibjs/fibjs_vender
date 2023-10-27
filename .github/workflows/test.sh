@@ -2,7 +2,7 @@
 
 set -ev
 
-DIST_EXEC="bin/${HOST_OS}_${BUILD_ARCH}_${BUILD_TYPE}/jssdk_test"
+DIST_EXEC="bin/${BUILD_OS}_${BUILD_ARCH}_${BUILD_TYPE}/jssdk_test"
 if [[ $HOST_OS == 'Linux' ]]; then
     CUR=`pwd`
 
