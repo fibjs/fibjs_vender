@@ -175,4 +175,4 @@ jobs:
           
       - name: Test
         shell: bash
-        run: . ./vender/.github/workflows/test.sh
+        run: . ./.github/workflows/test.sh
