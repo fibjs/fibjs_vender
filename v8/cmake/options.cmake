@@ -5,7 +5,7 @@ include_directories(
 	${CMAKE_CURRENT_LIST_DIR}/../../unicode/include
 )
 
-if(${ARCH} MATCHES "64")
+if(${BUILD_ARCH} MATCHES "64")
 	include_directories(${CMAKE_CURRENT_LIST_DIR}/../gen/64)
 else()
 	include_directories(${CMAKE_CURRENT_LIST_DIR}/../gen/32)
