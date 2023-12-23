@@ -49,7 +49,7 @@ inline exlib::wstring utf8to16String(const char* src, int32_t srclen = -1)
         int32_t n = utf8_mbstowcs(src, srclen, NULL, 0);
         str.resize(n);
 
-        utf8_mbstowcs(src, srclen, str.c_buffer(), n);
+        utf8_mbstowcs(src, srclen, str.data(), n);
     }
 
     return str;
@@ -73,7 +73,7 @@ inline exlib::string utf16to8String(const exlib::wchar* src, int32_t srclen = -1
         int32_t n = utf8_wcstombs(src, srclen, NULL, 0);
         str.resize(n);
 
-        utf8_wcstombs(src, srclen, str.c_buffer(), n);
+        utf8_wcstombs(src, srclen, str.data(), n);
     }
 
     return str;

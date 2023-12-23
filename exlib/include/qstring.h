@@ -305,7 +305,7 @@ public:
         return is_sso() ? m_small_data : m_buffer->data();
     }
 
-    T* c_buffer()
+    T* data()
     {
         if (is_sso())
             return m_small_data;
@@ -401,9 +401,9 @@ public:
             resize(len + n);
 
             if (n == 1)
-                c_buffer()[len] = ch;
+                data()[len] = ch;
             else
-                qmemset(c_buffer() + len, ch, n);
+                qmemset(data() + len, ch, n);
         }
         return *this;
     }
@@ -412,15 +412,15 @@ public:
     {
         if (sz > 0) {
             size_t len = length();
-            const T* data = c_str();
+            const T* data_ = c_str();
 
-            if (str >= data && str < data + len) {
-                basic_string<T> temp(data, len);
+            if (str >= data_ && str < data_ + len) {
+                basic_string<T> temp(data_, len);
                 temp.append(str, sz);
                 *this = temp;
             } else {
                 resize(len + sz);
-                qmemcpy(c_buffer() + len, str, sz);
+                qmemcpy(data() + len, str, sz);
             }
         }
         return *this;
@@ -431,16 +431,16 @@ public:
     {
         resize(n);
         if (n == 1)
-            *c_buffer() = ch;
+            *data() = ch;
         else
-            qmemset(c_buffer(), ch, n);
+            qmemset(data(), ch, n);
         return *this;
     }
 
     basic_string<T>& assign(const T* str, size_t sz)
     {
         resize(sz);
-        qmemcpy(c_buffer(), str, sz);
+        qmemcpy(data(), str, sz);
         return *this;
     }
 
@@ -551,29 +551,6 @@ public:
     }
 
 public:
-    void tolower()
-    {
-        T* buf = c_buffer();
-        size_t sz = length();
-
-        while (sz--) {
-            *buf = qtolower(*buf);
-            buf++;
-        }
-    }
-
-    void toupper()
-    {
-        T* buf = c_buffer();
-        size_t sz = length();
-
-        while (sz--) {
-            *buf = qtoupper(*buf);
-            buf++;
-        }
-    }
-
-public:
     basic_string<char> hex() const
     {
         basic_string<char> retVal;
@@ -584,7 +561,7 @@ public:
 
         i = len * (sizeof(T) * 2 + 1);
         retVal.resize(i);
-        char* data = retVal.c_buffer();
+        char* data = retVal.data();
 
         pos = 0;
 
@@ -605,10 +582,10 @@ public:
     }
 
 public:
-    T operator[](size_t i) const
-    {
-        return c_str()[i];
-    }
+    // T operator[](size_t i) const
+    // {
+    //     return c_str()[i];
+    // }
 
     basic_string<T> operator+=(T ch)
     {
@@ -831,6 +808,49 @@ typedef uint32_t wchar32;
 typedef basic_string<char> string;
 typedef basic_string<wchar> wstring;
 typedef basic_string<wchar32> wstring32;
+
+template <typename T>
+inline void qstrlwr(T* s)
+{
+    T c;
+
+    while ((c = *s) != 0)
+        *s++ = qtolower(c);
+}
+
+template <typename T>
+inline void qstrlwr(T& str)
+{
+    auto buf = str.data();
+    size_t sz = str.length();
+
+    while (sz--) {
+        *buf = qtolower(*buf);
+        buf++;
+    }
+}
+
+template <typename T>
+inline void qstrupr(T* s)
+{
+    T c;
+
+    while ((c = *s) != 0)
+        *s++ = qtoupper(c);
+}
+
+template <typename T>
+void qstrupr(T& str)
+{
+    auto buf = str.data();
+    size_t sz = str.length();
+
+    while (sz--) {
+        *buf = qtoupper(*buf);
+        buf++;
+    }
+}
+
 }
 
 namespace std {

@@ -57,7 +57,7 @@ void fiber_proc(void* p)
     exlib::string arg2 = "--embedded-src=" + embedded_fname;
 
     char* args[3] = {
-        (char*)p, arg1.c_buffer(), arg2.c_buffer()
+        (char*)p, arg1.data(), arg2.data()
     };
 
     _main(3, args);
