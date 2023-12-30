@@ -15,12 +15,12 @@
 
 namespace js {
 
-int32_t utf8_mbstowcs(const char* src, int32_t srclen, exlib::wchar* dst, int32_t dstlen);
-int32_t utf8_wcstombs(const exlib::wchar* src, int32_t srclen, char* dst, int32_t dstlen);
+int32_t utf8_mbstowcs(const char* src, int32_t srclen, char16_t* dst, int32_t dstlen);
+int32_t utf8_wcstombs(const char16_t* src, int32_t srclen, char* dst, int32_t dstlen);
 int32_t utf8_getchar(const char*& src, const char* end);
 int32_t utf8_putchar(int32_t ch, char*& dst, const char* end);
-int32_t utf16_getchar(const exlib::wchar*& src, const exlib::wchar* end);
-int32_t utf16_putchar(int32_t ch, exlib::wchar*& dst, const exlib::wchar* end);
+int32_t utf16_getchar(const char16_t*& src, const char16_t* end);
+int32_t utf16_putchar(int32_t ch, char16_t*& dst, const char16_t* end);
 
 inline int32_t utf8_strlen(const char* src, int32_t srclen)
 {
@@ -30,7 +30,7 @@ inline int32_t utf8_strlen(const char* src, int32_t srclen)
     return utf8_mbstowcs(src, srclen, NULL, 0);
 }
 
-inline int32_t utf8_strlen(const exlib::wchar* src, int32_t srclen)
+inline int32_t utf8_strlen(const char16_t* src, int32_t srclen)
 {
     if (srclen == -1)
         srclen = (int32_t)exlib::qstrlen(src);
@@ -62,7 +62,7 @@ inline exlib::wstring utf8to16String(exlib::string src)
 
 #define UTF8_W(s) utf8to16String(s).c_str()
 
-inline exlib::string utf16to8String(const exlib::wchar* src, int32_t srclen = -1)
+inline exlib::string utf16to8String(const char16_t* src, int32_t srclen = -1)
 {
     exlib::string str;
 

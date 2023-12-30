@@ -797,17 +797,9 @@ bool operator!=(const T* lhs,
     return rhs.compare(lhs) != 0;
 }
 
-#ifdef _WIN32
-typedef wchar_t wchar;
-#else
-typedef uint16_t wchar;
-#endif
-
-typedef uint32_t wchar32;
-
 typedef basic_string<char> string;
-typedef basic_string<wchar> wstring;
-typedef basic_string<wchar32> wstring32;
+typedef basic_string<char16_t> wstring;
+typedef basic_string<char32_t> wstring32;
 
 template <typename T>
 inline void qstrlwr(T* s)
