@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.5)
 
 if(${BUILD_ARCH} STREQUAL "x64")
     add_definitions(-D__SSE2__)

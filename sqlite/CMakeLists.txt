@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.5)
 
 add_definitions(
 	-DSQLITE_THREADSAFE=2
