@@ -6,11 +6,6 @@ set(libs
     unicode
     expat
     gumbo
-    gd
-    tiff
-    jpeg
-    png
-    webp
     jemalloc
     zlib
     leveldb
