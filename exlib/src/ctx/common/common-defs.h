@@ -56,3 +56,4 @@
 #endif
 
 #define REG_OFFSET(__reg) (MCONTEXT_GREGS + ((__reg)*REG_SZ))
+#define FP_REG_OFFSET(__reg) (MCONTEXT_FPREGS + ((__reg)*FP_REG_SZ))
