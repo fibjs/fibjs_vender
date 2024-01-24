@@ -17,6 +17,8 @@ include(cmake/options.cmake)
 
 if("${BUILD_OS}" STREQUAL "Alpine")
 	include(cmake/v8-${BUILD_ARCH}-Linux.cmake)
+elseif("${BUILD_ARCH}" STREQUAL "loong64ow")
+	include(cmake/v8-loong64-${BUILD_OS}.cmake)
 else()
 	include(cmake/v8-${BUILD_ARCH}-${BUILD_OS}.cmake)
 endif()

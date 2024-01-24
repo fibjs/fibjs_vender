@@ -9,11 +9,17 @@ if(NOT ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
         file(GLOB src_list "src/*.c*")
     endif()
 
-    file(GLOB ctx_list "src/ctx/${BUILD_ARCH}/*.c" "src/ctx/${BUILD_ARCH}/*.S")
+    if(${BUILD_ARCH} STREQUAL "loong64ow")
+        set(ARCH_SRC "loong64")
+    else()
+        set(ARCH_SRC ${BUILD_ARCH})
+    endif()
+
+    file(GLOB ctx_list "src/ctx/${ARCH_SRC}/*.c" "src/ctx/${ARCH_SRC}/*.S")
     list(APPEND src_list ${ctx_list})
 
     include_directories(
-        ${PROJECT_SOURCE_DIR}/src/ctx/${BUILD_ARCH}
+        ${PROJECT_SOURCE_DIR}/src/ctx/${ARCH_SRC}
         ${PROJECT_SOURCE_DIR}/src/ctx/common
     )
 else()
