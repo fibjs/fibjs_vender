@@ -7,10 +7,11 @@ typedef struct {
     unsigned long long __fpregs[8] __attribute__((__aligned__(16)));
 } ctx_mcontext_t;
 
-typedef struct {
+typedef struct
+{
     void* ss_sp;
-    size_t ss_size;
     int ss_flags;
+    size_t ss_size;
 } ctx_stack_t;
 
 typedef struct ctx_ucontext {
