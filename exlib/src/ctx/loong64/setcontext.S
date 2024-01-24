@@ -46,7 +46,7 @@ FUNC(ctx_setcontext)
 	ld.d	$t8, $t5, (MCONTEXT_PC)
 
 	jr	$t8
-	move	$v0, $zero
+	move	$a0, $zero
 
 	POP_FRAME(ctx_setcontext)
 END(ctx_setcontext)

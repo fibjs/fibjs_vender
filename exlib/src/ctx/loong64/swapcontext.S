@@ -25,7 +25,7 @@ FUNC(ctx_swapcontext)
 	st.d	$a6, $t5, REG_OFFSET(10)
 	st.d	$a7, $t5, REG_OFFSET(11)
 
-	st.d	$x, $t5, REG_OFFSET(21)
+	st.d	$r21, $t5, REG_OFFSET(21)
 
 	st.d	$s0, $t5, REG_OFFSET(23)
 	st.d	$s1, $t5, REG_OFFSET(24)
@@ -77,7 +77,7 @@ FUNC(ctx_swapcontext)
 	ld.d	$a6, $t4, REG_OFFSET(10)
 	ld.d	$a7, $t4, REG_OFFSET(11)
 
-	ld.d	$x, $t4, REG_OFFSET(21)
+	ld.d	$r21, $t4, REG_OFFSET(21)
 
 	ld.d	$s0, $t4, REG_OFFSET(23)
 	ld.d	$s1, $t4, REG_OFFSET(24)
@@ -96,7 +96,7 @@ FUNC(ctx_swapcontext)
 	ld.d	$t8, $t4, (MCONTEXT_PC)
 
 	jr	$t8
-	move	$v0, $zero
+	move	$a0, $zero
 
 fail:
 	la.global	$t8, exit
@@ -104,5 +104,5 @@ fail:
 	POP_FRAME(ctx_swapcontext)
 
 	jirl	$ra, $t8, 0
-	move	$v0, $zero
+	move	$a0, $zero
 END(ctx_swapcontext)

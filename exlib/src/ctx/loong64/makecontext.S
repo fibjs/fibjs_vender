@@ -24,8 +24,8 @@ FUNC(ctx_makecontext)
 	st.d	$a7, $sp, A7_OFF
 
 	/* set $zero in the mcontext to 1. */
-	addi.d	$v0, $zero, 1
-	st.d	$v0, $t5, REG_OFFSET(0)
+	addi.d	$a0, $zero, 1
+	st.d	$a0, $t5, REG_OFFSET(0)
 
 	/* ensure the stack is aligned on a quad-word boundary. */
 	ld.d	$t0, $t5, UCONTEXT_STACK_PTR
@@ -47,9 +47,9 @@ FUNC(ctx_makecontext)
 
 store_register_arg:
 	addi.d	$t3, $t3, 1
-	ld.d	$v1, $t1, 0
+	ld.d	$a1, $t1, 0
 	addi.d	$t1, $t1, REG_SZ
-	st.d	$v1, $t2, 0
+	st.d	$a1, $t2, 0
 	addi.d	$t2, $t2, REG_SZ
 	addi.d	$t6, $zero, 8
 	bltu	$t3, $t6, store_register_arg
@@ -71,9 +71,9 @@ store_register_arg:
 
 store_stack_arg:
 	addi.d	$t3, $t3, 1
-	ld.d	$v1, $t1, 0
+	ld.d	$a1, $t1, 0
 	addi.d	$t1, $t1, REG_SZ
-	st.d	$v1, $t2, 0
+	st.d	$a1, $t2, 0
 	addi.d	$t2, $t2, REG_SZ
 	bltu	$t3, $a2, store_stack_arg
 
@@ -81,8 +81,8 @@ no_more_arguments:
 	/* trampoline setup. */
 	la.got	$t8, ctx_trampoline
 
-	ld.d	$v1, $t5, UCONTEXT_UC_LINK
-	st.d	$v1, $t5, REG_OFFSET(23)
+	ld.d	$a1, $t5, UCONTEXT_UC_LINK
+	st.d	$a1, $t5, REG_OFFSET(23)
 
 	st.d	$t0, $t5, REG_OFFSET(3)
 
