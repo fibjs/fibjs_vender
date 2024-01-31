@@ -172,3 +172,43 @@ __atomic_compare_exchange_8:
 	popl	%edi
 	popl	%ebx
 	retl
+
+// uint64_t __atomic_fetch_or_8(volatile void* ptr, uint64_t val, int memorder)
+
+.globl	__atomic_fetch_or_8
+__atomic_fetch_or_8:
+	pushl	%ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	subl	$12, %esp
+	movl	36(%esp), %eax
+	movl	40(%esp), %esi
+	movl	%eax, (%esp)
+	movl	32(%esp), %eax
+	movl	4(%eax), %edx
+	movl	(%eax), %eax
+	movl	%esi, 4(%esp)
+.f2:
+	movl	(%esp), %ebx
+	movl	4(%esp), %ecx
+	movl	%eax, %edi
+	movl	%edx, %ebp
+	movl	32(%esp), %esi
+	orl	%eax, %ebx
+	orl	%edx, %ecx
+	lock cmpxchg8b	(%esi)
+	jne	.f2
+	addl	$12, %esp
+	movl	%edi, %eax
+	movl	%ebp, %edx
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+
+.globl __atomic_is_lock_free
+__atomic_is_lock_free:
+	xorl	%eax, %eax
+	ret
