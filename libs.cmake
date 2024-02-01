@@ -17,6 +17,7 @@ set(libs
     uuid
     exif
     mbedtls
+    openssl
     secp256k1
     curve25519
     fips202
