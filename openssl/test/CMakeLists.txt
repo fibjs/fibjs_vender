@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(test_libs openssl)
+set(test_libs openssl exlib)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/../include
