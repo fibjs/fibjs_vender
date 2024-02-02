@@ -1,3 +1,4 @@
+
 %ifidn __OUTPUT_FORMAT__,obj
 section	code	use32 class=code align=64
 %elifidn __OUTPUT_FORMAT__,win32
@@ -1400,55 +1401,55 @@ L$010PIC_point:
 	xor	edx,edx
 	jmp	ebp
 L$012ej7:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	dh,BYTE [6+esi]
 	shl	edx,8
 L$013ej6:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	dh,BYTE [5+esi]
 L$014ej5:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	dl,BYTE [4+esi]
 L$015ej4:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	ecx,DWORD [esi]
 	jmp	NEAR L$016ejend
 L$017ej3:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	ch,BYTE [2+esi]
 	shl	ecx,8
 L$018ej2:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	ch,BYTE [1+esi]
 L$019ej1:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	cl,BYTE [esi]
 L$016ejend:
@@ -1617,55 +1618,55 @@ L$034PIC_point:
 	xor	edx,edx
 	jmp	ebp
 L$036ej7:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	dh,BYTE [6+esi]
 	shl	edx,8
 L$037ej6:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	dh,BYTE [5+esi]
 L$038ej5:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	dl,BYTE [4+esi]
 L$039ej4:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	ecx,DWORD [esi]
 	jmp	NEAR L$040ejend
 L$041ej3:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	ch,BYTE [2+esi]
 	shl	ecx,8
 L$042ej2:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	ch,BYTE [1+esi]
 L$043ej1:
-	#ifdef __CET__
+	
 
-db	243,15,30,251
-	#endif
+
+
 
 	mov	cl,BYTE [esi]
 L$040ejend:

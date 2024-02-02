@@ -1,3 +1,4 @@
+
 %ifidn __OUTPUT_FORMAT__,obj
 section	code	use32 class=code align=64
 %elifidn __OUTPUT_FORMAT__,win32
