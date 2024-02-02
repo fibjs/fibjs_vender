@@ -15,10 +15,10 @@ const path = require('path');
     });
 })
 
-const asm_target = {
-    "windows_arm64": ".asm",
-    "windows_ia32": ".S",
-    "windows_x64": ".asm"
+const windows_target = {
+    "windows_arm64": true,
+    "windows_ia32": true,
+    "windows_x64": true
 };
 
 fs.readdir("build").forEach(target => {
@@ -30,15 +30,13 @@ fs.readdir("build").forEach(target => {
             const ext = path.extname(file);
             var genfile;
 
-            if (asm_target[target]) {
-                if (ext === asm_target[target])
-                    genfile = path.join(path.basename(file, ext) + ".asm");
+            if (windows_target[target]) {
+                if (ext === ".asm")
+                    genfile = path.basename(file).replace(/lib.*-lib-/g, '').replace(/\.obj\.asm/g, ".asm");
                 else if (ext === ".c")
                     genfile = path.basename(file);
-            } else {
-                if (ext === ".s" || ext === ".S" || ext === ".c")
-                    genfile = path.basename(file);
-            }
+            } else if (ext === ".s" || ext === ".S" || ext === ".c")
+                genfile = path.basename(file);
 
             if (genfile) {
                 const src = path.join('src', m, folder, 'gen', target, genfile);
@@ -75,16 +73,4 @@ fs.readdir("build").forEach(target => {
 
     if (defs)
         fs.appendFile(`cmake/${target}.cmake`, `\n\nadd_definitions(${defs})\n`);
-
-    // src_list.forEach(f => console.log(f));
 });
-
-
-/*
-linux_arm64  -DBSAES_ASM -DECP_NISTZ256_ASM -DECP_SM2P256_ASM -DKECCAK1600_ASM -DMD5_ASM -DOPENSSL_BN_ASM_MONT -DOPENSSL_CPUID_OBJ -DOPENSSL_SM3_ASM -DPOLY1305_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DSM4_ASM -DVPAES_ASM -DVPSM4_ASM
-linux_x64    -DAES_ASM -DBSAES_ASM -DCMLL_ASM -DECP_NISTZ256_ASM -DGHASH_ASM -DKECCAK1600_ASM -DMD5_ASM -DOPENSSL_BN_ASM_GF2m -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_MONT5 -DOPENSSL_CPUID_OBJ -DOPENSSL_IA32_SSE2 -DPADLOCK_ASM -DPOLY1305_ASM -DRC4_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DVPAES_ASM -DWHIRLPOOL_ASM -DX25519_ASM
-linux_arm    -DAES_ASM -DBSAES_ASM -DECP_NISTZ256_ASM -DGHASH_ASM -DKECCAK1600_ASM -DOPENSSL_BN_ASM_GF2m -DOPENSSL_BN_ASM_MONT -DOPENSSL_CPUID_OBJ -DPOLY1305_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM
-
-
-
-*/
