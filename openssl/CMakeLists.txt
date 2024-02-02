@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 if("${BUILD_OS}" STREQUAL "Windows")
+    set(CMAKE_ASM_NASM_COMPILER ${PROJECT_SOURCE_DIR}/tools/nasm.exe)
     enable_language(ASM_NASM)
     include(./cmake/windows_${BUILD_ARCH}.cmake)
 elseif("${BUILD_OS}" STREQUAL "Darwin" OR "${BUILD_OS}" STREQUAL "iPhone")
