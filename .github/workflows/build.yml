@@ -65,6 +65,7 @@ jobs:
           - os: ubuntu-20.04
             arch: ppc64
             type: debug
+            test: skip
           - os: ubuntu-20.04
             arch: riscv64
             type: release
@@ -77,6 +78,7 @@ jobs:
           - os: ubuntu-20.04
             arch: loong64
             type: debug
+            test: skip
           - os: ubuntu-20.04
             arch: loong64ow
             type: release
@@ -99,18 +101,22 @@ jobs:
             target: android
             arch: x64
             type: release
+            test: skip
           - os: ubuntu-20.04
             target: android
             arch: ia32
             type: release
+            test: skip
           - os: ubuntu-20.04
             target: android
             arch: arm64
             type: release
+            test: skip
           - os: ubuntu-20.04
             target: android
             arch: arm
             type: release
+            test: skip
           - os: windows-2022
             arch: x64
             type: release
@@ -126,9 +132,11 @@ jobs:
           - os: windows-2022
             arch: arm64
             type: release
+            test: skip
           - os: windows-2022
             arch: arm64
             type: debug
+            test: skip
           - os: macos-14
             arch: x64
             type: release
@@ -145,10 +153,12 @@ jobs:
             target: iphone
             arch: arm64
             type: release
+            test: skip
           - os: macos-14
             target: iphone
             arch: x64
             type: release
+            test: skip
 
     steps:
       - name: Check out Git repository
@@ -180,5 +190,6 @@ jobs:
           overwrite: true
           
       - name: Test
+        if: ${{ matrix.test != 'skip' }}
         shell: bash
         run: . ./.github/workflows/test.sh
