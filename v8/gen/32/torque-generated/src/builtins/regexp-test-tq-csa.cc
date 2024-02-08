@@ -70,6 +70,7 @@
 #include "torque-generated/src/builtins/regexp-test-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
+#include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-match-all-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 
@@ -105,59 +106,61 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
     }
   }
 
+  TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.test");
+    tmp2 = FromConstexpr_Object_constexpr_string_0(state_, "RegExp.prototype.test");
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{tmp2}, TNode<Object>{parameter1});
   }
 
-  TNode<String> tmp2;
-  TNode<BoolT> tmp3;
+  TNode<String> tmp3;
+  TNode<BoolT> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    tmp3 = IsFastRegExpPermissive_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp0});
-    ca_.Branch(tmp3, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
+    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp4 = IsFastRegExpPermissive_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp0});
+    ca_.Branch(tmp4, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<JSRegExp> tmp4;
-  TNode<RegExpMatchInfo> tmp5;
+  TNode<JSRegExp> tmp5;
+  TNode<RegExpMatchInfo> tmp6;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp4 = UnsafeCast_JSRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
-    compiler::CodeAssemblerLabel label6(&ca_);
-    tmp5 = RegExpPrototypeExecBodyWithoutResultFast_0(state_, TNode<Context>{parameter0}, TNode<JSRegExp>{tmp4}, TNode<String>{tmp2}, &label6);
+    tmp5 = UnsafeCast_JSRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    compiler::CodeAssemblerLabel label7(&ca_);
+    tmp6 = RegExpPrototypeExecBodyWithoutResultFast_0(state_, TNode<Context>{parameter0}, TNode<JSRegExp>{tmp5}, TNode<String>{tmp3}, &label7);
     ca_.Goto(&block9);
-    if (label6.is_used()) {
-      ca_.Bind(&label6);
+    if (label7.is_used()) {
+      ca_.Bind(&label7);
       ca_.Goto(&block10);
     }
   }
 
-  TNode<False> tmp7;
+  TNode<False> tmp8;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp7 = False_0(state_);
-    CodeStubAssembler(state_).Return(tmp7);
-  }
-
-  TNode<True> tmp8;
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    tmp8 = True_0(state_);
+    tmp8 = False_0(state_);
     CodeStubAssembler(state_).Return(tmp8);
   }
 
-  TNode<Object> tmp9;
-  TNode<Null> tmp10;
-  TNode<BoolT> tmp11;
-  TNode<Boolean> tmp12;
+  TNode<True> tmp9;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    tmp9 = True_0(state_);
+    CodeStubAssembler(state_).Return(tmp9);
+  }
+
+  TNode<Object> tmp10;
+  TNode<Null> tmp11;
+  TNode<BoolT> tmp12;
+  TNode<Boolean> tmp13;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp9 = RegExpExec_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<String>{tmp2});
-    tmp10 = Null_0(state_);
-    tmp11 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp9}, TNode<HeapObject>{tmp10});
-    tmp12 = CodeStubAssembler(state_).SelectBooleanConstant(TNode<BoolT>{tmp11});
-    CodeStubAssembler(state_).Return(tmp12);
+    tmp10 = RegExpExec_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<String>{tmp3});
+    tmp11 = Null_0(state_);
+    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp10}, TNode<HeapObject>{tmp11});
+    tmp13 = CodeStubAssembler(state_).SelectBooleanConstant(TNode<BoolT>{tmp12});
+    CodeStubAssembler(state_).Return(tmp13);
   }
 }
 

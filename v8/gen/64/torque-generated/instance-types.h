@@ -33,7 +33,7 @@
       V(LAST_TEMPLATE_INFO_TYPE, 140) \
       V(ACCESS_CHECK_INFO_TYPE, 141) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=35&c=1 */\
       V(ACCESSOR_PAIR_TYPE, 142) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=18&c=1 */\
-      V(ALIASED_ARGUMENTS_ENTRY_TYPE, 143) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1 */\
+      V(ALIASED_ARGUMENTS_ENTRY_TYPE, 143) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1 */\
       V(ALLOCATION_MEMENTO_TYPE, 144) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1 */\
       V(ALLOCATION_SITE_TYPE, 145) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=5&c=1 */\
       V(ARRAY_BOILERPLATE_DESCRIPTION_TYPE, 146) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1 */\
@@ -86,25 +86,29 @@
         V(OBJECT_BOILERPLATE_DESCRIPTION_TYPE, 188) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=246&c=1 */\
         V(SCRIPT_CONTEXT_TABLE_TYPE, 189) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=248&c=1 */\
       V(LAST_FIXED_ARRAY_TYPE, 189) \
-      V(BYTE_ARRAY_TYPE, 190) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1 */\
+      V(BYTE_ARRAY_TYPE, 190) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=30&c=1 */\
       V(BYTECODE_ARRAY_TYPE, 191) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1 */\
-      V(EXTERNAL_POINTER_ARRAY_TYPE, 192) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1 */\
-      V(FIXED_DOUBLE_ARRAY_TYPE, 193) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1 */\
-      V(INTERNAL_CLASS_WITH_SMI_ELEMENTS_TYPE, 194) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1 */\
-      V(SLOPPY_ARGUMENTS_ELEMENTS_TYPE, 195) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1 */\
-    V(LAST_FIXED_ARRAY_BASE_TYPE, 195) \
-    V(FIRST_TURBOFAN_TYPE_TYPE, 196) \
-      V(TURBOFAN_BITSET_TYPE_TYPE, 196) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1 */\
-      V(TURBOFAN_HEAP_CONSTANT_TYPE_TYPE, 197) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1 */\
-      V(TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE, 198) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1 */\
-      V(TURBOFAN_RANGE_TYPE_TYPE, 199) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1 */\
-      V(TURBOFAN_UNION_TYPE_TYPE, 200) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1 */\
-    V(LAST_TURBOFAN_TYPE_TYPE, 200) \
-    V(FIRST_EXPORTED_SUB_CLASS_BASE_TYPE, 201) \
-      V(EXPORTED_SUB_CLASS_BASE_TYPE, 201) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1 */\
-      V(EXPORTED_SUB_CLASS_TYPE, 202) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1 */\
-      V(EXPORTED_SUB_CLASS2_TYPE, 203) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1 */\
-    V(LAST_EXPORTED_SUB_CLASS_BASE_TYPE, 203) \
+      V(EXTERNAL_POINTER_ARRAY_TYPE, 192) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=35&c=1 */\
+      V(FIXED_DOUBLE_ARRAY_TYPE, 193) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=19&c=1 */\
+      V(SLOPPY_ARGUMENTS_ELEMENTS_TYPE, 194) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1 */\
+    V(LAST_FIXED_ARRAY_BASE_TYPE, 194) \
+    V(FIRST_TURBOSHAFT_TYPE_TYPE, 195) \
+      V(FIRST_TURBOSHAFT_FLOAT64_TYPE_TYPE, 195) \
+        V(TURBOSHAFT_FLOAT64_TYPE_TYPE, 195) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1 */\
+        V(TURBOSHAFT_FLOAT64_RANGE_TYPE_TYPE, 196) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1 */\
+        V(TURBOSHAFT_FLOAT64_SET_TYPE_TYPE, 197) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1 */\
+      V(LAST_TURBOSHAFT_FLOAT64_TYPE_TYPE, 197) \
+      V(FIRST_TURBOSHAFT_WORD32_TYPE_TYPE, 198) \
+        V(TURBOSHAFT_WORD32_TYPE_TYPE, 198) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1 */\
+        V(TURBOSHAFT_WORD32_RANGE_TYPE_TYPE, 199) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1 */\
+        V(TURBOSHAFT_WORD32_SET_TYPE_TYPE, 200) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1 */\
+      V(LAST_TURBOSHAFT_WORD32_TYPE_TYPE, 200) \
+      V(FIRST_TURBOSHAFT_WORD64_TYPE_TYPE, 201) \
+        V(TURBOSHAFT_WORD64_TYPE_TYPE, 201) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1 */\
+        V(TURBOSHAFT_WORD64_RANGE_TYPE_TYPE, 202) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1 */\
+        V(TURBOSHAFT_WORD64_SET_TYPE_TYPE, 203) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1 */\
+      V(LAST_TURBOSHAFT_WORD64_TYPE_TYPE, 203) \
+    V(LAST_TURBOSHAFT_TYPE_TYPE, 203) \
     V(FOREIGN_TYPE, 204) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1 */\
     V(FIRST_CONTEXT_TYPE, 205) \
       V(AWAIT_CONTEXT_TYPE, 205) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=17&c=1 */\
@@ -118,116 +122,111 @@
       V(SCRIPT_CONTEXT_TYPE, 213) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=24&c=1 */\
       V(WITH_CONTEXT_TYPE, 214) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=25&c=1 */\
     V(LAST_CONTEXT_TYPE, 214) \
-    V(FIRST_TURBOSHAFT_TYPE_TYPE, 215) \
-      V(FIRST_TURBOSHAFT_FLOAT64_TYPE_TYPE, 215) \
-        V(TURBOSHAFT_FLOAT64_TYPE_TYPE, 215) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1 */\
-        V(TURBOSHAFT_FLOAT64_RANGE_TYPE_TYPE, 216) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1 */\
-        V(TURBOSHAFT_FLOAT64_SET_TYPE_TYPE, 217) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1 */\
-      V(LAST_TURBOSHAFT_FLOAT64_TYPE_TYPE, 217) \
-      V(FIRST_TURBOSHAFT_WORD32_TYPE_TYPE, 218) \
-        V(TURBOSHAFT_WORD32_TYPE_TYPE, 218) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1 */\
-        V(TURBOSHAFT_WORD32_RANGE_TYPE_TYPE, 219) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1 */\
-        V(TURBOSHAFT_WORD32_SET_TYPE_TYPE, 220) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1 */\
-      V(LAST_TURBOSHAFT_WORD32_TYPE_TYPE, 220) \
-      V(FIRST_TURBOSHAFT_WORD64_TYPE_TYPE, 221) \
-        V(TURBOSHAFT_WORD64_TYPE_TYPE, 221) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1 */\
-        V(TURBOSHAFT_WORD64_RANGE_TYPE_TYPE, 222) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1 */\
-        V(TURBOSHAFT_WORD64_SET_TYPE_TYPE, 223) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1 */\
-      V(LAST_TURBOSHAFT_WORD64_TYPE_TYPE, 223) \
-    V(LAST_TURBOSHAFT_TYPE_TYPE, 223) \
-    V(FIRST_UNCOMPILED_DATA_TYPE, 224) \
-      V(FIRST_UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, 224) \
-        V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, 224) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1 */\
-        V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_AND_JOB_TYPE, 225) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1 */\
-      V(LAST_UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, 225) \
-      V(FIRST_UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, 226) \
-        V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, 226) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1 */\
-        V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_WITH_JOB_TYPE, 227) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1 */\
-      V(LAST_UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, 227) \
-    V(LAST_UNCOMPILED_DATA_TYPE, 227) \
-    V(FIRST_WASM_FUNCTION_DATA_TYPE, 228) \
-      V(WASM_FUNCTION_DATA_TYPE, 228) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=1 */\
-      V(WASM_CAPI_FUNCTION_DATA_TYPE, 229) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1 */\
-      V(WASM_EXPORTED_FUNCTION_DATA_TYPE, 230) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1 */\
-      V(WASM_JS_FUNCTION_DATA_TYPE, 231) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1 */\
-    V(LAST_WASM_FUNCTION_DATA_TYPE, 231) \
-    V(FIRST_SMALL_ORDERED_HASH_TABLE_TYPE, 232) \
-      V(SMALL_ORDERED_HASH_MAP_TYPE, 232) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=64&c=1 */\
-      V(SMALL_ORDERED_HASH_SET_TYPE, 233) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=25&c=1 */\
-      V(SMALL_ORDERED_NAME_DICTIONARY_TYPE, 234) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=101&c=1 */\
-    V(LAST_SMALL_ORDERED_HASH_TABLE_TYPE, 234) \
-    V(FIRST_ABSTRACT_INTERNAL_CLASS_TYPE, 235) \
-      V(ABSTRACT_INTERNAL_CLASS_SUBCLASS1_TYPE, 235) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1 */\
-      V(ABSTRACT_INTERNAL_CLASS_SUBCLASS2_TYPE, 236) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1 */\
-    V(LAST_ABSTRACT_INTERNAL_CLASS_TYPE, 236) \
-    V(FIRST_DESCRIPTOR_ARRAY_TYPE, 237) \
-      V(DESCRIPTOR_ARRAY_TYPE, 237) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1 */\
-      V(STRONG_DESCRIPTOR_ARRAY_TYPE, 238) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1 */\
-    V(LAST_DESCRIPTOR_ARRAY_TYPE, 238) \
-    V(FIRST_MODULE_TYPE, 239) \
-      V(SOURCE_TEXT_MODULE_TYPE, 239) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1 */\
-      V(SYNTHETIC_MODULE_TYPE, 240) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1 */\
-    V(LAST_MODULE_TYPE, 240) \
-    V(FIRST_WEAK_FIXED_ARRAY_TYPE, 241) \
-      V(WEAK_FIXED_ARRAY_TYPE, 241) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1 */\
-      V(TRANSITION_ARRAY_TYPE, 242) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=250&c=1 */\
-    V(LAST_WEAK_FIXED_ARRAY_TYPE, 242) \
-    V(ACCESSOR_INFO_TYPE, 243) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=55&c=1 */\
-    V(CALL_HANDLER_INFO_TYPE, 244) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=5&c=1 */\
-    V(CELL_TYPE, 245) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1 */\
-    V(CODE_TYPE, 246) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=27&c=1 */\
-    V(COVERAGE_INFO_TYPE, 247) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=1 */\
-    V(EMBEDDER_DATA_ARRAY_TYPE, 248) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1 */\
-    V(FEEDBACK_METADATA_TYPE, 249) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=51&c=1 */\
-    V(FEEDBACK_VECTOR_TYPE, 250) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1 */\
-    V(FILLER_TYPE, 251) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=607&c=1 */\
-    V(FREE_SPACE_TYPE, 252) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1 */\
-    V(HOLE_TYPE, 253) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=5&c=1 */\
-    V(INSTRUCTION_STREAM_TYPE, 254) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=240&c=1 */\
-    V(INTERNAL_CLASS_TYPE, 255) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1 */\
-    V(INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE, 256) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1 */\
-    V(MAP_TYPE, 257) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1 */\
-    V(MEGA_DOM_HANDLER_TYPE, 258) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1 */\
-    V(ON_HEAP_BASIC_BLOCK_PROFILER_DATA_TYPE, 259) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1 */\
-    V(PREPARSE_DATA_TYPE, 260) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1 */\
-    V(PROPERTY_ARRAY_TYPE, 261) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-array.tq?l=5&c=1 */\
-    V(PROPERTY_CELL_TYPE, 262) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1 */\
-    V(SCOPE_INFO_TYPE, 263) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1 */\
-    V(SHARED_FUNCTION_INFO_TYPE, 264) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1 */\
-    V(SMI_BOX_TYPE, 265) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1 */\
-    V(SMI_PAIR_TYPE, 266) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1 */\
-    V(SORT_STATE_TYPE, 267) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1 */\
-    V(SWISS_NAME_DICTIONARY_TYPE, 268) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=7&c=1 */\
-    V(WASM_API_FUNCTION_REF_TYPE, 269) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1 */\
-    V(WASM_CONTINUATION_OBJECT_TYPE, 270) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=1 */\
-    V(WASM_INTERNAL_FUNCTION_TYPE, 271) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=1 */\
-    V(WASM_NULL_TYPE, 272) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=236&c=1 */\
-    V(WASM_RESUME_DATA_TYPE, 273) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1 */\
-    V(WASM_STRING_VIEW_ITER_TYPE, 274) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1 */\
-    V(WASM_TYPE_INFO_TYPE, 275) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1 */\
-    V(WEAK_ARRAY_LIST_TYPE, 276) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1 */\
-    V(WEAK_CELL_TYPE, 277) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1 */\
-    V(FIRST_JS_RECEIVER_TYPE, 278) \
-      V(FIRST_WASM_OBJECT_TYPE, 278) \
-        V(WASM_ARRAY_TYPE, 278) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1 */\
-        V(WASM_STRUCT_TYPE, 279) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1 */\
-      V(LAST_WASM_OBJECT_TYPE, 279) \
-      V(JS_PROXY_TYPE, 280) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1 */\
-      V(FIRST_JS_OBJECT_TYPE, 281) \
+    V(FIRST_TURBOFAN_TYPE_TYPE, 215) \
+      V(TURBOFAN_BITSET_TYPE_TYPE, 215) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=59&c=1 */\
+      V(TURBOFAN_HEAP_CONSTANT_TYPE_TYPE, 216) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=77&c=1 */\
+      V(TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE, 217) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=82&c=1 */\
+      V(TURBOFAN_RANGE_TYPE_TYPE, 218) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=71&c=1 */\
+      V(TURBOFAN_UNION_TYPE_TYPE, 219) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=65&c=1 */\
+    V(LAST_TURBOFAN_TYPE_TYPE, 219) \
+    V(FIRST_UNCOMPILED_DATA_TYPE, 220) \
+      V(FIRST_UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, 220) \
+        V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, 220) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1 */\
+        V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_AND_JOB_TYPE, 221) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1 */\
+      V(LAST_UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, 221) \
+      V(FIRST_UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, 222) \
+        V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, 222) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1 */\
+        V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_WITH_JOB_TYPE, 223) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1 */\
+      V(LAST_UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, 223) \
+    V(LAST_UNCOMPILED_DATA_TYPE, 223) \
+    V(FIRST_WASM_FUNCTION_DATA_TYPE, 224) \
+      V(WASM_FUNCTION_DATA_TYPE, 224) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=1 */\
+      V(WASM_CAPI_FUNCTION_DATA_TYPE, 225) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1 */\
+      V(WASM_EXPORTED_FUNCTION_DATA_TYPE, 226) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1 */\
+      V(WASM_JS_FUNCTION_DATA_TYPE, 227) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1 */\
+    V(LAST_WASM_FUNCTION_DATA_TYPE, 227) \
+    V(FIRST_EXPORTED_SUB_CLASS_BASE_TYPE, 228) \
+      V(EXPORTED_SUB_CLASS_BASE_TYPE, 228) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1 */\
+      V(EXPORTED_SUB_CLASS_TYPE, 229) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1 */\
+      V(EXPORTED_SUB_CLASS2_TYPE, 230) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1 */\
+    V(LAST_EXPORTED_SUB_CLASS_BASE_TYPE, 230) \
+    V(FIRST_SMALL_ORDERED_HASH_TABLE_TYPE, 231) \
+      V(SMALL_ORDERED_HASH_MAP_TYPE, 231) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=64&c=1 */\
+      V(SMALL_ORDERED_HASH_SET_TYPE, 232) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=25&c=1 */\
+      V(SMALL_ORDERED_NAME_DICTIONARY_TYPE, 233) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=101&c=1 */\
+    V(LAST_SMALL_ORDERED_HASH_TABLE_TYPE, 233) \
+    V(FIRST_ABSTRACT_INTERNAL_CLASS_TYPE, 234) \
+      V(ABSTRACT_INTERNAL_CLASS_SUBCLASS1_TYPE, 234) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1 */\
+      V(ABSTRACT_INTERNAL_CLASS_SUBCLASS2_TYPE, 235) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1 */\
+    V(LAST_ABSTRACT_INTERNAL_CLASS_TYPE, 235) \
+    V(FIRST_DESCRIPTOR_ARRAY_TYPE, 236) \
+      V(DESCRIPTOR_ARRAY_TYPE, 236) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1 */\
+      V(STRONG_DESCRIPTOR_ARRAY_TYPE, 237) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1 */\
+    V(LAST_DESCRIPTOR_ARRAY_TYPE, 237) \
+    V(FIRST_MODULE_TYPE, 238) \
+      V(SOURCE_TEXT_MODULE_TYPE, 238) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1 */\
+      V(SYNTHETIC_MODULE_TYPE, 239) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1 */\
+    V(LAST_MODULE_TYPE, 239) \
+    V(FIRST_WEAK_FIXED_ARRAY_TYPE, 240) \
+      V(WEAK_FIXED_ARRAY_TYPE, 240) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=24&c=1 */\
+      V(TRANSITION_ARRAY_TYPE, 241) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=250&c=1 */\
+    V(LAST_WEAK_FIXED_ARRAY_TYPE, 241) \
+    V(ACCESSOR_INFO_TYPE, 242) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=55&c=1 */\
+    V(CALL_HANDLER_INFO_TYPE, 243) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=5&c=1 */\
+    V(CELL_TYPE, 244) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1 */\
+    V(COVERAGE_INFO_TYPE, 245) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=1 */\
+    V(EMBEDDER_DATA_ARRAY_TYPE, 246) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1 */\
+    V(FEEDBACK_METADATA_TYPE, 247) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=51&c=1 */\
+    V(FEEDBACK_VECTOR_TYPE, 248) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1 */\
+    V(FILLER_TYPE, 249) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=608&c=1 */\
+    V(FREE_SPACE_TYPE, 250) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1 */\
+    V(HOLE_TYPE, 251) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=5&c=1 */\
+    V(INSTRUCTION_STREAM_TYPE, 252) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=240&c=1 */\
+    V(INTERNAL_CLASS_TYPE, 253) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1 */\
+    V(INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE, 254) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1 */\
+    V(MAP_TYPE, 255) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1 */\
+    V(MEGA_DOM_HANDLER_TYPE, 256) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1 */\
+    V(ON_HEAP_BASIC_BLOCK_PROFILER_DATA_TYPE, 257) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1 */\
+    V(PREPARSE_DATA_TYPE, 258) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1 */\
+    V(PROPERTY_ARRAY_TYPE, 259) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-array.tq?l=5&c=1 */\
+    V(PROPERTY_CELL_TYPE, 260) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1 */\
+    V(SCOPE_INFO_TYPE, 261) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1 */\
+    V(SHARED_FUNCTION_INFO_TYPE, 262) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1 */\
+    V(SMI_BOX_TYPE, 263) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1 */\
+    V(SMI_PAIR_TYPE, 264) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1 */\
+    V(SORT_STATE_TYPE, 265) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1 */\
+    V(SWISS_NAME_DICTIONARY_TYPE, 266) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=7&c=1 */\
+    V(CODE_TYPE, 267) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=17&c=1 */\
+    V(WASM_API_FUNCTION_REF_TYPE, 268) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1 */\
+    V(WASM_CONTINUATION_OBJECT_TYPE, 269) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=1 */\
+    V(WASM_INTERNAL_FUNCTION_TYPE, 270) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=1 */\
+    V(WASM_NULL_TYPE, 271) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=236&c=1 */\
+    V(WASM_RESUME_DATA_TYPE, 272) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1 */\
+    V(WASM_STRING_VIEW_ITER_TYPE, 273) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1 */\
+    V(WASM_TYPE_INFO_TYPE, 274) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1 */\
+    V(WEAK_ARRAY_LIST_TYPE, 275) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=47&c=1 */\
+    V(WEAK_CELL_TYPE, 276) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1 */\
+    V(FIRST_JS_RECEIVER_TYPE, 277) \
+      V(FIRST_WASM_OBJECT_TYPE, 277) \
+        V(WASM_ARRAY_TYPE, 277) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1 */\
+        V(WASM_STRUCT_TYPE, 278) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1 */\
+      V(LAST_WASM_OBJECT_TYPE, 278) \
+      V(JS_PROXY_TYPE, 279) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1 */\
+      V(FIRST_JS_OBJECT_TYPE, 280) \
         V(JS_OBJECT_TYPE, 1057) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=14&c=1 */\
-        V(FIRST_JS_CUSTOM_ELEMENTS_OBJECT_TYPE, 281) \
-          V(FIRST_JS_SPECIAL_OBJECT_TYPE, 281) \
-            V(JS_GLOBAL_OBJECT_TYPE, 281) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=110&c=1 */\
-            V(JS_GLOBAL_PROXY_TYPE, 282) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=104&c=1 */\
-            V(JS_MODULE_NAMESPACE_TYPE, 283) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1 */\
-            V(JS_SPECIAL_API_OBJECT_TYPE, 1040) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=627&c=1 */\
+        V(FIRST_JS_CUSTOM_ELEMENTS_OBJECT_TYPE, 280) \
+          V(FIRST_JS_SPECIAL_OBJECT_TYPE, 280) \
+            V(JS_GLOBAL_OBJECT_TYPE, 280) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=110&c=1 */\
+            V(JS_GLOBAL_PROXY_TYPE, 281) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=104&c=1 */\
+            V(JS_MODULE_NAMESPACE_TYPE, 282) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1 */\
+            V(JS_SPECIAL_API_OBJECT_TYPE, 1040) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=628&c=1 */\
           V(LAST_JS_SPECIAL_OBJECT_TYPE, 1040) \
           V(JS_PRIMITIVE_WRAPPER_TYPE, 1041) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=118&c=1 */\
         V(LAST_JS_CUSTOM_ELEMENTS_OBJECT_TYPE, 1041) \
         V(FIRST_JS_OBJECT_WITH_EMBEDDER_SLOTS_TYPE, 1058) \
           V(FIRST_JS_API_OBJECT_TYPE, 1058) \
-            V(JS_API_OBJECT_TYPE, 1058) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=613&c=1 */\
-            V(JS_LAST_DUMMY_API_OBJECT_TYPE, 2058) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=620&c=1 */\
+            V(JS_API_OBJECT_TYPE, 1058) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=614&c=1 */\
+            V(JS_LAST_DUMMY_API_OBJECT_TYPE, 2058) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=621&c=1 */\
           V(LAST_JS_API_OBJECT_TYPE, 2058) \
           V(FIRST_JS_ARRAY_BUFFER_VIEW_TYPE, 2059) \
             V(FIRST_JS_DATA_VIEW_OR_RAB_GSAB_DATA_VIEW_TYPE, 2059) \
@@ -319,12 +318,12 @@
         V(JS_ARRAY_ITERATOR_TYPE, 2115) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1 */\
         V(JS_ASYNC_FROM_SYNC_ITERATOR_TYPE, 2116) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=161&c=1 */\
         V(JS_COLLATOR_TYPE, 2117) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1 */\
-        V(JS_CONTEXT_EXTENSION_OBJECT_TYPE, 2118) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=630&c=1 */\
+        V(JS_CONTEXT_EXTENSION_OBJECT_TYPE, 2118) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=631&c=1 */\
         V(JS_DATE_TYPE, 2119) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=141&c=1 */\
         V(JS_DATE_TIME_FORMAT_TYPE, 2120) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=16&c=1 */\
         V(JS_DISPLAY_NAMES_TYPE, 2121) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1 */\
         V(JS_DURATION_FORMAT_TYPE, 2122) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1 */\
-        V(JS_ERROR_TYPE, 2123) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=632&c=1 */\
+        V(JS_ERROR_TYPE, 2123) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1 */\
         V(JS_EXTERNAL_OBJECT_TYPE, 2124) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1 */\
         V(JS_FINALIZATION_REGISTRY_TYPE, 2125) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1 */\
         V(JS_LIST_FORMAT_TYPE, 2126) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=14&c=1 */\
@@ -385,7 +384,7 @@
   V(OBJECT_TEMPLATE_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1 */\
   V(ACCESS_CHECK_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=35&c=1 */\
   V(ACCESSOR_PAIR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=18&c=1 */\
-  V(ALIASED_ARGUMENTS_ENTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1 */\
+  V(ALIASED_ARGUMENTS_ENTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1 */\
   V(ALLOCATION_MEMENTO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1 */\
   V(ALLOCATION_SITE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=5&c=1 */\
   V(ARRAY_BOILERPLATE_DESCRIPTION_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1 */\
@@ -432,20 +431,20 @@
   V(CLOSURE_FEEDBACK_CELL_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=247&c=1 */\
   V(OBJECT_BOILERPLATE_DESCRIPTION_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=246&c=1 */\
   V(SCRIPT_CONTEXT_TABLE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=248&c=1 */\
-  V(BYTE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1 */\
+  V(BYTE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=30&c=1 */\
   V(BYTECODE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1 */\
-  V(EXTERNAL_POINTER_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1 */\
-  V(FIXED_DOUBLE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1 */\
-  V(INTERNAL_CLASS_WITH_SMI_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1 */\
-  V(SLOPPY_ARGUMENTS_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1 */\
-  V(TURBOFAN_BITSET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1 */\
-  V(TURBOFAN_HEAP_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1 */\
-  V(TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1 */\
-  V(TURBOFAN_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1 */\
-  V(TURBOFAN_UNION_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1 */\
-  V(EXPORTED_SUB_CLASS_BASE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1 */\
-  V(EXPORTED_SUB_CLASS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1 */\
-  V(EXPORTED_SUB_CLASS2_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1 */\
+  V(EXTERNAL_POINTER_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=35&c=1 */\
+  V(FIXED_DOUBLE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=19&c=1 */\
+  V(SLOPPY_ARGUMENTS_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1 */\
+  V(TURBOSHAFT_FLOAT64_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1 */\
+  V(TURBOSHAFT_FLOAT64_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1 */\
+  V(TURBOSHAFT_FLOAT64_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1 */\
+  V(TURBOSHAFT_WORD32_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1 */\
+  V(TURBOSHAFT_WORD32_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1 */\
+  V(TURBOSHAFT_WORD32_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1 */\
+  V(TURBOSHAFT_WORD64_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1 */\
+  V(TURBOSHAFT_WORD64_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1 */\
+  V(TURBOSHAFT_WORD64_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1 */\
   V(FOREIGN_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1 */\
   V(AWAIT_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=17&c=1 */\
   V(BLOCK_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=18&c=1 */\
@@ -457,15 +456,11 @@
   V(NATIVE_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=53&c=1 */\
   V(SCRIPT_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=24&c=1 */\
   V(WITH_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=25&c=1 */\
-  V(TURBOSHAFT_FLOAT64_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1 */\
-  V(TURBOSHAFT_FLOAT64_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1 */\
-  V(TURBOSHAFT_FLOAT64_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1 */\
-  V(TURBOSHAFT_WORD32_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1 */\
-  V(TURBOSHAFT_WORD32_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1 */\
-  V(TURBOSHAFT_WORD32_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1 */\
-  V(TURBOSHAFT_WORD64_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1 */\
-  V(TURBOSHAFT_WORD64_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1 */\
-  V(TURBOSHAFT_WORD64_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1 */\
+  V(TURBOFAN_BITSET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=59&c=1 */\
+  V(TURBOFAN_HEAP_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=77&c=1 */\
+  V(TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=82&c=1 */\
+  V(TURBOFAN_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=71&c=1 */\
+  V(TURBOFAN_UNION_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=65&c=1 */\
   V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1 */\
   V(UNCOMPILED_DATA_WITH_PREPARSE_DATA_AND_JOB_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1 */\
   V(UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1 */\
@@ -474,6 +469,9 @@
   V(WASM_CAPI_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1 */\
   V(WASM_EXPORTED_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1 */\
   V(WASM_JS_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1 */\
+  V(EXPORTED_SUB_CLASS_BASE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1 */\
+  V(EXPORTED_SUB_CLASS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1 */\
+  V(EXPORTED_SUB_CLASS2_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1 */\
   V(SMALL_ORDERED_HASH_MAP_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=64&c=1 */\
   V(SMALL_ORDERED_HASH_SET_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=25&c=1 */\
   V(SMALL_ORDERED_NAME_DICTIONARY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=101&c=1 */\
@@ -483,22 +481,21 @@
   V(STRONG_DESCRIPTOR_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1 */\
   V(SOURCE_TEXT_MODULE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1 */\
   V(SYNTHETIC_MODULE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1 */\
-  V(WEAK_FIXED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1 */\
+  V(WEAK_FIXED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=24&c=1 */\
   V(TRANSITION_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=250&c=1 */\
   V(ACCESSOR_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=55&c=1 */\
   V(CALL_HANDLER_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=5&c=1 */\
   V(CELL_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1 */\
-  V(CODE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=27&c=1 */\
   V(COVERAGE_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=1 */\
   V(EMBEDDER_DATA_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/embedder-data-array.tq?l=5&c=1 */\
   V(FEEDBACK_METADATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=51&c=1 */\
   V(FEEDBACK_VECTOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=35&c=1 */\
-  V(FILLER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=607&c=1 */\
+  V(FILLER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=608&c=1 */\
   V(FREE_SPACE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1 */\
   V(HOLE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=5&c=1 */\
   V(INSTRUCTION_STREAM_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=240&c=1 */\
   V(INTERNAL_CLASS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1 */\
-  V(INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1 */\
+  V(INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1 */\
   V(MAP_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1 */\
   V(MEGA_DOM_HANDLER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1 */\
   V(ON_HEAP_BASIC_BLOCK_PROFILER_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1 */\
@@ -511,6 +508,7 @@
   V(SMI_PAIR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1 */\
   V(SORT_STATE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1 */\
   V(SWISS_NAME_DICTIONARY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=7&c=1 */\
+  V(CODE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=17&c=1 */\
   V(WASM_API_FUNCTION_REF_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1 */\
   V(WASM_CONTINUATION_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=1 */\
   V(WASM_INTERNAL_FUNCTION_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=1 */\
@@ -518,7 +516,7 @@
   V(WASM_RESUME_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1 */\
   V(WASM_STRING_VIEW_ITER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1 */\
   V(WASM_TYPE_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1 */\
-  V(WEAK_ARRAY_LIST_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1 */\
+  V(WEAK_ARRAY_LIST_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=47&c=1 */\
   V(WEAK_CELL_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1 */\
   V(WASM_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1 */\
   V(WASM_STRUCT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1 */\
@@ -527,10 +525,10 @@
   V(JS_GLOBAL_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=110&c=1 */\
   V(JS_GLOBAL_PROXY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=104&c=1 */\
   V(JS_MODULE_NAMESPACE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1 */\
-  V(JS_SPECIAL_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=627&c=1 */\
+  V(JS_SPECIAL_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=628&c=1 */\
   V(JS_PRIMITIVE_WRAPPER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=118&c=1 */\
-  V(JS_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=613&c=1 */\
-  V(JS_LAST_DUMMY_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=620&c=1 */\
+  V(JS_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=614&c=1 */\
+  V(JS_LAST_DUMMY_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=621&c=1 */\
   V(JS_DATA_VIEW_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1 */\
   V(JS_RAB_GSAB_DATA_VIEW_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1 */\
   V(JS_TYPED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1 */\
@@ -590,12 +588,12 @@
   V(JS_ARRAY_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1 */\
   V(JS_ASYNC_FROM_SYNC_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=161&c=1 */\
   V(JS_COLLATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1 */\
-  V(JS_CONTEXT_EXTENSION_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=630&c=1 */\
+  V(JS_CONTEXT_EXTENSION_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=631&c=1 */\
   V(JS_DATE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=141&c=1 */\
   V(JS_DATE_TIME_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=16&c=1 */\
   V(JS_DISPLAY_NAMES_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1 */\
   V(JS_DURATION_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1 */\
-  V(JS_ERROR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=632&c=1 */\
+  V(JS_ERROR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1 */\
   V(JS_EXTERNAL_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=43&c=1 */\
   V(JS_FINALIZATION_REGISTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1 */\
   V(JS_LIST_FORMAT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-list-format.tq?l=14&c=1 */\
@@ -650,7 +648,7 @@
   V(ObjectTemplateInfo, OBJECT_TEMPLATE_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1 */ \
   V(AccessCheckInfo, ACCESS_CHECK_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=35&c=1 */ \
   V(AccessorPair, ACCESSOR_PAIR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=18&c=1 */ \
-  V(AliasedArgumentsEntry, ALIASED_ARGUMENTS_ENTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1 */ \
+  V(AliasedArgumentsEntry, ALIASED_ARGUMENTS_ENTRY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1 */ \
   V(AllocationMemento, ALLOCATION_MEMENTO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1 */ \
   V(ArrayBoilerplateDescription, ARRAY_BOILERPLATE_DESCRIPTION_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1 */ \
   V(AsmWasmData, ASM_WASM_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=186&c=1 */ \
@@ -681,31 +679,30 @@
   V(Tuple2, TUPLE2_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=8&c=1 */ \
   V(WasmExceptionTag, WASM_EXCEPTION_TAG_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=127&c=1 */ \
   V(WasmIndirectFunctionTable, WASM_INDIRECT_FUNCTION_TABLE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=97&c=1 */ \
-  V(ByteArray, BYTE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=1 */ \
+  V(ByteArray, BYTE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=30&c=1 */ \
   V(BytecodeArray, BYTECODE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=7&c=1 */ \
-  V(ExternalPointerArray, EXTERNAL_POINTER_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=32&c=1 */ \
-  V(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=18&c=1 */ \
-  V(InternalClassWithSmiElements, INTERNAL_CLASS_WITH_SMI_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1 */ \
-  V(SloppyArgumentsElements, SLOPPY_ARGUMENTS_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1 */ \
-  V(TurbofanBitsetType, TURBOFAN_BITSET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1 */ \
-  V(TurbofanHeapConstantType, TURBOFAN_HEAP_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1 */ \
-  V(TurbofanOtherNumberConstantType, TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1 */ \
-  V(TurbofanRangeType, TURBOFAN_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1 */ \
-  V(TurbofanUnionType, TURBOFAN_UNION_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1 */ \
-  V(ExportedSubClass, EXPORTED_SUB_CLASS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1 */ \
-  V(ExportedSubClass2, EXPORTED_SUB_CLASS2_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1 */ \
-  V(Foreign, FOREIGN_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1 */ \
+  V(ExternalPointerArray, EXTERNAL_POINTER_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=35&c=1 */ \
+  V(FixedDoubleArray, FIXED_DOUBLE_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=19&c=1 */ \
+  V(SloppyArgumentsElements, SLOPPY_ARGUMENTS_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1 */ \
   V(TurboshaftFloat64RangeType, TURBOSHAFT_FLOAT64_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=68&c=1 */ \
   V(TurboshaftFloat64SetType, TURBOSHAFT_FLOAT64_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=77&c=1 */ \
   V(TurboshaftWord32RangeType, TURBOSHAFT_WORD32_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=21&c=1 */ \
   V(TurboshaftWord32SetType, TURBOSHAFT_WORD32_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=29&c=1 */ \
   V(TurboshaftWord64RangeType, TURBOSHAFT_WORD64_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=42&c=1 */ \
   V(TurboshaftWord64SetType, TURBOSHAFT_WORD64_SET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=52&c=1 */ \
+  V(Foreign, FOREIGN_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=5&c=1 */ \
+  V(TurbofanBitsetType, TURBOFAN_BITSET_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=59&c=1 */ \
+  V(TurbofanHeapConstantType, TURBOFAN_HEAP_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=77&c=1 */ \
+  V(TurbofanOtherNumberConstantType, TURBOFAN_OTHER_NUMBER_CONSTANT_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=82&c=1 */ \
+  V(TurbofanRangeType, TURBOFAN_RANGE_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=71&c=1 */ \
+  V(TurbofanUnionType, TURBOFAN_UNION_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=65&c=1 */ \
   V(UncompiledDataWithPreparseDataAndJob, UNCOMPILED_DATA_WITH_PREPARSE_DATA_AND_JOB_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1 */ \
   V(UncompiledDataWithoutPreparseDataWithJob, UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_WITH_JOB_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1 */ \
   V(WasmCapiFunctionData, WASM_CAPI_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1 */ \
   V(WasmExportedFunctionData, WASM_EXPORTED_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1 */ \
   V(WasmJSFunctionData, WASM_JS_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1 */ \
+  V(ExportedSubClass, EXPORTED_SUB_CLASS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1 */ \
+  V(ExportedSubClass2, EXPORTED_SUB_CLASS2_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1 */ \
   V(SmallOrderedHashMap, SMALL_ORDERED_HASH_MAP_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=64&c=1 */ \
   V(SmallOrderedHashSet, SMALL_ORDERED_HASH_SET_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=25&c=1 */ \
   V(SmallOrderedNameDictionary, SMALL_ORDERED_NAME_DICTIONARY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=101&c=1 */ \
@@ -723,7 +720,7 @@
   V(FreeSpace, FREE_SPACE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1 */ \
   V(Hole, HOLE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/hole.tq?l=5&c=1 */ \
   V(InternalClass, INTERNAL_CLASS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1 */ \
-  V(InternalClassWithStructElements, INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1 */ \
+  V(InternalClassWithStructElements, INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1 */ \
   V(Map, MAP_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1 */ \
   V(MegaDomHandler, MEGA_DOM_HANDLER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1 */ \
   V(OnHeapBasicBlockProfilerData, ON_HEAP_BASIC_BLOCK_PROFILER_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1 */ \
@@ -743,7 +740,7 @@
   V(WasmResumeData, WASM_RESUME_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1 */ \
   V(WasmStringViewIter, WASM_STRING_VIEW_ITER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1 */ \
   V(WasmTypeInfo, WASM_TYPE_INFO_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1 */ \
-  V(WeakArrayList, WEAK_ARRAY_LIST_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=46&c=1 */ \
+  V(WeakArrayList, WEAK_ARRAY_LIST_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=47&c=1 */ \
   V(WeakCell, WEAK_CELL_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1 */ \
   V(WasmArray, WASM_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1 */ \
   V(WasmStruct, WASM_STRUCT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1 */ \
@@ -823,15 +820,15 @@
 // full Torque definitions and subclasses.
 #define TORQUE_INSTANCE_CHECKERS_MULTIPLE_FULLY_DEFINED(V) \
   V(FixedArray, FIXED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=11&c=1 */ \
-  V(ExportedSubClassBase, EXPORTED_SUB_CLASS_BASE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1 */ \
   V(TurboshaftFloat64Type, TURBOSHAFT_FLOAT64_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=1 */ \
   V(TurboshaftWord32Type, TURBOSHAFT_WORD32_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=16&c=1 */ \
   V(TurboshaftWord64Type, TURBOSHAFT_WORD64_TYPE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=37&c=1 */ \
   V(UncompiledDataWithPreparseData, UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1 */ \
   V(UncompiledDataWithoutPreparseData, UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1 */ \
   V(WasmFunctionData, WASM_FUNCTION_DATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=1 */ \
+  V(ExportedSubClassBase, EXPORTED_SUB_CLASS_BASE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1 */ \
   V(DescriptorArray, DESCRIPTOR_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1 */ \
-  V(WeakFixedArray, WEAK_FIXED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=22&c=1 */ \
+  V(WeakFixedArray, WEAK_FIXED_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=24&c=1 */ \
   V(JSObject, JS_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=14&c=1 */ \
   V(JSFunction, JS_FUNCTION_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=30&c=1 */ \
   V(JSGeneratorObject, JS_GENERATOR_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1 */ \
@@ -869,12 +866,12 @@
   V(ScriptContext, SCRIPT_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=24&c=1 */ \
   V(WithContext, WITH_CONTEXT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=25&c=1 */ \
   V(TransitionArray, TRANSITION_ARRAY_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=250&c=1 */ \
-  V(Code, CODE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=27&c=1 */ \
   V(FeedbackMetadata, FEEDBACK_METADATA_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=51&c=1 */ \
-  V(Filler, FILLER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=607&c=1 */ \
+  V(Filler, FILLER_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=608&c=1 */ \
   V(InstructionStream, INSTRUCTION_STREAM_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=240&c=1 */ \
-  V(JSSpecialApiObject, JS_SPECIAL_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=627&c=1 */ \
-  V(JSLastDummyApiObject, JS_LAST_DUMMY_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=620&c=1 */ \
+  V(Code, CODE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=17&c=1 */ \
+  V(JSSpecialApiObject, JS_SPECIAL_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=628&c=1 */ \
+  V(JSLastDummyApiObject, JS_LAST_DUMMY_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=621&c=1 */ \
   V(Bigint64TypedArrayConstructor, BIGINT64_TYPED_ARRAY_CONSTRUCTOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=171&c=1 */ \
   V(Biguint64TypedArrayConstructor, BIGUINT64_TYPED_ARRAY_CONSTRUCTOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=168&c=1 */ \
   V(Float32TypedArrayConstructor, FLOAT32_TYPED_ARRAY_CONSTRUCTOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=159&c=1 */ \
@@ -905,8 +902,8 @@
   V(JSMapValueIterator, JS_MAP_VALUE_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=26&c=1 */ \
   V(JSSetKeyValueIterator, JS_SET_KEY_VALUE_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=30&c=1 */ \
   V(JSSetValueIterator, JS_SET_VALUE_ITERATOR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=32&c=1 */ \
-  V(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=630&c=1 */ \
-  V(JSError, JS_ERROR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=632&c=1 */ \
+  V(JSContextExtensionObject, JS_CONTEXT_EXTENSION_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=631&c=1 */ \
+  V(JSError, JS_ERROR_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1 */ \
   V(WasmExceptionPackage, WASM_EXCEPTION_PACKAGE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=134&c=1 */ \
   V(WasmInstanceObject, WASM_INSTANCE_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=12&c=1 */ \
   V(WasmValueObject, WASM_VALUE_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/debug/debug-wasm-objects.tq?l=7&c=1 */ \
@@ -917,7 +914,7 @@
 // they are not guaranteed to.
 #define TORQUE_INSTANCE_CHECKERS_MULTIPLE_ONLY_DECLARED(V) \
   V(HashTable, HASH_TABLE_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=216&c=1 */ \
-  V(JSApiObject, JS_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=613&c=1 */ \
+  V(JSApiObject, JS_API_OBJECT_TYPE) /* https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=614&c=1 */ \
 
 // Triples of (ClassName, FIRST_TYPE, LAST_TYPE) for classes
 // that have full Torque definitions.
@@ -932,17 +929,17 @@
   V(Struct, FIRST_STRUCT_TYPE, LAST_STRUCT_TYPE) \
   V(FixedArray, FIRST_FIXED_ARRAY_TYPE, LAST_FIXED_ARRAY_TYPE) \
   V(FixedArrayBase, FIRST_FIXED_ARRAY_BASE_TYPE, LAST_FIXED_ARRAY_BASE_TYPE) \
-  V(TurbofanType, FIRST_TURBOFAN_TYPE_TYPE, LAST_TURBOFAN_TYPE_TYPE) \
-  V(ExportedSubClassBase, FIRST_EXPORTED_SUB_CLASS_BASE_TYPE, LAST_EXPORTED_SUB_CLASS_BASE_TYPE) \
-  V(Context, FIRST_CONTEXT_TYPE, LAST_CONTEXT_TYPE) \
   V(TurboshaftFloat64Type, FIRST_TURBOSHAFT_FLOAT64_TYPE_TYPE, LAST_TURBOSHAFT_FLOAT64_TYPE_TYPE) \
   V(TurboshaftWord32Type, FIRST_TURBOSHAFT_WORD32_TYPE_TYPE, LAST_TURBOSHAFT_WORD32_TYPE_TYPE) \
   V(TurboshaftWord64Type, FIRST_TURBOSHAFT_WORD64_TYPE_TYPE, LAST_TURBOSHAFT_WORD64_TYPE_TYPE) \
   V(TurboshaftType, FIRST_TURBOSHAFT_TYPE_TYPE, LAST_TURBOSHAFT_TYPE_TYPE) \
+  V(Context, FIRST_CONTEXT_TYPE, LAST_CONTEXT_TYPE) \
+  V(TurbofanType, FIRST_TURBOFAN_TYPE_TYPE, LAST_TURBOFAN_TYPE_TYPE) \
   V(UncompiledDataWithPreparseData, FIRST_UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE, LAST_UNCOMPILED_DATA_WITH_PREPARSE_DATA_TYPE) \
   V(UncompiledDataWithoutPreparseData, FIRST_UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE, LAST_UNCOMPILED_DATA_WITHOUT_PREPARSE_DATA_TYPE) \
   V(UncompiledData, FIRST_UNCOMPILED_DATA_TYPE, LAST_UNCOMPILED_DATA_TYPE) \
   V(WasmFunctionData, FIRST_WASM_FUNCTION_DATA_TYPE, LAST_WASM_FUNCTION_DATA_TYPE) \
+  V(ExportedSubClassBase, FIRST_EXPORTED_SUB_CLASS_BASE_TYPE, LAST_EXPORTED_SUB_CLASS_BASE_TYPE) \
   V(SmallOrderedHashTable, FIRST_SMALL_ORDERED_HASH_TABLE_TYPE, LAST_SMALL_ORDERED_HASH_TABLE_TYPE) \
   V(AbstractInternalClass, FIRST_ABSTRACT_INTERNAL_CLASS_TYPE, LAST_ABSTRACT_INTERNAL_CLASS_TYPE) \
   V(DescriptorArray, FIRST_DESCRIPTOR_ARRAY_TYPE, LAST_DESCRIPTOR_ARRAY_TYPE) \
@@ -997,7 +994,6 @@
   V(AbstractInternalClass) \
   V(AbstractInternalClassSubclass1) \
   V(AbstractInternalClassSubclass2) \
-  V(InternalClassWithSmiElements) \
   V(InternalClassWithStructElements) \
   V(ExportedSubClass2) \
   V(SortState) \
@@ -1010,7 +1006,6 @@
   V(TURBOSHAFT_WORD32_SET_TYPE_TYPE, TurboshaftWord32SetType, turboshaft_word32set_type) \
   V(TURBOSHAFT_WORD64_SET_TYPE_TYPE, TurboshaftWord64SetType, turboshaft_word64set_type) \
   V(TURBOSHAFT_FLOAT64_SET_TYPE_TYPE, TurboshaftFloat64SetType, turboshaft_float64set_type) \
-  V(INTERNAL_CLASS_WITH_SMI_ELEMENTS_TYPE, InternalClassWithSmiElements, internal_class_with_smi_elements) \
   V(INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE, InternalClassWithStructElements, internal_class_with_struct_elements) \
 
 #define TORQUE_DEFINED_FIXED_INSTANCE_TYPE_LIST(V) \
@@ -1075,7 +1070,6 @@
   V(_, ExportedSubClassMap, exported_sub_class_map, ExportedSubClass) \
   V(_, AbstractInternalClassSubclass1Map, abstract_internal_class_subclass1_map, AbstractInternalClassSubclass1) \
   V(_, AbstractInternalClassSubclass2Map, abstract_internal_class_subclass2_map, AbstractInternalClassSubclass2) \
-  V(_, InternalClassWithSmiElementsMap, internal_class_with_smi_elements_map, InternalClassWithSmiElements) \
   V(_, InternalClassWithStructElementsMap, internal_class_with_struct_elements_map, InternalClassWithStructElements) \
   V(_, ExportedSubClass2Map, exported_sub_class2_map, ExportedSubClass2) \
   V(_, SortStateMap, sort_state_map, SortState) \
@@ -1111,7 +1105,6 @@
   V(Map, exported_sub_class_map, ExportedSubClassMap) \
   V(Map, abstract_internal_class_subclass1_map, AbstractInternalClassSubclass1Map) \
   V(Map, abstract_internal_class_subclass2_map, AbstractInternalClassSubclass2Map) \
-  V(Map, internal_class_with_smi_elements_map, InternalClassWithSmiElementsMap) \
   V(Map, internal_class_with_struct_elements_map, InternalClassWithStructElementsMap) \
   V(Map, exported_sub_class2_map, ExportedSubClass2Map) \
   V(Map, sort_state_map, SortStateMap) \

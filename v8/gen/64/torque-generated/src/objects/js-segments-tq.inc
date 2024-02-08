@@ -25,15 +25,22 @@ class TorqueGeneratedJSSegments : public P {
   inline void set_icu_break_iterator(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  inline Tagged<Foreign> unicode_string() const;
+  inline Tagged<String> raw_string() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  inline Tagged<Foreign> unicode_string(PtrComprCageBase cage_base) const;
+  inline Tagged<String> raw_string(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  inline void set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_raw_string(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
-  inline int flags() const;
+  inline Tagged<Foreign> unicode_string() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+  inline Tagged<Foreign> unicode_string(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+  inline void set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=15&c=3
+  inline int flags() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=15&c=3
   inline void set_flags(int value);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1
@@ -55,9 +62,12 @@ class TorqueGeneratedJSSegments : public P {
   static constexpr int kIcuBreakIteratorOffset = P::kHeaderSize;
   static constexpr int kIcuBreakIteratorOffsetEnd = kIcuBreakIteratorOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-  static constexpr int kUnicodeStringOffset = kIcuBreakIteratorOffsetEnd + 1;
-  static constexpr int kUnicodeStringOffsetEnd = kUnicodeStringOffset + kTaggedSize - 1;
+  static constexpr int kRawStringOffset = kIcuBreakIteratorOffsetEnd + 1;
+  static constexpr int kRawStringOffsetEnd = kRawStringOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+  static constexpr int kUnicodeStringOffset = kRawStringOffsetEnd + 1;
+  static constexpr int kUnicodeStringOffsetEnd = kUnicodeStringOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=15&c=3
   static constexpr int kFlagsOffset = kUnicodeStringOffsetEnd + 1;
   static constexpr int kFlagsOffsetEnd = kFlagsOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kFlagsOffsetEnd + 1;

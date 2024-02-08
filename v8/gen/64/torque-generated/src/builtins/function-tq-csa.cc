@@ -68,13 +68,13 @@
 #include "src/wasm/wasm-linkage.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/function-tq-csa.h"
+#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frames-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/function-tq-csa.h"
-#include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/descriptor-array-tq-csa.h"
@@ -554,7 +554,7 @@ TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::Code
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
+    std::tie(tmp0, tmp1) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
     ca_.Goto(&block2);
   }
 

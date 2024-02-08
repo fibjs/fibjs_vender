@@ -129,7 +129,7 @@ class TorqueGeneratedPromiseReaction : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=32&c=3
   inline void set_next(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class Undefined | CallableApiObject | CallableJSProxy | class JSFunction | class JSBoundFunction | class JSWrappedFunction)
+  // Torque type: (class Undefined | class JSFunction | CallableApiObject | CallableJSProxy | class JSBoundFunction | class JSWrappedFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=33&c=3
   inline Tagged<HeapObject> reject_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=33&c=3
@@ -137,7 +137,7 @@ class TorqueGeneratedPromiseReaction : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=33&c=3
   inline void set_reject_handler(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class Undefined | CallableApiObject | CallableJSProxy | class JSFunction | class JSBoundFunction | class JSWrappedFunction)
+  // Torque type: (class Undefined | class JSFunction | CallableApiObject | CallableJSProxy | class JSBoundFunction | class JSWrappedFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=34&c=3
   inline Tagged<HeapObject> fulfill_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=34&c=3
@@ -255,7 +255,7 @@ class TorqueGeneratedPromiseReactionJobTask : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=56&c=3
   inline void set_context(Tagged<Context> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class Undefined | CallableApiObject | CallableJSProxy | class JSFunction | class JSBoundFunction | class JSWrappedFunction)
+  // Torque type: (class Undefined | class JSFunction | CallableApiObject | CallableJSProxy | class JSBoundFunction | class JSWrappedFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=57&c=3
   inline Tagged<HeapObject> handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=57&c=3

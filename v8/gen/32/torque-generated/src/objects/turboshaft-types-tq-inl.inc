@@ -1,29 +1,29 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTypeElements(TurboshaftWord32SetType p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTypeElements(Tagged<TurboshaftWord32SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh(TurboshaftWord64SetType p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh(Tagged<TurboshaftWord64SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(TurboshaftWord64SetType p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(Tagged<TurboshaftWord64SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements(TurboshaftFloat64SetType p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements(Tagged<TurboshaftFloat64SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=216&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
 inline intptr_t TqRuntimeConvert_intptr_uint32_0(uint32_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
@@ -32,20 +32,20 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord32SetTypeElements
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTypeElements(TurboshaftWord32SetType p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTypeElements(Tagged<TurboshaftWord32SetType> p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
-  Object tmp4{}; USE(tmp4);
+  Tagged<Object> tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
   goto block0;
 
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
-  tmp1 = (p_o).ReadField<uint32_t>(tmp0);
+  tmp1 = (p_o)->ReadField<uint32_t>(tmp0);
   tmp2 = TqRuntimeConvert_intptr_uint32_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x8ull));
   std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_uint32_0(p_o, tmp3, tmp2);
@@ -60,20 +60,20 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord32SetTyp
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=57&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh(TurboshaftWord64SetType p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsHigh(Tagged<TurboshaftWord64SetType> p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
-  Object tmp4{}; USE(tmp4);
+  Tagged<Object> tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
   goto block0;
 
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
-  tmp1 = (p_o).ReadField<uint32_t>(tmp0);
+  tmp1 = (p_o)->ReadField<uint32_t>(tmp0);
   tmp2 = TqRuntimeConvert_intptr_uint32_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x8ull));
   std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_uint32_0(p_o, tmp3, tmp2);
@@ -88,9 +88,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTyp
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=58&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(TurboshaftWord64SetType p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTypeElementsLow(Tagged<TurboshaftWord64SetType> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
@@ -99,7 +99,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTyp
   intptr_t tmp6{}; USE(tmp6);
   uint32_t tmp7{}; USE(tmp7);
   intptr_t tmp8{}; USE(tmp8);
-  Object tmp9{}; USE(tmp9);
+  Tagged<Object> tmp9{}; USE(tmp9);
   intptr_t tmp10{}; USE(tmp10);
   intptr_t tmp11{}; USE(tmp11);
   goto block0;
@@ -110,7 +110,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTyp
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
-  tmp7 = (p_o).ReadField<uint32_t>(tmp6);
+  tmp7 = (p_o)->ReadField<uint32_t>(tmp6);
   tmp8 = TqRuntimeConvert_intptr_uint32_0(tmp7);
   std::tie(tmp9, tmp10, tmp11) = TqRuntimeNewMutableSlice_uint32_0(p_o, tmp5, tmp8);
   goto block2;
@@ -124,20 +124,20 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftWord64SetTyp
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements(TurboshaftFloat64SetType p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceTurboshaftFloat64SetTypeElements(Tagged<TurboshaftFloat64SetType> p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
-  Object tmp4{}; USE(tmp4);
+  Tagged<Object> tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
   goto block0;
 
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp1 = (p_o).ReadField<uint32_t>(tmp0);
+  tmp1 = (p_o)->ReadField<uint32_t>(tmp0);
   tmp2 = TqRuntimeConvert_intptr_uint32_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0xcull));
   std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_float64_0(p_o, tmp3, tmp2);
@@ -169,7 +169,7 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint32_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint32_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=216&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
 intptr_t TqRuntimeConvert_intptr_uint32_0(uint32_t p_i) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
@@ -208,9 +208,9 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint32_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=34&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -228,9 +228,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Object 
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_float64_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=82&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;

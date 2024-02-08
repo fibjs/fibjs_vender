@@ -2,9 +2,7 @@
 #define V8_GEN_TORQUE_GENERATED_VISITOR_LISTS_H_
 
 #define TORQUE_INSTANCE_TYPE_TO_BODY_DESCRIPTOR_LIST(V)\
-V(FIXED_ARRAY_TYPE,FixedArray)\
 V(WEAK_FIXED_ARRAY_TYPE,WeakFixedArray)\
-V(SLOPPY_ARGUMENTS_ELEMENTS_TYPE,SloppyArgumentsElements)\
 V(SCOPE_INFO_TYPE,ScopeInfo)\
 V(DESCRIPTOR_ARRAY_TYPE,DescriptorArray)\
 V(STRONG_DESCRIPTOR_ARRAY_TYPE,StrongDescriptorArray)\
@@ -37,7 +35,6 @@ V(EXPORTED_SUB_CLASS_BASE_TYPE,ExportedSubClassBase)\
 V(EXPORTED_SUB_CLASS_TYPE,ExportedSubClass)\
 V(ABSTRACT_INTERNAL_CLASS_SUBCLASS1_TYPE,AbstractInternalClassSubclass1)\
 V(ABSTRACT_INTERNAL_CLASS_SUBCLASS2_TYPE,AbstractInternalClassSubclass2)\
-V(INTERNAL_CLASS_WITH_SMI_ELEMENTS_TYPE,InternalClassWithSmiElements)\
 V(INTERNAL_CLASS_WITH_STRUCT_ELEMENTS_TYPE,InternalClassWithStructElements)\
 V(EXPORTED_SUB_CLASS2_TYPE,ExportedSubClass2)\
 V(SORT_STATE_TYPE,SortState)\
@@ -63,9 +60,7 @@ V(AbstractInternalClassSubclass2)\
 
 #define TORQUE_POINTER_VISITOR_ID_LIST(V)\
 V(Context)\
-V(FixedArray)\
 V(WeakFixedArray)\
-V(SloppyArgumentsElements)\
 V(ScopeInfo)\
 V(DescriptorArray)\
 V(StrongDescriptorArray)\
@@ -87,7 +82,6 @@ V(SmiPair)\
 V(SmiBox)\
 V(ExportedSubClassBase)\
 V(ExportedSubClass)\
-V(InternalClassWithSmiElements)\
 V(InternalClassWithStructElements)\
 V(ExportedSubClass2)\
 V(SortState)\

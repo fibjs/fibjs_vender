@@ -69,7 +69,7 @@
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
-#include "torque-generated/src/builtins/array-from-tq-csa.h"
+#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/array-isarray-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
@@ -1001,7 +1001,7 @@ TorqueStructPromiseResolvingFunctions CreatePromiseResolvingFunctions_0(compiler
     ca_.Bind(&block0);
     tmp0 = CreatePromiseResolvingFunctionsContext_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{p_promise}, TNode<Boolean>{p_debugEvent}, TNode<NativeContext>{p_nativeContext});
     tmp1 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp2, tmp3) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp1}).Flatten();
+    std::tie(tmp2, tmp3) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp1}).Flatten();
     tmp4 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp2, tmp3});
     tmp5 = CodeStubAssembler(state_).PromiseCapabilityDefaultResolveSharedFunConstant();
     tmp6 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp4}, TNode<SharedFunctionInfo>{tmp5}, TNode<Context>{tmp0});
@@ -1085,7 +1085,7 @@ TNode<PromiseCapability> InnerNewPromiseCapability_0(compiler::CodeAssemblerStat
     tmp14 = CreatePromiseCapabilitiesExecutorContext_0(state_, TNode<NativeContext>{tmp0}, TNode<PromiseCapability>{tmp13});
     tmp15 = CodeStubAssembler(state_).PromiseGetCapabilitiesExecutorSharedFunConstant();
     tmp16 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp17, tmp18) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp16}).Flatten();
+    std::tie(tmp17, tmp18) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp16}).Flatten();
     tmp19 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp17, tmp18});
     tmp20 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp19}, TNode<SharedFunctionInfo>{tmp15}, TNode<Context>{tmp14});
     tmp21 = UnsafeCast_Constructor_0(state_, TNode<Context>{p_context}, TNode<Object>{p_constructor});
@@ -1981,46 +1981,6 @@ void InitContextSlot_PromiseCapabilitiesExecutorContext_PromiseCapabilitiesExecu
   }
 
     ca_.Bind(&block22);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=316&c=16
-TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = ContextSlot_NativeContext_NativeContext_Map_0(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=333&c=8
-TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = ContextSlot_NativeContext_NativeContext_JSFunction_0(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=355&c=32

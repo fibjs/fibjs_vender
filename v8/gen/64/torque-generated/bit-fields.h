@@ -518,16 +518,14 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=54&c=1
 #define DEFINE_TORQUE_GENERATED_TURBOFAN_TYPE_HIGH_BITS() \
   using MachineBit = base::BitField<bool, 0, 1, uint32_t>; \
-  using TheHoleBit = base::BitField<bool, 1, 1, uint32_t>; \
-  using PropertyCellHoleBit = base::BitField<bool, 2, 1, uint32_t>; \
+  using HoleBit = base::BitField<bool, 1, 1, uint32_t>; \
   enum Flag: uint32_t { \
     kNone = 0, \
     kMachine = uint32_t{1} << 0, \
-    kTheHole = uint32_t{1} << 1, \
-    kPropertyCellHole = uint32_t{1} << 2, \
+    kHole = uint32_t{1} << 1, \
   }; \
   using Flags = base::Flags<Flag>; \
-  static constexpr int kFlagCount = 3; \
+  static constexpr int kFlagCount = 2; \
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=7&c=1
 #define DEFINE_TORQUE_GENERATED_TURBOSHAFT_FLOAT_SPECIAL_VALUES() \

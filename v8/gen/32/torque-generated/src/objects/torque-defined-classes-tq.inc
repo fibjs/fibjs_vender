@@ -7,11 +7,36 @@ class ExportedSubClass;
 class AbstractInternalClass;
 class AbstractInternalClassSubclass1;
 class AbstractInternalClassSubclass2;
-class InternalClassWithSmiElements;
 class InternalClassWithStructElements;
 class ExportedSubClass2;
 class SortState;
 class WasmStringViewIter;
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1
+template <class D, class P>
+class TorqueGeneratedSloppyArgumentsElementsAsserts {
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=29&c=3
+  static constexpr int kContextOffset = P::kHeaderSize;
+  static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=30&c=3
+  static constexpr int kArgumentsOffset = kContextOffsetEnd + 1;
+  static constexpr int kArgumentsOffsetEnd = kArgumentsOffset + kTaggedSize - 1;
+  static constexpr int kHeaderSize = kArgumentsOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
+  static constexpr int kMappedEntriesOffset = kArgumentsOffsetEnd + 1;
+  static constexpr int kMappedEntriesOffsetEnd = kMappedEntriesOffset + 0 - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kMappedEntriesOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
+
+  static_assert(kContextOffset == D::kContextOffset,
+                "Values of SloppyArgumentsElements::kContextOffset defined in Torque and C++ do not match");
+  static_assert(kArgumentsOffset == D::kArgumentsOffset,
+                "Values of SloppyArgumentsElements::kArgumentsOffset defined in Torque and C++ do not match");
+  static_assert(kMappedEntriesOffset == D::kMappedEntriesOffset,
+                "Values of SloppyArgumentsElements::kMappedEntriesOffset defined in Torque and C++ do not match");
+};
+
 // Alias for IsStrongDescriptorArray() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
 V8_EXPORT_PRIVATE bool IsStrongDescriptorArray_NonInline(Tagged<HeapObject> o);
@@ -754,110 +779,11 @@ class AbstractInternalClassSubclass2 : public TorqueGeneratedAbstractInternalCla
   TQ_OBJECT_CONSTRUCTORS(AbstractInternalClassSubclass2)
 };
 
-// Alias for IsInternalClassWithSmiElements() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-V8_EXPORT_PRIVATE bool IsInternalClassWithSmiElements_NonInline(Tagged<HeapObject> o);
-
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-template <class D, class P>
-class TorqueGeneratedInternalClassWithSmiElements : public P {
-  static_assert(
-      std::is_same<InternalClassWithSmiElements, D>::value,
-      "Use this class as direct base for InternalClassWithSmiElements.");
-  static_assert(
-      std::is_same<FixedArrayBase, P>::value,
-      "Pass in FixedArrayBase as second template parameter for TorqueGeneratedInternalClassWithSmiElements.");
-
- public: 
-  using Super = P;
-  using TorqueGeneratedClass = TorqueGeneratedInternalClassWithSmiElements<D,P>;
-
- protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
-  inline int data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
-  inline void set_data(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-  inline Tagged<Oddball> object() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-  inline Tagged<Oddball> object(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-  inline void set_object(Tagged<Oddball> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-  inline int entries(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-  inline void set_entries(int i, int value);
-
- public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
-  DECL_PRINTER(InternalClassWithSmiElements)
-
-#ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-  V8_EXPORT_PRIVATE void InternalClassWithSmiElementsVerify(Isolate* isolate);
-#endif  // VERIFY_HEAP
-
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
-  static constexpr int kDataOffset = P::kHeaderSize;
-  static constexpr int kDataOffsetEnd = kDataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-  static constexpr int kObjectOffset = kDataOffsetEnd + 1;
-  static constexpr int kObjectOffsetEnd = kObjectOffset + kTaggedSize - 1;
-  static constexpr int kHeaderSize = kObjectOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-  static constexpr int kEntriesOffset = kObjectOffsetEnd + 1;
-  static constexpr int kEntriesOffsetEnd = kEntriesOffset + 0 - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kEntriesOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-  V8_INLINE static constexpr int32_t SizeFor(int length) {
-    int32_t size = kHeaderSize;
-    size += length * 4;
-    return size;
-  }
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-  V8_INLINE int32_t AllocatedSize() const {
-    return SizeFor(this->length());
-  }
-
-  friend class Factory;
-
-  template <class DAlias = D>
-  constexpr TorqueGeneratedInternalClassWithSmiElements() : P() {
-    static_assert(
-        std::is_base_of<TorqueGeneratedInternalClassWithSmiElements, DAlias>::value,
-        "class TorqueGeneratedInternalClassWithSmiElements should be used as direct base for InternalClassWithSmiElements.");
-  }
-
- protected:
-  inline explicit constexpr TorqueGeneratedInternalClassWithSmiElements(Address ptr, typename P::SkipTypeCheckTag
-)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
-  inline explicit TorqueGeneratedInternalClassWithSmiElements(Address ptr);
-};
-
-class InternalClassWithSmiElements : public TorqueGeneratedInternalClassWithSmiElements<InternalClassWithSmiElements, FixedArrayBase> {
- public:
-  class BodyDescriptor;
-  TQ_OBJECT_CONSTRUCTORS(InternalClassWithSmiElements)
-};
-
 // Alias for IsInternalClassWithStructElements() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
 V8_EXPORT_PRIVATE bool IsInternalClassWithStructElements_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
 template <class D, class P>
 class TorqueGeneratedInternalClassWithStructElements : public P {
   static_assert(
@@ -872,52 +798,52 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
   using TorqueGeneratedClass = TorqueGeneratedInternalClassWithStructElements<D,P>;
 
  protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
   inline int32_t dummy1() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
   inline void set_dummy1(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
   inline int32_t dummy2() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
   inline void set_dummy2(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1198&c=9
   inline int count() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1198&c=9
   inline void set_count(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
   inline int data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
   inline void set_data(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
   inline Tagged<Object> object() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
   inline Tagged<Object> object(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
   inline void set_object(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
   inline int entries(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
   inline void set_entries(int i, int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline int more_entries_a(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline void set_more_entries_a(int i, int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline int more_entries_b(int i) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline void set_more_entries_b(int i, int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
   V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
   V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
     return Tagged<D>::unchecked_cast(object);
   }
@@ -925,37 +851,37 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
   DECL_PRINTER(InternalClassWithStructElements)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
   V8_EXPORT_PRIVATE void InternalClassWithStructElementsVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
   static constexpr int kDummy1Offset = P::kHeaderSize;
   static constexpr int kDummy1OffsetEnd = kDummy1Offset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
   static constexpr int kDummy2Offset = kDummy1OffsetEnd + 1;
   static constexpr int kDummy2OffsetEnd = kDummy2Offset + kInt32Size - 1;
   static constexpr int kStartOfStrongFieldsOffset = kDummy2OffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1198&c=9
   static constexpr int kCountOffset = kDummy2OffsetEnd + 1;
   static constexpr int kCountOffsetEnd = kCountOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
   static constexpr int kDataOffset = kCountOffsetEnd + 1;
   static constexpr int kDataOffsetEnd = kDataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
   static constexpr int kObjectOffset = kDataOffsetEnd + 1;
   static constexpr int kObjectOffsetEnd = kObjectOffset + kTaggedSize - 1;
   static constexpr int kHeaderSize = kObjectOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
   static constexpr int kEntriesOffset = kObjectOffsetEnd + 1;
   static constexpr int kEntriesOffsetEnd = kEntriesOffset + 0 - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
   inline int MoreEntriesOffset() const;
   static constexpr int kEndOfStrongFieldsOffset = kEntriesOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
   static constexpr int kEndOfWeakFieldsOffset = kEntriesOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
   V8_INLINE static constexpr int32_t SizeFor(int count) {
     int32_t size = kHeaderSize;
     size += count * 4;
@@ -963,7 +889,7 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->count());
   }
@@ -990,10 +916,10 @@ class InternalClassWithStructElements : public TorqueGeneratedInternalClassWithS
 };
 
 // Alias for IsExportedSubClass2() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
 V8_EXPORT_PRIVATE bool IsExportedSubClass2_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
 template <class D, class P>
 class TorqueGeneratedExportedSubClass2 : public P {
   static_assert(
@@ -1007,24 +933,24 @@ class TorqueGeneratedExportedSubClass2 : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedExportedSubClass2<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
   inline int32_t x_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
   inline void set_x_field(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
   inline int32_t y_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
   inline void set_y_field(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
   inline int z_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
   inline void set_z_field(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
   V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
   V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
     return Tagged<D>::unchecked_cast(object);
   }
@@ -1032,18 +958,18 @@ class TorqueGeneratedExportedSubClass2 : public P {
   DECL_PRINTER(ExportedSubClass2)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
   V8_EXPORT_PRIVATE void ExportedSubClass2Verify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
   static constexpr int kXFieldOffset = P::kHeaderSize;
   static constexpr int kXFieldOffsetEnd = kXFieldOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
   static constexpr int kYFieldOffset = kXFieldOffsetEnd + 1;
   static constexpr int kYFieldOffsetEnd = kYFieldOffset + kInt32Size - 1;
   static constexpr int kStartOfStrongFieldsOffset = kYFieldOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
   static constexpr int kZFieldOffset = kYFieldOffsetEnd + 1;
   static constexpr int kZFieldOffsetEnd = kZFieldOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kZFieldOffsetEnd + 1;
@@ -1052,14 +978,14 @@ class TorqueGeneratedExportedSubClass2 : public P {
   static constexpr int kHeaderSize = kZFieldOffsetEnd + 1;
   static constexpr int kSize = kZFieldOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -1126,7 +1052,7 @@ class TorqueGeneratedSortState : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
   inline void set_initialReceiverLength(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class Undefined | CallableApiObject | CallableJSProxy | class JSFunction | class JSBoundFunction | class JSWrappedFunction)
+  // Torque type: (class Undefined | class JSFunction | CallableApiObject | CallableJSProxy | class JSBoundFunction | class JSWrappedFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
   inline Tagged<HeapObject> userCmpFn() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3

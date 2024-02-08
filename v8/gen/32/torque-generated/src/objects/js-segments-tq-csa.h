@@ -16,15 +16,21 @@ TNode<Foreign> LoadJSSegmentsIcuBreakIterator_0(compiler::CodeAssemblerState* st
 void StoreJSSegmentsIcuBreakIterator_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o, TNode<Foreign> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
-TNode<Foreign> LoadJSSegmentsUnicodeString_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o);
+TNode<String> LoadJSSegmentsRawString_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
+void StoreJSSegmentsRawString_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o, TNode<String> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+TNode<Foreign> LoadJSSegmentsUnicodeString_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
 void StoreJSSegmentsUnicodeString_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o, TNode<Foreign> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=15&c=3
 TNode<Smi> LoadJSSegmentsFlags_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=15&c=3
 void StoreJSSegmentsFlags_0(compiler::CodeAssemblerState* state_, TNode<JSSegments> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=11&c=1

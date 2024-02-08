@@ -227,14 +227,14 @@ Tagged<JSReceiver> TorqueGeneratedJSFinalizationRegistry<D, P>::cleanup() const 
 template<class D, class P>
 Tagged<JSReceiver> TorqueGeneratedJSFinalizationRegistry<D, P>::cleanup(PtrComprCageBase cage_base) const {
   Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kCleanupOffset);
-  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=11&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_cleanup(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kCleanupOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCleanupOffset, value, mode);
 }

@@ -1,7 +1,6 @@
 class JSArgumentsObject;
 class JSSloppyArgumentsObject;
 class JSStrictArgumentsObject;
-class SloppyArgumentsElements;
 class AliasedArgumentsEntry;
 // Alias for IsJSArgumentsObject() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=5&c=1
@@ -179,113 +178,11 @@ class TorqueGeneratedJSStrictArgumentsObject : public P {
   inline explicit TorqueGeneratedJSStrictArgumentsObject(Address ptr);
 };
 
-// Alias for IsSloppyArgumentsElements() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-V8_EXPORT_PRIVATE bool IsSloppyArgumentsElements_NonInline(Tagged<HeapObject> o);
-
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-template <class D, class P>
-class TorqueGeneratedSloppyArgumentsElements : public P {
-  static_assert(
-      std::is_same<SloppyArgumentsElements, D>::value,
-      "Use this class as direct base for SloppyArgumentsElements.");
-  static_assert(
-      std::is_same<FixedArrayBase, P>::value,
-      "Pass in FixedArrayBase as second template parameter for TorqueGeneratedSloppyArgumentsElements.");
-
- public: 
-  using Super = P;
-  using TorqueGeneratedClass = TorqueGeneratedSloppyArgumentsElements<D,P>;
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  inline Tagged<Context> context() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  inline Tagged<Context> context(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  inline void set_context(Tagged<Context> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  inline Tagged<FixedArray> arguments() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  inline Tagged<FixedArray> arguments(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  inline void set_arguments(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: (Smi | TheHole)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  inline Tagged<Object> mapped_entries(int i, RelaxedLoadTag) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  inline Tagged<Object> mapped_entries(PtrComprCageBase cage_base, int i, RelaxedLoadTag) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  inline void set_mapped_entries(int i, Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
-  DECL_PRINTER(SloppyArgumentsElements)
-
-#ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_EXPORT_PRIVATE void SloppyArgumentsElementsVerify(Isolate* isolate);
-#endif  // VERIFY_HEAP
-
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=79&c=3
-  static constexpr int kContextOffset = P::kHeaderSize;
-  static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=80&c=3
-  static constexpr int kArgumentsOffset = kContextOffsetEnd + 1;
-  static constexpr int kArgumentsOffsetEnd = kArgumentsOffset + kTaggedSize - 1;
-  static constexpr int kHeaderSize = kArgumentsOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=81&c=19
-  static constexpr int kMappedEntriesOffset = kArgumentsOffsetEnd + 1;
-  static constexpr int kMappedEntriesOffsetEnd = kMappedEntriesOffset + 0 - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kMappedEntriesOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_INLINE static constexpr int32_t SizeFor(int length) {
-    int32_t size = kHeaderSize;
-    size += length * 4;
-    return size;
-  }
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-  V8_INLINE int32_t AllocatedSize() const {
-    return SizeFor(this->length());
-  }
-
-  friend class Factory;
-
-  template <class DAlias = D>
-  constexpr TorqueGeneratedSloppyArgumentsElements() : P() {
-    static_assert(
-        std::is_base_of<TorqueGeneratedSloppyArgumentsElements, DAlias>::value,
-        "class TorqueGeneratedSloppyArgumentsElements should be used as direct base for SloppyArgumentsElements.");
-  }
-
- protected:
-  inline explicit constexpr TorqueGeneratedSloppyArgumentsElements(Address ptr, typename P::SkipTypeCheckTag
-)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
-  inline explicit TorqueGeneratedSloppyArgumentsElements(Address ptr);
-};
-
-class SloppyArgumentsElements : public TorqueGeneratedSloppyArgumentsElements<SloppyArgumentsElements, FixedArrayBase> {
- public:
-  class BodyDescriptor;
-  TQ_OBJECT_CONSTRUCTORS(SloppyArgumentsElements)
-};
-
 // Alias for IsAliasedArgumentsEntry() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
 V8_EXPORT_PRIVATE bool IsAliasedArgumentsEntry_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
 template <class D, class P>
 class TorqueGeneratedAliasedArgumentsEntry : public P {
   static_assert(
@@ -299,14 +196,14 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedAliasedArgumentsEntry<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=92&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=42&c=3
   inline int aliased_context_slot() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=92&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=42&c=3
   inline void set_aliased_context_slot(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
   V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
   V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
     return Tagged<D>::unchecked_cast(object);
   }
@@ -314,12 +211,12 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
   DECL_PRINTER(AliasedArgumentsEntry)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
   V8_EXPORT_PRIVATE void AliasedArgumentsEntryVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=92&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=42&c=3
   static constexpr int kAliasedContextSlotOffset = P::kHeaderSize;
   static constexpr int kAliasedContextSlotOffsetEnd = kAliasedContextSlotOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kAliasedContextSlotOffsetEnd + 1;
@@ -328,14 +225,14 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
   static constexpr int kHeaderSize = kAliasedContextSlotOffsetEnd + 1;
   static constexpr int kSize = kAliasedContextSlotOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 8);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }

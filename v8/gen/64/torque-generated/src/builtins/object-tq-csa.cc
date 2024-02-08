@@ -928,7 +928,7 @@ TNode<PropertyDescriptorObject> ToPropertyDescriptor_0(compiler::CodeAssemblerSt
     tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp2 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_object, tmp1});
     tmp3 = DATA_PROPERTY_DESCRIPTOR_MAP_INDEX_0(state_);
-    std::tie(tmp4, tmp5) = NativeContextSlot_Map_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp3}).Flatten();
+    std::tie(tmp4, tmp5) = NativeContextSlot_Map_1(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp3}).Flatten();
     tmp6 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp4, tmp5});
     tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp2}, TNode<HeapObject>{tmp6});
     ca_.Branch(tmp7, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -1033,7 +1033,7 @@ TNode<PropertyDescriptorObject> ToPropertyDescriptor_0(compiler::CodeAssemblerSt
     tmp45 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp46 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_object, tmp45});
     tmp47 = ACCESSOR_PROPERTY_DESCRIPTOR_MAP_INDEX_0(state_);
-    std::tie(tmp48, tmp49) = NativeContextSlot_Map_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp47}).Flatten();
+    std::tie(tmp48, tmp49) = NativeContextSlot_Map_1(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp47}).Flatten();
     tmp50 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp48, tmp49});
     tmp51 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp46}, TNode<HeapObject>{tmp50});
     ca_.Branch(tmp51, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
@@ -1715,7 +1715,7 @@ TNode<HeapObject> Cast_JSReceiver_OR_Null_1(compiler::CodeAssemblerState* state_
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object.tq?l=225&c=22
-TorqueStructReference_Map_0 NativeContextSlot_Map_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
+TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

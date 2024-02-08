@@ -25,24 +25,14 @@ class TorqueGeneratedOddballAsserts {
 
   static_assert(kToNumberRawOffset == D::kToNumberRawOffset,
                 "Values of Oddball::kToNumberRawOffset defined in Torque and C++ do not match");
-  static_assert(StaticStringsEqual("float64", D::kToNumberRawTqFieldType),
-                "Types of Oddball::kToNumberRawOffset specified in Torque and C++ do not match");
   static_assert(kToStringOffset == D::kToStringOffset,
                 "Values of Oddball::kToStringOffset defined in Torque and C++ do not match");
-  static_assert(StaticStringsEqual("String", D::kToStringTqFieldType),
-                "Types of Oddball::kToStringOffset specified in Torque and C++ do not match");
   static_assert(kToNumberOffset == D::kToNumberOffset,
                 "Values of Oddball::kToNumberOffset defined in Torque and C++ do not match");
-  static_assert(StaticStringsEqual("Number", D::kToNumberTqFieldType),
-                "Types of Oddball::kToNumberOffset specified in Torque and C++ do not match");
   static_assert(kTypeOfOffset == D::kTypeOfOffset,
                 "Values of Oddball::kTypeOfOffset defined in Torque and C++ do not match");
-  static_assert(StaticStringsEqual("String", D::kTypeOfTqFieldType),
-                "Types of Oddball::kTypeOfOffset specified in Torque and C++ do not match");
   static_assert(kKindOffset == D::kKindOffset,
                 "Values of Oddball::kKindOffset defined in Torque and C++ do not match");
-  static_assert(StaticStringsEqual("Smi", D::kKindTqFieldType),
-                "Types of Oddball::kKindOffset specified in Torque and C++ do not match");
   static_assert(kSize == D::kSize);
 };
 

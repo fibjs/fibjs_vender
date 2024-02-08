@@ -132,21 +132,7 @@ void TorqueGeneratedAbstractInternalClassSubclass2<AbstractInternalClassSubclass
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-bool IsInternalClassWithSmiElements_NonInline(Tagged<HeapObject> o) {
-  return IsInternalClassWithSmiElements(o);
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedInternalClassWithSmiElements<InternalClassWithSmiElements, FixedArrayBase>::InternalClassWithSmiElementsVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::InternalClassWithSmiElementsVerify(InternalClassWithSmiElements::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
 bool IsInternalClassWithStructElements_NonInline(Tagged<HeapObject> o) {
   return IsInternalClassWithStructElements(o);
 }
@@ -160,7 +146,7 @@ void TorqueGeneratedInternalClassWithStructElements<InternalClassWithStructEleme
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
 bool IsExportedSubClass2_NonInline(Tagged<HeapObject> o) {
   return IsExportedSubClass2(o);
 }

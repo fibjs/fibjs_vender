@@ -35,7 +35,7 @@ class TorqueGeneratedTemplateInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=9&c=3
   inline void set_number_of_properties(int value);
 
-  // Torque type: (class Undefined | class TemplateList)
+  // Torque type: (class Undefined | class ArrayList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
   inline Tagged<HeapObject> property_list() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
@@ -43,7 +43,7 @@ class TorqueGeneratedTemplateInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
   inline void set_property_list(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class Undefined | class TemplateList)
+  // Torque type: (class Undefined | class ArrayList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=11&c=3
   inline Tagged<HeapObject> property_accessors() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=11&c=3

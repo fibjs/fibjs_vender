@@ -72,6 +72,45 @@ namespace v8 {
 namespace internal {
 namespace  {
 class EnumVerifier {
+  // ArrayFromAsyncLabels (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=7&c=1)
+  void VerifyEnum_ArrayFromAsyncLabels(ArrayBuiltins::ArrayFromAsyncLabels x) {
+    switch(x) {
+      case ArrayBuiltins::ArrayFromAsyncLabels::kGetIteratorStep: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kCheckIteratorValueAndMapping: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kIteratorMapping: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kGetIteratorValueWithMapping: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kAddIteratorValueToTheArray: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kGetArrayLikeValue: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kCheckArrayLikeValueAndMapping: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kGetArrayLikeValueWithMapping: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kAddArrayLikeValueToTheArray: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kDoneAndResolvePromise: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kCloseAsyncIterator: break;
+      case ArrayBuiltins::ArrayFromAsyncLabels::kRejectPromise: break;
+    }
+  }
+
+  // ArrayFromAsyncResolveContextSlots (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1)
+  void VerifyEnum_ArrayFromAsyncResolveContextSlots(ArrayBuiltins::ArrayFromAsyncResolveContextSlots x) {
+    switch(x) {
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateStepSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateAwaitedValueSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateLenSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateIndexSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolvePromiseSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolvePromiseFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveOnFulfilledFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveOnRejectedFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResultArraySlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveIteratorSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveNextMethodSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveErrorSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveMapfnSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveThisArgSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveLength: break;
+    }
+  }
+
   // UpdateFeedbackMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=277&c=1)
   void VerifyEnum_UpdateFeedbackMode(UpdateFeedbackMode x) {
     switch(x) {
@@ -267,11 +306,13 @@ class EnumVerifier {
       case MessageTemplate::kArgumentIsNonObject: break;
       case MessageTemplate::kKeysMethodInvalid: break;
       case MessageTemplate::kGeneratorRunning: break;
+      case MessageTemplate::kFirstArgumentAsyncIteratorSymbolNonCallable: break;
+      case MessageTemplate::kIteratorResultNotAnObject: break;
       default: break;
     }
   }
 
-  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=476&c=1)
+  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1)
   void VerifyEnum_PropertyAttributes(PropertyAttributes x) {
     switch(x) {
       case PropertyAttributes::NONE: break;
@@ -294,7 +335,7 @@ class EnumVerifier {
     }
   }
 
-  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=596&c=1)
+  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=597&c=1)
   void VerifyEnum_LanguageMode(LanguageMode x) {
     switch(x) {
       case LanguageMode::kStrict: break;
@@ -302,7 +343,7 @@ class EnumVerifier {
     }
   }
 
-  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=697&c=1)
+  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=698&c=1)
   void VerifyEnum_BigIntHandling(CodeStubAssembler::BigIntHandling x) {
     switch(x) {
       case CodeStubAssembler::BigIntHandling::kConvertToNumber: break;
@@ -310,7 +351,7 @@ class EnumVerifier {
     }
   }
 
-  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2086&c=1)
+  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2087&c=1)
   void VerifyEnum_HashFieldType(Name::HashFieldType x) {
     switch(x) {
       case Name::HashFieldType::kHash: break;

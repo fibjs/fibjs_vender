@@ -66,14 +66,14 @@ Tagged<JSReceiver> TorqueGeneratedJSIteratorMapHelper<D, P>::mapper() const {
 template<class D, class P>
 Tagged<JSReceiver> TorqueGeneratedJSIteratorMapHelper<D, P>::mapper(PtrComprCageBase cage_base) const {
   Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kMapperOffset);
-  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorMapHelper<D, P>::set_mapper(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kMapperOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMapperOffset, value, mode);
 }
@@ -123,14 +123,14 @@ Tagged<JSReceiver> TorqueGeneratedJSIteratorFilterHelper<D, P>::predicate() cons
 template<class D, class P>
 Tagged<JSReceiver> TorqueGeneratedJSIteratorFilterHelper<D, P>::predicate(PtrComprCageBase cage_base) const {
   Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kPredicateOffset);
-  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_predicate(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kPredicateOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPredicateOffset, value, mode);
 }
@@ -248,14 +248,14 @@ Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::mapper() const 
 template<class D, class P>
 Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::mapper(PtrComprCageBase cage_base) const {
   Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kMapperOffset);
-  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_mapper(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kMapperOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMapperOffset, value, mode);
 }

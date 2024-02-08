@@ -1132,40 +1132,42 @@ TF_BUILTIN(RegExpPrototypeReplace, CodeStubAssembler) {
     }
   }
 
+  TNode<Object> tmp6;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@replace");
+    tmp6 = FromConstexpr_Object_constexpr_string_0(state_, "RegExp.prototype.@@replace");
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{tmp6}, TNode<Object>{parameter1});
   }
 
-  TNode<String> tmp6;
-  TNode<JSRegExp> tmp7;
+  TNode<String> tmp7;
+  TNode<JSRegExp> tmp8;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp6 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp1});
-    compiler::CodeAssemblerLabel label8(&ca_);
-    tmp7 = Cast_FastJSRegExp_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp4}, &label8);
+    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    compiler::CodeAssemblerLabel label9(&ca_);
+    tmp8 = Cast_FastJSRegExp_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp4}, &label9);
     ca_.Goto(&block7);
-    if (label8.is_used()) {
-      ca_.Bind(&label8);
+    if (label9.is_used()) {
+      ca_.Bind(&label9);
       ca_.Goto(&block8);
     }
   }
 
-  TNode<Smi> tmp9;
-  TNode<String> tmp10;
+  TNode<Smi> tmp10;
+  TNode<String> tmp11;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp9 = CodeStubAssembler(state_).SmiConstant(v8::Isolate::kRegExpReplaceCalledOnSlowRegExp);
-    CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, tmp9);
-    tmp10 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpReplaceRT, parameter0, tmp4, tmp6, tmp3)); 
-    arguments.PopAndReturn(tmp10);
+    tmp10 = CodeStubAssembler(state_).SmiConstant(v8::Isolate::kRegExpReplaceCalledOnSlowRegExp);
+    CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, tmp10);
+    tmp11 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpReplaceRT, parameter0, tmp4, tmp7, tmp3)); 
+    arguments.PopAndReturn(tmp11);
   }
 
-  TNode<String> tmp11;
+  TNode<String> tmp12;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp11 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kRegExpReplace), parameter0, tmp7, tmp6, tmp3);
-    arguments.PopAndReturn(tmp11);
+    tmp12 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kRegExpReplace), parameter0, tmp8, tmp7, tmp3);
+    arguments.PopAndReturn(tmp12);
   }
 }
 

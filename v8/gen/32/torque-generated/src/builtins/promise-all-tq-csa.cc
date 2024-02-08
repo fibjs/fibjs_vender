@@ -69,7 +69,7 @@
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-all-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
-#include "torque-generated/src/builtins/array-from-tq-csa.h"
+#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -1127,7 +1127,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
     tmp12 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
-    std::tie(tmp13, tmp14) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
+    std::tie(tmp13, tmp14) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
     }
     if (catch15__label.is_used()) {
       compiler::CodeAssemblerLabel catch15_skip(&ca_);
@@ -2147,7 +2147,7 @@ TNode<Object> PerformPromiseAll_PromiseAllResolveElementFunctor_PromiseAllReject
   if (block79.is_used()) {
     ca_.Bind(&block79, &phi_bb79_11);
     tmp184 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp185, tmp186) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp184}).Flatten();
+    std::tie(tmp185, tmp186) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp184}).Flatten();
     tmp187 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp185, tmp186});
     tmp188 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp188, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});
@@ -2329,7 +2329,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
     tmp12 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
-    std::tie(tmp13, tmp14) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
+    std::tie(tmp13, tmp14) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp12}).Flatten();
     }
     if (catch15__label.is_used()) {
       compiler::CodeAssemblerLabel catch15_skip(&ca_);
@@ -3347,7 +3347,7 @@ TNode<Object> PerformPromiseAll_PromiseAllSettledResolveElementFunctor_PromiseAl
   if (block79.is_used()) {
     ca_.Bind(&block79, &phi_bb79_11);
     tmp183 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
-    std::tie(tmp184, tmp185) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp183}).Flatten();
+    std::tie(tmp184, tmp185) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp183}).Flatten();
     tmp186 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp184, tmp185});
     tmp187 = FromConstexpr_bool_constexpr_bool_0(state_, p_hasResolveAndRejectClosures);
     ca_.Branch(tmp187, &block83, std::vector<compiler::Node*>{phi_bb79_11}, &block84, std::vector<compiler::Node*>{phi_bb79_11});

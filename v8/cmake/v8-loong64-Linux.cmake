@@ -31,6 +31,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlastindex-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-foreach-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-foreach-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-async-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-async-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-isarray-tq-csa.cc
@@ -475,6 +477,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/templates-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/torque-defined-classes-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/torque-defined-classes-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/trusted-object-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/trusted-object-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turbofan-types-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turbofan-types-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/turboshaft-types-tq-csa.cc
@@ -793,6 +797,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/int64-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/late-escape-analysis-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/late-load-elimination-reducer.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/loop-unrolling-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/loop-unrolling-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/machine-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/memory-optimization-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/operations.cc
@@ -812,6 +818,9 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/types.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/use-map.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/utils.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-dead-code-elimination-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-gc-optimize-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-gc-type-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-optimize-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-turboshaft-compiler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/type-cache.cc
@@ -908,6 +917,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/base/active-system-pages.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/asm/loong64/push_registers_asm.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/incremental-marking-schedule.cc
+	${PROJECT_SOURCE_DIR}/src/heap/base/memory-tagging.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/stack.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/worklist.cc
 	${PROJECT_SOURCE_DIR}/src/heap/basic-memory-chunk.cc
@@ -971,6 +981,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc/visitor.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc/write-barrier.cc
 	${PROJECT_SOURCE_DIR}/src/heap/ephemeron-remembered-set.cc
+	${PROJECT_SOURCE_DIR}/src/heap/evacuation-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/heap/evacuation-verifier.cc
 	${PROJECT_SOURCE_DIR}/src/heap/factory-base.cc
 	${PROJECT_SOURCE_DIR}/src/heap/factory.cc
@@ -991,6 +1002,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/large-spaces.cc
 	${PROJECT_SOURCE_DIR}/src/heap/local-factory.cc
 	${PROJECT_SOURCE_DIR}/src/heap/local-heap.cc
+	${PROJECT_SOURCE_DIR}/src/heap/main-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/heap/mark-compact.cc
 	${PROJECT_SOURCE_DIR}/src/heap/mark-sweep-utilities.cc
 	${PROJECT_SOURCE_DIR}/src/heap/marking-barrier.cc
@@ -1243,6 +1255,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/code-pointer-table.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/external-pointer-table.cc
+	${PROJECT_SOURCE_DIR}/src/sandbox/indirect-pointer-table.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/sandbox.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/testing.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/code-serializer.cc

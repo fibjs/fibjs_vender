@@ -33,6 +33,9 @@ TFJ(ArrayForEachLoopEagerDeoptContinuation, JSParameterCount(4), kReceiver, kCal
 TFJ(ArrayForEachLoopLazyDeoptContinuation, JSParameterCount(5), kReceiver, kCallback, kThisArg, kInitialK, kLength, kResult) \
 TFC(ArrayForEachLoopContinuation, ArrayForEachLoopContinuation) \
 TFJ(ArrayForEach, kDontAdaptArgumentsSentinel) \
+TFJ(ArrayFromAsyncOnFulfilled, JSParameterCount(1), kReceiver, kResult) \
+TFJ(ArrayFromAsyncOnRejected, JSParameterCount(1), kReceiver, kResult) \
+TFJ(ArrayFromAsync, kDontAdaptArgumentsSentinel) \
 TFJ(ArrayFrom, kDontAdaptArgumentsSentinel) \
 TFJ(ArrayIsArray, JSParameterCount(1), kReceiver, kArg) \
 TFC(LoadJoinElement_DictionaryElements_0, LoadJoinElement_DictionaryElements_0) \
@@ -504,6 +507,7 @@ TFC(WasmTableGetFuncRef, WasmTableGetFuncRef) \
 TFC(WasmTableSetFuncRef, WasmTableSetFuncRef) \
 TFC(WasmRefFunc, WasmRefFunc) \
 TFC(WasmInternalFunctionCreateExternal, WasmInternalFunctionCreateExternal) \
+TFC(WasmAllocateZeroedFixedArray, WasmAllocateZeroedFixedArray) \
 TFC(WasmAllocateFixedArray, WasmAllocateFixedArray) \
 TFC(WasmThrow, WasmThrow) \
 TFC(WasmRethrow, WasmRethrow) \
@@ -561,6 +565,9 @@ TFC(WasmStringEncodeWtf16, WasmStringEncodeWtf16) \
 TFC(WasmStringEncodeWtf16Array, WasmStringEncodeWtf16Array) \
 TFC(ThrowToLowerCaseCalledOnNull, ThrowToLowerCaseCalledOnNull) \
 TFC(ThrowIndexOfCalledOnNull, ThrowIndexOfCalledOnNull) \
+TFC(ThrowDataViewGetInt32DetachedError, ThrowDataViewGetInt32DetachedError) \
+TFC(ThrowDataViewGetInt32OutOfBounds, ThrowDataViewGetInt32OutOfBounds) \
+TFC(ThrowDataViewGetInt32TypeError, ThrowDataViewGetInt32TypeError) \
 TFC(WasmStringConcat, WasmStringConcat) \
 TFC(WasmStringEqual, WasmStringEqual) \
 TFC(WasmStringIsUSVSequence, WasmStringIsUSVSequence) \

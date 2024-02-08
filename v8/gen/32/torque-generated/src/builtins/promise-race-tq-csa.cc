@@ -69,6 +69,7 @@
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-race-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
+#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
@@ -240,7 +241,7 @@ TF_BUILTIN(PromiseRace, CodeStubAssembler) {
     tmp24 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch27__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch27__label);
-    std::tie(tmp25, tmp26) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp3}, TNode<IntPtrT>{tmp24}).Flatten();
+    std::tie(tmp25, tmp26) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp3}, TNode<IntPtrT>{tmp24}).Flatten();
     }
     if (catch27__label.is_used()) {
       compiler::CodeAssemblerLabel catch27_skip(&ca_);

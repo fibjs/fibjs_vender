@@ -69,7 +69,7 @@
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
-#include "torque-generated/src/builtins/array-from-tq-csa.h"
+#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
@@ -468,7 +468,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp18 = ITERATOR_RESULT_MAP_INDEX_0(state_);
-    std::tie(tmp19, tmp20) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp18}).Flatten();
+    std::tie(tmp19, tmp20) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp18}).Flatten();
     tmp21 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp19, tmp20});
     tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp9}, TNode<HeapObject>{tmp21});
     ca_.Branch(tmp22, &block28, std::vector<compiler::Node*>{}, &block29, std::vector<compiler::Node*>{});

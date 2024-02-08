@@ -75,7 +75,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=99&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=96&c=1
 TNode<Smi> kStoreSucceded_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -86,7 +86,7 @@ TNode<Smi> kStoreSucceded_0(compiler::CodeAssemblerState* state_) {
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
   return TNode<Smi>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=100&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=97&c=1
 TNode<Smi> kStoreFailureArrayDetachedOrOutOfBounds_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -97,7 +97,7 @@ TNode<Smi> kStoreFailureArrayDetachedOrOutOfBounds_0(compiler::CodeAssemblerStat
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
   return TNode<Smi>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=140&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=137&c=1
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_elementsKindParam) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -388,7 +388,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{phi_bb1_1}, TNode<BuiltinPtr>{phi_bb1_2}, TNode<BuiltinPtr>{phi_bb1_3}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=191&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=188&c=1
 TNode<JSTypedArray> EnsureAttached_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array, compiler::CodeAssemblerLabel* label_DetachedOrOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -429,7 +429,7 @@ TNode<JSTypedArray> EnsureAttached_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<JSTypedArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=206&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=203&c=1
 TorqueStructAttachedJSTypedArrayAndLength_0 EnsureAttachedAndReadLength_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array, compiler::CodeAssemblerLabel* label_DetachedOrOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -467,7 +467,7 @@ TorqueStructAttachedJSTypedArrayAndLength_0 EnsureAttachedAndReadLength_0(compil
   return TorqueStructAttachedJSTypedArrayAndLength_0{TNode<JSTypedArray>{tmp2}, TNode<UintPtrT>{tmp0}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=241&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=238&c=1
 TorqueStructAttachedJSTypedArrayWitness_0 NewAttachedJSTypedArrayWitness_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -490,7 +490,7 @@ TorqueStructAttachedJSTypedArrayWitness_0 NewAttachedJSTypedArrayWitness_0(compi
   return TorqueStructAttachedJSTypedArrayWitness_0{TNode<JSTypedArray>{p_array}, TNode<JSTypedArray>{p_array}, TNode<BuiltinPtr>{tmp1}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=254&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=251&c=1
 ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -507,7 +507,7 @@ ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::UINT8_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=257&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=254&c=1
 ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -524,7 +524,7 @@ ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state
   return ElementsKind::INT8_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=260&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=257&c=1
 ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -541,7 +541,7 @@ ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* sta
   return ElementsKind::UINT16_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=263&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=260&c=1
 ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -558,7 +558,7 @@ ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::INT16_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=266&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=263&c=1
 ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -575,7 +575,7 @@ ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* sta
   return ElementsKind::UINT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=269&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=266&c=1
 ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -592,7 +592,7 @@ ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::INT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=272&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=269&c=1
 ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -609,7 +609,7 @@ ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* st
   return ElementsKind::FLOAT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=275&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=272&c=1
 ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -626,7 +626,7 @@ ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* st
   return ElementsKind::FLOAT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=278&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=275&c=1
 ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -643,7 +643,7 @@ ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerStat
   return ElementsKind::UINT8_CLAMPED_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=281&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=278&c=1
 ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -660,7 +660,7 @@ ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* 
   return ElementsKind::BIGUINT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=284&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=281&c=1
 ElementsKind KindForArrayType_BigInt64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -677,7 +677,7 @@ ElementsKind KindForArrayType_BigInt64Elements_0(compiler::CodeAssemblerState* s
   return ElementsKind::BIGINT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=151&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=148&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -694,7 +694,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int32Elements_0(compiler:
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Int32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Int32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Int32Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=153&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=150&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -711,7 +711,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float32Elements_0(compile
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Float32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Float32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Float32Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=155&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=152&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -728,7 +728,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float64Elements_0(compile
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Float64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Float64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Float64Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=157&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=154&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8ClampedElements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -745,7 +745,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8ClampedElements_0(co
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Uint8ClampedElements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Uint8ClampedElements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Uint8ClampedElements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=159&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=156&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigUint64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -762,7 +762,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigUint64Elements_0(compi
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_BigUint64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_BigUint64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_BigUint64Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=161&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=158&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigInt64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -779,7 +779,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigInt64Elements_0(compil
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_BigInt64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_BigInt64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_BigInt64Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=165&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=162&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -796,7 +796,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8Elements_0(compiler:
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Uint8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Uint8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Uint8Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=167&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=164&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -813,7 +813,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int8Elements_0(compiler::
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Int8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Int8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Int8Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=169&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=166&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -830,7 +830,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint16Elements_0(compiler
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Uint16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Uint16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Uint16Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=171&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=168&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -847,7 +847,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int16Elements_0(compiler:
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Int16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Int16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Int16Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=173&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=170&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

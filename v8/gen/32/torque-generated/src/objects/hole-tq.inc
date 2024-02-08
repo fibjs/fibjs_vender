@@ -13,8 +13,6 @@ class TorqueGeneratedHoleAsserts {
 
   static_assert(kRawNumericValueOffset == D::kRawNumericValueOffset,
                 "Values of Hole::kRawNumericValueOffset defined in Torque and C++ do not match");
-  static_assert(StaticStringsEqual("float64", D::kRawNumericValueTqFieldType),
-                "Types of Hole::kRawNumericValueOffset specified in Torque and C++ do not match");
   static_assert(kSize == D::kSize);
 };
 

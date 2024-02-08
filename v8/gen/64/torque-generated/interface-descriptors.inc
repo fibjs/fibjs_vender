@@ -1370,6 +1370,13 @@ class WasmInternalFunctionCreateExternalDescriptor : public StaticCallInterfaceD
   DECLARE_DEFAULT_DESCRIPTOR(WasmInternalFunctionCreateExternalDescriptor)
 };
 
+class WasmAllocateZeroedFixedArrayDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateZeroedFixedArrayDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSize)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<IntPtrT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateZeroedFixedArrayDescriptor)
+};
+
 class WasmAllocateFixedArrayDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateFixedArrayDescriptor> {
  public:
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSize)
@@ -1767,6 +1774,27 @@ class ThrowIndexOfCalledOnNullDescriptor : public StaticCallInterfaceDescriptor<
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowIndexOfCalledOnNullDescriptor)
+};
+
+class ThrowDataViewGetInt32DetachedErrorDescriptor : public StaticCallInterfaceDescriptor<ThrowDataViewGetInt32DetachedErrorDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowDataViewGetInt32DetachedErrorDescriptor)
+};
+
+class ThrowDataViewGetInt32OutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowDataViewGetInt32OutOfBoundsDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowDataViewGetInt32OutOfBoundsDescriptor)
+};
+
+class ThrowDataViewGetInt32TypeErrorDescriptor : public StaticCallInterfaceDescriptor<ThrowDataViewGetInt32TypeErrorDescriptor> {
+ public:
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kValue)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ThrowDataViewGetInt32TypeErrorDescriptor)
 };
 
 class WasmStringConcatDescriptor : public StaticCallInterfaceDescriptor<WasmStringConcatDescriptor> {

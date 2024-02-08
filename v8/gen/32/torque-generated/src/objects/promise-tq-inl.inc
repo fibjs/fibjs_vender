@@ -112,14 +112,14 @@ Tagged<HeapObject> TorqueGeneratedPromiseReaction<D, P>::reject_handler() const 
 template<class D, class P>
 Tagged<HeapObject> TorqueGeneratedPromiseReaction<D, P>::reject_handler(PtrComprCageBase cage_base) const {
   Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kRejectHandlerOffset);
-  DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=33&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_reject_handler(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kRejectHandlerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRejectHandlerOffset, value, mode);
 }
@@ -135,14 +135,14 @@ Tagged<HeapObject> TorqueGeneratedPromiseReaction<D, P>::fulfill_handler() const
 template<class D, class P>
 Tagged<HeapObject> TorqueGeneratedPromiseReaction<D, P>::fulfill_handler(PtrComprCageBase cage_base) const {
   Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kFulfillHandlerOffset);
-  DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=34&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_fulfill_handler(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kFulfillHandlerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFulfillHandlerOffset, value, mode);
 }
@@ -261,14 +261,14 @@ Tagged<HeapObject> TorqueGeneratedPromiseReactionJobTask<D, P>::handler() const 
 template<class D, class P>
 Tagged<HeapObject> TorqueGeneratedPromiseReactionJobTask<D, P>::handler(PtrComprCageBase cage_base) const {
   Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kHandlerOffset);
-  DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=57&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReactionJobTask<D, P>::set_handler(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kHandlerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHandlerOffset, value, mode);
 }

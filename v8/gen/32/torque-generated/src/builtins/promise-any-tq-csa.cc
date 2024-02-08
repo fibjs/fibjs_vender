@@ -70,7 +70,7 @@
 #include "torque-generated/src/builtins/promise-any-tq-csa.h"
 #include "torque-generated/src/builtins/aggregate-error-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
-#include "torque-generated/src/builtins/array-from-tq-csa.h"
+#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
 #include "torque-generated/src/builtins/array-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -386,61 +386,56 @@ USE(parameter2);
   TNode<IntPtrT> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<FixedArray> tmp29;
-  TNode<IntPtrT> tmp30;
-  TNode<Object> tmp31;
-  TNode<IntPtrT> tmp32;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp27 = CodeStubAssembler(state_).LoadAndUntagFixedArrayBaseLength(TNode<FixedArrayBase>{tmp14});
     tmp28 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp29 = ExtractFixedArray_0(state_, TNode<FixedArray>{tmp14}, TNode<IntPtrT>{tmp28}, TNode<IntPtrT>{tmp27}, TNode<IntPtrT>{tmp24});
-    tmp30 = kPromiseAnyRejectElementErrorsSlot_0(state_);
-    std::tie(tmp31, tmp32) = ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_FixedArray_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp30}).Flatten();
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp31, tmp32}, tmp29);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp12, tmp13}, tmp29);
     ca_.Goto(&block20, tmp29);
   }
 
-  TNode<FixedArray> phi_bb20_8;
-  TNode<Object> tmp33;
-  TNode<IntPtrT> tmp34;
-  TNode<IntPtrT> tmp35;
-  TNode<UintPtrT> tmp36;
-  TNode<UintPtrT> tmp37;
-  TNode<BoolT> tmp38;
+  TNode<FixedArray> phi_bb20_10;
+  TNode<Object> tmp30;
+  TNode<IntPtrT> tmp31;
+  TNode<IntPtrT> tmp32;
+  TNode<UintPtrT> tmp33;
+  TNode<UintPtrT> tmp34;
+  TNode<BoolT> tmp35;
   if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_8);
-    std::tie(tmp33, tmp34, tmp35) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb20_8}).Flatten();
-    tmp36 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp10});
-    tmp37 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp35});
-    tmp38 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp36}, TNode<UintPtrT>{tmp37});
-    ca_.Branch(tmp38, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
+    ca_.Bind(&block20, &phi_bb20_10);
+    std::tie(tmp30, tmp31, tmp32) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb20_10}).Flatten();
+    tmp33 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp10});
+    tmp34 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp32});
+    tmp35 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp33}, TNode<UintPtrT>{tmp34});
+    ca_.Branch(tmp35, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
   }
 
+  TNode<IntPtrT> tmp36;
+  TNode<IntPtrT> tmp37;
+  TNode<Object> tmp38;
   TNode<IntPtrT> tmp39;
-  TNode<IntPtrT> tmp40;
-  TNode<Object> tmp41;
+  TNode<Smi> tmp40;
+  TNode<Smi> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<Smi> tmp43;
-  TNode<Smi> tmp44;
-  TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
-  TNode<IntPtrT> tmp47;
-  TNode<Smi> tmp48;
-  TNode<BoolT> tmp49;
+  TNode<Object> tmp43;
+  TNode<IntPtrT> tmp44;
+  TNode<Smi> tmp45;
+  TNode<BoolT> tmp46;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp39 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp10});
-    tmp40 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp34}, TNode<IntPtrT>{tmp39});
-    std::tie(tmp41, tmp42) = NewReference_Object_0(state_, TNode<Object>{tmp33}, TNode<IntPtrT>{tmp40}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp41, tmp42}, parameter3);
-    tmp43 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp44 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp18}, TNode<Smi>{tmp43});
-    tmp45 = kPromiseAnyRejectElementRemainingSlot_0(state_);
-    std::tie(tmp46, tmp47) = ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_Smi_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp45}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp46, tmp47}, tmp44);
-    tmp48 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp49 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp44}, TNode<Smi>{tmp48});
-    ca_.Branch(tmp49, &block29, std::vector<compiler::Node*>{}, &block30, std::vector<compiler::Node*>{});
+    tmp36 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp10});
+    tmp37 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp31}, TNode<IntPtrT>{tmp36});
+    std::tie(tmp38, tmp39) = NewReference_Object_0(state_, TNode<Object>{tmp30}, TNode<IntPtrT>{tmp37}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp38, tmp39}, parameter3);
+    tmp40 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp41 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp18}, TNode<Smi>{tmp40});
+    tmp42 = kPromiseAnyRejectElementRemainingSlot_0(state_);
+    std::tie(tmp43, tmp44) = ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_Smi_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp42}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp43, tmp44}, tmp41);
+    tmp45 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp46 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp41}, TNode<Smi>{tmp45});
+    ca_.Branch(tmp46, &block29, std::vector<compiler::Node*>{}, &block30, std::vector<compiler::Node*>{});
   }
 
   if (block26.is_used()) {
@@ -448,39 +443,42 @@ USE(parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSObject> tmp50;
+  TNode<JSObject> tmp47;
+  TNode<FixedArray> tmp48;
+  TNode<IntPtrT> tmp49;
+  TNode<Object> tmp50;
   TNode<IntPtrT> tmp51;
-  TNode<Object> tmp52;
+  TNode<PromiseCapability> tmp52;
   TNode<IntPtrT> tmp53;
-  TNode<PromiseCapability> tmp54;
-  TNode<IntPtrT> tmp55;
-  TNode<Object> tmp56;
-  TNode<JSReceiver> tmp57;
-  TNode<Undefined> tmp58;
-  TNode<Object> tmp59;
+  TNode<Object> tmp54;
+  TNode<JSReceiver> tmp55;
+  TNode<Undefined> tmp56;
+  TNode<Object> tmp57;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp50 = ConstructAggregateError_0(state_, TNode<Context>{tmp2}, TNode<FixedArray>{phi_bb20_8});
-    tmp51 = kPromiseAnyRejectElementCapabilitySlot_0(state_);
-    std::tie(tmp52, tmp53) = ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_PromiseCapability_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp51}).Flatten();
-    tmp54 = CodeStubAssembler(state_).LoadReference<PromiseCapability>(CodeStubAssembler::Reference{tmp52, tmp53});
-    tmp55 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp56 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp54, tmp55});
-    tmp57 = UnsafeCast_Callable_0(state_, TNode<Context>{tmp2}, TNode<Object>{tmp56});
-    tmp58 = Undefined_0(state_);
-    tmp59 = CodeStubAssembler(state_).Call(TNode<Context>{tmp2}, TNode<Object>{tmp57}, TNode<Object>{tmp58}, TNode<Object>{tmp50});
+    tmp47 = ConstructAggregateError_0(state_, TNode<Context>{tmp2}, TNode<FixedArray>{phi_bb20_10});
+    tmp48 = kEmptyFixedArray_0(state_);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp12, tmp13}, tmp48);
+    tmp49 = kPromiseAnyRejectElementCapabilitySlot_0(state_);
+    std::tie(tmp50, tmp51) = ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_PromiseCapability_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp49}).Flatten();
+    tmp52 = CodeStubAssembler(state_).LoadReference<PromiseCapability>(CodeStubAssembler::Reference{tmp50, tmp51});
+    tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp54 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp52, tmp53});
+    tmp55 = UnsafeCast_Callable_0(state_, TNode<Context>{tmp2}, TNode<Object>{tmp54});
+    tmp56 = Undefined_0(state_);
+    tmp57 = CodeStubAssembler(state_).Call(TNode<Context>{tmp2}, TNode<Object>{tmp55}, TNode<Object>{tmp56}, TNode<Object>{tmp47});
     ca_.Goto(&block30);
   }
 
-  TNode<Undefined> tmp60;
+  TNode<Undefined> tmp58;
   if (block30.is_used()) {
     ca_.Bind(&block30);
-    tmp60 = Undefined_0(state_);
-    CodeStubAssembler(state_).Return(tmp60);
+    tmp58 = Undefined_0(state_);
+    CodeStubAssembler(state_).Return(tmp58);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=169&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=171&c=1
 TNode<Object> PerformPromiseAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TorqueStructIteratorRecord p_iteratorRecord, TNode<JSReceiver> p_constructor, TNode<PromiseCapability> p_resultCapability, TNode<Object> p_promiseResolveFunction, compiler::CodeAssemblerLabel* label_Reject, compiler::TypedCodeAssemblerVariable<Object>* label_Reject_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -548,7 +546,7 @@ TNode<Object> PerformPromiseAny_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp2 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch5__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch5__label);
-    std::tie(tmp3, tmp4) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp3, tmp4) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp2}).Flatten();
     }
     if (catch5__label.is_used()) {
       compiler::CodeAssemblerLabel catch5_skip(&ca_);
@@ -1254,7 +1252,7 @@ TNode<Object> PerformPromiseAny_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Bind(&block52, &phi_bb52_8);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-any.tq", 325});
+      pos_stack.push_back({"src/builtins/promise-any.tq", 327});
       CodeStubAssembler(state_).FailAssert("Torque assert 'errors.length == index - 1' failed", pos_stack);
     }
   }
@@ -1445,7 +1443,7 @@ TF_BUILTIN(PromiseAny, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=392&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=394&c=1
 TNode<JSObject> ConstructAggregateError_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_errors) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1613,7 +1611,7 @@ void InitContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementConte
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=108&c=17
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=108&c=31
 TorqueStructReference_FixedArray_0 ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1662,7 +1660,7 @@ TorqueStructReference_FixedArray_0 ContextSlot_PromiseAnyRejectElementContext_Pr
   return TorqueStructReference_FixedArray_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=115&c=33
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=116&c=33
 TorqueStructReference_Smi_0 ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1711,7 +1709,7 @@ TorqueStructReference_Smi_0 ContextSlot_PromiseAnyRejectElementContext_PromiseAn
   return TorqueStructReference_Smi_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=158&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=160&c=25
 TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_PromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1760,7 +1758,7 @@ TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseAnyRejectElementCon
   return TorqueStructReference_PromiseCapability_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=287&c=30
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=289&c=30
 TNode<BoolT> Is_JSPromise_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1807,7 +1805,7 @@ TNode<BoolT> Is_JSPromise_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=347&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=349&c=10
 TNode<BoolT> Is_Constructor_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

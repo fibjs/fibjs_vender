@@ -9,14 +9,14 @@ inline TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<D, P>::TorqueGe
     : P(ptr) {
   SLOW_DCHECK(IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=38
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=29
 template<class D, class P>
 Tagged<Code> TorqueGeneratedJSFunction<D, P>::code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSFunction::code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=38
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=29
 template<class D, class P>
 Tagged<Code> TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) const {
   Tagged<Code> value = TaggedField<Tagged<Code>>::load(cage_base, *this, kCodeOffset);
@@ -24,7 +24,7 @@ Tagged<Code> TorqueGeneratedJSFunction<D, P>::code(PtrComprCageBase cage_base) c
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=38
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=29
 template<class D, class P>
 void TorqueGeneratedJSFunction<D, P>::set_code(Tagged<Code> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsCode(value));
@@ -146,14 +146,14 @@ Tagged<JSReceiver> TorqueGeneratedJSBoundFunction<D, P>::bound_target_function()
 template<class D, class P>
 Tagged<JSReceiver> TorqueGeneratedJSBoundFunction<D, P>::bound_target_function(PtrComprCageBase cage_base) const {
   Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kBoundTargetFunctionOffset);
-  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=11&c=3
 template<class D, class P>
 void TorqueGeneratedJSBoundFunction<D, P>::set_bound_target_function(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kBoundTargetFunctionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundTargetFunctionOffset, value, mode);
 }
@@ -226,14 +226,14 @@ Tagged<JSReceiver> TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_functi
 template<class D, class P>
 Tagged<JSReceiver> TorqueGeneratedJSWrappedFunction<D, P>::wrapped_target_function(PtrComprCageBase cage_base) const {
   Tagged<JSReceiver> value = TaggedField<Tagged<JSReceiver>>::load(cage_base, *this, kWrappedTargetFunctionOffset);
-  DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedJSWrappedFunction<D, P>::set_wrapped_target_function(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kWrappedTargetFunctionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kWrappedTargetFunctionOffset, value, mode);
 }

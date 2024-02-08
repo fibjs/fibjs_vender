@@ -1,4 +1,3 @@
-Handle<SloppyArgumentsElements> NewSloppyArgumentsElements(int length, Handle<Context> context, Handle<FixedArray> arguments, AllocationType allocation_type);
 Handle<UncompiledDataWithoutPreparseData> NewUncompiledDataWithoutPreparseData(Handle<String> inferred_name, int32_t start_position, int32_t end_position, AllocationType allocation_type);
 Handle<UncompiledDataWithPreparseData> NewUncompiledDataWithPreparseData(Handle<String> inferred_name, int32_t start_position, int32_t end_position, Handle<PreparseData> preparse_data, AllocationType allocation_type);
 Handle<UncompiledDataWithoutPreparseDataWithJob> NewUncompiledDataWithoutPreparseDataWithJob(Handle<String> inferred_name, int32_t start_position, int32_t end_position, Address job, AllocationType allocation_type);

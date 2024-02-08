@@ -1,148 +1,148 @@
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNames(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNames(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalInfos(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalInfos(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunctionName(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunctionName(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInfo(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInfo(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockList(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockList(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariableCount(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariableCount(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariables(ScopeInfo p_o);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariables(Tagged<ScopeInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=296&c=1
-inline intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
+inline intptr_t TqRuntimeConvert_intptr_Smi_0(Tagged<Smi> p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=76&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int32_0(int32_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=56&c=1
-inline Smi TqRuntimeFromConstexpr_Smi_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
+inline Tagged<Smi> TqRuntimeFromConstexpr_Smi_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
 inline intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashTable_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1
 inline uint32_t TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(VariableAllocationInfo p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariableInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariableInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefined_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefined_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=127&c=1
 inline uint32_t TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(uint32_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=157&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=151&c=1
 inline bool TqRuntimeFromConstexpr_bool_constexpr_bool_0(bool p_b);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModuleInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModuleInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=125&c=23
 inline intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=382&c=1
 inline uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 inline intptr_t TqRuntimeTimesSizeOf_Smi_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-inline std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr_t p_offset);
+inline std::tuple<Tagged<Object>, intptr_t> TqRuntimeNewReference_Smi_0(Tagged<Object> p_object, intptr_t p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-inline std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0(Object p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=57&c=10
-inline Smi TqRuntimeConvert_Smi_constexpr_int31_0(int31_t p_i);
+inline Tagged<Smi> TqRuntimeConvert_Smi_constexpr_int31_0(int31_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=85&c=1
-inline Smi TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i);
+inline Tagged<Smi> TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i);
 
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNames
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNames
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNames(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNames(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
-  Smi tmp1{}; USE(tmp1);
+  Tagged<Smi> tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   bool tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
-  Smi tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
-  Smi phi_bb4_4{}; USE(phi_bb4_4);
+  Tagged<Smi> tmp6{}; USE(tmp6);
+  Tagged<Smi> tmp7{}; USE(tmp7);
+  Tagged<Smi> phi_bb4_4{}; USE(phi_bb4_4);
   intptr_t tmp8{}; USE(tmp8);
   intptr_t tmp9{}; USE(tmp9);
-  Object tmp10{}; USE(tmp10);
+  Tagged<Object> tmp10{}; USE(tmp10);
   intptr_t tmp11{}; USE(tmp11);
   intptr_t tmp12{}; USE(tmp12);
   goto block0;
 
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(24);
-  tmp1 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp0));
+  tmp1 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp0));
   tmp2 = TqRuntimeConvert_intptr_Smi_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_int32_0(kScopeInfoMaxInlinedLocalNamesSize);
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrLessThan(tmp2, tmp3);
@@ -154,7 +154,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
 
   block2:
   tmp5 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(24);
-  tmp6 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp5));
+  tmp6 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp5));
   phi_bb4_4 = tmp6;
   goto block4;
 
@@ -178,16 +178,16 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalNamesHashtable(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   intptr_t tmp8{}; USE(tmp8);
   intptr_t tmp9{}; USE(tmp9);
   bool tmp10{}; USE(tmp10);
@@ -195,7 +195,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
   intptr_t tmp12{}; USE(tmp12);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp13{}; USE(tmp13);
-  Object tmp14{}; USE(tmp14);
+  Tagged<Object> tmp14{}; USE(tmp14);
   intptr_t tmp15{}; USE(tmp15);
   intptr_t tmp16{}; USE(tmp16);
   goto block0;
@@ -206,7 +206,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(24);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = TqRuntimeConvert_intptr_Smi_0(tmp7);
   tmp9 = TqRuntimeFromConstexpr_intptr_constexpr_int32_0(kScopeInfoMaxInlinedLocalNamesSize);
   tmp10 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrLessThanOrEqual(tmp9, tmp8);
@@ -240,18 +240,18 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalN
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoContextLocalInfos
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalInfos(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalInfos(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   intptr_t tmp8{}; USE(tmp8);
-  Object tmp9{}; USE(tmp9);
+  Tagged<Object> tmp9{}; USE(tmp9);
   intptr_t tmp10{}; USE(tmp10);
   intptr_t tmp11{}; USE(tmp11);
   goto block0;
@@ -262,7 +262,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalI
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(24);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = TqRuntimeConvert_intptr_Smi_0(tmp7);
   std::tie(tmp9, tmp10, tmp11) = TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(p_o, tmp5, tmp8);
   goto block2;
@@ -276,22 +276,22 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoContextLocalI
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVariableInfo(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   bool tmp8{}; USE(tmp8);
   intptr_t tmp9{}; USE(tmp9);
   intptr_t tmp10{}; USE(tmp10);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp11{}; USE(tmp11);
-  Object tmp12{}; USE(tmp12);
+  Tagged<Object> tmp12{}; USE(tmp12);
   intptr_t tmp13{}; USE(tmp13);
   intptr_t tmp14{}; USE(tmp14);
   goto block0;
@@ -302,7 +302,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVar
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 10, 1, uint32_t>::decode(tmp7.value()));
   if (tmp8) {
     goto block2;
@@ -334,16 +334,16 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoSavedClassVar
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoFunctionVariableInfo
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVariableInfo(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   uint32_t tmp8{}; USE(tmp8);
   uint32_t tmp9{}; USE(tmp9);
   bool tmp10{}; USE(tmp10);
@@ -351,7 +351,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVaria
   intptr_t tmp12{}; USE(tmp12);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp13{}; USE(tmp13);
-  Object tmp14{}; USE(tmp14);
+  Tagged<Object> tmp14{}; USE(tmp14);
   intptr_t tmp15{}; USE(tmp15);
   intptr_t tmp16{}; USE(tmp16);
   goto block0;
@@ -362,7 +362,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVaria
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<VariableAllocationInfo, 12, 2, uint32_t>::decode(tmp7.value()));
   tmp9 = TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(VariableAllocationInfo::NONE);
   tmp10 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32NotEqual(tmp8, tmp9);
@@ -396,22 +396,22 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoFunctionVaria
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoInferredFunctionName
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunctionName(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunctionName(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   bool tmp8{}; USE(tmp8);
   intptr_t tmp9{}; USE(tmp9);
   intptr_t tmp10{}; USE(tmp10);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp11{}; USE(tmp11);
-  Object tmp12{}; USE(tmp12);
+  Tagged<Object> tmp12{}; USE(tmp12);
   intptr_t tmp13{}; USE(tmp13);
   intptr_t tmp14{}; USE(tmp14);
   goto block0;
@@ -422,7 +422,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunct
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 14, 1, uint32_t>::decode(tmp7.value()));
   if (tmp8) {
     goto block2;
@@ -454,54 +454,54 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoInferredFunct
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoPositionInfo
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   uint32_t tmp8{}; USE(tmp8);
   uint32_t tmp9{}; USE(tmp9);
   bool tmp10{}; USE(tmp10);
   bool tmp11{}; USE(tmp11);
   intptr_t tmp12{}; USE(tmp12);
-  Smi tmp13{}; USE(tmp13);
+  Tagged<Smi> tmp13{}; USE(tmp13);
   uint32_t tmp14{}; USE(tmp14);
   uint32_t tmp15{}; USE(tmp15);
   bool tmp16{}; USE(tmp16);
   bool phi_bb8_9{}; USE(phi_bb8_9);
   bool tmp17{}; USE(tmp17);
   intptr_t tmp18{}; USE(tmp18);
-  Smi tmp19{}; USE(tmp19);
+  Tagged<Smi> tmp19{}; USE(tmp19);
   uint32_t tmp20{}; USE(tmp20);
   uint32_t tmp21{}; USE(tmp21);
   bool tmp22{}; USE(tmp22);
   bool phi_bb11_9{}; USE(phi_bb11_9);
   bool tmp23{}; USE(tmp23);
   intptr_t tmp24{}; USE(tmp24);
-  Smi tmp25{}; USE(tmp25);
+  Tagged<Smi> tmp25{}; USE(tmp25);
   uint32_t tmp26{}; USE(tmp26);
   uint32_t tmp27{}; USE(tmp27);
   bool tmp28{}; USE(tmp28);
   bool phi_bb14_9{}; USE(phi_bb14_9);
   bool tmp29{}; USE(tmp29);
   intptr_t tmp30{}; USE(tmp30);
-  Smi tmp31{}; USE(tmp31);
+  Tagged<Smi> tmp31{}; USE(tmp31);
   uint32_t tmp32{}; USE(tmp32);
   uint32_t tmp33{}; USE(tmp33);
   bool tmp34{}; USE(tmp34);
   bool phi_bb17_9{}; USE(phi_bb17_9);
   bool tmp35{}; USE(tmp35);
   intptr_t tmp36{}; USE(tmp36);
-  Smi tmp37{}; USE(tmp37);
+  Tagged<Smi> tmp37{}; USE(tmp37);
   bool tmp38{}; USE(tmp38);
   bool tmp39{}; USE(tmp39);
   intptr_t tmp40{}; USE(tmp40);
-  Smi tmp41{}; USE(tmp41);
+  Tagged<Smi> tmp41{}; USE(tmp41);
   uint32_t tmp42{}; USE(tmp42);
   uint32_t tmp43{}; USE(tmp43);
   bool tmp44{}; USE(tmp44);
@@ -511,7 +511,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
   intptr_t tmp46{}; USE(tmp46);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp47{}; USE(tmp47);
-  Object tmp48{}; USE(tmp48);
+  Tagged<Object> tmp48{}; USE(tmp48);
   intptr_t tmp49{}; USE(tmp49);
   intptr_t tmp50{}; USE(tmp50);
   goto block0;
@@ -522,7 +522,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp7.value()));
   tmp9 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::FUNCTION_SCOPE);
   tmp10 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp8, tmp9);
@@ -539,7 +539,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 
   block7:
   tmp12 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp13 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp12));
+  tmp13 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp12));
   tmp14 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp13.value()));
   tmp15 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::SCRIPT_SCOPE);
   tmp16 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp14, tmp15);
@@ -560,7 +560,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 
   block10:
   tmp18 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp19 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp18));
+  tmp19 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp18));
   tmp20 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp19.value()));
   tmp21 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::EVAL_SCOPE);
   tmp22 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp20, tmp21);
@@ -581,7 +581,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 
   block13:
   tmp24 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp25 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp24));
+  tmp25 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp24));
   tmp26 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp25.value()));
   tmp27 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::MODULE_SCOPE);
   tmp28 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp26, tmp27);
@@ -602,7 +602,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 
   block16:
   tmp30 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp31 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp30));
+  tmp31 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp30));
   tmp32 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp31.value()));
   tmp33 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::SHADOW_REALM_SCOPE);
   tmp34 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp32, tmp33);
@@ -623,7 +623,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 
   block19:
   tmp36 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp37 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp36));
+  tmp37 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp36));
   tmp38 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 29, 1, uint32_t>::decode(tmp37.value()));
   if (tmp38) {
     goto block21;
@@ -638,7 +638,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 
   block22:
   tmp40 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp41 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp40));
+  tmp41 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp40));
   tmp42 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp41.value()));
   tmp43 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::CLASS_SCOPE);
   tmp44 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp42, tmp43);
@@ -680,22 +680,22 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoPositionInfo(
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoOuterScopeInfo
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInfo(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInfo(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   bool tmp8{}; USE(tmp8);
   intptr_t tmp9{}; USE(tmp9);
   intptr_t tmp10{}; USE(tmp10);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp11{}; USE(tmp11);
-  Object tmp12{}; USE(tmp12);
+  Tagged<Object> tmp12{}; USE(tmp12);
   intptr_t tmp13{}; USE(tmp13);
   intptr_t tmp14{}; USE(tmp14);
   goto block0;
@@ -706,7 +706,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInf
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 22, 1, uint32_t>::decode(tmp7.value()));
   if (tmp8) {
     goto block2;
@@ -738,22 +738,22 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoOuterScopeInf
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoLocalsBlockList
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockList(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockList(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   bool tmp8{}; USE(tmp8);
   intptr_t tmp9{}; USE(tmp9);
   intptr_t tmp10{}; USE(tmp10);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp11{}; USE(tmp11);
-  Object tmp12{}; USE(tmp12);
+  Tagged<Object> tmp12{}; USE(tmp12);
   intptr_t tmp13{}; USE(tmp13);
   intptr_t tmp14{}; USE(tmp14);
   goto block0;
@@ -764,7 +764,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockLi
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 28, 1, uint32_t>::decode(tmp7.value()));
   if (tmp8) {
     goto block2;
@@ -796,16 +796,16 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoLocalsBlockLi
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleInfo
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   uint32_t tmp8{}; USE(tmp8);
   uint32_t tmp9{}; USE(tmp9);
   bool tmp10{}; USE(tmp10);
@@ -813,7 +813,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(Sc
   intptr_t tmp12{}; USE(tmp12);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp13{}; USE(tmp13);
-  Object tmp14{}; USE(tmp14);
+  Tagged<Object> tmp14{}; USE(tmp14);
   intptr_t tmp15{}; USE(tmp15);
   intptr_t tmp16{}; USE(tmp16);
   goto block0;
@@ -824,7 +824,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(Sc
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp7.value()));
   tmp9 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::MODULE_SCOPE);
   tmp10 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp8, tmp9);
@@ -858,16 +858,16 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleInfo(Sc
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleVariableCount
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariableCount(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariableCount(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   uint32_t tmp8{}; USE(tmp8);
   uint32_t tmp9{}; USE(tmp9);
   bool tmp10{}; USE(tmp10);
@@ -875,7 +875,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
   intptr_t tmp12{}; USE(tmp12);
   intptr_t phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp13{}; USE(tmp13);
-  Object tmp14{}; USE(tmp14);
+  Tagged<Object> tmp14{}; USE(tmp14);
   intptr_t tmp15{}; USE(tmp15);
   intptr_t tmp16{}; USE(tmp16);
   goto block0;
@@ -886,7 +886,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp7.value()));
   tmp9 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::MODULE_SCOPE);
   tmp10 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp8, tmp9);
@@ -920,20 +920,20 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceScopeInfoModuleVariables
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariables(ScopeInfo p_o) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariables(Tagged<ScopeInfo> p_o) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
   intptr_t tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
-  Smi tmp7{}; USE(tmp7);
+  Tagged<Smi> tmp7{}; USE(tmp7);
   uint32_t tmp8{}; USE(tmp8);
   uint32_t tmp9{}; USE(tmp9);
   bool tmp10{}; USE(tmp10);
-  Object tmp11{}; USE(tmp11);
+  Tagged<Object> tmp11{}; USE(tmp11);
   intptr_t tmp12{}; USE(tmp12);
   intptr_t tmp13{}; USE(tmp13);
   intptr_t tmp14{}; USE(tmp14);
@@ -942,13 +942,13 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
   bool tmp17{}; USE(tmp17);
   intptr_t tmp18{}; USE(tmp18);
   intptr_t tmp19{}; USE(tmp19);
-  Object tmp20{}; USE(tmp20);
+  Tagged<Object> tmp20{}; USE(tmp20);
   intptr_t tmp21{}; USE(tmp21);
-  Smi tmp22{}; USE(tmp22);
-  Smi tmp23{}; USE(tmp23);
-  Smi phi_bb4_8{}; USE(phi_bb4_8);
+  Tagged<Smi> tmp22{}; USE(tmp22);
+  Tagged<Smi> tmp23{}; USE(tmp23);
+  Tagged<Smi> phi_bb4_8{}; USE(phi_bb4_8);
   intptr_t tmp24{}; USE(tmp24);
-  Object tmp25{}; USE(tmp25);
+  Tagged<Object> tmp25{}; USE(tmp25);
   intptr_t tmp26{}; USE(tmp26);
   intptr_t tmp27{}; USE(tmp27);
   goto block0;
@@ -959,7 +959,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
   tmp4 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrMul(tmp3, tmp2);
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
-  tmp7 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&p_o), static_cast<int>(tmp6));
+  tmp7 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(p_o), static_cast<int>(tmp6));
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp7.value()));
   tmp9 = TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(ScopeType::MODULE_SCOPE);
   tmp10 = TorqueRuntimeMacroShims::CodeStubAssembler::Word32Equal(tmp8, tmp9);
@@ -985,7 +985,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeFieldSliceScopeInfoModuleVariabl
   tmp18 = TqRuntimeTimesSizeOf_Smi_0(tmp14);
   tmp19 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp12, tmp18);
   std::tie(tmp20, tmp21) = TqRuntimeNewReference_Smi_0(tmp11, tmp19);
-  tmp22 = TaggedField<Smi>::load(*static_cast<HeapObject*>(&tmp20), static_cast<int>(tmp21));
+  tmp22 = TaggedField<Tagged<Smi>>::load(Tagged<HeapObject>::unchecked_cast(tmp20), static_cast<int>(tmp21));
   phi_bb4_8 = tmp22;
   goto block4;
 
@@ -1028,8 +1028,8 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=296&c=1
-intptr_t TqRuntimeConvert_intptr_Smi_0(Smi p_s) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
+intptr_t TqRuntimeConvert_intptr_Smi_0(Tagged<Smi> p_s) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
   goto block0;
@@ -1065,9 +1065,9 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int32_0(int32_t p_i) {
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_Smi_constexpr_IntegerLiteral_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=56&c=1
-Smi TqRuntimeFromConstexpr_Smi_constexpr_IntegerLiteral_0(IntegerLiteral p_i) {
+Tagged<Smi> TqRuntimeFromConstexpr_Smi_constexpr_IntegerLiteral_0(IntegerLiteral p_i) {
   DisallowGarbageCollection no_gc;
-  Smi tmp0{}; USE(tmp0);
+  Tagged<Smi> tmp0{}; USE(tmp0);
   goto block0;
 
   block0:
@@ -1101,9 +1101,9 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_String_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=125&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1137,9 +1137,9 @@ intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_NameToIndexHashTable_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=130&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashTable_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1157,9 +1157,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_NameToIndexHashT
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=136&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_VariableProperties_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1177,9 +1177,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SmiTagged_Variab
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_Smi_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=142&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_Smi_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1217,9 +1217,9 @@ uint32_t TqRuntimeFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(Variable
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_FunctionVariableInfo_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=148&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariableInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariableInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1237,9 +1237,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_FunctionVariable
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_String_OR_Undefined_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=153&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefined_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefined_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1256,7 +1256,7 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_String_OR_Undefi
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_uint32_constexpr_uint32_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_uint32_constexpr_uint32_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=127&c=1
 uint32_t TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(uint32_t p_i) {
   DisallowGarbageCollection no_gc;
   int32_t tmp0{}; USE(tmp0);
@@ -1276,7 +1276,7 @@ uint32_t TqRuntimeFromConstexpr_uint32_constexpr_uint32_0(uint32_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_bool_constexpr_bool_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_bool_constexpr_bool_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=157&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=151&c=1
 bool TqRuntimeFromConstexpr_bool_constexpr_bool_0(bool p_b) {
   DisallowGarbageCollection no_gc;
   bool tmp0{}; USE(tmp0);
@@ -1295,9 +1295,9 @@ bool TqRuntimeFromConstexpr_bool_constexpr_bool_0(bool p_b) {
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_PositionInfo_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1315,9 +1315,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_PositionInfo_0(O
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=166&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_ScopeInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1335,9 +1335,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_TheHole_OR_Scope
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_HashTable_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=171&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1355,9 +1355,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_HashTable_0(Obje
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_SourceTextModuleInfo_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModuleInfo_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModuleInfo_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1375,9 +1375,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_SourceTextModule
 #define V8_INTERNAL_DEFINED_TqRuntimeNewConstSlice_Smi_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=9
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewConstSlice_Smi_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1412,7 +1412,7 @@ intptr_t TqRuntimeConvert_intptr_constexpr_int31_0(int31_t p_i) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_uintptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_uintptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=382&c=1
 uintptr_t TqRuntimeConvert_uintptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
@@ -1451,9 +1451,9 @@ intptr_t TqRuntimeTimesSizeOf_Smi_0(intptr_t p_i) {
 #define V8_INTERNAL_DEFINED_TqRuntimeNewReference_Smi_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr_t p_offset) {
+std::tuple<Tagged<Object>, intptr_t> TqRuntimeNewReference_Smi_0(Tagged<Object> p_object, intptr_t p_offset) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   goto block0;
 
@@ -1470,9 +1470,9 @@ std::tuple<Object, intptr_t> TqRuntimeNewReference_Smi_0(Object p_object, intptr
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_ModuleVariable_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
-std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0(Object p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Object tmp0{}; USE(tmp0);
+  Tagged<Object> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -1490,9 +1490,9 @@ std::tuple<Object, intptr_t, intptr_t> TqRuntimeNewMutableSlice_ModuleVariable_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_Smi_constexpr_int31_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=57&c=10
-Smi TqRuntimeConvert_Smi_constexpr_int31_0(int31_t p_i) {
+Tagged<Smi> TqRuntimeConvert_Smi_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
-  Smi tmp0{}; USE(tmp0);
+  Tagged<Smi> tmp0{}; USE(tmp0);
   goto block0;
 
   block0:
@@ -1526,9 +1526,9 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i) {
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_Smi_constexpr_int31_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=85&c=1
-Smi TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i) {
+Tagged<Smi> TqRuntimeFromConstexpr_Smi_constexpr_int31_0(int31_t p_i) {
   DisallowGarbageCollection no_gc;
-  Smi tmp0{}; USE(tmp0);
+  Tagged<Smi> tmp0{}; USE(tmp0);
   goto block0;
 
   block0:

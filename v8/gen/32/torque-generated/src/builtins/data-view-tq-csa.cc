@@ -578,7 +578,7 @@ TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerSta
 
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{p_method});
+    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{p_context}, MessageTemplate::kIncompatibleMethodReceiver, TNode<Object>{p_method}, TNode<Object>{p_o});
   }
 
   TNode<JSRabGsabDataView> tmp5;

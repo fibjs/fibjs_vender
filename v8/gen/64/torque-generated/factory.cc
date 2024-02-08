@@ -9,26 +9,6 @@ namespace v8 {
 namespace internal {
 
 template <typename Impl>
-Handle<SloppyArgumentsElements> TorqueGeneratedFactory<Impl>::NewSloppyArgumentsElements(int length, Handle<Context> context, Handle<FixedArray> arguments, AllocationType allocation_type) {
- int size = TorqueGeneratedSloppyArgumentsElements<SloppyArgumentsElements, FixedArrayBase>::SizeFor(length);
-  Tagged<Map> map = factory()->read_only_roots().sloppy_arguments_elements_map();  Tagged<HeapObject> raw_object =
-    factory()->AllocateRawWithImmortalMap(size, allocation_type, map);
-  Tagged<SloppyArgumentsElements> result = SloppyArgumentsElements::cast(raw_object);
-  DisallowGarbageCollection no_gc;  WriteBarrierMode write_barrier_mode =
-     allocation_type == AllocationType::kYoung
-     ? SKIP_WRITE_BARRIER : UPDATE_WRITE_BARRIER;
-  USE(write_barrier_mode);
-  result->TorqueGeneratedClass::set_length(length);
-  result->TorqueGeneratedClass::set_context(*context, write_barrier_mode);
-  result->TorqueGeneratedClass::set_arguments(*arguments, write_barrier_mode);
-  return handle(result, factory()->isolate());
-}
-
-template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<SloppyArgumentsElements>TorqueGeneratedFactory<Factory>::NewSloppyArgumentsElements(int length, Handle<Context> context, Handle<FixedArray> arguments, AllocationType allocation_type);
-template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) Handle<SloppyArgumentsElements>TorqueGeneratedFactory<LocalFactory>::NewSloppyArgumentsElements(int length, Handle<Context> context, Handle<FixedArray> arguments, AllocationType allocation_type);
-
-
-template <typename Impl>
 Handle<UncompiledDataWithoutPreparseData> TorqueGeneratedFactory<Impl>::NewUncompiledDataWithoutPreparseData(Handle<String> inferred_name, int32_t start_position, int32_t end_position, AllocationType allocation_type) {
  int size = TorqueGeneratedUncompiledDataWithoutPreparseData<UncompiledDataWithoutPreparseData, UncompiledData>::SizeFor();
   Tagged<Map> map = factory()->read_only_roots().uncompiled_data_without_preparse_data_map();  Tagged<HeapObject> raw_object =

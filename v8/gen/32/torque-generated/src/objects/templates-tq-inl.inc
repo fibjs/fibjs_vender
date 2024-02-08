@@ -48,14 +48,14 @@ Tagged<HeapObject> TorqueGeneratedTemplateInfo<D, P>::property_list() const {
 template<class D, class P>
 Tagged<HeapObject> TorqueGeneratedTemplateInfo<D, P>::property_list(PtrComprCageBase cage_base) const {
   Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kPropertyListOffset);
-  DCHECK(IsUndefined(value) || IsTemplateList(value));
+  DCHECK(IsUndefined(value) || IsArrayList(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateInfo<D, P>::set_property_list(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsTemplateList(value));
+  SLOW_DCHECK(IsUndefined(value) || IsArrayList(value));
   WRITE_FIELD(*this, kPropertyListOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPropertyListOffset, value, mode);
 }
@@ -71,14 +71,14 @@ Tagged<HeapObject> TorqueGeneratedTemplateInfo<D, P>::property_accessors() const
 template<class D, class P>
 Tagged<HeapObject> TorqueGeneratedTemplateInfo<D, P>::property_accessors(PtrComprCageBase cage_base) const {
   Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kPropertyAccessorsOffset);
-  DCHECK(IsUndefined(value) || IsTemplateList(value));
+  DCHECK(IsUndefined(value) || IsArrayList(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=11&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateInfo<D, P>::set_property_accessors(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsTemplateList(value));
+  SLOW_DCHECK(IsUndefined(value) || IsArrayList(value));
   WRITE_FIELD(*this, kPropertyAccessorsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPropertyAccessorsOffset, value, mode);
 }

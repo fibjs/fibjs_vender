@@ -22,17 +22,33 @@ void TorqueGeneratedSymbol<Symbol, Name>::SymbolPrint(std::ostream& os) {
 }
 
 template <>
-void TorqueGeneratedFixedArray<FixedArray, FixedArrayBase>::FixedArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "FixedArray");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedJSObject<JSObject, JSReceiver>::JSObjectPrint(std::ostream& os) {
   this->PrintHeader(os, "JSObject");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->elements());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSPromise<JSPromise, JSObjectWithEmbedderSlots>::JSPromisePrint(std::ostream& os) {
+  this->PrintHeader(os, "JSPromise");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - reactions_or_result: " << Brief(this->reactions_or_result());
+  os << "\n - flags: " << this->flags();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSFunction<JSFunction, JSFunctionOrBoundFunctionOrWrappedFunction>::JSFunctionPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSFunction");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - code: " << Brief(this->code());
+  os << "\n - shared_function_info: " << Brief(this->shared_function_info());
+  os << "\n - context: " << Brief(this->context());
+  os << "\n - feedback_cell: " << Brief(this->feedback_cell());
+  os << "\n - prototype_or_initial_map: " << Brief(this->prototype_or_initial_map());
   os << '\n';
 }
 
@@ -55,19 +71,6 @@ void TorqueGeneratedJSProxy<JSProxy, JSReceiver>::JSProxyPrint(std::ostream& os)
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - target: " << Brief(this->target());
   os << "\n - handler: " << Brief(this->handler());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedJSFunction<JSFunction, JSFunctionOrBoundFunctionOrWrappedFunction>::JSFunctionPrint(std::ostream& os) {
-  this->PrintHeader(os, "JSFunction");
-  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
-  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - code: " << Brief(this->code());
-  os << "\n - shared_function_info: " << Brief(this->shared_function_info());
-  os << "\n - context: " << Brief(this->context());
-  os << "\n - feedback_cell: " << Brief(this->feedback_cell());
-  os << "\n - prototype_or_initial_map: " << Brief(this->prototype_or_initial_map());
   os << '\n';
 }
 
@@ -139,16 +142,6 @@ void TorqueGeneratedWasmInternalFunction<WasmInternalFunction, HeapObject>::Wasm
 template <>
 void TorqueGeneratedWasmNull<WasmNull, HeapObject>::WasmNullPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmNull");
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedJSPromise<JSPromise, JSObjectWithEmbedderSlots>::JSPromisePrint(std::ostream& os) {
-  this->PrintHeader(os, "JSPromise");
-  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
-  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - reactions_or_result: " << Brief(this->reactions_or_result());
-  os << "\n - flags: " << this->flags();
   os << '\n';
 }
 
@@ -253,15 +246,6 @@ void TorqueGeneratedJSStrictArgumentsObject<JSStrictArgumentsObject, JSArguments
 }
 
 template <>
-void TorqueGeneratedSloppyArgumentsElements<SloppyArgumentsElements, FixedArrayBase>::SloppyArgumentsElementsPrint(std::ostream& os) {
-  this->PrintHeader(os, "SloppyArgumentsElements");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << "\n - context: " << Brief(this->context());
-  os << "\n - arguments: " << Brief(this->arguments());
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedAliasedArgumentsEntry<AliasedArgumentsEntry, Struct>::AliasedArgumentsEntryPrint(std::ostream& os) {
   this->PrintHeader(os, "AliasedArgumentsEntry");
   os << "\n - aliased_context_slot: " << this->aliased_context_slot();
@@ -288,38 +272,11 @@ void TorqueGeneratedCell<Cell, HeapObject>::CellPrint(std::ostream& os) {
 }
 
 template <>
-void TorqueGeneratedBytecodeArray<BytecodeArray, FixedArrayBase>::BytecodeArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "BytecodeArray");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << "\n - constant_pool: " << Brief(this->constant_pool());
-  os << "\n - handler_table: " << Brief(this->handler_table());
-  os << "\n - source_position_table: " << Brief(this->source_position_table(kAcquireLoad));
-  os << "\n - frame_size: " << this->frame_size();
-  os << "\n - parameter_size: " << this->parameter_size();
-  os << "\n - incoming_new_target_or_generator_register: " << this->incoming_new_target_or_generator_register();
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedScopeInfo<ScopeInfo, HeapObject>::ScopeInfoPrint(std::ostream& os) {
   this->PrintHeader(os, "ScopeInfo");
   os << "\n - flags: " << this->flags();
   os << "\n - parameter_count: " << this->parameter_count();
   os << "\n - context_local_count: " << this->context_local_count();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedFixedDoubleArray<FixedDoubleArray, FixedArrayBase>::FixedDoubleArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "FixedDoubleArray");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedRegExpMatchInfo<RegExpMatchInfo, FixedArray>::RegExpMatchInfoPrint(std::ostream& os) {
-  this->PrintHeader(os, "RegExpMatchInfo");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
   os << '\n';
 }
 
@@ -455,34 +412,6 @@ void TorqueGeneratedFeedbackVector<FeedbackVector, HeapObject>::FeedbackVectorPr
   os << "\n - closure_feedback_cell_array: " << Brief(this->closure_feedback_cell_array());
   os << "\n - parent_feedback_cell: " << Brief(this->parent_feedback_cell());
   os << "\n - maybe_optimized_code: " << Brief(this->maybe_optimized_code());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedByteArray<ByteArray, FixedArrayBase>::ByteArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "ByteArray");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedExternalPointerArray<ExternalPointerArray, FixedArrayBase>::ExternalPointerArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "ExternalPointerArray");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedArrayList<ArrayList, FixedArray>::ArrayListPrint(std::ostream& os) {
-  this->PrintHeader(os, "ArrayList");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedTemplateList<TemplateList, FixedArray>::TemplateListPrint(std::ostream& os) {
-  this->PrintHeader(os, "TemplateList");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
   os << '\n';
 }
 
@@ -1700,15 +1629,6 @@ void TorqueGeneratedAbstractInternalClassSubclass2<AbstractInternalClassSubclass
 }
 
 template <>
-void TorqueGeneratedInternalClassWithSmiElements<InternalClassWithSmiElements, FixedArrayBase>::InternalClassWithSmiElementsPrint(std::ostream& os) {
-  this->PrintHeader(os, "InternalClassWithSmiElements");
-  os << "\n - length: " << this->FixedArrayBase::TorqueGeneratedClass::length();
-  os << "\n - data: " << this->data();
-  os << "\n - object: " << Brief(this->object());
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedInternalClassWithStructElements<InternalClassWithStructElements, HeapObject>::InternalClassWithStructElementsPrint(std::ostream& os) {
   this->PrintHeader(os, "InternalClassWithStructElements");
   os << "\n - dummy1: " << this->dummy1();
@@ -1876,6 +1796,7 @@ void TorqueGeneratedJSSegmentIterator<JSSegmentIterator, JSObject>::JSSegmentIte
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - icu_break_iterator: " << Brief(this->icu_break_iterator());
+  os << "\n - raw_string: " << Brief(this->raw_string());
   os << "\n - unicode_string: " << Brief(this->unicode_string());
   os << "\n - flags: " << this->flags();
   os << '\n';
@@ -1898,6 +1819,7 @@ void TorqueGeneratedJSSegments<JSSegments, JSObject>::JSSegmentsPrint(std::ostre
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - icu_break_iterator: " << Brief(this->icu_break_iterator());
+  os << "\n - raw_string: " << Brief(this->raw_string());
   os << "\n - unicode_string: " << Brief(this->unicode_string());
   os << "\n - flags: " << this->flags();
   os << '\n';

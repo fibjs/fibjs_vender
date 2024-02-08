@@ -20,21 +20,7 @@ void TorqueGeneratedJSArgumentsObject<JSArgumentsObject, JSObject>::JSArgumentsO
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=77&c=1
-bool IsSloppyArgumentsElements_NonInline(Tagged<HeapObject> o) {
-  return IsSloppyArgumentsElements(o);
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedSloppyArgumentsElements<SloppyArgumentsElements, FixedArrayBase>::SloppyArgumentsElementsVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SloppyArgumentsElementsVerify(SloppyArgumentsElements::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=91&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=41&c=1
 bool IsAliasedArgumentsEntry_NonInline(Tagged<HeapObject> o) {
   return IsAliasedArgumentsEntry(o);
 }

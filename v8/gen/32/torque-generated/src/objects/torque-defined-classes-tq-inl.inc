@@ -279,133 +279,66 @@ inline TorqueGeneratedAbstractInternalClassSubclass2<D, P>::TorqueGeneratedAbstr
   SLOW_DCHECK(IsAbstractInternalClassSubclass2_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(AbstractInternalClassSubclass2)
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
-template<class D, class P>
-int TorqueGeneratedInternalClassWithSmiElements<D, P>::data() const {
-  int value = TaggedField<Smi>::load(*this, kDataOffset).value();
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1191&c=3
-template<class D, class P>
-void TorqueGeneratedInternalClassWithSmiElements<D, P>::set_data(int value) {
-  WRITE_FIELD(*this, kDataOffset, Smi::FromInt(value));
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-template<class D, class P>
-Tagged<Oddball> TorqueGeneratedInternalClassWithSmiElements<D, P>::object() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedInternalClassWithSmiElements::object(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-template<class D, class P>
-Tagged<Oddball> TorqueGeneratedInternalClassWithSmiElements<D, P>::object(PtrComprCageBase cage_base) const {
-  Tagged<Oddball> value = TaggedField<Tagged<Oddball>>::load(cage_base, *this, kObjectOffset);
-  DCHECK(IsOddball(value));
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=3
-template<class D, class P>
-void TorqueGeneratedInternalClassWithSmiElements<D, P>::set_object(Tagged<Oddball> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsOddball(value));
-  WRITE_FIELD(*this, kObjectOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kObjectOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-template<class D, class P>
-int TorqueGeneratedInternalClassWithSmiElements<D, P>::entries(int i) const {
-  DCHECK_GE(i, 0);
-  DCHECK_LT(i, this ->length());
-  int offset = kEntriesOffset + i * kTaggedSize;
-  int value = TaggedField<Smi>::load(*this, offset).value();
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1193&c=3
-template<class D, class P>
-void TorqueGeneratedInternalClassWithSmiElements<D, P>::set_entries(int i, int value) {
-  DCHECK_GE(i, 0);
-  DCHECK_LT(i, this ->length());
-  int offset = kEntriesOffset + i * kTaggedSize;
-  WRITE_FIELD(*this, offset, Smi::FromInt(value));
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedInternalClassWithSmiElements<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
-template<class D, class P>
-inline TorqueGeneratedInternalClassWithSmiElements<D, P>::TorqueGeneratedInternalClassWithSmiElements(Address ptr)
-    : P(ptr) {
-  SLOW_DCHECK(IsInternalClassWithSmiElements_NonInline(*this));
-}
-TQ_OBJECT_CONSTRUCTORS_IMPL(InternalClassWithSmiElements)
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
 template<class D, class P>
 int32_t TorqueGeneratedInternalClassWithStructElements<D, P>::dummy1() const {
   int32_t value = this->template ReadField<int32_t>(kDummy1Offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_dummy1(int32_t value) {
   this->template WriteField<int32_t>(kDummy1Offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
 template<class D, class P>
 int32_t TorqueGeneratedInternalClassWithStructElements<D, P>::dummy2() const {
   int32_t value = this->template ReadField<int32_t>(kDummy2Offset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_dummy2(int32_t value) {
   this->template WriteField<int32_t>(kDummy2Offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1198&c=9
 template<class D, class P>
 int TorqueGeneratedInternalClassWithStructElements<D, P>::count() const {
   int value = TaggedField<Smi>::load(*this, kCountOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1198&c=9
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_count(int value) {
   WRITE_FIELD(*this, kCountOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
 template<class D, class P>
 int TorqueGeneratedInternalClassWithStructElements<D, P>::data() const {
   int value = TaggedField<Smi>::load(*this, kDataOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_data(int value) {
   WRITE_FIELD(*this, kDataOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
 template<class D, class P>
 Tagged<Object> TorqueGeneratedInternalClassWithStructElements<D, P>::object() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedInternalClassWithStructElements::object(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
 template<class D, class P>
 Tagged<Object> TorqueGeneratedInternalClassWithStructElements<D, P>::object(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kObjectOffset);
@@ -413,7 +346,7 @@ Tagged<Object> TorqueGeneratedInternalClassWithStructElements<D, P>::object(PtrC
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_object(Tagged<Object> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
@@ -421,7 +354,7 @@ void TorqueGeneratedInternalClassWithStructElements<D, P>::set_object(Tagged<Obj
   CONDITIONAL_WRITE_BARRIER(*this, kObjectOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
 template<class D, class P>
 int TorqueGeneratedInternalClassWithStructElements<D, P>::entries(int i) const {
   DCHECK_GE(i, 0);
@@ -431,7 +364,7 @@ int TorqueGeneratedInternalClassWithStructElements<D, P>::entries(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1207&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_entries(int i, int value) {
   DCHECK_GE(i, 0);
@@ -440,7 +373,7 @@ void TorqueGeneratedInternalClassWithStructElements<D, P>::set_entries(int i, in
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
 template<class D, class P>
 int TorqueGeneratedInternalClassWithStructElements<D, P>::more_entries_a(int i) const {
   DCHECK_GE(i, 0);
@@ -450,7 +383,7 @@ int TorqueGeneratedInternalClassWithStructElements<D, P>::more_entries_a(int i) 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_more_entries_a(int i, int value) {
   DCHECK_GE(i, 0);
@@ -459,7 +392,7 @@ void TorqueGeneratedInternalClassWithStructElements<D, P>::set_more_entries_a(in
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
 template<class D, class P>
 int TorqueGeneratedInternalClassWithStructElements<D, P>::more_entries_b(int i) const {
   DCHECK_GE(i, 0);
@@ -469,7 +402,7 @@ int TorqueGeneratedInternalClassWithStructElements<D, P>::more_entries_b(int i) 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
 template<class D, class P>
 void TorqueGeneratedInternalClassWithStructElements<D, P>::set_more_entries_b(int i, int value) {
   DCHECK_GE(i, 0);
@@ -478,13 +411,13 @@ void TorqueGeneratedInternalClassWithStructElements<D, P>::set_more_entries_b(in
   WRITE_FIELD(*this, offset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
 template<class D, class P>
 Tagged<D> TorqueGeneratedInternalClassWithStructElements<D, P>::cast(Tagged<Object> object) {
     return Tagged<D>(D(object.ptr()));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1208&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
 template<class D, class P>
 int TorqueGeneratedInternalClassWithStructElements<D, P>::MoreEntriesOffset() const {
   return static_cast<int>(std::get<1>(TqRuntimeFieldSliceInternalClassWithStructElementsMoreEntries(*static_cast<const D*>(this))));
@@ -496,46 +429,46 @@ inline TorqueGeneratedInternalClassWithStructElements<D, P>::TorqueGeneratedInte
   SLOW_DCHECK(IsInternalClassWithStructElements_NonInline(*this));
 }
 TQ_OBJECT_CONSTRUCTORS_IMPL(InternalClassWithStructElements)
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
 template<class D, class P>
 int32_t TorqueGeneratedExportedSubClass2<D, P>::x_field() const {
   int32_t value = this->template ReadField<int32_t>(kXFieldOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1285&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
 template<class D, class P>
 void TorqueGeneratedExportedSubClass2<D, P>::set_x_field(int32_t value) {
   this->template WriteField<int32_t>(kXFieldOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
 template<class D, class P>
 int32_t TorqueGeneratedExportedSubClass2<D, P>::y_field() const {
   int32_t value = this->template ReadField<int32_t>(kYFieldOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1286&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
 template<class D, class P>
 void TorqueGeneratedExportedSubClass2<D, P>::set_y_field(int32_t value) {
   this->template WriteField<int32_t>(kYFieldOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
 template<class D, class P>
 int TorqueGeneratedExportedSubClass2<D, P>::z_field() const {
   int value = TaggedField<Smi>::load(*this, kZFieldOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1287&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
 template<class D, class P>
 void TorqueGeneratedExportedSubClass2<D, P>::set_z_field(int value) {
   WRITE_FIELD(*this, kZFieldOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1283&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
 template<class D, class P>
 Tagged<D> TorqueGeneratedExportedSubClass2<D, P>::cast(Tagged<Object> object) {
     return Tagged<D>(D(object.ptr()));
@@ -627,14 +560,14 @@ Tagged<HeapObject> TorqueGeneratedSortState<D, P>::userCmpFn() const {
 template<class D, class P>
 Tagged<HeapObject> TorqueGeneratedSortState<D, P>::userCmpFn(PtrComprCageBase cage_base) const {
   Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kUserCmpFnOffset);
-  DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
 template<class D, class P>
 void TorqueGeneratedSortState<D, P>::set_userCmpFn(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSFunction(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
   WRITE_FIELD(*this, kUserCmpFnOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUserCmpFnOffset, value, mode);
 }
