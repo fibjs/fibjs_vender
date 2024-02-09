@@ -6178,7 +6178,7 @@ struct ExternInternalizeOp : FixedArityOperationT<1, ExternInternalizeOp> {
 
   void Validate(const Graph& graph) const {}
 
-  auto options() const { return std::tuple(); }
+  auto options() const { return std::tuple<>(); }
 };
 
 struct ExternExternalizeOp : FixedArityOperationT<1, ExternExternalizeOp> {
@@ -6199,7 +6199,7 @@ struct ExternExternalizeOp : FixedArityOperationT<1, ExternExternalizeOp> {
 
   void Validate(const Graph& graph) const {}
 
-  auto options() const { return std::tuple(); }
+  auto options() const { return std::tuple<>(); }
 };
 
 struct StructGetOp : FixedArityOperationT<1, StructGetOp> {

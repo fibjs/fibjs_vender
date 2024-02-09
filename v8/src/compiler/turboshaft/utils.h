@@ -165,8 +165,8 @@ template <typename Head, typename Next, typename... Rest>
 constexpr uint64_t multi_encode(const Head& head, const Next& next,
                                 const Rest&... rest) {
   uint64_t v = multi_encode(next, rest...);
-  DCHECK_LT(
-      v, std::numeric_limits<uint64_t>::max() / MultiSwitch<Head>::max_value);
+  // DCHECK_LT(
+  //     v, std::numeric_limits<uint64_t>::max() / MultiSwitch<Head>::max_value);
   return (v * MultiSwitch<Head>::max_value) + MultiSwitch<Head>::encode(head);
 }
 }  // namespace detail

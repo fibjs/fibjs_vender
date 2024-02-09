@@ -175,7 +175,7 @@ static V8_INLINE void __cpuid(int cpu_info[4], int info_type) {
 static std::tuple<uint32_t, uint32_t> ReadELFHWCaps() {
   uint32_t hwcap = 0;
   uint32_t hwcap2 = 0;
-#if defined(AT_HWCAP)
+#if defined(AT_HWCAP) && defined(__GLIBC__)
   hwcap = static_cast<uint32_t>(getauxval(AT_HWCAP));
 #if defined(AT_HWCAP2)
   hwcap2 = static_cast<uint32_t>(getauxval(AT_HWCAP2));
@@ -196,7 +196,7 @@ static std::tuple<uint32_t, uint32_t> ReadELFHWCaps() {
         break;
       }
       if (entry.tag == AT_HWCAP) {
-        result = entry.value;
+        hwcap = entry.value;
         break;
       }
     }
