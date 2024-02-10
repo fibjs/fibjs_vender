@@ -121,21 +121,11 @@ jobs:
             arch: x64
             type: release
           - os: windows-2022
-            arch: x64
-            type: debug
-          - os: windows-2022
             arch: ia32
             type: release
           - os: windows-2022
-            arch: ia32
-            type: debug
-          - os: windows-2022
             arch: arm64
             type: release
-            test: skip
-          - os: windows-2022
-            arch: arm64
-            type: debug
             test: skip
           - os: macos-14
             arch: x64
