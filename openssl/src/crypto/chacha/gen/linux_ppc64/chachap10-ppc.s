@@ -6,7 +6,9 @@ ChaCha20_ctr32_vsx_p10:
 .localentry	ChaCha20_ctr32_vsx_p10,0
 
 	cmpldi	5,255
-	bgt	ChaCha20_ctr32_vsx_8x
+	ble	.Not_greater_than_8x
+	b	ChaCha20_ctr32_vsx_8x
+.Not_greater_than_8x:
 	stdu	1,-224(1)
 	mflr	0
 	li	10,127

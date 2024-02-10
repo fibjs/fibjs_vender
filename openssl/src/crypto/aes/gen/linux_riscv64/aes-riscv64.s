@@ -994,7 +994,8 @@ AES_set_decrypt_key:
     addi    sp,sp,-16
     sd      x12,0(sp) # We need to hold onto this!
     sd      ra,8(sp)
-    jal     ra,AES_set_encrypt_key
+    la      t0,AES_set_encrypt_key
+    jalr    ra,t0
     ld      x12,0(sp)
     ld      ra,8(sp)
     addi    sp,sp,16
