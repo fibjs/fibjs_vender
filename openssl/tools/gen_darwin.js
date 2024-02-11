@@ -19,12 +19,12 @@ for (var arch in darwin_config) {
         });
     } catch (e) { }
 
-    if(child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "-w"], {
+    if (child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
         cwd: `build/darwin_${arch}`
     }))
         throw new Error("openssl config failed");
     const cwd = process.cwd();
-    if(child_process.run("make", ["build_libs", "-j8"], {
+    if (child_process.run("make", ["build_libs", "-j8"], {
         cwd: `build/darwin_${arch}`
     }))
         throw new Error("openssl build failed");

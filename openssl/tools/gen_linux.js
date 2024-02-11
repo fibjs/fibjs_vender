@@ -47,7 +47,7 @@ for (var arch in linux_config) {
         });
     } catch (e) { }
 
-    if(child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "-w"], {
+    if(child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
         cwd: `build/linux_${arch}`,
         env: {
             CC: config.prefix + "gcc",

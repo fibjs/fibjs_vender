@@ -109,7 +109,7 @@ int ossl_param_find_pidx(const char *s)
                             break;
                         case 's':
                             if (strcmp("ize", s + 6) == 0)
-                                return PIDX_CIPHER_PARAM_BLOCK_SIZE;
+                                return PIDX_DIGEST_PARAM_BLOCK_SIZE;
                         }
                     }
                 }
@@ -245,7 +245,7 @@ int ossl_param_find_pidx(const char *s)
                         }
                         break;
                     case '\0':
-                        return PIDX_KDF_PARAM_DATA;
+                        return PIDX_OBJECT_PARAM_DATA;
                     }
                 }
             }
@@ -550,7 +550,7 @@ int ossl_param_find_pidx(const char *s)
             break;
         case 'm':
             if (strcmp("plicit-rejection", s + 2) == 0)
-                return PIDX_PKEY_PARAM_IMPLICIT_REJECTION;
+                return PIDX_ASYM_CIPHER_PARAM_IMPLICIT_REJECTION;
             break;
         case 'n':
             switch(s[2]) {
@@ -729,7 +729,7 @@ int ossl_param_find_pidx(const char *s)
                         return PIDX_CIPHER_PARAM_KEYLEN;
                     break;
                 case '\0':
-                    return PIDX_MAC_PARAM_KEY;
+                    return PIDX_KDF_PARAM_KEY;
                 }
             }
         }
@@ -934,7 +934,7 @@ int ossl_param_find_pidx(const char *s)
             break;
         case 'a':
             if (strcmp("me", s + 2) == 0)
-                return PIDX_STORE_PARAM_ISSUER;
+                return PIDX_PROV_PARAM_NAME;
             break;
         case 'o':
             switch(s[2]) {
@@ -968,7 +968,7 @@ int ossl_param_find_pidx(const char *s)
                 return PIDX_CIPHER_PARAM_NUM;
             break;
         case '\0':
-            return PIDX_KDF_PARAM_SCRYPT_N;
+            return PIDX_PKEY_PARAM_RSA_N;
         }
         break;
     case 'o':
@@ -1165,7 +1165,7 @@ int ossl_param_find_pidx(const char *s)
                 return PIDX_PKEY_PARAM_PUB_KEY;
             break;
         case '\0':
-            return PIDX_KDF_PARAM_SCRYPT_P;
+            return PIDX_PKEY_PARAM_FFC_P;
         }
         break;
     case 'q':
@@ -1742,7 +1742,7 @@ int ossl_param_find_pidx(const char *s)
                         break;
                     case 'l':
                         if (strcmp("en", s + 5) == 0)
-                            return PIDX_PKEY_PARAM_RSA_PSS_SALTLEN;
+                            return PIDX_SIGNATURE_PARAM_PSS_SALTLEN;
                         break;
                     case '\0':
                         return PIDX_MAC_PARAM_SALT;

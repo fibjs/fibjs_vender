@@ -24,16 +24,29 @@ ChaCha20_ctr32:
 	# $r8 = arg #5 (counter array)
 
 	beqz		$r6,.Lno_data
+	ori			$r15,$r0,64
 	la.pcrel	$r12,OPENSSL_loongarch_hwcap_P
 	ld.w		$r12,$r12,0
+
+	bleu		$r6,$r15,.LChaCha20_1x  # goto 1x when len <= 64
+
+	andi		$r12,$r12,LOONGARCH_HWCAP_LASX | LOONGARCH_HWCAP_LSX
+	beqz		$r12,.LChaCha20_1x
+
+	addi.d		$r3,$r3,-64
+	fst.d		$f24,$r3,0
+	fst.d		$f25,$r3,8
+	fst.d		$f26,$r3,16
+	fst.d		$f27,$r3,24
+	fst.d		$f28,$r3,32
+	fst.d		$f29,$r3,40
+	fst.d		$f30,$r3,48
+	fst.d		$f31,$r3,56
 
 	andi		$r13,$r12,LOONGARCH_HWCAP_LASX
 	bnez		$r13,.LChaCha20_8x
 
-	andi		$r14,$r12,LOONGARCH_HWCAP_LSX
-	bnez		$r14,.LChaCha20_4x
-
-	b			.LChaCha20_1x
+	b		.LChaCha20_4x
 
 .align 6
 .LChaCha20_1x:
@@ -351,9 +364,6 @@ ChaCha20_ctr32:
 
 .align 6
 .LChaCha20_4x:
-	ori			$r15,$r0,64
-	bleu		$r6,$r15,.LChaCha20_1x  # goto 1x when len <= 64
-
 	addi.d		$r3,$r3,-128
 
 	# Save the initial block counter in $r16
@@ -792,13 +802,10 @@ ChaCha20_ctr32:
 
 .Ldone_4x:
 	addi.d		$r3,$r3,128
-	b			.Lend
+	b			.Lrestore_saved_fpr
 
 .align 6
 .LChaCha20_8x:
-	ori			$r15,$r0,64
-	bleu		$r6,$r15,.LChaCha20_1x  # goto 1x when len <= 64
-
 	addi.d		$r3,$r3,-128
 
 	# Save the initial block counter in $r16
@@ -1421,8 +1428,18 @@ ChaCha20_ctr32:
 
 .Ldone_8x:
 	addi.d		$r3,$r3,128
-	b			.Lend
+	b			.Lrestore_saved_fpr
 
+.Lrestore_saved_fpr:
+	fld.d		$f24,$r3,0
+	fld.d		$f25,$r3,8
+	fld.d		$f26,$r3,16
+	fld.d		$f27,$r3,24
+	fld.d		$f28,$r3,32
+	fld.d		$f29,$r3,40
+	fld.d		$f30,$r3,48
+	fld.d		$f31,$r3,56
+	addi.d		$r3,$r3,64
 .Lno_data:
 .Lend:
 	jr	$r1

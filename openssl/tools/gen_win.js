@@ -6,14 +6,14 @@ const windows_config = {
         "arch": "VC-WIN64A",
         "target": "x64"
     },
-    // "arm64": {
-    //     "arch": "VC-WIN64-ARM",
-    //     "target": "arm64"
-    // },
-    // "ia32": {
-    //     "arch": "VC-WIN32",
-    //     "target": "x86"
-    // },
+    "arm64": {
+        "arch": "VC-WIN64-ARM",
+        "target": "arm64"
+    },
+    "ia32": {
+        "arch": "VC-WIN32",
+        "target": "x86"
+    }
 };
 
 for (var arch in windows_config) {
@@ -37,7 +37,7 @@ for (var arch in windows_config) {
         }
     };
 
-    if (child_process.run("perl", ["..\\..\\openssl\\Configure", config.arch, "no-shared", "-w"], opts))
+    if (child_process.run("perl", ["..\\..\\openssl\\Configure", config.arch, "no-shared", "no-md4", "no-mdc2", "no-whirlpool", "-w"], opts))
         throw new Error("openssl config failed");
     if (child_process.run("nmake", ["build_libs"], opts))
         throw new Error("openssl build failed");

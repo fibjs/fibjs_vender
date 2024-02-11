@@ -91,6 +91,12 @@ extern "C" {
 # ifndef OPENSSL_NO_MD2
 #  define OPENSSL_NO_MD2
 # endif
+# ifndef OPENSSL_NO_MD4
+#  define OPENSSL_NO_MD4
+# endif
+# ifndef OPENSSL_NO_MDC2
+#  define OPENSSL_NO_MDC2
+# endif
 # ifndef OPENSSL_NO_MSAN
 #  define OPENSSL_NO_MSAN
 # endif
@@ -123,6 +129,9 @@ extern "C" {
 # endif
 # ifndef OPENSSL_NO_WEAK_SSL_CIPHERS
 #  define OPENSSL_NO_WEAK_SSL_CIPHERS
+# endif
+# ifndef OPENSSL_NO_WHIRLPOOL
+#  define OPENSSL_NO_WHIRLPOOL
 # endif
 # ifndef OPENSSL_NO_WINSTORE
 #  define OPENSSL_NO_WINSTORE

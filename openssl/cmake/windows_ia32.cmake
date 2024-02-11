@@ -422,13 +422,10 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/keymgmt_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/keymgmt_meth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_blake2.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_md4.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_md5.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_md5_sha1.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_mdc2.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_ripemd.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_sha.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_wp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/m_null.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/m_sigver.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/mac_lib.c
@@ -477,14 +474,10 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/kdf/kdf_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/lhash/lh_stats.c
     ${PROJECT_SOURCE_DIR}/src/crypto/lhash/lhash.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/md4/md4_dgst.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/md4/md4_one.c
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/gen/windows_ia32/md5-586.asm
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/md5_dgst.c
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/md5_one.c
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/md5_sha1.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/mdc2/mdc2_one.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/mdc2/mdc2dgst.c
     ${PROJECT_SOURCE_DIR}/src/crypto/mem.c
     ${PROJECT_SOURCE_DIR}/src/crypto/mem_sec.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/cbc128.c
@@ -685,9 +678,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/ui/ui_openssl.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ui/ui_util.c
     ${PROJECT_SOURCE_DIR}/src/crypto/uid.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/whrlpool/gen/windows_ia32/wp-mmx.asm
-    ${PROJECT_SOURCE_DIR}/src/crypto/whrlpool/wp_block.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/whrlpool/wp_dgst.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/by_dir.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/by_file.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/by_store.c
@@ -878,17 +868,14 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/blake2b_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/blake2s_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/digestcommon.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md4_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_sha1_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/mdc2_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/null_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha2_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha3_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sm3_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/wp_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/encode_decode/decode_der2key.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/encode_decode/decode_epki2pki.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/encode_decode/decode_msblob2key.c
@@ -1045,4 +1032,4 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/tls_srp.c
 )
 
-add_definitions(-DAES_ASM -DCMLL_ASM -DDES_ASM -DECP_NISTZ256_ASM -DGHASH_ASM -DMD5_ASM -DOPENSSL_BN_ASM_GF2m -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_CPUID_OBJ -DOPENSSL_IA32_SSE2 -DPADLOCK_ASM -DPOLY1305_ASM -DRC4_ASM -DRMD160_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DVPAES_ASM -DWHIRLPOOL_ASM)
+add_definitions(-DAES_ASM -DCMLL_ASM -DDES_ASM -DECP_NISTZ256_ASM -DGHASH_ASM -DMD5_ASM -DOPENSSL_BN_ASM_GF2m -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_CPUID_OBJ -DOPENSSL_IA32_SSE2 -DPADLOCK_ASM -DPOLY1305_ASM -DRC4_ASM -DRMD160_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DVPAES_ASM)
