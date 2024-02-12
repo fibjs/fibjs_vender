@@ -425,7 +425,7 @@ static int mac_gen_set_params(void *genctx, const OSSL_PARAM params[])
             ERR_raise(ERR_LIB_PROV, ERR_R_PASSED_INVALID_ARGUMENT);
             return 0;
         }
-        gctx->priv_key = OPENSSL_secure_malloc(p->data_size);
+        gctx->priv_key = OPENSSL_secure_malloc(p->data_size ? p->data_size : 1);
         if (gctx->priv_key == NULL)
             return 0;
         memcpy(gctx->priv_key, p->data, p->data_size);
