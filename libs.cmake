@@ -20,8 +20,8 @@ set(libs
     openssl
     secp256k1
     curve25519
-    fips202
     blst
+    fips202
     blake2
     jssdk
     unzip
