@@ -157,16 +157,13 @@ extern "C" {
 # undef I386_ONLY
 
 # if !defined(OPENSSL_SYS_UEFI)
-#  if defined(__i386__) || defined(_M_IX86) || defined(__arm__)
-#    define BN_LLONG
-#    undef SIXTY_FOUR_BIT_LONG
-#    undef SIXTY_FOUR_BIT
-#    define THIRTY_TWO_BIT
+#  ifdef _WIN64
+#   define SIXTY_FOUR_BIT
+#  elif defined(__i386__) || defined(_M_IX86) || defined(__arm__)
+#   define BN_LLONG
+#   define THIRTY_TWO_BIT
 #  else
-#    undef BN_LLONG
-#    define SIXTY_FOUR_BIT_LONG
-#    undef SIXTY_FOUR_BIT
-#    undef THIRTY_TWO_BIT
+#   define SIXTY_FOUR_BIT_LONG
 #  endif
 # endif
 
