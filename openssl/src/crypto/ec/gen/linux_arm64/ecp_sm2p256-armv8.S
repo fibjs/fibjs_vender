@@ -549,7 +549,7 @@ ecp_sm2p256_mul:
 	stp	x29,x30,[sp,#-80]!
 	add	x29,sp,#0
 	stp	x16,x17,[sp,#16]
-	stp	x18,x19,[sp,#64]
+	stp	x19,x20,[sp,#64]
 
 	// Load inputs
 	ldp	x7,x8,[x1]
@@ -617,62 +617,62 @@ ecp_sm2p256_mul:
 	umulh	x4,x10,x11
 	adds	x15,x15,x3
 	adcs	x17,x17,x4
-	adcs	x18,xzr,xzr
+	adcs	x19,xzr,xzr
 
 	mul	x3,x9,x12
 	umulh	x4,x9,x12
 	adds	x15,x15,x3
 	adcs	x17,x17,x4
-	adcs	x18,x18,xzr
+	adcs	x19,x19,xzr
 
 	mul	x3,x8,x13
 	umulh	x4,x8,x13
 	adds	x15,x15,x3
 	adcs	x17,x17,x4
-	adcs	x18,x18,xzr
+	adcs	x19,x19,xzr
 
 	mul	x3,x7,x14
 	umulh	x4,x7,x14
 	adds	x15,x15,x3
 	adcs	x17,x17,x4
-	adcs	x18,x18,xzr
+	adcs	x19,x19,xzr
 
 // ### s3*s5 + s2*s6 + s1*s7 ###
 	mul	x3,x10,x12
 	umulh	x4,x10,x12
 	adds	x17,x17,x3
-	adcs	x18,x18,x4
-	adcs	x19,xzr,xzr
+	adcs	x19,x19,x4
+	adcs	x20,xzr,xzr
 
 	mul	x3,x9,x13
 	umulh	x4,x9,x13
 	adds	x17,x17,x3
-	adcs	x18,x18,x4
-	adcs	x19,x19,xzr
+	adcs	x19,x19,x4
+	adcs	x20,x20,xzr
 
 	mul	x3,x8,x14
 	umulh	x4,x8,x14
 	adds	x11,x17,x3
-	adcs	x18,x18,x4
-	adcs	x19,x19,xzr
+	adcs	x19,x19,x4
+	adcs	x20,x20,xzr
 
 // ### s3*s6 + s2*s7 ###
 	mul	x3,x10,x13
 	umulh	x4,x10,x13
-	adds	x18,x18,x3
-	adcs	x19,x19,x4
+	adds	x19,x19,x3
+	adcs	x20,x20,x4
 	adcs	x17,xzr,xzr
 
 	mul	x3,x9,x14
 	umulh	x4,x9,x14
-	adds	x12,x18,x3
-	adcs	x19,x19,x4
+	adds	x12,x19,x3
+	adcs	x20,x20,x4
 	adcs	x17,x17,xzr
 
 // ### s3*s7 ###
 	mul	x3,x10,x14
 	umulh	x4,x10,x14
-	adds	x13,x19,x3
+	adds	x13,x20,x3
 	adcs	x14,x17,x4
 
 	mov	x7,x16
@@ -690,7 +690,7 @@ ecp_sm2p256_mul:
 
 	// Restore scalar registers
 	ldp	x16,x17,[sp,#16]
-	ldp	x18,x19,[sp,#64]
+	ldp	x19,x20,[sp,#64]
 	ldp	x29,x30,[sp],#80
 
 	AARCH64_VALIDATE_LINK_REGISTER
@@ -708,7 +708,7 @@ ecp_sm2p256_sqr:
 	stp	x29,x30,[sp,#-80]!
 	add	x29,sp,#0
 	stp	x16,x17,[sp,#16]
-	stp	x18,x19,[sp,#64]
+	stp	x19,x20,[sp,#64]
 
 	// Load inputs
 	ldp	x11,x12,[x1]
@@ -791,16 +791,16 @@ ecp_sm2p256_sqr:
 	umulh	x4,x13,x13
 
 // ### s7*s7 ###
-	mul	x18,x14,x14
-	umulh	x19,x14,x14
+	mul	x19,x14,x14
+	umulh	x20,x14,x14
 
 	adds	x8,x8,x17
 	adcs	x9,x9,x11
 	adcs	x10,x10,x12
 	adcs	x7,x7,x3
 	adcs	x5,x5,x4
-	adcs	x6,x6,x18
-	adcs	x15,x15,x19
+	adcs	x6,x6,x19
+	adcs	x15,x15,x20
 
 	mov	x11,x7
 	mov	x7,x16
@@ -818,7 +818,7 @@ ecp_sm2p256_sqr:
 
 	// Restore scalar registers
 	ldp	x16,x17,[sp,#16]
-	ldp	x18,x19,[sp,#64]
+	ldp	x19,x20,[sp,#64]
 	ldp	x29,x30,[sp],#80
 
 	AARCH64_VALIDATE_LINK_REGISTER
