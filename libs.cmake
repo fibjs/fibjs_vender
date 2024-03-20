@@ -16,13 +16,7 @@ set(libs
     umysql
     uuid
     exif
-    mbedtls
     openssl
-    secp256k1
-    curve25519
-    blst
-    fips202
-    blake2
     jssdk
     unzip
     uv
