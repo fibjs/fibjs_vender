@@ -851,7 +851,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_xts_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_common.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_common.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_default.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_default_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_hw.c
@@ -871,7 +870,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_sha1_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/null_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha2_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha3_prov.c
@@ -944,8 +942,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/signature/sm2_sig.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/file_store.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/file_store_any2obj.c
+    ${PROJECT_SOURCE_DIR}/src/providers/legacyprov.c
     ${PROJECT_SOURCE_DIR}/src/providers/nullprov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/prov_running.c
     ${PROJECT_SOURCE_DIR}/src/providers/prov_running.c
     ${PROJECT_SOURCE_DIR}/src/ssl/bio_ssl.c
     ${PROJECT_SOURCE_DIR}/src/ssl/d1_lib.c
@@ -1031,4 +1029,4 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/tls_srp.c
 )
 
-add_definitions(-DAES_ASM -DCMLL_ASM -DDES_ASM -DECP_NISTZ256_ASM -DGHASH_ASM -DMD5_ASM -DOPENSSL_BN_ASM_GF2m -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_CPUID_OBJ -DOPENSSL_IA32_SSE2 -DPADLOCK_ASM -DPOLY1305_ASM -DRC4_ASM -DRMD160_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DVPAES_ASM)
+add_definitions(-DAES_ASM -DCMLL_ASM -DDES_ASM -DECP_NISTZ256_ASM -DGHASH_ASM -DMD5_ASM -DOPENSSL_BN_ASM_GF2m -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_CPUID_OBJ -DOPENSSL_IA32_SSE2 -DPADLOCK_ASM -DPOLY1305_ASM -DRC4_ASM -DRMD160_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DSTATIC_LEGACY -DVPAES_ASM)

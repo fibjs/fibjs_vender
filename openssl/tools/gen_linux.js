@@ -47,7 +47,7 @@ for (var arch in linux_config) {
         });
     } catch (e) { }
 
-    if(child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
+    if (child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-module", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
         cwd: `build/linux_${arch}`,
         env: {
             CC: config.prefix + "gcc",
@@ -57,7 +57,7 @@ for (var arch in linux_config) {
         }
     }))
         throw new Error("openssl config failed");
-    if(child_process.run("docker", ["run", "-it", "--rm", "-v", `${cwd}:${cwd}`, "-w", `${cwd}/build/linux_${arch}`,
+    if (child_process.run("docker", ["run", "-it", "--rm", "-v", `${cwd}:${cwd}`, "-w", `${cwd}/build/linux_${arch}`,
         `fibjs/linux-build-env:${arch}`, "make", "build_libs", "-j8"]))
         throw new Error("openssl build failed");
 }

@@ -841,7 +841,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_xts_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_common.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_common.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_default.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_default_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_hw.c
@@ -861,7 +860,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_sha1_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/null_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha2_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha3_prov.c
@@ -935,8 +933,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/file_store.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/file_store_any2obj.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/winstore_store.c
+    ${PROJECT_SOURCE_DIR}/src/providers/legacyprov.c
     ${PROJECT_SOURCE_DIR}/src/providers/nullprov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/prov_running.c
     ${PROJECT_SOURCE_DIR}/src/providers/prov_running.c
     ${PROJECT_SOURCE_DIR}/src/ssl/bio_ssl.c
     ${PROJECT_SOURCE_DIR}/src/ssl/d1_lib.c

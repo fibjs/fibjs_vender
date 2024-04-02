@@ -19,7 +19,7 @@ for (var arch in darwin_config) {
         });
     } catch (e) { }
 
-    if (child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
+    if (child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-module", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
         cwd: `build/darwin_${arch}`
     }))
         throw new Error("openssl config failed");
