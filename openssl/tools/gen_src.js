@@ -65,6 +65,8 @@ fs.readdir("build").forEach(target => {
         const m2 = /-D(BS)?AES_ASM( +(-D\S*))+/.exec(makescript);
         if (m2)
             defs = m2[0];
+        else
+            defs = "-DSTATIC_LEGACY";
     }
 
     fs.mkdir('cmake', { recursive: true });

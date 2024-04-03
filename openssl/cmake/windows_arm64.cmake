@@ -1019,3 +1019,5 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/tls_depr.c
     ${PROJECT_SOURCE_DIR}/src/ssl/tls_srp.c
 )
+
+add_definitions(-DSTATIC_LEGACY)
