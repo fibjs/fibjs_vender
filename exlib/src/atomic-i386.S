@@ -139,6 +139,25 @@ __atomic_load_8:
 
 	retl
 
+// void __atomic_store_8(volatile void *ptr, uint64_t val, int memorder);
+
+.globl __atomic_store_8
+__atomic_store_8:
+	endbr32
+	pushl	%ebx
+	subl	$8, %esp
+	movl	24(%esp), %ebx
+	movl	20(%esp), %ecx
+	movl	%ecx, (%esp)
+	movl	%ebx, 4(%esp)
+	fildq	(%esp)
+	movl	16(%esp), %eax
+	fistpq	(%eax)
+	lock orl	$0, (%esp)
+	addl	$8, %esp
+	popl	%ebx
+	ret
+
 
 // int __atomic_compare_exchange_8(volatile int64_t* ptr, volatile int64_t* old_val, 
 //              int64_t newval, int smodel, int fmodel);
@@ -199,6 +218,120 @@ __atomic_fetch_or_8:
 	orl	%edx, %ecx
 	lock cmpxchg8b	(%esi)
 	jne	.f2
+	addl	$12, %esp
+	movl	%edi, %eax
+	movl	%ebp, %edx
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+
+// uint64_t __atomic_fetch_add_8(volatile void *ptr, uint64_t val, int memorder);
+
+.globl	__atomic_fetch_add_8
+__atomic_fetch_add_8:
+	endbr32
+	pushl	%ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	subl	$20, %esp
+	movl	44(%esp), %eax
+	movl	48(%esp), %edx
+	movl	40(%esp), %ebp
+	movl	%eax, 8(%esp)
+	movl	%edx, 12(%esp)
+	movl	0(%ebp), %eax
+	movl	4(%ebp), %edx
+.g2:
+	movl	8(%esp), %ecx
+	movl	12(%esp), %ebx
+	movl	%eax, %esi
+	movl	%edx, %edi
+	addl	%eax, %ecx
+	adcl	%edx, %ebx
+	movl	%ecx, (%esp)
+	movl	%ebx, 4(%esp)
+	movl	(%esp), %ebx
+	movl	4(%esp), %ecx
+	lock cmpxchg8b	0(%ebp)
+	jne	.g2
+	addl	$20, %esp
+	movl	%esi, %eax
+	movl	%edi, %edx
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+
+// uint64_t __atomic_fetch_sub_8(volatile void *ptr, uint64_t val, int memorder);
+
+.globl	__atomic_fetch_sub_8
+__atomic_fetch_sub_8:
+	endbr32
+	pushl	%ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	subl	$20, %esp
+	movl	44(%esp), %eax
+	movl	48(%esp), %edx
+	movl	40(%esp), %ebp
+	movl	%eax, (%esp)
+	movl	%edx, 4(%esp)
+	movl	0(%ebp), %eax
+	movl	4(%ebp), %edx
+.h2:
+	movl	%eax, %ecx
+	movl	%edx, %ebx
+	subl	(%esp), %ecx
+	sbbl	4(%esp), %ebx
+	movl	%ebx, 12(%esp)
+	movl	%ecx, %ebx
+	movl	%eax, %esi
+	movl	%edx, %edi
+	movl	%ecx, 8(%esp)
+	movl	12(%esp), %ecx
+	lock cmpxchg8b	0(%ebp)
+	jne	.h2
+	addl	$20, %esp
+	movl	%esi, %eax
+	movl	%edi, %edx
+	popl	%ebx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	ret
+
+// uint64_t __atomic_fetch_and_8(volatile void *ptr, uint64_t val, int memorder);
+
+.globl	__atomic_fetch_and_8
+__atomic_fetch_and_8:
+	endbr32
+	pushl	%ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%ebx
+	subl	$12, %esp
+	movl	36(%esp), %eax
+	movl	40(%esp), %esi
+	movl	%eax, (%esp)
+	movl	32(%esp), %eax
+	movl	4(%eax), %edx
+	movl	(%eax), %eax
+	movl	%esi, 4(%esp)
+.i2:
+	movl	(%esp), %ebx
+	movl	4(%esp), %ecx
+	movl	%eax, %edi
+	movl	%edx, %ebp
+	movl	32(%esp), %esi
+	andl	%eax, %ebx
+	andl	%edx, %ecx
+	lock cmpxchg8b	(%esi)
+	jne	.i2
 	addl	$12, %esp
 	movl	%edi, %eax
 	movl	%ebp, %edx
