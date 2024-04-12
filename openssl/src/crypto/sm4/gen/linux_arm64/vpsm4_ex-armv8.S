@@ -1,4 +1,4 @@
-// Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
 //
 // Licensed under the Apache License 2.0 (the "License").  You may not use
 // this file except in compliance with the License.  You can obtain a copy
@@ -1872,7 +1872,7 @@ vpsm4_ex_cbc_encrypt:
 	zip2	v7.2d,v9.2d,v11.2d
 	ld1	{v15.4s},[x4]
 	ld1	{v8.4s,v9.4s,v10.4s,v11.4s},[x0],#64
-	// note ivec1 and vtmpx[3] are resuing the same register
+	// note ivec1 and vtmpx[3] are reusing the same register
 	// care needs to be taken to avoid conflict
 	eor	v0.16b,v0.16b,v15.16b
 	ld1	{v12.4s,v13.4s,v14.4s,v15.4s},[x0],#64
@@ -3214,13 +3214,14 @@ vpsm4_ex_xts_encrypt_gb:
 #ifdef __AARCH64EB__
 	rev32	v17.16b,v17.16b
 #endif
-	mov	v2.16b,v17.16b
+	rbit	v2.16b,v17.16b
 	ldr	q0, .Lxts_magic
 	shl	v18.16b, v2.16b, #1
 	ext	v1.16b, v2.16b, v2.16b,#15
 	ushr	v1.16b, v1.16b, #7
 	mul	v1.16b, v1.16b, v0.16b
 	eor	v18.16b, v18.16b, v1.16b
+	rbit	v18.16b,v18.16b
 	b	.check_dec_gb
 
 
@@ -3229,12 +3230,12 @@ vpsm4_ex_xts_encrypt_gb:
 .check_dec_gb:
 	// encryption:1 decryption:0
 	cmp	w28,1
-	b.eq	.prcess_last_2blks_gb
+	b.eq	.process_last_2blks_gb
 	mov	v0.16B,v17.16b
 	mov	v17.16B,v18.16b
 	mov	v18.16B,v0.16b
 
-.prcess_last_2blks_gb:
+.process_last_2blks_gb:
 #ifdef __AARCH64EB__
 	rev32	v17.16b,v17.16b
 #endif
@@ -4207,12 +4208,12 @@ vpsm4_ex_xts_encrypt:
 .check_dec:
 	// encryption:1 decryption:0
 	cmp	w28,1
-	b.eq	.prcess_last_2blks
+	b.eq	.process_last_2blks
 	mov	v0.16B,v17.16b
 	mov	v17.16B,v18.16b
 	mov	v18.16B,v0.16b
 
-.prcess_last_2blks:
+.process_last_2blks:
 #ifdef __AARCH64EB__
 	rev32	v17.16b,v17.16b
 #endif

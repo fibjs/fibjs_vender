@@ -955,14 +955,21 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/pqueue.c
     ${PROJECT_SOURCE_DIR}/src/ssl/priority_queue.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/cc_newreno.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/json_enc.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/qlog.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/qlog_event_helpers.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_ackm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_cfq.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_channel.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_demux.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_engine.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_fc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_fifd.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_impl.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_lcidm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_method.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_port.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rcidm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_reactor.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_rx.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_shared.c
@@ -971,6 +978,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rstream.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rx_depack.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_sf_list.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_srt_gen.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_srtm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_sstream.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_statm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_stream_map.c
@@ -980,6 +989,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_tserver.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_txp.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_txpim.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_types.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_wire.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_wire_pkt.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/uint_set.c
@@ -994,6 +1004,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tlsany_meth.c
     ${PROJECT_SOURCE_DIR}/src/ssl/record/rec_layer_d1.c
     ${PROJECT_SOURCE_DIR}/src/ssl/record/rec_layer_s3.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/rio/poll_immediate.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_enc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_lib.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_msg.c

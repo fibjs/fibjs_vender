@@ -7,6 +7,9 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_ofb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_wrap.c
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_riscv64/aes-riscv64-zkn.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_riscv64/aes-riscv64-zvbb-zvkg-zvkned.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_riscv64/aes-riscv64-zvkb-zvkned.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_riscv64/aes-riscv64-zvkned.s
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_riscv64/aes-riscv64.s
     ${PROJECT_SOURCE_DIR}/src/crypto/aria/aria.c
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_bitstr.c
@@ -162,6 +165,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_ofb64.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_skey.c
     ${PROJECT_SOURCE_DIR}/src/crypto/chacha/chacha_enc.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/chacha/chacha_riscv.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/chacha/gen/linux_riscv64/chacha-riscv64-zvkb.s
     ${PROJECT_SOURCE_DIR}/src/crypto/cmac/cmac.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_asn.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_client.c
@@ -482,6 +487,9 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/ctr128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/cts128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/gcm128.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/modes/gen/linux_riscv64/aes-gcm-riscv64-zvkb-zvkg-zvkned.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/modes/gen/linux_riscv64/ghash-riscv64-zvkb-zvbc.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/modes/gen/linux_riscv64/ghash-riscv64-zvkg.s
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/gen/linux_riscv64/ghash-riscv64.s
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/ocb128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/ofb128.c
@@ -615,20 +623,26 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed_ecb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed_ofb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/self_test_core.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_riscv64/sha256-riscv64-zvkb-zvknha_or_zvknhb.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_riscv64/sha512-riscv64-zvkb-zvknhb.S
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/keccak1600.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha1_one.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha1dgst.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha256.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha512.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha_riscv.c
     ${PROJECT_SOURCE_DIR}/src/crypto/siphash/siphash.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sleep.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_crypt.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_key.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_sign.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/sm3/gen/linux_riscv64/sm3-riscv64-zvksh.S
     ${PROJECT_SOURCE_DIR}/src/crypto/sm3/legacy_sm3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm3/sm3.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/sm3/sm3_riscv.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/sm4/gen/linux_riscv64/sm4-riscv64-zvksed.s
     ${PROJECT_SOURCE_DIR}/src/crypto/sm4/sm4.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sparse_array.c
     ${PROJECT_SOURCE_DIR}/src/crypto/srp/srp_lib.c
@@ -947,14 +961,21 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/pqueue.c
     ${PROJECT_SOURCE_DIR}/src/ssl/priority_queue.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/cc_newreno.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/json_enc.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/qlog.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/qlog_event_helpers.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_ackm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_cfq.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_channel.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_demux.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_engine.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_fc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_fifd.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_impl.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_lcidm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_method.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_port.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rcidm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_reactor.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_rx.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_shared.c
@@ -963,6 +984,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rstream.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rx_depack.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_sf_list.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_srt_gen.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_srtm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_sstream.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_statm.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_stream_map.c
@@ -972,6 +995,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_tserver.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_txp.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_txpim.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_types.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_wire.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_wire_pkt.c
     ${PROJECT_SOURCE_DIR}/src/ssl/quic/uint_set.c
@@ -986,6 +1010,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tlsany_meth.c
     ${PROJECT_SOURCE_DIR}/src/ssl/record/rec_layer_d1.c
     ${PROJECT_SOURCE_DIR}/src/ssl/record/rec_layer_s3.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/rio/poll_immediate.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_enc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_lib.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_msg.c
@@ -1022,4 +1047,4 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/tls_srp.c
 )
 
-add_definitions(-DAES_ASM -DGHASH_ASM -DOPENSSL_CPUID_OBJ -DSTATIC_LEGACY)
+add_definitions(-DAES_ASM -DGHASH_ASM -DINCLUDE_C_CHACHA20 -DINCLUDE_C_SHA256 -DINCLUDE_C_SHA512 -DOPENSSL_CPUID_OBJ -DOPENSSL_SM3_ASM -DSHA256_ASM -DSHA512_ASM -DSM4_ASM -DSTATIC_LEGACY)

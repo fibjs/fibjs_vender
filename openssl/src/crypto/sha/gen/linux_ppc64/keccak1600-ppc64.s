@@ -543,6 +543,8 @@ SHA3_squeeze:
 	subi	29,4,1
 	mr	30,5
 	mr	31,6
+	cmplwi	7,0
+	bne	.Lnext_block
 	b	.Loop_squeeze
 
 .align	4
@@ -573,6 +575,7 @@ SHA3_squeeze:
 	subic.	6,6,8
 	bgt	.Loop_squeeze
 
+.Lnext_block:
 	mr	3,28
 	bl	KeccakF1600
 	subi	3,28,8

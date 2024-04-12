@@ -245,7 +245,7 @@ int ossl_param_find_pidx(const char *s)
                         }
                         break;
                     case '\0':
-                        return PIDX_KDF_PARAM_DATA;
+                        return PIDX_OBJECT_PARAM_DATA;
                     }
                 }
             }
@@ -313,7 +313,7 @@ int ossl_param_find_pidx(const char *s)
                                 }
                                 break;
                             case '\0':
-                                return PIDX_ALG_PARAM_DIGEST;
+                                return PIDX_STORE_PARAM_DIGEST;
                             }
                         }
                     }
@@ -729,7 +729,7 @@ int ossl_param_find_pidx(const char *s)
                         return PIDX_CIPHER_PARAM_KEYLEN;
                     break;
                 case '\0':
-                    return PIDX_KDF_PARAM_KEY;
+                    return PIDX_MAC_PARAM_KEY;
                 }
             }
         }
@@ -915,7 +915,7 @@ int ossl_param_find_pidx(const char *s)
                     default:
                         break;
                     case '\0':
-                        return PIDX_KDF_PARAM_MODE;
+                        return PIDX_LIBSSL_RECORD_LAYER_PARAM_MODE;
                     }
                     break;
                 case 'u':
@@ -934,7 +934,7 @@ int ossl_param_find_pidx(const char *s)
             break;
         case 'a':
             if (strcmp("me", s + 2) == 0)
-                return PIDX_PROV_PARAM_NAME;
+                return PIDX_STORE_PARAM_ISSUER;
             break;
         case 'o':
             switch(s[2]) {
@@ -1152,7 +1152,7 @@ int ossl_param_find_pidx(const char *s)
                     break;
                 case 'p':
                     if (strcmp("erties", s + 4) == 0)
-                        return PIDX_ALG_PARAM_PROPERTIES;
+                        return PIDX_STORE_PARAM_PROPERTIES;
                     break;
                 case 'v':
                     if (strcmp("ider-name", s + 4) == 0)
@@ -1165,7 +1165,7 @@ int ossl_param_find_pidx(const char *s)
                 return PIDX_PKEY_PARAM_PUB_KEY;
             break;
         case '\0':
-            return PIDX_PKEY_PARAM_EC_P;
+            return PIDX_PKEY_PARAM_FFC_P;
         }
         break;
     case 'q':
@@ -1477,6 +1477,10 @@ int ossl_param_find_pidx(const char *s)
                             }
                         }
                         break;
+                    case 'd':
+                        if (strcmp("erive-from-pq", s + 5) == 0)
+                            return PIDX_PKEY_PARAM_RSA_DERIVE_FROM_PQ;
+                        break;
                     case 'e':
                         switch(s[5]) {
                         default:
@@ -1717,7 +1721,7 @@ int ossl_param_find_pidx(const char *s)
             }
             break;
         case '\0':
-            return PIDX_KDF_PARAM_KBKDF_R;
+            return PIDX_KDF_PARAM_SCRYPT_R;
         }
         break;
     case 's':
@@ -1745,7 +1749,7 @@ int ossl_param_find_pidx(const char *s)
                             return PIDX_SIGNATURE_PARAM_PSS_SALTLEN;
                         break;
                     case '\0':
-                        return PIDX_KDF_PARAM_SALT;
+                        return PIDX_MAC_PARAM_SALT;
                     }
                 }
                 break;
