@@ -24,7 +24,10 @@ include_directories(
 )
 
 if("${BUILD_OS}" STREQUAL "Windows")
-    add_definitions(-DWIN32_LEAN_AND_MEAN)
+    add_definitions(
+        -DWIN32_LEAN_AND_MEAN
+        -DUSE_BCRYPTGENRANDOM
+    )
 endif()
 
 add_definitions(
