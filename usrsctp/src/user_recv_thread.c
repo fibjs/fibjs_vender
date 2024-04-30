@@ -57,7 +57,11 @@
 #endif
 #endif
 #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__)
-#include <net/route.h>
+// #include <net/route.h>
+#define RTAX_IFA        5       /* interface addr sockaddr present */
+#define RTAX_MAX        8       /* size of array to allocate */
+#define RTM_NEWADDR     0xc     /* address being added to iface */
+#define RTM_DELADDR     0xd     /* address being removed from iface */
 #endif
 /* local macros and datatypes used to get IP addresses system independently */
 #if !defined(IP_PKTINFO) && !defined(IP_RECVDSTADDR)
