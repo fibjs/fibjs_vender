@@ -16,6 +16,7 @@ set(libs
     umysql
     uuid
     exif
+    datachannel
     juice
     usrsctp
     openssl
