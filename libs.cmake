@@ -17,6 +17,7 @@ set(libs
     uuid
     exif
     juice
+    usrsctp
     openssl
     jssdk
     unzip
