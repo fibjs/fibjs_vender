@@ -76,6 +76,7 @@ struct RTC_CPP_EXPORT Configuration {
 	bool enableIceUdpMux = false; // libjuice only
 	bool disableAutoNegotiation = false;
 	bool forceMediaTransport = false;
+	bool disableFingerprintVerification = false;
 
 	// Port range
 	uint16_t portRangeBegin = 1024;
@@ -86,6 +87,12 @@ struct RTC_CPP_EXPORT Configuration {
 
 	// Local maximum message size for Data Channels
 	optional<size_t> maxMessageSize;
+
+	optional<string> iceUfrag;
+	optional<string> icePwd;
+
+	optional<string> certPem;
+	optional<string> keyPem;
 };
 
 #ifdef RTC_ENABLE_WEBSOCKET

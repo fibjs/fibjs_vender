@@ -45,8 +45,16 @@ static LogCounter
                                 "Number of unknown RTCP packet types over past second");
 
 PeerConnection::PeerConnection(Configuration config_)
-    : config(std::move(config_)), mCertificate(make_certificate(config.certificateType)) {
+    : config(std::move(config_)) {
 	PLOG_VERBOSE << "Creating PeerConnection";
+
+	if( config.certPem.has_value() && config.keyPem.has_value() ) {
+		std::promise<certificate_ptr> cert;
+		cert.set_value(std::make_shared<Certificate>(Certificate::FromString(config.certPem.value(), config.keyPem.value())));
+		mCertificate = cert.get_future();
+	} else {
+		mCertificate = make_certificate(config.certificateType);
+	}
 
 	if (config.portRangeEnd && config.portRangeBegin > config.portRangeEnd)
 		throw std::invalid_argument("Invalid port range");
@@ -425,6 +433,9 @@ bool PeerConnection::checkFingerprint(const std::string &fingerprint) const {
 	std::lock_guard lock(mRemoteDescriptionMutex);
 	if (!mRemoteDescription || !mRemoteDescription->fingerprint())
 		return false;
+
+	if (config.disableFingerprintVerification)
+		return true;
 
 	auto expectedFingerprint = mRemoteDescription->fingerprint()->value;
 	if (expectedFingerprint  == fingerprint) {
@@ -858,10 +869,8 @@ void PeerConnection::validateRemoteDescription(const Description &description) {
 	if (activeMediaCount == 0)
 		throw std::invalid_argument("Remote description has no active media");
 
-	if (auto local = localDescription(); local && local->iceUfrag() && local->icePwd())
-		if (*description.iceUfrag() == *local->iceUfrag() &&
-		    *description.icePwd() == *local->icePwd())
-			throw std::logic_error("Got the local description as remote description");
+	if (auto local = localDescription(); local && local->sessionId() == description.sessionId())
+		throw std::logic_error("Got the local description as remote description");
 
 	PLOG_VERBOSE << "Remote description looks valid";
 }

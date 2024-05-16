@@ -154,6 +154,11 @@ IceTransport::IceTransport(const Configuration &config, candidate_callback candi
 	mAgent = decltype(mAgent)(juice_create(&jconfig), juice_destroy);
 	if (!mAgent)
 		throw std::runtime_error("Failed to create the ICE agent");
+
+	if (config.iceUfrag.has_value() && config.icePwd.has_value()) {
+		juice_set_local_ice_attributes(mAgent.get(), config.iceUfrag.value().c_str(),
+		                               config.icePwd.value().c_str());
+	}
 }
 
 IceTransport::~IceTransport() {
