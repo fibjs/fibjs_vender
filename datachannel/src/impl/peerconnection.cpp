@@ -429,13 +429,20 @@ void PeerConnection::rollbackLocalDescription() {
 	}
 }
 
-bool PeerConnection::checkFingerprint(const std::string &fingerprint) const {
+bool PeerConnection::checkFingerprint(const std::string &fingerprint) {
 	std::lock_guard lock(mRemoteDescriptionMutex);
 	if (!mRemoteDescription || !mRemoteDescription->fingerprint())
 		return false;
 
-	if (config.disableFingerprintVerification)
+	if (config.disableFingerprintVerification) {
+		CertificateFingerprint fp;
+
+		fp.algorithm = mRemoteDescription->fingerprint()->algorithm;
+		fp.value = fingerprint;
+		mRemoteDescription->setFingerprint(fp);
+
 		return true;
+	}
 
 	auto expectedFingerprint = mRemoteDescription->fingerprint()->value;
 	if (expectedFingerprint  == fingerprint) {

@@ -53,7 +53,7 @@ struct PeerConnection : std::enable_shared_from_this<PeerConnection> {
 
 	void endLocalCandidates();
 	void rollbackLocalDescription();
-	bool checkFingerprint(const std::string &fingerprint) const;
+	bool checkFingerprint(const std::string &fingerprint);
 	void forwardMessage(message_ptr message);
 	void forwardMedia(message_ptr message);
 	void forwardBufferedAmount(uint16_t stream, size_t amount);
