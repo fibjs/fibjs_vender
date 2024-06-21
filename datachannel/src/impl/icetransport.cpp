@@ -161,6 +161,10 @@ IceTransport::IceTransport(const Configuration &config, candidate_callback candi
 	}
 }
 
+void IceTransport::setIceAttributes([[maybe_unused]] string uFrag, [[maybe_unused]] string pwd) {
+	PLOG_WARNING << "Setting custom ICE attributes is not supported with libnice, please use libjuice";
+}
+
 IceTransport::~IceTransport() {
 	PLOG_DEBUG << "Destroying ICE transport";
 	mAgent.reset();
@@ -606,6 +610,12 @@ IceTransport::IceTransport(const Configuration &config, candidate_callback candi
 
 	nice_agent_attach_recv(mNiceAgent.get(), mStreamId, 1, g_main_loop_get_context(MainLoop.get()),
 	                       RecvCallback, this);
+}
+
+void IceTransport::setIceAttributes(string uFrag, string pwd) {
+	if (juice_set_local_ice_attributes(mAgent.get(), uFrag.c_str(), pwd.c_str()) < 0) {
+		throw std::invalid_argument("Invalid ICE attributes");
+	}
 }
 
 IceTransport::~IceTransport() {
