@@ -15,7 +15,6 @@ set(libs
     sqlite
     umysql
     uuid
-    exif
     datachannel
     juice
     usrsctp
