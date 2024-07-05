@@ -166,7 +166,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_skey.c
     ${PROJECT_SOURCE_DIR}/src/crypto/chacha/chacha_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/chacha/chacha_riscv.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/chacha/gen/linux_riscv64/chacha-riscv64-zvkb.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/chacha/gen/linux_riscv64/chacha-riscv64-zbb-zvkb.s
     ${PROJECT_SOURCE_DIR}/src/crypto/cmac/cmac.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_asn.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_client.c
