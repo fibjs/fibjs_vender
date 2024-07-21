@@ -5,9 +5,9 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_misc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_ofb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_wrap.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_ia32/aes-586.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_ia32/aesni-x86.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_ia32/vpaes-x86.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_ia32/aes-586.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_ia32/aesni-x86.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/aes/gen/linux_ia32/vpaes-x86.S
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_bitstr.c
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_d2i_fp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_digest.c
@@ -139,15 +139,15 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_srp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_word.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_x931p.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/bn-586.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/co-586.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/x86-gf2m.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/x86-mont.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/bn-586.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/co-586.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/x86-gf2m.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/gen/linux_ia32/x86-mont.S
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/rsa_sup_mul.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bsearch.c
     ${PROJECT_SOURCE_DIR}/src/crypto/buffer/buf_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/buffer/buffer.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/chacha/gen/linux_ia32/chacha-x86.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/chacha/gen/linux_ia32/chacha-x86.S
     ${PROJECT_SOURCE_DIR}/src/crypto/cmac/cmac.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_asn.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_client.c
@@ -221,8 +221,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ecb3_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ecb_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/fcrypt.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/des/gen/linux_ia32/crypt586.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/des/gen/linux_ia32/des-586.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/des/gen/linux_ia32/crypt586.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/des/gen/linux_ia32/des-586.S
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ofb64ede.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ofb64enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ofb_enc.c
@@ -309,7 +309,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecx_backend.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecx_key.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecx_meth.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/ec/gen/linux_ia32/ecp_nistz256-x86.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/ec/gen/linux_ia32/ecp_nistz256-x86.S
     ${PROJECT_SOURCE_DIR}/src/crypto/eia3/eia3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/encode_decode/decoder_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/encode_decode/decoder_lib.c
@@ -427,7 +427,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/ffc/ffc_params.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ffc/ffc_params_generate.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ffc/ffc_params_validate.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/gen/linux_ia32/x86cpuid.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/gen/linux_ia32/x86cpuid.S
     ${PROJECT_SOURCE_DIR}/src/crypto/getenv.c
     ${PROJECT_SOURCE_DIR}/src/crypto/hmac/hmac.c
     ${PROJECT_SOURCE_DIR}/src/crypto/http/http_client.c
@@ -439,7 +439,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/kdf/kdf_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/lhash/lh_stats.c
     ${PROJECT_SOURCE_DIR}/src/crypto/lhash/lhash.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/md5/gen/linux_ia32/md5-586.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/md5/gen/linux_ia32/md5-586.S
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/md5_dgst.c
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/md5_one.c
     ${PROJECT_SOURCE_DIR}/src/crypto/md5/md5_sha1.c
@@ -451,7 +451,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/ctr128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/cts128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/gcm128.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/modes/gen/linux_ia32/ghash-x86.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/modes/gen/linux_ia32/ghash-x86.S
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/ocb128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/ofb128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/siv128.c
@@ -519,7 +519,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/pkcs7/pk7_mime.c
     ${PROJECT_SOURCE_DIR}/src/crypto/pkcs7/pk7_smime.c
     ${PROJECT_SOURCE_DIR}/src/crypto/pkcs7/pkcs7err.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/poly1305/gen/linux_ia32/poly1305-x86.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/poly1305/gen/linux_ia32/poly1305-x86.S
     ${PROJECT_SOURCE_DIR}/src/crypto/poly1305/poly1305.c
     ${PROJECT_SOURCE_DIR}/src/crypto/property/defn_cache.c
     ${PROJECT_SOURCE_DIR}/src/crypto/property/property.c
@@ -540,7 +540,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_meth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_pool.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/randfile.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rc4/gen/linux_ia32/rc4-586.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/rc4/gen/linux_ia32/rc4-586.S
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_ameth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_asn1.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_backend.c
@@ -568,9 +568,9 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_x931.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_x931g.c
     ${PROJECT_SOURCE_DIR}/src/crypto/self_test_core.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_ia32/sha1-586.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_ia32/sha256-586.s
-    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_ia32/sha512-586.s
+    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_ia32/sha1-586.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_ia32/sha256-586.S
+    ${PROJECT_SOURCE_DIR}/src/crypto/sha/gen/linux_ia32/sha512-586.S
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/keccak1600.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha1_one.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha1dgst.c
