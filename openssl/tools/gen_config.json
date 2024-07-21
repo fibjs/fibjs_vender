@@ -1,0 +1,9 @@
+[
+    "-fPIC",
+    "no-shared",
+    "no-module",
+    "no-md4",
+    "no-mdc2",
+    "no-whirlpool",
+    "-w"
+]

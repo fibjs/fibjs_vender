@@ -1,6 +1,8 @@
 const child_process = require('child_process');
 const fs = require('fs');
 
+const gen_config = require("./gen_config.json");
+
 const darwin_config = {
     "x64": {
         "arch": "darwin64-x86_64"
@@ -19,7 +21,7 @@ for (var arch in darwin_config) {
         });
     } catch (e) { }
 
-    if (child_process.run("bash", ["../../openssl/config", config.arch, "-fPIC", "no-shared", "no-module", "no-md4", "no-mdc2", "no-whirlpool", "-w"], {
+    if (child_process.run("bash", ["../../openssl/config", config.arch].concat(gen_config), {
         cwd: `build/darwin_${arch}`
     }))
         throw new Error("openssl config failed");
