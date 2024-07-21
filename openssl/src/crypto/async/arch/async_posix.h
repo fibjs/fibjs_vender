@@ -61,9 +61,6 @@ typedef struct async_fibre_st {
 #  endif
 } async_fibre;
 
-int async_local_init(void);
-void async_local_deinit(void);
-
 static ossl_inline int async_fibre_swapcontext(async_fibre *o, async_fibre *n, int r)
 {
 #  ifdef USE_SWAPCONTEXT
@@ -82,6 +79,9 @@ static ossl_inline int async_fibre_swapcontext(async_fibre *o, async_fibre *n, i
     return 1;
 }
 
+#  ifdef async_fibre_init_dispatcher
+#   undef async_fibre_init_dispatcher
+#  endif
 #  define async_fibre_init_dispatcher(d)
 
 int async_fibre_makecontext(async_fibre *fibre);

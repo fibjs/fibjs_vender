@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -76,18 +76,15 @@ static RSA *rsa_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
 {
     RSA *ret = OPENSSL_zalloc(sizeof(*ret));
 
-    if (ret == NULL)
-        return NULL;
-
-    ret->lock = CRYPTO_THREAD_lock_new();
-    if (ret->lock == NULL) {
-        ERR_raise(ERR_LIB_RSA, ERR_R_CRYPTO_LIB);
-        OPENSSL_free(ret);
+    if (ret == NULL) {
+        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
-    if (!CRYPTO_NEW_REF(&ret->references, 1)) {
-        CRYPTO_THREAD_lock_free(ret->lock);
+    ret->references = 1;
+    ret->lock = CRYPTO_THREAD_lock_new();
+    if (ret->lock == NULL) {
+        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
         OPENSSL_free(ret);
         return NULL;
     }
@@ -140,7 +137,7 @@ void RSA_free(RSA *r)
     if (r == NULL)
         return;
 
-    CRYPTO_DOWN_REF(&r->references, &i);
+    CRYPTO_DOWN_REF(&r->references, &i, r->lock);
     REF_PRINT_COUNT("RSA", r);
     if (i > 0)
         return;
@@ -157,7 +154,6 @@ void RSA_free(RSA *r)
 #endif
 
     CRYPTO_THREAD_lock_free(r->lock);
-    CRYPTO_FREE_REF(&r->references);
 
     BN_free(r->n);
     BN_free(r->e);
@@ -185,7 +181,7 @@ int RSA_up_ref(RSA *r)
 {
     int i;
 
-    if (CRYPTO_UP_REF(&r->references, &i) <= 0)
+    if (CRYPTO_UP_REF(&r->references, &i, r->lock) <= 0)
         return 0;
 
     REF_PRINT_COUNT("RSA", r);
@@ -744,13 +740,9 @@ int RSA_pkey_ctx_ctrl(EVP_PKEY_CTX *ctx, int optype, int cmd, int p1, void *p2)
 
 DEFINE_STACK_OF(BIGNUM)
 
-/*
- * Note: This function deletes values from the parameter
- * stack values as they are consumed and set in the RSA key.
- */
-int ossl_rsa_set0_all_params(RSA *r, STACK_OF(BIGNUM) *primes,
-                             STACK_OF(BIGNUM) *exps,
-                             STACK_OF(BIGNUM) *coeffs)
+int ossl_rsa_set0_all_params(RSA *r, const STACK_OF(BIGNUM) *primes,
+                             const STACK_OF(BIGNUM) *exps,
+                             const STACK_OF(BIGNUM) *coeffs)
 {
 #ifndef FIPS_MODULE
     STACK_OF(RSA_PRIME_INFO) *prime_infos, *old_infos = NULL;
@@ -761,39 +753,17 @@ int ossl_rsa_set0_all_params(RSA *r, STACK_OF(BIGNUM) *primes,
         return 0;
 
     pnum = sk_BIGNUM_num(primes);
-
-    /* we need at least 2 primes */
-    if (pnum < 2)
+    if (pnum < 2
+        || pnum != sk_BIGNUM_num(exps)
+        || pnum != sk_BIGNUM_num(coeffs) + 1)
         return 0;
 
     if (!RSA_set0_factors(r, sk_BIGNUM_value(primes, 0),
-                          sk_BIGNUM_value(primes, 1)))
+                          sk_BIGNUM_value(primes, 1))
+        || !RSA_set0_crt_params(r, sk_BIGNUM_value(exps, 0),
+                                sk_BIGNUM_value(exps, 1),
+                                sk_BIGNUM_value(coeffs, 0)))
         return 0;
-
-    /*
-     * if we managed to set everything above, remove those elements from the
-     * stack
-     * Note, we do this after the above all to ensure that we have taken
-     * ownership of all the elements in the RSA key to avoid memory leaks
-     * we also use delete 0 here as we are grabbing items from the end of the
-     * stack rather than the start, otherwise we could use pop
-     */
-    sk_BIGNUM_delete(primes, 0);
-    sk_BIGNUM_delete(primes, 0);
-
-    if (pnum == sk_BIGNUM_num(exps)
-        && pnum == sk_BIGNUM_num(coeffs) + 1) {
-
-        if (!RSA_set0_crt_params(r, sk_BIGNUM_value(exps, 0),
-                                 sk_BIGNUM_value(exps, 1),
-                                 sk_BIGNUM_value(coeffs, 0)))
-        return 0;
-
-        /* as above, once we consume the above params, delete them from the list */
-        sk_BIGNUM_delete(exps, 0);
-        sk_BIGNUM_delete(exps, 0);
-        sk_BIGNUM_delete(coeffs, 0);
-    }
 
 #ifndef FIPS_MODULE
     old_infos = r->prime_infos;
@@ -808,17 +778,19 @@ int ossl_rsa_set0_all_params(RSA *r, STACK_OF(BIGNUM) *primes,
             return 0;
 
         for (i = 2; i < pnum; i++) {
-            BIGNUM *prime = sk_BIGNUM_pop(primes);
-            BIGNUM *exp = sk_BIGNUM_pop(exps);
-            BIGNUM *coeff = sk_BIGNUM_pop(coeffs);
+            BIGNUM *prime = sk_BIGNUM_value(primes, i);
+            BIGNUM *exp = sk_BIGNUM_value(exps, i);
+            BIGNUM *coeff = sk_BIGNUM_value(coeffs, i - 1);
             RSA_PRIME_INFO *pinfo = NULL;
 
             if (!ossl_assert(prime != NULL && exp != NULL && coeff != NULL))
                 goto err;
 
             /* Using ossl_rsa_multip_info_new() is wasteful, so allocate directly */
-            if ((pinfo = OPENSSL_zalloc(sizeof(*pinfo))) == NULL)
+            if ((pinfo = OPENSSL_zalloc(sizeof(*pinfo))) == NULL) {
+                ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
                 goto err;
+            }
 
             pinfo->r = prime;
             pinfo->d = exp;
@@ -1023,10 +995,6 @@ int EVP_PKEY_CTX_set_rsa_pss_keygen_md_name(EVP_PKEY_CTX *ctx,
  */
 int EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX *ctx, const EVP_MD *md)
 {
-    /* If key type not RSA return error */
-    if (!EVP_PKEY_CTX_is_a(ctx, "RSA"))
-        return -1;
-
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
                              EVP_PKEY_CTRL_RSA_OAEP_MD, 0, (void *)(md));
 }
@@ -1054,10 +1022,6 @@ int EVP_PKEY_CTX_get_rsa_oaep_md_name(EVP_PKEY_CTX *ctx, char *name,
  */
 int EVP_PKEY_CTX_get_rsa_oaep_md(EVP_PKEY_CTX *ctx, const EVP_MD **md)
 {
-    /* If key type not RSA return error */
-    if (!EVP_PKEY_CTX_is_a(ctx, "RSA"))
-        return -1;
-
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, EVP_PKEY_OP_TYPE_CRYPT,
                              EVP_PKEY_CTRL_GET_RSA_OAEP_MD, 0, (void *)md);
 }
@@ -1120,13 +1084,6 @@ int EVP_PKEY_CTX_get_rsa_mgf1_md(EVP_PKEY_CTX *ctx, const EVP_MD **md)
 int EVP_PKEY_CTX_set0_rsa_oaep_label(EVP_PKEY_CTX *ctx, void *label, int llen)
 {
     OSSL_PARAM rsa_params[2], *p = rsa_params;
-    const char *empty = "";
-    /*
-     * Needed as we swap label with empty if it is NULL, and label is
-     * freed at the end of this function.
-     */
-    void *plabel = label;
-    int ret;
 
     if (ctx == NULL || !EVP_PKEY_CTX_IS_ASYM_CIPHER_OP(ctx)) {
         ERR_raise(ERR_LIB_EVP, EVP_R_COMMAND_NOT_SUPPORTED);
@@ -1138,20 +1095,15 @@ int EVP_PKEY_CTX_set0_rsa_oaep_label(EVP_PKEY_CTX *ctx, void *label, int llen)
     if (!EVP_PKEY_CTX_is_a(ctx, "RSA"))
         return -1;
 
-    /* Accept NULL for backward compatibility */
-    if (label == NULL && llen == 0)
-        plabel = (void *)empty;
-
     /* Cast away the const. This is read only so should be safe */
     *p++ = OSSL_PARAM_construct_octet_string(OSSL_ASYM_CIPHER_PARAM_OAEP_LABEL,
-                                             (void *)plabel, (size_t)llen);
+                                             (void *)label, (size_t)llen);
     *p++ = OSSL_PARAM_construct_end();
 
-    ret = evp_pkey_ctx_set_params_strict(ctx, rsa_params);
-    if (ret <= 0)
-        return ret;
+    if (!evp_pkey_ctx_set_params_strict(ctx, rsa_params))
+        return 0;
 
-    /* Ownership is supposed to be transferred to the callee. */
+    /* Ownership is supposed to be transfered to the callee. */
     OPENSSL_free(label);
     return 1;
 }

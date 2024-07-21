@@ -34,20 +34,6 @@ typedef struct {
     } stream;
 } EVP_DES_KEY;
 
-# if defined(AES_ASM) && (defined(__sparc) || defined(__sparc__))
-/* ----------^^^ this is not a typo, just a way to detect that
- * assembler support was in general requested... */
-#  include "crypto/sparc_arch.h"
-
-#  define SPARC_DES_CAPABLE       (OPENSSL_sparcv9cap_P[1] & CFR_DES)
-
-void des_t4_key_expand(const void *key, DES_key_schedule *ks);
-void des_t4_cbc_encrypt(const void *inp, void *out, size_t len,
-                        const DES_key_schedule *ks, unsigned char iv[8]);
-void des_t4_cbc_decrypt(const void *inp, void *out, size_t len,
-                        const DES_key_schedule *ks, unsigned char iv[8]);
-# endif
-
 static int des_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                         const unsigned char *iv, int enc);
 static int des_ctrl(EVP_CIPHER_CTX *c, int type, int arg, void *ptr);
@@ -149,8 +135,7 @@ static int des_cfb1_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                            const unsigned char *in, size_t inl)
 {
     size_t n, chunk = EVP_MAXCHUNK / 8;
-    unsigned char c[1];
-    unsigned char d[1] = { 0 };  /* Appease Coverity */
+    unsigned char c[1], d[1];
 
     if (inl < chunk)
         chunk = inl;
@@ -214,17 +199,6 @@ static int des_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     EVP_DES_KEY *dat = (EVP_DES_KEY *) EVP_CIPHER_CTX_get_cipher_data(ctx);
 
     dat->stream.cbc = NULL;
-# if defined(SPARC_DES_CAPABLE)
-    if (SPARC_DES_CAPABLE) {
-        int mode = EVP_CIPHER_CTX_get_mode(ctx);
-
-        if (mode == EVP_CIPH_CBC_MODE) {
-            des_t4_key_expand(key, &dat->ks.ks);
-            dat->stream.cbc = enc ? des_t4_cbc_encrypt : des_t4_cbc_decrypt;
-            return 1;
-        }
-    }
-# endif
     DES_set_key_unchecked(deskey, EVP_CIPHER_CTX_get_cipher_data(ctx));
     return 1;
 }

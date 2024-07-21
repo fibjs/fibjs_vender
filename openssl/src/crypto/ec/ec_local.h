@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -13,6 +13,7 @@
 #include <openssl/obj_mac.h>
 #include <openssl/ec.h>
 #include <openssl/bn.h>
+#include <openssl/engine.h>
 #include "internal/refcount.h"
 #include "crypto/ec.h"
 
@@ -198,14 +199,46 @@ struct ec_method_st {
                        EC_POINT *p, BN_CTX *ctx);
 };
 
+struct ec_point_method_st {
+    int curve_id;
+
+    /* used by EC_POINT_add */
+    int (*add)(const EC_GROUP *, EC_POINT *r, const EC_POINT *a,
+                const EC_POINT *b, BN_CTX *);
+    /* used by EC_POINT_dbl */
+    int (*dbl)(const EC_GROUP *, EC_POINT *r, const EC_POINT *a, BN_CTX *);
+    /* used by ECP_POINT_invert */
+    int (*invert)(const EC_GROUP *, EC_POINT *, BN_CTX *);
+    /* used by ECP_POINT_mul */
+    int (*mul)(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
+                size_t num, const EC_POINT *points[], const BIGNUM *scalars[],
+                BN_CTX *);
+    /* used by ECP_POINTs_scalars_mul */
+    int (*scalars_mul)(const EC_GROUP *group, EC_POINT *r[], size_t num,
+                       const EC_POINT *points[], const BIGNUM *scalars[],
+                       BN_CTX *ctx);
+    /* used by ECP_POINTs_scalar_mul */
+    int (*scalar_mul)(const EC_GROUP *group, EC_POINT *r[], size_t num,
+                      const EC_POINT *points[], const BIGNUM *scalar,
+                      BN_CTX *ctx);
+    /* used by ECP_POINTs_string2_to_points */
+    int (*strings_to_points)(const EC_GROUP *group, EC_POINT *r[],
+                             size_t num, const unsigned char *strings[],
+                             BN_CTX *ctx);
+    /* used by ECP_POINTs_string2_to_points_scalar_mul */
+    int (*strings_to_points_scalar_mul)(const EC_GROUP *group, EC_POINT *r[],
+                                        size_t num, const unsigned char *strings[],
+                                        const BIGNUM *scalar, BN_CTX *ctx);
+};
+
 /*
  * Types and functions to manipulate pre-computed values.
  */
 typedef struct nistp224_pre_comp_st NISTP224_PRE_COMP;
 typedef struct nistp256_pre_comp_st NISTP256_PRE_COMP;
-typedef struct nistp384_pre_comp_st NISTP384_PRE_COMP;
 typedef struct nistp521_pre_comp_st NISTP521_PRE_COMP;
 typedef struct nistz256_pre_comp_st NISTZ256_PRE_COMP;
+typedef struct sm2p256_pre_comp_st SM2P256_PRE_COMP;
 typedef struct ec_pre_comp_st EC_PRE_COMP;
 
 struct ec_group_st {
@@ -246,7 +279,7 @@ struct ec_group_st {
      * equation of the form y^2 + x*y = x^3 + a*x^2 + b.
      */
     BIGNUM *a, *b;
-    /* enable optimized point arithmetic for special case */
+    /* enable optimized point arithmetics for special case */
     int a_is_minus3;
     /* method-specific (e.g., Montgomery structure) */
     void *field_data1;
@@ -265,20 +298,24 @@ struct ec_group_st {
      */
     enum {
         PCT_none,
-        PCT_nistp224, PCT_nistp256, PCT_nistp384, PCT_nistp521, PCT_nistz256,
+        PCT_nistp224, PCT_nistp256, PCT_nistp521, PCT_nistz256, PCT_sm2p256,
         PCT_ec
     } pre_comp_type;
     union {
         NISTP224_PRE_COMP *nistp224;
         NISTP256_PRE_COMP *nistp256;
-        NISTP384_PRE_COMP *nistp384;
         NISTP521_PRE_COMP *nistp521;
         NISTZ256_PRE_COMP *nistz256;
+        SM2P256_PRE_COMP *sm2p256;
         EC_PRE_COMP *ec;
     } pre_comp;
 
     OSSL_LIB_CTX *libctx;
     char *propq;
+#ifndef OPENSSL_NO_ENGINE
+    ENGINE *engine;
+    const EC_POINT_METHOD *ecp_meth;
+#endif
 };
 
 #define SETPRECOMP(g, type, pre) \
@@ -300,6 +337,7 @@ struct ec_key_st {
 #ifndef FIPS_MODULE
     CRYPTO_EX_DATA ex_data;
 #endif
+    CRYPTO_RWLOCK *lock;
     OSSL_LIB_CTX *libctx;
     char *propq;
 
@@ -319,8 +357,13 @@ struct ec_point_st {
     BIGNUM *Y;
     BIGNUM *Z;                  /* Jacobian projective coordinates: * (X, Y,
                                  * Z) represents (X/Z^2, Y/Z^3) if Z != 0 */
-    int Z_is_one;               /* enable optimized point arithmetic for
+    int Z_is_one;               /* enable optimized point arithmetics for
                                  * special case */
+};
+
+struct ec_points_st {
+    int count;
+    EC_POINT **items;
 };
 
 static ossl_inline int ec_point_is_compat(const EC_POINT *point,
@@ -334,18 +377,18 @@ static ossl_inline int ec_point_is_compat(const EC_POINT *point,
 
 NISTP224_PRE_COMP *EC_nistp224_pre_comp_dup(NISTP224_PRE_COMP *);
 NISTP256_PRE_COMP *EC_nistp256_pre_comp_dup(NISTP256_PRE_COMP *);
-NISTP384_PRE_COMP *ossl_ec_nistp384_pre_comp_dup(NISTP384_PRE_COMP *);
 NISTP521_PRE_COMP *EC_nistp521_pre_comp_dup(NISTP521_PRE_COMP *);
 NISTZ256_PRE_COMP *EC_nistz256_pre_comp_dup(NISTZ256_PRE_COMP *);
 NISTP256_PRE_COMP *EC_nistp256_pre_comp_dup(NISTP256_PRE_COMP *);
+SM2P256_PRE_COMP *EC_sm2p256_pre_comp_dup(SM2P256_PRE_COMP *);
 EC_PRE_COMP *EC_ec_pre_comp_dup(EC_PRE_COMP *);
 
 void EC_pre_comp_free(EC_GROUP *group);
 void EC_nistp224_pre_comp_free(NISTP224_PRE_COMP *);
 void EC_nistp256_pre_comp_free(NISTP256_PRE_COMP *);
-void ossl_ec_nistp384_pre_comp_free(NISTP384_PRE_COMP *);
 void EC_nistp521_pre_comp_free(NISTP521_PRE_COMP *);
 void EC_nistz256_pre_comp_free(NISTZ256_PRE_COMP *);
+void EC_sm2p256_pre_comp_free(SM2P256_PRE_COMP *);
 void EC_ec_pre_comp_free(EC_PRE_COMP *);
 
 /*
@@ -510,11 +553,12 @@ int ossl_ec_GF2m_simple_field_sqr(const EC_GROUP *, BIGNUM *r, const BIGNUM *a,
 int ossl_ec_GF2m_simple_field_div(const EC_GROUP *, BIGNUM *r, const BIGNUM *a,
                                  const BIGNUM *b, BN_CTX *);
 
-#ifndef OPENSSL_NO_EC_NISTP_64_GCC_128
+#if !defined(OPENSSL_NO_EC_NISTP_64_GCC_128) || !defined(OPENSSL_NO_EC_SM2P_64_GCC_128)
 # ifdef B_ENDIAN
-#  error "Can not enable ec_nistp_64_gcc_128 on big-endian systems"
+#  error "Can not enable ec_nistp_64_gcc_128 and ec_sm2p_64_gcc_128 on big-endian systems"
 # endif
 
+# ifndef OPENSSL_NO_EC_NISTP_64_GCC_128
 /* method functions in ecp_nistp224.c */
 int ossl_ec_GFp_nistp224_group_init(EC_GROUP *group);
 int ossl_ec_GFp_nistp224_group_set_curve(EC_GROUP *group, const BIGNUM *p,
@@ -555,27 +599,6 @@ int ossl_ec_GFp_nistp256_points_mul(const EC_GROUP *group, EC_POINT *r,
 int ossl_ec_GFp_nistp256_precompute_mult(EC_GROUP *group, BN_CTX *ctx);
 int ossl_ec_GFp_nistp256_have_precompute_mult(const EC_GROUP *group);
 
-/* method functions in ecp_nistp384.c */
-int ossl_ec_GFp_nistp384_group_init(EC_GROUP *group);
-int ossl_ec_GFp_nistp384_group_set_curve(EC_GROUP *group, const BIGNUM *p,
-                                         const BIGNUM *a, const BIGNUM *n,
-                                         BN_CTX *);
-int ossl_ec_GFp_nistp384_point_get_affine_coordinates(const EC_GROUP *group,
-                                                      const EC_POINT *point,
-                                                      BIGNUM *x, BIGNUM *y,
-                                                      BN_CTX *ctx);
-int ossl_ec_GFp_nistp384_mul(const EC_GROUP *group, EC_POINT *r,
-                             const BIGNUM *scalar, size_t num,
-                             const EC_POINT *points[], const BIGNUM *scalars[],
-                             BN_CTX *);
-int ossl_ec_GFp_nistp384_points_mul(const EC_GROUP *group, EC_POINT *r,
-                                    const BIGNUM *scalar, size_t num,
-                                    const EC_POINT *points[],
-                                    const BIGNUM *scalars[], BN_CTX *ctx);
-int ossl_ec_GFp_nistp384_precompute_mult(EC_GROUP *group, BN_CTX *ctx);
-int ossl_ec_GFp_nistp384_have_precompute_mult(const EC_GROUP *group);
-const EC_METHOD *ossl_ec_GFp_nistp384_method(void);
-
 /* method functions in ecp_nistp521.c */
 int ossl_ec_GFp_nistp521_group_init(EC_GROUP *group);
 int ossl_ec_GFp_nistp521_group_set_curve(EC_GROUP *group, const BIGNUM *p,
@@ -595,6 +618,29 @@ int ossl_ec_GFp_nistp521_points_mul(const EC_GROUP *group, EC_POINT *r,
                                     const BIGNUM *scalars[], BN_CTX *ctx);
 int ossl_ec_GFp_nistp521_precompute_mult(EC_GROUP *group, BN_CTX *ctx);
 int ossl_ec_GFp_nistp521_have_precompute_mult(const EC_GROUP *group);
+# endif
+
+# if !defined(OPENSSL_NO_EC_SM2P_64_GCC_128) && !defined(OPENSSL_NO_SM2)
+/* method functions in ecp_sm2p256.c */
+int ossl_ec_GFp_sm2p256_group_init(EC_GROUP *group);
+int ossl_ec_GFp_sm2p256_group_set_curve(EC_GROUP *group, const BIGNUM *p,
+                                         const BIGNUM *a, const BIGNUM *n,
+                                         BN_CTX *);
+int ossl_ec_GFp_sm2p256_point_get_affine_coordinates(const EC_GROUP *group,
+                                                      const EC_POINT *point,
+                                                      BIGNUM *x, BIGNUM *y,
+                                                      BN_CTX *ctx);
+int ossl_ec_GFp_sm2p256_mul(const EC_GROUP *group, EC_POINT *r,
+                             const BIGNUM *scalar, size_t num,
+                             const EC_POINT *points[], const BIGNUM *scalars[],
+                             BN_CTX *);
+int ossl_ec_GFp_sm2p256_points_mul(const EC_GROUP *group, EC_POINT *r,
+                                    const BIGNUM *scalar, size_t num,
+                                    const EC_POINT *points[],
+                                    const BIGNUM *scalars[], BN_CTX *ctx);
+int ossl_ec_GFp_sm2p256_precompute_mult(EC_GROUP *group, BN_CTX *ctx);
+int ossl_ec_GFp_sm2p256_have_precompute_mult(const EC_GROUP *group);
+# endif
 
 /* utility functions in ecp_nistputil.c */
 void ossl_ec_GFp_nistp_points_make_affine_internal(size_t num, void *point_array,
@@ -652,11 +698,6 @@ int ossl_ec_key_simple_oct2priv(EC_KEY *eckey, const unsigned char *buf,
 int ossl_ec_key_simple_generate_key(EC_KEY *eckey);
 int ossl_ec_key_simple_generate_public_key(EC_KEY *eckey);
 int ossl_ec_key_simple_check_key(const EC_KEY *eckey);
-
-#ifdef ECP_SM2P256_ASM
-/* Returns optimized methods for SM2 */
-const EC_METHOD *EC_GFp_sm2p256_method(void);
-#endif
 
 int ossl_ec_curve_nid_from_params(const EC_GROUP *group, BN_CTX *ctx);
 

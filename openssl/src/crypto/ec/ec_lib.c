@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2022 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -19,10 +19,12 @@
 #include <openssl/core_names.h>
 #include <openssl/err.h>
 #include <openssl/opensslv.h>
-#include <openssl/param_build.h>
+#include <openssl/sha.h>
 #include "crypto/ec.h"
 #include "internal/nelem.h"
 #include "ec_local.h"
+
+#define HASH_TO_EC_POINT_TRY_COUNT  1000
 
 /* functions for EC_GROUP objects */
 
@@ -41,14 +43,18 @@ EC_GROUP *ossl_ec_group_new_ex(OSSL_LIB_CTX *libctx, const char *propq,
     }
 
     ret = OPENSSL_zalloc(sizeof(*ret));
-    if (ret == NULL)
+    if (ret == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
 
     ret->libctx = libctx;
     if (propq != NULL) {
         ret->propq = OPENSSL_strdup(propq);
-        if (ret->propq == NULL)
+        if (ret->propq == NULL) {
+            ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
             goto err;
+        }
     }
     ret->meth = meth;
     if ((ret->meth->flags & EC_FLAGS_CUSTOM_CURVE) == 0) {
@@ -82,6 +88,24 @@ EC_GROUP *EC_GROUP_new(const EC_METHOD *meth)
 # endif
 #endif
 
+#ifndef FIPS_MODULE
+# ifndef OPENSSL_NO_ENGINE
+EC_GROUP *EC_GROUP_new_ex(const EC_METHOD *meth, ENGINE *engine)
+{
+    EC_GROUP *ret = EC_GROUP_new(meth);
+    if (ret == NULL)
+        return NULL;
+
+    if (!EC_GROUP_set_engine(ret, engine)) {
+        EC_GROUP_free(ret);
+        return NULL;
+    }
+
+    return ret;
+}
+# endif
+#endif
+
 void EC_pre_comp_free(EC_GROUP *group)
 {
     switch (group->pre_comp_type) {
@@ -92,6 +116,11 @@ void EC_pre_comp_free(EC_GROUP *group)
         EC_nistz256_pre_comp_free(group->pre_comp.nistz256);
 #endif
         break;
+    case PCT_sm2p256:
+#if !defined(OPENSSL_NO_SM2) && !defined(OPENSSL_NO_EC_SM2P_64_GCC_128)
+        EC_sm2p256_pre_comp_free(group->pre_comp.sm2p256);
+#endif
+        break;
 #ifndef OPENSSL_NO_EC_NISTP_64_GCC_128
     case PCT_nistp224:
         EC_nistp224_pre_comp_free(group->pre_comp.nistp224);
@@ -99,16 +128,12 @@ void EC_pre_comp_free(EC_GROUP *group)
     case PCT_nistp256:
         EC_nistp256_pre_comp_free(group->pre_comp.nistp256);
         break;
-    case PCT_nistp384:
-        ossl_ec_nistp384_pre_comp_free(group->pre_comp.nistp384);
-        break;
     case PCT_nistp521:
         EC_nistp521_pre_comp_free(group->pre_comp.nistp521);
         break;
 #else
     case PCT_nistp224:
     case PCT_nistp256:
-    case PCT_nistp384:
     case PCT_nistp521:
         break;
 #endif
@@ -126,6 +151,12 @@ void EC_GROUP_free(EC_GROUP *group)
 
     if (group->meth->group_finish != 0)
         group->meth->group_finish(group);
+
+#ifndef FIPS_MODULE
+# ifndef OPENSSL_NO_ENGINE
+    ENGINE_finish(group->engine);
+# endif
+#endif
 
     EC_pre_comp_free(group);
     BN_MONT_CTX_free(group->mont_data);
@@ -147,6 +178,12 @@ void EC_GROUP_clear_free(EC_GROUP *group)
         group->meth->group_clear_finish(group);
     else if (group->meth->group_finish != 0)
         group->meth->group_finish(group);
+
+# ifndef FIPS_MODULE
+#  ifndef OPENSSL_NO_ENGINE
+    ENGINE_finish(group->engine);
+#  endif
+# endif
 
     EC_pre_comp_free(group);
     BN_MONT_CTX_free(group->mont_data);
@@ -185,6 +222,11 @@ int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
         dest->pre_comp.nistz256 = EC_nistz256_pre_comp_dup(src->pre_comp.nistz256);
 #endif
         break;
+    case PCT_sm2p256:
+#if !defined(OPENSSL_NO_SM2) && !defined(OPENSSL_NO_EC_SM2P_64_GCC_128)
+        dest->pre_comp.sm2p256 = EC_sm2p256_pre_comp_dup(src->pre_comp.sm2p256);
+#endif
+        break;
 #ifndef OPENSSL_NO_EC_NISTP_64_GCC_128
     case PCT_nistp224:
         dest->pre_comp.nistp224 = EC_nistp224_pre_comp_dup(src->pre_comp.nistp224);
@@ -192,16 +234,12 @@ int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
     case PCT_nistp256:
         dest->pre_comp.nistp256 = EC_nistp256_pre_comp_dup(src->pre_comp.nistp256);
         break;
-    case PCT_nistp384:
-        dest->pre_comp.nistp384 = ossl_ec_nistp384_pre_comp_dup(src->pre_comp.nistp384);
-        break;
     case PCT_nistp521:
         dest->pre_comp.nistp521 = EC_nistp521_pre_comp_dup(src->pre_comp.nistp521);
         break;
 #else
     case PCT_nistp224:
     case PCT_nistp256:
-    case PCT_nistp384:
     case PCT_nistp521:
         break;
 #endif
@@ -251,8 +289,10 @@ int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
 
     if (src->seed) {
         OPENSSL_free(dest->seed);
-        if ((dest->seed = OPENSSL_malloc(src->seed_len)) == NULL)
+        if ((dest->seed = OPENSSL_malloc(src->seed_len)) == NULL) {
+            ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
             return 0;
+        }
         if (!memcpy(dest->seed, src->seed, src->seed_len))
             return 0;
         dest->seed_len = src->seed_len;
@@ -261,6 +301,20 @@ int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
         dest->seed = NULL;
         dest->seed_len = 0;
     }
+
+#ifndef FIPS_MODULE
+# ifndef OPENSSL_NO_ENGINE
+    if (src->engine) {
+        dest->engine = src->engine;
+        if (!ENGINE_init(dest->engine)) {
+            ERR_raise(ERR_LIB_EC, ERR_R_ENGINE_LIB);
+            return 0;
+        }
+
+        dest->ecp_meth = src->ecp_meth;
+    }
+# endif
+#endif
 
     return dest->meth->group_copy(dest, src);
 }
@@ -535,8 +589,10 @@ size_t EC_GROUP_set_seed(EC_GROUP *group, const unsigned char *p, size_t len)
     if (!len || !p)
         return 1;
 
-    if ((group->seed = OPENSSL_malloc(len)) == NULL)
+    if ((group->seed = OPENSSL_malloc(len)) == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     memcpy(group->seed, p, len);
     group->seed_len = len;
 
@@ -711,6 +767,128 @@ end:
     return r;
 }
 
+/* functions for EC_POINTS objects */
+
+EC_POINTS *EC_POINTS_new(const EC_GROUP *group, int count)
+{
+    int i;
+    EC_POINT *point;
+    EC_POINTS *ret;
+
+    if (group == NULL) {
+        ECerr(EC_F_EC_POINTS_NEW, ERR_R_PASSED_NULL_PARAMETER);
+        return NULL;
+    }
+    if (group->meth->point_init == NULL) {
+        ECerr(EC_F_EC_POINTS_NEW, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
+        return NULL;
+    }
+
+    ret = OPENSSL_zalloc(sizeof(*ret) + count * sizeof(EC_POINT *));
+    if (ret == NULL) {
+        ECerr(EC_F_EC_POINTS_NEW, ERR_R_MALLOC_FAILURE);
+        return NULL;
+    }
+
+    ret->count = count;
+    ret->items = (EC_POINT **)(ret + 1);
+
+    for (i = 0; i < count; i++) {
+        point = EC_POINT_new(group);
+        if (point == NULL)
+            EC_POINTS_free(ret);
+
+        ret->items[i] = point;
+    }
+
+    return ret;
+}
+
+void EC_POINTS_free(EC_POINTS *points)
+{
+    int i;
+
+    if (points == NULL)
+        return;
+
+    for (i = 0; i < points->count; i++)
+        EC_POINT_free(points->items[i]);
+
+    OPENSSL_free(points);
+}
+
+void EC_POINTS_clear_free(EC_POINTS *points)
+{
+    int i;
+
+    if (points == NULL)
+        return;
+
+    for (i = 0; i < points->count; i++)
+        EC_POINT_clear_free(points->items[i]);
+
+    OPENSSL_clear_free(points, sizeof(*points) + points->count * sizeof(EC_POINT *));
+}
+
+int EC_POINTS_copy(EC_POINTS *dest, const EC_POINTS *src)
+{
+    int i;
+
+    if (dest == src)
+        return 1;
+
+    if (dest->count != src->count) {
+        ECerr(EC_F_EC_POINTS_COPY, EC_R_INCOMPATIBLE_OBJECTS);
+        return 0;
+    }
+
+    for (i = 0; i < src->count; i++) {
+        if (!EC_POINT_copy(dest->items[i], src->items[i]))
+            return 0;
+    }
+
+    return 1;
+}
+
+EC_POINTS *EC_POINTS_dup(const EC_POINTS *a, const EC_GROUP *group)
+{
+    EC_POINTS *t;
+    int r;
+
+    if (a == NULL)
+        return NULL;
+
+    t = EC_POINTS_new(group, a->count);
+    if (t == NULL)
+        return NULL;
+    r = EC_POINTS_copy(t, a);
+    if (!r) {
+        EC_POINTS_free(t);
+        return NULL;
+    }
+    return t;
+}
+
+EC_POINT *EC_POINTS_get_item(EC_POINTS *p, int i)
+{
+    return p != NULL && i >= 0 && i < p->count ? p->items[i] : NULL;
+}
+
+int EC_POINTS_set_item(EC_POINTS *p, int i, EC_POINT *point)
+{
+    if (p == NULL || i > p->count)
+        return 0;
+
+    p->items[i] = point;
+
+    return 1;
+}
+
+int EC_POINTS_count(EC_POINTS *p)
+{
+    return p->count;
+}
+
 /* functions for EC_POINT objects */
 
 EC_POINT *EC_POINT_new(const EC_GROUP *group)
@@ -727,8 +905,10 @@ EC_POINT *EC_POINT_new(const EC_GROUP *group)
     }
 
     ret = OPENSSL_zalloc(sizeof(*ret));
-    if (ret == NULL)
+    if (ret == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
 
     ret->meth = group->meth;
     ret->curve_name = group->curve_name;
@@ -800,12 +980,71 @@ EC_POINT *EC_POINT_dup(const EC_POINT *a, const EC_GROUP *group)
     return t;
 }
 
+#ifndef FIPS_MODULE
+/*
+ * Functions for convert string to ec_point on the elliptic curve.
+ * This implementation belongs to the ad-hoc method, but it is also the
+ * recommended implementation in the mcl library, the google open source project
+ * and the cryptography conference paper.
+ *  \param  group   underlying EC_GROUP object
+ *  \param  r       EC_POINT object for the result
+ *  \param  str     string pointer
+ *  \param  len     length of the string
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINT_from_string(const EC_GROUP *group, EC_POINT *r,
+                         const unsigned char *str, size_t len)
+{
+    int ret = 0, i = 0;
+    unsigned char hash_res[SHA256_DIGEST_LENGTH];
+    unsigned char *p = (unsigned char *)str;
+    BN_CTX *bn_ctx = NULL;
+    BIGNUM *x;
+
+    memset(hash_res, 0, sizeof(hash_res));
+
+    if ((bn_ctx = BN_CTX_new_ex(group->libctx)) == NULL)
+        goto end;
+
+    BN_CTX_start(bn_ctx);
+    if ((x = BN_CTX_get(bn_ctx)) == NULL)
+        goto end;
+
+    do {
+        if (!SHA256(p, len, hash_res))
+            goto end;
+
+        BN_bin2bn(hash_res, SHA256_DIGEST_LENGTH, x);
+
+        p  = &hash_res[0];
+        len = sizeof(hash_res);
+
+        if(EC_POINT_set_compressed_coordinates(group, r, x, 0, bn_ctx) == 1) {
+            ret = 1;
+            break;
+        }
+
+        ERR_clear_error();
+    } while (i++ < HASH_TO_EC_POINT_TRY_COUNT);
+
+end:
+    BN_CTX_end(bn_ctx);
+    BN_CTX_free(bn_ctx);
+    return ret;
+}
+#endif
+
 #ifndef OPENSSL_NO_DEPRECATED_3_0
 const EC_METHOD *EC_POINT_method_of(const EC_POINT *point)
 {
     return point->meth;
 }
 #endif
+
+int EC_POINT_get_curve_name(const EC_POINT *point)
+{
+    return point->curve_name;
+}
 
 int EC_POINT_set_to_infinity(const EC_GROUP *group, EC_POINT *point)
 {
@@ -945,6 +1184,10 @@ int EC_POINT_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
         ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
         return 0;
     }
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->add != NULL)
+        return group->ecp_meth->add(group, r, a, b, ctx);
+#endif
     return group->meth->add(group, r, a, b, ctx);
 }
 
@@ -959,6 +1202,10 @@ int EC_POINT_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
         ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
         return 0;
     }
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->dbl != NULL)
+        return group->ecp_meth->dbl(group, r, a, ctx);
+#endif
     return group->meth->dbl(group, r, a, ctx);
 }
 
@@ -972,6 +1219,10 @@ int EC_POINT_invert(const EC_GROUP *group, EC_POINT *a, BN_CTX *ctx)
         ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
         return 0;
     }
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->invert != NULL)
+        return group->ecp_meth->invert(group, a, ctx);
+#endif
     return group->meth->invert(group, a, ctx);
 }
 
@@ -1097,6 +1348,12 @@ int EC_POINTs_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
         return 0;
     }
 
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->mul != NULL)
+        ret = group->ecp_meth->mul(group, r, scalar, num, points, scalars, ctx);
+    else
+#endif
+
     if (group->meth->mul != NULL)
         ret = group->meth->mul(group, r, scalar, num, points, scalars, ctx);
     else
@@ -1138,6 +1395,13 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
     }
 
     num = (point != NULL && p_scalar != NULL) ? 1 : 0;
+
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->mul != NULL)
+        ret = group->ecp_meth->mul(group, r, g_scalar, num, &point, &p_scalar, ctx);
+    else
+#endif
+
     if (group->meth->mul != NULL)
         ret = group->meth->mul(group, r, g_scalar, num, &point, &p_scalar, ctx);
     else
@@ -1147,6 +1411,235 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
 #ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);
 #endif
+    return ret;
+}
+
+/*
+ * Functions for point multiplication.
+ * r[i] = points[i] * scalars[i]
+ */
+int EC_POINTs_scalars_mul(const EC_GROUP *group, EC_POINTS **r, size_t num,
+                          const EC_POINT *points[], const BIGNUM *scalars[],
+                          BN_CTX *ctx)
+{
+    int ret = 0;
+    size_t i = 0;
+    BN_CTX *new_ctx = NULL;
+    EC_POINTS *result = NULL;
+
+    if (r == NULL || points == NULL || scalars == NULL || num <= 0)
+        return 0;
+
+    if (*r == NULL) {
+        result = EC_POINTS_new(group, (uint32_t)num);
+        if (result == NULL)
+            return 0;
+    } else {
+        result = *r;
+    }
+
+    for (i = 0; i < num; i++) {
+        if (!ec_point_is_compat(points[i], group)) {
+            ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
+            goto err;
+        }
+    }
+
+    if (ctx == NULL && (ctx = new_ctx = BN_CTX_secure_new_ex(NULL)) == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->scalars_mul != NULL) {
+        if (!group->ecp_meth->scalars_mul(group, result->items, num, points,
+                                          scalars, ctx))
+            goto err;
+    } else
+#endif
+
+    for (i = 0; i < num; i++) {
+        if (!EC_POINT_mul(group, result->items[i], NULL, points[i], scalars[i],
+                          ctx))
+            goto err;
+    }
+
+    *r = result;
+    result = NULL;
+    ret = 1;
+err:
+    BN_CTX_free(new_ctx);
+    EC_POINTS_free(result);
+    return ret;
+}
+
+/*
+ * Functions for point multiplication.
+ * r[i] = points[i] * scalar
+ */
+int EC_POINTs_scalar_mul(const EC_GROUP *group, EC_POINTS **r, size_t num,
+                         const EC_POINT *points[], const BIGNUM *scalar,
+                         BN_CTX *ctx)
+{
+    int ret = 0;
+    size_t i = 0;
+    BN_CTX *new_ctx = NULL;
+    EC_POINTS *result = NULL;
+
+    if (r == NULL || points == NULL || scalar == NULL || num <= 0)
+        return 0;
+
+    if (*r == NULL) {
+        result = EC_POINTS_new(group, (uint32_t)num);
+        if (result == NULL)
+            return 0;
+    } else {
+        result = *r;
+    }
+
+    for (i = 0; i < num; i++) {
+        if (!ec_point_is_compat(points[i], group)) {
+            ERR_raise(ERR_LIB_EC, EC_R_INCOMPATIBLE_OBJECTS);
+            goto err;
+        }
+    }
+
+    if (ctx == NULL && (ctx = new_ctx = BN_CTX_secure_new_ex(NULL)) == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->scalar_mul != NULL) {
+        if (!group->ecp_meth->scalar_mul(group, result->items, num, points,
+                                         scalar, ctx))
+            goto err;
+    } else
+#endif
+
+    for (i = 0; i < num; i++) {
+        if (!EC_POINT_mul(group, result->items[i], NULL, points[i], scalar, ctx))
+            goto err;
+    }
+
+    *r = result;
+    result = NULL;
+    ret = 1;
+err:
+    BN_CTX_free(new_ctx);
+    EC_POINTS_free(result);
+    return ret;
+}
+
+/*
+ * Functions for convert some strings to some points on the elliptic curve.
+ * r[i]->X = hash(strings[i])
+ * r[i]->Y = F(hash(strings[i])), the Y coordinate can be calculated by taking
+ *           the X coordinate into the equation
+ * r[i]->Z = 1
+ */
+int EC_POINTs_from_strings(const EC_GROUP *group, EC_POINTS **r,
+                           size_t num, const unsigned char *strings[],
+                           BN_CTX *ctx)
+{
+    int ret = 0;
+    BN_CTX *new_ctx = NULL;
+    EC_POINTS *result = NULL;
+
+    if (r == NULL || strings == NULL || num <= 0)
+        return 0;
+
+    if (*r == NULL) {
+        result = EC_POINTS_new(group, (uint32_t)num);
+        if (result == NULL)
+            return 0;
+    } else {
+        result = *r;
+    }
+
+    if (ctx == NULL && (ctx = new_ctx = BN_CTX_secure_new_ex(NULL)) == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL && group->ecp_meth->strings_to_points != NULL) {
+        if (!group->ecp_meth->strings_to_points(group, result->items, num,
+                                                strings, ctx)) {
+            goto err;
+        } else {
+            *r = result;
+            ret = 1;
+        }
+    }
+#endif
+
+    result = NULL;
+
+    /*
+     * TODO
+     */
+err:
+    BN_CTX_free(new_ctx);
+    EC_POINTS_free(result);
+    return ret;
+}
+
+/*
+ * Functions for convert some strings to some points on the elliptic curve, then
+ * multiply with scalar.
+ * point[i]->X = hash(strings[i])
+ * point[i]->Y = F(hash(strings[i])), the Y coordinate can be calculated by taking
+ *           the X coordinate into the equation
+ * point[i]->Z = 1
+ * r[i] = scalar * point[i]
+ */
+int EC_POINTs_from_strings_scalar_mul(const EC_GROUP *group, EC_POINTS **r,
+                                      size_t num, const unsigned char *strings[],
+                                      const BIGNUM *scalar, BN_CTX *ctx)
+{
+    int ret = 0;
+    BN_CTX *new_ctx = NULL;
+    EC_POINTS *result = NULL;
+
+    if (r == NULL || strings == NULL || num <= 0)
+        return 0;
+
+    if (*r == NULL) {
+        result = EC_POINTS_new(group, (uint32_t)num);
+        if (result == NULL)
+            return 0;
+    } else {
+        result = *r;
+    }
+
+    if (ctx == NULL && (ctx = new_ctx = BN_CTX_secure_new_ex(NULL)) == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_INTERNAL_ERROR);
+        goto err;
+    }
+
+#ifndef OPENSSL_NO_ENGINE
+    if (group->ecp_meth != NULL
+        && group->ecp_meth->strings_to_points_scalar_mul != NULL) {
+        if (!group->ecp_meth->strings_to_points_scalar_mul(group, result->items,
+                                                           num, strings, scalar,
+                                                           ctx)) {
+            goto err;
+        } else {
+            *r = result;
+            ret = 1;
+        }
+    }
+#endif
+
+    result = NULL;
+
+    /*
+     * TODO
+     */
+err:
+    BN_CTX_free(new_ctx);
+    EC_POINTS_free(result);
     return ret;
 }
 
@@ -1341,6 +1834,36 @@ int EC_GROUP_get_basis_type(const EC_GROUP *group)
         return 0;
 }
 
+#ifndef FIPS_MODULE
+# ifndef OPENSSL_NO_ENGINE
+int EC_GROUP_set_engine(EC_GROUP *group, ENGINE *engine)
+{
+    const EC_POINT_METHOD *ecp_meth;
+
+    if (!ENGINE_init(engine)) {
+        ERR_raise(ERR_LIB_EC, ERR_R_ENGINE_LIB);
+        return 0;
+    }
+
+    ecp_meth = ENGINE_get_ecp_meth(engine, group->curve_name);
+    if (ecp_meth == NULL) {
+        ERR_raise(ERR_LIB_EC, EC_R_EC_POINT_METHOD_NOT_FOUND);
+        return 0;
+    }
+
+    group->ecp_meth = ecp_meth;
+    group->engine = engine;
+
+    return 1;
+}
+
+const ENGINE *EC_GROUP_get0_engine(const EC_GROUP *group)
+{
+    return group->engine;
+}
+# endif
+#endif
+
 #ifndef OPENSSL_NO_EC2M
 int EC_GROUP_get_trinomial_basis(const EC_GROUP *group, unsigned int *k)
 {
@@ -1506,7 +2029,7 @@ int ossl_ec_group_set_params(EC_GROUP *group, const OSSL_PARAM params[])
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_EC_POINT_CONVERSION_FORMAT);
     if (p != NULL) {
         if (!ossl_ec_pt_format_param2id(p, &format)) {
-            ERR_raise(ERR_LIB_EC, EC_R_INVALID_FORM);
+            ECerr(0, EC_R_INVALID_FORM);
             return 0;
         }
         EC_GROUP_set_point_conversion_form(group, format);
@@ -1515,7 +2038,7 @@ int ossl_ec_group_set_params(EC_GROUP *group, const OSSL_PARAM params[])
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_EC_ENCODING);
     if (p != NULL) {
         if (!ossl_ec_encoding_param2id(p, &encoding_flag)) {
-            ERR_raise(ERR_LIB_EC, EC_R_INVALID_FORM);
+            ECerr(0, EC_R_INVALID_FORM);
             return 0;
         }
         EC_GROUP_set_asn1_flag(group, encoding_flag);
@@ -1526,7 +2049,7 @@ int ossl_ec_group_set_params(EC_GROUP *group, const OSSL_PARAM params[])
         /* The seed is allowed to be NULL */
         if (p->data_type != OSSL_PARAM_OCTET_STRING
             || !EC_GROUP_set_seed(group, p->data, p->data_size)) {
-            ERR_raise(ERR_LIB_EC, EC_R_INVALID_SEED);
+            ECerr(0, EC_R_INVALID_SEED);
             return 0;
         }
     }
@@ -1555,23 +2078,13 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
     /* This is the simple named group case */
     ptmp = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_GROUP_NAME);
     if (ptmp != NULL) {
-        int decoded = 0;
-
-        if ((group = group_new_from_name(ptmp, libctx, propq)) == NULL)
-            return NULL;
-        if (!ossl_ec_group_set_params(group, params)) {
-            EC_GROUP_free(group);
-            return NULL;
+        group = group_new_from_name(ptmp, libctx, propq);
+        if (group != NULL) {
+            if (!ossl_ec_group_set_params(group, params)) {
+                EC_GROUP_free(group);
+                group = NULL;
+            }
         }
-
-        ptmp = OSSL_PARAM_locate_const(params,
-                                       OSSL_PKEY_PARAM_EC_DECODED_FROM_EXPLICIT_PARAMS);
-        if (ptmp != NULL && !OSSL_PARAM_get_int(ptmp, &decoded)) {
-            ERR_raise(ERR_LIB_EC, EC_R_WRONG_CURVE_PARAMETERS);
-            EC_GROUP_free(group);
-            return NULL;
-        }
-        group->decoded_from_explicit_params = decoded > 0;
         return group;
     }
 #ifdef FIPS_MODULE
@@ -1581,7 +2094,7 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
     /* If it gets here then we are trying explicit parameters */
     bnctx = BN_CTX_new_ex(libctx);
     if (bnctx == NULL) {
-        ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     BN_CTX_start(bnctx);
@@ -1591,7 +2104,7 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
     b = BN_CTX_get(bnctx);
     order = BN_CTX_get(bnctx);
     if (order == NULL) {
-        ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -1742,8 +2255,6 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
         EC_GROUP_free(group);
         group = named_group;
     }
-    /* We've imported the group from explicit parameters, set it so. */
-    group->decoded_from_explicit_params = 1;
     ok = 1;
  err:
     if (!ok) {
@@ -1756,39 +2267,4 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
 
     return group;
 #endif /* FIPS_MODULE */
-}
-
-OSSL_PARAM *EC_GROUP_to_params(const EC_GROUP *group, OSSL_LIB_CTX *libctx,
-                               const char *propq, BN_CTX *bnctx)
-{
-    OSSL_PARAM_BLD *tmpl = NULL;
-    BN_CTX *new_bnctx = NULL;
-    unsigned char *gen_buf = NULL;
-    OSSL_PARAM *params = NULL;
-
-    if (group == NULL)
-        goto err;
-
-    tmpl = OSSL_PARAM_BLD_new();
-    if (tmpl == NULL)
-        goto err;
-
-    if (bnctx == NULL)
-        bnctx = new_bnctx = BN_CTX_new_ex(libctx);
-    if (bnctx == NULL)
-        goto err;
-    BN_CTX_start(bnctx);
-
-    if (!ossl_ec_group_todata(
-            group, tmpl, NULL, libctx, propq, bnctx, &gen_buf))
-        goto err;
-
-    params = OSSL_PARAM_BLD_to_param(tmpl);
-
- err:
-    OSSL_PARAM_BLD_free(tmpl);
-    OPENSSL_free(gen_buf);
-    BN_CTX_end(bnctx);
-    BN_CTX_free(new_bnctx);
-    return params;
 }

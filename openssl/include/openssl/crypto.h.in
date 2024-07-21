@@ -1,7 +1,7 @@
 /*
  * {- join("\n * ", @autowarntext) -}
  *
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -89,7 +89,6 @@ int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock);
 int CRYPTO_atomic_or(uint64_t *val, uint64_t op, uint64_t *ret,
                      CRYPTO_RWLOCK *lock);
 int CRYPTO_atomic_load(uint64_t *val, uint64_t *ret, CRYPTO_RWLOCK *lock);
-int CRYPTO_atomic_load_int(int *val, int *ret, CRYPTO_RWLOCK *lock);
 
 /* No longer needed, so this is a no-op */
 #define OPENSSL_malloc_init() while(0) continue
@@ -151,6 +150,8 @@ const char *OPENSSL_version_pre_release(void);
 const char *OPENSSL_version_build_metadata(void);
 
 unsigned long OpenSSL_version_num(void);
+unsigned long Tongsuo_version_num(void);
+# define BabaSSL_version_num Tongsuo_version_num
 const char *OpenSSL_version(int type);
 # define OPENSSL_VERSION                0
 # define OPENSSL_CFLAGS                 1
@@ -162,6 +163,10 @@ const char *OpenSSL_version(int type);
 # define OPENSSL_FULL_VERSION_STRING    7
 # define OPENSSL_MODULES_DIR            8
 # define OPENSSL_CPU_INFO               9
+# define TONGSUO_VERSION                10
+# ifndef OPENSSL_NO_QUIC
+#  define OPENSSL_INFO_QUIC             2000
+# endif
 
 const char *OPENSSL_info(int type);
 /*
@@ -319,11 +324,11 @@ void CRYPTO_get_mem_functions(CRYPTO_malloc_fn *malloc_fn,
                               CRYPTO_realloc_fn *realloc_fn,
                               CRYPTO_free_fn *free_fn);
 
-OSSL_CRYPTO_ALLOC void *CRYPTO_malloc(size_t num, const char *file, int line);
-OSSL_CRYPTO_ALLOC void *CRYPTO_zalloc(size_t num, const char *file, int line);
-OSSL_CRYPTO_ALLOC void *CRYPTO_memdup(const void *str, size_t siz, const char *file, int line);
-OSSL_CRYPTO_ALLOC char *CRYPTO_strdup(const char *str, const char *file, int line);
-OSSL_CRYPTO_ALLOC char *CRYPTO_strndup(const char *str, size_t s, const char *file, int line);
+void *CRYPTO_malloc(size_t num, const char *file, int line);
+void *CRYPTO_zalloc(size_t num, const char *file, int line);
+void *CRYPTO_memdup(const void *str, size_t siz, const char *file, int line);
+char *CRYPTO_strdup(const char *str, const char *file, int line);
+char *CRYPTO_strndup(const char *str, size_t s, const char *file, int line);
 void CRYPTO_free(void *ptr, const char *file, int line);
 void CRYPTO_clear_free(void *ptr, size_t num, const char *file, int line);
 void *CRYPTO_realloc(void *addr, size_t num, const char *file, int line);
@@ -332,8 +337,8 @@ void *CRYPTO_clear_realloc(void *addr, size_t old_num, size_t num,
 
 int CRYPTO_secure_malloc_init(size_t sz, size_t minsize);
 int CRYPTO_secure_malloc_done(void);
-OSSL_CRYPTO_ALLOC void *CRYPTO_secure_malloc(size_t num, const char *file, int line);
-OSSL_CRYPTO_ALLOC void *CRYPTO_secure_zalloc(size_t num, const char *file, int line);
+void *CRYPTO_secure_malloc(size_t num, const char *file, int line);
+void *CRYPTO_secure_zalloc(size_t num, const char *file, int line);
 void CRYPTO_secure_free(void *ptr, const char *file, int line);
 void CRYPTO_secure_clear_free(void *ptr, size_t num,
                               const char *file, int line);
@@ -343,6 +348,10 @@ size_t CRYPTO_secure_actual_size(void *ptr);
 size_t CRYPTO_secure_used(void);
 
 void OPENSSL_cleanse(void *ptr, size_t len);
+
+# ifndef OPENSSL_NO_CRYPTO_MDEBUG_COUNT
+void CRYPTO_get_mem_counts(int *count, size_t *size);
+# endif
 
 # ifndef OPENSSL_NO_CRYPTO_MDEBUG
 /*
@@ -529,8 +538,6 @@ int OSSL_LIB_CTX_load_config(OSSL_LIB_CTX *ctx, const char *config_file);
 void OSSL_LIB_CTX_free(OSSL_LIB_CTX *);
 OSSL_LIB_CTX *OSSL_LIB_CTX_get0_global_default(void);
 OSSL_LIB_CTX *OSSL_LIB_CTX_set0_default(OSSL_LIB_CTX *libctx);
-
-void OSSL_sleep(uint64_t millis);
 
 # ifdef  __cplusplus
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -33,7 +33,7 @@ int ASN1_verify(i2d_of_void *i2d, X509_ALGOR *a, ASN1_BIT_STRING *signature,
     int ret = -1, i, inl;
 
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_ASN1, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     i = OBJ_obj2nid(a->algorithm);
@@ -54,8 +54,10 @@ int ASN1_verify(i2d_of_void *i2d, X509_ALGOR *a, ASN1_BIT_STRING *signature,
         goto err;
     }
     buf_in = OPENSSL_malloc((unsigned int)inl);
-    if (buf_in == NULL)
+    if (buf_in == NULL) {
+        ERR_raise(ERR_LIB_ASN1, ERR_R_MALLOC_FAILURE);
         goto err;
+    }
     p = buf_in;
 
     i2d(data, &p);
@@ -96,14 +98,73 @@ int ASN1_item_verify_ex(const ASN1_ITEM *it, const X509_ALGOR *alg,
                         const ASN1_OCTET_STRING *id, EVP_PKEY *pkey,
                         OSSL_LIB_CTX *libctx, const char *propq)
 {
-    EVP_MD_CTX *ctx;
     int rv = -1;
+    int mdnid, pknid;
+    const EVP_MD *md = NULL;
+    EVP_MD_CTX *ctx = evp_md_ctx_new_ex(pkey, id, libctx, propq);
 
-    if ((ctx = evp_md_ctx_new_ex(pkey, id, libctx, propq)) != NULL) {
-        rv = ASN1_item_verify_ctx(it, alg, signature, data, ctx);
-        EVP_PKEY_CTX_free(EVP_MD_CTX_get_pkey_ctx(ctx));
-        EVP_MD_CTX_free(ctx);
+    if (ctx == NULL) {
+        ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+        return rv;
     }
+
+    /* Convert signature OID into digest and public key OIDs */
+    if (!OBJ_find_sigid_algs(OBJ_obj2nid(alg->algorithm), &mdnid, &pknid)) {
+        ERR_raise(ERR_LIB_ASN1, ASN1_R_UNKNOWN_SIGNATURE_ALGORITHM);
+        goto err;
+    }
+
+    if (mdnid != NID_undef) {
+        md = EVP_get_digestbynid(mdnid);
+        if (md == NULL) {
+            ERR_raise(ERR_LIB_ASN1, ASN1_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM);
+            goto err;
+        }
+    }
+
+#ifndef OPENSSL_NO_SM2
+    if (pknid == NID_sm2) {
+        EVP_PKEY_CTX *pctx = NULL, *opctx = EVP_MD_CTX_get_pkey_ctx(ctx);
+
+        if (pknid == NID_sm2 && !EVP_PKEY_set_alias_type(pkey, EVP_PKEY_SM2)) {
+            ERR_raise(ERR_LIB_ASN1, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+
+        pctx = EVP_PKEY_CTX_new_from_pkey(opctx->libctx, pkey,
+                                          opctx->propquery);
+        if (pctx == NULL) {
+            ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+            goto err;
+        }
+
+        if (EVP_PKEY_CTX_set1_id(pctx,
+                                 opctx->cached_parameters.dist_id,
+                                 opctx->cached_parameters.dist_id_len) != 1) {
+            ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+            goto err;
+        }
+
+        EVP_PKEY_CTX_free(opctx);
+        EVP_MD_CTX_set_pkey_ctx(ctx, pctx);
+    }
+#endif
+
+    /*
+     * Note that some algorithms (notably Ed25519 and Ed448) may allow
+     * a NULL digest value.
+     */
+    if (!EVP_DigestVerifyInit(ctx, NULL, md, NULL, pkey)) {
+        ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+        rv = 0;
+        goto err;
+    }
+
+    rv = ASN1_item_verify_ctx(it, alg, signature, data, ctx);
+
+ err:
+    EVP_PKEY_CTX_free(EVP_MD_CTX_get_pkey_ctx(ctx));
+    EVP_MD_CTX_free(ctx);
     return rv;
 }
 
@@ -152,8 +213,6 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
         if (ret <= 1)
             goto err;
     } else {
-        const EVP_MD *type = NULL;
-
         /*
          * We don't yet have the ability for providers to be able to handle
          * X509_ALGOR style parameters. Fortunately the only one that needs this
@@ -176,26 +235,6 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
                 ERR_raise(ERR_LIB_ASN1, ASN1_R_WRONG_PUBLIC_KEY_TYPE);
                 goto err;
             }
-
-            if (mdnid != NID_undef) {
-                type = EVP_get_digestbynid(mdnid);
-                if (type == NULL) {
-                    ERR_raise_data(ERR_LIB_ASN1,
-                                   ASN1_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM,
-                                   "nid=0x%x", mdnid);
-                    goto err;
-                }
-            }
-
-            /*
-             * Note that some algorithms (notably Ed25519 and Ed448) may allow
-             * a NULL digest value.
-             */
-            if (!EVP_DigestVerifyInit(ctx, NULL, type, NULL, pkey)) {
-                ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
-                ret = 0;
-                goto err;
-            }
         }
     }
 
@@ -205,7 +244,7 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
         goto err;
     }
     if (buf_in == NULL) {
-        ERR_raise(ERR_LIB_ASN1, ERR_R_ASN1_LIB);
+        ERR_raise(ERR_LIB_ASN1, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     inll = inl;

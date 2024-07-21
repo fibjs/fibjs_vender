@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -211,6 +211,57 @@ BN_CTX *BN_CTX_new(void);
 BN_CTX *BN_CTX_secure_new_ex(OSSL_LIB_CTX *ctx);
 BN_CTX *BN_CTX_secure_new(void);
 void BN_CTX_free(BN_CTX *c);
+# ifndef OPENSSL_NO_BN_METHOD
+#  if !defined(OPENSSL_NO_ENGINE) && !defined(FIPS_MODULE)
+int BN_CTX_set_engine(BN_CTX *ctx, ENGINE *engine);
+const ENGINE *BN_CTX_get0_engine(BN_CTX *ctx);
+#  endif
+int BN_CTX_set_method(BN_CTX *ctx, const BN_METHOD *method);
+BN_METHOD *BN_METHOD_new(const char *name);
+void BN_METHOD_free(BN_METHOD *meth);
+int BN_METHOD_copy(BN_METHOD *dst, const BN_METHOD *src);
+char *BN_METHOD_name(BN_METHOD *meth);
+int (*BN_METHOD_get_add(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+void BN_METHOD_set_add(BN_METHOD *meth,
+                       int (*mod_add)(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
+                                      const BIGNUM *m, BN_CTX *ctx));
+int (*BN_METHOD_get_sub(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+void BN_METHOD_set_sub(BN_METHOD *meth,
+                       int (*mod_sub)(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
+                                      const BIGNUM *m, BN_CTX *ctx));
+int (*BN_METHOD_get_mul(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+void BN_METHOD_set_mul(BN_METHOD *meth,
+                       int (*mod_mul)(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
+                                      const BIGNUM *m, BN_CTX *ctx));
+int (*BN_METHOD_get_exp(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+void BN_METHOD_set_exp(BN_METHOD *meth,
+                       int (*mod_exp)(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
+                                      const BIGNUM *m, BN_CTX *ctx));
+int (*BN_METHOD_get_sqr(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx);
+void BN_METHOD_set_sqr(BN_METHOD *meth,
+                       int (*mod_sqr)(BIGNUM *r, const BIGNUM *a, const BIGNUM *m,
+                                      BN_CTX *ctx));
+BIGNUM *(*BN_METHOD_get_sqrt(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *n, BN_CTX *ctx);
+void BN_METHOD_set_sqrt(BN_METHOD *meth,
+                        BIGNUM *(*mod_sqrt)(BIGNUM *r, const BIGNUM *a,
+                                            const BIGNUM *n, BN_CTX *ctx));
+BIGNUM *(*BN_METHOD_get_inverse(BN_METHOD *meth))
+    (BIGNUM *r, const BIGNUM *a, const BIGNUM *n, BN_CTX *ctx);
+void BN_METHOD_set_inverse(BN_METHOD *meth,
+                           BIGNUM *(*mod_inverse)(BIGNUM *r, const BIGNUM *a,
+                                                  const BIGNUM *n, BN_CTX *ctx));
+int (*BN_METHOD_get_div(BN_METHOD *meth))
+    (BIGNUM *dv, BIGNUM *rem, const BIGNUM *m, const BIGNUM *d, BN_CTX *ctx);
+void BN_METHOD_set_div(BN_METHOD *meth,
+                       int (*div)(BIGNUM *dv, BIGNUM *rem, const BIGNUM *m,
+                                  const BIGNUM *d, BN_CTX *ctx));
+# endif
 void BN_CTX_start(BN_CTX *ctx);
 BIGNUM *BN_CTX_get(BN_CTX *ctx);
 void BN_CTX_end(BN_CTX *ctx);
@@ -241,18 +292,12 @@ void BN_clear_free(BIGNUM *a);
 BIGNUM *BN_copy(BIGNUM *a, const BIGNUM *b);
 void BN_swap(BIGNUM *a, BIGNUM *b);
 BIGNUM *BN_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
-BIGNUM *BN_signed_bin2bn(const unsigned char *s, int len, BIGNUM *ret);
 int BN_bn2bin(const BIGNUM *a, unsigned char *to);
 int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen);
-int BN_signed_bn2bin(const BIGNUM *a, unsigned char *to, int tolen);
 BIGNUM *BN_lebin2bn(const unsigned char *s, int len, BIGNUM *ret);
-BIGNUM *BN_signed_lebin2bn(const unsigned char *s, int len, BIGNUM *ret);
 int BN_bn2lebinpad(const BIGNUM *a, unsigned char *to, int tolen);
-int BN_signed_bn2lebin(const BIGNUM *a, unsigned char *to, int tolen);
 BIGNUM *BN_native2bn(const unsigned char *s, int len, BIGNUM *ret);
-BIGNUM *BN_signed_native2bn(const unsigned char *s, int len, BIGNUM *ret);
 int BN_bn2nativepad(const BIGNUM *a, unsigned char *to, int tolen);
-int BN_signed_bn2native(const BIGNUM *a, unsigned char *to, int tolen);
 BIGNUM *BN_mpi2bn(const unsigned char *s, int len, BIGNUM *ret);
 int BN_bn2mpi(const BIGNUM *a, unsigned char *to);
 int BN_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b);
@@ -350,7 +395,6 @@ int BN_gcd(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
 int BN_kronecker(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx); /* returns
                                                                   * -2 for
                                                                   * error */
-int BN_are_coprime(BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
 BIGNUM *BN_mod_inverse(BIGNUM *ret,
                        const BIGNUM *a, const BIGNUM *n, BN_CTX *ctx);
 BIGNUM *BN_mod_sqrt(BIGNUM *ret,
@@ -550,6 +594,15 @@ const BIGNUM *BN_get0_nist_prime_224(void);
 const BIGNUM *BN_get0_nist_prime_256(void);
 const BIGNUM *BN_get0_nist_prime_384(void);
 const BIGNUM *BN_get0_nist_prime_521(void);
+
+/*
+ * faster mod functions for the sm2 prime, 0 <= a < p^2
+ */
+# ifndef OPENSSL_NO_SM2
+int BN_sm2_mod_256(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx);
+
+const BIGNUM *BN_get0_sm2_prime_256(void);
+# endif
 
 int (*BN_nist_mod_func(const BIGNUM *p)) (BIGNUM *r, const BIGNUM *a,
                                           const BIGNUM *field, BN_CTX *ctx);

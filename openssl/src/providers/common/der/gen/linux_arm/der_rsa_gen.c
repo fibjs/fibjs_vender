@@ -50,13 +50,6 @@ const unsigned char ossl_der_oid_id_RSASSA_PSS[DER_OID_SZ_id_RSASSA_PSS] = {
 };
 
 /*
- * md2WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 2 }
- */
-const unsigned char ossl_der_oid_md2WithRSAEncryption[DER_OID_SZ_md2WithRSAEncryption] = {
-    DER_OID_V_md2WithRSAEncryption
-};
-
-/*
  * md5WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 4 }
  */
 const unsigned char ossl_der_oid_md5WithRSAEncryption[DER_OID_SZ_md5WithRSAEncryption] = {
@@ -145,30 +138,5 @@ const unsigned char ossl_der_oid_id_rsassa_pkcs1_v1_5_with_sha3_384[DER_OID_SZ_i
  */
 const unsigned char ossl_der_oid_id_rsassa_pkcs1_v1_5_with_sha3_512[DER_OID_SZ_id_rsassa_pkcs1_v1_5_with_sha3_512] = {
     DER_OID_V_id_rsassa_pkcs1_v1_5_with_sha3_512
-};
-
-/*
- * md4WithRSAEncryption OBJECT IDENTIFIER ::= { pkcs-1 3 }
- */
-const unsigned char ossl_der_oid_md4WithRSAEncryption[DER_OID_SZ_md4WithRSAEncryption] = {
-    DER_OID_V_md4WithRSAEncryption
-};
-
-/*
- * ripemd160WithRSAEncryption    OBJECT IDENTIFIER ::= {
- *     iso(1) identified-organization(3) teletrust(36) algorithm(3) signatureAlgorithm(3) rsaSignature(1) 2
- * }
- */
-const unsigned char ossl_der_oid_ripemd160WithRSAEncryption[DER_OID_SZ_ripemd160WithRSAEncryption] = {
-    DER_OID_V_ripemd160WithRSAEncryption
-};
-
-/*
- * mdc2WithRSASignature OBJECT IDENTIFIER ::= {
- *     iso(1) identified-organization(3) oiw(14) secsig(3) algorithms(2) mdc2WithRSASignature(14)
- * }
- */
-const unsigned char ossl_der_oid_mdc2WithRSASignature[DER_OID_SZ_mdc2WithRSASignature] = {
-    DER_OID_V_mdc2WithRSASignature
 };
 

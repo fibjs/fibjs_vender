@@ -34,7 +34,7 @@ int EVP_OpenInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *type,
         return 1;
 
     if ((pctx = EVP_PKEY_CTX_new(priv, NULL)) == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -42,13 +42,15 @@ int EVP_OpenInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *type,
         || EVP_PKEY_decrypt(pctx, NULL, &keylen, ek, ekl) <= 0)
         goto err;
 
-    if ((key = OPENSSL_malloc(keylen)) == NULL)
+    if ((key = OPENSSL_malloc(keylen)) == NULL) {
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         goto err;
+    }
 
     if (EVP_PKEY_decrypt(pctx, key, &keylen, ek, ekl) <= 0)
         goto err;
 
-    if (EVP_CIPHER_CTX_set_key_length(ctx, keylen) <= 0
+    if (!EVP_CIPHER_CTX_set_key_length(ctx, keylen)
         || !EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
         goto err;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -46,7 +46,6 @@ struct evp_cipher_ctx_st {
     /* FIXME: Should this even exist? It appears unused */
     void *app_data;             /* application stuff */
     int key_len;                /* May change for variable length cipher */
-    int iv_len;                 /* IV length */
     unsigned long flags;        /* Various flags */
     void *cipher_data;          /* per EVP data */
     int final_used;
@@ -95,12 +94,11 @@ struct evp_keymgmt_st {
     int id;                      /* libcrypto internal */
 
     int name_id;
-    /* NID for the legacy alg if there is one */
-    int legacy_alg;
     char *type_name;
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
+    CRYPTO_RWLOCK *lock;
 
     /* Constructor(s), destructor, information */
     OSSL_FUNC_keymgmt_new_fn *new;
@@ -129,10 +127,8 @@ struct evp_keymgmt_st {
     /* Import and export routines */
     OSSL_FUNC_keymgmt_import_fn *import;
     OSSL_FUNC_keymgmt_import_types_fn *import_types;
-    OSSL_FUNC_keymgmt_import_types_ex_fn *import_types_ex;
     OSSL_FUNC_keymgmt_export_fn *export;
     OSSL_FUNC_keymgmt_export_types_fn *export_types;
-    OSSL_FUNC_keymgmt_export_types_ex_fn *export_types_ex;
     OSSL_FUNC_keymgmt_dup_fn *dup;
 } /* EVP_KEYMGMT */ ;
 
@@ -142,6 +138,7 @@ struct evp_keyexch_st {
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
+    CRYPTO_RWLOCK *lock;
 
     OSSL_FUNC_keyexch_newctx_fn *newctx;
     OSSL_FUNC_keyexch_init_fn *init;
@@ -161,6 +158,7 @@ struct evp_signature_st {
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
+    CRYPTO_RWLOCK *lock;
 
     OSSL_FUNC_signature_newctx_fn *newctx;
     OSSL_FUNC_signature_sign_init_fn *sign_init;
@@ -195,6 +193,7 @@ struct evp_asym_cipher_st {
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
+    CRYPTO_RWLOCK *lock;
 
     OSSL_FUNC_asym_cipher_newctx_fn *newctx;
     OSSL_FUNC_asym_cipher_encrypt_init_fn *encrypt_init;
@@ -215,6 +214,7 @@ struct evp_kem_st {
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
+    CRYPTO_RWLOCK *lock;
 
     OSSL_FUNC_kem_newctx_fn *newctx;
     OSSL_FUNC_kem_encapsulate_init_fn *encapsulate_init;
@@ -227,8 +227,6 @@ struct evp_kem_st {
     OSSL_FUNC_kem_gettable_ctx_params_fn *gettable_ctx_params;
     OSSL_FUNC_kem_set_ctx_params_fn *set_ctx_params;
     OSSL_FUNC_kem_settable_ctx_params_fn *settable_ctx_params;
-    OSSL_FUNC_kem_auth_encapsulate_init_fn *auth_encapsulate_init;
-    OSSL_FUNC_kem_auth_decapsulate_init_fn *auth_decapsulate_init;
 } /* EVP_KEM */;
 
 int PKCS5_v2_PBKDF2_keyivgen(EVP_CIPHER_CTX *ctx, const char *pass,
@@ -271,6 +269,13 @@ void *evp_generic_fetch(OSSL_LIB_CTX *ctx, int operation_id,
                                             OSSL_PROVIDER *prov),
                         int (*up_ref_method)(void *),
                         void (*free_method)(void *));
+void *evp_generic_fetch_by_number(OSSL_LIB_CTX *ctx, int operation_id,
+                                  int name_id, const char *properties,
+                                  void *(*new_method)(int name_id,
+                                                      const OSSL_ALGORITHM *algodef,
+                                                      OSSL_PROVIDER *prov),
+                                  int (*up_ref_method)(void *),
+                                  void (*free_method)(void *));
 void *evp_generic_fetch_from_prov(OSSL_PROVIDER *prov, int operation_id,
                                   const char *name, const char *properties,
                                   void *(*new_method)(int name_id,
@@ -292,6 +297,9 @@ void evp_generic_do_all(OSSL_LIB_CTX *libctx, int operation_id,
 
 /* Internal fetchers for method types that are to be combined with others */
 EVP_KEYMGMT *evp_keymgmt_fetch_by_number(OSSL_LIB_CTX *ctx, int name_id,
+                                         const char *properties);
+EVP_KEYMGMT *evp_keymgmt_fetch_from_prov(OSSL_PROVIDER *prov,
+                                         const char *name,
                                          const char *properties);
 EVP_SIGNATURE *evp_signature_fetch_from_prov(OSSL_PROVIDER *prov,
                                              const char *name,

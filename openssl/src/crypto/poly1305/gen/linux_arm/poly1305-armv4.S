@@ -1164,5 +1164,5 @@ poly1305_emit_neon:
 .align	2
 .align	2
 #if	__ARM_MAX_ARCH__>=7
-
+.comm	OPENSSL_armcap_P,4,4
 #endif

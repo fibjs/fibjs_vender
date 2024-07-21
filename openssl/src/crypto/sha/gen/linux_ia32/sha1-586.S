@@ -4,11 +4,7 @@
 .align	16
 sha1_block_data_order:
 .L_sha1_block_data_order_begin:
-	#ifdef __CET__
-
 .byte	243,15,30,251
-	#endif
-
 	pushl	%ebp
 	pushl	%ebx
 	pushl	%esi
@@ -1403,11 +1399,7 @@ sha1_block_data_order:
 .type	_sha1_block_data_order_shaext,@function
 .align	16
 _sha1_block_data_order_shaext:
-	#ifdef __CET__
-
 .byte	243,15,30,251
-	#endif
-
 	pushl	%ebp
 	pushl	%ebx
 	pushl	%esi
@@ -1578,11 +1570,7 @@ _sha1_block_data_order_shaext:
 .type	_sha1_block_data_order_ssse3,@function
 .align	16
 _sha1_block_data_order_ssse3:
-	#ifdef __CET__
-
 .byte	243,15,30,251
-	#endif
-
 	pushl	%ebp
 	pushl	%ebx
 	pushl	%esi
@@ -2802,11 +2790,7 @@ _sha1_block_data_order_ssse3:
 .type	_sha1_block_data_order_avx,@function
 .align	16
 _sha1_block_data_order_avx:
-	#ifdef __CET__
-
 .byte	243,15,30,251
-	#endif
-
 	pushl	%ebp
 	pushl	%ebx
 	pushl	%esi

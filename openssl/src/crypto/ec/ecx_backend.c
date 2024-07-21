@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -110,16 +110,22 @@ ECX_KEY *ossl_ecx_key_dup(const ECX_KEY *key, int selection)
 {
     ECX_KEY *ret = OPENSSL_zalloc(sizeof(*ret));
 
-    if (ret == NULL)
+    if (ret == NULL) {
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
+
+    ret->lock = CRYPTO_THREAD_lock_new();
+    if (ret->lock == NULL) {
+        OPENSSL_free(ret);
+        return NULL;
+    }
 
     ret->libctx = key->libctx;
-    ret->haspubkey = 0;
+    ret->haspubkey = key->haspubkey;
     ret->keylen = key->keylen;
     ret->type = key->type;
-
-    if (!CRYPTO_NEW_REF(&ret->references, 1))
-        goto err;
+    ret->references = 1;
 
     if (key->propq != NULL) {
         ret->propq = OPENSSL_strdup(key->propq);
@@ -127,26 +133,21 @@ ECX_KEY *ossl_ecx_key_dup(const ECX_KEY *key, int selection)
             goto err;
     }
 
-    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0
-        && key->haspubkey == 1) {
+    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0)
         memcpy(ret->pubkey, key->pubkey, sizeof(ret->pubkey));
-        ret->haspubkey = 1;
-    }
 
     if ((selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0
         && key->privkey != NULL) {
-        if (ossl_ecx_key_allocate_privkey(ret) == NULL) {
-            ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
+        if (ossl_ecx_key_allocate_privkey(ret) == NULL)
             goto err;
-        }
         memcpy(ret->privkey, key->privkey, ret->keylen);
     }
 
     return ret;
 
 err:
-    CRYPTO_FREE_REF(&ret->references);
     ossl_ecx_key_free(ret);
+    ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
     return NULL;
 }
 
@@ -185,7 +186,7 @@ ECX_KEY *ossl_ecx_key_op(const X509_ALGOR *palg,
 
     key = ossl_ecx_key_new(libctx, KEYNID2TYPE(id), 1, propq);
     if (key == NULL) {
-        ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
+        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
         return 0;
     }
     pubkey = key->pubkey;
@@ -195,7 +196,7 @@ ECX_KEY *ossl_ecx_key_op(const X509_ALGOR *palg,
     } else {
         privkey = ossl_ecx_key_allocate_privkey(key);
         if (privkey == NULL) {
-            ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
+            ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
             goto err;
         }
         if (op == KEY_OP_KEYGEN) {

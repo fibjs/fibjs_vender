@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2002-2022 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -19,6 +19,7 @@
 
 # include <openssl/opensslconf.h>
 # include <openssl/types.h>
+# include <openssl/safestack.h>
 
 # include <string.h>
 
@@ -88,9 +89,6 @@ typedef enum {
 
 const char *OSSL_EC_curve_nid2name(int nid);
 
-# ifndef OPENSSL_NO_STDIO
-#  include <stdio.h>
-# endif
 # ifndef OPENSSL_NO_EC
 #  include <openssl/asn1.h>
 #  include <openssl/symhacks.h>
@@ -111,6 +109,7 @@ typedef struct ec_group_st EC_GROUP;
 typedef struct ec_point_st EC_POINT;
 typedef struct ecpk_parameters_st ECPKPARAMETERS;
 typedef struct ec_parameters_st ECPARAMETERS;
+typedef struct ec_points_st EC_POINTS;
 
 /********************************************************************/
 /*               EC_METHODs for curves over GF(p)                   */
@@ -149,6 +148,13 @@ OSSL_DEPRECATEDIN_3_0 const EC_METHOD *EC_GFp_nistp256_method(void);
  */
 OSSL_DEPRECATEDIN_3_0 const EC_METHOD *EC_GFp_nistp521_method(void);
 #   endif /* OPENSSL_NO_EC_NISTP_64_GCC_128 */
+
+#   if !defined(OPENSSL_NO_EC_SM2P_64_GCC_128) && !defined(OPENSSL_NO_SM2)
+/** Returns 64-bit optimized methods for sm2p256
+ *  \return  EC_METHOD object
+ */
+OSSL_DEPRECATEDIN_3_0 const EC_METHOD *EC_GFp_sm2p256_method(void);
+#   endif /* OPENSSL_NO_EC_SM2P_64_GCC_128 */
 
 #   ifndef OPENSSL_NO_EC2M
 /********************************************************************/
@@ -190,6 +196,32 @@ OSSL_DEPRECATEDIN_3_0 const EC_METHOD *EC_GROUP_method_of(const EC_GROUP *group)
  */
 OSSL_DEPRECATEDIN_3_0 int EC_METHOD_get_field_type(const EC_METHOD *meth);
 #  endif /* OPENSSL_NO_DEPRECATED_3_0 */
+
+#ifndef FIPS_MODULE
+# ifndef OPENSSL_NO_ENGINE
+
+/** Creates a new EC_GROUP object, and binding engine
+ *  \param   meth  EC_METHOD to use
+ *  \param   engine  ENGINE to use
+ *  \return  newly created EC_GROUP object or NULL in case of an error.
+ */
+EC_GROUP *EC_GROUP_new_ex(const EC_METHOD *meth, ENGINE *engine);
+
+/** Sets the engine of a EC_GROUP object.
+ *  \param   meth  EC_METHOD to use
+ *  \param   engine  ENGINE to use
+ *  \return 1 on success and 0 if an error occurred.
+ */
+int EC_GROUP_set_engine(EC_GROUP *group, ENGINE *engine);
+
+/** Returns the ENGINE object of a EC_GROUP object
+ *  \param  group  EC_GROUP object
+ *  \return the ENGINE object (possibly NULL).
+ */
+const ENGINE *EC_GROUP_get0_engine(const EC_GROUP *group);
+
+# endif
+#endif
 
 /** Frees a EC_GROUP object
  *  \param  group  EC_GROUP object to be freed.
@@ -461,22 +493,6 @@ EC_GROUP *EC_GROUP_new_from_params(const OSSL_PARAM params[],
                                    OSSL_LIB_CTX *libctx, const char *propq);
 
 /**
- * Creates an OSSL_PARAM array with the parameters describing the given
- * EC_GROUP.
- * The resulting parameters may contain an explicit or a named curve depending
- * on the EC_GROUP.
- *  \param  group  pointer to the EC_GROUP object
- *  \param  libctx The associated library context or NULL for the default
- *                 context
- *  \param  propq  A property query string
- *  \param  bnctx  BN_CTX object (optional)
- *  \return newly created OSSL_PARAM array with the parameters
- *          describing the given EC_GROUP or NULL if an error occurred
- */
-OSSL_PARAM *EC_GROUP_to_params(const EC_GROUP *group, OSSL_LIB_CTX *libctx,
-                               const char *propq, BN_CTX *bnctx);
-
-/**
  * Creates a EC_GROUP object with a curve specified by a NID
  *  \param  libctx The associated library context or NULL for the default
  *                 context
@@ -553,6 +569,64 @@ int EC_GROUP_check_named_curve(const EC_GROUP *group, int nist_only,
                                BN_CTX *ctx);
 
 /********************************************************************/
+/*                    EC_POINTS functions                            */
+/********************************************************************/
+
+/** Creates a new EC_POINTS object for the specified EC_GROUP and the count of
+ *  EC_POINT
+ *  \param  group  EC_GROUP the underlying EC_GROUP object
+ *  \param  count  the count of EC_POINT
+ *  \return newly created EC_POINTS object or NULL if an error occurred
+ */
+EC_POINTS *EC_POINTS_new(const EC_GROUP *group, int count);
+
+/** Frees a EC_POINTS object
+ *  \param  points  EC_POINTS object to be freed
+ */
+void EC_POINTS_free(EC_POINTS *points);
+
+/** Clears and frees a EC_POINTS object
+ *  \param  points  EC_POINTS object to be cleared and freed
+ */
+void EC_POINTS_clear_free(EC_POINTS *points);
+
+/** Copies EC_POINTS object
+ *  \param  dst  destination EC_POINTS object
+ *  \param  src  source EC_POINTS object
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINTS_copy(EC_POINTS *dst, const EC_POINTS *src);
+
+/** Creates a new EC_POINTS object and copies the content of the supplied
+ *  EC_POINT
+ *  \param  src    source EC_POINTS object
+ *  \param  group  underlying the EC_GROUP object
+ *  \return newly created EC_POINTS object or NULL if an error occurred
+ */
+EC_POINTS *EC_POINTS_dup(const EC_POINTS *src, const EC_GROUP *group);
+
+/** Returns the i-th EC_POINT object in EC_POINTS object
+ *  \param  p  EC_POINTS object
+ *  \param  i  the index number
+ *  \return EC_POINT object or NULL if an error occurred.
+ */
+EC_POINT *EC_POINTS_get_item(EC_POINTS *p, int i);
+
+/** Stores EC_POINT object into EC_POINTS object
+ *  \param  p      EC_POINTS object
+ *  \param  i      the index number
+ *  \param  point  EC_POINT object
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINTS_set_item(EC_POINTS *p, int i, EC_POINT *point);
+
+/** Returns the count of EC_POINT object in the EC_POINTS object.
+ *  \param  p  EC_POINTS object
+ *  \return the count of EC_POINT object in the EC_POINTS object.
+ */
+int EC_POINTS_count(EC_POINTS *p);
+
+/********************************************************************/
 /*                    EC_POINT functions                            */
 /********************************************************************/
 
@@ -587,6 +661,19 @@ int EC_POINT_copy(EC_POINT *dst, const EC_POINT *src);
  */
 EC_POINT *EC_POINT_dup(const EC_POINT *src, const EC_GROUP *group);
 
+#ifndef FIPS_MODULE
+/*
+ * Functions for convert string to ec_point on the elliptic curve.
+ *  \param  group   underlying EC_GROUP object
+ *  \param  r       EC_POINT object for the result
+ *  \param  str     string pointer
+ *  \param  len     length of the string
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINT_from_string(const EC_GROUP *group, EC_POINT *r,
+                         const unsigned char *str, size_t len);
+#endif
+
 /** Sets a point to infinity (neutral element)
  *  \param  group  underlying EC_GROUP object
  *  \param  point  EC_POINT to set to infinity
@@ -600,6 +687,12 @@ int EC_POINT_set_to_infinity(const EC_GROUP *group, EC_POINT *point);
  *  \return the EC_METHOD used
  */
 OSSL_DEPRECATEDIN_3_0 const EC_METHOD *EC_POINT_method_of(const EC_POINT *point);
+
+/** Returns the curve name of a EC_POINT object
+ *  \param  point  EC_POINT object
+ *  \return NID of the curve name OID or 0 if not set.
+ */
+int EC_POINT_get_curve_name(const EC_POINT *point);
 
 /** Sets the jacobian projective coordinates of a EC_POINT over GFp
  *  \param  group  underlying EC_GROUP object
@@ -893,6 +986,172 @@ OSSL_DEPRECATEDIN_3_0 int EC_POINTs_mul(const EC_GROUP *group, EC_POINT *r,
 int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *n,
                  const EC_POINT *q, const BIGNUM *m, BN_CTX *ctx);
 
+/*
+ * Functions for point multiplication:  r[i] = points[i] * scalars[i]
+ *  \param  group   underlying EC_GROUP object
+ *  \param  r       a pointer to a EC_POINTS object for the result (if *r NULL
+ *                  the function allocates a EC_POINTS object and write to *r)
+ *  \param  num     number of points and scalars
+ *  \param  points  array of size num of EC_POINT objects
+ *  \param  scalars array of size num of BIGNUM objects
+ *  \param  ctx     BN_CTX object (optional)
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINTs_scalars_mul(const EC_GROUP *group, EC_POINTS **r, size_t num,
+                          const EC_POINT *points[], const BIGNUM *scalars[],
+                          BN_CTX *ctx);
+
+/*
+ * Functions for point multiplication: r[i] = points[i] * scalar
+ *  \param  group   underlying EC_GROUP object
+ *  \param  r       a pointer to a EC_POINTS object for the result (if *r NULL
+ *                  the function allocates a EC_POINTS object and write to *r)
+ *  \param  num     number of points
+ *  \param  points  array of size num of EC_POINT objects
+ *  \param  scalar  BIGNUM object for scalar multiply
+ *  \param  ctx     BN_CTX object (optional)
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINTs_scalar_mul(const EC_GROUP *group, EC_POINTS **r, size_t num,
+                         const EC_POINT *points[], const BIGNUM *scalar,
+                         BN_CTX *ctx);
+
+/*
+ * Functions for convert some strings to some points on the elliptic curve.
+ * r[i]->X = hash(strings[i])
+ * r[i]->Y = F(hash(strings[i])), the Y coordinate can be calculated by taking
+ *           the X coordinate into the equation
+ * r[i]->Z = 1
+ *  \param  group   underlying EC_GROUP object
+ *  \param  r       a pointer to a EC_POINTS object for the result (if *r NULL
+ *                  the function allocates a EC_POINTS object and write to *r)
+ *  \param  num     number of strings
+ *  \param  strings array of size num of string objects
+ *  \param  ctx     BN_CTX object (optional)
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINTs_from_strings(const EC_GROUP *group, EC_POINTS **r,
+                           size_t num, const unsigned char *strings[],
+                           BN_CTX *ctx);
+
+/*
+ * Functions for convert some strings to some points on the elliptic curve, then
+ * multiply with scalar.
+ * point[i]->X = hash(strings[i])
+ * point[i]->Y = F(hash(strings[i])), the Y coordinate can be calculated by taking
+ *           the X coordinate into the equation
+ * point[i]->Z = 1
+ * r[i] = scalar * point[i]
+ *  \param  group   underlying EC_GROUP object
+ *  \param  r       a pointer to a EC_POINTS object for the result (if *r NULL
+ *                  the function allocates a EC_POINTS object and write to *r)
+ *  \param  num     number of strings
+ *  \param  strings array of size num of string objects
+ *  \param  scalar  BIGNUM object for scalar multiply
+ *  \param  ctx     BN_CTX object (optional)
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINTs_from_strings_scalar_mul(const EC_GROUP *group, EC_POINTS **r,
+                                      size_t num, const unsigned char *strings[],
+                                      const BIGNUM *scalar, BN_CTX *ctx);
+
+/********************************************************************/
+/*  EC_POINT_METHOD constructors, destructors, writers and accessors  */
+/********************************************************************/
+
+/** Creates a new EC_POINT_METHOD object for the specified curve_id
+ *  \param  curve_id  the elliptic curve id
+ *  \return newly created EC_POINT_METHOD object or NULL if an error occurred
+ */
+EC_POINT_METHOD *EC_POINT_METHOD_new(int curve_id);
+
+/** Frees a EC_POINT_METHOD object
+ *  \param  meth  EC_POINT_METHOD object to be freed
+ */
+void EC_POINT_METHOD_free(EC_POINT_METHOD *meth);
+
+/** Copies EC_POINT_METHOD object
+ *  \param  dst  destination EC_POINT_METHOD object
+ *  \param  src  source EC_POINT_METHOD object
+ *  \return 1 on success and 0 if an error occurred
+ */
+int EC_POINT_METHOD_copy(EC_POINT_METHOD *dst, const EC_POINT_METHOD *src);
+
+/** Returns the curve_id of a EC_POINT_METHOD object
+ *  \param  meth  EC_POINT_METHOD object
+ *  \return NID of the curve name OID or 0 if not set.
+ */
+int EC_POINT_METHOD_curve_id(EC_POINT_METHOD *meth);
+
+int (*EC_POINT_METHOD_get_add(EC_POINT_METHOD *meth))
+    (const EC_GROUP *, EC_POINT *r, const EC_POINT *a, const EC_POINT *b,
+     BN_CTX *);
+void EC_POINT_METHOD_set_add(EC_POINT_METHOD *meth,
+                             int (*add)(const EC_GROUP *, EC_POINT *r,
+                                        const EC_POINT *a, const EC_POINT *b,
+                                        BN_CTX *));
+
+int (*EC_POINT_METHOD_get_dbl(EC_POINT_METHOD *meth))
+    (const EC_GROUP *, EC_POINT *r, const EC_POINT *a, BN_CTX *);
+void EC_POINT_METHOD_set_dbl(EC_POINT_METHOD *meth,
+                             int (*dbl)(const EC_GROUP *, EC_POINT *r,
+                                        const EC_POINT *a, BN_CTX *));
+
+int (*EC_POINT_METHOD_get_invert(EC_POINT_METHOD *meth))
+    (const EC_GROUP *, EC_POINT *point, BN_CTX *);
+void EC_POINT_METHOD_set_invert(EC_POINT_METHOD *meth,
+                                int (*invert)(const EC_GROUP *, EC_POINT *point,
+                                              BN_CTX *));
+
+int (*EC_POINT_METHOD_get_mul(EC_POINT_METHOD *meth))
+    (const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar, size_t num,
+     const EC_POINT *points[], const BIGNUM *scalars[], BN_CTX *);
+void EC_POINT_METHOD_set_mul(EC_POINT_METHOD *meth,
+                             int (*mul)(const EC_GROUP *group, EC_POINT *r,
+                                        const BIGNUM *scalar, size_t num,
+                                        const EC_POINT *points[],
+                                        const BIGNUM *scalars[], BN_CTX *));
+
+int (*EC_POINT_METHOD_get_scalars_mul(EC_POINT_METHOD *meth))
+    (const EC_GROUP *group, EC_POINT *r[], size_t num, const EC_POINT *points[],
+     const BIGNUM *scalars[], BN_CTX *ctx);
+void EC_POINT_METHOD_set_scalars_mul(EC_POINT_METHOD *meth,
+                                     int (*scalars_mul)(const EC_GROUP *group,
+                                                        EC_POINT *r[], size_t num,
+                                                        const EC_POINT *points[],
+                                                        const BIGNUM *scalars[],
+                                                        BN_CTX *ctx));
+
+int (*EC_POINT_METHOD_get_scalar_mul(EC_POINT_METHOD *meth))
+    (const EC_GROUP *group, EC_POINT *r[], size_t num, const EC_POINT *points[],
+     const BIGNUM *scalar, BN_CTX *ctx);
+void EC_POINT_METHOD_set_scalar_mul(EC_POINT_METHOD *meth,
+                                    int (*scalar_mul)(const EC_GROUP *group,
+                                                      EC_POINT *r[], size_t num,
+                                                      const EC_POINT *points[],
+                                                      const BIGNUM *scalar,
+                                                      BN_CTX *ctx));
+
+int (*EC_POINT_METHOD_get_strings_to_points(EC_POINT_METHOD *meth))
+    (const EC_GROUP *group, EC_POINT *r[], size_t num, const unsigned char *[],
+     BN_CTX *ctx);
+void EC_POINT_METHOD_set_strings_to_points(EC_POINT_METHOD *meth,
+                                           int (*func)(const EC_GROUP *,
+                                                       EC_POINT *[], size_t,
+                                                       const unsigned char *[],
+                                                       BN_CTX *));
+
+int (*EC_POINT_METHOD_get_strings_to_points_scalar_mul(EC_POINT_METHOD *meth))
+    (const EC_GROUP *, EC_POINT *[], size_t, const unsigned char *[],
+     const BIGNUM *, BN_CTX *);
+void EC_POINT_METHOD_set_strings_to_points_scalar_mul(EC_POINT_METHOD *meth,
+                                                      int (*func)(const EC_GROUP *,
+                                                                  EC_POINT *[],
+                                                                  size_t,
+                                                                  const unsigned char *[],
+                                                                  const BIGNUM *,
+                                                                  BN_CTX *));
+
 #  ifndef OPENSSL_NO_DEPRECATED_3_0
 /** Stores multiples of generator for faster point multiplication
  *  \param  group  EC_GROUP object
@@ -1127,7 +1386,7 @@ OSSL_DEPRECATEDIN_3_0 int EC_KEY_check_key(const EC_KEY *key);
 
 /** Indicates if an EC_KEY can be used for signing.
  *  \param  eckey  the EC_KEY object
- *  \return 1 if can sign and 0 otherwise.
+ *  \return 1 if can can sign and 0 otherwise.
  */
 OSSL_DEPRECATEDIN_3_0 int EC_KEY_can_sign(const EC_KEY *eckey);
 
@@ -1303,7 +1562,7 @@ OSSL_DEPRECATEDIN_3_0 int EC_KEY_set_method(EC_KEY *key, const EC_KEY_METHOD *me
 OSSL_DEPRECATEDIN_3_0 EC_KEY *EC_KEY_new_method(ENGINE *engine);
 
 /** The old name for ecdh_KDF_X9_63
- *  The ECDH KDF specification has been mistakenly attributed to ANSI X9.62,
+ *  The ECDH KDF specification has been mistakingly attributed to ANSI X9.62,
  *  it is actually specified in ANSI X9.63.
  *  This identifier is retained for backwards compatibility
  */
@@ -1579,6 +1838,231 @@ OSSL_DEPRECATEDIN_3_0 void EC_KEY_METHOD_get_verify
 #     pragma error_messages (default,E_ARRAY_OF_INCOMPLETE_NONAME,E_ARRAY_OF_INCOMPLETE)
 #    endif
 #   endif
+#  endif
+
+#  ifndef OPENSSL_NO_EC_ELGAMAL
+/********************************************************************/
+/*           EC_ELGAMAL for curves over GF(p)                       */
+/********************************************************************/
+#   define EC_ELGAMAL_MAX_BITS                                      32
+#   define EC_ELGAMAL_FLAG_DEFAULT                                  0x00
+#   define EC_ELGAMAL_FLAG_TWISTED                                  0x01
+#   define EC_ELGAMAL_DECRYPT_TABLE_FLAG_NEGATIVE                   0x01
+#   define EC_ELGAMAL_DECRYPT_TABLE_FLAG_NEGATIVE_FIRST             0x02
+#   define EC_ELGAMAL_DECRYPT_TABLE_FLAG_NEGATIVE_ONLY              0x03
+
+STACK_OF(EC_KEY);
+
+typedef struct ec_elgamal_ctx_st EC_ELGAMAL_CTX;
+typedef struct ec_elgamal_mr_ctx_st EC_ELGAMAL_MR_CTX;
+typedef struct ec_elgamal_ciphertext_st EC_ELGAMAL_CIPHERTEXT;
+typedef struct ec_elgamal_mr_ciphertext_st EC_ELGAMAL_MR_CIPHERTEXT;
+typedef struct ec_elgamal_decrypt_table_st EC_ELGAMAL_DECRYPT_TABLE;
+
+/********************************************************************/
+/*                   EC_ELGAMAL functions                           */
+/********************************************************************/
+
+/** Creates a new EC_ELGAMAL object
+ *  \param  key  EC_KEY to use
+ *  \param  h        EC_POINT object pointer
+ *  \param  flag     flag of ctx
+ *  \return newly created EC_ELGAMAL_CTX object or NULL in case of an error
+ */
+EC_ELGAMAL_CTX *EC_ELGAMAL_CTX_new(EC_KEY *key, const EC_POINT *h, int32_t flag);
+EC_ELGAMAL_CTX *EC_ELGAMAL_CTX_dup(EC_ELGAMAL_CTX *ctx);
+
+/** Frees a EC_ELGAMAL_CTX object
+ *  \param  ctx  EC_ELGAMAL_CTX object to be freed
+ */
+void EC_ELGAMAL_CTX_free(EC_ELGAMAL_CTX *ctx);
+
+/** Creates a new EC_ELGAMAL_MR_CTX object
+ *  \param  key      EC_KEY to use
+ *  \param  flag     flag of ctx
+ *  \return newly created EC_ELGAMAL_MR_CTX object or NULL in case of an error
+ */
+EC_ELGAMAL_MR_CTX *EC_ELGAMAL_MR_CTX_new(STACK_OF(EC_KEY) *keys, const EC_POINT *h,
+                                         int32_t flag);
+
+/** Frees a EC_ELGAMAL_MR_CTX object
+ *  \param  ctx  EC_ELGAMAL_MR_CTX object to be freed
+ */
+void EC_ELGAMAL_MR_CTX_free(EC_ELGAMAL_MR_CTX *ctx);
+
+/** Creates a new EC_ELGAMAL_DECRYPT_TABLE object
+ *  \param  ctx              EC_ELGAMAL_CTX object
+ *  \param  decrypt_negative Whether negative numbers can be decrypted (1 or 0)
+ *  \return newly created EC_ELGAMAL_DECRYPT_TABLE object or NULL in case of an error
+ */
+EC_ELGAMAL_DECRYPT_TABLE *EC_ELGAMAL_DECRYPT_TABLE_new(EC_ELGAMAL_CTX *ctx,
+                                                       int32_t decrypt_negative);
+
+/** Creates a new EC_ELGAMAL_DECRYPT_TABLE object with some extra paramers
+ *  \param  ctx             EC_ELGAMAL_CTX object
+ *  \param  flag            the flag of decrypt table
+ *  \param  baby_step_bits  baby step exponent/bits
+ *  \param  giant_step_bits giant step exponent/bits
+ *  \return newly created EC_ELGAMAL_DECRYPT_TABLE object or NULL in case of an error
+ */
+EC_ELGAMAL_DECRYPT_TABLE *EC_ELGAMAL_DECRYPT_TABLE_new_ex(EC_ELGAMAL_CTX *ctx,
+                                                          int32_t flag,
+                                                          uint32_t baby_step_bits,
+                                                          uint32_t giant_step_bits);
+
+/** Frees a EC_ELGAMAL_DECRYPT_TABLE object
+ *  \param  table  EC_ELGAMAL_DECRYPT_TABLE object to be freed
+ */
+void EC_ELGAMAL_DECRYPT_TABLE_free(EC_ELGAMAL_DECRYPT_TABLE *table);
+
+/** Sets a EC_ELGAMAL_DECRYPT_TABLE object for decryption.
+ *  \param  ctx   EC_ELGAMAL_CTX object
+ *  \param  table EC_ELGAMAL_DECRYPT_TABLE object
+ */
+void EC_ELGAMAL_CTX_set_decrypt_table(EC_ELGAMAL_CTX *ctx,
+                                      EC_ELGAMAL_DECRYPT_TABLE *table);
+
+/** Encrypts an Integer with additadive homomorphic EC-ElGamal
+ *  \param  ctx        EC_ELGAMAL_CTX object.
+ *  \param  r          EC_ELGAMAL_CIPHERTEXT object that stores the result of
+ *                     the encryption
+ *  \param  plaintext  The plaintext integer to be encrypted
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_encrypt(EC_ELGAMAL_CTX *ctx, EC_ELGAMAL_CIPHERTEXT *r, int32_t plaintext);
+int EC_ELGAMAL_bn_encrypt(EC_ELGAMAL_CTX *ctx, EC_ELGAMAL_CIPHERTEXT *r,
+                          const BIGNUM *plaintext, const BIGNUM *rand);
+
+/** Encryption with one plaintext for multiple recipients.
+ *  \param  ctx        EC_ELGAMAL_CTX object.
+ *  \param  r          EC_ELGAMAL_CIPHERTEXT_MR object that stores the result of
+ *                     the encryption
+ *  \param  plaintext  The plaintext BIGNUM object to be encrypted
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_MR_encrypt(EC_ELGAMAL_MR_CTX *ctx, EC_ELGAMAL_MR_CIPHERTEXT *r,
+                          const BIGNUM *plaintext, BIGNUM *rand);
+
+/** Decrypts the ciphertext
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \param  r          The resulting plaintext integer
+ *  \param  cihpertext EC_ELGAMAL_CIPHERTEXT object to be decrypted
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_decrypt(EC_ELGAMAL_CTX *ctx, int32_t *r,
+                       const EC_ELGAMAL_CIPHERTEXT *ciphertext);
+
+/** Adds two EC-Elgamal ciphertext and stores it in r (r = c1 + c2).
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \param  r          The EC_ELGAMAL_CIPHERTEXT object that stores the addition
+ *                     result
+ *  \param  c1         EC_ELGAMAL_CIPHERTEXT object
+ *  \param  c2         EC_ELGAMAL_CIPHERTEXT object
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_add(EC_ELGAMAL_CTX *ctx, EC_ELGAMAL_CIPHERTEXT *r,
+                   const EC_ELGAMAL_CIPHERTEXT *c1,
+                   const EC_ELGAMAL_CIPHERTEXT *c2);
+
+/** Substracts two EC-Elgamal ciphertext and stores it in r (r = c1 - c2).
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \param  r          The EC_ELGAMAL_CIPHERTEXT object that stores the
+ *                     subtraction result
+ *  \param  c1         EC_ELGAMAL_CIPHERTEXT object
+ *  \param  c2         EC_ELGAMAL_CIPHERTEXT object
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_sub(EC_ELGAMAL_CTX *ctx, EC_ELGAMAL_CIPHERTEXT *r,
+                   const EC_ELGAMAL_CIPHERTEXT *c1,
+                   const EC_ELGAMAL_CIPHERTEXT *c2);
+
+/** Ciphertext multiplication, computes r = c * m
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \param  r          The EC_ELGAMAL_CIPHERTEXT object that stores the
+ *                     multiplication result
+ *  \param  c1         EC_ELGAMAL_CIPHERTEXT object
+ *  \param  c2         EC_ELGAMAL_CIPHERTEXT object
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_mul(EC_ELGAMAL_CTX *ctx, EC_ELGAMAL_CIPHERTEXT *r,
+                   const EC_ELGAMAL_CIPHERTEXT *c, int32_t m);
+
+/** Creates a new EC_ELGAMAL_CIPHERTEXT object for EC-ELGAMAL oparations
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \return newly created EC_ELGAMAL_CIPHERTEXT object or NULL in case of an error
+ */
+EC_ELGAMAL_CIPHERTEXT *EC_ELGAMAL_CIPHERTEXT_new(EC_ELGAMAL_CTX *ctx);
+EC_ELGAMAL_CIPHERTEXT *EC_ELGAMAL_CIPHERTEXT_dup(const EC_ELGAMAL_CIPHERTEXT *ct,
+                                                 const EC_GROUP *group);
+
+/** Frees a EC_ELGAMAL_CIPHERTEXT object
+ *  \param  ciphertext  EC_ELGAMAL_CIPHERTEXT object to be freed
+ */
+void EC_ELGAMAL_CIPHERTEXT_free(EC_ELGAMAL_CIPHERTEXT *ciphertext);
+
+/** Creates a new EC_ELGAMAL_MR_CIPHERTEXT object for EC-ELGAMAL oparations
+ *  \param  ctx        EC_ELGAMAL_MR_CTX object
+ *  \return newly created EC_ELGAMAL_MR_CIPHERTEXT object or NULL in case of an error
+ */
+EC_ELGAMAL_MR_CIPHERTEXT *EC_ELGAMAL_MR_CIPHERTEXT_new(EC_ELGAMAL_MR_CTX *ctx);
+EC_ELGAMAL_MR_CIPHERTEXT *EC_ELGAMAL_MR_CIPHERTEXT_dup(const EC_ELGAMAL_MR_CIPHERTEXT *ct,
+                                                       const EC_GROUP *group);
+
+/** Frees a EC_ELGAMAL_MR_CIPHERTEXT object
+ *  \param  ciphertext  EC_ELGAMAL_MR_CIPHERTEXT object to be freed
+ */
+void EC_ELGAMAL_MR_CIPHERTEXT_free(EC_ELGAMAL_MR_CIPHERTEXT *ciphertext);
+
+/** Encodes EC_ELGAMAL_CIPHERTEXT to binary
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \param  out        the buffer for the result (if NULL the function returns
+ *                     number of bytes needed).
+ *  \param  size       The memory size of the out pointer object
+ *  \param  ciphertext EC_ELGAMAL_CIPHERTEXT object
+ *  \param  compressed Whether to compress the encoding (either 0 or 1)
+ *  \return the length of the encoded octet string or 0 if an error occurred
+ */
+size_t EC_ELGAMAL_CIPHERTEXT_encode(EC_ELGAMAL_CTX *ctx, unsigned char *out,
+                                    size_t size,
+                                    const EC_ELGAMAL_CIPHERTEXT *ciphertext,
+                                    int compressed);
+
+/** Decodes binary to EC_ELGAMAL_CIPHERTEXT
+ *  \param  ctx        EC_ELGAMAL_CTX object
+ *  \param  r          the resulting ciphertext
+ *  \param  in         Memory buffer with the encoded EC_ELGAMAL_CIPHERTEXT
+ *                     object
+ *  \param  size       The memory size of the in pointer object
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_CIPHERTEXT_decode(EC_ELGAMAL_CTX *ctx, EC_ELGAMAL_CIPHERTEXT *r,
+                                 unsigned char *in, size_t size);
+
+/** Encodes EC_ELGAMAL_MR_CIPHERTEXT to binary
+ *  \param  ctx        EC_ELGAMAL_MR_CTX object
+ *  \param  out        the buffer for the result (if NULL the function returns
+ *                     number of bytes needed).
+ *  \param  size       The memory size of the out pointer object
+ *  \param  ciphertext EC_ELGAMAL_MR_CIPHERTEXT object
+ *  \param  compressed Whether to compress the encoding (either 0 or 1)
+ *  \return the length of the encoded octet string or 0 if an error occurred
+ */
+size_t EC_ELGAMAL_MR_CIPHERTEXT_encode(EC_ELGAMAL_MR_CTX *ctx, unsigned char *out,
+                                       size_t size,
+                                       const EC_ELGAMAL_MR_CIPHERTEXT *ciphertext,
+                                       int compressed);
+
+/** Decodes binary to EC_ELGAMAL_MR_CIPHERTEXT
+ *  \param  ctx        EC_ELGAMAL_MR_CTX object
+ *  \param  r          the resulting ciphertext
+ *  \param  in         Memory buffer with the encoded EC_ELGAMAL_MR_CIPHERTEXT
+ *                     object
+ *  \param  size       The memory size of the in pointer object
+ *  \return 1 on success and 0 otherwise
+ */
+int EC_ELGAMAL_MR_CIPHERTEXT_decode(EC_ELGAMAL_MR_CTX *ctx, EC_ELGAMAL_MR_CIPHERTEXT *r,
+                                    unsigned char *in, size_t size);
+
 #  endif
 
 # endif

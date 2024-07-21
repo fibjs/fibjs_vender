@@ -46,6 +46,9 @@ extern "C" {
 #  define ENGINE_METHOD_DSA               (unsigned int)0x0002
 #  define ENGINE_METHOD_DH                (unsigned int)0x0004
 #  define ENGINE_METHOD_RAND              (unsigned int)0x0008
+#  ifndef OPENSSL_NO_BN_METHOD
+#   define ENGINE_METHOD_BN               (unsigned int)0x0010
+#  endif
 #  define ENGINE_METHOD_CIPHERS           (unsigned int)0x0040
 #  define ENGINE_METHOD_DIGESTS           (unsigned int)0x0080
 #  define ENGINE_METHOD_PKEY_METHS        (unsigned int)0x0200
@@ -301,6 +304,8 @@ typedef int (*ENGINE_PKEY_METHS_PTR) (ENGINE *, EVP_PKEY_METHOD **,
                                       const int **, int);
 typedef int (*ENGINE_PKEY_ASN1_METHS_PTR) (ENGINE *, EVP_PKEY_ASN1_METHOD **,
                                            const int **, int);
+typedef int (*ENGINE_ECP_METHS_PTR) (ENGINE *, const EC_POINT_METHOD **,
+                                     const int **, int);
 /*
  * STRUCTURE functions ... all of these functions deal with pointers to
  * ENGINE structures where the pointers have a "structural reference". This
@@ -402,6 +407,16 @@ OSSL_DEPRECATEDIN_3_0 void ENGINE_register_all_pkey_meths(void);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_register_pkey_asn1_meths(ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 void ENGINE_unregister_pkey_asn1_meths(ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 void ENGINE_register_all_pkey_asn1_meths(void);
+#  endif
+
+int ENGINE_register_ecp_meths(ENGINE *e);
+void ENGINE_unregister_ecp_meths(ENGINE *e);
+void ENGINE_register_all_ecp_meths(void);
+
+#  ifndef OPENSSL_NO_BN_METHOD
+int ENGINE_register_bn_meth(ENGINE *e);
+void ENGINE_unregister_bn_meth(ENGINE *e);
+void ENGINE_register_all_bn_meth(void);
 #  endif
 
 /*
@@ -526,6 +541,11 @@ OSSL_DEPRECATEDIN_3_0 int ENGINE_set_flags(ENGINE *e, int flags);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_set_cmd_defns(ENGINE *e,
                                                const ENGINE_CMD_DEFN *defns);
 #  endif
+int ENGINE_set_ecp_meths(ENGINE *e, ENGINE_ECP_METHS_PTR f);
+#  ifndef OPENSSL_NO_BN_METHOD
+int ENGINE_set_bn_meth(ENGINE *e, const BN_METHOD *bn_meth);
+#  endif
+
 /* These functions allow control over any per-structure ENGINE data. */
 #  define ENGINE_get_ex_new_index(l, p, newf, dupf, freef) \
     CRYPTO_get_ex_new_index(CRYPTO_EX_INDEX_ENGINE, l, p, newf, dupf, freef)
@@ -598,6 +618,13 @@ const ENGINE_CMD_DEFN *ENGINE_get_cmd_defns(const ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_get_flags(const ENGINE *e);
 #  endif
 
+ENGINE_ECP_METHS_PTR ENGINE_get_ecp_meths(ENGINE *e);
+const EC_POINT_METHOD *ENGINE_get_ecp_meth(ENGINE *e, int curve_id);
+
+#  ifndef OPENSSL_NO_BN_METHOD
+const BN_METHOD *ENGINE_get_bn_meth(ENGINE *e);
+#  endif
+
 /*
  * FUNCTIONAL functions. These functions deal with ENGINE structures that
  * have (or will) be initialised for use. Broadly speaking, the structural
@@ -612,7 +639,7 @@ OSSL_DEPRECATEDIN_3_0 int ENGINE_get_flags(const ENGINE *e);
  */
 
 /*
- * Initialise an engine type for use (or up its reference count if it's
+ * Initialise a engine type for use (or up its reference count if it's
  * already in use). This will fail if the engine is not currently operational
  * and cannot initialise.
  */
@@ -620,7 +647,7 @@ OSSL_DEPRECATEDIN_3_0 int ENGINE_get_flags(const ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_init(ENGINE *e);
 #  endif
 /*
- * Free a functional reference to an engine type. This does not require a
+ * Free a functional reference to a engine type. This does not require a
  * corresponding call to ENGINE_free as it also releases a structural
  * reference.
  */
@@ -674,6 +701,8 @@ OSSL_DEPRECATEDIN_3_0 ENGINE *ENGINE_get_pkey_meth_engine(int nid);
 OSSL_DEPRECATEDIN_3_0 ENGINE *ENGINE_get_pkey_asn1_meth_engine(int nid);
 #  endif
 
+ENGINE *ENGINE_get_ecp_meth_engine(int curve_id);
+
 /*
  * This sets a new default ENGINE structure for performing RSA operations. If
  * the result is non-zero (success) then the ENGINE structure will have had
@@ -695,6 +724,13 @@ OSSL_DEPRECATEDIN_3_0 int ENGINE_set_default_ciphers(ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_set_default_digests(ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_set_default_pkey_meths(ENGINE *e);
 OSSL_DEPRECATEDIN_3_0 int ENGINE_set_default_pkey_asn1_meths(ENGINE *e);
+#  endif
+
+int ENGINE_set_default_ecp_meths(ENGINE *e);
+
+#  ifndef OPENSSL_NO_BN_METHOD
+int ENGINE_set_default_bn_meth(ENGINE *e);
+ENGINE *ENGINE_get_default_bn_meth(void);
 #  endif
 
 /*

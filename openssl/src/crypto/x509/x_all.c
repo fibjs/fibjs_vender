@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -30,12 +30,21 @@
 
 int X509_verify(X509 *a, EVP_PKEY *r)
 {
-    if (X509_ALGOR_cmp(&a->sig_alg, &a->cert_info.signature) != 0)
+    if (X509_ALGOR_cmp(&a->sig_alg, &a->cert_info.signature))
         return 0;
 
     return ASN1_item_verify_ex(ASN1_ITEM_rptr(X509_CINF), &a->sig_alg,
                                &a->signature, &a->cert_info,
                                a->distinguishing_id, r, a->libctx, a->propq);
+}
+
+int X509_verify_ctx(X509 *a, EVP_MD_CTX *ctx)
+{
+    if (X509_ALGOR_cmp(&a->sig_alg, &a->cert_info.signature) != 0)
+        return 0;
+
+    return ASN1_item_verify_ctx(ASN1_ITEM_rptr(X509_CINF), &a->sig_alg,
+                                &a->signature, &a->cert_info, ctx);
 }
 
 int X509_REQ_verify_ex(X509_REQ *a, EVP_PKEY *r, OSSL_LIB_CTX *libctx,
@@ -51,6 +60,12 @@ int X509_REQ_verify(X509_REQ *a, EVP_PKEY *r)
     return X509_REQ_verify_ex(a, r, NULL, NULL);
 }
 
+int X509_REQ_verify_ctx(X509_REQ *a, EVP_MD_CTX *ctx)
+{
+    return ASN1_item_verify_ctx(ASN1_ITEM_rptr(X509_REQ_INFO), &a->sig_alg,
+                                a->signature, &a->req_info, ctx);
+}
+
 int NETSCAPE_SPKI_verify(NETSCAPE_SPKI *a, EVP_PKEY *r)
 {
     return ASN1_item_verify(ASN1_ITEM_rptr(NETSCAPE_SPKAC),
@@ -59,21 +74,6 @@ int NETSCAPE_SPKI_verify(NETSCAPE_SPKI *a, EVP_PKEY *r)
 
 int X509_sign(X509 *x, EVP_PKEY *pkey, const EVP_MD *md)
 {
-    if (x == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return 0;
-    }
-    if (sk_X509_EXTENSION_num(X509_get0_extensions(x)) > 0
-            && !X509_set_version(x, X509_VERSION_3))
-        return 0;
-
-    /*
-     * Setting the modified flag before signing it. This makes the cached
-     * encoding to be ignored, so even if the certificate fields have changed,
-     * they are signed correctly.
-     * The X509_sign_ctx, X509_REQ_sign{,_ctx}, X509_CRL_sign{,_ctx} functions
-     * which exist below are the same.
-     */
     x->cert_info.enc.modified = 1;
     return ASN1_item_sign_ex(ASN1_ITEM_rptr(X509_CINF), &x->cert_info.signature,
                              &x->sig_alg, &x->signature, &x->cert_info, NULL,
@@ -82,13 +82,6 @@ int X509_sign(X509 *x, EVP_PKEY *pkey, const EVP_MD *md)
 
 int X509_sign_ctx(X509 *x, EVP_MD_CTX *ctx)
 {
-    if (x == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return 0;
-    }
-    if (sk_X509_EXTENSION_num(X509_get0_extensions(x)) > 0
-            && !X509_set_version(x, X509_VERSION_3))
-        return 0;
     x->cert_info.enc.modified = 1;
     return ASN1_item_sign_ctx(ASN1_ITEM_rptr(X509_CINF),
                               &x->cert_info.signature,
@@ -98,9 +91,8 @@ int X509_sign_ctx(X509 *x, EVP_MD_CTX *ctx)
 static ASN1_VALUE *simple_get_asn1(const char *url, BIO *bio, BIO *rbio,
                                    int timeout, const ASN1_ITEM *it)
 {
-#ifndef OPENSSL_NO_HTTP
     BIO *mem = OSSL_HTTP_get(url, NULL /* proxy */, NULL /* no_proxy */,
-                             bio, rbio, NULL /* cb */, NULL /* arg */,
+                             bio, rbio, NULL /* cb */ , NULL /* arg */,
                              1024 /* buf_size */, NULL /* headers */,
                              NULL /* expected_ct */, 1 /* expect_asn1 */,
                              OSSL_HTTP_DEFAULT_MAX_RESP_LEN, timeout);
@@ -108,9 +100,6 @@ static ASN1_VALUE *simple_get_asn1(const char *url, BIO *bio, BIO *rbio,
 
     BIO_free(mem);
     return res;
-#else
-    return 0;
-#endif
 }
 
 X509 *X509_load_http(const char *url, BIO *bio, BIO *rbio, int timeout)
@@ -121,11 +110,6 @@ X509 *X509_load_http(const char *url, BIO *bio, BIO *rbio, int timeout)
 
 int X509_REQ_sign(X509_REQ *x, EVP_PKEY *pkey, const EVP_MD *md)
 {
-    if (x == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return 0;
-    }
-    x->req_info.enc.modified = 1;
     return ASN1_item_sign_ex(ASN1_ITEM_rptr(X509_REQ_INFO), &x->sig_alg, NULL,
                              x->signature, &x->req_info, NULL,
                              pkey, md, x->libctx, x->propq);
@@ -133,11 +117,6 @@ int X509_REQ_sign(X509_REQ *x, EVP_PKEY *pkey, const EVP_MD *md)
 
 int X509_REQ_sign_ctx(X509_REQ *x, EVP_MD_CTX *ctx)
 {
-    if (x == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return 0;
-    }
-    x->req_info.enc.modified = 1;
     return ASN1_item_sign_ctx(ASN1_ITEM_rptr(X509_REQ_INFO),
                               &x->sig_alg, NULL, x->signature, &x->req_info,
                               ctx);
@@ -145,10 +124,6 @@ int X509_REQ_sign_ctx(X509_REQ *x, EVP_MD_CTX *ctx)
 
 int X509_CRL_sign(X509_CRL *x, EVP_PKEY *pkey, const EVP_MD *md)
 {
-    if (x == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return 0;
-    }
     x->crl.enc.modified = 1;
     return ASN1_item_sign_ex(ASN1_ITEM_rptr(X509_CRL_INFO), &x->crl.sig_alg,
                              &x->sig_alg, &x->signature, &x->crl, NULL,
@@ -157,10 +132,6 @@ int X509_CRL_sign(X509_CRL *x, EVP_PKEY *pkey, const EVP_MD *md)
 
 int X509_CRL_sign_ctx(X509_CRL *x, EVP_MD_CTX *ctx)
 {
-    if (x == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return 0;
-    }
     x->crl.enc.modified = 1;
     return ASN1_item_sign_ctx(ASN1_ITEM_rptr(X509_CRL_INFO),
                               &x->crl.sig_alg, &x->sig_alg, &x->signature,
@@ -175,8 +146,7 @@ X509_CRL *X509_CRL_load_http(const char *url, BIO *bio, BIO *rbio, int timeout)
 
 int NETSCAPE_SPKI_sign(NETSCAPE_SPKI *x, EVP_PKEY *pkey, const EVP_MD *md)
 {
-    return
-        ASN1_item_sign_ex(ASN1_ITEM_rptr(NETSCAPE_SPKAC), &x->sig_algor, NULL,
+    return ASN1_item_sign_ex(ASN1_ITEM_rptr(NETSCAPE_SPKAC), &x->sig_algor, NULL,
                           x->signature, x->spkac, NULL, pkey, md, NULL, NULL);
 }
 
@@ -259,6 +229,7 @@ PKCS7 *d2i_PKCS7_bio(BIO *bp, PKCS7 **p7)
         propq = (*p7)->ctx.propq;
     }
 
+
     ret = ASN1_item_d2i_bio_ex(ASN1_ITEM_rptr(PKCS7), bp, p7, libctx, propq);
     if (ret != NULL)
         ossl_pkcs7_resolve_libctx(ret);
@@ -292,8 +263,7 @@ X509_REQ *d2i_X509_REQ_bio(BIO *bp, X509_REQ **req)
         propq = (*req)->propq;
     }
 
-    return
-        ASN1_item_d2i_bio_ex(ASN1_ITEM_rptr(X509_REQ), bp, req, libctx, propq);
+    return ASN1_item_d2i_bio_ex(ASN1_ITEM_rptr(X509_REQ), bp, req, libctx, propq);
 }
 
 int i2d_X509_REQ_bio(BIO *bp, const X509_REQ *req)
@@ -456,9 +426,9 @@ int i2d_ECPrivateKey_bio(BIO *bp, const EC_KEY *eckey)
 int X509_pubkey_digest(const X509 *data, const EVP_MD *type,
                        unsigned char *md, unsigned int *len)
 {
-    ASN1_BIT_STRING *key = X509_get0_pubkey_bitstr(data);
-
-    if (key == NULL)
+    ASN1_BIT_STRING *key;
+    key = X509_get0_pubkey_bitstr(data);
+    if (!key)
         return 0;
     return EVP_Digest(key->data, key->length, md, len, type, NULL);
 }
@@ -514,7 +484,7 @@ ASN1_OCTET_STRING *X509_digest_sig(const X509 *cert,
                 || !ossl_rsa_pss_get_param_unverified(pss, &mmd, &mgf1md,
                                                       &saltlen,
                                                       &trailerfield)
-                || mmd == NULL) {
+                ||  mmd == NULL) {
                 RSA_PSS_PARAMS_free(pss);
                 ERR_raise(ERR_LIB_X509, X509_R_UNSUPPORTED_ALGORITHM);
                 return NULL;
@@ -557,7 +527,7 @@ ASN1_OCTET_STRING *X509_digest_sig(const X509 *cert,
     if (!X509_digest(cert, md, hash, &len)
             || (new = ASN1_OCTET_STRING_new()) == NULL)
         goto err;
-    if (ASN1_OCTET_STRING_set(new, hash, len)) {
+    if ((ASN1_OCTET_STRING_set(new, hash, len))) {
         if (md_used != NULL)
             *md_used = md;
         else
@@ -586,17 +556,15 @@ int X509_CRL_digest(const X509_CRL *data, const EVP_MD *type,
         memcpy(md, data->sha1_hash, sizeof(data->sha1_hash));
         return 1;
     }
-    return
-        ossl_asn1_item_digest_ex(ASN1_ITEM_rptr(X509_CRL), type, (char *)data,
-                                 md, len, data->libctx, data->propq);
+    return ossl_asn1_item_digest_ex(ASN1_ITEM_rptr(X509_CRL), type, (char *)data,
+                                    md, len, data->libctx, data->propq);
 }
 
 int X509_REQ_digest(const X509_REQ *data, const EVP_MD *type,
                     unsigned char *md, unsigned int *len)
 {
-    return
-        ossl_asn1_item_digest_ex(ASN1_ITEM_rptr(X509_REQ), type, (char *)data,
-                                 md, len, data->libctx, data->propq);
+    return ossl_asn1_item_digest_ex(ASN1_ITEM_rptr(X509_REQ), type, (char *)data,
+                                    md, len, data->libctx, data->propq);
 }
 
 int X509_NAME_digest(const X509_NAME *data, const EVP_MD *type,
@@ -718,22 +686,6 @@ int i2d_PUBKEY_fp(FILE *fp, const EVP_PKEY *pkey)
     return ASN1_i2d_fp_of(EVP_PKEY, i2d_PUBKEY, fp, pkey);
 }
 
-EVP_PKEY *d2i_PUBKEY_ex_fp(FILE *fp, EVP_PKEY **a, OSSL_LIB_CTX *libctx,
-                           const char *propq)
-{
-    BIO *b;
-    void *ret;
-
-    if ((b = BIO_new(BIO_s_file())) == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_BUF_LIB);
-        return NULL;
-    }
-    BIO_set_fp(b, fp, BIO_NOCLOSE);
-    ret = d2i_PUBKEY_ex_bio(b, a, libctx, propq);
-    BIO_free(b);
-    return ret;
-}
-
 EVP_PKEY *d2i_PUBKEY_fp(FILE *fp, EVP_PKEY **a)
 {
     return ASN1_d2i_fp_of(EVP_PKEY, EVP_PKEY_new, d2i_PUBKEY, fp, a);
@@ -799,25 +751,6 @@ EVP_PKEY *d2i_PrivateKey_ex_bio(BIO *bp, EVP_PKEY **a, OSSL_LIB_CTX *libctx,
 int i2d_PUBKEY_bio(BIO *bp, const EVP_PKEY *pkey)
 {
     return ASN1_i2d_bio_of(EVP_PKEY, i2d_PUBKEY, bp, pkey);
-}
-
-EVP_PKEY *d2i_PUBKEY_ex_bio(BIO *bp, EVP_PKEY **a, OSSL_LIB_CTX *libctx,
-                            const char *propq)
-{
-    BUF_MEM *b = NULL;
-    const unsigned char *p;
-    void *ret = NULL;
-    int len;
-
-    len = asn1_d2i_read_bio(bp, &b);
-    if (len < 0)
-        goto err;
-
-    p = (unsigned char *)b->data;
-    ret = d2i_PUBKEY_ex(a, &p, len, libctx, propq);
- err:
-    BUF_MEM_free(b);
-    return ret;
 }
 
 EVP_PKEY *d2i_PUBKEY_bio(BIO *bp, EVP_PKEY **a)

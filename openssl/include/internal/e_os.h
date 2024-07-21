@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -15,7 +15,7 @@
 
 # include <openssl/e_os2.h>
 # include <openssl/crypto.h>
-# include "internal/numbers.h"   /* Ensure the definition of SIZE_MAX */
+# include "internal/nelem.h"
 
 /*
  * <openssl/e_os2.h> contains what we can justify to make visible to the
@@ -143,7 +143,7 @@ static __inline unsigned int _strlen31(const char *str)
 #     undef stdin
 #     undef stdout
 #     undef stderr
-FILE *__iob_func(void);
+FILE *__iob_func();
 #     define stdin  (&__iob_func()[0])
 #     define stdout (&__iob_func()[1])
 #     define stderr (&__iob_func()[2])
@@ -188,68 +188,22 @@ FILE *__iob_func(void);
 #   include <sys/time.h>
 #  endif
 
-#  ifdef OPENSSL_SYS_VMS
-#   define VMS 1
-  /*
-   * some programs don't include stdlib, so exit() and others give implicit
-   * function warnings
-   */
-#   include <stdlib.h>
-#   if defined(__DECC)
-#    include <unistd.h>
-#   else
-#    include <unixlib.h>
-#   endif
-#   define LIST_SEPARATOR_CHAR ','
-  /* We don't have any well-defined random devices on VMS, yet... */
-#   undef DEVRANDOM
-  /*-
-     We need to do this since VMS has the following coding on status codes:
-
-     Bits 0-2: status type: 0 = warning, 1 = success, 2 = error, 3 = info ...
-               The important thing to know is that odd numbers are considered
-               good, while even ones are considered errors.
-     Bits 3-15: actual status number
-     Bits 16-27: facility number.  0 is considered "unknown"
-     Bits 28-31: control bits.  If bit 28 is set, the shell won't try to
-                 output the message (which, for random codes, just looks ugly)
-
-     So, what we do here is to change 0 to 1 to get the default success status,
-     and everything else is shifted up to fit into the status number field, and
-     the status is tagged as an error, which is what is wanted here.
-
-     Finally, we add the VMS C facility code 0x35a000, because there are some
-     programs, such as Perl, that will reinterpret the code back to something
-     POSIX.  'man perlvms' explains it further.
-
-     NOTE: the perlvms manual wants to turn all codes 2 to 255 into success
-     codes (status type = 1).  I couldn't disagree more.  Fortunately, the
-     status type doesn't seem to bother Perl.
-     -- Richard Levitte
-  */
-#   define EXIT(n)  exit((n) ? (((n) << 3) | 2 | 0x10000000 | 0x35a000) : 1)
-
-#   define DEFAULT_HOME "SYS$LOGIN:"
-
-#  else
-     /* !defined VMS */
-#   include <unistd.h>
-#   include <sys/types.h>
-#   ifdef OPENSSL_SYS_WIN32_CYGWIN
-#    include <io.h>
-#    include <fcntl.h>
-#   endif
-
-#   define LIST_SEPARATOR_CHAR ':'
-#   define EXIT(n)             exit(n)
+#  include <unistd.h>
+#  include <sys/types.h>
+#  ifdef OPENSSL_SYS_WIN32_CYGWIN
+#   include <io.h>
+#   include <fcntl.h>
 #  endif
+
+#  define LIST_SEPARATOR_CHAR ':'
+#  define EXIT(n)             exit(n)
 
 # endif
 
 /***********************************************/
 
 # if defined(OPENSSL_SYS_WINDOWS)
-#  if defined(_MSC_VER) && (_MSC_VER >= 1310) && !defined(_WIN32_WCE)
+#  if (_MSC_VER >= 1310) && !defined(_WIN32_WCE)
 #   define open _open
 #   define fdopen _fdopen
 #   define close _close
@@ -258,7 +212,6 @@ FILE *__iob_func(void);
 #   endif
 #   define unlink _unlink
 #   define fileno _fileno
-#   define isatty _isatty
 #  endif
 # else
 #  include <strings.h>
@@ -287,6 +240,54 @@ struct servent *getservbyname(const char *name, const char *proto);
 # endif
 /* end vxworks */
 
+/* system-specific variants defining ossl_sleep() */
+#ifdef OPENSSL_SYS_UNIX
+# include <unistd.h>
+static ossl_inline void ossl_sleep(unsigned long millis)
+{
+# ifdef OPENSSL_SYS_VXWORKS
+    struct timespec ts;
+    ts.tv_sec = (long int) (millis / 1000);
+    ts.tv_nsec = (long int) (millis % 1000) * 1000000ul;
+    nanosleep(&ts, NULL);
+# elif defined(__TANDEM)
+#  if !defined(_REENTRANT)
+#   include <cextdecs.h(PROCESS_DELAY_)>
+    /* HPNS does not support usleep for non threaded apps */
+    PROCESS_DELAY_(millis * 1000);
+#  elif defined(_SPT_MODEL_)
+#   include <spthread.h>
+#   include <spt_extensions.h>
+    usleep(millis * 1000);
+#  else
+    usleep(millis * 1000);
+#  endif
+# else
+    usleep(millis * 1000);
+# endif
+}
+#elif defined(_WIN32)
+# include <windows.h>
+static ossl_inline void ossl_sleep(unsigned long millis)
+{
+    Sleep(millis);
+}
+#else
+/* Fallback to a busy wait */
+static ossl_inline void ossl_sleep(unsigned long millis)
+{
+    struct timeval start, now;
+    unsigned long elapsedms;
+
+    gettimeofday(&start, NULL);
+    do {
+        gettimeofday(&now, NULL);
+        elapsedms = (((now.tv_sec - start.tv_sec) * 1000000)
+                     + now.tv_usec - start.tv_usec) / 1000;
+    } while (elapsedms < millis);
+}
+#endif /* defined OPENSSL_SYS_UNIX */
+
 /* ----------------------------- HP NonStop -------------------------------- */
 /* Required to support platform variant without getpid() and pid_t. */
 # if defined(__TANDEM) && defined(_GUARDIAN_TARGET)
@@ -296,12 +297,12 @@ struct servent *getservbyname(const char *name, const char *proto);
 #  define gethostbyname(name)                gethostbyname((char*)name)
 #  define ioctlsocket(a,b,c)	ioctl(a,b,c)
 #  ifdef NO_GETPID
-inline int nssgetpid(void);
+inline int nssgetpid();
 #   ifndef NSSGETPID_MACRO
 #    define NSSGETPID_MACRO
 #    include <cextdecs.h(PROCESSHANDLE_GETMINE_)>
 #    include <cextdecs.h(PROCESSHANDLE_DECOMPOSE_)>
-       inline int nssgetpid(void)
+       inline int nssgetpid()
        {
          short phandle[10]={0};
          union pseudo_pid {
@@ -353,7 +354,7 @@ inline int nssgetpid(void);
    /* unistd.h defines _POSIX_VERSION */
 #  if (defined(OPENSSL_SYS_UNIX) \
         && ( (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112L)      \
-             || defined(__sun) || defined(__hpux) || defined(__sgi)      \
+             || defined(__sun) || defined(__sgi)      \
              || defined(__osf__) )) \
       || defined(_WIN32)
       /* secure memory is implemented */

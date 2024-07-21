@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -134,18 +134,15 @@ static DSA *dsa_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
 {
     DSA *ret = OPENSSL_zalloc(sizeof(*ret));
 
-    if (ret == NULL)
-        return NULL;
-
-    ret->lock = CRYPTO_THREAD_lock_new();
-    if (ret->lock == NULL) {
-        ERR_raise(ERR_LIB_DSA, ERR_R_CRYPTO_LIB);
-        OPENSSL_free(ret);
+    if (ret == NULL) {
+        ERR_raise(ERR_LIB_DSA, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
-    if (!CRYPTO_NEW_REF(&ret->references, 1)) {
-        CRYPTO_THREAD_lock_free(ret->lock);
+    ret->references = 1;
+    ret->lock = CRYPTO_THREAD_lock_new();
+    if (ret->lock == NULL) {
+        ERR_raise(ERR_LIB_DSA, ERR_R_MALLOC_FAILURE);
         OPENSSL_free(ret);
         return NULL;
     }
@@ -178,8 +175,6 @@ static DSA *dsa_new_intern(ENGINE *engine, OSSL_LIB_CTX *libctx)
                                     &ret->ex_data))
         goto err;
 #endif
-
-    ossl_ffc_params_init(&ret->params);
 
     if ((ret->meth->init != NULL) && !ret->meth->init(ret)) {
         ERR_raise(ERR_LIB_DSA, ERR_R_INIT_FAIL);
@@ -217,7 +212,7 @@ void DSA_free(DSA *r)
     if (r == NULL)
         return;
 
-    CRYPTO_DOWN_REF(&r->references, &i);
+    CRYPTO_DOWN_REF(&r->references, &i, r->lock);
     REF_PRINT_COUNT("DSA", r);
     if (i > 0)
         return;
@@ -234,7 +229,6 @@ void DSA_free(DSA *r)
 #endif
 
     CRYPTO_THREAD_lock_free(r->lock);
-    CRYPTO_FREE_REF(&r->references);
 
     ossl_ffc_params_cleanup(&r->params);
     BN_clear_free(r->pub_key);
@@ -246,7 +240,7 @@ int DSA_up_ref(DSA *r)
 {
     int i;
 
-    if (CRYPTO_UP_REF(&r->references, &i) <= 0)
+    if (CRYPTO_UP_REF(&r->references, &i, r->lock) <= 0)
         return 0;
 
     REF_PRINT_COUNT("DSA", r);
@@ -353,7 +347,13 @@ FFC_PARAMS *ossl_dsa_get0_params(DSA *dsa)
 int ossl_dsa_ffc_params_fromdata(DSA *dsa, const OSSL_PARAM params[])
 {
     int ret;
-    FFC_PARAMS *ffc = ossl_dsa_get0_params(dsa);
+    FFC_PARAMS *ffc;
+
+    if (dsa == NULL)
+        return 0;
+    ffc = ossl_dsa_get0_params(dsa);
+    if (ffc == NULL)
+        return 0;
 
     ret = ossl_ffc_params_fromdata(ffc, params);
     if (ret)

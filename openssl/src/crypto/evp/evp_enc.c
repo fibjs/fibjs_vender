@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -24,11 +24,8 @@
 #include "internal/cryptlib.h"
 #include "internal/provider.h"
 #include "internal/core.h"
-#include "internal/safe_math.h"
 #include "crypto/evp.h"
 #include "evp_local.h"
-
-OSSL_SAFE_MATH_SIGNED(int, int)
 
 int EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX *ctx)
 {
@@ -46,7 +43,6 @@ int EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX *ctx)
     if (ctx->fetched_cipher != NULL)
         EVP_CIPHER_free(ctx->fetched_cipher);
     memset(ctx, 0, sizeof(*ctx));
-    ctx->iv_len = -1;
 
     return 1;
 
@@ -65,20 +61,39 @@ int EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX *ctx)
     ENGINE_finish(ctx->engine);
 #endif
     memset(ctx, 0, sizeof(*ctx));
-    ctx->iv_len = -1;
     return 1;
 }
 
+#ifndef OPENSSL_NO_EVP_CIPHER_API_COMPAT
+
+/* compatibility: for lua ffi */
+
+# ifdef EVP_CIPHER_CTX_init
+#  undef EVP_CIPHER_CTX_init
+# endif
+
+# ifdef EVP_CIPHER_CTX_cleanup
+#  undef EVP_CIPHER_CTX_cleanup
+# endif
+
+void EVP_CIPHER_CTX_init(EVP_CIPHER_CTX *ctx);
+int EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *ctx);
+
+void EVP_CIPHER_CTX_init(EVP_CIPHER_CTX *ctx)
+{
+    EVP_CIPHER_CTX_reset(ctx);
+}
+
+int EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *ctx)
+{
+    return EVP_CIPHER_CTX_reset(ctx);
+}
+
+#endif
+
 EVP_CIPHER_CTX *EVP_CIPHER_CTX_new(void)
 {
-    EVP_CIPHER_CTX *ctx;
-
-    ctx = OPENSSL_zalloc(sizeof(EVP_CIPHER_CTX));
-    if (ctx == NULL)
-        return NULL;
-
-    ctx->iv_len = -1;
-    return ctx;
+    return OPENSSL_zalloc(sizeof(EVP_CIPHER_CTX));
 }
 
 void EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *ctx)
@@ -99,7 +114,6 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
 #if !defined(OPENSSL_NO_ENGINE) && !defined(FIPS_MODULE)
     ENGINE *tmpimpl = NULL;
 #endif
-
     /*
      * enc == 1 means we are encrypting.
      * enc == 0 means we are decrypting.
@@ -144,10 +158,7 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
 #if !defined(OPENSSL_NO_ENGINE) && !defined(FIPS_MODULE)
             || tmpimpl != NULL
 #endif
-            || impl != NULL
-            || (cipher != NULL && cipher->origin == EVP_ORIG_METH)
-            || (cipher == NULL && ctx->cipher != NULL
-                               && ctx->cipher->origin == EVP_ORIG_METH)) {
+            || impl != NULL) {
         if (ctx->cipher == ctx->fetched_cipher)
             ctx->cipher = NULL;
         EVP_CIPHER_free(ctx->fetched_cipher);
@@ -159,11 +170,10 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
      * (legacy code)
      */
     if (cipher != NULL && ctx->cipher != NULL) {
-        if (ctx->cipher->cleanup != NULL && !ctx->cipher->cleanup(ctx))
-            return 0;
         OPENSSL_clear_free(ctx->cipher_data, ctx->cipher->ctx_size);
         ctx->cipher_data = NULL;
     }
+
 
     /* Start of non-legacy code below */
 
@@ -200,19 +210,12 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
 #endif
     }
 
-    if (!ossl_assert(cipher->prov != NULL)) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
-        return 0;
-    }
-
-    if (cipher != ctx->fetched_cipher) {
+    if (cipher->prov != NULL) {
         if (!EVP_CIPHER_up_ref((EVP_CIPHER *)cipher)) {
             ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
             return 0;
         }
         EVP_CIPHER_free(ctx->fetched_cipher);
-        /* Coverity false positive, the reference counting is confusing it */
-        /* coverity[use_after_free] */
         ctx->fetched_cipher = (EVP_CIPHER *)cipher;
     }
     ctx->cipher = cipher;
@@ -248,12 +251,12 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
         OSSL_PARAM *q = param_lens;
         const OSSL_PARAM *p;
 
-        p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_KEYLEN); 
+        p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_KEYLEN);
         if (p != NULL)
             memcpy(q++, p, sizeof(*q));
 
         /*
-         * Note that OSSL_CIPHER_PARAM_AEAD_IVLEN is a synonym for
+         * Note that OSSL_CIPHER_PARAM_AEAD_IVLEN is a synomym for
          * OSSL_CIPHER_PARAM_IVLEN so both are covered here.
          */
         p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_IVLEN);
@@ -354,6 +357,7 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
             ctx->cipher_data = OPENSSL_zalloc(ctx->cipher->ctx_size);
             if (ctx->cipher_data == NULL) {
                 ctx->cipher = NULL;
+                ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
                 return 0;
             }
         } else {
@@ -363,7 +367,7 @@ static int evp_cipher_init_internal(EVP_CIPHER_CTX *ctx,
         /* Preserve wrap enable flag, zero everything else */
         ctx->flags &= EVP_CIPHER_CTX_FLAG_WRAP_ALLOW;
         if (ctx->cipher->flags & EVP_CIPH_CTRL_INIT) {
-            if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_INIT, 0, NULL) <= 0) {
+            if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_INIT, 0, NULL)) {
                 ctx->cipher = NULL;
                 ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
                 return 0;
@@ -536,19 +540,7 @@ int EVP_DecryptInit_ex2(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
 #ifdef PTRDIFF_T
 # undef PTRDIFF_T
 #endif
-#if defined(OPENSSL_SYS_VMS) && __INITIAL_POINTER_SIZE==64
-/*
- * Then we have VMS that distinguishes itself by adhering to
- * sizeof(size_t)==4 even in 64-bit builds, which means that
- * difference between two pointers might be truncated to 32 bits.
- * In the context one can even wonder how comparison for
- * equality is implemented. To be on the safe side we adhere to
- * PTRDIFF_T even for comparison for equality.
- */
-# define PTRDIFF_T uint64_t
-#else
-# define PTRDIFF_T size_t
-#endif
+#define PTRDIFF_T size_t
 
 int ossl_is_partially_overlapping(const void *ptr1, const void *ptr2, int len)
 {
@@ -571,7 +563,7 @@ static int evp_EncryptDecryptUpdate(EVP_CIPHER_CTX *ctx,
     int i, j, bl, cmpl = inl;
 
     if (EVP_CIPHER_CTX_test_flags(ctx, EVP_CIPH_FLAG_LENGTH_BITS))
-        cmpl = safe_div_round_up_int(cmpl, 8, NULL);
+        cmpl = (cmpl + 7) / 8;
 
     bl = ctx->cipher->block_size;
 
@@ -662,7 +654,7 @@ int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
     size_t soutl, inl_ = (size_t)inl;
     int blocksize;
 
-    if (ossl_likely(outl != NULL)) {
+    if (outl != NULL) {
         *outl = 0;
     } else {
         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
@@ -670,22 +662,22 @@ int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
     }
 
     /* Prevent accidental use of decryption context when encrypting */
-    if (ossl_unlikely(!ctx->encrypt)) {
+    if (!ctx->encrypt) {
         ERR_raise(ERR_LIB_EVP, EVP_R_INVALID_OPERATION);
         return 0;
     }
 
-    if (ossl_unlikely(ctx->cipher == NULL)) {
+    if (ctx->cipher == NULL) {
         ERR_raise(ERR_LIB_EVP, EVP_R_NO_CIPHER_SET);
         return 0;
     }
 
-    if (ossl_unlikely(ctx->cipher->prov == NULL))
+    if (ctx->cipher->prov == NULL)
         goto legacy;
 
     blocksize = ctx->cipher->block_size;
 
-    if (ossl_unlikely(ctx->cipher->cupdate == NULL || blocksize < 1)) {
+    if (ctx->cipher->cupdate == NULL  || blocksize < 1) {
         ERR_raise(ERR_LIB_EVP, EVP_R_UPDATE_ERROR);
         return 0;
     }
@@ -694,7 +686,7 @@ int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
                                inl_ + (size_t)(blocksize == 1 ? 0 : blocksize),
                                in, inl_);
 
-    if (ossl_likely(ret)) {
+    if (ret) {
         if (soutl > INT_MAX) {
             ERR_raise(ERR_LIB_EVP, EVP_R_UPDATE_ERROR);
             return 0;
@@ -811,7 +803,7 @@ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
     size_t soutl, inl_ = (size_t)inl;
     int blocksize;
 
-    if (ossl_likely(outl != NULL)) {
+    if (outl != NULL) {
         *outl = 0;
     } else {
         ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
@@ -819,21 +811,21 @@ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
     }
 
     /* Prevent accidental use of encryption context when decrypting */
-    if (ossl_unlikely(ctx->encrypt)) {
+    if (ctx->encrypt) {
         ERR_raise(ERR_LIB_EVP, EVP_R_INVALID_OPERATION);
         return 0;
     }
 
-    if (ossl_unlikely(ctx->cipher == NULL)) {
+    if (ctx->cipher == NULL) {
         ERR_raise(ERR_LIB_EVP, EVP_R_NO_CIPHER_SET);
         return 0;
     }
-    if (ossl_unlikely(ctx->cipher->prov == NULL))
+    if (ctx->cipher->prov == NULL)
         goto legacy;
 
     blocksize = EVP_CIPHER_CTX_get_block_size(ctx);
 
-    if (ossl_unlikely(ctx->cipher->cupdate == NULL || blocksize < 1)) {
+    if (ctx->cipher->cupdate == NULL || blocksize < 1) {
         ERR_raise(ERR_LIB_EVP, EVP_R_UPDATE_ERROR);
         return 0;
     }
@@ -841,7 +833,7 @@ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
                                inl_ + (size_t)(blocksize == 1 ? 0 : blocksize),
                                in, inl_);
 
-    if (ossl_likely(ret)) {
+    if (ret) {
         if (soutl > INT_MAX) {
             ERR_raise(ERR_LIB_EVP, EVP_R_UPDATE_ERROR);
             return 0;
@@ -857,7 +849,7 @@ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out, int *outl,
     b = ctx->cipher->block_size;
 
     if (EVP_CIPHER_CTX_test_flags(ctx, EVP_CIPH_FLAG_LENGTH_BITS))
-        cmpl = safe_div_round_up_int(cmpl, 8, NULL);
+        cmpl = (cmpl + 7) / 8;
 
     if (ctx->cipher->flags & EVP_CIPH_FLAG_CUSTOM_CIPHER) {
         if (b == 1 && ossl_is_partially_overlapping(out, in, cmpl)) {
@@ -1044,7 +1036,7 @@ int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *c, int keylen)
     if (c->cipher->prov != NULL) {
         int ok;
         OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
-        size_t len;
+        size_t len = keylen;
 
         if (EVP_CIPHER_CTX_get_key_length(c) == keylen)
             return 1;
@@ -1057,13 +1049,9 @@ int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *c, int keylen)
         }
 
         params[0] = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_KEYLEN, &len);
-        if (!OSSL_PARAM_set_int(params, keylen))
-            return 0;
         ok = evp_do_ciph_ctx_setparams(c->cipher, c->algctx, params);
-        if (ok <= 0)
-            return 0;
-        c->key_len = keylen;
-        return 1;
+
+        return ok > 0 ? 1 : 0;
     }
 
     /* Code below to be removed when legacy support is dropped. */
@@ -1123,13 +1111,7 @@ int EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
 
     switch (type) {
     case EVP_CTRL_SET_KEY_LENGTH:
-        if (arg < 0)
-            return 0;
-        if (ctx->key_len == arg)
-            /* Skip calling into provider if unchanged. */
-            return 1;
         params[0] = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_KEYLEN, &sz);
-        ctx->key_len = -1;
         break;
     case EVP_CTRL_RAND_KEY:      /* Used by DES */
         set_params = 0;
@@ -1153,18 +1135,13 @@ int EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
     case EVP_CTRL_AEAD_SET_IVLEN:
         if (arg < 0)
             return 0;
-        if (ctx->iv_len == arg)
-            /* Skip calling into provider if unchanged. */
-            return 1;
         params[0] = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_IVLEN, &sz);
-        ctx->iv_len = -1;
         break;
     case EVP_CTRL_CCM_SET_L:
         if (arg < 2 || arg > 8)
             return 0;
         sz = 15 - arg;
         params[0] = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_IVLEN, &sz);
-        ctx->iv_len = -1;
         break;
     case EVP_CTRL_AEAD_SET_IV_FIXED:
         params[0] = OSSL_PARAM_construct_octet_string(
@@ -1217,13 +1194,6 @@ int EVP_CIPHER_CTX_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
         if (ret <= 0)
             goto end;
         return sz;
-#ifndef OPENSSL_NO_RC2
-    case EVP_CTRL_GET_RC2_KEY_BITS:
-        set_params = 0; /* Fall thru */
-    case EVP_CTRL_SET_RC2_KEY_BITS:
-        params[0] = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_RC2_KEYBITS, &sz);
-        break;
-#endif /* OPENSSL_NO_RC2 */
 #if !defined(OPENSSL_NO_MULTIBLOCK)
     case EVP_CTRL_TLS1_1_MULTIBLOCK_MAX_BUFSIZE:
         params[0] = OSSL_PARAM_construct_size_t(
@@ -1328,27 +1298,9 @@ int EVP_CIPHER_get_params(EVP_CIPHER *cipher, OSSL_PARAM params[])
 
 int EVP_CIPHER_CTX_set_params(EVP_CIPHER_CTX *ctx, const OSSL_PARAM params[])
 {
-    int r = 0;
-    const OSSL_PARAM *p;
-
-    if (ctx->cipher != NULL && ctx->cipher->set_ctx_params != NULL) {
-        r = ctx->cipher->set_ctx_params(ctx->algctx, params);
-        if (r > 0) {
-            p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_KEYLEN);
-            if (p != NULL && !OSSL_PARAM_get_int(p, &ctx->key_len)) {
-                r = 0;
-                ctx->key_len = -1;
-            }
-        }
-        if (r > 0) {
-            p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_IVLEN);
-            if (p != NULL && !OSSL_PARAM_get_int(p, &ctx->iv_len)) {
-                r = 0;
-                ctx->iv_len = -1;
-            }
-        }
-    }
-    return r;
+    if (ctx->cipher != NULL && ctx->cipher->set_ctx_params != NULL)
+        return ctx->cipher->set_ctx_params(ctx->algctx, params);
+    return 0;
 }
 
 int EVP_CIPHER_CTX_get_params(EVP_CIPHER_CTX *ctx, OSSL_PARAM params[])
@@ -1444,17 +1396,6 @@ int EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *ctx, unsigned char *key)
 #endif /* FIPS_MODULE */
 }
 
-EVP_CIPHER_CTX *EVP_CIPHER_CTX_dup(const EVP_CIPHER_CTX *in)
-{
-    EVP_CIPHER_CTX *out = EVP_CIPHER_CTX_new();
-
-    if (out != NULL && !EVP_CIPHER_CTX_copy(out, in)) {
-        EVP_CIPHER_CTX_free(out);
-        out = NULL;
-    }
-    return out;
-}
-
 int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in)
 {
     if ((in == NULL) || (in->cipher == NULL)) {
@@ -1506,6 +1447,7 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in)
         out->cipher_data = OPENSSL_malloc(in->cipher->ctx_size);
         if (out->cipher_data == NULL) {
             out->cipher = NULL;
+            ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
             return 0;
         }
         memcpy(out->cipher_data, in->cipher_data, in->cipher->ctx_size);
@@ -1524,9 +1466,13 @@ EVP_CIPHER *evp_cipher_new(void)
 {
     EVP_CIPHER *cipher = OPENSSL_zalloc(sizeof(EVP_CIPHER));
 
-    if (cipher != NULL && !CRYPTO_NEW_REF(&cipher->refcnt, 1)) {
-        OPENSSL_free(cipher);
-        return NULL;
+    if (cipher != NULL) {
+        cipher->lock = CRYPTO_THREAD_lock_new();
+        if (cipher->lock == NULL) {
+            OPENSSL_free(cipher);
+            return NULL;
+        }
+        cipher->refcnt = 1;
     }
     return cipher;
 }
@@ -1571,7 +1517,7 @@ static void *evp_cipher_from_algorithm(const int name_id,
     int fnciphcnt = 0, fnctxcnt = 0;
 
     if ((cipher = evp_cipher_new()) == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
@@ -1726,7 +1672,7 @@ int EVP_CIPHER_up_ref(EVP_CIPHER *cipher)
     int ref = 0;
 
     if (cipher->origin == EVP_ORIG_DYNAMIC)
-        CRYPTO_UP_REF(&cipher->refcnt, &ref);
+        CRYPTO_UP_REF(&cipher->refcnt, &ref, cipher->lock);
     return 1;
 }
 
@@ -1734,7 +1680,7 @@ void evp_cipher_free_int(EVP_CIPHER *cipher)
 {
     OPENSSL_free(cipher->type_name);
     ossl_provider_free(cipher->prov);
-    CRYPTO_FREE_REF(&cipher->refcnt);
+    CRYPTO_THREAD_lock_free(cipher->lock);
     OPENSSL_free(cipher);
 }
 
@@ -1745,7 +1691,7 @@ void EVP_CIPHER_free(EVP_CIPHER *cipher)
     if (cipher == NULL || cipher->origin != EVP_ORIG_DYNAMIC)
         return;
 
-    CRYPTO_DOWN_REF(&cipher->refcnt, &i);
+    CRYPTO_DOWN_REF(&cipher->refcnt, &i, cipher->lock);
     if (i > 0)
         return;
     evp_cipher_free_int(cipher);

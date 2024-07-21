@@ -52,7 +52,6 @@ static ASN1_ITEM_EXP *asn1_item_list[] = {
     ASN1_ITEM_ref(CERTIFICATEPOLICIES),
 #ifndef OPENSSL_NO_CMS
     ASN1_ITEM_ref(CMS_ContentInfo),
-    ASN1_ITEM_ref(CMS_EnvelopedData),
     ASN1_ITEM_ref(CMS_ReceiptRequest),
 #endif
     ASN1_ITEM_ref(CRL_DIST_POINTS),
@@ -148,7 +147,6 @@ static ASN1_ITEM_EXP *asn1_item_list[] = {
 #endif
     ASN1_ITEM_ref(SXNETID),
     ASN1_ITEM_ref(SXNET),
-    ASN1_ITEM_ref(ISSUER_SIGN_TOOL),
     ASN1_ITEM_ref(USERNOTICE),
     ASN1_ITEM_ref(X509_ALGORS),
     ASN1_ITEM_ref(X509_ALGOR),

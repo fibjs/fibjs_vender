@@ -1,5 +1,3 @@
-#include "arm_arch.h"
-
 .text
 
 .align	8	// strategic alignment and padding that allows to use
@@ -35,8 +33,8 @@ iotas:
 
 .align	5
 KeccakF1600_int:
-	AARCH64_SIGN_LINK_REGISTER
 	adr	x28,iotas
+.long	0xd503233f			// paciasp
 	stp	x28,x30,[sp,#16]		// 32 bytes on top are mine
 	b	Loop
 .align	4
@@ -200,14 +198,14 @@ Loop:
 	bne	Loop
 
 	ldr	x30,[sp,#24]
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf			// autiasp
 	ret
 
 
 
 .align	5
 KeccakF1600:
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f			// paciasp
 	stp	x29,x30,[sp,#-128]!
 	add	x29,sp,#0
 	stp	x19,x20,[sp,#16]
@@ -257,7 +255,7 @@ KeccakF1600:
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldp	x29,x30,[sp],#128
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf			// autiasp
 	ret
 
 
@@ -265,7 +263,7 @@ KeccakF1600:
 
 .align	5
 _SHA3_absorb:
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f			// paciasp
 	stp	x29,x30,[sp,#-128]!
 	add	x29,sp,#0
 	stp	x19,x20,[sp,#16]
@@ -499,14 +497,14 @@ Labsorbed:
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldp	x29,x30,[sp],#128
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf			// autiasp
 	ret
 
 .globl	_SHA3_squeeze
 
 .align	5
 _SHA3_squeeze:
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f			// paciasp
 	stp	x29,x30,[sp,#-48]!
 	add	x29,sp,#0
 	stp	x19,x20,[sp,#16]
@@ -516,8 +514,6 @@ _SHA3_squeeze:
 	mov	x20,x1
 	mov	x21,x2
 	mov	x22,x3
-	cmp	w4, #0				// w4 = 'next' argument
-	bne	Lnext_block
 
 Loop_squeeze:
 	ldr	x4,[x0],#8
@@ -532,7 +528,7 @@ Loop_squeeze:
 
 	subs	x3,x3,#8
 	bhi	Loop_squeeze
-Lnext_block:
+
 	mov	x0,x19
 	bl	KeccakF1600
 	mov	x0,x19
@@ -571,7 +567,7 @@ Lsqueeze_done:
 	ldp	x19,x20,[sp,#16]
 	ldp	x21,x22,[sp,#32]
 	ldp	x29,x30,[sp],#48
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf			// autiasp
 	ret
 
 
@@ -679,7 +675,7 @@ Loop_ce:
 
 .align	5
 KeccakF1600_cext:
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f		// paciasp
 	stp	x29,x30,[sp,#-80]!
 	add	x29,sp,#0
 	stp	d8,d9,[sp,#16]		// per ABI requirement
@@ -720,14 +716,14 @@ KeccakF1600_cext:
 	ldp	d12,d13,[sp,#48]
 	ldp	d14,d15,[sp,#64]
 	ldr	x29,[sp],#80
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf		// autiasp
 	ret
 
 .globl	_SHA3_absorb_cext
 
 .align	5
 _SHA3_absorb_cext:
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f		// paciasp
 	stp	x29,x30,[sp,#-80]!
 	add	x29,sp,#0
 	stp	d8,d9,[sp,#16]		// per ABI requirement
@@ -943,14 +939,14 @@ Labsorbed_ce:
 	ldp	d12,d13,[sp,#48]
 	ldp	d14,d15,[sp,#64]
 	ldp	x29,x30,[sp],#80
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf		// autiasp
 	ret
 
 .globl	_SHA3_squeeze_cext
 
 .align	5
 _SHA3_squeeze_cext:
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f		// paciasp
 	stp	x29,x30,[sp,#-16]!
 	add	x29,sp,#0
 	mov	x9,x0
@@ -1006,7 +1002,7 @@ Lsqueeze_tail_ce:
 
 Lsqueeze_done_ce:
 	ldr	x29,[sp],#16
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf		// autiasp
 	ret
 
 .byte	75,101,99,99,97,107,45,49,54,48,48,32,97,98,115,111,114,98,32,97,110,100,32,115,113,117,101,101,122,101,32,102,111,114,32,65,82,77,118,56,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0

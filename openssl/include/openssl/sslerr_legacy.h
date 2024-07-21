@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -143,6 +143,7 @@ OSSL_DEPRECATEDIN_3_0 int ERR_load_SSL_strings(void);
 #  define SSL_F_SSL_ADD_SERVERHELLO_RENEGOTIATE_EXT        0
 #  define SSL_F_SSL_ADD_SERVERHELLO_TLSEXT                 0
 #  define SSL_F_SSL_ADD_SERVERHELLO_USE_SRTP_EXT           0
+#  define SSL_F_SSL_BAD_METHOD                             0
 #  define SSL_F_SSL_BUILD_CERT_CHAIN                       0
 #  define SSL_F_SSL_BYTES_TO_CIPHER_LIST                   0
 #  define SSL_F_SSL_CACHE_CIPHERLIST                       0
@@ -304,7 +305,6 @@ OSSL_DEPRECATEDIN_3_0 int ERR_load_SSL_strings(void);
 #  define SSL_F_TLS_CONSTRUCT_CHANGE_CIPHER_SPEC           0
 #  define SSL_F_TLS_CONSTRUCT_CKE_DHE                      0
 #  define SSL_F_TLS_CONSTRUCT_CKE_ECDHE                    0
-#  define SSL_F_TLS_CONSTRUCT_CKE_GOST                     0
 #  define SSL_F_TLS_CONSTRUCT_CKE_PSK_PREAMBLE             0
 #  define SSL_F_TLS_CONSTRUCT_CKE_RSA                      0
 #  define SSL_F_TLS_CONSTRUCT_CKE_SRP                      0
@@ -354,7 +354,6 @@ OSSL_DEPRECATEDIN_3_0 int ERR_load_SSL_strings(void);
 #  define SSL_F_TLS_CONSTRUCT_STOC_ALPN                    0
 #  define SSL_F_TLS_CONSTRUCT_STOC_CERTIFICATE             0
 #  define SSL_F_TLS_CONSTRUCT_STOC_COOKIE                  0
-#  define SSL_F_TLS_CONSTRUCT_STOC_CRYPTOPRO_BUG           0
 #  define SSL_F_TLS_CONSTRUCT_STOC_DONE                    0
 #  define SSL_F_TLS_CONSTRUCT_STOC_EARLY_DATA              0
 #  define SSL_F_TLS_CONSTRUCT_STOC_EARLY_DATA_INFO         0
@@ -428,7 +427,6 @@ OSSL_DEPRECATEDIN_3_0 int ERR_load_SSL_strings(void);
 #  define SSL_F_TLS_PROCESS_CHANGE_CIPHER_SPEC             0
 #  define SSL_F_TLS_PROCESS_CKE_DHE                        0
 #  define SSL_F_TLS_PROCESS_CKE_ECDHE                      0
-#  define SSL_F_TLS_PROCESS_CKE_GOST                       0
 #  define SSL_F_TLS_PROCESS_CKE_PSK_PREAMBLE               0
 #  define SSL_F_TLS_PROCESS_CKE_RSA                        0
 #  define SSL_F_TLS_PROCESS_CKE_SRP                        0

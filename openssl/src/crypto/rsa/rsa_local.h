@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -13,7 +13,11 @@
 #include "internal/refcount.h"
 #include "crypto/rsa.h"
 
-#define RSA_MAX_PRIME_NUM       5
+# ifndef OPENSSL_NO_RSA_MULTI_PRIME_KEY_COMPAT
+#  define RSA_MAX_PRIME_NUM     512
+# else
+#  define RSA_MAX_PRIME_NUM     5
+# endif
 
 typedef struct rsa_prime_info_st {
     BIGNUM *r;
@@ -150,10 +154,6 @@ struct rsa_meth_st {
 /* Macros to test if a pkey or ctx is for a PSS key */
 #define pkey_is_pss(pkey) (pkey->ameth->pkey_id == EVP_PKEY_RSA_PSS)
 #define pkey_ctx_is_pss(ctx) (ctx->pmeth->pkey_id == EVP_PKEY_RSA_PSS)
-int ossl_rsa_multiprime_derive(RSA *rsa, int bits, int primes,
-                                 BIGNUM *e_value,
-                                 STACK_OF(BIGNUM) *factors, STACK_OF(BIGNUM) *exps,
-                                 STACK_OF(BIGNUM) *coeffs);
 
 RSA_PSS_PARAMS *ossl_rsa_pss_params_create(const EVP_MD *sigmd,
                                            const EVP_MD *mgf1md, int saltlen);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -17,61 +17,54 @@
 #include "internal/cryptlib.h"
 #include "../ssl_local.h"
 #include "statem_local.h"
+#include "internal/cryptlib.h"
 
-static int final_renegotiate(SSL_CONNECTION *s, unsigned int context, int sent);
-static int init_server_name(SSL_CONNECTION *s, unsigned int context);
-static int final_server_name(SSL_CONNECTION *s, unsigned int context, int sent);
-static int final_ec_pt_formats(SSL_CONNECTION *s, unsigned int context,
-                               int sent);
-static int init_session_ticket(SSL_CONNECTION *s, unsigned int context);
+static int final_renegotiate(SSL *s, unsigned int context, int sent);
+static int init_server_name(SSL *s, unsigned int context);
+static int final_server_name(SSL *s, unsigned int context, int sent);
+static int final_ec_pt_formats(SSL *s, unsigned int context, int sent);
+static int init_session_ticket(SSL *s, unsigned int context);
 #ifndef OPENSSL_NO_OCSP
-static int init_status_request(SSL_CONNECTION *s, unsigned int context);
+static int init_status_request(SSL *s, unsigned int context);
 #endif
 #ifndef OPENSSL_NO_NEXTPROTONEG
-static int init_npn(SSL_CONNECTION *s, unsigned int context);
+static int init_npn(SSL *s, unsigned int context);
 #endif
-static int init_alpn(SSL_CONNECTION *s, unsigned int context);
-static int final_alpn(SSL_CONNECTION *s, unsigned int context, int sent);
-static int init_sig_algs_cert(SSL_CONNECTION *s, unsigned int context);
-static int init_sig_algs(SSL_CONNECTION *s, unsigned int context);
-static int init_server_cert_type(SSL_CONNECTION *sc, unsigned int context);
-static int init_client_cert_type(SSL_CONNECTION *sc, unsigned int context);
-static int init_certificate_authorities(SSL_CONNECTION *s,
-                                        unsigned int context);
-static EXT_RETURN tls_construct_certificate_authorities(SSL_CONNECTION *s,
-                                                        WPACKET *pkt,
+static int init_alpn(SSL *s, unsigned int context);
+static int final_alpn(SSL *s, unsigned int context, int sent);
+static int init_sig_algs_cert(SSL *s, unsigned int context);
+static int init_sig_algs(SSL *s, unsigned int context);
+static int init_certificate_authorities(SSL *s, unsigned int context);
+static EXT_RETURN tls_construct_certificate_authorities(SSL *s, WPACKET *pkt,
                                                         unsigned int context,
                                                         X509 *x,
                                                         size_t chainidx);
-static int tls_parse_certificate_authorities(SSL_CONNECTION *s, PACKET *pkt,
+static int tls_parse_certificate_authorities(SSL *s, PACKET *pkt,
                                              unsigned int context, X509 *x,
                                              size_t chainidx);
 #ifndef OPENSSL_NO_SRP
-static int init_srp(SSL_CONNECTION *s, unsigned int context);
+static int init_srp(SSL *s, unsigned int context);
 #endif
-static int init_ec_point_formats(SSL_CONNECTION *s, unsigned int context);
-static int init_etm(SSL_CONNECTION *s, unsigned int context);
-static int init_ems(SSL_CONNECTION *s, unsigned int context);
-static int final_ems(SSL_CONNECTION *s, unsigned int context, int sent);
-static int init_psk_kex_modes(SSL_CONNECTION *s, unsigned int context);
-static int final_key_share(SSL_CONNECTION *s, unsigned int context, int sent);
+static int init_ec_point_formats(SSL *s, unsigned int context);
+static int init_etm(SSL *s, unsigned int context);
+static int init_ems(SSL *s, unsigned int context);
+static int final_ems(SSL *s, unsigned int context, int sent);
+static int init_psk_kex_modes(SSL *s, unsigned int context);
+static int final_key_share(SSL *s, unsigned int context, int sent);
 #ifndef OPENSSL_NO_SRTP
-static int init_srtp(SSL_CONNECTION *s, unsigned int context);
+static int init_srtp(SSL *s, unsigned int context);
 #endif
-static int final_sig_algs(SSL_CONNECTION *s, unsigned int context, int sent);
-static int final_early_data(SSL_CONNECTION *s, unsigned int context, int sent);
-static int final_maxfragmentlen(SSL_CONNECTION *s, unsigned int context,
-                                int sent);
-static int init_post_handshake_auth(SSL_CONNECTION *s, unsigned int context);
-static int final_psk(SSL_CONNECTION *s, unsigned int context, int sent);
-static int tls_init_compress_certificate(SSL_CONNECTION *sc, unsigned int context);
-static EXT_RETURN tls_construct_compress_certificate(SSL_CONNECTION *sc, WPACKET *pkt,
-                                                     unsigned int context,
-                                                     X509 *x, size_t chainidx);
-static int tls_parse_compress_certificate(SSL_CONNECTION *sc, PACKET *pkt,
-                                          unsigned int context,
-                                          X509 *x, size_t chainidx);
+static int final_sig_algs(SSL *s, unsigned int context, int sent);
+static int final_early_data(SSL *s, unsigned int context, int sent);
+static int final_maxfragmentlen(SSL *s, unsigned int context, int sent);
+static int init_post_handshake_auth(SSL *s, unsigned int context);
+static int final_psk(SSL *s, unsigned int context, int sent);
 
+#ifndef OPENSSL_NO_QUIC
+static int init_quic_transport_params(SSL *s, unsigned int context);
+static int final_quic_transport_params_draft(SSL *s, unsigned int context, int sent);
+static int final_quic_transport_params(SSL *s, unsigned int context, int sent);
+#endif
 /* Structure to define a built-in extension */
 typedef struct extensions_definition_st {
     /* The defined type for the extension */
@@ -85,36 +78,31 @@ typedef struct extensions_definition_st {
      * Initialise extension before parsing. Always called for relevant contexts
      * even if extension not present
      */
-    int (*init)(SSL_CONNECTION *s, unsigned int context);
+    int (*init)(SSL *s, unsigned int context);
     /* Parse extension sent from client to server */
-    int (*parse_ctos)(SSL_CONNECTION *s, PACKET *pkt, unsigned int context,
-                      X509 *x, size_t chainidx);
+    int (*parse_ctos)(SSL *s, PACKET *pkt, unsigned int context, X509 *x,
+                      size_t chainidx);
     /* Parse extension send from server to client */
-    int (*parse_stoc)(SSL_CONNECTION *s, PACKET *pkt, unsigned int context,
-                      X509 *x, size_t chainidx);
+    int (*parse_stoc)(SSL *s, PACKET *pkt, unsigned int context, X509 *x,
+                      size_t chainidx);
     /* Construct extension sent from server to client */
-    EXT_RETURN (*construct_stoc)(SSL_CONNECTION *s, WPACKET *pkt,
-                                 unsigned int context,
+    EXT_RETURN (*construct_stoc)(SSL *s, WPACKET *pkt, unsigned int context,
                                  X509 *x, size_t chainidx);
     /* Construct extension sent from client to server */
-    EXT_RETURN (*construct_ctos)(SSL_CONNECTION *s, WPACKET *pkt,
-                                 unsigned int context,
+    EXT_RETURN (*construct_ctos)(SSL *s, WPACKET *pkt, unsigned int context,
                                  X509 *x, size_t chainidx);
     /*
      * Finalise extension after parsing. Always called where an extensions was
      * initialised even if the extension was not present. |sent| is set to 1 if
      * the extension was seen, or 0 otherwise.
      */
-    int (*final)(SSL_CONNECTION *s, unsigned int context, int sent);
+    int (*final)(SSL *s, unsigned int context, int sent);
 } EXTENSION_DEFINITION;
 
 /*
  * Definitions of all built-in extensions. NOTE: Changes in the number or order
  * of these extensions should be mirrored with equivalent changes to the
  * indexes ( TLSEXT_IDX_* ) defined in ssl_local.h.
- * Extensions should be added to test/ext_internal_test.c as well, as that
- * tests the ordering of the extensions.
- *
  * Each extension has an initialiser, a client and
  * server side parser and a finaliser. The initialiser is called (if the
  * extension is relevant to the given context) even if we did not see the
@@ -135,7 +123,7 @@ typedef struct extensions_definition_st {
  * NOTE: WebSphere Application Server 7+ cannot handle empty extensions at
  * the end, keep these extensions before signature_algorithm.
  */
-#define INVALID_EXTENSION { TLSEXT_TYPE_invalid, 0, NULL, NULL, NULL, NULL, NULL, NULL }
+#define INVALID_EXTENSION { 0x10000, 0, NULL, NULL, NULL, NULL, NULL, NULL }
 static const EXTENSION_DEFINITION ext_defs[] = {
     {
         TLSEXT_TYPE_renegotiate,
@@ -288,6 +276,19 @@ static const EXTENSION_DEFINITION ext_defs[] = {
 #else
     INVALID_EXTENSION,
 #endif
+#ifndef OPENSSL_NO_DELEGATED_CREDENTIAL
+    {
+        TLSEXT_TYPE_delegated_credential,
+        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_CERTIFICATE_REQUEST
+        | SSL_EXT_TLS1_3_ONLY | SSL_EXT_TLS1_3_CERTIFICATE,
+        NULL,
+        tls_parse_ctos_delegated_credential, tls_parse_stoc_delegated_credential,
+        tls_construct_stoc_delegated_credential, tls_construct_ctos_delegated_credential,
+        NULL
+    },
+#else
+    INVALID_EXTENSION,
+#endif
     {
         TLSEXT_TYPE_extended_master_secret,
         SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_2_SERVER_HELLO
@@ -310,24 +311,6 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         tls_parse_ctos_post_handshake_auth, NULL,
         NULL, tls_construct_ctos_post_handshake_auth,
         NULL,
-    },
-    {
-        TLSEXT_TYPE_client_cert_type,
-        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
-        | SSL_EXT_TLS1_2_SERVER_HELLO,
-        init_client_cert_type,
-        tls_parse_ctos_client_cert_type, tls_parse_stoc_client_cert_type,
-        tls_construct_stoc_client_cert_type, tls_construct_ctos_client_cert_type,
-        NULL
-    },
-    {
-        TLSEXT_TYPE_server_cert_type,
-        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
-        | SSL_EXT_TLS1_2_SERVER_HELLO,
-        init_server_cert_type,
-        tls_parse_ctos_server_cert_type, tls_parse_stoc_server_cert_type,
-        tls_construct_stoc_server_cert_type, tls_construct_ctos_server_cert_type,
-        NULL
     },
     {
         TLSEXT_TYPE_signature_algorithms,
@@ -375,26 +358,6 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         tls_construct_stoc_cookie, tls_construct_ctos_cookie, NULL
     },
     {
-        /*
-         * Special unsolicited ServerHello extension only used when
-         * SSL_OP_CRYPTOPRO_TLSEXT_BUG is set. We allow it in a ClientHello but
-         * ignore it.
-         */
-        TLSEXT_TYPE_cryptopro_bug,
-        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_2_SERVER_HELLO
-        | SSL_EXT_TLS1_2_AND_BELOW_ONLY,
-        NULL, NULL, NULL, tls_construct_stoc_cryptopro_bug, NULL, NULL
-    },
-    {
-        TLSEXT_TYPE_compress_certificate,
-        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_CERTIFICATE_REQUEST
-        | SSL_EXT_TLS_IMPLEMENTATION_ONLY | SSL_EXT_TLS1_3_ONLY,
-        tls_init_compress_certificate,
-        tls_parse_compress_certificate, tls_parse_compress_certificate,
-        tls_construct_compress_certificate, tls_construct_compress_certificate,
-        NULL
-    },
-    {
         TLSEXT_TYPE_early_data,
         SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
         | SSL_EXT_TLS1_3_NEW_SESSION_TICKET | SSL_EXT_TLS1_3_ONLY,
@@ -411,6 +374,42 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         tls_construct_certificate_authorities,
         tls_construct_certificate_authorities, NULL,
     },
+#ifndef OPENSSL_NO_QUIC
+    {
+        TLSEXT_TYPE_quic_transport_parameters_draft,
+        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
+        | SSL_EXT_TLS_IMPLEMENTATION_ONLY | SSL_EXT_TLS1_3_ONLY,
+        init_quic_transport_params,
+        tls_parse_ctos_quic_transport_params_draft, tls_parse_stoc_quic_transport_params_draft,
+        tls_construct_stoc_quic_transport_params_draft, tls_construct_ctos_quic_transport_params_draft,
+        final_quic_transport_params_draft,
+    },
+    {
+        TLSEXT_TYPE_quic_transport_parameters,
+        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
+        | SSL_EXT_TLS_IMPLEMENTATION_ONLY | SSL_EXT_TLS1_3_ONLY,
+        init_quic_transport_params,
+        tls_parse_ctos_quic_transport_params, tls_parse_stoc_quic_transport_params,
+        tls_construct_stoc_quic_transport_params, tls_construct_ctos_quic_transport_params,
+        final_quic_transport_params,
+    },
+#else
+    INVALID_EXTENSION,
+    INVALID_EXTENSION,
+#endif
+#ifndef OPENSSL_NO_CERT_COMPRESSION
+    {
+        TLSEXT_TYPE_compress_certificate,
+        SSL_EXT_TLS1_3_ONLY | SSL_EXT_CLIENT_HELLO
+        | SSL_EXT_TLS1_3_CERTIFICATE_REQUEST,
+        NULL,
+        tls_parse_compress_cert, tls_parse_compress_cert,
+        tls_construct_compress_cert, tls_construct_compress_cert,
+        NULL
+    },
+#else
+    INVALID_EXTENSION,
+#endif
     {
         /* Must be immediately before pre_shared_key */
         TLSEXT_TYPE_padding,
@@ -429,26 +428,14 @@ static const EXTENSION_DEFINITION ext_defs[] = {
     }
 };
 
-/* Returns a TLSEXT_TYPE for the given index */
-unsigned int ossl_get_extension_type(size_t idx)
-{
-    size_t num_exts = OSSL_NELEM(ext_defs);
-
-    if (idx >= num_exts)
-        return TLSEXT_TYPE_out_of_range;
-
-    return ext_defs[idx].type;
-}
-
 /* Check whether an extension's context matches the current context */
-static int validate_context(SSL_CONNECTION *s, unsigned int extctx,
-                            unsigned int thisctx)
+static int validate_context(SSL *s, unsigned int extctx, unsigned int thisctx)
 {
     /* Check we're allowed to use this extension in this context */
     if ((thisctx & extctx) == 0)
         return 0;
 
-    if (SSL_CONNECTION_IS_DTLS(s)) {
+    if (SSL_IS_DTLS(s)) {
         if ((extctx & SSL_EXT_TLS_ONLY) != 0)
             return 0;
     } else if ((extctx & SSL_EXT_DTLS_ONLY) != 0) {
@@ -458,8 +445,7 @@ static int validate_context(SSL_CONNECTION *s, unsigned int extctx,
     return 1;
 }
 
-int tls_validate_all_contexts(SSL_CONNECTION *s, unsigned int thisctx,
-                              RAW_EXTENSION *exts)
+int tls_validate_all_contexts(SSL *s, unsigned int thisctx, RAW_EXTENSION *exts)
 {
     size_t i, num_exts, builtin_num = OSSL_NELEM(ext_defs), offset;
     RAW_EXTENSION *thisext;
@@ -503,9 +489,9 @@ int tls_validate_all_contexts(SSL_CONNECTION *s, unsigned int thisctx,
  * indicate the extension is not allowed. If returning 1 then |*found| is set to
  * the definition for the extension we found.
  */
-static int verify_extension(SSL_CONNECTION *s, unsigned int context,
-                            unsigned int type, custom_ext_methods *meths,
-                            RAW_EXTENSION *rawexlist, RAW_EXTENSION **found)
+static int verify_extension(SSL *s, unsigned int context, unsigned int type,
+                            custom_ext_methods *meths, RAW_EXTENSION *rawexlist,
+                            RAW_EXTENSION **found)
 {
     size_t i;
     size_t builtin_num = OSSL_NELEM(ext_defs);
@@ -551,8 +537,7 @@ static int verify_extension(SSL_CONNECTION *s, unsigned int context,
  * the extension is relevant for the current context |thisctx| or not. Returns
  * 1 if the extension is relevant for this context, and 0 otherwise
  */
-int extension_is_relevant(SSL_CONNECTION *s, unsigned int extctx,
-                          unsigned int thisctx)
+int extension_is_relevant(SSL *s, unsigned int extctx, unsigned int thisctx)
 {
     int is_tls13;
 
@@ -563,9 +548,9 @@ int extension_is_relevant(SSL_CONNECTION *s, unsigned int extctx,
     if ((thisctx & SSL_EXT_TLS1_3_HELLO_RETRY_REQUEST) != 0)
         is_tls13 = 1;
     else
-        is_tls13 = SSL_CONNECTION_IS_TLS13(s);
+        is_tls13 = SSL_IS_TLS13(s);
 
-    if ((SSL_CONNECTION_IS_DTLS(s)
+    if ((SSL_IS_DTLS(s)
                 && (extctx & SSL_EXT_TLS_IMPLEMENTATION_ONLY) != 0)
             || (s->version == SSL3_VERSION
                     && (extctx & SSL_EXT_SSL3_ALLOWED) == 0)
@@ -602,8 +587,7 @@ int extension_is_relevant(SSL_CONNECTION *s, unsigned int extctx,
  * found, or an internal error occurred. We only check duplicates for
  * extensions that we know about. We ignore others.
  */
-int tls_collect_extensions(SSL_CONNECTION *s, PACKET *packet,
-                           unsigned int context,
+int tls_collect_extensions(SSL *s, PACKET *packet, unsigned int context,
                            RAW_EXTENSION **res, size_t *len, int init)
 {
     PACKET extensions = *packet;
@@ -625,7 +609,7 @@ int tls_collect_extensions(SSL_CONNECTION *s, PACKET *packet,
     num_exts = OSSL_NELEM(ext_defs) + (exts != NULL ? exts->meths_count : 0);
     raw_extensions = OPENSSL_zalloc(num_exts * sizeof(*raw_extensions));
     if (raw_extensions == NULL) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_CRYPTO_LIB);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_MALLOC_FAILURE);
         return 0;
     }
 
@@ -676,10 +660,6 @@ int tls_collect_extensions(SSL_CONNECTION *s, PACKET *packet,
                 && type != TLSEXT_TYPE_renegotiate
                 && type != TLSEXT_TYPE_signed_certificate_timestamp
                 && (s->ext.extflags[idx] & SSL_EXT_FLAG_SENT) == 0
-#ifndef OPENSSL_NO_GOST
-                && !((context & SSL_EXT_TLS1_2_SERVER_HELLO) != 0
-                     && type == TLSEXT_TYPE_cryptopro_bug)
-#endif
                                                                 ) {
             SSLfatal(s, SSL_AD_UNSUPPORTED_EXTENSION,
                      SSL_R_UNSOLICITED_EXTENSION);
@@ -691,8 +671,8 @@ int tls_collect_extensions(SSL_CONNECTION *s, PACKET *packet,
             thisex->type = type;
             thisex->received_order = i++;
             if (s->ext.debug_cb)
-                s->ext.debug_cb(SSL_CONNECTION_GET_SSL(s), !s->server,
-                                thisex->type, PACKET_data(&thisex->data),
+                s->ext.debug_cb(s, !s->server, thisex->type,
+                                PACKET_data(&thisex->data),
                                 PACKET_remaining(&thisex->data),
                                 s->ext.debug_arg);
         }
@@ -734,11 +714,11 @@ int tls_collect_extensions(SSL_CONNECTION *s, PACKET *packet,
  * Certificate. Returns 1 on success or 0 on failure. If an extension is not
  * present this counted as success.
  */
-int tls_parse_extension(SSL_CONNECTION *s, TLSEXT_INDEX idx, int context,
+int tls_parse_extension(SSL *s, TLSEXT_INDEX idx, int context,
                         RAW_EXTENSION *exts, X509 *x, size_t chainidx)
 {
     RAW_EXTENSION *currext = &exts[idx];
-    int (*parser)(SSL_CONNECTION *s, PACKET *pkt, unsigned int context, X509 *x,
+    int (*parser)(SSL *s, PACKET *pkt, unsigned int context, X509 *x,
                   size_t chainidx) = NULL;
 
     /* Skip if the extension is not present */
@@ -784,8 +764,7 @@ int tls_parse_extension(SSL_CONNECTION *s, TLSEXT_INDEX idx, int context,
  * working on a Certificate message then we also pass the Certificate |x| and
  * its position in the |chainidx|, with 0 being the first certificate.
  */
-int tls_parse_all_extensions(SSL_CONNECTION *s, int context,
-                             RAW_EXTENSION *exts, X509 *x,
+int tls_parse_all_extensions(SSL *s, int context, RAW_EXTENSION *exts, X509 *x,
                              size_t chainidx, int fin)
 {
     size_t i, numexts = OSSL_NELEM(ext_defs);
@@ -820,8 +799,8 @@ int tls_parse_all_extensions(SSL_CONNECTION *s, int context,
     return 1;
 }
 
-int should_add_extension(SSL_CONNECTION *s, unsigned int extctx,
-                         unsigned int thisctx, int max_version)
+int should_add_extension(SSL *s, unsigned int extctx, unsigned int thisctx,
+                         int max_version)
 {
     /* Skip if not relevant for our context */
     if ((extctx & thisctx) == 0)
@@ -831,7 +810,7 @@ int should_add_extension(SSL_CONNECTION *s, unsigned int extctx,
     if (!extension_is_relevant(s, extctx, thisctx)
             || ((extctx & SSL_EXT_TLS1_3_ONLY) != 0
                 && (thisctx & SSL_EXT_CLIENT_HELLO) != 0
-                && (SSL_CONNECTION_IS_DTLS(s) || max_version < TLS1_3_VERSION)))
+                && (SSL_IS_DTLS(s) || max_version < TLS1_3_VERSION)))
         return 0;
 
     return 1;
@@ -845,14 +824,12 @@ int should_add_extension(SSL_CONNECTION *s, unsigned int extctx,
  * 0 being the first in the chain). Returns 1 on success or 0 on failure. On a
  * failure construction stops at the first extension to fail to construct.
  */
-int tls_construct_extensions(SSL_CONNECTION *s, WPACKET *pkt,
-                             unsigned int context,
+int tls_construct_extensions(SSL *s, WPACKET *pkt, unsigned int context,
                              X509 *x, size_t chainidx)
 {
     size_t i;
     int min_version, max_version = 0, reason;
     const EXTENSION_DEFINITION *thisexd;
-    int for_comp = (context & SSL_EXT_TLS1_3_CERTIFICATE_COMPRESSION) != 0;
 
     if (!WPACKET_start_sub_packet_u16(pkt)
                /*
@@ -863,17 +840,15 @@ int tls_construct_extensions(SSL_CONNECTION *s, WPACKET *pkt,
             || ((context &
                  (SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_2_SERVER_HELLO)) != 0
                 && !WPACKET_set_flags(pkt,
-                                      WPACKET_FLAGS_ABANDON_ON_ZERO_LENGTH))) {
-        if (!for_comp)
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+                                     WPACKET_FLAGS_ABANDON_ON_ZERO_LENGTH))) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         return 0;
     }
 
     if ((context & SSL_EXT_CLIENT_HELLO) != 0) {
         reason = ssl_get_min_max_version(s, &min_version, &max_version, NULL);
         if (reason != 0) {
-            if (!for_comp)
-                SSLfatal(s, SSL_AD_INTERNAL_ERROR, reason);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, reason);
             return 0;
         }
     }
@@ -889,8 +864,7 @@ int tls_construct_extensions(SSL_CONNECTION *s, WPACKET *pkt,
     }
 
     for (i = 0, thisexd = ext_defs; i < OSSL_NELEM(ext_defs); i++, thisexd++) {
-        EXT_RETURN (*construct)(SSL_CONNECTION *s, WPACKET *pkt,
-                                unsigned int context,
+        EXT_RETURN (*construct)(SSL *s, WPACKET *pkt, unsigned int context,
                                 X509 *x, size_t chainidx);
         EXT_RETURN ret;
 
@@ -917,8 +891,7 @@ int tls_construct_extensions(SSL_CONNECTION *s, WPACKET *pkt,
     }
 
     if (!WPACKET_close(pkt)) {
-        if (!for_comp)
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         return 0;
     }
 
@@ -932,7 +905,7 @@ int tls_construct_extensions(SSL_CONNECTION *s, WPACKET *pkt,
  * otherwise. These functions return 1 on success or 0 on failure.
  */
 
-static int final_renegotiate(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_renegotiate(SSL *s, unsigned int context, int sent)
 {
     if (!s->server) {
         /*
@@ -972,7 +945,7 @@ static ossl_inline void ssl_tsan_decr(const SSL_CTX *ctx,
     }
 }
 
-static int init_server_name(SSL_CONNECTION *s, unsigned int context)
+static int init_server_name(SSL *s, unsigned int context)
 {
     if (s->server) {
         s->servername_done = 0;
@@ -984,24 +957,22 @@ static int init_server_name(SSL_CONNECTION *s, unsigned int context)
     return 1;
 }
 
-static int final_server_name(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_server_name(SSL *s, unsigned int context, int sent)
 {
     int ret = SSL_TLSEXT_ERR_NOACK;
     int altmp = SSL_AD_UNRECOGNIZED_NAME;
-    SSL *ssl = SSL_CONNECTION_GET_SSL(s);
-    SSL_CTX *sctx = SSL_CONNECTION_GET_CTX(s);
-    int was_ticket = (SSL_get_options(ssl) & SSL_OP_NO_TICKET) == 0;
+    int was_ticket = (SSL_get_options(s) & SSL_OP_NO_TICKET) == 0;
 
-    if (!ossl_assert(sctx != NULL) || !ossl_assert(s->session_ctx != NULL)) {
+    if (!ossl_assert(s->ctx != NULL) || !ossl_assert(s->session_ctx != NULL)) {
         SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         return 0;
     }
 
-    if (sctx->ext.servername_cb != NULL)
-        ret = sctx->ext.servername_cb(ssl, &altmp,
-                                      sctx->ext.servername_arg);
+    if (s->ctx->ext.servername_cb != NULL)
+        ret = s->ctx->ext.servername_cb(s, &altmp,
+                                        s->ctx->ext.servername_arg);
     else if (s->session_ctx->ext.servername_cb != NULL)
-        ret = s->session_ctx->ext.servername_cb(ssl, &altmp,
+        ret = s->session_ctx->ext.servername_cb(s, &altmp,
                                        s->session_ctx->ext.servername_arg);
 
     /*
@@ -1029,9 +1000,9 @@ static int final_server_name(SSL_CONNECTION *s, unsigned int context, int sent)
      * context, to avoid the confusing situation of having sess_accept_good
      * exceed sess_accept (zero) for the new context.
      */
-    if (SSL_IS_FIRST_HANDSHAKE(s) && sctx != s->session_ctx
+    if (SSL_IS_FIRST_HANDSHAKE(s) && s->ctx != s->session_ctx
             && s->hello_retry_request == SSL_HRR_NONE) {
-        ssl_tsan_counter(sctx, &sctx->stats.sess_accept);
+        ssl_tsan_counter(s->ctx, &s->ctx->stats.sess_accept);
         ssl_tsan_decr(s->session_ctx, &s->session_ctx->stats.sess_accept);
     }
 
@@ -1041,10 +1012,10 @@ static int final_server_name(SSL_CONNECTION *s, unsigned int context, int sent)
      * Also, if this is not a resumption, create a new session ID
      */
     if (ret == SSL_TLSEXT_ERR_OK && s->ext.ticket_expected
-            && was_ticket && (SSL_get_options(ssl) & SSL_OP_NO_TICKET) != 0) {
+            && was_ticket && (SSL_get_options(s) & SSL_OP_NO_TICKET) != 0) {
         s->ext.ticket_expected = 0;
         if (!s->hit) {
-            SSL_SESSION* ss = SSL_get_session(ssl);
+            SSL_SESSION* ss = SSL_get_session(s);
 
             if (ss != NULL) {
                 OPENSSL_free(ss->ext.tick);
@@ -1070,7 +1041,7 @@ static int final_server_name(SSL_CONNECTION *s, unsigned int context, int sent)
 
     case SSL_TLSEXT_ERR_ALERT_WARNING:
         /* TLSv1.3 doesn't have warning alerts so we suppress this */
-        if (!SSL_CONNECTION_IS_TLS13(s))
+        if (!SSL_IS_TLS13(s))
             ssl3_send_alert(s, SSL3_AL_WARNING, altmp);
         s->servername_done = 0;
         return 1;
@@ -1084,8 +1055,7 @@ static int final_server_name(SSL_CONNECTION *s, unsigned int context, int sent)
     }
 }
 
-static int final_ec_pt_formats(SSL_CONNECTION *s, unsigned int context,
-                               int sent)
+static int final_ec_pt_formats(SSL *s, unsigned int context, int sent)
 {
     unsigned long alg_k, alg_a;
 
@@ -1123,7 +1093,7 @@ static int final_ec_pt_formats(SSL_CONNECTION *s, unsigned int context,
     return 1;
 }
 
-static int init_session_ticket(SSL_CONNECTION *s, unsigned int context)
+static int init_session_ticket(SSL *s, unsigned int context)
 {
     if (!s->server)
         s->ext.ticket_expected = 0;
@@ -1132,7 +1102,7 @@ static int init_session_ticket(SSL_CONNECTION *s, unsigned int context)
 }
 
 #ifndef OPENSSL_NO_OCSP
-static int init_status_request(SSL_CONNECTION *s, unsigned int context)
+static int init_status_request(SSL *s, unsigned int context)
 {
     if (s->server) {
         s->ext.status_type = TLSEXT_STATUSTYPE_nothing;
@@ -1151,7 +1121,7 @@ static int init_status_request(SSL_CONNECTION *s, unsigned int context)
 #endif
 
 #ifndef OPENSSL_NO_NEXTPROTONEG
-static int init_npn(SSL_CONNECTION *s, unsigned int context)
+static int init_npn(SSL *s, unsigned int context)
 {
     s->s3.npn_seen = 0;
 
@@ -1159,7 +1129,7 @@ static int init_npn(SSL_CONNECTION *s, unsigned int context)
 }
 #endif
 
-static int init_alpn(SSL_CONNECTION *s, unsigned int context)
+static int init_alpn(SSL *s, unsigned int context)
 {
     OPENSSL_free(s->s3.alpn_selected);
     s->s3.alpn_selected = NULL;
@@ -1172,12 +1142,12 @@ static int init_alpn(SSL_CONNECTION *s, unsigned int context)
     return 1;
 }
 
-static int final_alpn(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_alpn(SSL *s, unsigned int context, int sent)
 {
     if (!s->server && !sent && s->session->ext.alpn_selected != NULL)
             s->ext.early_data_ok = 0;
 
-    if (!s->server || !SSL_CONNECTION_IS_TLS13(s))
+    if (!s->server || !SSL_IS_TLS13(s))
         return 1;
 
     /*
@@ -1192,7 +1162,7 @@ static int final_alpn(SSL_CONNECTION *s, unsigned int context, int sent)
     return tls_handle_alpn(s);
 }
 
-static int init_sig_algs(SSL_CONNECTION *s, unsigned int context)
+static int init_sig_algs(SSL *s, unsigned int context)
 {
     /* Clear any signature algorithms extension received */
     OPENSSL_free(s->s3.tmp.peer_sigalgs);
@@ -1202,8 +1172,7 @@ static int init_sig_algs(SSL_CONNECTION *s, unsigned int context)
     return 1;
 }
 
-static int init_sig_algs_cert(SSL_CONNECTION *s,
-                              ossl_unused unsigned int context)
+static int init_sig_algs_cert(SSL *s, ossl_unused unsigned int context)
 {
     /* Clear any signature algorithms extension received */
     OPENSSL_free(s->s3.tmp.peer_cert_sigalgs);
@@ -1214,7 +1183,7 @@ static int init_sig_algs_cert(SSL_CONNECTION *s,
 }
 
 #ifndef OPENSSL_NO_SRP
-static int init_srp(SSL_CONNECTION *s, unsigned int context)
+static int init_srp(SSL *s, unsigned int context)
 {
     OPENSSL_free(s->srp_ctx.login);
     s->srp_ctx.login = NULL;
@@ -1223,7 +1192,7 @@ static int init_srp(SSL_CONNECTION *s, unsigned int context)
 }
 #endif
 
-static int init_ec_point_formats(SSL_CONNECTION *s, unsigned int context)
+static int init_ec_point_formats(SSL *s, unsigned int context)
 {
     OPENSSL_free(s->ext.peer_ecpointformats);
     s->ext.peer_ecpointformats = NULL;
@@ -1232,14 +1201,14 @@ static int init_ec_point_formats(SSL_CONNECTION *s, unsigned int context)
     return 1;
 }
 
-static int init_etm(SSL_CONNECTION *s, unsigned int context)
+static int init_etm(SSL *s, unsigned int context)
 {
     s->ext.use_etm = 0;
 
     return 1;
 }
 
-static int init_ems(SSL_CONNECTION *s, unsigned int context)
+static int init_ems(SSL *s, unsigned int context)
 {
     if (s->s3.flags & TLS1_FLAGS_RECEIVED_EXTMS) {
         s->s3.flags &= ~TLS1_FLAGS_RECEIVED_EXTMS;
@@ -1249,7 +1218,7 @@ static int init_ems(SSL_CONNECTION *s, unsigned int context)
     return 1;
 }
 
-static int final_ems(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_ems(SSL *s, unsigned int context, int sent)
 {
     /*
      * Check extended master secret extension is not dropped on
@@ -1275,15 +1244,14 @@ static int final_ems(SSL_CONNECTION *s, unsigned int context, int sent)
     return 1;
 }
 
-static int init_certificate_authorities(SSL_CONNECTION *s, unsigned int context)
+static int init_certificate_authorities(SSL *s, unsigned int context)
 {
     sk_X509_NAME_pop_free(s->s3.tmp.peer_ca_names, X509_NAME_free);
     s->s3.tmp.peer_ca_names = NULL;
     return 1;
 }
 
-static EXT_RETURN tls_construct_certificate_authorities(SSL_CONNECTION *s,
-                                                        WPACKET *pkt,
+static EXT_RETURN tls_construct_certificate_authorities(SSL *s, WPACKET *pkt,
                                                         unsigned int context,
                                                         X509 *x,
                                                         size_t chainidx)
@@ -1312,7 +1280,7 @@ static EXT_RETURN tls_construct_certificate_authorities(SSL_CONNECTION *s,
     return EXT_RETURN_SENT;
 }
 
-static int tls_parse_certificate_authorities(SSL_CONNECTION *s, PACKET *pkt,
+static int tls_parse_certificate_authorities(SSL *s, PACKET *pkt,
                                              unsigned int context, X509 *x,
                                              size_t chainidx)
 {
@@ -1326,7 +1294,7 @@ static int tls_parse_certificate_authorities(SSL_CONNECTION *s, PACKET *pkt,
 }
 
 #ifndef OPENSSL_NO_SRTP
-static int init_srtp(SSL_CONNECTION *s, unsigned int context)
+static int init_srtp(SSL *s, unsigned int context)
 {
     if (s->server)
         s->srtp_profile = NULL;
@@ -1335,9 +1303,9 @@ static int init_srtp(SSL_CONNECTION *s, unsigned int context)
 }
 #endif
 
-static int final_sig_algs(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_sig_algs(SSL *s, unsigned int context, int sent)
 {
-    if (!sent && SSL_CONNECTION_IS_TLS13(s) && !s->hit) {
+    if (!sent && SSL_IS_TLS13(s) && !s->hit) {
         SSLfatal(s, TLS13_AD_MISSING_EXTENSION,
                  SSL_R_MISSING_SIGALGS_EXTENSION);
         return 0;
@@ -1346,10 +1314,10 @@ static int final_sig_algs(SSL_CONNECTION *s, unsigned int context, int sent)
     return 1;
 }
 
-static int final_key_share(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_key_share(SSL *s, unsigned int context, int sent)
 {
 #if !defined(OPENSSL_NO_TLS1_3)
-    if (!SSL_CONNECTION_IS_TLS13(s))
+    if (!SSL_IS_TLS13(s))
         return 1;
 
     /* Nothing to do for key_share in an HRR */
@@ -1449,11 +1417,7 @@ static int final_key_share(SSL_CONNECTION *s, unsigned int context, int sent)
                     group_id = pgroups[i];
 
                     if (check_in_list(s, group_id, clntgroups, clnt_num_groups,
-                                      1)
-                            && tls_group_allowed(s, group_id,
-                                                 SSL_SECOP_CURVE_SUPPORTED)
-                            && tls_valid_group(s, group_id, TLS1_3_VERSION,
-                                               TLS1_3_VERSION, 0, NULL))
+                                      1))
                         break;
                 }
 
@@ -1510,14 +1474,13 @@ static int final_key_share(SSL_CONNECTION *s, unsigned int context, int sent)
     return 1;
 }
 
-static int init_psk_kex_modes(SSL_CONNECTION *s, unsigned int context)
+static int init_psk_kex_modes(SSL *s, unsigned int context)
 {
     s->ext.psk_kex_mode = TLSEXT_KEX_MODE_FLAG_NONE;
     return 1;
 }
 
-int tls_psk_do_binder(SSL_CONNECTION *s, const EVP_MD *md,
-                      const unsigned char *msgstart,
+int tls_psk_do_binder(SSL *s, const EVP_MD *md, const unsigned char *msgstart,
                       size_t binderoffset, const unsigned char *binderin,
                       unsigned char *binderout, SSL_SESSION *sess, int sign,
                       int external)
@@ -1527,16 +1490,18 @@ int tls_psk_do_binder(SSL_CONNECTION *s, const EVP_MD *md,
     unsigned char hash[EVP_MAX_MD_SIZE], binderkey[EVP_MAX_MD_SIZE];
     unsigned char finishedkey[EVP_MAX_MD_SIZE], tmpbinder[EVP_MAX_MD_SIZE];
     unsigned char *early_secret;
-    /* ASCII: "res binder", in hex for EBCDIC compatibility */
-    static const unsigned char resumption_label[] = "\x72\x65\x73\x20\x62\x69\x6E\x64\x65\x72";
-    /* ASCII: "ext binder", in hex for EBCDIC compatibility */
-    static const unsigned char external_label[] = "\x65\x78\x74\x20\x62\x69\x6E\x64\x65\x72";
+#ifdef CHARSET_EBCDIC
+    static const unsigned char resumption_label[] = { 0x72, 0x65, 0x73, 0x20, 0x62, 0x69, 0x6E, 0x64, 0x65, 0x72, 0x00 };
+    static const unsigned char external_label[]   = { 0x65, 0x78, 0x74, 0x20, 0x62, 0x69, 0x6E, 0x64, 0x65, 0x72, 0x00 };
+#else
+    static const unsigned char resumption_label[] = "res binder";
+    static const unsigned char external_label[] = "ext binder";
+#endif
     const unsigned char *label;
     size_t bindersize, labelsize, hashsize;
     int hashsizei = EVP_MD_get_size(md);
     int ret = -1;
     int usepskfored = 0;
-    SSL_CTX *sctx = SSL_CONNECTION_GET_CTX(s);
 
     /* Ensure cast to size_t is safe */
     if (!ossl_assert(hashsizei >= 0)) {
@@ -1656,8 +1621,8 @@ int tls_psk_do_binder(SSL_CONNECTION *s, const EVP_MD *md,
         goto err;
     }
 
-    mackey = EVP_PKEY_new_raw_private_key_ex(sctx->libctx, "HMAC",
-                                             sctx->propq, finishedkey,
+    mackey = EVP_PKEY_new_raw_private_key_ex(s->ctx->libctx, "HMAC",
+                                             s->ctx->propq, finishedkey,
                                              hashsize);
     if (mackey == NULL) {
         SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
@@ -1668,8 +1633,8 @@ int tls_psk_do_binder(SSL_CONNECTION *s, const EVP_MD *md,
         binderout = tmpbinder;
 
     bindersize = hashsize;
-    if (EVP_DigestSignInit_ex(mctx, NULL, EVP_MD_get0_name(md), sctx->libctx,
-                              sctx->propq, mackey, NULL) <= 0
+    if (EVP_DigestSignInit_ex(mctx, NULL, EVP_MD_get0_name(md), s->ctx->libctx,
+                              s->ctx->propq, mackey, NULL) <= 0
             || EVP_DigestSignUpdate(mctx, hash, hashsize) <= 0
             || EVP_DigestSignFinal(mctx, binderout, &bindersize) <= 0
             || bindersize != hashsize) {
@@ -1695,7 +1660,7 @@ int tls_psk_do_binder(SSL_CONNECTION *s, const EVP_MD *md,
     return ret;
 }
 
-static int final_early_data(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_early_data(SSL *s, unsigned int context, int sent)
 {
     if (!sent)
         return 1;
@@ -1722,7 +1687,7 @@ static int final_early_data(SSL_CONNECTION *s, unsigned int context, int sent)
             || !s->ext.early_data_ok
             || s->hello_retry_request != SSL_HRR_NONE
             || (s->allow_early_data_cb != NULL
-                && !s->allow_early_data_cb(SSL_CONNECTION_GET_SSL(s),
+                && !s->allow_early_data_cb(s,
                                          s->allow_early_data_cb_data))) {
         s->ext.early_data = SSL_EARLY_DATA_REJECTED;
     } else {
@@ -1738,8 +1703,7 @@ static int final_early_data(SSL_CONNECTION *s, unsigned int context, int sent)
     return 1;
 }
 
-static int final_maxfragmentlen(SSL_CONNECTION *s, unsigned int context,
-                                int sent)
+static int final_maxfragmentlen(SSL *s, unsigned int context, int sent)
 {
     /*
      * Session resumption on server-side with MFL extension active
@@ -1751,18 +1715,19 @@ static int final_maxfragmentlen(SSL_CONNECTION *s, unsigned int context,
         return 0;
     }
 
-    if (s->session && USE_MAX_FRAGMENT_LENGTH_EXT(s->session)) {
-        s->rlayer.rrlmethod->set_max_frag_len(s->rlayer.rrl,
-                                              GET_MAX_FRAGMENT_LENGTH(s->session));
-        s->rlayer.wrlmethod->set_max_frag_len(s->rlayer.wrl,
-                                              ssl_get_max_send_fragment(s));
-    }
+    /* Current SSL buffer is lower than requested MFL */
+    if (s->session && USE_MAX_FRAGMENT_LENGTH_EXT(s->session)
+            && s->max_send_fragment < GET_MAX_FRAGMENT_LENGTH(s->session))
+        /* trigger a larger buffer reallocation */
+        if (!ssl3_setup_buffers(s)) {
+            /* SSLfatal() already called */
+            return 0;
+        }
 
     return 1;
 }
 
-static int init_post_handshake_auth(SSL_CONNECTION *s,
-                                    ossl_unused unsigned int context)
+static int init_post_handshake_auth(SSL *s, ossl_unused unsigned int context)
 {
     s->post_handshake_auth = SSL_PHA_NONE;
 
@@ -1773,7 +1738,7 @@ static int init_post_handshake_auth(SSL_CONNECTION *s,
  * If clients offer "pre_shared_key" without a "psk_key_exchange_modes"
  * extension, servers MUST abort the handshake.
  */
-static int final_psk(SSL_CONNECTION *s, unsigned int context, int sent)
+static int final_psk(SSL *s, unsigned int context, int sent)
 {
     if (s->server && sent && s->clienthello != NULL
             && !s->clienthello->pre_proc_exts[TLSEXT_IDX_psk_kex_modes].present) {
@@ -1785,149 +1750,281 @@ static int final_psk(SSL_CONNECTION *s, unsigned int context, int sent)
     return 1;
 }
 
-static int tls_init_compress_certificate(SSL_CONNECTION *sc, unsigned int context)
+#ifndef OPENSSL_NO_QUIC
+static int init_quic_transport_params(SSL *s, unsigned int context)
 {
-    memset(sc->ext.compress_certificate_from_peer, 0,
-           sizeof(sc->ext.compress_certificate_from_peer));
     return 1;
 }
 
-/* The order these are put into the packet imply a preference order: [brotli, zlib, zstd] */
-static EXT_RETURN tls_construct_compress_certificate(SSL_CONNECTION *sc, WPACKET *pkt,
-                                                     unsigned int context,
-                                                     X509 *x, size_t chainidx)
+static int final_quic_transport_params_draft(SSL *s, unsigned int context,
+                                             int sent)
 {
-#ifndef OPENSSL_NO_COMP_ALG
-    int i;
-
-    if (!ossl_comp_has_alg(0))
-        return EXT_RETURN_NOT_SENT;
-
-    /* Server: Don't attempt to compress a non-X509 (i.e. an RPK) */
-    if (sc->server && sc->ext.server_cert_type != TLSEXT_cert_type_x509) {
-        sc->cert_comp_prefs[0] = TLSEXT_comp_cert_none;
-        return EXT_RETURN_NOT_SENT;
-    }
-
-    /* Client: If we sent a client cert-type extension, don't indicate compression */
-    if (!sc->server && sc->ext.client_cert_type_ctos) {
-        sc->cert_comp_prefs[0] = TLSEXT_comp_cert_none;
-        return EXT_RETURN_NOT_SENT;
-    }
-
-    /* Do not indicate we support receiving compressed certificates */
-    if ((sc->options & SSL_OP_NO_RX_CERTIFICATE_COMPRESSION) != 0)
-        return EXT_RETURN_NOT_SENT;
-
-    if (sc->cert_comp_prefs[0] == TLSEXT_comp_cert_none)
-        return EXT_RETURN_NOT_SENT;
-
-    if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_compress_certificate)
-            || !WPACKET_start_sub_packet_u16(pkt)
-            || !WPACKET_start_sub_packet_u8(pkt))
-        goto err;
-
-    for (i = 0; sc->cert_comp_prefs[i] != TLSEXT_comp_cert_none; i++) {
-        if (!WPACKET_put_bytes_u16(pkt, sc->cert_comp_prefs[i]))
-            goto err;
-    }
-    if (!WPACKET_close(pkt) || !WPACKET_close(pkt))
-        goto err;
-
-    sc->ext.compress_certificate_sent = 1;
-    return EXT_RETURN_SENT;
- err:
-    SSLfatal(sc, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
-    return EXT_RETURN_FAIL;
-#else
-    return EXT_RETURN_NOT_SENT;
-#endif
+    return 1;
 }
 
-#ifndef OPENSSL_NO_COMP_ALG
-static int tls_comp_in_pref(SSL_CONNECTION *sc, int alg)
+static int final_quic_transport_params(SSL *s, unsigned int context, int sent)
 {
-    int i;
-
-    /* ossl_comp_has_alg() considers 0 as "any" */
-    if (alg == 0)
-        return 0;
-    /* Make sure algorithm is enabled */
-    if (!ossl_comp_has_alg(alg))
-        return 0;
-    /* If no preferences are set, it's ok */
-    if (sc->cert_comp_prefs[0] == TLSEXT_comp_cert_none)
-        return 1;
-    /* Find the algorithm */
-    for (i = 0; i < TLSEXT_comp_cert_limit; i++)
-        if (sc->cert_comp_prefs[i] == alg)
-            return 1;
-    return 0;
-}
-#endif
-
-int tls_parse_compress_certificate(SSL_CONNECTION *sc, PACKET *pkt, unsigned int context,
-                                   X509 *x, size_t chainidx)
-{
-#ifndef OPENSSL_NO_COMP_ALG
-    PACKET supported_comp_algs;
-    unsigned int comp;
-    int already_set[TLSEXT_comp_cert_limit];
-    int j = 0;
-
-    /* If no algorithms are available, ignore the extension */
-    if (!ossl_comp_has_alg(0))
-        return 1;
-
-    /* Don't attempt to compress a non-X509 (i.e. an RPK) */
-    if (sc->server && sc->ext.server_cert_type != TLSEXT_cert_type_x509)
-        return 1;
-    if (!sc->server && sc->ext.client_cert_type != TLSEXT_cert_type_x509)
-        return 1;
-
-    /* Ignore the extension and don't send compressed certificates */
-    if ((sc->options & SSL_OP_NO_TX_CERTIFICATE_COMPRESSION) != 0)
-        return 1;
-
-    if (!PACKET_as_length_prefixed_1(pkt, &supported_comp_algs)
-            || PACKET_remaining(&supported_comp_algs) == 0) {
-        SSLfatal(sc, SSL_AD_DECODE_ERROR, SSL_R_BAD_EXTENSION);
-        return 0;
-    }
-
-    memset(already_set, 0, sizeof(already_set));
-    /*
-     * The preference array has real values, so take a look at each
-     * value coming in, and make sure it's in our preference list
-     * The array is 0 (i.e. "none") terminated
-     * The preference list only contains supported algorithms
-     */
-    while (PACKET_get_net_2(&supported_comp_algs, &comp)) {
-        if (tls_comp_in_pref(sc, comp) && !already_set[comp]) {
-            sc->ext.compress_certificate_from_peer[j++] = comp;
-            already_set[comp] = 1;
+    /* called after final_quic_transport_params_draft */
+    if (SSL_IS_QUIC(s)) {
+        if (s->ext.peer_quic_transport_params_len == 0
+            && s->ext.peer_quic_transport_params_draft_len == 0) {
+            SSLfatal(s, SSL_AD_MISSING_EXTENSION,
+                     SSL_R_MISSING_QUIC_TRANSPORT_PARAMETERS_EXTENSION);
+            return 0;
+        }
+        /* if we got both, discard the one we can't use */
+        if (s->ext.peer_quic_transport_params_len != 0
+            && s->ext.peer_quic_transport_params_draft_len != 0) {
+            if (s->quic_transport_version == TLSEXT_TYPE_quic_transport_parameters_draft) {
+                OPENSSL_free(s->ext.peer_quic_transport_params);
+                s->ext.peer_quic_transport_params = NULL;
+                s->ext.peer_quic_transport_params_len = 0;
+            } else {
+                OPENSSL_free(s->ext.peer_quic_transport_params_draft);
+                s->ext.peer_quic_transport_params_draft = NULL;
+                s->ext.peer_quic_transport_params_draft_len = 0;
+            }
         }
     }
+
+    return 1;
+}
 #endif
+
+#ifndef OPENSSL_NO_CERT_COMPRESSION
+EXT_RETURN tls_construct_compress_cert(SSL *s, WPACKET *pkt,
+                                       unsigned int context,
+                                       X509 *x, size_t chainidx)
+{
+    int i;
+    int first = 1;
+
+    if (s->cert_comp_algs == NULL) {
+        return EXT_RETURN_NOT_SENT;
+    }
+
+    for (i = 0; i < sk_CERT_COMP_num(s->cert_comp_algs); ++i) {
+        const CERT_COMP *comp = sk_CERT_COMP_value(s->cert_comp_algs, i);
+
+        if (comp->decompress == NULL)
+            continue;
+
+        if (first &&
+            (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_compress_certificate)
+             /* bytes of extension_data */
+             || !WPACKET_start_sub_packet_u16(pkt)
+             /* bytes of algorithms */
+             || !WPACKET_start_sub_packet_u8(pkt))) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+            return EXT_RETURN_FAIL;
+        }
+
+        first = 0;
+
+        if (!WPACKET_put_bytes_u16(pkt, comp->alg_id))
+            return EXT_RETURN_FAIL;
+    }
+
+    if (!first &&
+        (!WPACKET_close(pkt)
+        || !WPACKET_close(pkt))) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+        return EXT_RETURN_FAIL;
+    }
+
+    return (first == 1) ? EXT_RETURN_NOT_SENT : EXT_RETURN_SENT;
+}
+
+int tls_parse_compress_cert(SSL *s, PACKET *pkt, unsigned int context,
+                            X509 *x, size_t chainidx)
+{
+    unsigned int id;
+    CERT_COMP *comp = NULL;
+    PACKET cert_comp_alg_list;
+    size_t size, i;
+    int j, best, num_algs;
+
+    if (s->cert_comp_algs == NULL) {
+        return 1;
+    }
+
+    if (!PACKET_as_length_prefixed_1(pkt, &cert_comp_alg_list)) {
+        SSLfatal(s, SSL_AD_DECODE_ERROR, SSL_R_BAD_EXTENSION);
+        return 0;
+    }
+
+    size = PACKET_remaining(&cert_comp_alg_list);
+
+    /* Each cert compression algorithm id is 2 bytes and we must have at least 1. */
+    if (size == 0 || (size & 1) != 0) {
+        SSLfatal(s, SSL_AD_DECODE_ERROR, SSL_R_BAD_EXTENSION);
+        return 0;
+    }
+
+    size >>= 1;
+
+    num_algs = sk_CERT_COMP_num(s->cert_comp_algs);
+    best = num_algs;
+
+    for (i = 0; i < size && PACKET_get_net_2(&cert_comp_alg_list, &id); i++) {
+        for (j = 0; j < num_algs; j++) {
+            comp = sk_CERT_COMP_value(s->cert_comp_algs, j);
+
+            if (comp->compress == NULL)
+                continue;
+
+            if (id == comp->alg_id && j < best) {
+                best = j;
+                break;
+            }
+        }
+    }
+
+    if (best < num_algs) {
+        comp = sk_CERT_COMP_value(s->cert_comp_algs, best);
+        s->cert_comp_compress_id = comp->alg_id;
+    }
+
+    return 1;
+}
+#endif
+
+#ifndef OPENSSL_NO_DELEGATED_CREDENTIAL
+int tls_parse_dc_from_extension(SSL *s, PACKET *pkt, unsigned int context,
+                                X509 *x, size_t chainidx)
+{
+    if (!s->enable_verify_peer_by_dc)
+        return 1;
+    /*
+     * If the client receives a delegated credential without sending this extension, then the
+     * client MUST abort with an "unexpected_message" alert.
+     */
+    if (!(s->delegated_credential_tag & DC_REQ_HAS_BEEN_SEND_TO_PEER)) {
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    if (s->session == NULL) {
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    if (PACKET_remaining(pkt) <= 0) {
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    s->session->peer_dc = DC_new_from_raw_byte_ex(PACKET_data(pkt),
+                                                  PACKET_remaining(pkt),
+                                                  s->ctx->libctx,
+                                                  s->ctx->propq);
+    if (s->session->peer_dc == NULL) {
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    s->delegated_credential_tag |= DC_HAS_BEEN_USED_FOR_VERIFY_PEER;
     return 1;
 }
 
-static int init_server_cert_type(SSL_CONNECTION *sc, unsigned int context)
+int tls_process_dc_request(SSL *s, PACKET *pkt, unsigned int context,
+                           X509 *x, size_t chainidx)
 {
-    /* Only reset when parsing client hello */
-    if (sc->server) {
-        sc->ext.server_cert_type_ctos = OSSL_CERT_TYPE_CTOS_NONE;
-        sc->ext.server_cert_type = TLSEXT_cert_type_x509;
+    PACKET supported_sig_algs;
+
+    if (!s->enable_sign_by_dc)
+        return 1;
+
+    if (!PACKET_as_length_prefixed_2(pkt, &supported_sig_algs)
+        || PACKET_remaining(&supported_sig_algs) == 0) {
+        SSLfatal(s, SSL_AD_DECODE_ERROR, SSL_R_BAD_EXTENSION);
+        return 0;
     }
+
+    OPENSSL_free(s->s3.tmp.peer_dc_sigalgs);
+    s->s3.tmp.peer_dc_sigalgs = NULL;
+    s->s3.tmp.peer_dc_sigalgslen = 0;
+
+    if (!tls1_save_u16(&supported_sig_algs, &s->s3.tmp.peer_dc_sigalgs,
+                       &s->s3.tmp.peer_dc_sigalgslen)) {
+        SSLfatal(s, SSL_AD_DECODE_ERROR, SSL_R_BAD_EXTENSION);
+        return 0;
+    }
+
+    if (!tls1_set_shared_dc_sigalgs(s)) {
+        SSLfatal(s, SSL_AD_DECODE_ERROR, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
     return 1;
 }
 
-static int init_client_cert_type(SSL_CONNECTION *sc, unsigned int context)
+EXT_RETURN tls_construct_delegated_credential_raw(SSL *s, WPACKET *pkt, unsigned int context,
+                                                  X509 *x, size_t chainidx)
 {
-    /* Only reset when parsing client hello */
-    if (sc->server) {
-        sc->ext.client_cert_type_ctos = OSSL_CERT_TYPE_CTOS_NONE;
-        sc->ext.client_cert_type = TLSEXT_cert_type_x509;
+    if (!s->enable_sign_by_dc)
+        return EXT_RETURN_NOT_SENT;
+
+    if (s->delegated_credential_tag & DC_HAS_BEEN_USED_FOR_SIGN) {
+        DELEGATED_CREDENTIAL *dc;
+        unsigned char *dc_raw = NULL;
+        unsigned long  dc_raw_len = 0;
+
+        if (s->s3.tmp.dc == NULL || s->s3.tmp.dc->dc == NULL) {
+            SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+            return EXT_RETURN_FAIL;
+        }
+
+        dc = s->s3.tmp.dc->dc;
+        dc_raw = DC_get0_raw_byte(dc);
+        if (dc_raw == NULL) {
+            SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+            return EXT_RETURN_FAIL;
+        }
+        dc_raw_len = DC_get_raw_byte_len(dc);
+        if (dc_raw_len <= 0) {
+            SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+            return EXT_RETURN_FAIL;
+        }
+
+        if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_delegated_credential)
+            || !WPACKET_start_sub_packet_u16(pkt)
+            || !WPACKET_memcpy(pkt, dc_raw, dc_raw_len)
+            || !WPACKET_close(pkt)) {
+            SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+            return EXT_RETURN_FAIL;
+        }
+        return EXT_RETURN_SENT;
     }
-    return 1;
+    return EXT_RETURN_NOT_SENT;
 }
+
+EXT_RETURN tls_construct_delegated_credential_request(SSL *s, WPACKET *pkt,
+                                                      unsigned int context,
+                                                      X509 *x, size_t chainidx)
+{
+    size_t salglen;
+    const uint16_t *salg;
+
+    if (!s->enable_verify_peer_by_dc)
+        return EXT_RETURN_NOT_SENT;
+
+    salglen = tls12_get_psigalgs(s, 1, &salg);
+
+    if (!WPACKET_put_bytes_u16(pkt, TLSEXT_TYPE_delegated_credential)
+            /* Sub-packet for sig-algs extension */
+            || !WPACKET_start_sub_packet_u16(pkt)
+            /* Sub-packet for the actual list */
+            || !WPACKET_start_sub_packet_u16(pkt)
+            || !tls12_copy_sigalgs(s, pkt, salg, salglen)
+            || !WPACKET_close(pkt)
+            || !WPACKET_close(pkt)) {
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, ERR_R_INTERNAL_ERROR);
+        return EXT_RETURN_FAIL;
+    }
+
+    s->delegated_credential_tag |= DC_REQ_HAS_BEEN_SEND_TO_PEER;
+    return EXT_RETURN_SENT;
+}
+#endif
+

@@ -4,11 +4,7 @@
 .align	16
 bn_mul_mont:
 .L_bn_mul_mont_begin:
-	#ifdef __CET__
-
 .byte	243,15,30,251
-	#endif
-
 	pushl	%ebp
 	pushl	%ebx
 	pushl	%esi

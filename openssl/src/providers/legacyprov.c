@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -12,7 +12,6 @@
 #include <openssl/core.h>
 #include <openssl/core_dispatch.h>
 #include <openssl/core_names.h>
-#include <openssl/err.h>
 #include <openssl/params.h>
 #include "prov/provider_ctx.h"
 #include "prov/implementations.h"
@@ -32,22 +31,6 @@ static OSSL_FUNC_provider_query_operation_fn legacy_query;
 #ifdef STATIC_LEGACY
 OSSL_provider_init_fn ossl_legacy_provider_init;
 # define OSSL_provider_init ossl_legacy_provider_init
-#endif
-
-#ifndef STATIC_LEGACY
-/*
- * Should these function pointers be stored in the provider side provctx?
- * Could they ever be different from one init to the next? We assume not for
- * now.
- */
-
-/* Functions provided by the core */
-static OSSL_FUNC_core_new_error_fn *c_new_error;
-static OSSL_FUNC_core_set_error_debug_fn *c_set_error_debug;
-static OSSL_FUNC_core_vset_error_fn *c_vset_error;
-static OSSL_FUNC_core_set_error_mark_fn *c_set_error_mark;
-static OSSL_FUNC_core_clear_last_error_mark_fn *c_clear_last_error_mark;
-static OSSL_FUNC_core_pop_error_to_mark_fn *c_pop_error_to_mark;
 #endif
 
 /* Parameters we provide to the core */
@@ -84,57 +67,10 @@ static int legacy_get_params(void *provctx, OSSL_PARAM params[])
 }
 
 static const OSSL_ALGORITHM legacy_digests[] = {
-#ifndef OPENSSL_NO_MD2
-    ALG(PROV_NAMES_MD2, ossl_md2_functions),
-#endif
-#ifndef OPENSSL_NO_MD4
-    ALG(PROV_NAMES_MD4, ossl_md4_functions),
-#endif
-#ifndef OPENSSL_NO_MDC2
-    ALG(PROV_NAMES_MDC2, ossl_mdc2_functions),
-#endif /* OPENSSL_NO_MDC2 */
-#ifndef OPENSSL_NO_WHIRLPOOL
-    ALG(PROV_NAMES_WHIRLPOOL, ossl_wp_functions),
-#endif /* OPENSSL_NO_WHIRLPOOL */
-#ifndef OPENSSL_NO_RMD160
-    ALG(PROV_NAMES_RIPEMD_160, ossl_ripemd160_functions),
-#endif /* OPENSSL_NO_RMD160 */
     { NULL, NULL, NULL }
 };
 
 static const OSSL_ALGORITHM legacy_ciphers[] = {
-#ifndef OPENSSL_NO_CAST
-    ALG(PROV_NAMES_CAST5_ECB, ossl_cast5128ecb_functions),
-    ALG(PROV_NAMES_CAST5_CBC, ossl_cast5128cbc_functions),
-    ALG(PROV_NAMES_CAST5_OFB, ossl_cast5128ofb64_functions),
-    ALG(PROV_NAMES_CAST5_CFB, ossl_cast5128cfb64_functions),
-#endif /* OPENSSL_NO_CAST */
-#ifndef OPENSSL_NO_BF
-    ALG(PROV_NAMES_BF_ECB, ossl_blowfish128ecb_functions),
-    ALG(PROV_NAMES_BF_CBC, ossl_blowfish128cbc_functions),
-    ALG(PROV_NAMES_BF_OFB, ossl_blowfish128ofb64_functions),
-    ALG(PROV_NAMES_BF_CFB, ossl_blowfish128cfb64_functions),
-#endif /* OPENSSL_NO_BF */
-#ifndef OPENSSL_NO_IDEA
-    ALG(PROV_NAMES_IDEA_ECB, ossl_idea128ecb_functions),
-    ALG(PROV_NAMES_IDEA_CBC, ossl_idea128cbc_functions),
-    ALG(PROV_NAMES_IDEA_OFB, ossl_idea128ofb64_functions),
-    ALG(PROV_NAMES_IDEA_CFB, ossl_idea128cfb64_functions),
-#endif /* OPENSSL_NO_IDEA */
-#ifndef OPENSSL_NO_SEED
-    ALG(PROV_NAMES_SEED_ECB, ossl_seed128ecb_functions),
-    ALG(PROV_NAMES_SEED_CBC, ossl_seed128cbc_functions),
-    ALG(PROV_NAMES_SEED_OFB, ossl_seed128ofb128_functions),
-    ALG(PROV_NAMES_SEED_CFB, ossl_seed128cfb128_functions),
-#endif /* OPENSSL_NO_SEED */
-#ifndef OPENSSL_NO_RC2
-    ALG(PROV_NAMES_RC2_ECB, ossl_rc2128ecb_functions),
-    ALG(PROV_NAMES_RC2_CBC, ossl_rc2128cbc_functions),
-    ALG(PROV_NAMES_RC2_40_CBC, ossl_rc240cbc_functions),
-    ALG(PROV_NAMES_RC2_64_CBC, ossl_rc264cbc_functions),
-    ALG(PROV_NAMES_RC2_CFB, ossl_rc2128cfb128_functions),
-    ALG(PROV_NAMES_RC2_OFB, ossl_rc2128ofb128_functions),
-#endif /* OPENSSL_NO_RC2 */
 #ifndef OPENSSL_NO_RC4
     ALG(PROV_NAMES_RC4, ossl_rc4128_functions),
     ALG(PROV_NAMES_RC4_40, ossl_rc440_functions),
@@ -162,7 +98,6 @@ static const OSSL_ALGORITHM legacy_ciphers[] = {
 
 static const OSSL_ALGORITHM legacy_kdfs[] = {
     ALG(PROV_NAMES_PBKDF1, ossl_kdf_pbkdf1_functions),
-    ALG(PROV_NAMES_PVKKDF, ossl_kdf_pvk_functions),
     { NULL, NULL, NULL }
 };
 
@@ -193,7 +128,7 @@ static const OSSL_DISPATCH legacy_dispatch_table[] = {
     { OSSL_FUNC_PROVIDER_GETTABLE_PARAMS, (void (*)(void))legacy_gettable_params },
     { OSSL_FUNC_PROVIDER_GET_PARAMS, (void (*)(void))legacy_get_params },
     { OSSL_FUNC_PROVIDER_QUERY_OPERATION, (void (*)(void))legacy_query },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };
 
 int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
@@ -202,41 +137,6 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
                        void **provctx)
 {
     OSSL_LIB_CTX *libctx = NULL;
-#ifndef STATIC_LEGACY
-    const OSSL_DISPATCH *tmp;
-#endif
-
-#ifndef STATIC_LEGACY
-    for (tmp = in; tmp->function_id != 0; tmp++) {
-        /*
-         * We do not support the scenario of an application linked against
-         * multiple versions of libcrypto (e.g. one static and one dynamic),
-         * but sharing a single legacy.so. We do a simple sanity check here.
-         */
-#define set_func(c, f) if (c == NULL) c = f; else if (c != f) return 0;
-        switch (tmp->function_id) {
-        case OSSL_FUNC_CORE_NEW_ERROR:
-            set_func(c_new_error, OSSL_FUNC_core_new_error(tmp));
-            break;
-        case OSSL_FUNC_CORE_SET_ERROR_DEBUG:
-            set_func(c_set_error_debug, OSSL_FUNC_core_set_error_debug(tmp));
-            break;
-        case OSSL_FUNC_CORE_VSET_ERROR:
-            set_func(c_vset_error, OSSL_FUNC_core_vset_error(tmp));
-            break;
-        case OSSL_FUNC_CORE_SET_ERROR_MARK:
-            set_func(c_set_error_mark, OSSL_FUNC_core_set_error_mark(tmp));
-            break;
-        case OSSL_FUNC_CORE_CLEAR_LAST_ERROR_MARK:
-            set_func(c_clear_last_error_mark,
-                     OSSL_FUNC_core_clear_last_error_mark(tmp));
-            break;
-        case OSSL_FUNC_CORE_POP_ERROR_TO_MARK:
-            set_func(c_pop_error_to_mark, OSSL_FUNC_core_pop_error_to_mark(tmp));
-            break;
-        }
-    }
-#endif
 
     if ((*provctx = ossl_prov_ctx_new()) == NULL
         || (libctx = OSSL_LIB_CTX_new_child(handle, in)) == NULL) {
@@ -252,53 +152,3 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
 
     return 1;
 }
-
-#ifndef STATIC_LEGACY
-/*
- * Provider specific implementation of libcrypto functions in terms of
- * upcalls.
- */
-
-/*
- * For ERR functions, we pass a NULL context.  This is valid to do as long
- * as only error codes that the calling libcrypto supports are used.
- */
-void ERR_new(void)
-{
-    c_new_error(NULL);
-}
-
-void ERR_set_debug(const char *file, int line, const char *func)
-{
-    c_set_error_debug(NULL, file, line, func);
-}
-
-void ERR_set_error(int lib, int reason, const char *fmt, ...)
-{
-    va_list args;
-
-    va_start(args, fmt);
-    c_vset_error(NULL, ERR_PACK(lib, 0, reason), fmt, args);
-    va_end(args);
-}
-
-void ERR_vset_error(int lib, int reason, const char *fmt, va_list args)
-{
-    c_vset_error(NULL, ERR_PACK(lib, 0, reason), fmt, args);
-}
-
-int ERR_set_mark(void)
-{
-    return c_set_error_mark(NULL);
-}
-
-int ERR_clear_last_mark(void)
-{
-    return c_clear_last_error_mark(NULL);
-}
-
-int ERR_pop_to_mark(void)
-{
-    return c_pop_error_to_mark(NULL);
-}
-#endif

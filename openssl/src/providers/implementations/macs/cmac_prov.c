@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -18,8 +18,6 @@
 #include <openssl/params.h>
 #include <openssl/evp.h>
 #include <openssl/cmac.h>
-#include <openssl/err.h>
-#include <openssl/proverr.h>
 
 #include "prov/implementations.h"
 #include "prov/provider_ctx.h"
@@ -101,12 +99,8 @@ static void *cmac_dup(void *vsrc)
 static size_t cmac_size(void *vmacctx)
 {
     struct cmac_data_st *macctx = vmacctx;
-    const EVP_CIPHER_CTX *cipherctx = CMAC_CTX_get0_cipher_ctx(macctx->ctx);
 
-    if (EVP_CIPHER_CTX_get0_cipher(cipherctx) == NULL)
-        return 0;
-
-    return EVP_CIPHER_CTX_get_block_size(cipherctx);
+    return EVP_CIPHER_CTX_get_block_size(CMAC_CTX_get0_cipher_ctx(macctx->ctx));
 }
 
 static int cmac_setkey(struct cmac_data_st *macctx,
@@ -201,16 +195,8 @@ static int cmac_set_ctx_params(void *vmacctx, const OSSL_PARAM params[])
     if (params == NULL)
         return 1;
 
-    if ((p = OSSL_PARAM_locate_const(params, OSSL_MAC_PARAM_CIPHER)) != NULL) {
-        if (!ossl_prov_cipher_load_from_params(&macctx->cipher, params, ctx))
-            return 0;
-
-        if (EVP_CIPHER_get_mode(ossl_prov_cipher_cipher(&macctx->cipher))
-            != EVP_CIPH_CBC_MODE) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_MODE);
-            return 0;
-        }
-    }
+    if (!ossl_prov_cipher_load_from_params(&macctx->cipher, params, ctx))
+        return 0;
 
     if ((p = OSSL_PARAM_locate_const(params, OSSL_MAC_PARAM_KEY)) != NULL) {
         if (p->data_type != OSSL_PARAM_OCTET_STRING)
@@ -233,5 +219,5 @@ const OSSL_DISPATCH ossl_cmac_functions[] = {
     { OSSL_FUNC_MAC_SETTABLE_CTX_PARAMS,
       (void (*)(void))cmac_settable_ctx_params },
     { OSSL_FUNC_MAC_SET_CTX_PARAMS, (void (*)(void))cmac_set_ctx_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };

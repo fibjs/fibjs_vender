@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -45,10 +45,10 @@ DEFINE_RUN_ONCE_STATIC(init_info_strings)
 
     BIO_snprintf(ossl_cpu_info_str, sizeof(ossl_cpu_info_str),
                  CPUINFO_PREFIX "OPENSSL_ia32cap=0x%llx:0x%llx",
-                 (unsigned long long)OPENSSL_ia32cap_P[0] |
-                 (unsigned long long)OPENSSL_ia32cap_P[1] << 32,
-                 (unsigned long long)OPENSSL_ia32cap_P[2] |
-                 (unsigned long long)OPENSSL_ia32cap_P[3] << 32);
+                 (long long)OPENSSL_ia32cap_P[0] |
+                 (long long)OPENSSL_ia32cap_P[1] << 32,
+                 (long long)OPENSSL_ia32cap_P[2] |
+                 (long long)OPENSSL_ia32cap_P[3] << 32);
     if ((env = getenv("OPENSSL_ia32cap")) != NULL)
         BIO_snprintf(ossl_cpu_info_str + strlen(ossl_cpu_info_str),
                      sizeof(ossl_cpu_info_str) - strlen(ossl_cpu_info_str),
@@ -131,15 +131,11 @@ DEFINE_RUN_ONCE_STATIC(init_info_strings)
 #ifdef OPENSSL_RAND_SEED_NONE
         add_seeds_string("none");
 #endif
-#ifdef OPENSSL_RAND_SEED_RDTSC
-        add_seeds_string("rdtsc");
+#ifdef OPENSSL_RAND_SEED_RTDSC
+        add_seeds_string("stdsc");
 #endif
 #ifdef OPENSSL_RAND_SEED_RDCPU
-# ifdef __aarch64__
-        add_seeds_string("rndr ( rndrrs rndr )");
-# else
         add_seeds_string("rdrand ( rdseed rdrand )");
-# endif
 #endif
 #ifdef OPENSSL_RAND_SEED_LIBRANDOM
         add_seeds_string("C-library-random");
@@ -182,8 +178,6 @@ const char *OPENSSL_info(int t)
     case OPENSSL_INFO_DIR_FILENAME_SEPARATOR:
 #if defined(_WIN32)
         return "\\";
-#elif defined(__VMS)
-        return "";
 #else  /* Assume POSIX */
         return "/";
 #endif

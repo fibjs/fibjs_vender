@@ -31,7 +31,6 @@ Lfk:
 
 .align	5
 _sm4_v8_set_encrypt_key:
-	AARCH64_VALID_CALL_TARGET
 	ld1	{v0.4s},[x0]
 	adr	x2,Lfk
 	ld1	{v24.4s},[x2]
@@ -58,7 +57,6 @@ _sm4_v8_set_encrypt_key:
 
 .align	5
 _sm4_v8_set_decrypt_key:
-	AARCH64_VALID_CALL_TARGET
 	ld1	{v7.4s},[x0]
 	adr	x2,Lfk
 	ld1	{v24.4s},[x2]
@@ -101,7 +99,6 @@ _sm4_v8_set_decrypt_key:
 
 .align	5
 _sm4_v8_encrypt:
-	AARCH64_VALID_CALL_TARGET
 	ld1	{v16.4s},[x0]
 	ld1	{v0.4s,v1.4s,v2.4s,v3.4s},[x2],64
 	ld1	{v4.4s,v5.4s,v6.4s,v7.4s},[x2]
@@ -128,7 +125,6 @@ _sm4_v8_encrypt:
 
 .align	5
 _sm4_v8_decrypt:
-	AARCH64_VALID_CALL_TARGET
 	ld1	{v16.4s},[x0]
 	ld1	{v0.4s,v1.4s,v2.4s,v3.4s},[x2],64
 	ld1	{v4.4s,v5.4s,v6.4s,v7.4s},[x2]
@@ -155,7 +151,6 @@ _sm4_v8_decrypt:
 
 .align	5
 _sm4_v8_ecb_encrypt:
-	AARCH64_VALID_CALL_TARGET
 	ld1	{v0.4s,v1.4s,v2.4s,v3.4s},[x3],#64
 	ld1	{v4.4s,v5.4s,v6.4s,v7.4s},[x3]
 1:
@@ -418,7 +413,6 @@ _sm4_v8_ecb_encrypt:
 
 .align	5
 _sm4_v8_cbc_encrypt:
-	AARCH64_VALID_CALL_TARGET
 	stp	d8,d9,[sp, #-16]!
 
 	ld1	{v0.4s,v1.4s,v2.4s,v3.4s},[x3],#64
@@ -809,7 +803,6 @@ Ldec:
 
 .align	5
 _sm4_v8_ctr32_encrypt_blocks:
-	AARCH64_VALID_CALL_TARGET
 	stp	d8,d9,[sp, #-16]!
 
 	ld1	{v8.4s},[x4]

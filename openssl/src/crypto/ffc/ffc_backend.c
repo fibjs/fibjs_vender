@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -24,6 +24,9 @@ int ossl_ffc_params_fromdata(FFC_PARAMS *ffc, const OSSL_PARAM params[])
     BIGNUM *p = NULL, *q = NULL, *g = NULL, *j = NULL;
     int i;
 
+    if (ffc == NULL)
+        return 0;
+
     prm  = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_GROUP_NAME);
     if (prm != NULL) {
         /*
@@ -36,7 +39,7 @@ int ossl_ffc_params_fromdata(FFC_PARAMS *ffc, const OSSL_PARAM params[])
         if (prm->data_type != OSSL_PARAM_UTF8_STRING
             || prm->data == NULL
             || (group = ossl_ffc_name_to_dh_named_group(prm->data)) == NULL
-            || !ossl_ffc_named_group_set(ffc, group))
+            || !ossl_ffc_named_group_set_pqg(ffc, group))
 #endif
             goto err;
     }
@@ -73,8 +76,9 @@ int ossl_ffc_params_fromdata(FFC_PARAMS *ffc, const OSSL_PARAM params[])
     }
     prm  = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_FFC_SEED);
     if (prm != NULL) {
-        if (prm->data_type != OSSL_PARAM_OCTET_STRING
-            || !ossl_ffc_params_set_seed(ffc, prm->data, prm->data_size))
+        if (prm->data_type != OSSL_PARAM_OCTET_STRING)
+            goto err;
+        if (!ossl_ffc_params_set_seed(ffc, prm->data, prm->data_size))
             goto err;
     }
     prm  = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_FFC_VALIDATE_PQ);
@@ -107,10 +111,11 @@ int ossl_ffc_params_fromdata(FFC_PARAMS *ffc, const OSSL_PARAM params[])
         if (p1 != NULL) {
             if (p1->data_type != OSSL_PARAM_UTF8_STRING)
                 goto err;
-            props = p1->data;
         }
-        ossl_ffc_set_digest(ffc, prm->data, props);
+        if (!ossl_ffc_set_digest(ffc, prm->data, props))
+            goto err;
     }
+
     ossl_ffc_params_set0_pqg(ffc, p, q, g);
     ossl_ffc_params_set0_j(ffc, j);
     return 1;

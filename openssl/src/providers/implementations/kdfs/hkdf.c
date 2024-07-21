@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -30,13 +30,10 @@
 #include "prov/implementations.h"
 #include "prov/provider_util.h"
 #include "internal/e_os.h"
-#include "internal/params.h"
 
 #define HKDF_MAXBUF 2048
-#define HKDF_MAXINFO (32*1024)
 
 static OSSL_FUNC_kdf_newctx_fn kdf_hkdf_new;
-static OSSL_FUNC_kdf_dupctx_fn kdf_hkdf_dup;
 static OSSL_FUNC_kdf_freectx_fn kdf_hkdf_free;
 static OSSL_FUNC_kdf_reset_fn kdf_hkdf_reset;
 static OSSL_FUNC_kdf_derive_fn kdf_hkdf_derive;
@@ -85,7 +82,7 @@ typedef struct {
     size_t label_len;
     unsigned char *data;
     size_t data_len;
-    unsigned char *info;
+    unsigned char info[HKDF_MAXBUF];
     size_t info_len;
 } KDF_HKDF;
 
@@ -96,7 +93,9 @@ static void *kdf_hkdf_new(void *provctx)
     if (!ossl_prov_is_running())
         return NULL;
 
-    if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) != NULL)
+    if ((ctx = OPENSSL_zalloc(sizeof(*ctx))) == NULL)
+        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    else
         ctx->provctx = provctx;
     return ctx;
 }
@@ -122,39 +121,9 @@ static void kdf_hkdf_reset(void *vctx)
     OPENSSL_free(ctx->label);
     OPENSSL_clear_free(ctx->data, ctx->data_len);
     OPENSSL_clear_free(ctx->key, ctx->key_len);
-    OPENSSL_clear_free(ctx->info, ctx->info_len);
+    OPENSSL_cleanse(ctx->info, ctx->info_len);
     memset(ctx, 0, sizeof(*ctx));
     ctx->provctx = provctx;
-}
-
-static void *kdf_hkdf_dup(void *vctx)
-{
-    const KDF_HKDF *src = (const KDF_HKDF *)vctx;
-    KDF_HKDF *dest;
-
-    dest = kdf_hkdf_new(src->provctx);
-    if (dest != NULL) {
-        if (!ossl_prov_memdup(src->salt, src->salt_len, &dest->salt,
-                              &dest->salt_len)
-                || !ossl_prov_memdup(src->key, src->key_len,
-                                     &dest->key , &dest->key_len)
-                || !ossl_prov_memdup(src->prefix, src->prefix_len,
-                                     &dest->prefix, &dest->prefix_len)
-                || !ossl_prov_memdup(src->label, src->label_len,
-                                     &dest->label, &dest->label_len)
-                || !ossl_prov_memdup(src->data, src->data_len,
-                                     &dest->data, &dest->data_len)
-                || !ossl_prov_memdup(src->info, src->info_len,
-                                     &dest->info, &dest->info_len)
-                || !ossl_prov_digest_copy(&dest->digest, &src->digest))
-            goto err;
-        dest->mode = src->mode;
-    }
-    return dest;
-
- err:
-    kdf_hkdf_free(dest);
-    return NULL;
 }
 
 static size_t kdf_hkdf_size(KDF_HKDF *ctx)
@@ -277,6 +246,7 @@ static int hkdf_common_set_ctx_params(KDF_HKDF *ctx, const OSSL_PARAM params[])
 
 static int kdf_hkdf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 {
+    const OSSL_PARAM *p;
     KDF_HKDF *ctx = vctx;
 
     if (params == NULL)
@@ -285,11 +255,23 @@ static int kdf_hkdf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     if (!hkdf_common_set_ctx_params(ctx, params))
         return 0;
 
-    if (ossl_param_get1_concat_octet_string(params, OSSL_KDF_PARAM_INFO,
-                                            &ctx->info, &ctx->info_len,
-                                            HKDF_MAXINFO) == 0)
-        return 0;
+    /* The info fields concatenate, so process them all */
+    if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_INFO)) != NULL) {
+        ctx->info_len = 0;
+        for (; p != NULL; p = OSSL_PARAM_locate_const(p + 1,
+                                                      OSSL_KDF_PARAM_INFO)) {
+            const void *q = ctx->info + ctx->info_len;
+            size_t sz = 0;
 
+            if (p->data_size != 0
+                && p->data != NULL
+                && !OSSL_PARAM_get_octet_string(p, (void **)&q,
+                                                HKDF_MAXBUF - ctx->info_len,
+                                                &sz))
+                return 0;
+            ctx->info_len += sz;
+        }
+    }
     return 1;
 }
 
@@ -316,13 +298,6 @@ static int kdf_hkdf_get_ctx_params(void *vctx, OSSL_PARAM params[])
             return 0;
         return OSSL_PARAM_set_size_t(p, sz);
     }
-    if ((p = OSSL_PARAM_locate(params, OSSL_KDF_PARAM_INFO)) != NULL) {
-        if (ctx->info == NULL || ctx->info_len == 0) {
-            p->return_size = 0;
-            return 1;
-        }
-        return OSSL_PARAM_set_octet_string(p, ctx->info, ctx->info_len);
-    }
     return -2;
 }
 
@@ -331,7 +306,6 @@ static const OSSL_PARAM *kdf_hkdf_gettable_ctx_params(ossl_unused void *ctx,
 {
     static const OSSL_PARAM known_gettable_ctx_params[] = {
         OSSL_PARAM_size_t(OSSL_KDF_PARAM_SIZE, NULL),
-        OSSL_PARAM_octet_string(OSSL_KDF_PARAM_INFO, NULL, 0),
         OSSL_PARAM_END
     };
     return known_gettable_ctx_params;
@@ -339,7 +313,6 @@ static const OSSL_PARAM *kdf_hkdf_gettable_ctx_params(ossl_unused void *ctx,
 
 const OSSL_DISPATCH ossl_kdf_hkdf_functions[] = {
     { OSSL_FUNC_KDF_NEWCTX, (void(*)(void))kdf_hkdf_new },
-    { OSSL_FUNC_KDF_DUPCTX, (void(*)(void))kdf_hkdf_dup },
     { OSSL_FUNC_KDF_FREECTX, (void(*)(void))kdf_hkdf_free },
     { OSSL_FUNC_KDF_RESET, (void(*)(void))kdf_hkdf_reset },
     { OSSL_FUNC_KDF_DERIVE, (void(*)(void))kdf_hkdf_derive },
@@ -349,7 +322,7 @@ const OSSL_DISPATCH ossl_kdf_hkdf_functions[] = {
     { OSSL_FUNC_KDF_GETTABLE_CTX_PARAMS,
       (void(*)(void))kdf_hkdf_gettable_ctx_params },
     { OSSL_FUNC_KDF_GET_CTX_PARAMS, (void(*)(void))kdf_hkdf_get_ctx_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };
 
 /*
@@ -539,7 +512,7 @@ static int HKDF_Expand(const EVP_MD *evp_md,
         if (!HMAC_Final(hmac, prev, NULL))
             goto err;
 
-        copy_len = (dig_len > okm_len - done_len) ?
+        copy_len = (done_len + dig_len > okm_len) ?
                        okm_len - done_len :
                        dig_len;
 
@@ -755,7 +728,6 @@ static const OSSL_PARAM *kdf_tls1_3_settable_ctx_params(ossl_unused void *ctx,
 
 const OSSL_DISPATCH ossl_kdf_tls1_3_kdf_functions[] = {
     { OSSL_FUNC_KDF_NEWCTX, (void(*)(void))kdf_hkdf_new },
-    { OSSL_FUNC_KDF_DUPCTX, (void(*)(void))kdf_hkdf_dup },
     { OSSL_FUNC_KDF_FREECTX, (void(*)(void))kdf_hkdf_free },
     { OSSL_FUNC_KDF_RESET, (void(*)(void))kdf_hkdf_reset },
     { OSSL_FUNC_KDF_DERIVE, (void(*)(void))kdf_tls1_3_derive },
@@ -765,5 +737,5 @@ const OSSL_DISPATCH ossl_kdf_tls1_3_kdf_functions[] = {
     { OSSL_FUNC_KDF_GETTABLE_CTX_PARAMS,
       (void(*)(void))kdf_hkdf_gettable_ctx_params },
     { OSSL_FUNC_KDF_GET_CTX_PARAMS, (void(*)(void))kdf_hkdf_get_ctx_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };

@@ -7,17 +7,16 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include "crypto/sm4.h"
+#include <crypto/sm4.h>
 #include "prov/ciphercommon.h"
 #include "prov/ciphercommon_ccm.h"
-#include "crypto/sm4_platform.h"
 
 typedef struct prov_sm4_ccm_ctx_st {
-    PROV_CCM_CTX base; /* Must be first */
+    PROV_CCM_CTX base;          /* must be first entry in struct */
     union {
         OSSL_UNION_ALIGN;
         SM4_KEY ks;
     } ks;                       /* SM4 key schedule to use */
 } PROV_SM4_CCM_CTX;
 
-const PROV_CCM_HW *ossl_prov_sm4_hw_ccm(size_t keylen);
+const PROV_CCM_HW *ossl_prov_sm4_hw_ccm(size_t keybits);

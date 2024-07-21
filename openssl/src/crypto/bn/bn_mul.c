@@ -115,12 +115,12 @@ BN_ULONG bn_sub_part_words(BN_ULONG *r,
                     r[1] = a[1];
                     if (--dl <= 0)
                         break;
-                    /* fall through */
+                    /* fall thru */
                 case 2:
                     r[2] = a[2];
                     if (--dl <= 0)
                         break;
-                    /* fall through */
+                    /* fall thru */
                 case 3:
                     r[3] = a[3];
                     if (--dl <= 0)
@@ -496,6 +496,10 @@ void bn_mul_low_recursive(BN_ULONG *r, BN_ULONG *a, BN_ULONG *b, int n2,
 
 int BN_mul(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
 {
+#ifndef OPENSSL_NO_BN_METHOD
+    if (ctx && ctx->bn_meth && ctx->bn_meth->mod_mul)
+        return ctx->bn_meth->mod_mul(r, a, b, NULL, ctx);
+#endif
     int ret = bn_mul_fixed_top(r, a, b, ctx);
 
     bn_correct_top(r);

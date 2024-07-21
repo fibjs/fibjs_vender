@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2004-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -69,8 +69,10 @@ X509_POLICY_NODE *ossl_policy_level_add_node(X509_POLICY_LEVEL *level,
         return NULL;
 
     node = OPENSSL_zalloc(sizeof(*node));
-    if (node == NULL)
+    if (node == NULL) {
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
     node->data = data;
     node->parent = parent;
     if (level != NULL) {
@@ -83,11 +85,11 @@ X509_POLICY_NODE *ossl_policy_level_add_node(X509_POLICY_LEVEL *level,
             if (level->nodes == NULL)
                 level->nodes = ossl_policy_node_cmp_new();
             if (level->nodes == NULL) {
-                ERR_raise(ERR_LIB_X509V3, ERR_R_X509_LIB);
+                ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
                 goto node_error;
             }
             if (!sk_X509_POLICY_NODE_push(level->nodes, node)) {
-                ERR_raise(ERR_LIB_X509V3, ERR_R_CRYPTO_LIB);
+                ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
                 goto node_error;
             }
         }
@@ -96,13 +98,13 @@ X509_POLICY_NODE *ossl_policy_level_add_node(X509_POLICY_LEVEL *level,
     if (extra_data) {
         if (tree->extra_data == NULL)
             tree->extra_data = sk_X509_POLICY_DATA_new_null();
-        if (tree->extra_data == NULL) {
-            ERR_raise(ERR_LIB_X509V3, ERR_R_CRYPTO_LIB);
-            goto extra_data_error;
+        if (tree->extra_data == NULL){
+            ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+            goto node_error;
         }
         if (!sk_X509_POLICY_DATA_push(tree->extra_data, data)) {
-            ERR_raise(ERR_LIB_X509V3, ERR_R_CRYPTO_LIB);
-            goto extra_data_error;
+            ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+            goto node_error;
         }
     }
 
@@ -111,14 +113,6 @@ X509_POLICY_NODE *ossl_policy_level_add_node(X509_POLICY_LEVEL *level,
         parent->nchild++;
 
     return node;
-
- extra_data_error:
-    if (level != NULL) {
-        if (level->anyPolicy == node)
-            level->anyPolicy = NULL;
-        else
-            (void) sk_X509_POLICY_NODE_pop(level->nodes);
-    }
 
  node_error:
     ossl_policy_node_free(node);

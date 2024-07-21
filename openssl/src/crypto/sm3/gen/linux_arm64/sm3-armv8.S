@@ -1,4 +1,4 @@
-// Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
 //
 // Licensed under the Apache License 2.0 (the "License").  You may not use
 // this file except in compliance with the License.  You can obtain a copy
@@ -10,12 +10,12 @@
 // $output is the last argument if it looks like a file (it has an extension)
 // $flavour is the first argument if it doesn't look like a file
 #include "arm_arch.h"
+.arch	armv8.2-a
 .text
 .globl	ossl_hwsm3_block_data_order
 .type	ossl_hwsm3_block_data_order,%function
 .align	5
 ossl_hwsm3_block_data_order:
-	AARCH64_VALID_CALL_TARGET
 	// load state
 	ld1	{v5.4s,v6.4s}, [x0]
 	rev64	v5.4s, v5.4s

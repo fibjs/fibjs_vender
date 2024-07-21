@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2022 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2017 Ribose Inc. All Rights Reserved.
  * Ported from Ribose contributions from Botan.
  *
@@ -17,18 +17,18 @@
 #include "internal/numbers.h"
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <openssl/err.h>
 #include <openssl/bn.h>
 #include <string.h>
 
 int ossl_sm2_compute_z_digest(uint8_t *out,
                               const EVP_MD *digest,
                               const uint8_t *id,
-                              const size_t id_len,
+                              size_t id_len,
                               const EC_KEY *key)
 {
     int rc = 0;
     const EC_GROUP *group = EC_KEY_get0_group(key);
-    const EC_POINT *pubkey = EC_KEY_get0_public_key(key);
     BN_CTX *ctx = NULL;
     EVP_MD_CTX *hash = NULL;
     BIGNUM *p = NULL;
@@ -43,20 +43,10 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
     uint16_t entl = 0;
     uint8_t e_byte = 0;
 
-    /* SM2 Signatures require a public key, check for it */
-    if (pubkey == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_PASSED_NULL_PARAMETER);
-        goto done;
-    }
-
     hash = EVP_MD_CTX_new();
-    if (hash == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_EVP_LIB);
-        goto done;
-    }
     ctx = BN_CTX_new_ex(ossl_ec_key_get_libctx(key));
-    if (ctx == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+    if (hash == NULL || ctx == NULL) {
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -69,7 +59,7 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
     yA = BN_CTX_get(ctx);
 
     if (yA == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -79,6 +69,11 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
     }
 
     /* Z = h(ENTL || ID || a || b || xG || yG || xA || yA) */
+
+    if (id == NULL) {
+        id = (const uint8_t *)SM2_DEFAULT_USERID;
+        id_len = strlen(SM2_DEFAULT_USERID);
+    }
 
     if (id_len >= (UINT16_MAX / 8)) {
         /* too large */
@@ -111,8 +106,10 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
 
     p_bytes = BN_num_bytes(p);
     buf = OPENSSL_zalloc(p_bytes);
-    if (buf == NULL)
+    if (buf == NULL) {
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
+    }
 
     if (BN_bn2binpad(a, buf, p_bytes) < 0
             || !EVP_DigestUpdate(hash, buf, p_bytes)
@@ -126,7 +123,7 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
             || BN_bn2binpad(yG, buf, p_bytes) < 0
             || !EVP_DigestUpdate(hash, buf, p_bytes)
             || !EC_POINT_get_affine_coordinates(group,
-                                                pubkey,
+                                                EC_KEY_get0_public_key(key),
                                                 xA, yA, ctx)
             || BN_bn2binpad(xA, buf, p_bytes) < 0
             || !EVP_DigestUpdate(hash, buf, p_bytes)
@@ -164,14 +161,12 @@ static BIGNUM *sm2_compute_msg_hash(const EVP_MD *digest,
         ERR_raise(ERR_LIB_SM2, SM2_R_INVALID_DIGEST);
         goto done;
     }
-    if (hash == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_EVP_LIB);
-        goto done;
-    }
 
     z = OPENSSL_zalloc(md_size);
-    if (z == NULL)
+    if (hash == NULL || z == NULL) {
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
+    }
 
     fetched_digest = EVP_MD_fetch(libctx, EVP_MD_get0_name(digest), propq);
     if (fetched_digest == NULL) {
@@ -221,13 +216,9 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
     OSSL_LIB_CTX *libctx = ossl_ec_key_get_libctx(key);
 
     kG = EC_POINT_new(group);
-    if (kG == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_EC_LIB);
-        goto done;
-    }
     ctx = BN_CTX_new_ex(libctx);
-    if (ctx == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+    if (kG == NULL || ctx == NULL) {
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -237,7 +228,7 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
     x1 = BN_CTX_get(ctx);
     tmp = BN_CTX_get(ctx);
     if (tmp == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -249,7 +240,7 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
     s = BN_new();
 
     if (r == NULL || s == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -303,7 +294,7 @@ static ECDSA_SIG *sm2_sig_gen(const EC_KEY *key, const BIGNUM *e)
 
         sig = ECDSA_SIG_new();
         if (sig == NULL) {
-            ERR_raise(ERR_LIB_SM2, ERR_R_ECDSA_LIB);
+            ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
             goto done;
         }
 
@@ -340,7 +331,7 @@ static int sm2_sig_verify(const EC_KEY *key, const ECDSA_SIG *sig,
     ctx = BN_CTX_new_ex(libctx);
     pt = EC_POINT_new(group);
     if (ctx == NULL || pt == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_EC_LIB);
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -348,7 +339,7 @@ static int sm2_sig_verify(const EC_KEY *key, const ECDSA_SIG *sig,
     t = BN_CTX_get(ctx);
     x1 = BN_CTX_get(ctx);
     if (x1 == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
 
@@ -397,7 +388,6 @@ static int sm2_sig_verify(const EC_KEY *key, const ECDSA_SIG *sig,
         ret = 1;
 
  done:
-    BN_CTX_end(ctx);
     EC_POINT_free(pt);
     BN_CTX_free(ctx);
     return ret;
@@ -457,11 +447,6 @@ int ossl_sm2_internal_sign(const unsigned char *dgst, int dgstlen,
     int sigleni;
     int ret = -1;
 
-    if (sig == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_PASSED_NULL_PARAMETER);
-        goto done;
-    }
-
     e = BN_bin2bn(dgst, dgstlen, NULL);
     if (e == NULL) {
        ERR_raise(ERR_LIB_SM2, ERR_R_BN_LIB);
@@ -502,7 +487,7 @@ int ossl_sm2_internal_verify(const unsigned char *dgst, int dgstlen,
 
     s = ECDSA_SIG_new();
     if (s == NULL) {
-        ERR_raise(ERR_LIB_SM2, ERR_R_ECDSA_LIB);
+        ERR_raise(ERR_LIB_SM2, ERR_R_MALLOC_FAILURE);
         goto done;
     }
     if (d2i_ECDSA_SIG(&s, &p, sig_len) == NULL) {

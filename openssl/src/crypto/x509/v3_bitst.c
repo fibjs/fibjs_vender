@@ -38,10 +38,22 @@ static BIT_STRING_BITNAME key_usage_type_table[] = {
     {-1, NULL, NULL}
 };
 
+#ifndef OPENSSL_NO_DELEGATED_CREDENTIAL
+static BIT_STRING_BITNAME dc_usage_type_table[] = {
+    {0, "Server Delegation", "serverDelegation"},
+    {1, "Client Delegation", "clientDelegation"},
+    {-1, NULL, NULL}
+};
+#endif
+
 const X509V3_EXT_METHOD ossl_v3_nscert =
 EXT_BITSTRING(NID_netscape_cert_type, ns_cert_type_table);
 const X509V3_EXT_METHOD ossl_v3_key_usage =
 EXT_BITSTRING(NID_key_usage, key_usage_type_table);
+#ifndef OPENSSL_NO_DELEGATED_CREDENTIAL
+const X509V3_EXT_METHOD ossl_v3_dc_usage =
+EXT_BITSTRING(NID_delegation_usage, dc_usage_type_table);
+#endif
 
 STACK_OF(CONF_VALUE) *i2v_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
                                           ASN1_BIT_STRING *bits,
@@ -64,7 +76,7 @@ ASN1_BIT_STRING *v2i_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
     int i;
     BIT_STRING_BITNAME *bnam;
     if ((bs = ASN1_BIT_STRING_new()) == NULL) {
-        ERR_raise(ERR_LIB_X509V3, ERR_R_ASN1_LIB);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     for (i = 0; i < sk_CONF_VALUE_num(nval); i++) {
@@ -73,7 +85,7 @@ ASN1_BIT_STRING *v2i_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
             if (strcmp(bnam->sname, val->name) == 0
                 || strcmp(bnam->lname, val->name) == 0) {
                 if (!ASN1_BIT_STRING_set_bit(bs, bnam->bitnum, 1)) {
-                    ERR_raise(ERR_LIB_X509V3, ERR_R_ASN1_LIB);
+                    ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
                     ASN1_BIT_STRING_free(bs);
                     return NULL;
                 }

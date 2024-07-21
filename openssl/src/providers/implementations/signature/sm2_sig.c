@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -9,7 +9,7 @@
 
 /*
  * ECDSA low level APIs are deprecated for public use, but still ok for
- * internal use - SM2 implementation uses ECDSA_size() function.
+ * internal use - SM2 implemetation uses ECDSA_size() function.
  */
 #include "internal/deprecated.h"
 
@@ -22,10 +22,10 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/proverr.h>
+#include <openssl/sm3.h>
 #include "internal/nelem.h"
 #include "internal/sizes.h"
 #include "internal/cryptlib.h"
-#include "internal/sm3.h"
 #include "prov/implementations.h"
 #include "prov/providercommon.h"
 #include "prov/provider_ctx.h"
@@ -55,6 +55,8 @@ static OSSL_FUNC_signature_gettable_ctx_md_params_fn sm2sig_gettable_ctx_md_para
 static OSSL_FUNC_signature_set_ctx_md_params_fn sm2sig_set_ctx_md_params;
 static OSSL_FUNC_signature_settable_ctx_md_params_fn sm2sig_settable_ctx_md_params;
 
+#define OSSL_PKEY_PARAM_SM2_ZA              "sm2-za"
+
 /*
  * What's passed as an actual key is defined by the KEYMGMT interface.
  * We happen to know that our KEYMGMT simply passes EC structures, so
@@ -66,9 +68,9 @@ typedef struct {
     EC_KEY *ec;
 
     /*
-     * Flag to determine if the 'z' digest needs to be computed and fed to the
+     * Flag to termine if the 'z' digest needs to be computed and fed to the
      * hash function.
-     * This flag should be set on initialization and the computation should
+     * This flag should be set on initialization and the compuation should
      * be performed only once, on first update.
      */
     unsigned int flag_compute_z_digest : 1;
@@ -122,6 +124,7 @@ static void *sm2sig_newctx(void *provctx, const char *propq)
     ctx->libctx = PROV_LIBCTX_OF(provctx);
     if (propq != NULL && (ctx->propq = OPENSSL_strdup(propq)) == NULL) {
         OPENSSL_free(ctx);
+        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     ctx->mdsize = SM3_DIGEST_LENGTH;
@@ -208,6 +211,9 @@ static int sm2sig_digest_signverify_init(void *vpsm2ctx, const char *mdname,
     WPACKET pkt;
     int ret = 0;
 
+    /* This default value must be assigned before it may be overridden */
+    ctx->flag_compute_z_digest = 1;
+
     if (!sm2sig_signature_init(vpsm2ctx, ec, params)
         || !sm2sig_set_mdname(ctx, mdname))
         return ret;
@@ -238,8 +244,6 @@ static int sm2sig_digest_signverify_init(void *vpsm2ctx, const char *mdname,
 
     if (!EVP_DigestInit_ex2(ctx->mdctx, ctx->md, params))
         goto error;
-
-    ctx->flag_compute_z_digest = 1;
 
     ret = 1;
 
@@ -329,7 +333,6 @@ static void sm2sig_freectx(void *vpsm2ctx)
 
     free_md(ctx);
     EC_KEY_free(ctx->ec);
-    OPENSSL_free(ctx->propq);
     OPENSSL_free(ctx->id);
     OPENSSL_free(ctx);
 }
@@ -345,20 +348,12 @@ static void *sm2sig_dupctx(void *vpsm2ctx)
 
     *dstctx = *srcctx;
     dstctx->ec = NULL;
-    dstctx->propq = NULL;
     dstctx->md = NULL;
     dstctx->mdctx = NULL;
-    dstctx->id = NULL;
 
     if (srcctx->ec != NULL && !EC_KEY_up_ref(srcctx->ec))
         goto err;
     dstctx->ec = srcctx->ec;
-
-    if (srcctx->propq != NULL) {
-        dstctx->propq = OPENSSL_strdup(srcctx->propq);
-        if (dstctx->propq == NULL)
-            goto err;
-    }
 
     if (srcctx->md != NULL && !EVP_MD_up_ref(srcctx->md))
         goto err;
@@ -435,6 +430,22 @@ static int sm2sig_set_ctx_params(void *vpsm2ctx, const OSSL_PARAM params[])
     if (params == NULL)
         return 1;
 
+    p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_SM2_ZA);
+    if (p != NULL) {
+        char *v = NULL;
+
+        if (!OSSL_PARAM_get_utf8_string(p, &v, 0))
+            return 0;
+
+        /*
+         * If 'sm2-za:no' is specified, omit computing the z digest
+         */
+        if (OPENSSL_strcasecmp(v, "no") == 0)
+            psm2ctx->flag_compute_z_digest = 0;
+
+        OPENSSL_free(v);
+    }
+
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_DIST_ID);
     if (p != NULL) {
         void *tmp_id = NULL;
@@ -485,6 +496,7 @@ static const OSSL_PARAM known_settable_ctx_params[] = {
     OSSL_PARAM_size_t(OSSL_SIGNATURE_PARAM_DIGEST_SIZE, NULL),
     OSSL_PARAM_utf8_string(OSSL_SIGNATURE_PARAM_DIGEST, NULL, 0),
     OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_DIST_ID, NULL, 0),
+    OSSL_PARAM_utf8_string(OSSL_PKEY_PARAM_SM2_ZA, NULL, 0),
     OSSL_PARAM_END
 };
 
@@ -568,5 +580,5 @@ const OSSL_DISPATCH ossl_sm2_signature_functions[] = {
       (void (*)(void))sm2sig_set_ctx_md_params },
     { OSSL_FUNC_SIGNATURE_SETTABLE_CTX_MD_PARAMS,
       (void (*)(void))sm2sig_settable_ctx_md_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };

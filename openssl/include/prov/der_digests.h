@@ -31,14 +31,6 @@ extern const unsigned char ossl_der_oid_sigAlgs[DER_OID_SZ_sigAlgs];
 extern const unsigned char ossl_der_oid_id_sha1[DER_OID_SZ_id_sha1];
 
 /*
- * id-md2  OBJECT IDENTIFIER ::= {
- *   iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 2 }
- */
-#define DER_OID_V_id_md2 DER_P_OBJECT, 8, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x02
-#define DER_OID_SZ_id_md2 10
-extern const unsigned char ossl_der_oid_id_md2[DER_OID_SZ_id_md2];
-
-/*
  * id-md5  OBJECT IDENTIFIER ::= {
  *   iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) 5 }
  */

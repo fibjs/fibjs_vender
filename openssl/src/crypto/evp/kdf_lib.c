@@ -31,7 +31,7 @@ EVP_KDF_CTX *EVP_KDF_CTX_new(EVP_KDF *kdf)
     if (ctx == NULL
         || (ctx->algctx = kdf->newctx(ossl_provider_ctx(kdf->prov))) == NULL
         || !EVP_KDF_up_ref(kdf)) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         if (ctx != NULL)
             kdf->freectx(ctx->algctx);
         OPENSSL_free(ctx);
@@ -60,12 +60,14 @@ EVP_KDF_CTX *EVP_KDF_CTX_dup(const EVP_KDF_CTX *src)
         return NULL;
 
     dst = OPENSSL_malloc(sizeof(*dst));
-    if (dst == NULL)
+    if (dst == NULL) {
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
 
     memcpy(dst, src, sizeof(*dst));
     if (!EVP_KDF_up_ref(dst->meth)) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         OPENSSL_free(dst);
         return NULL;
     }
@@ -95,7 +97,7 @@ const char *EVP_KDF_get0_description(const EVP_KDF *kdf)
 
 int EVP_KDF_is_a(const EVP_KDF *kdf, const char *name)
 {
-    return kdf != NULL && evp_is_a(kdf->prov, kdf->name_id, NULL, name);
+    return evp_is_a(kdf->prov, kdf->name_id, NULL, name);
 }
 
 const OSSL_PROVIDER *EVP_KDF_get0_provider(const EVP_KDF *kdf)

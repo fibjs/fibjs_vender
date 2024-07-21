@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -223,9 +223,9 @@ static const unsigned short ctype_char_map[128] = {
    /* 7F del */ CTYPE_MASK_cntrl
 };
 
-#ifdef CHARSET_EBCDIC
 int ossl_toascii(int c)
 {
+#ifdef CHARSET_EBCDIC
     if (c < -128 || c > 256 || c == EOF)
         return c;
     /*
@@ -237,17 +237,23 @@ int ossl_toascii(int c)
     if (c < 0)
         c += 256;
     return os_toascii[c];
+#else
+    return c;
+#endif
 }
 
 int ossl_fromascii(int c)
 {
+#ifdef CHARSET_EBCDIC
     if (c < -128 || c > 256 || c == EOF)
         return c;
     if (c < 0)
         c += 256;
     return os_toebcdic[c];
-}
+#else
+    return c;
 #endif
+}
 
 int ossl_ctype_check(int c, unsigned int mask)
 {
@@ -258,7 +264,7 @@ int ossl_ctype_check(int c, unsigned int mask)
 }
 
 /*
- * Implement some of the simpler functions directly to avoid the overhead of
+ * Implement some of the simplier functions directly to avoid the overhead of
  * accessing memory via ctype_char_map[].
  */
 

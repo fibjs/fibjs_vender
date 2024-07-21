@@ -28,8 +28,12 @@ extern "C" {
  * These macros express version number MAJOR.MINOR.PATCH exactly
  */
 # define OPENSSL_VERSION_MAJOR  3
-# define OPENSSL_VERSION_MINOR  3
-# define OPENSSL_VERSION_PATCH  1
+# define OPENSSL_VERSION_MINOR  0
+# define OPENSSL_VERSION_PATCH  3
+
+# define TONGSUO_VERSION_MAJOR  8
+# define TONGSUO_VERSION_MINOR  4
+# define TONGSUO_VERSION_PATCH  0
 
 /*
  * Additional version information
@@ -43,6 +47,8 @@ extern "C" {
 /* Could be: #define OPENSSL_VERSION_BUILD_METADATA "+fips" */
 /* Could be: #define OPENSSL_VERSION_BUILD_METADATA "+vendor.1" */
 # define OPENSSL_VERSION_BUILD_METADATA ""
+
+# define TONGSUO_VERSION_PRE_RELEASE ""
 
 /*
  * Note: The OpenSSL Project will never define OPENSSL_VERSION_BUILD_METADATA
@@ -74,21 +80,21 @@ extern "C" {
  * longer variant with OPENSSL_VERSION_PRE_RELEASE_STR and
  * OPENSSL_VERSION_BUILD_METADATA_STR appended.
  */
-# define OPENSSL_VERSION_STR "3.3.1"
-# define OPENSSL_FULL_VERSION_STR "3.3.1"
+# define OPENSSL_VERSION_STR "3.0.3"
+# define OPENSSL_FULL_VERSION_STR "3.0.3"
 
 /*
  * SECTION 3: ADDITIONAL METADATA
  *
  * These strings are defined separately to allow them to be parsable.
  */
-# define OPENSSL_RELEASE_DATE "4 Jun 2024"
+# define OPENSSL_RELEASE_DATE "3 May 2022"
 
 /*
  * SECTION 4: BACKWARD COMPATIBILITY
  */
 
-# define OPENSSL_VERSION_TEXT "OpenSSL 3.3.1 4 Jun 2024"
+# define OPENSSL_VERSION_TEXT "OpenSSL 3.0.3 3 May 2022"
 
 /* Synthesize OPENSSL_VERSION_NUMBER with the layout 0xMNN00PPSL */
 # ifdef OPENSSL_VERSION_PRE_RELEASE
@@ -101,6 +107,22 @@ extern "C" {
       |(OPENSSL_VERSION_MINOR<<20)       \
       |(OPENSSL_VERSION_PATCH<<4)        \
       |_OPENSSL_VERSION_PRE_RELEASE )
+
+/* Tongsuo/BabaSSL stuffs */
+# ifdef TONGSUO_VERSION_PRE_RELEASE
+#  define _TONGSUO_VERSION_PRE_RELEASE 0x0L
+# else
+#  define _TONGSUO_VERSION_PRE_RELEASE 0xfL
+# endif
+# define TONGSUO_VERSION_NUMBER          \
+    ( (TONGSUO_VERSION_MAJOR<<28)        \
+      |(TONGSUO_VERSION_MINOR<<20)       \
+      |(TONGSUO_VERSION_PATCH<<4)        \
+      |_TONGSUO_VERSION_PRE_RELEASE )
+
+# define TONGSUO_VERSION_TEXT    "Tongsuo 8.4.0"
+# define BABASSL_VERSION_NUMBER  TONGSUO_VERSION_NUMBER
+# define BABASSL_VERSION_TEXT    TONGSUO_VERSION_TEXT
 
 # ifdef  __cplusplus
 }

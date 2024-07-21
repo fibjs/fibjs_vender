@@ -19,20 +19,8 @@
 #include <openssl/rsa.h>
 #include <openssl/objects.h>
 #ifndef FIPS_MODULE
-# ifndef OPENSSL_NO_MD2
-#  include <openssl/md2.h> /* uses MD2_DIGEST_LENGTH */
-# endif
-# ifndef OPENSSL_NO_MD4
-#  include <openssl/md4.h> /* uses MD4_DIGEST_LENGTH */
-# endif
 # ifndef OPENSSL_NO_MD5
 #  include <openssl/md5.h> /* uses MD5_DIGEST_LENGTH */
-# endif
-# ifndef OPENSSL_NO_MDC2
-#  include <openssl/mdc2.h> /* uses MDC2_DIGEST_LENGTH */
-# endif
-# ifndef OPENSSL_NO_RMD160
-#  include <openssl/ripemd.h> /* uses RIPEMD160_DIGEST_LENGTH */
 # endif
 #endif
 #include <openssl/sha.h> /* uses SHA???_DIGEST_LENGTH */
@@ -83,7 +71,7 @@ static const unsigned char digestinfo_##name##_der[] = {                       \
       ASN1_OCTET_STRING, sz                                                    \
 };
 
-/* MD2, MD4 and MD5 OIDs are of the form: (1 2 840 113549 2 |n|) */
+/* MD5 OID is of the form: (1 2 840 113549 2 |n|) */
 #define ENCODE_DIGESTINFO_MD(name, n, sz)                                      \
 static const unsigned char digestinfo_##name##_der[] = {                       \
     ASN1_SEQUENCE, 0x10 + sz,                                                  \
@@ -94,34 +82,8 @@ static const unsigned char digestinfo_##name##_der[] = {                       \
 };
 
 #ifndef FIPS_MODULE
-# ifndef OPENSSL_NO_MD2
-ENCODE_DIGESTINFO_MD(md2, 0x02, MD2_DIGEST_LENGTH)
-# endif
-# ifndef OPENSSL_NO_MD4
-ENCODE_DIGESTINFO_MD(md4, 0x03, MD4_DIGEST_LENGTH)
-# endif
 # ifndef OPENSSL_NO_MD5
 ENCODE_DIGESTINFO_MD(md5, 0x05, MD5_DIGEST_LENGTH)
-# endif
-# ifndef OPENSSL_NO_MDC2
-/* MDC-2 (2 5 8 3 101) */
-static const unsigned char digestinfo_mdc2_der[] = {
-    ASN1_SEQUENCE, 0x0c + MDC2_DIGEST_LENGTH,
-      ASN1_SEQUENCE, 0x08,
-        ASN1_OID, 0x04, 2 * 40 + 5, 8, 3, 101,
-        ASN1_NULL, 0x00,
-      ASN1_OCTET_STRING, MDC2_DIGEST_LENGTH
-};
-# endif
-# ifndef OPENSSL_NO_RMD160
-/* RIPEMD160 (1 3 36 3 2 1) */
-static const unsigned char digestinfo_ripemd160_der[] = {
-    ASN1_SEQUENCE, 0x0d + RIPEMD160_DIGEST_LENGTH,
-      ASN1_SEQUENCE, 0x09,
-        ASN1_OID, 0x05, 1 * 40 + 3, 36, 3, 2, 1,
-        ASN1_NULL, 0x00,
-      ASN1_OCTET_STRING, RIPEMD160_DIGEST_LENGTH
-};
 # endif
 #endif /* FIPS_MODULE */
 
@@ -154,20 +116,8 @@ const unsigned char *ossl_rsa_digestinfo_encoding(int md_nid, size_t *len)
 {
     switch (md_nid) {
 #ifndef FIPS_MODULE
-# ifndef OPENSSL_NO_MDC2
-    MD_CASE(mdc2)
-# endif
-# ifndef OPENSSL_NO_MD2
-    MD_CASE(md2)
-# endif
-# ifndef OPENSSL_NO_MD4
-    MD_CASE(md4)
-# endif
 # ifndef OPENSSL_NO_MD5
     MD_CASE(md5)
-# endif
-# ifndef OPENSSL_NO_RMD160
-    MD_CASE(ripemd160)
 # endif
 #endif /* FIPS_MODULE */
     MD_CASE(sha1)
@@ -194,20 +144,8 @@ static int digest_sz_from_nid(int nid)
 {
     switch (nid) {
 #ifndef FIPS_MODULE
-# ifndef OPENSSL_NO_MDC2
-    MD_NID_CASE(mdc2, MDC2_DIGEST_LENGTH)
-# endif
-# ifndef OPENSSL_NO_MD2
-    MD_NID_CASE(md2, MD2_DIGEST_LENGTH)
-# endif
-# ifndef OPENSSL_NO_MD4
-    MD_NID_CASE(md4, MD4_DIGEST_LENGTH)
-# endif
 # ifndef OPENSSL_NO_MD5
     MD_NID_CASE(md5, MD5_DIGEST_LENGTH)
-# endif
-# ifndef OPENSSL_NO_RMD160
-    MD_NID_CASE(ripemd160, RIPEMD160_DIGEST_LENGTH)
 # endif
 #endif /* FIPS_MODULE */
     MD_NID_CASE(sha1, SHA_DIGEST_LENGTH)
@@ -258,8 +196,10 @@ static int encode_pkcs1(unsigned char **out, size_t *out_len, int type,
     }
     dig_info_len = di_prefix_len + m_len;
     dig_info = OPENSSL_malloc(dig_info_len);
-    if (dig_info == NULL)
+    if (dig_info == NULL) {
+        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     memcpy(dig_info, di_prefix, di_prefix_len);
     memcpy(dig_info + di_prefix_len, m, m_len);
 
@@ -278,7 +218,7 @@ int RSA_sign(int type, const unsigned char *m, unsigned int m_len,
 
 #ifndef FIPS_MODULE
     if (rsa->meth->rsa_sign != NULL)
-        return rsa->meth->rsa_sign(type, m, m_len, sigret, siglen, rsa) > 0;
+        return rsa->meth->rsa_sign(type, m, m_len, sigret, siglen, rsa);
 #endif /* FIPS_MODULE */
 
     /* Compute the encoded digest. */
@@ -341,8 +281,10 @@ int ossl_rsa_verify(int type, const unsigned char *m, unsigned int m_len,
 
     /* Recover the encoded digest. */
     decrypt_buf = OPENSSL_malloc(siglen);
-    if (decrypt_buf == NULL)
+    if (decrypt_buf == NULL) {
+        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
         goto err;
+    }
 
     len = RSA_public_decrypt((int)siglen, sigbuf, decrypt_buf, rsa,
                              RSA_PKCS1_PADDING);
@@ -372,26 +314,6 @@ int ossl_rsa_verify(int type, const unsigned char *m, unsigned int m_len,
             }
 
             if (memcmp(decrypt_buf, m, SSL_SIG_LENGTH) != 0) {
-                ERR_raise(ERR_LIB_RSA, RSA_R_BAD_SIGNATURE);
-                goto err;
-            }
-        }
-    } else if (type == NID_mdc2 && decrypt_len == 2 + 16
-               && decrypt_buf[0] == 0x04 && decrypt_buf[1] == 0x10) {
-        /*
-         * Oddball MDC2 case: signature can be OCTET STRING. check for correct
-         * tag and length octets.
-         */
-        if (rm != NULL) {
-            memcpy(rm, decrypt_buf + 2, 16);
-            *prm_len = 16;
-        } else {
-            if (m_len != 16) {
-                ERR_raise(ERR_LIB_RSA, RSA_R_INVALID_MESSAGE_LENGTH);
-                goto err;
-            }
-
-            if (memcmp(m, decrypt_buf + 2, 16) != 0) {
                 ERR_raise(ERR_LIB_RSA, RSA_R_BAD_SIGNATURE);
                 goto err;
             }

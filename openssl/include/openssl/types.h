@@ -7,21 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
-/*
- * Unfortunate workaround to avoid symbol conflict with wincrypt.h
- * See https://github.com/openssl/openssl/issues/9981
- */
-#ifdef _WIN32
-# define WINCRYPT_USE_SYMBOL_PREFIX
-# undef X509_NAME
-# undef X509_EXTENSIONS
-# undef PKCS7_SIGNER_INFO
-# undef OCSP_REQUEST
-# undef OCSP_RESPONSE
-#endif
-
 #ifndef OPENSSL_TYPES_H
 # define OPENSSL_TYPES_H
+# pragma once
 
 # include <limits.h>
 
@@ -81,6 +69,15 @@ typedef struct asn1_string_table_st ASN1_STRING_TABLE;
 typedef struct ASN1_ITEM_st ASN1_ITEM;
 typedef struct asn1_pctx_st ASN1_PCTX;
 typedef struct asn1_sctx_st ASN1_SCTX;
+
+# ifdef _WIN32
+#  undef X509_NAME
+#  undef X509_EXTENSIONS
+#  undef PKCS7_ISSUER_AND_SERIAL
+#  undef PKCS7_SIGNER_INFO
+#  undef OCSP_REQUEST
+#  undef OCSP_RESPONSE
+# endif
 
 # ifdef BIGNUM
 #  undef BIGNUM
@@ -153,8 +150,14 @@ typedef struct ec_key_st EC_KEY;
 typedef struct ec_key_method_st EC_KEY_METHOD;
 # endif
 
+typedef struct ec_point_method_st EC_POINT_METHOD;
+
 typedef struct rand_meth_st RAND_METHOD;
 typedef struct rand_drbg_st RAND_DRBG;
+
+# ifndef OPENSSL_NO_BN_METHOD
+typedef struct bn_method_st BN_METHOD;
+# endif
 
 typedef struct ssl_dane_st SSL_DANE;
 typedef struct x509_st X509;
@@ -165,6 +168,9 @@ typedef struct x509_revoked_st X509_REVOKED;
 typedef struct X509_name_st X509_NAME;
 typedef struct X509_pubkey_st X509_PUBKEY;
 typedef struct x509_store_st X509_STORE;
+#ifndef OPENSSL_NO_DELEGATED_CREDENTIAL
+typedef struct delegated_credential_st DELEGATED_CREDENTIAL;
+#endif
 typedef struct x509_store_ctx_st X509_STORE_CTX;
 
 typedef struct x509_object_st X509_OBJECT;
@@ -186,6 +192,10 @@ typedef struct ui_method_st UI_METHOD;
 typedef struct engine_st ENGINE;
 typedef struct ssl_st SSL;
 typedef struct ssl_ctx_st SSL_CTX;
+
+# ifndef OPENSSL_NO_STATUS
+typedef struct ssl_status_st SSL_status;
+# endif
 
 typedef struct comp_ctx_st COMP_CTX;
 typedef struct comp_method_st COMP_METHOD;
@@ -214,6 +224,8 @@ typedef struct ct_policy_eval_ctx_st CT_POLICY_EVAL_CTX;
 
 typedef struct ossl_store_info_st OSSL_STORE_INFO;
 typedef struct ossl_store_search_st OSSL_STORE_SEARCH;
+
+typedef struct ssl_quic_method_st SSL_QUIC_METHOD;
 
 typedef struct ossl_lib_ctx_st OSSL_LIB_CTX;
 

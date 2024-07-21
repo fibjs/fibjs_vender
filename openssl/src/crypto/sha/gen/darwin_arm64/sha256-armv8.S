@@ -55,8 +55,8 @@
 
 // $output is the last argument if it looks like a file (it has an extension)
 // $flavour is the first argument if it doesn't look like a file
-#include "arm_arch.h"
 #ifndef	__KERNEL__
+# include "arm_arch.h"
 
 .private_extern	_OPENSSL_armcap_P
 #endif
@@ -67,7 +67,6 @@
 
 .align	6
 _sha256_block_data_order:
-	AARCH64_VALID_CALL_TARGET
 #ifndef	__KERNEL__
 	adrp	x16,_OPENSSL_armcap_P@PAGE
 	ldr	w16,[x16,_OPENSSL_armcap_P@PAGEOFF]
@@ -76,7 +75,7 @@ _sha256_block_data_order:
 	tst	w16,#ARMV7_NEON
 	b.ne	Lneon_entry
 #endif
-	AARCH64_SIGN_LINK_REGISTER
+.long	0xd503233f				// paciasp
 	stp	x29,x30,[sp,#-128]!
 	add	x29,sp,#0
 
@@ -1036,7 +1035,7 @@ Loop_16_xx:
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldp	x29,x30,[sp],#128
-	AARCH64_VALIDATE_LINK_REGISTER
+.long	0xd50323bf				// autiasp
 	ret
 
 
@@ -1069,7 +1068,6 @@ LK256:
 .align	6
 sha256_block_armv8:
 Lv8_entry:
-	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
 	stp	x29,x30,[sp,#-16]!
 	add	x29,sp,#0
 
@@ -1211,9 +1209,7 @@ Loop_hw:
 
 .align	4
 _sha256_block_neon:
-	AARCH64_VALID_CALL_TARGET
 Lneon_entry:
-	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later
 	stp	x29, x30, [sp, #-16]!
 	mov	x29, sp
 	sub	sp,sp,#16*4

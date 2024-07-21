@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -27,23 +27,8 @@
 
 #include "rsaz_exp.h"
 
-#undef SPARC_T4_MONT
-#if defined(OPENSSL_BN_ASM_MONT) && (defined(__sparc__) || defined(__sparc))
-# include "crypto/sparc_arch.h"
-# define SPARC_T4_MONT
-#endif
-
 /* maximum precomputation table size for *variable* sliding windows */
 #define TABLE_SIZE      32
-
-/*
- * Beyond this limit the constant time code is disabled due to
- * the possible overflow in the computation of powerbufLen in
- * BN_mod_exp_mont_consttime.
- * When this limit is exceeded, the computation will be done using
- * non-constant time code, but it will take very long.
- */
-#define BN_CONSTTIME_SIZE_LIMIT (INT_MAX / BN_BYTES / 256)
 
 /* this one works - simple but works */
 int BN_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, BN_CTX *ctx)
@@ -98,6 +83,11 @@ int BN_mod_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, const BIGNUM *m,
                BN_CTX *ctx)
 {
     int ret;
+
+#ifndef OPENSSL_NO_BN_METHOD
+    if (ctx && ctx->bn_meth && ctx->bn_meth->mod_exp)
+        return ctx->bn_meth->mod_exp(r, a, p, m, ctx);
+#endif
 
     bn_check_top(a);
     bn_check_top(p);
@@ -169,7 +159,7 @@ int BN_mod_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, const BIGNUM *m,
 int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
                     const BIGNUM *m, BN_CTX *ctx)
 {
-    int i, j, bits, ret = 0, wstart, wend, window;
+    int i, j, bits, ret = 0, wstart, wend, window, wvalue;
     int start = 1;
     BIGNUM *aa;
     /* Table of variables obtained from 'ctx' */
@@ -239,23 +229,14 @@ int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
     start = 1;                  /* This is used to avoid multiplication etc
                                  * when there is only the value '1' in the
                                  * buffer. */
+    wvalue = 0;                 /* The 'value' of the window */
     wstart = bits - 1;          /* The top bit of the window */
     wend = 0;                   /* The bottom bit of the window */
-
-    if (r == p) {
-        BIGNUM *p_dup = BN_CTX_get(ctx);
-
-        if (p_dup == NULL || BN_copy(p_dup, p) == NULL)
-            goto err;
-        p = p_dup;
-    }
 
     if (!BN_one(r))
         goto err;
 
     for (;;) {
-        int wvalue;             /* The 'value' of the window */
-
         if (BN_is_bit_set(p, wstart) == 0) {
             if (!start)
                 if (!BN_mod_mul_reciprocal(r, r, r, &recp, ctx))
@@ -297,6 +278,7 @@ int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 
         /* move the 'window' down further */
         wstart -= wend + 1;
+        wvalue = 0;
         start = 0;
         if (wstart < 0)
             break;
@@ -312,13 +294,19 @@ int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
                     const BIGNUM *m, BN_CTX *ctx, BN_MONT_CTX *in_mont)
 {
-    int i, j, bits, ret = 0, wstart, wend, window;
+    int i, j, bits, ret = 0, wstart, wend, window, wvalue;
     int start = 1;
     BIGNUM *d, *r;
     const BIGNUM *aa;
     /* Table of variables obtained from 'ctx' */
     BIGNUM *val[TABLE_SIZE];
     BN_MONT_CTX *mont = NULL;
+
+    if (BN_get_flags(p, BN_FLG_CONSTTIME) != 0
+            || BN_get_flags(a, BN_FLG_CONSTTIME) != 0
+            || BN_get_flags(m, BN_FLG_CONSTTIME) != 0) {
+        return BN_mod_exp_mont_consttime(rr, a, p, m, ctx, in_mont);
+    }
 
     bn_check_top(a);
     bn_check_top(p);
@@ -328,14 +316,6 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
         ERR_raise(ERR_LIB_BN, BN_R_CALLED_WITH_EVEN_MODULUS);
         return 0;
     }
-
-    if (m->top <= BN_CONSTTIME_SIZE_LIMIT
-        && (BN_get_flags(p, BN_FLG_CONSTTIME) != 0
-            || BN_get_flags(a, BN_FLG_CONSTTIME) != 0
-            || BN_get_flags(m, BN_FLG_CONSTTIME) != 0)) {
-        return BN_mod_exp_mont_consttime(rr, a, p, m, ctx, in_mont);
-    }
-
     bits = BN_num_bits(p);
     if (bits == 0) {
         /* x**0 mod 1, or x**0 mod -1 is still zero. */
@@ -392,6 +372,7 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     start = 1;                  /* This is used to avoid multiplication etc
                                  * when there is only the value '1' in the
                                  * buffer. */
+    wvalue = 0;                 /* The 'value' of the window */
     wstart = bits - 1;          /* The top bit of the window */
     wend = 0;                   /* The bottom bit of the window */
 
@@ -411,8 +392,6 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     if (!bn_to_mont_fixed_top(r, BN_value_one(), mont, ctx))
         goto err;
     for (;;) {
-        int wvalue;             /* The 'value' of the window */
-
         if (BN_is_bit_set(p, wstart) == 0) {
             if (!start) {
                 if (!bn_mul_mont_fixed_top(r, r, r, mont, ctx))
@@ -455,6 +434,7 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
 
         /* move the 'window' down further */
         wstart -= wend + 1;
+        wvalue = 0;
         start = 0;
         if (wstart < 0)
             break;
@@ -464,17 +444,6 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
      * removes padding [if any] and makes return value suitable for public
      * API consumer.
      */
-#if defined(SPARC_T4_MONT)
-    if (OPENSSL_sparcv9cap_P[0] & (SPARCV9_VIS3 | SPARCV9_PREFER_FPU)) {
-        j = mont->N.top;        /* borrow j */
-        val[0]->d[0] = 1;       /* borrow val[0] */
-        for (i = 1; i < j; i++)
-            val[0]->d[i] = 0;
-        val[0]->top = j;
-        if (!BN_mod_mul_montgomery(rr, r, val[0], mont, ctx))
-            goto err;
-    } else
-#endif
     if (!BN_from_montgomery(rr, r, mont, ctx))
         goto err;
     ret = 1;
@@ -619,9 +588,6 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     int powerbufLen = 0;
     unsigned char *powerbuf = NULL;
     BIGNUM tmp, am;
-#if defined(SPARC_T4_MONT)
-    unsigned int t4 = 0;
-#endif
 
     bn_check_top(a);
     bn_check_top(p);
@@ -633,11 +599,6 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     }
 
     top = m->top;
-
-    if (top > BN_CONSTTIME_SIZE_LIMIT) {
-        /* Prevent overflowing the powerbufLen computation below */
-        return BN_mod_exp_mont(rr, a, p, m, ctx, in_mont);
-    }
 
     /*
      * Use all bits stored in |p|, rather than |BN_num_bits|, so we do not leak
@@ -710,15 +671,8 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
 
     /* Get the window size to use with size of p. */
     window = BN_window_bits_for_ctime_exponent_size(bits);
-#if defined(SPARC_T4_MONT)
-    if (window >= 5 && (top & 15) == 0 && top <= 64 &&
-        (OPENSSL_sparcv9cap_P[1] & (CFR_MONTMUL | CFR_MONTSQR)) ==
-        (CFR_MONTMUL | CFR_MONTSQR) && (t4 = OPENSSL_sparcv9cap_P[0]))
-        window = 5;
-    else
-#endif
 #if defined(OPENSSL_BN_ASM_MONT5)
-    if (window >= 5 && top <= BN_SOFT_LIMIT) {
+    if (window >= 5) {
         window = 5;             /* ~5% improvement for RSA2048 sign, and even
                                  * for RSA4096 */
         /* reserve space for mont->N.d[] copy */
@@ -779,166 +733,17 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     if (!bn_to_mont_fixed_top(&am, a, mont, ctx))
         goto err;
 
-    if (top > BN_SOFT_LIMIT)
-        goto fallback;
-
-#if defined(SPARC_T4_MONT)
-    if (t4) {
-        typedef int (*bn_pwr5_mont_f) (BN_ULONG *tp, const BN_ULONG *np,
-                                       const BN_ULONG *n0, const void *table,
-                                       int power, int bits);
-        int bn_pwr5_mont_t4_8(BN_ULONG *tp, const BN_ULONG *np,
-                              const BN_ULONG *n0, const void *table,
-                              int power, int bits);
-        int bn_pwr5_mont_t4_16(BN_ULONG *tp, const BN_ULONG *np,
-                               const BN_ULONG *n0, const void *table,
-                               int power, int bits);
-        int bn_pwr5_mont_t4_24(BN_ULONG *tp, const BN_ULONG *np,
-                               const BN_ULONG *n0, const void *table,
-                               int power, int bits);
-        int bn_pwr5_mont_t4_32(BN_ULONG *tp, const BN_ULONG *np,
-                               const BN_ULONG *n0, const void *table,
-                               int power, int bits);
-        static const bn_pwr5_mont_f pwr5_funcs[4] = {
-            bn_pwr5_mont_t4_8, bn_pwr5_mont_t4_16,
-            bn_pwr5_mont_t4_24, bn_pwr5_mont_t4_32
-        };
-        bn_pwr5_mont_f pwr5_worker = pwr5_funcs[top / 16 - 1];
-
-        typedef int (*bn_mul_mont_f) (BN_ULONG *rp, const BN_ULONG *ap,
-                                      const void *bp, const BN_ULONG *np,
-                                      const BN_ULONG *n0);
-        int bn_mul_mont_t4_8(BN_ULONG *rp, const BN_ULONG *ap, const void *bp,
-                             const BN_ULONG *np, const BN_ULONG *n0);
-        int bn_mul_mont_t4_16(BN_ULONG *rp, const BN_ULONG *ap,
-                              const void *bp, const BN_ULONG *np,
-                              const BN_ULONG *n0);
-        int bn_mul_mont_t4_24(BN_ULONG *rp, const BN_ULONG *ap,
-                              const void *bp, const BN_ULONG *np,
-                              const BN_ULONG *n0);
-        int bn_mul_mont_t4_32(BN_ULONG *rp, const BN_ULONG *ap,
-                              const void *bp, const BN_ULONG *np,
-                              const BN_ULONG *n0);
-        static const bn_mul_mont_f mul_funcs[4] = {
-            bn_mul_mont_t4_8, bn_mul_mont_t4_16,
-            bn_mul_mont_t4_24, bn_mul_mont_t4_32
-        };
-        bn_mul_mont_f mul_worker = mul_funcs[top / 16 - 1];
-
-        void bn_mul_mont_vis3(BN_ULONG *rp, const BN_ULONG *ap,
-                              const void *bp, const BN_ULONG *np,
-                              const BN_ULONG *n0, int num);
-        void bn_mul_mont_t4(BN_ULONG *rp, const BN_ULONG *ap,
-                            const void *bp, const BN_ULONG *np,
-                            const BN_ULONG *n0, int num);
-        void bn_mul_mont_gather5_t4(BN_ULONG *rp, const BN_ULONG *ap,
-                                    const void *table, const BN_ULONG *np,
-                                    const BN_ULONG *n0, int num, int power);
-        void bn_flip_n_scatter5_t4(const BN_ULONG *inp, size_t num,
-                                   void *table, size_t power);
-        void bn_gather5_t4(BN_ULONG *out, size_t num,
-                           void *table, size_t power);
-        void bn_flip_t4(BN_ULONG *dst, BN_ULONG *src, size_t num);
-
-        BN_ULONG *np = mont->N.d, *n0 = mont->n0;
-        int stride = 5 * (6 - (top / 16 - 1)); /* multiple of 5, but less
-                                                * than 32 */
-
-        /*
-         * BN_to_montgomery can contaminate words above .top [in
-         * BN_DEBUG build...
-         */
-        for (i = am.top; i < top; i++)
-            am.d[i] = 0;
-        for (i = tmp.top; i < top; i++)
-            tmp.d[i] = 0;
-
-        bn_flip_n_scatter5_t4(tmp.d, top, powerbuf, 0);
-        bn_flip_n_scatter5_t4(am.d, top, powerbuf, 1);
-        if (!(*mul_worker) (tmp.d, am.d, am.d, np, n0) &&
-            !(*mul_worker) (tmp.d, am.d, am.d, np, n0))
-            bn_mul_mont_vis3(tmp.d, am.d, am.d, np, n0, top);
-        bn_flip_n_scatter5_t4(tmp.d, top, powerbuf, 2);
-
-        for (i = 3; i < 32; i++) {
-            /* Calculate a^i = a^(i-1) * a */
-            if (!(*mul_worker) (tmp.d, tmp.d, am.d, np, n0) &&
-                !(*mul_worker) (tmp.d, tmp.d, am.d, np, n0))
-                bn_mul_mont_vis3(tmp.d, tmp.d, am.d, np, n0, top);
-            bn_flip_n_scatter5_t4(tmp.d, top, powerbuf, i);
-        }
-
-        /* switch to 64-bit domain */
-        np = alloca(top * sizeof(BN_ULONG));
-        top /= 2;
-        bn_flip_t4(np, mont->N.d, top);
-
-        /*
-         * The exponent may not have a whole number of fixed-size windows.
-         * To simplify the main loop, the initial window has between 1 and
-         * full-window-size bits such that what remains is always a whole
-         * number of windows
-         */
-        window0 = (bits - 1) % 5 + 1;
-        wmask = (1 << window0) - 1;
-        bits -= window0;
-        wvalue = bn_get_bits(p, bits) & wmask;
-        bn_gather5_t4(tmp.d, top, powerbuf, wvalue);
-
-        /*
-         * Scan the exponent one window at a time starting from the most
-         * significant bits.
-         */
-        while (bits > 0) {
-            if (bits < stride)
-                stride = bits;
-            bits -= stride;
-            wvalue = bn_get_bits(p, bits);
-
-            if ((*pwr5_worker) (tmp.d, np, n0, powerbuf, wvalue, stride))
-                continue;
-            /* retry once and fall back */
-            if ((*pwr5_worker) (tmp.d, np, n0, powerbuf, wvalue, stride))
-                continue;
-
-            bits += stride - 5;
-            wvalue >>= stride - 5;
-            wvalue &= 31;
-            bn_mul_mont_t4(tmp.d, tmp.d, tmp.d, np, n0, top);
-            bn_mul_mont_t4(tmp.d, tmp.d, tmp.d, np, n0, top);
-            bn_mul_mont_t4(tmp.d, tmp.d, tmp.d, np, n0, top);
-            bn_mul_mont_t4(tmp.d, tmp.d, tmp.d, np, n0, top);
-            bn_mul_mont_t4(tmp.d, tmp.d, tmp.d, np, n0, top);
-            bn_mul_mont_gather5_t4(tmp.d, tmp.d, powerbuf, np, n0, top,
-                                   wvalue);
-        }
-
-        bn_flip_t4(tmp.d, tmp.d, top);
-        top *= 2;
-        /* back to 32-bit domain */
-        tmp.top = top;
-        bn_correct_top(&tmp);
-        OPENSSL_cleanse(np, top * sizeof(BN_ULONG));
-    } else
-#endif
 #if defined(OPENSSL_BN_ASM_MONT5)
     if (window == 5 && top > 1) {
         /*
-         * This optimization uses ideas from https://eprint.iacr.org/2011/239,
-         * specifically optimization of cache-timing attack countermeasures,
-         * pre-computation optimization, and Almost Montgomery Multiplication.
-         *
-         * The paper discusses a 4-bit window to optimize 512-bit modular
-         * exponentiation, used in RSA-1024 with CRT, but RSA-1024 is no longer
-         * important.
-         *
-         * |bn_mul_mont_gather5| and |bn_power5| implement the "almost"
-         * reduction variant, so the values here may not be fully reduced.
-         * They are bounded by R (i.e. they fit in |top| words), not |m|.
-         * Additionally, we pass these "almost" reduced inputs into
-         * |bn_mul_mont|, which implements the normal reduction variant.
-         * Given those inputs, |bn_mul_mont| may not give reduced
-         * output, but it will still produce "almost" reduced output.
+         * This optimization uses ideas from http://eprint.iacr.org/2011/239,
+         * specifically optimization of cache-timing attack countermeasures
+         * and pre-computation optimization.
+         */
+
+        /*
+         * Dedicated window==4 case improves 512-bit RSA sign by ~15%, but as
+         * 512-bit RSA is hardly relevant, we omit it to spare size...
          */
         void bn_mul_mont_gather5(BN_ULONG *rp, const BN_ULONG *ap,
                                  const void *table, const BN_ULONG *np,
@@ -950,6 +755,9 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
                        const void *table, const BN_ULONG *np,
                        const BN_ULONG *n0, int num, int power);
         int bn_get_bits5(const BN_ULONG *ap, int off);
+        int bn_from_montgomery(BN_ULONG *rp, const BN_ULONG *ap,
+                               const BN_ULONG *not_used, const BN_ULONG *np,
+                               const BN_ULONG *n0, int num);
 
         BN_ULONG *n0 = mont->n0, *np;
 
@@ -1038,22 +846,17 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
             }
         }
 
+        ret = bn_from_montgomery(tmp.d, tmp.d, NULL, np, n0, top);
         tmp.top = top;
-        /*
-         * The result is now in |tmp| in Montgomery form, but it may not be
-         * fully reduced. This is within bounds for |BN_from_montgomery|
-         * (tmp < R <= m*R) so it will, when converting from Montgomery form,
-         * produce a fully reduced result.
-         *
-         * This differs from Figure 2 of the paper, which uses AMM(h, 1) to
-         * convert from Montgomery form with unreduced output, followed by an
-         * extra reduction step. In the paper's terminology, we replace
-         * steps 9 and 10 with MM(h, 1).
-         */
+        bn_correct_top(&tmp);
+        if (ret) {
+            if (!BN_copy(rr, &tmp))
+                ret = 0;
+            goto err;           /* non-zero ret means it's not error */
+        }
     } else
 #endif
     {
- fallback:
         if (!MOD_EXP_CTIME_COPY_TO_PREBUF(&tmp, top, powerbuf, 0, window))
             goto err;
         if (!MOD_EXP_CTIME_COPY_TO_PREBUF(&am, top, powerbuf, 1, window))
@@ -1137,15 +940,6 @@ int BN_mod_exp_mont_consttime(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
      * removes padding [if any] and makes return value suitable for public
      * API consumer.
      */
-#if defined(SPARC_T4_MONT)
-    if (OPENSSL_sparcv9cap_P[0] & (SPARCV9_VIS3 | SPARCV9_PREFER_FPU)) {
-        am.d[0] = 1;            /* borrow am */
-        for (i = 1; i < top; i++)
-            am.d[i] = 0;
-        if (!BN_mod_mul_montgomery(rr, &tmp, &am, mont, ctx))
-            goto err;
-    } else
-#endif
     if (!BN_from_montgomery(rr, &tmp, mont, ctx))
         goto err;
     ret = 1;
@@ -1311,7 +1105,7 @@ int BN_mod_exp_mont_word(BIGNUM *rr, BN_ULONG a, const BIGNUM *p,
 int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
                       const BIGNUM *m, BN_CTX *ctx)
 {
-    int i, j, bits, ret = 0, wstart, wend, window;
+    int i, j, bits, ret = 0, wstart, wend, window, wvalue;
     int start = 1;
     BIGNUM *d;
     /* Table of variables obtained from 'ctx' */
@@ -1322,11 +1116,6 @@ int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
             || BN_get_flags(m, BN_FLG_CONSTTIME) != 0) {
         /* BN_FLG_CONSTTIME only supported by BN_mod_exp_mont() */
         ERR_raise(ERR_LIB_BN, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
-        return 0;
-    }
-
-    if (r == m) {
-        ERR_raise(ERR_LIB_BN, ERR_R_PASSED_INVALID_ARGUMENT);
         return 0;
     }
 
@@ -1371,23 +1160,14 @@ int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
     start = 1;                  /* This is used to avoid multiplication etc
                                  * when there is only the value '1' in the
                                  * buffer. */
+    wvalue = 0;                 /* The 'value' of the window */
     wstart = bits - 1;          /* The top bit of the window */
     wend = 0;                   /* The bottom bit of the window */
-
-    if (r == p) {
-        BIGNUM *p_dup = BN_CTX_get(ctx);
-
-        if (p_dup == NULL || BN_copy(p_dup, p) == NULL)
-            goto err;
-        p = p_dup;
-    }
 
     if (!BN_one(r))
         goto err;
 
     for (;;) {
-        int wvalue;             /* The 'value' of the window */
-
         if (BN_is_bit_set(p, wstart) == 0) {
             if (!start)
                 if (!BN_mod_mul(r, r, r, m, ctx))
@@ -1429,6 +1209,7 @@ int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 
         /* move the 'window' down further */
         wstart -= wend + 1;
+        wvalue = 0;
         start = 0;
         if (wstart < 0)
             break;
@@ -1460,20 +1241,12 @@ int BN_mod_exp_mont_consttime_x2(BIGNUM *rr1, const BIGNUM *a1, const BIGNUM *p1
     BN_MONT_CTX *mont2 = NULL;
 
     if (ossl_rsaz_avx512ifma_eligible() &&
-        (((a1->top == 16) && (p1->top == 16) && (BN_num_bits(m1) == 1024) &&
-          (a2->top == 16) && (p2->top == 16) && (BN_num_bits(m2) == 1024)) ||
-         ((a1->top == 24) && (p1->top == 24) && (BN_num_bits(m1) == 1536) &&
-          (a2->top == 24) && (p2->top == 24) && (BN_num_bits(m2) == 1536)) ||
-         ((a1->top == 32) && (p1->top == 32) && (BN_num_bits(m1) == 2048) &&
-          (a2->top == 32) && (p2->top == 32) && (BN_num_bits(m2) == 2048)))) {
+        ((a1->top == 16) && (p1->top == 16) && (BN_num_bits(m1) == 1024) &&
+         (a2->top == 16) && (p2->top == 16) && (BN_num_bits(m2) == 1024))) {
 
-        int topn = a1->top;
-        /* Modulus bits of |m1| and |m2| are equal */
-        int mod_bits = BN_num_bits(m1);
-
-        if (bn_wexpand(rr1, topn) == NULL)
+        if (bn_wexpand(rr1, 16) == NULL)
             goto err;
-        if (bn_wexpand(rr2, topn) == NULL)
+        if (bn_wexpand(rr2, 16) == NULL)
             goto err;
 
         /*  Ensure that montgomery contexts are initialized */
@@ -1498,14 +1271,14 @@ int BN_mod_exp_mont_consttime_x2(BIGNUM *rr1, const BIGNUM *a1, const BIGNUM *p1
                                           mont1->RR.d, mont1->n0[0],
                                           rr2->d, a2->d, p2->d, m2->d,
                                           mont2->RR.d, mont2->n0[0],
-                                          mod_bits);
+                                          1024 /* factor bit size */);
 
-        rr1->top = topn;
+        rr1->top = 16;
         rr1->neg = 0;
         bn_correct_top(rr1);
         bn_check_top(rr1);
 
-        rr2->top = topn;
+        rr2->top = 16;
         rr2->neg = 0;
         bn_correct_top(rr2);
         bn_check_top(rr2);

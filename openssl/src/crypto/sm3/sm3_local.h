@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2017 Ribose Inc. All Rights Reserved.
  * Ported from Ribose contributions from Botan.
  *
@@ -10,16 +10,16 @@
  */
 
 #include <string.h>
-#include "internal/sm3.h"
+#include <openssl/sm3.h>
 
 #define DATA_ORDER_IS_BIG_ENDIAN
 
 #define HASH_LONG               SM3_WORD
 #define HASH_CTX                SM3_CTX
 #define HASH_CBLOCK             SM3_CBLOCK
-#define HASH_UPDATE             ossl_sm3_update
-#define HASH_TRANSFORM          ossl_sm3_transform
-#define HASH_FINAL              ossl_sm3_final
+#define HASH_UPDATE             SM3_Update
+#define HASH_TRANSFORM          SM3_Transform
+#define HASH_FINAL              SM3_Final
 #define HASH_MAKE_STRING(c, s)              \
       do {                                  \
         unsigned long ll;                   \
@@ -34,14 +34,9 @@
       } while (0)
 
 #if defined(OPENSSL_SM3_ASM)
-# if defined(__aarch64__) || defined(_M_ARM64)
+# if defined(__aarch64__)
 #  include "crypto/arm_arch.h"
 #  define HWSM3_CAPABLE (OPENSSL_armcap_P & ARMV8_SM3)
-void ossl_hwsm3_block_data_order(SM3_CTX *c, const void *p, size_t num);
-# endif
-# if defined(__riscv) && __riscv_xlen == 64
-#  include "crypto/riscv_arch.h"
-#  define HWSM3_CAPABLE 1
 void ossl_hwsm3_block_data_order(SM3_CTX *c, const void *p, size_t num);
 # endif
 #endif
@@ -54,32 +49,11 @@ void ossl_hwsm3_block_data_order(SM3_CTX *c, const void *p, size_t num);
 #endif
 
 void ossl_sm3_block_data_order(SM3_CTX *c, const void *p, size_t num);
-void ossl_sm3_transform(SM3_CTX *c, const unsigned char *data);
 
 #include "crypto/md32_common.h"
 
-#ifndef PEDANTIC
-# if defined(__GNUC__) && __GNUC__>=2 && \
-     !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_NO_INLINE_ASM)
-#  if defined(__riscv_zksh)
-#   define P0(x) ({ MD32_REG_T ret;        \
-                       asm ("sm3p0 %0, %1" \
-                       : "=r"(ret)         \
-                       : "r"(x)); ret;     })
-#   define P1(x) ({ MD32_REG_T ret;        \
-                       asm ("sm3p1 %0, %1" \
-                       : "=r"(ret)         \
-                       : "r"(x)); ret;     })
-#  endif
-# endif
-#endif
-
-#ifndef P0
-# define P0(X) (X ^ ROTATE(X, 9) ^ ROTATE(X, 17))
-#endif
-#ifndef P1
-# define P1(X) (X ^ ROTATE(X, 15) ^ ROTATE(X, 23))
-#endif
+#define P0(X) (X ^ ROTATE(X, 9) ^ ROTATE(X, 17))
+#define P1(X) (X ^ ROTATE(X, 15) ^ ROTATE(X, 23))
 
 #define FF0(X,Y,Z) (X ^ Y ^ Z)
 #define GG0(X,Y,Z) (X ^ Y ^ Z)

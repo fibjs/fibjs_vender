@@ -7,11 +7,11 @@
  * https://www.openssl.org/source/license.html
  */
 
-#if defined(__linux) || defined(__sun) || defined(__hpux)
+#if defined(__linux) || defined(__sun)
 /*
  * Following definition aliases fopen to fopen64 on above mentioned
  * platforms. This makes it possible to open and sequentially access files
- * larger than 2GB from 32-bit application. It does not allow one to traverse
+ * larger than 2GB from 32-bit application. It does not allow to traverse
  * them beyond 2GB with fseek/ftell, but on the other hand *no* 32-bit
  * platform permits that, not with fseek/ftell. Not to mention that breaking
  * 2GB limit for seeking would require surgery to *our* API. But sequential
@@ -165,12 +165,6 @@ static int file_write(BIO *b, const char *in, int inl)
             ret = fwrite(in, (int)inl, 1, (FILE *)b->ptr);
         if (ret)
             ret = inl;
-        /* ret=fwrite(in,1,(int)inl,(FILE *)b->ptr); */
-        /*
-         * according to Tim Hudson <tjh@openssl.org>, the commented out
-         * version above can cause 'inl' write calls under some stupid stdio
-         * implementations (VMS)
-         */
     }
     return ret;
 }

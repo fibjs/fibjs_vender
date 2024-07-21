@@ -4,11 +4,7 @@
 .align	16
 ossl_md5_block_asm_data_order:
 .L_ossl_md5_block_asm_data_order_begin:
-	#ifdef __CET__
-
 .byte	243,15,30,251
-	#endif
-
 	pushl	%esi
 	pushl	%edi
 	movl	12(%esp),%edi

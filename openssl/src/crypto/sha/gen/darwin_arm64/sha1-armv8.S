@@ -1,5 +1,5 @@
-#include "arm_arch.h"
 #ifndef	__KERNEL__
+# include "arm_arch.h"
 
 .private_extern	_OPENSSL_armcap_P
 #endif
@@ -10,13 +10,11 @@
 
 .align	6
 _sha1_block_data_order:
-	AARCH64_VALID_CALL_TARGET
 	adrp	x16,_OPENSSL_armcap_P@PAGE
 	ldr	w16,[x16,_OPENSSL_armcap_P@PAGEOFF]
 	tst	w16,#ARMV8_SHA1
 	b.ne	Lv8_entry
 
-	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
 	stp	x29,x30,[sp,#-96]!
 	add	x29,sp,#0
 	stp	x19,x20,[sp,#16]
@@ -1076,7 +1074,6 @@ Loop:
 .align	6
 sha1_block_armv8:
 Lv8_entry:
-	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
 	stp	x29,x30,[sp,#-16]!
 	add	x29,sp,#0
 

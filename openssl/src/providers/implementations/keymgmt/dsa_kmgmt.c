@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -199,9 +199,8 @@ static int dsa_import(void *keydata, int selection, const OSSL_PARAM params[])
     if ((selection & DSA_POSSIBLE_SELECTIONS) == 0)
         return 0;
 
-    /* a key without parameters is meaningless */
-    ok = ok && ossl_dsa_ffc_params_fromdata(dsa, params);
-
+    if ((selection & OSSL_KEYMGMT_SELECT_ALL_PARAMETERS) != 0)
+        ok = ok && ossl_dsa_ffc_params_fromdata(dsa, params);
     if ((selection & OSSL_KEYMGMT_SELECT_KEYPAIR) != 0) {
         int include_private =
             selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY ? 1 : 0;
@@ -223,9 +222,6 @@ static int dsa_export(void *keydata, int selection, OSSL_CALLBACK *param_cb,
     if (!ossl_prov_is_running() || dsa == NULL)
         return 0;
 
-    if ((selection & DSA_POSSIBLE_SELECTIONS) == 0)
-        return 0;
-
     tmpl = OSSL_PARAM_BLD_new();
     if (tmpl == NULL)
         return 0;
@@ -239,10 +235,9 @@ static int dsa_export(void *keydata, int selection, OSSL_CALLBACK *param_cb,
         ok = ok && dsa_key_todata(dsa, tmpl, NULL, include_private);
     }
 
-    if (!ok || (params = OSSL_PARAM_BLD_to_param(tmpl)) == NULL) {
-        ok = 0;
+    if (!ok
+        || (params = OSSL_PARAM_BLD_to_param(tmpl)) == NULL)
         goto err;
-    }
 
     ok = param_cb(params, cbarg);
     OSSL_PARAM_free(params);
@@ -462,7 +457,6 @@ static int dsa_gen_set_params(void *genctx, const OSSL_PARAM params[])
 {
     struct dsa_gen_ctx *gctx = genctx;
     const OSSL_PARAM *p;
-    int gen_type = -1;
 
     if (gctx == NULL)
         return 0;
@@ -473,18 +467,10 @@ static int dsa_gen_set_params(void *genctx, const OSSL_PARAM params[])
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_FFC_TYPE);
     if (p != NULL) {
         if (p->data_type != OSSL_PARAM_UTF8_STRING
-            || ((gen_type = dsa_gen_type_name2id(p->data)) == -1)) {
+            || ((gctx->gen_type = dsa_gen_type_name2id(p->data)) == -1)) {
             ERR_raise(ERR_LIB_PROV, ERR_R_PASSED_INVALID_ARGUMENT);
             return 0;
         }
-
-        /*
-         * Only assign context gen_type if it was set by dsa_gen_type_name2id
-         * must be in range:
-         * DSA_PARAMGEN_TYPE_FIPS_186_4 <= gen_type <= DSA_PARAMGEN_TYPE_FIPS_DEFAULT
-         */
-        if (gen_type != -1)
-            gctx->gen_type = gen_type;
     }
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_FFC_GINDEX);
     if (p != NULL
@@ -577,19 +563,6 @@ static void *dsa_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg)
         gctx->gen_type = (gctx->pbits >= 2048 ? DSA_PARAMGEN_TYPE_FIPS_186_4 :
                                                 DSA_PARAMGEN_TYPE_FIPS_186_2);
 
-    /*
-     * Do a bounds check on context gen_type. Must be in range:
-     * DSA_PARAMGEN_TYPE_FIPS_186_4 <= gen_type <= DSA_PARAMGEN_TYPE_FIPS_DEFAULT
-     * Noted here as this needs to be adjusted if a new type is
-     * added.
-     */
-    if (!ossl_assert((gctx->gen_type >= DSA_PARAMGEN_TYPE_FIPS_186_4)
-                    && (gctx->gen_type <= DSA_PARAMGEN_TYPE_FIPS_DEFAULT))) {
-        ERR_raise_data(ERR_LIB_PROV, ERR_R_INTERNAL_ERROR,
-                       "gen_type set to unsupported value %d", gctx->gen_type);
-        return NULL;
-    }
-
     gctx->cb = osslcb;
     gctx->cbarg = cbarg;
     gencb = BN_GENCB_new();
@@ -612,9 +585,10 @@ static void *dsa_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg)
     } else if (gctx->hindex != 0) {
         ossl_ffc_params_set_h(ffc, gctx->hindex);
     }
-    if (gctx->mdname != NULL)
-        ossl_ffc_set_digest(ffc, gctx->mdname, gctx->mdprops);
-
+    if (gctx->mdname != NULL) {
+        if (!ossl_ffc_set_digest(ffc, gctx->mdname, gctx->mdprops))
+            goto end;
+    }
     if ((gctx->selection & OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS) != 0) {
 
          if (ossl_dsa_generate_ffc_parameters(dsa, gctx->gen_type,
@@ -697,5 +671,5 @@ const OSSL_DISPATCH ossl_dsa_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_EXPORT, (void (*)(void))dsa_export },
     { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))dsa_export_types },
     { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))dsa_dup },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };

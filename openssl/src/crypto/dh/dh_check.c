@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -73,7 +73,7 @@ int DH_check_params(const DH *dh, int *ret)
     BN_CTX *ctx = NULL;
 
     *ret = 0;
-    ctx = BN_CTX_new_ex(dh->libctx);
+    ctx = BN_CTX_new();
     if (ctx == NULL)
         goto err;
     BN_CTX_start(ctx);
@@ -155,14 +155,13 @@ int DH_check(const DH *dh, int *ret)
     /* Don't do any checks at all with an excessively large modulus */
     if (BN_num_bits(dh->params.p) > OPENSSL_DH_CHECK_MAX_MODULUS_BITS) {
         ERR_raise(ERR_LIB_DH, DH_R_MODULUS_TOO_LARGE);
-        *ret = DH_MODULUS_TOO_LARGE | DH_CHECK_P_NOT_PRIME;
         return 0;
     }
 
     if (!DH_check_params(dh, ret))
         return 0;
 
-    ctx = BN_CTX_new_ex(dh->libctx);
+    ctx = BN_CTX_new();
     if (ctx == NULL)
         goto err;
     BN_CTX_start(ctx);
@@ -271,8 +270,7 @@ int DH_check_pub_key(const DH *dh, const BIGNUM *pub_key, int *ret)
  */
 int ossl_dh_check_pub_key_partial(const DH *dh, const BIGNUM *pub_key, int *ret)
 {
-    return ossl_ffc_validate_public_key_partial(&dh->params, pub_key, ret)
-           && *ret == 0;
+    return ossl_ffc_validate_public_key_partial(&dh->params, pub_key, ret);
 }
 
 int ossl_dh_check_priv_key(const DH *dh, const BIGNUM *priv_key, int *ret)
@@ -284,43 +282,22 @@ int ossl_dh_check_priv_key(const DH *dh, const BIGNUM *priv_key, int *ret)
     two_powN = BN_new();
     if (two_powN == NULL)
         return 0;
-
-    if (dh->params.q != NULL) {
-        upper = dh->params.q;
-#ifndef FIPS_MODULE
-    } else if (dh->params.p != NULL) {
-        /*
-         * We do not have q so we just check the key is within some
-         * reasonable range, or the number of bits is equal to dh->length.
-         */
-        int length = dh->length;
-
-        if (length == 0) {
-            length = BN_num_bits(dh->params.p) - 1;
-            if (BN_num_bits(priv_key) <= length
-                && BN_num_bits(priv_key) > 1)
-                ok = 1;
-        } else if (BN_num_bits(priv_key) == length) {
-            ok = 1;
-        }
-        goto end;
-#endif
-    } else {
-        goto end;
-    }
+    if (dh->params.q == NULL)
+        goto err;
+    upper = dh->params.q;
 
     /* Is it from an approved Safe prime group ?*/
     if (DH_get_nid((DH *)dh) != NID_undef && dh->length != 0) {
         if (!BN_lshift(two_powN, BN_value_one(), dh->length))
-            goto end;
+            goto err;
         if (BN_cmp(two_powN, dh->params.q) < 0)
             upper = two_powN;
     }
     if (!ossl_ffc_validate_private_key(upper, priv_key, ret))
-        goto end;
+        goto err;
 
     ok = 1;
-end:
+err:
     BN_free(two_powN);
     return ok;
 }
@@ -351,7 +328,7 @@ int ossl_dh_check_pairwise(const DH *dh)
     /* recalculate the public key = (g ^ priv) mod p */
     if (!ossl_dh_generate_public_key(ctx, dh, dh->priv_key, pub_key))
         goto err;
-    /* check it matches the existing public_key */
+    /* check it matches the existing pubic_key */
     ret = BN_cmp(pub_key, dh->pub_key) == 0;
 err:
     BN_free(pub_key);

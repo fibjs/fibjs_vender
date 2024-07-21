@@ -7,7 +7,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_misc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_ofb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/aes/aes_wrap.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/aria/aria.c
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_bitstr.c
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_d2i_fp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/asn1/a_digest.c
@@ -79,11 +78,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/async/async.c
     ${PROJECT_SOURCE_DIR}/src/crypto/async/async_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/async/async_wait.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bf/bf_cfb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bf/bf_ecb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bf/bf_enc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bf/bf_ofb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bf/bf_skey.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bf_buff.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bf_lbuf.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bf_nbio.c
@@ -104,7 +98,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_conn.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_core.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_dgram.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_dgram_pair.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_fd.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_file.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_log.c
@@ -113,6 +106,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/bss_sock.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bio/ossl_core_bio.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_add.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_asm.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_asm.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_blind.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_const.c
@@ -140,33 +134,22 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_recp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_rsa_fips186_4.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_shift.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_sm2.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_sqr.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_sqrt.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_srp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_word.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bn/bn_x931p.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/bn/rsa_sup_mul.c
     ${PROJECT_SOURCE_DIR}/src/crypto/bsearch.c
     ${PROJECT_SOURCE_DIR}/src/crypto/buffer/buf_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/buffer/buffer.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/camellia.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/cmll_cbc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/cmll_cfb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/cmll_ctr.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/cmll_ecb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/cmll_misc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/camellia/cmll_ofb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_cfb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_ecb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_enc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_ofb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/cast/c_skey.c
     ${PROJECT_SOURCE_DIR}/src/crypto/chacha/chacha_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmac/cmac.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_asn.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_client.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_ctx.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_err.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_genm.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_hdr.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_http.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cmp/cmp_msg.c
@@ -192,9 +175,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/cms/cms_rsa.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cms/cms_sd.c
     ${PROJECT_SOURCE_DIR}/src/crypto/cms/cms_smime.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/comp/c_brotli.c
     ${PROJECT_SOURCE_DIR}/src/crypto/comp/c_zlib.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/comp/c_zstd.c
     ${PROJECT_SOURCE_DIR}/src/crypto/comp/comp_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/comp/comp_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/conf/conf_api.c
@@ -235,9 +216,11 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/des/cfb64enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/cfb_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/des_enc.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/des/des_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ecb3_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ecb_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/fcrypt.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/des/fcrypt_b.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/fcrypt_b.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ofb64ede.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/ofb64enc.c
@@ -248,7 +231,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/des/set_key.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/str2key.c
     ${PROJECT_SOURCE_DIR}/src/crypto/des/xcbc_enc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/deterministic_nonce.c
     ${PROJECT_SOURCE_DIR}/src/crypto/dh/dh_ameth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/dh/dh_asn1.c
     ${PROJECT_SOURCE_DIR}/src/crypto/dh/dh_backend.c
@@ -284,7 +266,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/dso/dso_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/dso/dso_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/dso/dso_openssl.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/dso/dso_vms.c
     ${PROJECT_SOURCE_DIR}/src/crypto/dso/dso_win32.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ebcdic.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/curve25519.c
@@ -318,6 +299,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecdsa_sign.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecdsa_vrf.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/eck_prn.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecp_meth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecp_mont.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecp_nist.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecp_oct.c
@@ -325,6 +307,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecx_backend.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecx_key.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ec/ecx_meth.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/eia3/eia3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/encode_decode/decoder_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/encode_decode/decoder_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/encode_decode/decoder_meth.c
@@ -352,6 +335,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_digest.c
     ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_dsa.c
     ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_eckey.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_ecpmeth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_pkmeth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_rand.c
     ${PROJECT_SOURCE_DIR}/src/crypto/engine/tb_rsa.c
@@ -359,9 +343,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/err/err_all.c
     ${PROJECT_SOURCE_DIR}/src/crypto/err/err_all_legacy.c
     ${PROJECT_SOURCE_DIR}/src/crypto/err/err_blocks.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/err/err_mark.c
     ${PROJECT_SOURCE_DIR}/src/crypto/err/err_prn.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/err/err_save.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ess/ess_asn1.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ess/ess_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ess/ess_lib.c
@@ -381,21 +363,15 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_aes.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_aes_cbc_hmac_sha1.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_aes_cbc_hmac_sha256.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_aria.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_bf.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_camellia.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_cast.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_chacha20_poly1305.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_des.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_des3.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_idea.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_eea3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_null.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_old.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_rc2.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_rc4.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_rc4_hmac_md5.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_rc5.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_seed.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_sm4.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/e_xcbc_d.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/ec_ctrl.c
@@ -417,10 +393,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/kem.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/keymgmt_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/keymgmt_meth.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_blake2.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_md5.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_md5_sha1.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_ripemd.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/legacy_sha.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/m_null.c
     ${PROJECT_SOURCE_DIR}/src/crypto/evp/m_sigver.c
@@ -450,19 +424,11 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/ffc/ffc_params.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ffc/ffc_params_generate.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ffc/ffc_params_validate.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/gen/windows_arm64/params_idx.c
     ${PROJECT_SOURCE_DIR}/src/crypto/getenv.c
     ${PROJECT_SOURCE_DIR}/src/crypto/hmac/hmac.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/hpke/hpke.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/hpke/hpke_util.c
     ${PROJECT_SOURCE_DIR}/src/crypto/http/http_client.c
     ${PROJECT_SOURCE_DIR}/src/crypto/http/http_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/http/http_lib.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/idea/i_cbc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/idea/i_cfb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/idea/i_ecb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/idea/i_ofb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/idea/i_skey.c
     ${PROJECT_SOURCE_DIR}/src/crypto/info.c
     ${PROJECT_SOURCE_DIR}/src/crypto/init.c
     ${PROJECT_SOURCE_DIR}/src/crypto/initthread.c
@@ -486,7 +452,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/siv128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/wrap128.c
     ${PROJECT_SOURCE_DIR}/src/crypto/modes/xts128.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/modes/xts128gb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/o_dir.c
     ${PROJECT_SOURCE_DIR}/src/crypto/o_fopen.c
     ${PROJECT_SOURCE_DIR}/src/crypto/o_init.c
@@ -562,24 +527,15 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/provider_core.c
     ${PROJECT_SOURCE_DIR}/src/crypto/provider_predefined.c
     ${PROJECT_SOURCE_DIR}/src/crypto/punycode.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/quic_vlint.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/prov_seed.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_deprecated.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_meth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_pool.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rand/rand_uniform.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rand/randfile.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rc2/rc2_cbc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rc2/rc2_ecb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rc2/rc2_skey.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rc2/rc2cfb64.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/rc2/rc2ofb64.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rc4/rc4_enc.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rc4/rc4_skey.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/ripemd/rmd_dgst.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/ripemd/rmd_one.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_ameth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_asn1.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_backend.c
@@ -606,11 +562,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_sp800_56b_gen.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_x931.c
     ${PROJECT_SOURCE_DIR}/src/crypto/rsa/rsa_x931g.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed_cbc.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed_cfb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed_ecb.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/seed/seed_ofb.c
     ${PROJECT_SOURCE_DIR}/src/crypto/self_test_core.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/keccak1600.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha1_one.c
@@ -619,10 +570,10 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sha/sha512.c
     ${PROJECT_SOURCE_DIR}/src/crypto/siphash/siphash.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/sleep.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_crypt.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_key.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_kmeth.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm2/sm2_sign.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm3/legacy_sm3.c
     ${PROJECT_SOURCE_DIR}/src/crypto/sm3/sm3.c
@@ -638,17 +589,10 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/store/store_register.c
     ${PROJECT_SOURCE_DIR}/src/crypto/store/store_result.c
     ${PROJECT_SOURCE_DIR}/src/crypto/store/store_strings.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/thread/api.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/thread/arch.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/thread/arch/thread_none.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/thread/arch/thread_posix.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/thread/arch/thread_win.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/thread/internal.c
     ${PROJECT_SOURCE_DIR}/src/crypto/threads_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/threads_none.c
     ${PROJECT_SOURCE_DIR}/src/crypto/threads_pthread.c
     ${PROJECT_SOURCE_DIR}/src/crypto/threads_win.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/time.c
     ${PROJECT_SOURCE_DIR}/src/crypto/trace.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ts/ts_asn1.c
     ${PROJECT_SOURCE_DIR}/src/crypto/ts/ts_conf.c
@@ -693,16 +637,11 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_enum.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_extku.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_genn.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_group_ac.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_ia5.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_ind_iss.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_info.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_int.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_ist.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_lib.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_ncons.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_no_ass.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_no_rev_avail.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_pci.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_pcia.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_pcons.c
@@ -711,12 +650,9 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_prn.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_purp.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_san.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_single_use.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_skid.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_soa_id.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_sxnet.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_tlsf.c
-    ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_utf8.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3_utl.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/v3err.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/x509_att.c
@@ -750,6 +686,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/x_req.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/x_x509.c
     ${PROJECT_SOURCE_DIR}/src/crypto/x509/x_x509a.c
+    ${PROJECT_SOURCE_DIR}/src/crypto/zuc/zuc.c
     ${PROJECT_SOURCE_DIR}/src/providers/baseprov.c
     ${PROJECT_SOURCE_DIR}/src/providers/common/bio_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/common/capabilities.c
@@ -787,9 +724,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_ccm_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_gcm.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_gcm_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_gcm_siv.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_gcm_siv_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_gcm_siv_polyval.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_ocb.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_ocb_hw.c
@@ -799,18 +733,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_xts.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_xts_fips.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aes_xts_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aria.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aria_ccm.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aria_ccm_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aria_gcm.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aria_gcm_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_aria_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_blowfish.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_blowfish_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_camellia.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_camellia_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_cast5.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_cast5_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_chacha20.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_chacha20_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_chacha20_poly1305.c
@@ -820,25 +742,17 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_des_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_desx.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_desx_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_idea.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_idea_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_null.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_rc2.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_rc2_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_rc4.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_rc4_hmac_md5.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_rc4_hmac_md5_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_rc4_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_seed.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_seed_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_ccm.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_ccm_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_gcm.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_gcm_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_xts.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_sm4_xts_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_common.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_default.c
@@ -846,6 +760,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_wrap.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_tdes_wrap_hw.c
+    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_zuc_eea3.c
+    ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/cipher_zuc_eea3_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/ciphercommon.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/ciphercommon_block.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/ciphercommon_ccm.c
@@ -853,14 +769,10 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/ciphercommon_gcm.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/ciphercommon_gcm_hw.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/ciphers/ciphercommon_hw.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/blake2_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/blake2b_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/blake2s_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/digestcommon.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/md5_sha1_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/null_prov.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/ripemd_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha2_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sha3_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/digests/sm3_prov.c
@@ -879,24 +791,19 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/exchange/ecdh_exch.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/exchange/ecx_exch.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/exchange/kdf_exch.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/argon2.c
+    ${PROJECT_SOURCE_DIR}/src/providers/implementations/exchange/sm2dh_exch.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/hkdf.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/hmacdrbg_kdf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/kbkdf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/krb5kdf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/pbkdf1.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/pbkdf2.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/pbkdf2_fips.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/pkcs12kdf.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/pvkkdf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/scrypt.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/sshkdf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/sskdf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/tls1_prf.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kdfs/x942kdf.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/kem/ec_kem.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/kem/ecx_kem.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/kem/kem_util.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/kem/rsa_kem.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/keymgmt/dh_kmgmt.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/keymgmt/dsa_kmgmt.c
@@ -905,9 +812,8 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/keymgmt/kdf_legacy_kmgmt.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/keymgmt/mac_legacy_kmgmt.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/keymgmt/rsa_kmgmt.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/blake2b_mac.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/blake2s_mac.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/cmac_prov.c
+    ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/eia3_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/gmac_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/hmac_prov.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/macs/kmac_prov.c
@@ -932,7 +838,6 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/signature/sm2_sig.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/file_store.c
     ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/file_store_any2obj.c
-    ${PROJECT_SOURCE_DIR}/src/providers/implementations/storemgmt/winstore_store.c
     ${PROJECT_SOURCE_DIR}/src/providers/legacyprov.c
     ${PROJECT_SOURCE_DIR}/src/providers/nullprov.c
     ${PROJECT_SOURCE_DIR}/src/providers/prov_running.c
@@ -940,67 +845,21 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/d1_lib.c
     ${PROJECT_SOURCE_DIR}/src/ssl/d1_msg.c
     ${PROJECT_SOURCE_DIR}/src/ssl/d1_srtp.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/event_queue.c
     ${PROJECT_SOURCE_DIR}/src/ssl/methods.c
     ${PROJECT_SOURCE_DIR}/src/ssl/pqueue.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/priority_queue.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/cc_newreno.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/json_enc.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/qlog.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/qlog_event_helpers.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_ackm.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_cfq.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_channel.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_demux.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_engine.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_fc.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_fifd.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_impl.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_lcidm.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_method.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_port.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rcidm.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_reactor.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_rx.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_shared.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_tx.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_record_util.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rstream.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_rx_depack.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_sf_list.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_srt_gen.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_srtm.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_sstream.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_statm.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_stream_map.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_thread_assist.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_tls.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_trace.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_tserver.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_txp.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_txpim.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_types.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_wire.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/quic_wire_pkt.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/quic/uint_set.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/dtls_meth.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/ssl3_cbc.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/ssl3_meth.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tls13_meth.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tls1_meth.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tls_common.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tls_multib.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tls_pad.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/record/methods/tlsany_meth.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/record/dtls1_bitmap.c
     ${PROJECT_SOURCE_DIR}/src/ssl/record/rec_layer_d1.c
     ${PROJECT_SOURCE_DIR}/src/ssl/record/rec_layer_s3.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/rio/poll_immediate.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/record/ssl3_buffer.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/record/ssl3_record.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/record/ssl3_record_tls13.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/record/tls_pad.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/s3_cbc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_enc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_lib.c
     ${PROJECT_SOURCE_DIR}/src/ssl/s3_msg.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_asn1.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_cert.c
-    ${PROJECT_SOURCE_DIR}/src/ssl/ssl_cert_comp.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_ciph.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_conf.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_err.c
@@ -1008,6 +867,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_init.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_lib.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_mcnf.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/ssl_quic.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_rsa.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_rsa_legacy.c
     ${PROJECT_SOURCE_DIR}/src/ssl/ssl_sess.c
@@ -1022,6 +882,7 @@ set(src_list
     ${PROJECT_SOURCE_DIR}/src/ssl/statem/statem_clnt.c
     ${PROJECT_SOURCE_DIR}/src/ssl/statem/statem_dtls.c
     ${PROJECT_SOURCE_DIR}/src/ssl/statem/statem_lib.c
+    ${PROJECT_SOURCE_DIR}/src/ssl/statem/statem_quic.c
     ${PROJECT_SOURCE_DIR}/src/ssl/statem/statem_srvr.c
     ${PROJECT_SOURCE_DIR}/src/ssl/t1_enc.c
     ${PROJECT_SOURCE_DIR}/src/ssl/t1_lib.c

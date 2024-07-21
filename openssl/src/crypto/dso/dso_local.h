@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -19,9 +19,8 @@
 struct dso_st {
     DSO_METHOD *meth;
     /*
-     * Standard dlopen uses a (void *). Win32 uses a HANDLE. VMS doesn't use
-     * anything but will need to cache the filename for use in the dso_bind
-     * handler. All in all, let each method control its own destiny.
+     * Standard dlopen uses a (void *). Win32 uses a HANDLE. All in all, let
+     * each method control its own destiny.
      * "Handles" and such go in a STACK.
      */
     STACK_OF(void) *meth_data;
@@ -61,6 +60,7 @@ struct dso_st {
      * loaded.
      */
     char *loaded_filename;
+    CRYPTO_RWLOCK *lock;
 };
 
 struct dso_meth_st {

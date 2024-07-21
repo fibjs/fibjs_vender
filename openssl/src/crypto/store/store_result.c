@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -191,15 +191,13 @@ static EVP_PKEY *try_key_ref(struct extracted_param_data_st *data,
     EVP_PKEY *pk = NULL;
     EVP_KEYMGMT *keymgmt = NULL;
     void *keydata = NULL;
-    int try_fallback = 2;
 
     /* If we have an object reference, we must have a data type */
     if (data->data_type == NULL)
         return 0;
 
     keymgmt = EVP_KEYMGMT_fetch(libctx, data->data_type, propq);
-    ERR_set_mark();
-    while (keymgmt != NULL && keydata == NULL && try_fallback-- > 0) {
+    if (keymgmt != NULL) {
         /*
          * There are two possible cases
          *
@@ -209,8 +207,6 @@ static EVP_PKEY *try_key_ref(struct extracted_param_data_st *data,
          *     do the export/import dance.
          */
         if (EVP_KEYMGMT_get0_provider(keymgmt) == provider) {
-            /* no point trying fallback here */
-            try_fallback = 0;
             keydata = evp_keymgmt_load(keymgmt, data->ref, data->ref_size);
         } else {
             struct evp_keymgmt_util_try_import_data_st import_data;
@@ -234,23 +230,9 @@ static EVP_PKEY *try_key_ref(struct extracted_param_data_st *data,
 
             keydata = import_data.keydata;
         }
-
-        if (keydata == NULL && try_fallback > 0) {
-            EVP_KEYMGMT_free(keymgmt);
-            keymgmt = evp_keymgmt_fetch_from_prov((OSSL_PROVIDER *)provider,
-                                                  data->data_type, propq);
-            if (keymgmt != NULL) {
-                ERR_pop_to_mark();
-                ERR_set_mark();
-            }
-        }
     }
-    if (keydata != NULL) {
-        ERR_pop_to_mark();
+    if (keydata != NULL)
         pk = evp_keymgmt_util_make_pkey(keymgmt, keydata);
-    } else {
-        ERR_clear_last_mark();
-    }
     EVP_KEYMGMT_free(keymgmt);
 
     return pk;
@@ -553,10 +535,8 @@ static int try_pkcs12(struct extracted_param_data_st *data, OSSL_STORE_INFO **v,
 
             ok = 0;              /* Assume decryption or parse error */
 
-            if (!PKCS12_mac_present(p12)
+            if (PKCS12_verify_mac(p12, "", 0)
                 || PKCS12_verify_mac(p12, NULL, 0)) {
-                pass = NULL;
-            } else if (PKCS12_verify_mac(p12, "", 0)) {
                 pass = "";
             } else {
                 static char prompt_info[] = "PKCS12 import pass phrase";
@@ -629,7 +609,7 @@ static int try_pkcs12(struct extracted_param_data_st *data, OSSL_STORE_INFO **v,
                 }
                 EVP_PKEY_free(pkey);
                 X509_free(cert);
-                OSSL_STACK_OF_X509_free(chain);
+                sk_X509_pop_free(chain, X509_free);
                 OSSL_STORE_INFO_free(osi_pkey);
                 OSSL_STORE_INFO_free(osi_cert);
                 OSSL_STORE_INFO_free(osi_ca);

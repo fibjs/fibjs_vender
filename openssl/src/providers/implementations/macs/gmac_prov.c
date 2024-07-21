@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -235,8 +235,8 @@ static int gmac_set_ctx_params(void *vmacctx, const OSSL_PARAM params[])
         if (p->data_type != OSSL_PARAM_OCTET_STRING)
             return 0;
 
-        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN,
-                                 p->data_size, NULL) <= 0
+        if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN,
+                                 p->data_size, NULL)
             || !EVP_EncryptInit_ex(ctx, NULL, NULL, NULL, p->data))
             return 0;
     }
@@ -255,5 +255,5 @@ const OSSL_DISPATCH ossl_gmac_functions[] = {
     { OSSL_FUNC_MAC_SETTABLE_CTX_PARAMS,
       (void (*)(void))gmac_settable_ctx_params },
     { OSSL_FUNC_MAC_SET_CTX_PARAMS, (void (*)(void))gmac_set_ctx_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };

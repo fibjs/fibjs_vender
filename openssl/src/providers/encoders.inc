@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -22,6 +22,7 @@
 #define ENCODER_STRUCTURE_DHX                           "dhx"
 #define ENCODER_STRUCTURE_DSA                           "dsa"
 #define ENCODER_STRUCTURE_EC                            "ec"
+#define ENCODER_STRUCTURE_SM2                           "sm2"
 #define ENCODER_STRUCTURE_RSA                           "rsa"
 #define ENCODER_STRUCTURE_PKCS1                         "pkcs1"
 #define ENCODER_STRUCTURE_PKCS3                         "pkcs3"
@@ -57,12 +58,10 @@ ENCODER_TEXT("DSA", dsa, yes),
 #endif
 #ifndef OPENSSL_NO_EC
 ENCODER_TEXT("EC", ec, yes),
-# ifndef OPENSSL_NO_ECX
 ENCODER_TEXT("ED25519", ed25519, yes),
 ENCODER_TEXT("ED448", ed448, yes),
 ENCODER_TEXT("X25519", x25519, yes),
 ENCODER_TEXT("X448", x448, yes),
-# endif
 # ifndef OPENSSL_NO_SM2
 ENCODER_TEXT("SM2", sm2, no),
 # endif
@@ -183,7 +182,6 @@ ENCODER_w_structure("EC", ec, yes, pem, PrivateKeyInfo),
 ENCODER_w_structure("EC", ec, yes, der, SubjectPublicKeyInfo),
 ENCODER_w_structure("EC", ec, yes, pem, SubjectPublicKeyInfo),
 
-#ifndef OPENSSL_NO_ECX
 ENCODER_w_structure("X25519", x25519, yes, der, EncryptedPrivateKeyInfo),
 ENCODER_w_structure("X25519", x25519, yes, pem, EncryptedPrivateKeyInfo),
 ENCODER_w_structure("X25519", x25519, yes, der, PrivateKeyInfo),
@@ -211,7 +209,6 @@ ENCODER_w_structure("ED448", ed448, yes, der, PrivateKeyInfo),
 ENCODER_w_structure("ED448", ed448, yes, pem, PrivateKeyInfo),
 ENCODER_w_structure("ED448", ed448, yes, der, SubjectPublicKeyInfo),
 ENCODER_w_structure("ED448", ed448, yes, pem, SubjectPublicKeyInfo),
-# endif
 
 # ifndef OPENSSL_NO_SM2
 ENCODER_w_structure("SM2", sm2, no, der, EncryptedPrivateKeyInfo),

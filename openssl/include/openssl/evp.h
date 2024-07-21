@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -35,7 +35,6 @@
 # define EVP_MAX_KEY_LENGTH              64
 # define EVP_MAX_IV_LENGTH               16
 # define EVP_MAX_BLOCK_LENGTH            32
-# define EVP_MAX_AEAD_TAG_LENGTH         16
 
 # define PKCS5_SALT_LEN                  8
 /* Default PKCS#5 iteration count */
@@ -80,14 +79,13 @@
 # define EVP_PKEY_ED25519 NID_ED25519
 # define EVP_PKEY_X448 NID_X448
 # define EVP_PKEY_ED448 NID_ED448
+# define EVP_PKEY_EIA3 NID_zuc_128_eia3
 /* Special indicator that the object is uniquely provider side */
 # define EVP_PKEY_KEYMGMT -1
 
 /* Easy to use macros for EVP_PKEY related selections */
 # define EVP_PKEY_KEY_PARAMETERS                                            \
     ( OSSL_KEYMGMT_SELECT_ALL_PARAMETERS )
-# define EVP_PKEY_PRIVATE_KEY                                               \
-    ( EVP_PKEY_KEY_PARAMETERS | OSSL_KEYMGMT_SELECT_PRIVATE_KEY )
 # define EVP_PKEY_PUBLIC_KEY                                                \
     ( EVP_PKEY_KEY_PARAMETERS | OSSL_KEYMGMT_SELECT_PUBLIC_KEY )
 # define EVP_PKEY_KEYPAIR                                                   \
@@ -229,8 +227,7 @@ int (*EVP_MD_meth_get_ctrl(const EVP_MD *md))(EVP_MD_CTX *ctx, int cmd,
  * if the following flag is set.
  */
 # define EVP_MD_CTX_FLAG_FINALISE        0x0200
-/* NOTE: 0x0400 and 0x0800 are reserved for internal usage */
-
+/* NOTE: 0x0400 is reserved for internal usage */
 # ifndef OPENSSL_NO_DEPRECATED_3_0
 OSSL_DEPRECATEDIN_3_0
 EVP_CIPHER *EVP_CIPHER_meth_new(int cipher_type, int block_size, int key_len);
@@ -310,7 +307,6 @@ OSSL_DEPRECATEDIN_3_0 int
 # define         EVP_CIPH_WRAP_MODE              0x10002
 # define         EVP_CIPH_OCB_MODE               0x10003
 # define         EVP_CIPH_SIV_MODE               0x10004
-# define         EVP_CIPH_GCM_SIV_MODE           0x10005
 # define         EVP_CIPH_MODE                   0xF0007
 /* Set if variable length cipher */
 # define         EVP_CIPH_VARIABLE_LENGTH        0x8
@@ -368,8 +364,6 @@ OSSL_DEPRECATEDIN_3_0 int
 
 # define         EVP_CTRL_INIT                   0x0
 # define         EVP_CTRL_SET_KEY_LENGTH         0x1
-# define         EVP_CTRL_GET_RC2_KEY_BITS       0x2
-# define         EVP_CTRL_SET_RC2_KEY_BITS       0x3
 # define         EVP_CTRL_GET_RC5_ROUNDS         0x4
 # define         EVP_CTRL_SET_RC5_ROUNDS         0x5
 # define         EVP_CTRL_RAND_KEY               0x6
@@ -527,6 +521,11 @@ typedef int (EVP_PBE_KEYGEN_EX) (EVP_CIPHER_CTX *ctx, const char *pass,
                                         EVP_PKEY_POLY1305,(polykey))
 # endif
 
+# ifndef OPENSSL_NO_ZUC
+#  define EVP_PKEY_assign_EIA3(pkey,eia3key) EVP_PKEY_assign((pkey),EVP_PKEY_EIA3,\
+                                        (char *)(eia3key))
+# endif
+
 /* Add some extra combinations */
 # define EVP_get_digestbynid(a) EVP_get_digestbyname(OBJ_nid2sn(a))
 # define EVP_get_digestbyobj(a) EVP_get_digestbynid(OBJ_obj2nid(a))
@@ -636,10 +635,11 @@ int EVP_CIPHER_CTX_get_original_iv(EVP_CIPHER_CTX *ctx, void *buf, size_t len);
 OSSL_DEPRECATEDIN_3_0
 unsigned char *EVP_CIPHER_CTX_buf_noconst(EVP_CIPHER_CTX *ctx);
 # endif
+int EVP_CIPHER_CTX_get_buf_len(const EVP_CIPHER_CTX *ctx);
+int EVP_CIPHER_CTX_get_final_used(const EVP_CIPHER_CTX *ctx);
 int EVP_CIPHER_CTX_get_num(const EVP_CIPHER_CTX *ctx);
 # define EVP_CIPHER_CTX_num EVP_CIPHER_CTX_get_num
 int EVP_CIPHER_CTX_set_num(EVP_CIPHER_CTX *ctx, int num);
-EVP_CIPHER_CTX *EVP_CIPHER_CTX_dup(const EVP_CIPHER_CTX *in);
 int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in);
 void *EVP_CIPHER_CTX_get_app_data(const EVP_CIPHER_CTX *ctx);
 void EVP_CIPHER_CTX_set_app_data(EVP_CIPHER_CTX *ctx, void *data);
@@ -677,7 +677,7 @@ void BIO_set_md(BIO *, const EVP_MD *md);
 # define BIO_get_cipher_status(b)   BIO_ctrl(b,BIO_C_GET_CIPHER_STATUS,0,NULL)
 # define BIO_get_cipher_ctx(b,c_pp) BIO_ctrl(b,BIO_C_GET_CIPHER_CTX,0,(c_pp))
 
-__owur int EVP_Cipher(EVP_CIPHER_CTX *c,
+/*__owur*/ int EVP_Cipher(EVP_CIPHER_CTX *c,
                           unsigned char *out,
                           const unsigned char *in, unsigned int inl);
 
@@ -705,7 +705,6 @@ void EVP_MD_CTX_free(EVP_MD_CTX *ctx);
 # define EVP_MD_CTX_create()     EVP_MD_CTX_new()
 # define EVP_MD_CTX_init(ctx)    EVP_MD_CTX_reset((ctx))
 # define EVP_MD_CTX_destroy(ctx) EVP_MD_CTX_free((ctx))
-__owur EVP_MD_CTX *EVP_MD_CTX_dup(const EVP_MD_CTX *in);
 __owur int EVP_MD_CTX_copy_ex(EVP_MD_CTX *out, const EVP_MD_CTX *in);
 void EVP_MD_CTX_set_flags(EVP_MD_CTX *ctx, int flags);
 void EVP_MD_CTX_clear_flags(EVP_MD_CTX *ctx, int flags);
@@ -729,10 +728,8 @@ __owur int EVP_MD_CTX_copy(EVP_MD_CTX *out, const EVP_MD_CTX *in);
 __owur int EVP_DigestInit(EVP_MD_CTX *ctx, const EVP_MD *type);
 __owur int EVP_DigestFinal(EVP_MD_CTX *ctx, unsigned char *md,
                            unsigned int *s);
-__owur int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *out,
-                              size_t outlen);
-__owur int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out,
-                             size_t outlen);
+__owur int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md,
+                              size_t len);
 
 __owur EVP_MD *EVP_MD_fetch(OSSL_LIB_CTX *ctx, const char *algorithm,
                             const char *properties);
@@ -757,7 +754,7 @@ int EVP_CIPHER_CTX_test_flags(const EVP_CIPHER_CTX *ctx, int flags);
 
 __owur int EVP_EncryptInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                            const unsigned char *key, const unsigned char *iv);
-__owur int EVP_EncryptInit_ex(EVP_CIPHER_CTX *ctx,
+/*__owur*/ int EVP_EncryptInit_ex(EVP_CIPHER_CTX *ctx,
                                   const EVP_CIPHER *cipher, ENGINE *impl,
                                   const unsigned char *key,
                                   const unsigned char *iv);
@@ -765,16 +762,16 @@ __owur int EVP_EncryptInit_ex2(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                                const unsigned char *key,
                                const unsigned char *iv,
                                const OSSL_PARAM params[]);
-__owur int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out,
+/*__owur*/ int EVP_EncryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                  int *outl, const unsigned char *in, int inl);
-__owur int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out,
+/*__owur*/ int EVP_EncryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                    int *outl);
-__owur int EVP_EncryptFinal(EVP_CIPHER_CTX *ctx, unsigned char *out,
+/*__owur*/ int EVP_EncryptFinal(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                 int *outl);
 
 __owur int EVP_DecryptInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                            const unsigned char *key, const unsigned char *iv);
-__owur int EVP_DecryptInit_ex(EVP_CIPHER_CTX *ctx,
+/*__owur*/ int EVP_DecryptInit_ex(EVP_CIPHER_CTX *ctx,
                                   const EVP_CIPHER *cipher, ENGINE *impl,
                                   const unsigned char *key,
                                   const unsigned char *iv);
@@ -782,17 +779,17 @@ __owur int EVP_DecryptInit_ex2(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                                const unsigned char *key,
                                const unsigned char *iv,
                                const OSSL_PARAM params[]);
-__owur int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out,
+/*__owur*/ int EVP_DecryptUpdate(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                  int *outl, const unsigned char *in, int inl);
 __owur int EVP_DecryptFinal(EVP_CIPHER_CTX *ctx, unsigned char *outm,
                             int *outl);
-__owur int EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *outm,
+/*__owur*/ int EVP_DecryptFinal_ex(EVP_CIPHER_CTX *ctx, unsigned char *outm,
                                    int *outl);
 
 __owur int EVP_CipherInit(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *cipher,
                           const unsigned char *key, const unsigned char *iv,
                           int enc);
-__owur int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx,
+/*__owur*/ int EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx,
                                  const EVP_CIPHER *cipher, ENGINE *impl,
                                  const unsigned char *key,
                                  const unsigned char *iv, int enc);
@@ -826,18 +823,18 @@ __owur int EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
                             size_t siglen, const unsigned char *tbs,
                             size_t tbslen);
 
-__owur int EVP_DigestSignInit_ex(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+int EVP_DigestSignInit_ex(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                           const char *mdname, OSSL_LIB_CTX *libctx,
                           const char *props, EVP_PKEY *pkey,
                           const OSSL_PARAM params[]);
-__owur int EVP_DigestSignInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+/*__owur*/ int EVP_DigestSignInit(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                                   const EVP_MD *type, ENGINE *e,
                                   EVP_PKEY *pkey);
-__owur int EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data, size_t dsize);
+int EVP_DigestSignUpdate(EVP_MD_CTX *ctx, const void *data, size_t dsize);
 __owur int EVP_DigestSignFinal(EVP_MD_CTX *ctx, unsigned char *sigret,
                                size_t *siglen);
 
-__owur int EVP_DigestVerifyInit_ex(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
+int EVP_DigestVerifyInit_ex(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                             const char *mdname, OSSL_LIB_CTX *libctx,
                             const char *props, EVP_PKEY *pkey,
                             const OSSL_PARAM params[]);
@@ -903,19 +900,9 @@ __owur int BIO_set_cipher(BIO *b, const EVP_CIPHER *c, const unsigned char *k,
                           const unsigned char *i, int enc);
 
 const EVP_MD *EVP_md_null(void);
-# ifndef OPENSSL_NO_MD2
-const EVP_MD *EVP_md2(void);
-# endif
-# ifndef OPENSSL_NO_MD4
-const EVP_MD *EVP_md4(void);
-# endif
 # ifndef OPENSSL_NO_MD5
 const EVP_MD *EVP_md5(void);
 const EVP_MD *EVP_md5_sha1(void);
-# endif
-# ifndef OPENSSL_NO_BLAKE2
-const EVP_MD *EVP_blake2b512(void);
-const EVP_MD *EVP_blake2s256(void);
 # endif
 const EVP_MD *EVP_sha1(void);
 const EVP_MD *EVP_sha224(void);
@@ -931,15 +918,6 @@ const EVP_MD *EVP_sha3_512(void);
 const EVP_MD *EVP_shake128(void);
 const EVP_MD *EVP_shake256(void);
 
-# ifndef OPENSSL_NO_MDC2
-const EVP_MD *EVP_mdc2(void);
-# endif
-# ifndef OPENSSL_NO_RMD160
-const EVP_MD *EVP_ripemd160(void);
-# endif
-# ifndef OPENSSL_NO_WHIRLPOOL
-const EVP_MD *EVP_whirlpool(void);
-# endif
 # ifndef OPENSSL_NO_SM3
 const EVP_MD *EVP_sm3(void);
 # endif
@@ -980,36 +958,6 @@ const EVP_CIPHER *EVP_rc4_40(void);
 #  ifndef OPENSSL_NO_MD5
 const EVP_CIPHER *EVP_rc4_hmac_md5(void);
 #  endif
-# endif
-# ifndef OPENSSL_NO_IDEA
-const EVP_CIPHER *EVP_idea_ecb(void);
-const EVP_CIPHER *EVP_idea_cfb64(void);
-#  define EVP_idea_cfb EVP_idea_cfb64
-const EVP_CIPHER *EVP_idea_ofb(void);
-const EVP_CIPHER *EVP_idea_cbc(void);
-# endif
-# ifndef OPENSSL_NO_RC2
-const EVP_CIPHER *EVP_rc2_ecb(void);
-const EVP_CIPHER *EVP_rc2_cbc(void);
-const EVP_CIPHER *EVP_rc2_40_cbc(void);
-const EVP_CIPHER *EVP_rc2_64_cbc(void);
-const EVP_CIPHER *EVP_rc2_cfb64(void);
-#  define EVP_rc2_cfb EVP_rc2_cfb64
-const EVP_CIPHER *EVP_rc2_ofb(void);
-# endif
-# ifndef OPENSSL_NO_BF
-const EVP_CIPHER *EVP_bf_ecb(void);
-const EVP_CIPHER *EVP_bf_cbc(void);
-const EVP_CIPHER *EVP_bf_cfb64(void);
-#  define EVP_bf_cfb EVP_bf_cfb64
-const EVP_CIPHER *EVP_bf_ofb(void);
-# endif
-# ifndef OPENSSL_NO_CAST
-const EVP_CIPHER *EVP_cast5_ecb(void);
-const EVP_CIPHER *EVP_cast5_cbc(void);
-const EVP_CIPHER *EVP_cast5_cfb64(void);
-#  define EVP_cast5_cfb EVP_cast5_cfb64
-const EVP_CIPHER *EVP_cast5_ofb(void);
 # endif
 # ifndef OPENSSL_NO_RC5
 const EVP_CIPHER *EVP_rc5_32_12_16_cbc(void);
@@ -1069,77 +1017,11 @@ const EVP_CIPHER *EVP_aes_128_cbc_hmac_sha1(void);
 const EVP_CIPHER *EVP_aes_256_cbc_hmac_sha1(void);
 const EVP_CIPHER *EVP_aes_128_cbc_hmac_sha256(void);
 const EVP_CIPHER *EVP_aes_256_cbc_hmac_sha256(void);
-# ifndef OPENSSL_NO_ARIA
-const EVP_CIPHER *EVP_aria_128_ecb(void);
-const EVP_CIPHER *EVP_aria_128_cbc(void);
-const EVP_CIPHER *EVP_aria_128_cfb1(void);
-const EVP_CIPHER *EVP_aria_128_cfb8(void);
-const EVP_CIPHER *EVP_aria_128_cfb128(void);
-#  define EVP_aria_128_cfb EVP_aria_128_cfb128
-const EVP_CIPHER *EVP_aria_128_ctr(void);
-const EVP_CIPHER *EVP_aria_128_ofb(void);
-const EVP_CIPHER *EVP_aria_128_gcm(void);
-const EVP_CIPHER *EVP_aria_128_ccm(void);
-const EVP_CIPHER *EVP_aria_192_ecb(void);
-const EVP_CIPHER *EVP_aria_192_cbc(void);
-const EVP_CIPHER *EVP_aria_192_cfb1(void);
-const EVP_CIPHER *EVP_aria_192_cfb8(void);
-const EVP_CIPHER *EVP_aria_192_cfb128(void);
-#  define EVP_aria_192_cfb EVP_aria_192_cfb128
-const EVP_CIPHER *EVP_aria_192_ctr(void);
-const EVP_CIPHER *EVP_aria_192_ofb(void);
-const EVP_CIPHER *EVP_aria_192_gcm(void);
-const EVP_CIPHER *EVP_aria_192_ccm(void);
-const EVP_CIPHER *EVP_aria_256_ecb(void);
-const EVP_CIPHER *EVP_aria_256_cbc(void);
-const EVP_CIPHER *EVP_aria_256_cfb1(void);
-const EVP_CIPHER *EVP_aria_256_cfb8(void);
-const EVP_CIPHER *EVP_aria_256_cfb128(void);
-#  define EVP_aria_256_cfb EVP_aria_256_cfb128
-const EVP_CIPHER *EVP_aria_256_ctr(void);
-const EVP_CIPHER *EVP_aria_256_ofb(void);
-const EVP_CIPHER *EVP_aria_256_gcm(void);
-const EVP_CIPHER *EVP_aria_256_ccm(void);
-# endif
-# ifndef OPENSSL_NO_CAMELLIA
-const EVP_CIPHER *EVP_camellia_128_ecb(void);
-const EVP_CIPHER *EVP_camellia_128_cbc(void);
-const EVP_CIPHER *EVP_camellia_128_cfb1(void);
-const EVP_CIPHER *EVP_camellia_128_cfb8(void);
-const EVP_CIPHER *EVP_camellia_128_cfb128(void);
-#  define EVP_camellia_128_cfb EVP_camellia_128_cfb128
-const EVP_CIPHER *EVP_camellia_128_ofb(void);
-const EVP_CIPHER *EVP_camellia_128_ctr(void);
-const EVP_CIPHER *EVP_camellia_192_ecb(void);
-const EVP_CIPHER *EVP_camellia_192_cbc(void);
-const EVP_CIPHER *EVP_camellia_192_cfb1(void);
-const EVP_CIPHER *EVP_camellia_192_cfb8(void);
-const EVP_CIPHER *EVP_camellia_192_cfb128(void);
-#  define EVP_camellia_192_cfb EVP_camellia_192_cfb128
-const EVP_CIPHER *EVP_camellia_192_ofb(void);
-const EVP_CIPHER *EVP_camellia_192_ctr(void);
-const EVP_CIPHER *EVP_camellia_256_ecb(void);
-const EVP_CIPHER *EVP_camellia_256_cbc(void);
-const EVP_CIPHER *EVP_camellia_256_cfb1(void);
-const EVP_CIPHER *EVP_camellia_256_cfb8(void);
-const EVP_CIPHER *EVP_camellia_256_cfb128(void);
-#  define EVP_camellia_256_cfb EVP_camellia_256_cfb128
-const EVP_CIPHER *EVP_camellia_256_ofb(void);
-const EVP_CIPHER *EVP_camellia_256_ctr(void);
-# endif
 # ifndef OPENSSL_NO_CHACHA
 const EVP_CIPHER *EVP_chacha20(void);
 #  ifndef OPENSSL_NO_POLY1305
 const EVP_CIPHER *EVP_chacha20_poly1305(void);
 #  endif
-# endif
-
-# ifndef OPENSSL_NO_SEED
-const EVP_CIPHER *EVP_seed_ecb(void);
-const EVP_CIPHER *EVP_seed_cbc(void);
-const EVP_CIPHER *EVP_seed_cfb128(void);
-#  define EVP_seed_cfb EVP_seed_cfb128
-const EVP_CIPHER *EVP_seed_ofb(void);
 # endif
 
 # ifndef OPENSSL_NO_SM4
@@ -1149,6 +1031,12 @@ const EVP_CIPHER *EVP_sm4_cfb128(void);
 #  define EVP_sm4_cfb EVP_sm4_cfb128
 const EVP_CIPHER *EVP_sm4_ofb(void);
 const EVP_CIPHER *EVP_sm4_ctr(void);
+const EVP_CIPHER *EVP_sm4_gcm(void);
+const EVP_CIPHER *EVP_sm4_ccm(void);
+# endif
+
+# ifndef OPENSSL_NO_ZUC
+const EVP_CIPHER *EVP_eea3(void);
 # endif
 
 # ifndef OPENSSL_NO_DEPRECATED_1_1_0
@@ -1257,7 +1145,6 @@ const OSSL_PROVIDER *EVP_RAND_get0_provider(const EVP_RAND *rand);
 int EVP_RAND_get_params(EVP_RAND *rand, OSSL_PARAM params[]);
 
 EVP_RAND_CTX *EVP_RAND_CTX_new(EVP_RAND *rand, EVP_RAND_CTX *parent);
-int EVP_RAND_CTX_up_ref(EVP_RAND_CTX *ctx);
 void EVP_RAND_CTX_free(EVP_RAND_CTX *ctx);
 EVP_RAND *EVP_RAND_CTX_get0_rand(EVP_RAND_CTX *ctx);
 int EVP_RAND_CTX_get_params(EVP_RAND_CTX *ctx, OSSL_PARAM params[]);
@@ -1327,6 +1214,7 @@ int EVP_PKEY_can_sign(const EVP_PKEY *pkey);
 int EVP_PKEY_set_type(EVP_PKEY *pkey, int type);
 int EVP_PKEY_set_type_str(EVP_PKEY *pkey, const char *str, int len);
 int EVP_PKEY_set_type_by_keymgmt(EVP_PKEY *pkey, EVP_KEYMGMT *keymgmt);
+int EVP_PKEY_set_alias_type(EVP_PKEY *pkey, int type);
 # ifndef OPENSSL_NO_DEPRECATED_3_0
 #  ifndef OPENSSL_NO_ENGINE
 OSSL_DEPRECATEDIN_3_0
@@ -1384,6 +1272,10 @@ OSSL_DEPRECATEDIN_3_0
 struct ec_key_st *EVP_PKEY_get1_EC_KEY(EVP_PKEY *pkey);
 #  endif
 # endif /* OPENSSL_NO_DEPRECATED_3_0 */
+
+# ifndef OPENSSL_NO_ZUC
+const unsigned char *EVP_PKEY_get0_eia3(const EVP_PKEY *pkey, size_t *len);
+# endif
 
 EVP_PKEY *EVP_PKEY_new(void);
 int EVP_PKEY_up_ref(EVP_PKEY *pkey);
@@ -1725,8 +1617,6 @@ int EVP_PKEY_CTX_set_mac_key(EVP_PKEY_CTX *ctx, const unsigned char *key,
 # define EVP_PKEY_CTRL_PEER_KEY          2
 # define EVP_PKEY_CTRL_SET_MAC_KEY       6
 # define EVP_PKEY_CTRL_DIGESTINIT        7
-/* Used by GOST key encryption in TLS */
-# define EVP_PKEY_CTRL_SET_IV            8
 # ifndef OPENSSL_NO_DEPRECATED_3_0
 #  define EVP_PKEY_CTRL_PKCS7_ENCRYPT     3
 #  define EVP_PKEY_CTRL_PKCS7_DECRYPT     4
@@ -1749,6 +1639,11 @@ int EVP_PKEY_CTX_set_mac_key(EVP_PKEY_CTX *ctx, const unsigned char *key,
  * Method handles all operations: don't assume any digest related defaults.
  */
 # define EVP_PKEY_FLAG_SIGCTX_CUSTOM     4
+
+/* Used by Chromium/QUIC */
+# define X25519_PRIVATE_KEY_LEN          32
+# define X25519_PUBLIC_VALUE_LEN         32
+
 # ifndef OPENSSL_NO_DEPRECATED_3_0
 OSSL_DEPRECATEDIN_3_0 const EVP_PKEY_METHOD *EVP_PKEY_meth_find(int type);
 OSSL_DEPRECATEDIN_3_0 EVP_PKEY_METHOD *EVP_PKEY_meth_new(int id, int flags);
@@ -1932,17 +1827,14 @@ int EVP_PKEY_derive_set_peer(EVP_PKEY_CTX *ctx, EVP_PKEY *peer);
 int EVP_PKEY_derive(EVP_PKEY_CTX *ctx, unsigned char *key, size_t *keylen);
 
 int EVP_PKEY_encapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
-int EVP_PKEY_auth_encapsulate_init(EVP_PKEY_CTX *ctx, EVP_PKEY *authpriv,
-                                   const OSSL_PARAM params[]);
 int EVP_PKEY_encapsulate(EVP_PKEY_CTX *ctx,
                          unsigned char *wrappedkey, size_t *wrappedkeylen,
                          unsigned char *genkey, size_t *genkeylen);
 int EVP_PKEY_decapsulate_init(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[]);
-int EVP_PKEY_auth_decapsulate_init(EVP_PKEY_CTX *ctx, EVP_PKEY *authpub,
-                                   const OSSL_PARAM params[]);
 int EVP_PKEY_decapsulate(EVP_PKEY_CTX *ctx,
                          unsigned char *unwrapped, size_t *unwrappedlen,
                          const unsigned char *wrapped, size_t wrappedlen);
+
 typedef int EVP_PKEY_gen_cb(EVP_PKEY_CTX *ctx);
 
 int EVP_PKEY_fromdata_init(EVP_PKEY_CTX *ctx);
@@ -2176,6 +2068,11 @@ int EVP_PKEY_get_group_name(const EVP_PKEY *pkey, char *name, size_t name_sz,
 OSSL_LIB_CTX *EVP_PKEY_CTX_get0_libctx(EVP_PKEY_CTX *ctx);
 const char *EVP_PKEY_CTX_get0_propq(const EVP_PKEY_CTX *ctx);
 const OSSL_PROVIDER *EVP_PKEY_CTX_get0_provider(const EVP_PKEY_CTX *ctx);
+
+/* for compattibility usage */
+# ifndef OPENSSL_NO_SM2
+#  define EVP_PKEY_is_sm2(pkey) EVP_PKEY_is_a(pkey, "SM2")
+# endif
 
 # ifdef  __cplusplus
 }

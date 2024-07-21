@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -44,8 +44,10 @@ void *ossl_tdes_dupctx(void *ctx)
         return NULL;
 
     ret = OPENSSL_malloc(sizeof(*ret));
-    if (ret == NULL)
+    if (ret == NULL) {
+        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
     in->base.hw->copyctx(&ret->base, &in->base);
 
     return ret;
@@ -90,7 +92,6 @@ static int tdes_init(void *vctx, const unsigned char *key, size_t keylen,
         }
         if (!ctx->hw->init(ctx, key, ctx->keylen))
             return 0;
-        ctx->key_set = 1;
     }
     return ossl_cipher_generic_set_ctx_params(ctx, params);
 }
@@ -122,12 +123,13 @@ static int tdes_generatekey(PROV_CIPHER_CTX *ctx, void *ptr)
     if (kl == 0 || RAND_priv_bytes_ex(ctx->libctx, ptr, kl, 0) <= 0)
         return 0;
     DES_set_odd_parity(deskey);
-    if (kl >= 16) {
+    if (kl >= 16)
         DES_set_odd_parity(deskey + 1);
-        if (kl >= 24)
-            DES_set_odd_parity(deskey + 2);
+    if (kl >= 24) {
+        DES_set_odd_parity(deskey + 2);
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 int ossl_tdes_get_ctx_params(void *vctx, OSSL_PARAM params[])

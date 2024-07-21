@@ -51,13 +51,6 @@ extern const unsigned char ossl_der_oid_id_pSpecified[DER_OID_SZ_id_pSpecified];
 extern const unsigned char ossl_der_oid_id_RSASSA_PSS[DER_OID_SZ_id_RSASSA_PSS];
 
 /*
- * md2WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 2 }
- */
-#define DER_OID_V_md2WithRSAEncryption DER_P_OBJECT, 9, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x02
-#define DER_OID_SZ_md2WithRSAEncryption 11
-extern const unsigned char ossl_der_oid_md2WithRSAEncryption[DER_OID_SZ_md2WithRSAEncryption];
-
-/*
  * md5WithRSAEncryption         OBJECT IDENTIFIER ::= { pkcs-1 4 }
  */
 #define DER_OID_V_md5WithRSAEncryption DER_P_OBJECT, 9, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x04
@@ -147,31 +140,6 @@ extern const unsigned char ossl_der_oid_id_rsassa_pkcs1_v1_5_with_sha3_384[DER_O
 #define DER_OID_V_id_rsassa_pkcs1_v1_5_with_sha3_512 DER_P_OBJECT, 9, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x10
 #define DER_OID_SZ_id_rsassa_pkcs1_v1_5_with_sha3_512 11
 extern const unsigned char ossl_der_oid_id_rsassa_pkcs1_v1_5_with_sha3_512[DER_OID_SZ_id_rsassa_pkcs1_v1_5_with_sha3_512];
-
-/*
- * md4WithRSAEncryption OBJECT IDENTIFIER ::= { pkcs-1 3 }
- */
-#define DER_OID_V_md4WithRSAEncryption DER_P_OBJECT, 9, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x03
-#define DER_OID_SZ_md4WithRSAEncryption 11
-extern const unsigned char ossl_der_oid_md4WithRSAEncryption[DER_OID_SZ_md4WithRSAEncryption];
-
-/*
- * ripemd160WithRSAEncryption    OBJECT IDENTIFIER ::= {
- *     iso(1) identified-organization(3) teletrust(36) algorithm(3) signatureAlgorithm(3) rsaSignature(1) 2
- * }
- */
-#define DER_OID_V_ripemd160WithRSAEncryption DER_P_OBJECT, 6, 0x2B, 0x24, 0x03, 0x03, 0x01, 0x02
-#define DER_OID_SZ_ripemd160WithRSAEncryption 8
-extern const unsigned char ossl_der_oid_ripemd160WithRSAEncryption[DER_OID_SZ_ripemd160WithRSAEncryption];
-
-/*
- * mdc2WithRSASignature OBJECT IDENTIFIER ::= {
- *     iso(1) identified-organization(3) oiw(14) secsig(3) algorithms(2) mdc2WithRSASignature(14)
- * }
- */
-#define DER_OID_V_mdc2WithRSASignature DER_P_OBJECT, 5, 0x2B, 0x0E, 0x03, 0x02, 0x0E
-#define DER_OID_SZ_mdc2WithRSASignature 7
-extern const unsigned char ossl_der_oid_mdc2WithRSASignature[DER_OID_SZ_mdc2WithRSASignature];
 
 
 /* PSS parameters */

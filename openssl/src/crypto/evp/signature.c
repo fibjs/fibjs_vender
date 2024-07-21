@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -22,16 +22,20 @@ static EVP_SIGNATURE *evp_signature_new(OSSL_PROVIDER *prov)
 {
     EVP_SIGNATURE *signature = OPENSSL_zalloc(sizeof(EVP_SIGNATURE));
 
-    if (signature == NULL)
-        return NULL;
-
-    if (!CRYPTO_NEW_REF(&signature->refcnt, 1)) {
-        OPENSSL_free(signature);
+    if (signature == NULL) {
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
+    signature->lock = CRYPTO_THREAD_lock_new();
+    if (signature->lock == NULL) {
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
+        OPENSSL_free(signature);
+        return NULL;
+    }
     signature->prov = prov;
     ossl_provider_up_ref(prov);
+    signature->refcnt = 1;
 
     return signature;
 }
@@ -47,7 +51,7 @@ static void *evp_signature_from_algorithm(int name_id,
     int gparamfncnt = 0, sparamfncnt = 0, gmdparamfncnt = 0, smdparamfncnt = 0;
 
     if ((signature = evp_signature_new(prov)) == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -279,12 +283,12 @@ void EVP_SIGNATURE_free(EVP_SIGNATURE *signature)
 
     if (signature == NULL)
         return;
-    CRYPTO_DOWN_REF(&signature->refcnt, &i);
+    CRYPTO_DOWN_REF(&signature->refcnt, &i, signature->lock);
     if (i > 0)
         return;
     OPENSSL_free(signature->type_name);
     ossl_provider_free(signature->prov);
-    CRYPTO_FREE_REF(&signature->refcnt);
+    CRYPTO_THREAD_lock_free(signature->lock);
     OPENSSL_free(signature);
 }
 
@@ -292,7 +296,7 @@ int EVP_SIGNATURE_up_ref(EVP_SIGNATURE *signature)
 {
     int ref = 0;
 
-    CRYPTO_UP_REF(&signature->refcnt, &ref);
+    CRYPTO_UP_REF(&signature->refcnt, &ref, signature->lock);
     return 1;
 }
 
@@ -323,8 +327,7 @@ EVP_SIGNATURE *evp_signature_fetch_from_prov(OSSL_PROVIDER *prov,
 
 int EVP_SIGNATURE_is_a(const EVP_SIGNATURE *signature, const char *name)
 {
-    return signature != NULL
-           && evp_is_a(signature->prov, signature->name_id, NULL, name);
+    return evp_is_a(signature->prov, signature->name_id, NULL, name);
 }
 
 int evp_signature_get_number(const EVP_SIGNATURE *signature)
@@ -399,8 +402,8 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation,
     int iter;
 
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
-        return -1;
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        return -2;
     }
 
     evp_pkey_ctx_free_old_ops(ctx);
@@ -630,8 +633,8 @@ int EVP_PKEY_sign(EVP_PKEY_CTX *ctx,
     int ret;
 
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
-        return -1;
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        return -2;
     }
 
     if (ctx->operation != EVP_PKEY_OP_SIGN) {
@@ -641,11 +644,6 @@ int EVP_PKEY_sign(EVP_PKEY_CTX *ctx,
 
     if (ctx->op.sig.algctx == NULL)
         goto legacy;
-
-    if (ctx->op.sig.signature->sign == NULL) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
-        return -2;
-    }
 
     ret = ctx->op.sig.signature->sign(ctx->op.sig.algctx, sig, siglen,
                                       (sig == NULL) ? 0 : *siglen, tbs, tbslen);
@@ -679,8 +677,8 @@ int EVP_PKEY_verify(EVP_PKEY_CTX *ctx,
     int ret;
 
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
-        return -1;
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        return -2;
     }
 
     if (ctx->operation != EVP_PKEY_OP_VERIFY) {
@@ -690,11 +688,6 @@ int EVP_PKEY_verify(EVP_PKEY_CTX *ctx,
 
     if (ctx->op.sig.algctx == NULL)
         goto legacy;
-
-    if (ctx->op.sig.signature->verify == NULL) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
-        return -2;
-    }
 
     ret = ctx->op.sig.signature->verify(ctx->op.sig.algctx, sig, siglen,
                                         tbs, tbslen);
@@ -727,8 +720,8 @@ int EVP_PKEY_verify_recover(EVP_PKEY_CTX *ctx,
     int ret;
 
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_NULL_PARAMETER);
-        return -1;
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
+        return -2;
     }
 
     if (ctx->operation != EVP_PKEY_OP_VERIFYRECOVER) {
@@ -738,11 +731,6 @@ int EVP_PKEY_verify_recover(EVP_PKEY_CTX *ctx,
 
     if (ctx->op.sig.algctx == NULL)
         goto legacy;
-
-    if (ctx->op.sig.signature->verify_recover == NULL) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
-        return -2;
-    }
 
     ret = ctx->op.sig.signature->verify_recover(ctx->op.sig.algctx, rout,
                                                 routlen,

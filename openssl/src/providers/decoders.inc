@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -22,6 +22,7 @@
 #define DECODER_STRUCTURE_DHX                           "dhx"
 #define DECODER_STRUCTURE_DSA                           "dsa"
 #define DECODER_STRUCTURE_EC                            "ec"
+#define DECODER_STRUCTURE_SM2                           "sm2"
 #define DECODER_STRUCTURE_RSA                           "rsa"
 
 /* Arguments are prefixed with '_' to avoid build breaks on certain platforms */
@@ -58,7 +59,6 @@ DECODER_w_structure("EC", der, PrivateKeyInfo, ec, yes),
 DECODER_w_structure("EC", der, SubjectPublicKeyInfo, ec, yes),
 DECODER_w_structure("EC", der, type_specific_no_pub, ec, yes),
 DECODER_w_structure("EC", der, EC, ec, yes),
-# ifndef OPENSSL_NO_ECX
 DECODER_w_structure("ED25519", der, PrivateKeyInfo, ed25519, yes),
 DECODER_w_structure("ED25519", der, SubjectPublicKeyInfo, ed25519, yes),
 DECODER_w_structure("ED448", der, PrivateKeyInfo, ed448, yes),
@@ -67,7 +67,6 @@ DECODER_w_structure("X25519", der, PrivateKeyInfo, x25519, yes),
 DECODER_w_structure("X25519", der, SubjectPublicKeyInfo, x25519, yes),
 DECODER_w_structure("X448", der, PrivateKeyInfo, x448, yes),
 DECODER_w_structure("X448", der, SubjectPublicKeyInfo, x448, yes),
-# endif
 # ifndef OPENSSL_NO_SM2
 DECODER_w_structure("SM2", der, PrivateKeyInfo, sm2, no),
 DECODER_w_structure("SM2", der, SubjectPublicKeyInfo, sm2, no),

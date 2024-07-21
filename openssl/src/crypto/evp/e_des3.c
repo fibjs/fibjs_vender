@@ -37,20 +37,6 @@ typedef struct {
 # define ks2 ks.ks[1]
 # define ks3 ks.ks[2]
 
-# if defined(AES_ASM) && (defined(__sparc) || defined(__sparc__))
-/* ---------^^^ this is not a typo, just a way to detect that
- * assembler support was in general requested... */
-#  include "crypto/sparc_arch.h"
-
-#  define SPARC_DES_CAPABLE       (OPENSSL_sparcv9cap_P[1] & CFR_DES)
-
-void des_t4_key_expand(const void *key, DES_key_schedule *ks);
-void des_t4_ede3_cbc_encrypt(const void *inp, void *out, size_t len,
-                             const DES_key_schedule ks[3], unsigned char iv[8]);
-void des_t4_ede3_cbc_decrypt(const void *inp, void *out, size_t len,
-                             const DES_key_schedule ks[3], unsigned char iv[8]);
-# endif
-
 static int des_ede_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                             const unsigned char *iv, int enc);
 
@@ -165,8 +151,7 @@ static int des_ede3_cfb1_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                 const unsigned char *in, size_t inl)
 {
     size_t n;
-    unsigned char c[1];
-    unsigned char d[1] = { 0 }; /* Appease Coverity */
+    unsigned char c[1], d[1];
 
     if (!EVP_CIPHER_CTX_test_flags(ctx, EVP_CIPH_FLAG_LENGTH_BITS))
             inl *= 8;
@@ -229,20 +214,6 @@ static int des_ede_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     DES_EDE_KEY *dat = data(ctx);
 
     dat->stream.cbc = NULL;
-# if defined(SPARC_DES_CAPABLE)
-    if (SPARC_DES_CAPABLE) {
-        int mode = EVP_CIPHER_CTX_get_mode(ctx);
-
-        if (mode == EVP_CIPH_CBC_MODE) {
-            des_t4_key_expand(&deskey[0], &dat->ks1);
-            des_t4_key_expand(&deskey[1], &dat->ks2);
-            memcpy(&dat->ks3, &dat->ks1, sizeof(dat->ks1));
-            dat->stream.cbc = enc ? des_t4_ede3_cbc_encrypt :
-                des_t4_ede3_cbc_decrypt;
-            return 1;
-        }
-    }
-# endif
     DES_set_key_unchecked(&deskey[0], &dat->ks1);
     DES_set_key_unchecked(&deskey[1], &dat->ks2);
     memcpy(&dat->ks3, &dat->ks1, sizeof(dat->ks1));
@@ -256,20 +227,6 @@ static int des_ede3_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     DES_EDE_KEY *dat = data(ctx);
 
     dat->stream.cbc = NULL;
-# if defined(SPARC_DES_CAPABLE)
-    if (SPARC_DES_CAPABLE) {
-        int mode = EVP_CIPHER_CTX_get_mode(ctx);
-
-        if (mode == EVP_CIPH_CBC_MODE) {
-            des_t4_key_expand(&deskey[0], &dat->ks1);
-            des_t4_key_expand(&deskey[1], &dat->ks2);
-            des_t4_key_expand(&deskey[2], &dat->ks3);
-            dat->stream.cbc = enc ? des_t4_ede3_cbc_encrypt :
-                des_t4_ede3_cbc_decrypt;
-            return 1;
-        }
-    }
-# endif
     DES_set_key_unchecked(&deskey[0], &dat->ks1);
     DES_set_key_unchecked(&deskey[1], &dat->ks2);
     DES_set_key_unchecked(&deskey[2], &dat->ks3);
@@ -387,6 +344,8 @@ static int des_ede3_wrap(EVP_CIPHER_CTX *ctx, unsigned char *out,
 static int des_ede3_wrap_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                                 const unsigned char *in, size_t inl)
 {
+    if (in == NULL || inl == 0)
+        return 0;
     /*
      * Sanity check input length: we typically only wrap keys so EVP_MAXCHUNK
      * is more than will ever be needed. Also input length must be a multiple

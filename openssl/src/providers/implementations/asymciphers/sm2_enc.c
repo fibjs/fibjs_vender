@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -138,8 +138,6 @@ static void *sm2_dupctx(void *vpsm2ctx)
         return NULL;
 
     *dstctx = *srcctx;
-    memset(&dstctx->md, 0, sizeof(dstctx->md));
-
     if (dstctx->key != NULL && !EC_KEY_up_ref(dstctx->key)) {
         OPENSSL_free(dstctx);
         return NULL;
@@ -229,5 +227,5 @@ const OSSL_DISPATCH ossl_sm2_asym_cipher_functions[] = {
       (void (*)(void))sm2_set_ctx_params },
     { OSSL_FUNC_ASYM_CIPHER_SETTABLE_CTX_PARAMS,
       (void (*)(void))sm2_settable_ctx_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };

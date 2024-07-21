@@ -33,7 +33,7 @@ const linux_config = {
         "prefix": "/usr/bin/riscv64-linux-gnu-"
     },
     "loong64": {
-        "arch": "linux64-loongarch64",
+        "arch": "linux-generic64",
         "prefix": "/usr/cross-tools/bin/loongarch64-unknown-linux-gnu-"
     },
 };

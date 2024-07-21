@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -43,8 +43,6 @@ extern "C" {
 # define SSL3_CK_RSA_RC4_40_MD5                  0x03000003
 # define SSL3_CK_RSA_RC4_128_MD5                 0x03000004
 # define SSL3_CK_RSA_RC4_128_SHA                 0x03000005
-# define SSL3_CK_RSA_RC2_40_MD5                  0x03000006
-# define SSL3_CK_RSA_IDEA_128_SHA                0x03000007
 # define SSL3_CK_RSA_DES_40_CBC_SHA              0x03000008
 # define SSL3_CK_RSA_DES_64_CBC_SHA              0x03000009
 # define SSL3_CK_RSA_DES_192_CBC3_SHA            0x0300000A
@@ -82,7 +80,6 @@ extern "C" {
 # define SSL3_RFC_DHE_DSS_DES_192_CBC3_SHA       "TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA"
 # define SSL3_RFC_DHE_RSA_DES_192_CBC3_SHA       "TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA"
 # define SSL3_RFC_ADH_DES_192_CBC_SHA            "TLS_DH_anon_WITH_3DES_EDE_CBC_SHA"
-# define SSL3_RFC_RSA_IDEA_128_SHA               "TLS_RSA_WITH_IDEA_CBC_SHA"
 # define SSL3_RFC_RSA_RC4_128_MD5                "TLS_RSA_WITH_RC4_128_MD5"
 # define SSL3_RFC_RSA_RC4_128_SHA                "TLS_RSA_WITH_RC4_128_SHA"
 # define SSL3_RFC_ADH_RC4_128_MD5                "TLS_DH_anon_WITH_RC4_128_MD5"
@@ -92,8 +89,6 @@ extern "C" {
 # define SSL3_TXT_RSA_RC4_40_MD5                 "EXP-RC4-MD5"
 # define SSL3_TXT_RSA_RC4_128_MD5                "RC4-MD5"
 # define SSL3_TXT_RSA_RC4_128_SHA                "RC4-SHA"
-# define SSL3_TXT_RSA_RC2_40_MD5                 "EXP-RC2-CBC-MD5"
-# define SSL3_TXT_RSA_IDEA_128_SHA               "IDEA-CBC-SHA"
 # define SSL3_TXT_RSA_DES_40_CBC_SHA             "EXP-DES-CBC-SHA"
 # define SSL3_TXT_RSA_DES_64_CBC_SHA             "DES-CBC-SHA"
 # define SSL3_TXT_RSA_DES_192_CBC3_SHA           "DES-CBC3-SHA"
@@ -239,13 +234,6 @@ extern "C" {
 # define SSL3_RT_HEADER                  0x100
 # define SSL3_RT_INNER_CONTENT_TYPE      0x101
 
-/* Pseudo content types for QUIC */
-# define SSL3_RT_QUIC_DATAGRAM            0x200
-# define SSL3_RT_QUIC_PACKET              0x201
-# define SSL3_RT_QUIC_FRAME_FULL          0x202
-# define SSL3_RT_QUIC_FRAME_HEADER        0x203
-# define SSL3_RT_QUIC_FRAME_PADDING       0x204
-
 # define SSL3_AL_WARNING                 1
 # define SSL3_AL_FATAL                   2
 
@@ -306,8 +294,6 @@ extern "C" {
 
 /* Set if extended master secret extension required on renegotiation */
 # define TLS1_FLAGS_REQUIRED_EXTMS               0x1000
-
-/* 0x2000 is reserved for TLS1_FLAGS_QUIC (internal) */
 
 # define SSL3_MT_HELLO_REQUEST                   0
 # define SSL3_MT_CLIENT_HELLO                    1

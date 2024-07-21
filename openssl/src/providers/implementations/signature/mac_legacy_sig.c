@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -29,6 +29,7 @@ static OSSL_FUNC_signature_newctx_fn mac_hmac_newctx;
 static OSSL_FUNC_signature_newctx_fn mac_siphash_newctx;
 static OSSL_FUNC_signature_newctx_fn mac_poly1305_newctx;
 static OSSL_FUNC_signature_newctx_fn mac_cmac_newctx;
+static OSSL_FUNC_signature_newctx_fn mac_eia3_newctx;
 static OSSL_FUNC_signature_digest_sign_init_fn mac_digest_sign_init;
 static OSSL_FUNC_signature_digest_sign_update_fn mac_digest_sign_update;
 static OSSL_FUNC_signature_digest_sign_final_fn mac_digest_sign_final;
@@ -39,6 +40,7 @@ static OSSL_FUNC_signature_settable_ctx_params_fn mac_hmac_settable_ctx_params;
 static OSSL_FUNC_signature_settable_ctx_params_fn mac_siphash_settable_ctx_params;
 static OSSL_FUNC_signature_settable_ctx_params_fn mac_poly1305_settable_ctx_params;
 static OSSL_FUNC_signature_settable_ctx_params_fn mac_cmac_settable_ctx_params;
+static OSSL_FUNC_signature_settable_ctx_params_fn mac_eia3_settable_ctx_params;
 
 typedef struct {
     OSSL_LIB_CTX *libctx;
@@ -60,8 +62,10 @@ static void *mac_newctx(void *provctx, const char *propq, const char *macname)
         return NULL;
 
     pmacctx->libctx = PROV_LIBCTX_OF(provctx);
-    if (propq != NULL && (pmacctx->propq = OPENSSL_strdup(propq)) == NULL)
+    if (propq != NULL && (pmacctx->propq = OPENSSL_strdup(propq)) == NULL) {
+        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
         goto err;
+    }
 
     mac = EVP_MAC_fetch(pmacctx->libctx, macname, propq);
     if (mac == NULL)
@@ -92,6 +96,7 @@ MAC_NEWCTX(hmac, "HMAC")
 MAC_NEWCTX(siphash, "SIPHASH")
 MAC_NEWCTX(poly1305, "POLY1305")
 MAC_NEWCTX(cmac, "CMAC")
+MAC_NEWCTX(eia3, "EIA3")
 
 static int mac_digest_sign_init(void *vpmacctx, const char *mdname, void *vkey,
                                 const OSSL_PARAM params[])
@@ -240,6 +245,7 @@ MAC_SETTABLE_CTX_PARAMS(hmac, "HMAC")
 MAC_SETTABLE_CTX_PARAMS(siphash, "SIPHASH")
 MAC_SETTABLE_CTX_PARAMS(poly1305, "POLY1305")
 MAC_SETTABLE_CTX_PARAMS(cmac, "CMAC")
+MAC_SETTABLE_CTX_PARAMS(eia3, "EIA3")
 
 #define MAC_SIGNATURE_FUNCTIONS(funcname) \
     const OSSL_DISPATCH ossl_mac_legacy_##funcname##_signature_functions[] = { \
@@ -256,10 +262,11 @@ MAC_SETTABLE_CTX_PARAMS(cmac, "CMAC")
           (void (*)(void))mac_set_ctx_params }, \
         { OSSL_FUNC_SIGNATURE_SETTABLE_CTX_PARAMS, \
           (void (*)(void))mac_##funcname##_settable_ctx_params }, \
-        OSSL_DISPATCH_END \
+        { 0, NULL } \
     };
 
 MAC_SIGNATURE_FUNCTIONS(hmac)
 MAC_SIGNATURE_FUNCTIONS(siphash)
 MAC_SIGNATURE_FUNCTIONS(poly1305)
 MAC_SIGNATURE_FUNCTIONS(cmac)
+MAC_SIGNATURE_FUNCTIONS(eia3)
