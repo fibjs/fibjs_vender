@@ -177,6 +177,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ env.BUILD_NAME }}-${{ env.BUILD_TARGET }}-${{ env.BUILD_ARCH }}-${{ env.BUILD_TYPE }}.tar.gz
           tag: ${{ env.COMMIT_ID }}
+          target_commit: ${{ github.sha }}
           overwrite: true
           
       - name: Test
