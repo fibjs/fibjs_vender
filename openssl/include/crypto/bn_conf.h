@@ -22,8 +22,12 @@
 /* Should we define BN_DIV2W here? */
 
 /* Only one for the following should be defined */
-#define SIXTY_FOUR_BIT_LONG
-#undef SIXTY_FOUR_BIT
-#undef THIRTY_TWO_BIT
+#ifdef _WIN64
+# define SIXTY_FOUR_BIT
+#elif defined(__i386__) || defined(_M_IX86) || defined(__arm__)
+# define THIRTY_TWO_BIT
+#else
+# define SIXTY_FOUR_BIT_LONG
+#endif
 
 #endif
