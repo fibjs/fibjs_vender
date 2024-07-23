@@ -1,0 +1,4 @@
+- include/crypto/bn_conf.h
+- include/openssl/configuration.h
+- src/providers/implementations/keymgmt/mac_legacy_kmgmt.c
+- src/crypto/ec/curve25519.c

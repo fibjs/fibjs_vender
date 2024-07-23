@@ -1,19 +1,33 @@
 const fs = require('fs');
 const path = require('path');
 
+['openssl/include', 'build/darwin_arm64/include', 'build/darwin_arm64/providers/common/include'].forEach(m => {
+    fs.readdir(m, { recursive: true }).forEach(file => {
+        const ext = path.extname(file);
+        if (ext === ".h" || ext === ".def") {
+            const folder = path.dirname(file);
+            console.log(`include/${file}`);
+            fs.mkdir(`include/${folder}`, { recursive: true });
+            try {
+                fs.copyFile(`${m}/${file}`, `include/${file}`);
+            } catch (e) { }
+        }
+    });
+});
+
 ['crypto', 'providers', 'ssl'].forEach(m => {
     fs.readdir(`openssl/${m}`, { recursive: true }).forEach(file => {
         const ext = path.extname(file);
         if (ext === ".c" || ext === ".h" || ext === ".inc") {
             const folder = path.dirname(file);
-            console.log(`Copying openssl/${m}/${file} to src/${m}/${file}`);
+            console.log(`src/${m}/${file}`);
             fs.mkdir(`src/${m}/${folder}`, { recursive: true });
             try {
                 fs.copyFile(`openssl/${m}/${file}`, `src/${m}/${file}`);
             } catch (e) { }
         }
     });
-})
+});
 
 const windows_target = {
     "windows_arm64": true,
