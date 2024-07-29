@@ -28,7 +28,7 @@
 #  define ED25519_KEYLEN        32
 #  define ED448_KEYLEN          57
 
-#  define MAX_KEYLEN  ED448_KEYLEN
+#  define MAX_KEYLEN            96
 
 #  define X25519_BITS           253
 #  define X25519_SECURITY_BITS  128
