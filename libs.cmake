@@ -20,6 +20,7 @@ set(libs
     juice
     usrsctp
     openssl
+    fips202
     blst
     jssdk
     unzip
