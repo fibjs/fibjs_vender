@@ -3,7 +3,7 @@
 #include "fields.h"
 #include "bytes.h"
 #include <stdio.h>
-#include <openssl/evp.h>
+#include <fips202/include/fips202.h>
 
 const POINTonE1 BLS12_381_G1_P1 = {
     { TO_LIMB_T(0xcbbca09048aca92e), TO_LIMB_T(0x44035f6216317fd5),
@@ -26,23 +26,25 @@ const POINTonE1 BLS12_381_G1_P1_XOF = {
 void blst_expand_message_xof(unsigned char* bytes, size_t len_in_bytes, const unsigned char* msg, size_t msg_len,
     const unsigned char* DST, size_t DST_len)
 {
-    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
-    EVP_DigestInit_ex(ctx, EVP_shake256(), NULL);
+    shake256incctx ctx;
 
-    EVP_DigestUpdate(ctx, msg, msg_len);
+    shake256_inc_init(&ctx);
+
+    shake256_inc_absorb(&ctx, msg, msg_len);
 
     unsigned char buf[2];
     buf[0] = (len_in_bytes >> 8) & 0xff;
     buf[1] = len_in_bytes & 0xff;
-    EVP_DigestUpdate(ctx, buf, sizeof(buf));
+    shake256_inc_absorb(&ctx, buf, sizeof(buf));
 
-    EVP_DigestUpdate(ctx, DST, DST_len);
+    shake256_inc_absorb(&ctx, DST, DST_len);
 
     buf[0] = DST_len & 0xff;
-    EVP_DigestUpdate(ctx, buf, 1);
+    shake256_inc_absorb(&ctx, buf, 1);
 
-    EVP_DigestFinal_ex(ctx, bytes, &len_in_bytes);
-    EVP_MD_CTX_free(ctx);
+    shake256_inc_finalize(&ctx);
+    shake256_inc_squeeze(bytes, len_in_bytes, &ctx);
+    shake256_inc_ctx_release(&ctx);
 }
 
 void blst_hash_to_g1_xof(POINTonE1* p, const unsigned char* msg, size_t msg_len,

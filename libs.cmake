@@ -21,6 +21,7 @@ set(libs
     usrsctp
     openssl
     blst
+    fips202
     jssdk
     unzip
     uv
