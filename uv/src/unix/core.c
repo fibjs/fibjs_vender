@@ -73,10 +73,10 @@ extern char** environ;
 # include <sys/filio.h>
 # include <sys/wait.h>
 # if defined(__FreeBSD__)
-#  define uv__accept4 accept4
+// #  define uv__accept4 accept4
 # endif
 # if defined(__NetBSD__)
-#  define uv__accept4(a, b, c, d) paccept((a), (b), (c), NULL, (d))
+// #  define uv__accept4(a, b, c, d) paccept((a), (b), (c), NULL, (d))
 # endif
 #endif
 
@@ -88,7 +88,7 @@ extern char** environ;
 #if defined(__linux__)
 # include <sched.h>
 # include <sys/syscall.h>
-# define uv__accept4 accept4
+// # define uv__accept4 accept4
 #endif
 
 #if defined(__linux__) && defined(__SANITIZE_THREAD__) && defined(__clang__)
