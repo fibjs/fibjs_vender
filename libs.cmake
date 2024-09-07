@@ -2,7 +2,6 @@ set(libs
     v8
     abseil
     exlib
-    cares
     gtest
     unicode
     expat
