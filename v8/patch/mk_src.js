@@ -191,7 +191,7 @@ function gen_list(arch, os) {
         }
     }
 
-    if(arch !== 'x64')
+    if (arch !== 'x64')
         revect_list.forEach(skip_name);
 
     function filter_os() {
@@ -238,8 +238,7 @@ function gen_list(arch, os) {
                 src_list = util.difference(src_list, win_list, android_list, fuchsia_list);
 
                 src_list.push(
-                    "src/base/platform/platform-darwin.cc",
-                    "src/base/platform/platform-ios.cc"
+                    "src/base/platform/platform-darwin.cc"
                 )
             } else if (os == "Linux" || os == "Android") {
                 src_list = util.difference(src_list, win_list, mac_list, android_list, fuchsia_list);

@@ -545,7 +545,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/memory-protection-key.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/platform-darwin.cc
-	${PROJECT_SOURCE_DIR}/src/base/platform/platform-ios.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/platform-posix-time.cc
 	${PROJECT_SOURCE_DIR}/src/base/platform/time.cc
 	${PROJECT_SOURCE_DIR}/src/base/region-allocator.cc
