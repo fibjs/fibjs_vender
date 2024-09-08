@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/object-groupby-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -105,7 +109,7 @@ TNode<Object> CoerceGroupKey_0(compiler::CodeAssemblerState* state_, TNode<Conte
   TNode<Name> tmp2;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp2 = ca_.CallStub<Name>(Builtins::CallableFor(ca_.isolate(), Builtin::kToName), p_context, p_key);
+    tmp2 = ca_.CallBuiltin<Name>(Builtin::kToName, p_context, p_key);
     ca_.Goto(&block1, tmp2);
   }
 
@@ -347,7 +351,7 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp6 = FromConstexpr_String_constexpr_string_0(state_, p_methodName);
-    tmp7 = ca_.CallStub<OrderedHashMap>(Builtins::CallableFor(ca_.isolate(), Builtin::kGroupByGeneric), p_context, p_items, tmp3, tmp1, p_coerceToProperty, tmp6);
+    tmp7 = ca_.CallBuiltin<OrderedHashMap>(Builtin::kGroupByGeneric, p_context, p_items, tmp3, tmp1, p_coerceToProperty, tmp6);
     ca_.Goto(&block1, tmp7);
   }
 

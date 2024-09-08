@@ -68,7 +68,7 @@ TNode<BoolT> IsRegExp_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=435&c=1
 TNode<Object> RegExpCreate_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_maybeString, TNode<String> p_flags);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=444&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=448&c=1
 TNode<Object> RegExpCreate_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_initialMap, TNode<Object> p_maybeString, TNode<String> p_flags);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=334&c=22

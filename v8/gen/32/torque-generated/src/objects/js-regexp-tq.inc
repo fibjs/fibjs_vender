@@ -3,10 +3,10 @@ class JSRegExpResult;
 class JSRegExpResultWithIndices;
 class JSRegExpResultIndices;
 // Alias for IsJSRegExp() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=50&c=1
 V8_EXPORT_PRIVATE bool IsJSRegExp_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=50&c=1
 template <class D, class P>
 class TorqueGeneratedJSRegExp : public P {
   static_assert(
@@ -20,52 +20,37 @@ class TorqueGeneratedJSRegExp : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSRegExp<D,P>;
 
-  // Torque type: (class Undefined | class FixedArray)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
-  inline Tagged<HeapObject> data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
-  inline Tagged<HeapObject> data(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
-  inline void set_data(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
   // Torque type: (class String | class Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
-  inline Tagged<PrimitiveHeapObject> source() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
-  inline Tagged<PrimitiveHeapObject> source(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
-  inline void set_source(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
+  inline Tagged<Union<String, Undefined>> source() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
+  inline Tagged<Union<String, Undefined>> source(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
+  inline void set_source(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | SmiTagged<bitfield struct JSRegExpFlags>)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
-  inline Tagged<Object> flags() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
-  inline Tagged<Object> flags(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
-  inline void set_flags(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  inline Tagged<Union<Smi, Undefined>> flags() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  inline Tagged<Union<Smi, Undefined>> flags(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  inline void set_flags(Tagged<Union<Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSRegExp)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=50&c=1
   V8_EXPORT_PRIVATE void JSRegExpVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=18&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=51&c=3
   static constexpr int kDataOffset = P::kHeaderSize;
-  static constexpr int kDataOffsetEnd = kDataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=19&c=3
+  static constexpr int kDataOffsetEnd = kDataOffset + kTrustedPointerSize - 1;
+  static constexpr int kStartOfStrongFieldsOffset = kDataOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
   static constexpr int kSourceOffset = kDataOffsetEnd + 1;
   static constexpr int kSourceOffsetEnd = kSourceOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=20&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
   static constexpr int kFlagsOffset = kSourceOffsetEnd + 1;
   static constexpr int kFlagsOffsetEnd = kFlagsOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kFlagsOffsetEnd + 1;
@@ -88,7 +73,7 @@ class TorqueGeneratedJSRegExp : public P {
   inline explicit TorqueGeneratedJSRegExp(Address ptr);
 };
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=44&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=77&c=1
 template <class D, class P>
 class TorqueGeneratedJSRegExpResult : public P {
   static_assert(
@@ -103,76 +88,69 @@ class TorqueGeneratedJSRegExpResult : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRegExpResult<D,P>;
 
   // Torque type: JSAny
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
-  inline Tagged<Object> index() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
-  inline Tagged<Object> index(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
-  inline void set_index(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
+  inline Tagged<JSAny> index() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
+  inline Tagged<JSAny> index(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
+  inline void set_index(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
-  inline Tagged<Object> input() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
-  inline Tagged<Object> input(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
-  inline void set_input(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
+  inline Tagged<JSAny> input() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
+  inline Tagged<JSAny> input(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
+  inline void set_input(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
-  inline Tagged<Object> groups() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
-  inline Tagged<Object> groups(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
-  inline void set_groups(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
+  inline Tagged<JSAny> groups() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
+  inline Tagged<JSAny> groups(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
+  inline void set_groups(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class FixedArray)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-  inline Tagged<HeapObject> names() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-  inline Tagged<HeapObject> names(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-  inline void set_names(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
+  inline Tagged<Union<FixedArray, Undefined>> names() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
+  inline Tagged<Union<FixedArray, Undefined>> names(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
+  inline void set_names(Tagged<Union<FixedArray, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=86&c=3
   inline Tagged<String> regexp_input() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=86&c=3
   inline Tagged<String> regexp_input(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=86&c=3
   inline void set_regexp_input(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=54&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=87&c=3
   inline int regexp_last_index() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=54&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=87&c=3
   inline void set_regexp_last_index(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=44&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=44&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(JSRegExpResult)
 
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=47&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
   static constexpr int kIndexOffset = P::kHeaderSize;
   static constexpr int kIndexOffsetEnd = kIndexOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=48&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
   static constexpr int kInputOffset = kIndexOffsetEnd + 1;
   static constexpr int kInputOffsetEnd = kInputOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=49&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
   static constexpr int kGroupsOffset = kInputOffsetEnd + 1;
   static constexpr int kGroupsOffsetEnd = kGroupsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
   static constexpr int kNamesOffset = kGroupsOffsetEnd + 1;
   static constexpr int kNamesOffsetEnd = kNamesOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=86&c=3
   static constexpr int kRegexpInputOffset = kNamesOffsetEnd + 1;
   static constexpr int kRegexpInputOffsetEnd = kRegexpInputOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=54&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=87&c=3
   static constexpr int kRegexpLastIndexOffset = kRegexpInputOffsetEnd + 1;
   static constexpr int kRegexpLastIndexOffsetEnd = kRegexpLastIndexOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kRegexpLastIndexOffsetEnd + 1;
@@ -195,7 +173,7 @@ class TorqueGeneratedJSRegExpResult : public P {
   inline explicit TorqueGeneratedJSRegExpResult(Address ptr);
 };
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=57&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=90&c=1
 template <class D, class P>
 class TorqueGeneratedJSRegExpResultWithIndices : public P {
   static_assert(
@@ -210,25 +188,18 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRegExpResultWithIndices<D,P>;
 
   // Torque type: JSAny
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
-  inline Tagged<Object> indices() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
-  inline Tagged<Object> indices(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
-  inline void set_indices(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=57&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=57&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
+  inline Tagged<JSAny> indices() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
+  inline Tagged<JSAny> indices(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
+  inline void set_indices(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSRegExpResultWithIndices)
 
 
   static constexpr int kStartOfStrongFieldsOffset = P::kSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=58&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
   static constexpr int kIndicesOffset = P::kSize;
   static constexpr int kIndicesOffsetEnd = kIndicesOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kIndicesOffsetEnd + 1;
@@ -251,7 +222,7 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
   inline explicit TorqueGeneratedJSRegExpResultWithIndices(Address ptr);
 };
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=61&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=94&c=1
 template <class D, class P>
 class TorqueGeneratedJSRegExpResultIndices : public P {
   static_assert(
@@ -266,25 +237,18 @@ class TorqueGeneratedJSRegExpResultIndices : public P {
   using TorqueGeneratedClass = TorqueGeneratedJSRegExpResultIndices<D,P>;
 
   // Torque type: JSAny
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
-  inline Tagged<Object> groups() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
-  inline Tagged<Object> groups(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
-  inline void set_groups(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=61&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=61&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
+  inline Tagged<JSAny> groups() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
+  inline Tagged<JSAny> groups(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
+  inline void set_groups(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSRegExpResultIndices)
 
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=64&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
   static constexpr int kGroupsOffset = P::kHeaderSize;
   static constexpr int kGroupsOffsetEnd = kGroupsOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kGroupsOffsetEnd + 1;

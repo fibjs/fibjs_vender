@@ -15,7 +15,7 @@ bool IsFeedbackCell_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedFeedbackCell<FeedbackCell, Struct>::FeedbackCellVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::FeedbackCellVerify(FeedbackCell::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::FeedbackCellVerify(Cast<FeedbackCell>(*this), isolate);
 }
 
 

@@ -15,7 +15,7 @@ bool IsJSArrayIterator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSArrayIterator<JSArrayIterator, JSObject>::JSArrayIteratorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSArrayIteratorVerify(JSArrayIterator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSArrayIteratorVerify(Cast<JSArrayIterator>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSArray_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSArray<JSArray, JSObject>::JSArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSArrayVerify(JSArray::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSArrayVerify(Cast<JSArray>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsTemplateLiteralObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTemplateLiteralObject<TemplateLiteralObject, JSArray>::TemplateLiteralObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TemplateLiteralObjectVerify(TemplateLiteralObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TemplateLiteralObjectVerify(Cast<TemplateLiteralObject>(*this), isolate);
 }
 
 

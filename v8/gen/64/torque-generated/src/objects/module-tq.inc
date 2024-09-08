@@ -39,11 +39,11 @@ class TorqueGeneratedModule : public P {
 
   // Torque type: (class Undefined | class JSModuleNamespace)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-  inline Tagged<HeapObject> module_namespace() const;
+  inline Tagged<Union<JSModuleNamespace, Undefined>> module_namespace() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-  inline Tagged<HeapObject> module_namespace(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSModuleNamespace, Undefined>> module_namespace(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-  inline void set_module_namespace(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module_namespace(Tagged<Union<JSModuleNamespace, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=14&c=3
   inline Tagged<Object> exception() const;
@@ -54,18 +54,11 @@ class TorqueGeneratedModule : public P {
 
   // Torque type: (class Undefined | class JSPromise)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-  inline Tagged<HeapObject> top_level_capability() const;
+  inline Tagged<Union<JSPromise, Undefined>> top_level_capability() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-  inline Tagged<HeapObject> top_level_capability(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSPromise, Undefined>> top_level_capability(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-  inline void set_top_level_capability(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_top_level_capability(Tagged<Union<JSPromise, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
 #ifdef VERIFY_HEAP
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=5&c=1
@@ -136,13 +129,6 @@ class TorqueGeneratedJSModuleNamespace : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=21&c=3
   inline void set_module(Tagged<Module> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=20&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSModuleNamespace)
 
 #ifdef VERIFY_HEAP
@@ -205,13 +191,6 @@ class TorqueGeneratedScriptOrModule : public P {
   inline Tagged<FixedArray> host_defined_options(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=26&c=3
   inline void set_host_defined_options(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=24&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(ScriptOrModule)
 

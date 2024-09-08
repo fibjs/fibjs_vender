@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/js-iterator-helpers-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -113,7 +117,7 @@ TNode<JSIteratorHelper> Cast_JSIteratorHelper_0(compiler::CodeAssemblerState* st
   return TNode<JSIteratorHelper>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=13&c=1
 TNode<JSIteratorMapHelper> Cast_JSIteratorMapHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -149,7 +153,7 @@ TNode<JSIteratorMapHelper> Cast_JSIteratorMapHelper_0(compiler::CodeAssemblerSta
   return TNode<JSIteratorMapHelper>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=18&c=1
 TNode<JSIteratorFilterHelper> Cast_JSIteratorFilterHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -185,7 +189,7 @@ TNode<JSIteratorFilterHelper> Cast_JSIteratorFilterHelper_0(compiler::CodeAssemb
   return TNode<JSIteratorFilterHelper>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=23&c=1
 TNode<JSIteratorTakeHelper> Cast_JSIteratorTakeHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -221,7 +225,7 @@ TNode<JSIteratorTakeHelper> Cast_JSIteratorTakeHelper_0(compiler::CodeAssemblerS
   return TNode<JSIteratorTakeHelper>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=27&c=1
 TNode<JSIteratorDropHelper> Cast_JSIteratorDropHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -257,7 +261,7 @@ TNode<JSIteratorDropHelper> Cast_JSIteratorDropHelper_0(compiler::CodeAssemblerS
   return TNode<JSIteratorDropHelper>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=1
 TNode<JSIteratorFlatMapHelper> Cast_JSIteratorFlatMapHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -293,8 +297,8 @@ TNode<JSIteratorFlatMapHelper> Cast_JSIteratorFlatMapHelper_0(compiler::CodeAsse
   return TNode<JSIteratorFlatMapHelper>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-TorqueStructIteratorRecord LoadJSIteratorHelperUnderlying_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorHelper> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=9&c=3
+TNode<HeapObject> LoadJSIteratorHelperUnderlyingObject_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -302,26 +306,20 @@ TorqueStructIteratorRecord LoadJSIteratorHelperUnderlying_0(compiler::CodeAssemb
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<JSReceiver> tmp1;
-  TNode<IntPtrT> tmp2;
-  TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{p_o, tmp0});
-    tmp2 = FromConstexpr_intptr_constexpr_intptr_0(state_, 8);
-    tmp3 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp2});
-    tmp4 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp3});
+    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp4}};
+  return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=7&c=3
-void StoreJSIteratorHelperUnderlying_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorHelper> p_o, TorqueStructIteratorRecord p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=9&c=3
+void StoreJSIteratorHelperUnderlyingObject_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorHelper> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -329,22 +327,57 @@ void StoreJSIteratorHelperUnderlying_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<IntPtrT> tmp1;
-  TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{p_o, tmp0}, p_v.object);
-    tmp1 = FromConstexpr_intptr_constexpr_intptr_0(state_, 8);
-    tmp2 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp2}, p_v.next);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=3
+TNode<Object> LoadJSIteratorHelperUnderlyingNext_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorHelper> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Object>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=3
+void StoreJSIteratorHelperUnderlyingNext_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorHelper> p_o, TNode<Object> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=14&c=3
 TNode<JSReceiver> LoadJSIteratorMapHelperMapper_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -365,7 +398,7 @@ TNode<JSReceiver> LoadJSIteratorMapHelperMapper_0(compiler::CodeAssemblerState* 
   return TNode<JSReceiver>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=11&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=14&c=3
 void StoreJSIteratorMapHelperMapper_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorMapHelper> p_o, TNode<JSReceiver> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -384,7 +417,7 @@ void StoreJSIteratorMapHelperMapper_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=3
 TNode<Number> LoadJSIteratorMapHelperCounter_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -405,7 +438,7 @@ TNode<Number> LoadJSIteratorMapHelperCounter_0(compiler::CodeAssemblerState* sta
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=12&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=3
 void StoreJSIteratorMapHelperCounter_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorMapHelper> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -424,7 +457,7 @@ void StoreJSIteratorMapHelperCounter_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=19&c=3
 TNode<JSReceiver> LoadJSIteratorFilterHelperPredicate_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFilterHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -445,7 +478,7 @@ TNode<JSReceiver> LoadJSIteratorFilterHelperPredicate_0(compiler::CodeAssemblerS
   return TNode<JSReceiver>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=16&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=19&c=3
 void StoreJSIteratorFilterHelperPredicate_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFilterHelper> p_o, TNode<JSReceiver> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -464,7 +497,7 @@ void StoreJSIteratorFilterHelperPredicate_0(compiler::CodeAssemblerState* state_
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=3
 TNode<Number> LoadJSIteratorFilterHelperCounter_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFilterHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -485,7 +518,7 @@ TNode<Number> LoadJSIteratorFilterHelperCounter_0(compiler::CodeAssemblerState* 
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=17&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=3
 void StoreJSIteratorFilterHelperCounter_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFilterHelper> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -504,7 +537,7 @@ void StoreJSIteratorFilterHelperCounter_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=3
 TNode<Number> LoadJSIteratorTakeHelperRemaining_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorTakeHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -525,7 +558,7 @@ TNode<Number> LoadJSIteratorTakeHelperRemaining_0(compiler::CodeAssemblerState* 
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=3
 void StoreJSIteratorTakeHelperRemaining_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorTakeHelper> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -544,7 +577,7 @@ void StoreJSIteratorTakeHelperRemaining_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=3
 TNode<Number> LoadJSIteratorDropHelperRemaining_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorDropHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -565,7 +598,7 @@ TNode<Number> LoadJSIteratorDropHelperRemaining_0(compiler::CodeAssemblerState* 
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=25&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=3
 void StoreJSIteratorDropHelperRemaining_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorDropHelper> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -584,7 +617,7 @@ void StoreJSIteratorDropHelperRemaining_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
 TNode<JSReceiver> LoadJSIteratorFlatMapHelperMapper_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -605,7 +638,7 @@ TNode<JSReceiver> LoadJSIteratorFlatMapHelperMapper_0(compiler::CodeAssemblerSta
   return TNode<JSReceiver>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=29&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
 void StoreJSIteratorFlatMapHelperMapper_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<JSReceiver> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -624,7 +657,7 @@ void StoreJSIteratorFlatMapHelperMapper_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=33&c=3
 TNode<Number> LoadJSIteratorFlatMapHelperCounter_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -645,7 +678,7 @@ TNode<Number> LoadJSIteratorFlatMapHelperCounter_0(compiler::CodeAssemblerState*
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=30&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=33&c=3
 void StoreJSIteratorFlatMapHelperCounter_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -664,7 +697,7 @@ void StoreJSIteratorFlatMapHelperCounter_0(compiler::CodeAssemblerState* state_,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=34&c=3
 TorqueStructIteratorRecord LoadJSIteratorFlatMapHelperInnerIterator_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -691,7 +724,7 @@ TorqueStructIteratorRecord LoadJSIteratorFlatMapHelperInnerIterator_0(compiler::
   return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp4}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=34&c=3
 void StoreJSIteratorFlatMapHelperInnerIterator_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TorqueStructIteratorRecord p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -715,7 +748,7 @@ void StoreJSIteratorFlatMapHelperInnerIterator_0(compiler::CodeAssemblerState* s
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=35&c=3
 TNode<Boolean> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -736,7 +769,7 @@ TNode<Boolean> LoadJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerSt
   return TNode<Boolean>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=35&c=3
 void StoreJSIteratorFlatMapHelperInnerAlive_0(compiler::CodeAssemblerState* state_, TNode<JSIteratorFlatMapHelper> p_o, TNode<Boolean> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -900,7 +933,7 @@ TNode<JSIteratorHelper> DownCastForTorqueClass_JSIteratorHelper_0(compiler::Code
   return TNode<JSIteratorHelper>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=13&c=1
 TNode<JSIteratorMapHelper> DownCastForTorqueClass_JSIteratorMapHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1045,7 +1078,7 @@ TNode<JSIteratorMapHelper> DownCastForTorqueClass_JSIteratorMapHelper_0(compiler
   return TNode<JSIteratorMapHelper>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=18&c=1
 TNode<JSIteratorFilterHelper> DownCastForTorqueClass_JSIteratorFilterHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1190,7 +1223,7 @@ TNode<JSIteratorFilterHelper> DownCastForTorqueClass_JSIteratorFilterHelper_0(co
   return TNode<JSIteratorFilterHelper>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=23&c=1
 TNode<JSIteratorTakeHelper> DownCastForTorqueClass_JSIteratorTakeHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1335,7 +1368,7 @@ TNode<JSIteratorTakeHelper> DownCastForTorqueClass_JSIteratorTakeHelper_0(compil
   return TNode<JSIteratorTakeHelper>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=27&c=1
 TNode<JSIteratorDropHelper> DownCastForTorqueClass_JSIteratorDropHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1480,7 +1513,7 @@ TNode<JSIteratorDropHelper> DownCastForTorqueClass_JSIteratorDropHelper_0(compil
   return TNode<JSIteratorDropHelper>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=1
 TNode<JSIteratorFlatMapHelper> DownCastForTorqueClass_JSIteratorFlatMapHelper_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

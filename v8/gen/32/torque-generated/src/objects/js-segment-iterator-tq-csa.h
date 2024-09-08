@@ -33,6 +33,30 @@ TNode<Smi> LoadJSSegmentIteratorFlags_0(compiler::CodeAssemblerState* state_, TN
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=15&c=3
 void StoreJSSegmentIteratorFlags_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentIterator> p_o, TNode<Smi> p_v);
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=21&c=3
+TNode<String> LoadJSSegmentDataObjectSegment_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObject> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=21&c=3
+void StoreJSSegmentDataObjectSegment_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObject> p_o, TNode<String> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=22&c=3
+TNode<Number> LoadJSSegmentDataObjectIndex_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObject> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=22&c=3
+void StoreJSSegmentDataObjectIndex_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObject> p_o, TNode<Number> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=23&c=3
+TNode<String> LoadJSSegmentDataObjectInput_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObject> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=23&c=3
+void StoreJSSegmentDataObjectInput_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObject> p_o, TNode<String> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=29&c=3
+TNode<Boolean> LoadJSSegmentDataObjectWithIsWordLikeIsWordLike_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObjectWithIsWordLike> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=29&c=3
+void StoreJSSegmentDataObjectWithIsWordLikeIsWordLike_0(compiler::CodeAssemblerState* state_, TNode<JSSegmentDataObjectWithIsWordLike> p_o, TNode<Boolean> p_v);
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=11&c=1
 TNode<JSSegmentIterator> DownCastForTorqueClass_JSSegmentIterator_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 

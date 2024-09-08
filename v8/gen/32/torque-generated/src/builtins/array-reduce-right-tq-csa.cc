@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-reduce-right-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -158,7 +162,7 @@ TF_BUILTIN(ArrayReduceRightPreLoopEagerDeoptContinuation, CodeStubAssembler) {
     tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp4}, TNode<Number>{tmp6});
     tmp8 = TheHole_0(state_);
-    tmp9 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayReduceRightLoopContinuation), parameter0, tmp0, tmp2, tmp8, tmp0, tmp7, tmp4);
+    tmp9 = ca_.CallBuiltin<Object>(Builtin::kArrayReduceRightLoopContinuation, parameter0, tmp0, tmp2, tmp8, tmp0, tmp7, tmp4);
     CodeStubAssembler(state_).Return(tmp9);
   }
 }
@@ -259,7 +263,7 @@ TF_BUILTIN(ArrayReduceRightLoopEagerDeoptContinuation, CodeStubAssembler) {
   TNode<Object> tmp8;
   if (block15.is_used()) {
     ca_.Bind(&block15);
-    tmp8 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayReduceRightLoopContinuation), parameter0, tmp0, tmp2, parameter5, tmp0, tmp4, tmp6);
+    tmp8 = ca_.CallBuiltin<Object>(Builtin::kArrayReduceRightLoopContinuation, parameter0, tmp0, tmp2, parameter5, tmp0, tmp4, tmp6);
     CodeStubAssembler(state_).Return(tmp8);
   }
 }
@@ -360,7 +364,7 @@ TF_BUILTIN(ArrayReduceRightLoopLazyDeoptContinuation, CodeStubAssembler) {
   TNode<Object> tmp8;
   if (block15.is_used()) {
     ca_.Bind(&block15);
-    tmp8 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayReduceRightLoopContinuation), parameter0, tmp0, tmp2, parameter5, tmp0, tmp4, tmp6);
+    tmp8 = ca_.CallBuiltin<Object>(Builtin::kArrayReduceRightLoopContinuation, parameter0, tmp0, tmp2, parameter5, tmp0, tmp4, tmp6);
     CodeStubAssembler(state_).Return(tmp8);
   }
 }
@@ -985,7 +989,7 @@ TF_BUILTIN(ArrayReduceRight, CodeStubAssembler) {
   TNode<Object> tmp18;
   if (block14.is_used()) {
     ca_.Bind(&block14);
-    tmp18 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayReduceRightLoopContinuation), parameter0, tmp1, tmp7, tmp17.value(), tmp1, tmp16.value(), tmp2);
+    tmp18 = ca_.CallBuiltin<Object>(Builtin::kArrayReduceRightLoopContinuation, parameter0, tmp1, tmp7, tmp17.value(), tmp1, tmp16.value(), tmp2);
     arguments.PopAndReturn(tmp18);
   }
 

@@ -15,7 +15,7 @@ bool IsJSRelativeTimeFormat_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSRelativeTimeFormat<JSRelativeTimeFormat, JSObject>::JSRelativeTimeFormatVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSRelativeTimeFormatVerify(JSRelativeTimeFormat::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSRelativeTimeFormatVerify(Cast<JSRelativeTimeFormat>(*this), isolate);
 }
 
 

@@ -24,9 +24,6 @@ TNode<Object> OrdinaryToPrimitive_String_Inline_0(compiler::CodeAssemblerState* 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=105&c=7
 TNode<Name> Cast_Name_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=152&c=22
-TNode<Map> UnsafeCast_Map_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
-
 } // namespace internal
 } // namespace v8
 

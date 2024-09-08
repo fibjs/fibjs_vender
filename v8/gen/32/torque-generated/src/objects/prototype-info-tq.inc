@@ -19,27 +19,27 @@ class TorqueGeneratedPrototypeInfo : public P {
 
   // Torque type: (class Undefined | class JSModuleNamespace)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
-  inline Tagged<HeapObject> module_namespace() const;
+  inline Tagged<Union<JSModuleNamespace, Undefined>> module_namespace() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
-  inline Tagged<HeapObject> module_namespace(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSModuleNamespace, Undefined>> module_namespace(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=14&c=3
-  inline void set_module_namespace(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_module_namespace(Tagged<Union<JSModuleNamespace, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Zero | class WeakArrayList)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
-  inline Tagged<Object> prototype_users() const;
+  inline Tagged<Union<Smi, WeakArrayList>> prototype_users() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
-  inline Tagged<Object> prototype_users(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Smi, WeakArrayList>> prototype_users(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=18&c=3
-  inline void set_prototype_users(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_users(Tagged<Union<Smi, WeakArrayList>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class FixedArray | Zero)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
-  inline Tagged<Object> prototype_chain_enum_cache() const;
+  inline Tagged<Union<FixedArray, Smi, Undefined>> prototype_chain_enum_cache() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
-  inline Tagged<Object> prototype_chain_enum_cache(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<FixedArray, Smi, Undefined>> prototype_chain_enum_cache(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=20&c=3
-  inline void set_prototype_chain_enum_cache(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_chain_enum_cache(Tagged<Union<FixedArray, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=24&c=3
   inline int registry_slot() const;
@@ -51,20 +51,13 @@ class TorqueGeneratedPrototypeInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=26&c=3
   inline void set_bit_field(int value);
 
-  // Torque type: (class Undefined | Weak<class Map>)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
-  inline MaybeObject object_create_map() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
-  inline MaybeObject object_create_map(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
-  inline void set_object_create_map(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // Torque type: (class Undefined | class WeakArrayList)
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=31&c=3
+  inline Tagged<Union<Undefined, WeakArrayList>> derived_maps() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=31&c=3
+  inline Tagged<Union<Undefined, WeakArrayList>> derived_maps(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=31&c=3
+  inline void set_derived_maps(Tagged<Union<Undefined, WeakArrayList>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(PrototypeInfo)
 
@@ -89,14 +82,14 @@ class TorqueGeneratedPrototypeInfo : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=26&c=3
   static constexpr int kBitFieldOffset = kRegistrySlotOffsetEnd + 1;
   static constexpr int kBitFieldOffsetEnd = kBitFieldOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kBitFieldOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kBitFieldOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=29&c=3
-  static constexpr int kObjectCreateMapOffset = kBitFieldOffsetEnd + 1;
-  static constexpr int kObjectCreateMapOffsetEnd = kObjectCreateMapOffset + kTaggedSize - 1;
-  static constexpr int kEndOfWeakFieldsOffset = kObjectCreateMapOffsetEnd + 1;
-  static constexpr int kHeaderSize = kObjectCreateMapOffsetEnd + 1;
-  static constexpr int kSize = kObjectCreateMapOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=31&c=3
+  static constexpr int kDerivedMapsOffset = kBitFieldOffsetEnd + 1;
+  static constexpr int kDerivedMapsOffsetEnd = kDerivedMapsOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kDerivedMapsOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kDerivedMapsOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kDerivedMapsOffsetEnd + 1;
+  static constexpr int kHeaderSize = kDerivedMapsOffsetEnd + 1;
+  static constexpr int kSize = kDerivedMapsOffsetEnd + 1;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=9&c=1
   V8_INLINE static constexpr int32_t SizeFor() {

@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-lastindexof-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -450,7 +454,7 @@ TNode<Object> GenericArrayLastIndexOf_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_4);
-    tmp2 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_object, phi_bb2_4);
+    tmp2 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_object, phi_bb2_4);
     tmp3 = True_0(state_);
     tmp4 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp2}, TNode<HeapObject>{tmp3});
     ca_.Branch(tmp4, &block5, std::vector<compiler::Node*>{phi_bb2_4}, &block6, std::vector<compiler::Node*>{phi_bb2_4});

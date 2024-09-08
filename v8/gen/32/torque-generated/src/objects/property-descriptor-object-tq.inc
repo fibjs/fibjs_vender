@@ -22,36 +22,29 @@ class TorqueGeneratedPropertyDescriptorObject : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
   inline void set_flags(int value);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | TheHole)
+  // Torque type: (Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | class JSReceiver | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-  inline Tagged<Object> value() const;
+  inline Tagged<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-  inline Tagged<Object> value(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-  inline void set_value(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_value(Tagged<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | TheHole)
+  // Torque type: (Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | class JSReceiver | TheHole | class FunctionTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-  inline Tagged<Object> get() const;
+  inline Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> get() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-  inline Tagged<Object> get(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> get(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-  inline void set_get(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_get(Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | TheHole)
+  // Torque type: (Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | class JSReceiver | TheHole | class FunctionTemplateInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-  inline Tagged<Object> set() const;
+  inline Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> set() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-  inline Tagged<Object> set(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> set(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-  inline void set_set(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=19&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_set(Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(PropertyDescriptorObject)
 

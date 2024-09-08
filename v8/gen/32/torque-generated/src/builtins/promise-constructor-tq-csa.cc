@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
@@ -83,7 +87,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=29&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=24&c=1
 TNode<BoolT> HasAccessCheckFailed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_promiseFun, TNode<Object> p_executor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -149,14 +153,10 @@ USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<JSPromise> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Undefined> tmp0;
@@ -240,97 +240,82 @@ USE(parameter2);
   }
 
   TNode<JSPromise> phi_bb9_5;
-  TNode<BoolT> tmp16;
+  TNode<True> tmp16;
+  TNode<JSFunction> tmp17;
+  TNode<JSFunction> tmp18;
+  TNode<Context> tmp19;
+  TNode<JSReceiver> tmp20;
+      TNode<Object> tmp22;
+  TNode<Undefined> tmp23;
+  TNode<Object> tmp24;
+      TNode<Object> tmp26;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_5);
-    tmp16 = CodeStubAssembler(state_).IsDebugActive();
-    ca_.Branch(tmp16, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
+    tmp16 = True_0(state_);
+    std::tie(tmp17, tmp18, tmp19) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{phi_bb9_5}, TNode<Boolean>{tmp16}, TNode<NativeContext>{parameter0}).Flatten();
+    compiler::CodeAssemblerExceptionHandlerLabel catch21__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch21__label);
+    tmp20 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
+    }
+    if (catch21__label.is_used()) {
+      compiler::CodeAssemblerLabel catch21_skip(&ca_);
+      ca_.Goto(&catch21_skip);
+      ca_.Bind(&catch21__label, &tmp22);
+      ca_.Goto(&block12);
+      ca_.Bind(&catch21_skip);
+    }
+    tmp23 = Undefined_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch25__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch25__label);
+    tmp24 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp20}, TNode<Object>{tmp23}, TNode<Object>{tmp17}, TNode<Object>{tmp18});
+    }
+    if (catch25__label.is_used()) {
+      compiler::CodeAssemblerLabel catch25_skip(&ca_);
+      ca_.Goto(&catch25_skip);
+      ca_.Bind(&catch25__label, &tmp26);
+      ca_.Goto(&block13);
+      ca_.Bind(&catch25_skip);
+    }
+    ca_.Goto(&block10);
   }
 
-  TNode<Object> tmp17;
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    tmp17 = CodeStubAssembler(state_).CallRuntime(Runtime::kDebugPushPromise, parameter0, phi_bb9_5); 
-    ca_.Goto(&block11);
-  }
-
-  TNode<True> tmp18;
-  TNode<JSFunction> tmp19;
-  TNode<JSFunction> tmp20;
-  TNode<JSReceiver> tmp21;
-      TNode<Object> tmp23;
-  TNode<Undefined> tmp24;
-  TNode<Object> tmp25;
-      TNode<Object> tmp27;
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    tmp18 = True_0(state_);
-    std::tie(tmp19, tmp20) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{phi_bb9_5}, TNode<Boolean>{tmp18}, TNode<NativeContext>{parameter0}).Flatten();
-    compiler::CodeAssemblerExceptionHandlerLabel catch22__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch22__label);
-    tmp21 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
-    }
-    if (catch22__label.is_used()) {
-      compiler::CodeAssemblerLabel catch22_skip(&ca_);
-      ca_.Goto(&catch22_skip);
-      ca_.Bind(&catch22__label, &tmp23);
-      ca_.Goto(&block14);
-      ca_.Bind(&catch22_skip);
-    }
-    tmp24 = Undefined_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch26__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch26__label);
-    tmp25 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp21}, TNode<Object>{tmp24}, TNode<Object>{tmp19}, TNode<Object>{tmp20});
-    }
-    if (catch26__label.is_used()) {
-      compiler::CodeAssemblerLabel catch26_skip(&ca_);
-      ca_.Goto(&catch26_skip);
-      ca_.Bind(&catch26__label, &tmp27);
-      ca_.Goto(&block15);
-      ca_.Bind(&catch26_skip);
-    }
-    ca_.Goto(&block12);
+  TNode<HeapObject> tmp27;
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    tmp27 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block11, tmp22, tmp27);
   }
 
   TNode<HeapObject> tmp28;
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    tmp28 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block13, tmp23, tmp28);
-  }
-
-  TNode<HeapObject> tmp29;
-  if (block15.is_used()) {
-    ca_.Bind(&block15);
-    tmp29 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block13, tmp27, tmp29);
-  }
-
-  TNode<Object> phi_bb13_11;
-  TNode<HeapObject> phi_bb13_12;
-  TNode<Undefined> tmp30;
-  TNode<Object> tmp31;
   if (block13.is_used()) {
-    ca_.Bind(&block13, &phi_bb13_11, &phi_bb13_12);
-    tmp30 = Undefined_0(state_);
-    tmp31 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp20}, TNode<Object>{tmp30}, TNode<Object>{phi_bb13_11});
-    ca_.Goto(&block12);
+    ca_.Bind(&block13);
+    tmp28 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block11, tmp26, tmp28);
   }
 
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Branch(tmp16, &block16, std::vector<compiler::Node*>{}, &block17, std::vector<compiler::Node*>{});
+  TNode<Object> phi_bb11_11;
+  TNode<HeapObject> phi_bb11_12;
+  TNode<Context> tmp29;
+  TNode<IntPtrT> tmp30;
+  TNode<Object> tmp31;
+  TNode<IntPtrT> tmp32;
+  TNode<False> tmp33;
+  TNode<Undefined> tmp34;
+  TNode<Object> tmp35;
+  if (block11.is_used()) {
+    ca_.Bind(&block11, &phi_bb11_11, &phi_bb11_12);
+    tmp29 = (TNode<Context>{tmp19});
+    tmp30 = kDebugEventSlot_0(state_);
+    std::tie(tmp31, tmp32) = ContextSlot_PromiseResolvingFunctionContext_PromiseResolvingFunctionContext_Boolean_0(state_, TNode<Context>{tmp29}, TNode<IntPtrT>{tmp30}).Flatten();
+    tmp33 = False_0(state_);
+    CodeStubAssembler(state_).StoreReference<Boolean>(CodeStubAssembler::Reference{tmp31, tmp32}, tmp33);
+    tmp34 = Undefined_0(state_);
+    tmp35 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp18}, TNode<Object>{tmp34}, TNode<Object>{phi_bb11_11});
+    ca_.Goto(&block10);
   }
 
-  TNode<Object> tmp32;
-  if (block16.is_used()) {
-    ca_.Bind(&block16);
-    tmp32 = CodeStubAssembler(state_).CallRuntime(Runtime::kDebugPopPromise, parameter0); 
-    ca_.Goto(&block17);
-  }
-
-  if (block17.is_used()) {
-    ca_.Bind(&block17);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
     CodeStubAssembler(state_).Return(phi_bb9_5);
   }
 }
@@ -359,7 +344,7 @@ TF_BUILTIN(PromisePrototypeCatch, CodeStubAssembler) {
     ca_.Bind(&block2);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-constructor.tq", 100});
+      pos_stack.push_back({"src/builtins/promise-constructor.tq", 98});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Is<NativeContext>(context)' failed", pos_stack);
     }
   }
@@ -378,7 +363,26 @@ TF_BUILTIN(PromisePrototypeCatch, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=100&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=65&c=14
+TNode<JSPromise> UnsafeCast_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSPromise> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<JSPromise>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=98&c=9
 TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -425,7 +429,7 @@ TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=101&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=99&c=25
 TNode<NativeContext> UnsafeCast_NativeContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -15,11 +15,8 @@ TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice_0(compiler::CodeAssemblerSt
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=86&c=1
 TNode<JSArray> HandleFastSlice_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_o, TNode<Number> p_startNumber, TNode<Number> p_countNumber, compiler::CodeAssemblerLabel* label_Bailout);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=65&c=50
-TNode<Smi> UnsafeCast_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=64&c=24
-TNode<Object> UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+TNode<Object> UnsafeCast_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=106&c=7
 TNode<JSArgumentsObject> Cast_JSStrictArgumentsObject_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);

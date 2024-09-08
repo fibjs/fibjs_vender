@@ -14,13 +14,13 @@ bool IsJSArrayBufferView_NonInline(Tagged<HeapObject> o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedJSArrayBufferView<JSArrayBufferView, JSObjectWithEmbedderSlots>::JSArrayBufferViewVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSArrayBufferViewVerify(JSArrayBufferView::cast(*this), isolate);
+void TorqueGeneratedJSArrayBufferView<JSArrayBufferView, JSAPIObjectWithEmbedderSlots>::JSArrayBufferViewVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::JSArrayBufferViewVerify(Cast<JSArrayBufferView>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=107&c=1
 bool IsJSTypedArray_NonInline(Tagged<HeapObject> o) {
   return IsJSTypedArray(o);
 }
@@ -29,7 +29,7 @@ bool IsJSTypedArray_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTypedArray<JSTypedArray, JSArrayBufferView>::JSTypedArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTypedArrayVerify(JSTypedArray::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTypedArrayVerify(Cast<JSTypedArray>(*this), isolate);
 }
 
 
@@ -42,13 +42,13 @@ bool IsJSArrayBuffer_NonInline(Tagged<HeapObject> o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSObjectWithEmbedderSlots>::JSArrayBufferVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSArrayBufferVerify(JSArrayBuffer::cast(*this), isolate);
+void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSAPIObjectWithEmbedderSlots>::JSArrayBufferVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::JSArrayBufferVerify(Cast<JSArrayBuffer>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
 bool IsJSDataViewOrRabGsabDataView_NonInline(Tagged<HeapObject> o) {
   return IsJSDataViewOrRabGsabDataView(o);
 }
@@ -57,12 +57,12 @@ bool IsJSDataViewOrRabGsabDataView_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSDataViewOrRabGsabDataView<JSDataViewOrRabGsabDataView, JSArrayBufferView>::JSDataViewOrRabGsabDataViewVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSDataViewOrRabGsabDataViewVerify(JSDataViewOrRabGsabDataView::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSDataViewOrRabGsabDataViewVerify(Cast<JSDataViewOrRabGsabDataView>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
 bool IsJSDataView_NonInline(Tagged<HeapObject> o) {
   return IsJSDataView(o);
 }
@@ -71,12 +71,12 @@ bool IsJSDataView_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSDataView<JSDataView, JSDataViewOrRabGsabDataView>::JSDataViewVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSDataViewVerify(JSDataView::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSDataViewVerify(Cast<JSDataView>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
 bool IsJSRabGsabDataView_NonInline(Tagged<HeapObject> o) {
   return IsJSRabGsabDataView(o);
 }
@@ -85,7 +85,7 @@ bool IsJSRabGsabDataView_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSRabGsabDataView<JSRabGsabDataView, JSDataViewOrRabGsabDataView>::JSRabGsabDataViewVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSRabGsabDataViewVerify(JSRabGsabDataView::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSRabGsabDataViewVerify(Cast<JSRabGsabDataView>(*this), isolate);
 }
 
 

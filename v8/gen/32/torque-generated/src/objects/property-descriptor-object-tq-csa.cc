@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/property-descriptor-object-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -353,7 +357,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
     tmp38 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_newDesc, tmp37});
     tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp40 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp39});
-    tmp41 = SameValue_1(state_, TNode<Object>{tmp38}, TNode<Object>{tmp40});
+    tmp41 = SameValue_0(state_, TNode<Object>{tmp38}, TNode<Object>{tmp40});
     tmp42 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp41});
     ca_.Goto(&block28, tmp42);
   }
@@ -401,7 +405,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
     tmp49 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_newDesc, tmp48});
     tmp50 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp51 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp50});
-    tmp52 = SameValue_1(state_, TNode<Object>{tmp49}, TNode<Object>{tmp51});
+    tmp52 = SameValue_0(state_, TNode<Object>{tmp49}, TNode<Object>{tmp51});
     tmp53 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp52});
     ca_.Goto(&block33, tmp53);
   }
@@ -485,7 +489,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
     tmp68 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_newDesc, tmp67});
     tmp69 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp70 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp69});
-    tmp71 = SameValue_1(state_, TNode<Object>{tmp68}, TNode<Object>{tmp70});
+    tmp71 = SameValue_0(state_, TNode<Object>{tmp68}, TNode<Object>{tmp70});
     tmp72 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp71});
     ca_.Goto(&block42, tmp72);
   }
@@ -1392,7 +1396,7 @@ TNode<BoolT> Method_PropertyDescriptorObject_IsEmptyOrEquivalentTo_0(compiler::C
     tmp31 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_this, tmp30});
     tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp33 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp32});
-    tmp34 = SameValue_1(state_, TNode<Object>{tmp31}, TNode<Object>{tmp33});
+    tmp34 = SameValue_0(state_, TNode<Object>{tmp31}, TNode<Object>{tmp33});
     ca_.Goto(&block16, phi_bb15_2, tmp34);
   }
 
@@ -1516,7 +1520,7 @@ TNode<BoolT> Method_PropertyDescriptorObject_IsEmptyOrEquivalentTo_0(compiler::C
     tmp55 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_this, tmp54});
     tmp56 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp57 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp56});
-    tmp58 = SameValue_1(state_, TNode<Object>{tmp55}, TNode<Object>{tmp57});
+    tmp58 = SameValue_0(state_, TNode<Object>{tmp55}, TNode<Object>{tmp57});
     ca_.Goto(&block28, phi_bb27_2, tmp58);
   }
 
@@ -1576,7 +1580,7 @@ TNode<BoolT> Method_PropertyDescriptorObject_IsEmptyOrEquivalentTo_0(compiler::C
     tmp66 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_this, tmp65});
     tmp67 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp68 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp67});
-    tmp69 = SameValue_1(state_, TNode<Object>{tmp66}, TNode<Object>{tmp68});
+    tmp69 = SameValue_0(state_, TNode<Object>{tmp66}, TNode<Object>{tmp68});
     ca_.Goto(&block34, phi_bb33_2, tmp69);
   }
 
@@ -1634,7 +1638,7 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(164), static_cast<InstanceType>(164))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(163), static_cast<InstanceType>(163))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1677,7 +1681,7 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(164));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(163));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -1711,12 +1715,12 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(164), static_cast<InstanceType>(164))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(163), static_cast<InstanceType>(163))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(164));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(163));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});

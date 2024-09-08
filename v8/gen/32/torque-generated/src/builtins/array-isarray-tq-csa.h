@@ -6,9 +6,6 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-isarray.tq?l=15&c=5
-TNode<JSArray> Cast_JSArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-isarray.tq?l=18&c=5
 TNode<JSProxy> Cast_JSProxy_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 

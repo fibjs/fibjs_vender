@@ -22,19 +22,12 @@ class TorqueGeneratedJSCollection : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSCollection<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=3
   inline Tagged<Object> table() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=3
   inline Tagged<Object> table(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=3
   inline void set_table(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
 #ifdef VERIFY_HEAP
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=5&c=1
@@ -42,7 +35,7 @@ class TorqueGeneratedJSCollection : public P {
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=8&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=3
   static constexpr int kTableOffset = P::kHeaderSize;
   static constexpr int kTableOffsetEnd = kTableOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kTableOffsetEnd + 1;
@@ -66,10 +59,10 @@ class TorqueGeneratedJSCollection : public P {
 };
 
 // Alias for IsJSSet() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=12&c=1
 V8_EXPORT_PRIVATE bool IsJSSet_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=12&c=1
 template <class D, class P>
 class TorqueGeneratedJSSet : public P {
   static_assert(
@@ -83,17 +76,10 @@ class TorqueGeneratedJSSet : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSSet<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSSet)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=10&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=12&c=1
   V8_EXPORT_PRIVATE void JSSetVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -119,10 +105,10 @@ class TorqueGeneratedJSSet : public P {
 };
 
 // Alias for IsJSMap() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
 V8_EXPORT_PRIVATE bool IsJSMap_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
 template <class D, class P>
 class TorqueGeneratedJSMap : public P {
   static_assert(
@@ -136,17 +122,10 @@ class TorqueGeneratedJSMap : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSMap<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSMap)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=11&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
   V8_EXPORT_PRIVATE void JSMapVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -172,10 +151,10 @@ class TorqueGeneratedJSMap : public P {
 };
 
 // Alias for IsJSWeakCollection() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=15&c=1
 V8_EXPORT_PRIVATE bool IsJSWeakCollection_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=15&c=1
 template <class D, class P>
 class TorqueGeneratedJSWeakCollection : public P {
   static_assert(
@@ -189,27 +168,20 @@ class TorqueGeneratedJSWeakCollection : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSWeakCollection<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=3
   inline Tagged<Object> table() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=3
   inline Tagged<Object> table(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=3
   inline void set_table(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=13&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=15&c=1
   V8_EXPORT_PRIVATE void JSWeakCollectionVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=16&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=3
   static constexpr int kTableOffset = P::kHeaderSize;
   static constexpr int kTableOffsetEnd = kTableOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kTableOffsetEnd + 1;
@@ -233,10 +205,10 @@ class TorqueGeneratedJSWeakCollection : public P {
 };
 
 // Alias for IsJSWeakSet() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=20&c=1
 V8_EXPORT_PRIVATE bool IsJSWeakSet_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=20&c=1
 template <class D, class P>
 class TorqueGeneratedJSWeakSet : public P {
   static_assert(
@@ -250,17 +222,10 @@ class TorqueGeneratedJSWeakSet : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSWeakSet<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSWeakSet)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=18&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=20&c=1
   V8_EXPORT_PRIVATE void JSWeakSetVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -286,10 +251,10 @@ class TorqueGeneratedJSWeakSet : public P {
 };
 
 // Alias for IsJSWeakMap() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=21&c=1
 V8_EXPORT_PRIVATE bool IsJSWeakMap_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=21&c=1
 template <class D, class P>
 class TorqueGeneratedJSWeakMap : public P {
   static_assert(
@@ -303,17 +268,10 @@ class TorqueGeneratedJSWeakMap : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSWeakMap<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSWeakMap)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=19&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection.tq?l=21&c=1
   V8_EXPORT_PRIVATE void JSWeakMapVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 

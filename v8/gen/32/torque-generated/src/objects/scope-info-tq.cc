@@ -6,7 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=111&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=114&c=1
 bool IsScopeInfo_NonInline(Tagged<HeapObject> o) {
   return IsScopeInfo(o);
 }
@@ -15,7 +15,7 @@ bool IsScopeInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedScopeInfo<ScopeInfo, HeapObject>::ScopeInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ScopeInfoVerify(ScopeInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ScopeInfoVerify(Cast<ScopeInfo>(*this), isolate);
 }
 
 

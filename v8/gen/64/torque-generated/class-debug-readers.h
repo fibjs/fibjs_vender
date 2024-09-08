@@ -9,6 +9,78 @@
 #include <cstdint>
 #include <vector>
 
+#include "src/ast/ast.h"
+#include "src/builtins/builtins-array-gen.h"
+#include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
+#include "src/builtins/builtins-collections-gen.h"
+#include "src/builtins/builtins-constructor-gen.h"
+#include "src/builtins/builtins-data-view-gen.h"
+#include "src/builtins/builtins-iterator-gen.h"
+#include "src/builtins/builtins-object-gen.h"
+#include "src/builtins/builtins-promise-gen.h"
+#include "src/builtins/builtins-promise.h"
+#include "src/builtins/builtins-proxy-gen.h"
+#include "src/builtins/builtins-regexp-gen.h"
+#include "src/builtins/builtins-string-gen.h"
+#include "src/builtins/builtins-typed-array-gen.h"
+#include "src/builtins/builtins-utils-gen.h"
+#include "src/builtins/builtins-wasm-gen.h"
+#include "src/builtins/builtins.h"
+#include "src/codegen/code-factory.h"
+#include "src/debug/debug-wasm-objects.h"
+#include "src/heap/factory-inl.h"
+#include "src/ic/binary-op-assembler.h"
+#include "src/ic/handler-configuration-inl.h"
+#include "src/objects/arguments.h"
+#include "src/objects/bigint.h"
+#include "src/objects/call-site-info.h"
+#include "src/objects/elements-kind.h"
+#include "src/objects/free-space.h"
+#include "src/objects/intl-objects.h"
+#include "src/objects/js-atomics-synchronization.h"
+#include "src/objects/js-break-iterator.h"
+#include "src/objects/js-collator.h"
+#include "src/objects/js-date-time-format.h"
+#include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
+#include "src/objects/js-duration-format.h"
+#include "src/objects/js-function.h"
+#include "src/objects/js-generator.h"
+#include "src/objects/js-iterator-helpers.h"
+#include "src/objects/js-list-format.h"
+#include "src/objects/js-locale.h"
+#include "src/objects/js-number-format.h"
+#include "src/objects/js-objects.h"
+#include "src/objects/js-plural-rules.h"
+#include "src/objects/js-promise.h"
+#include "src/objects/js-raw-json.h"
+#include "src/objects/js-regexp-string-iterator.h"
+#include "src/objects/js-relative-time-format.h"
+#include "src/objects/js-segment-iterator-inl.h"
+#include "src/objects/js-segmenter.h"
+#include "src/objects/js-segments.h"
+#include "src/objects/js-shadow-realm.h"
+#include "src/objects/js-shared-array.h"
+#include "src/objects/js-struct.h"
+#include "src/objects/js-temporal-objects.h"
+#include "src/objects/js-weak-refs.h"
+#include "src/objects/objects.h"
+#include "src/objects/ordered-hash-table.h"
+#include "src/objects/property-array.h"
+#include "src/objects/property-descriptor-object.h"
+#include "src/objects/source-text-module.h"
+#include "src/objects/swiss-hash-table-helpers.h"
+#include "src/objects/swiss-name-dictionary.h"
+#include "src/objects/synthetic-module.h"
+#include "src/objects/template-objects.h"
+#include "src/objects/torque-defined-classes.h"
+#include "src/objects/turbofan-types.h"
+#include "src/objects/turboshaft-types.h"
+#include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
+#include "src/wasm/wasm-linkage.h"
+
 #include "tools/debug_helper/debug-helper-internal.h"
 
 // Unset a wingdi.h macro that causes conflicts.
@@ -30,18 +102,6 @@ class TqHeapObject : public TqObject {
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetMapAddress() const;
   Value<uintptr_t> GetMapValue(d::MemoryAccessor accessor ) const;
-};
-
-class TqJSReceiver : public TqHeapObject {
- public:
-  inline TqJSReceiver(uintptr_t address) : TqHeapObject(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetPropertiesOrHashAddress() const;
-  Value<uintptr_t> GetPropertiesOrHashValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqPrimitiveHeapObject : public TqHeapObject {
@@ -154,6 +214,18 @@ class TqUndefined : public TqOddball {
   bool IsSuperclassOf(const TqObject* other) const override;
 };
 
+class TqJSReceiver : public TqHeapObject {
+ public:
+  inline TqJSReceiver(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetPropertiesOrHashAddress() const;
+  Value<uintptr_t> GetPropertiesOrHashValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqContext : public TqHeapObject {
  public:
   inline TqContext(uintptr_t address) : TqHeapObject(address) {}
@@ -223,7 +295,7 @@ class TqJSFunction : public TqJSFunctionOrBoundFunctionOrWrappedFunction {
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetCodeAddress() const;
-  Value<uintptr_t> GetCodeValue(d::MemoryAccessor accessor ) const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCodeValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSharedFunctionInfoAddress() const;
   Value<uintptr_t> GetSharedFunctionInfoValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetContextAddress() const;
@@ -256,6 +328,16 @@ class TqFixedArray : public TqFixedArrayBase {
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetObjectsAddress() const;
   Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
+class TqTrustedObject : public TqHeapObject {
+ public:
+  inline TqTrustedObject(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
 };
 
 class TqWeakFixedArray : public TqHeapObject {
@@ -340,6 +422,18 @@ class TqHole : public TqHeapObject {
   Value<double /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetRawNumericValueValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqJSAPIObjectWithEmbedderSlots : public TqJSObject {
+ public:
+  inline TqJSAPIObjectWithEmbedderSlots(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCppHeapWrappableAddress() const;
+  Value<CppHeapPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCppHeapWrappableValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqJSCustomElementsObject : public TqJSObject {
  public:
   inline TqJSCustomElementsObject(uintptr_t address) : TqJSObject(address) {}
@@ -358,6 +452,8 @@ class TqJSSpecialObject : public TqJSCustomElementsObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCppHeapWrappableAddress() const;
+  Value<CppHeapPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCppHeapWrappableValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqMap : public TqHeapObject {
@@ -426,29 +522,107 @@ class TqWeakCell : public TqHeapObject {
   Value<uintptr_t> GetKeyListNextValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqWasmInternalFunction : public TqHeapObject {
+class TqTemplateInfo : public TqHeapObject {
  public:
-  inline TqWasmInternalFunction(uintptr_t address) : TqHeapObject(address) {}
+  inline TqTemplateInfo(uintptr_t address) : TqHeapObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetRefAddress() const;
-  Value<uintptr_t> GetRefValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetExternalAddress() const;
-  Value<uintptr_t> GetExternalValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetCodeAddress() const;
-  Value<uintptr_t> GetCodeValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetFunctionIndexAddress() const;
-  Value<uintptr_t> GetFunctionIndexValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetCallTargetAddress() const;
-  Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCallTargetValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetSerialNumberAddress() const;
+  Value<uintptr_t> GetSerialNumberValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetNumberOfPropertiesAddress() const;
+  Value<uintptr_t> GetNumberOfPropertiesValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetPropertyListAddress() const;
+  Value<uintptr_t> GetPropertyListValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetPropertyAccessorsAddress() const;
+  Value<uintptr_t> GetPropertyAccessorsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqFunctionTemplateInfo : public TqTemplateInfo {
+ public:
+  inline TqFunctionTemplateInfo(uintptr_t address) : TqTemplateInfo(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetClassNameAddress() const;
+  Value<uintptr_t> GetClassNameValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInterfaceNameAddress() const;
+  Value<uintptr_t> GetInterfaceNameValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetSignatureAddress() const;
+  Value<uintptr_t> GetSignatureValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetRareDataAddress() const;
+  Value<uintptr_t> GetRareDataValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetSharedFunctionInfoAddress() const;
+  Value<uintptr_t> GetSharedFunctionInfoValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCachedPropertyNameAddress() const;
+  Value<uintptr_t> GetCachedPropertyNameValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCallbackDataAddress() const;
+  Value<uintptr_t> GetCallbackDataValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagAddress() const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetFlagValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLengthAddress() const;
+  Value<int16_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInstanceTypeAddress() const;
+  Value<InstanceType /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetInstanceTypeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetExceptionContextAddress() const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetExceptionContextValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetOptionalPaddingAddress() const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetMaybeRedirectedCallbackAddress() const;
+  Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetMaybeRedirectedCallbackValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqWasmFuncRef : public TqHeapObject {
+ public:
+  inline TqWasmFuncRef(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetTrustedInternalAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedInternalValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqWasmNull : public TqHeapObject {
  public:
   inline TqWasmNull(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+};
+
+class TqJSCollection : public TqJSObject {
+ public:
+  inline TqJSCollection(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetTableAddress() const;
+  Value<uintptr_t> GetTableValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSSet : public TqJSCollection {
+ public:
+  inline TqJSSet(uintptr_t address) : TqJSCollection(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+};
+
+class TqJSMap : public TqJSCollection {
+ public:
+  inline TqJSMap(uintptr_t address) : TqJSCollection(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -482,9 +656,9 @@ class TqPromiseCapability : public TqStruct {
   Value<uintptr_t> GetRejectValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqJSArrayBufferView : public TqJSObjectWithEmbedderSlots {
+class TqJSArrayBufferView : public TqJSAPIObjectWithEmbedderSlots {
  public:
-  inline TqJSArrayBufferView(uintptr_t address) : TqJSObjectWithEmbedderSlots(address) {}
+  inline TqJSArrayBufferView(uintptr_t address) : TqJSAPIObjectWithEmbedderSlots(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -492,14 +666,14 @@ class TqJSArrayBufferView : public TqJSObjectWithEmbedderSlots {
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetBufferAddress() const;
   Value<uintptr_t> GetBufferValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetRawByteOffsetAddress() const;
-  Value<uintptr_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetRawByteOffsetValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetRawByteLengthAddress() const;
-  Value<uintptr_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetRawByteLengthValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetBitFieldAddress() const;
   Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetBitFieldValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetOptionalPaddingAddress() const;
   Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetRawByteOffsetAddress() const;
+  Value<uintptr_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetRawByteOffsetValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetRawByteLengthAddress() const;
+  Value<uintptr_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetRawByteLengthValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqJSTypedArray : public TqJSArrayBufferView {
@@ -548,22 +722,6 @@ class TqAllocationMemento : public TqStruct {
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetAllocationSiteAddress() const;
   Value<uintptr_t> GetAllocationSiteValue(d::MemoryAccessor accessor ) const;
-};
-
-class TqCallHandlerInfo : public TqHeapObject {
- public:
-  inline TqCallHandlerInfo(uintptr_t address) : TqHeapObject(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetDataAddress() const;
-  Value<uintptr_t> GetDataValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetOwnerTemplateAddress() const;
-  Value<uintptr_t> GetOwnerTemplateValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetMaybeRedirectedCallbackAddress() const;
-  Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetMaybeRedirectedCallbackValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqInterceptorInfo : public TqStruct {
@@ -706,12 +864,12 @@ class TqCallSiteInfo : public TqStruct {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCodeObjectAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCodeObjectValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetReceiverOrInstanceAddress() const;
   Value<uintptr_t> GetReceiverOrInstanceValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFunctionAddress() const;
   Value<uintptr_t> GetFunctionValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetCodeObjectAddress() const;
-  Value<uintptr_t> GetCodeObjectValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCodeOffsetOrSourcePositionAddress() const;
   Value<uintptr_t> GetCodeOffsetOrSourcePositionValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFlagsAddress() const;
@@ -732,36 +890,20 @@ class TqCell : public TqHeapObject {
   Value<uintptr_t> GetValueValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqBytecodeArray : public TqFixedArrayBase {
+class TqWeakArrayList : public TqHeapObject {
  public:
-  inline TqBytecodeArray(uintptr_t address) : TqFixedArrayBase(address) {}
+  inline TqWeakArrayList(uintptr_t address) : TqHeapObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetConstantPoolAddress() const;
-  Value<uintptr_t> GetConstantPoolValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetHandlerTableAddress() const;
-  Value<uintptr_t> GetHandlerTableValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetSourcePositionTableAddress() const;
-  Value<uintptr_t> GetSourcePositionTableValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetFrameSizeAddress() const;
-  Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetFrameSizeValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetParameterSizeAddress() const;
-  Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetParameterSizeValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetIncomingNewTargetOrGeneratorRegisterAddress() const;
-  Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetIncomingNewTargetOrGeneratorRegisterValue(d::MemoryAccessor accessor ) const;
-};
-
-class TqTrustedObject : public TqHeapObject {
- public:
-  inline TqTrustedObject(uintptr_t address) : TqHeapObject(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCapacityAddress() const;
+  Value<uintptr_t> GetCapacityValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
 };
 
 class TqExposedTrustedObject : public TqTrustedObject {
@@ -774,6 +916,68 @@ class TqExposedTrustedObject : public TqTrustedObject {
   bool IsSuperclassOf(const TqObject* other) const override;
 };
 
+class TqBytecodeArray : public TqExposedTrustedObject {
+ public:
+  inline TqBytecodeArray(uintptr_t address) : TqExposedTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetWrapperAddress() const;
+  Value<uintptr_t> GetWrapperValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetSourcePositionTableAddress() const;
+  Value<uintptr_t> GetSourcePositionTableValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetHandlerTableAddress() const;
+  Value<uintptr_t> GetHandlerTableValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetConstantPoolAddress() const;
+  Value<uintptr_t> GetConstantPoolValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFrameSizeAddress() const;
+  Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetFrameSizeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetParameterSizeAddress() const;
+  Value<uint16_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetParameterSizeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetMaxArgumentsAddress() const;
+  Value<uint16_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetMaxArgumentsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIncomingNewTargetOrGeneratorRegisterAddress() const;
+  Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetIncomingNewTargetOrGeneratorRegisterValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetOptionalPaddingAddress() const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBytesAddress() const;
+  Value<uint8_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetBytesValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
+class TqBytecodeWrapper : public TqStruct {
+ public:
+  inline TqBytecodeWrapper(uintptr_t address) : TqStruct(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetBytecodeAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetBytecodeValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqScriptContextTable : public TqHeapObject {
+ public:
+  inline TqScriptContextTable(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCapacityAddress() const;
+  Value<uintptr_t> GetCapacityValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetNamesToContextIndexAddress() const;
+  Value<uintptr_t> GetNamesToContextIndexValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
 class TqScopeInfo : public TqHeapObject {
  public:
   inline TqScopeInfo(uintptr_t address) : TqHeapObject(address) {}
@@ -783,13 +987,16 @@ class TqScopeInfo : public TqHeapObject {
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetFlagsAddress() const;
-  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetOptionalPaddingAddress() const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetParameterCountAddress() const;
   Value<uintptr_t> GetParameterCountValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetContextLocalCountAddress() const;
   Value<uintptr_t> GetContextLocalCountValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetContextLocalNamesAddress() const;
-  Value<uintptr_t> GetContextLocalNamesValue(d::MemoryAccessor accessor , size_t offset) const;
+  uintptr_t GetPositionInfoAddress() const;
+  uintptr_t GetModuleVariableCountAddress() const;
+  Value<uintptr_t> GetModuleVariableCountValue(d::MemoryAccessor accessor , size_t offset) const;
 };
 
 class TqFixedDoubleArray : public TqFixedArrayBase {
@@ -803,14 +1010,24 @@ class TqFixedDoubleArray : public TqFixedArrayBase {
   uintptr_t GetFloatsAddress() const;
 };
 
-class TqRegExpMatchInfo : public TqFixedArray {
+class TqRegExpMatchInfo : public TqHeapObject {
  public:
-  inline TqRegExpMatchInfo(uintptr_t address) : TqFixedArray(address) {}
+  inline TqRegExpMatchInfo(uintptr_t address) : TqHeapObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetNumberOfCaptureRegistersAddress() const;
+  Value<uintptr_t> GetNumberOfCaptureRegistersValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLastSubjectAddress() const;
+  Value<uintptr_t> GetLastSubjectValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLastInputAddress() const;
+  Value<uintptr_t> GetLastInputValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
 };
 
 class TqBreakPoint : public TqStruct {
@@ -853,16 +1070,16 @@ class TqDebugInfo : public TqStruct {
   Value<uintptr_t> GetSharedValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetDebuggerHintsAddress() const;
   Value<uintptr_t> GetDebuggerHintsValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetOriginalBytecodeArrayAddress() const;
-  Value<uintptr_t> GetOriginalBytecodeArrayValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetDebugBytecodeArrayAddress() const;
-  Value<uintptr_t> GetDebugBytecodeArrayValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetBreakPointsAddress() const;
   Value<uintptr_t> GetBreakPointsValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFlagsAddress() const;
   Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCoverageInfoAddress() const;
   Value<uintptr_t> GetCoverageInfoValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetOriginalBytecodeArrayAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOriginalBytecodeArrayValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetDebugBytecodeArrayAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetDebugBytecodeArrayValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqCoverageInfo : public TqHeapObject {
@@ -906,20 +1123,6 @@ class TqErrorStackData : public TqStruct {
   Value<uintptr_t> GetCallSiteInfosOrFormattedStackValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetLimitOrStackFrameInfosAddress() const;
   Value<uintptr_t> GetLimitOrStackFrameInfosValue(d::MemoryAccessor accessor ) const;
-};
-
-class TqPromiseOnStack : public TqStruct {
- public:
-  inline TqPromiseOnStack(uintptr_t address) : TqStruct(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetPrevAddress() const;
-  Value<uintptr_t> GetPrevValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetPromiseAddress() const;
-  Value<uintptr_t> GetPromiseValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqEnumCache : public TqStruct {
@@ -1019,6 +1222,20 @@ class TqFeedbackCell : public TqStruct {
   Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetInterruptBudgetValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqClosureFeedbackCellArray : public TqHeapObject {
+ public:
+  inline TqClosureFeedbackCellArray(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCapacityAddress() const;
+  Value<uintptr_t> GetCapacityValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
 class TqFeedbackVector : public TqHeapObject {
  public:
   inline TqFeedbackVector(uintptr_t address) : TqHeapObject(address) {}
@@ -1033,8 +1250,8 @@ class TqFeedbackVector : public TqHeapObject {
   Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetInvocationCountValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetOptionalPaddingAddress() const;
   Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetPlaceholder0Address() const;
-  Value<uint8_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetPlaceholder0Value(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInvocationCountBeforeStableAddress() const;
+  Value<uint8_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetInvocationCountBeforeStableValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetOsrStateAddress() const;
   Value<uint8_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOsrStateValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFlagsAddress() const;
@@ -1051,6 +1268,48 @@ class TqFeedbackVector : public TqHeapObject {
   Value<uintptr_t> GetRawFeedbackSlotsValue(d::MemoryAccessor accessor , size_t offset) const;
 };
 
+class TqTrustedFixedArray : public TqTrustedObject {
+ public:
+  inline TqTrustedFixedArray(uintptr_t address) : TqTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
+class TqProtectedFixedArray : public TqTrustedObject {
+ public:
+  inline TqProtectedFixedArray(uintptr_t address) : TqTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
+class TqTrustedWeakFixedArray : public TqTrustedObject {
+ public:
+  inline TqTrustedWeakFixedArray(uintptr_t address) : TqTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetObjectsAddress() const;
+  Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
 class TqByteArray : public TqFixedArrayBase {
  public:
   inline TqByteArray(uintptr_t address) : TqFixedArrayBase(address) {}
@@ -1059,6 +1318,20 @@ class TqByteArray : public TqFixedArrayBase {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetBytesAddress() const;
+  Value<uint8_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetBytesValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
+class TqTrustedByteArray : public TqTrustedObject {
+ public:
+  inline TqTrustedByteArray(uintptr_t address) : TqTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLengthAddress() const;
+  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetBytesAddress() const;
   Value<uint8_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetBytesValue(d::MemoryAccessor accessor , size_t offset) const;
 };
@@ -1075,19 +1348,9 @@ class TqExternalPointerArray : public TqFixedArrayBase {
   Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetPointersValue(d::MemoryAccessor accessor , size_t offset) const;
 };
 
-class TqArrayList : public TqFixedArray {
+class TqArrayList : public TqHeapObject {
  public:
-  inline TqArrayList(uintptr_t address) : TqFixedArray(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-};
-
-class TqWeakArrayList : public TqHeapObject {
- public:
-  inline TqWeakArrayList(uintptr_t address) : TqHeapObject(address) {}
+  inline TqArrayList(uintptr_t address) : TqHeapObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -1099,6 +1362,18 @@ class TqWeakArrayList : public TqHeapObject {
   Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetObjectsAddress() const;
   Value<uintptr_t> GetObjectsValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
+class TqTrustedForeign : public TqTrustedObject {
+ public:
+  inline TqTrustedForeign(uintptr_t address) : TqTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetForeignAddressAddress() const;
+  Value<Address /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetForeignAddressValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqFreeSpace : public TqHeapObject {
@@ -1115,9 +1390,9 @@ class TqFreeSpace : public TqHeapObject {
   Value<uintptr_t> GetNextValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqJSArrayBuffer : public TqJSObjectWithEmbedderSlots {
+class TqJSArrayBuffer : public TqJSAPIObjectWithEmbedderSlots {
  public:
-  inline TqJSArrayBuffer(uintptr_t address) : TqJSObjectWithEmbedderSlots(address) {}
+  inline TqJSArrayBuffer(uintptr_t address) : TqJSAPIObjectWithEmbedderSlots(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -1233,8 +1508,10 @@ class TqJSSynchronizationPrimitive : public TqAlwaysSharedSpaceJSObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetWaiterQueueHeadAddress() const;
+  Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetWaiterQueueHeadValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetStateAddress() const;
-  Value<uintptr_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetStateValue(d::MemoryAccessor accessor ) const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetStateValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqJSAtomicsMutex : public TqJSSynchronizationPrimitive {
@@ -1247,8 +1524,6 @@ class TqJSAtomicsMutex : public TqJSSynchronizationPrimitive {
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetOwnerThreadIdAddress() const;
   Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOwnerThreadIdValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetOptionalPaddingAddress() const;
-  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqJSAtomicsCondition : public TqJSSynchronizationPrimitive {
@@ -1259,6 +1534,8 @@ class TqJSAtomicsCondition : public TqJSSynchronizationPrimitive {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetOptionalPaddingAddress() const;
+  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqJSCollectionIterator : public TqJSObject {
@@ -1273,38 +1550,6 @@ class TqJSCollectionIterator : public TqJSObject {
   Value<uintptr_t> GetTableValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetIndexAddress() const;
   Value<uintptr_t> GetIndexValue(d::MemoryAccessor accessor ) const;
-};
-
-class TqJSCollection : public TqJSObject {
- public:
-  inline TqJSCollection(uintptr_t address) : TqJSObject(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetTableAddress() const;
-  Value<uintptr_t> GetTableValue(d::MemoryAccessor accessor ) const;
-};
-
-class TqJSSet : public TqJSCollection {
- public:
-  inline TqJSSet(uintptr_t address) : TqJSCollection(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-};
-
-class TqJSMap : public TqJSCollection {
- public:
-  inline TqJSMap(uintptr_t address) : TqJSCollection(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
 };
 
 class TqJSWeakCollection : public TqJSObject {
@@ -1332,6 +1577,40 @@ class TqJSWeakSet : public TqJSWeakCollection {
 class TqJSWeakMap : public TqJSWeakCollection {
  public:
   inline TqJSWeakMap(uintptr_t address) : TqJSWeakCollection(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+};
+
+class TqJSDisposableStackBase : public TqJSObject {
+ public:
+  inline TqJSDisposableStackBase(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetStackAddress() const;
+  Value<uintptr_t> GetStackValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetStatusAddress() const;
+  Value<uintptr_t> GetStatusValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSSyncDisposableStack : public TqJSDisposableStackBase {
+ public:
+  inline TqJSSyncDisposableStack(uintptr_t address) : TqJSDisposableStackBase(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+};
+
+class TqJSAsyncDisposableStack : public TqJSDisposableStackBase {
+ public:
+  inline TqJSAsyncDisposableStack(uintptr_t address) : TqJSDisposableStackBase(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -1415,7 +1694,10 @@ class TqJSIteratorHelper : public TqJSObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetUnderlyingAddress() const;
+  uintptr_t GetUnderlyingObjectAddress() const;
+  Value<uintptr_t> GetUnderlyingObjectValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUnderlyingNextAddress() const;
+  Value<uintptr_t> GetUnderlyingNextValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqJSIteratorMapHelper : public TqJSIteratorHelper {
@@ -1507,8 +1789,6 @@ class TqJSGlobalProxy : public TqJSSpecialObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetNativeContextAddress() const;
-  Value<uintptr_t> GetNativeContextValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqJSGlobalObject : public TqJSSpecialObject {
@@ -1519,8 +1799,6 @@ class TqJSGlobalObject : public TqJSSpecialObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetNativeContextAddress() const;
-  Value<uintptr_t> GetNativeContextValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetGlobalProxyAddress() const;
   Value<uintptr_t> GetGlobalProxyValue(d::MemoryAccessor accessor ) const;
 };
@@ -1574,7 +1852,7 @@ class TqJSDate : public TqJSObject {
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetValueAddress() const;
-  Value<uintptr_t> GetValueValue(d::MemoryAccessor accessor ) const;
+  Value<double /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetValueValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetYearAddress() const;
   Value<uintptr_t> GetYearValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetMonthAddress() const;
@@ -1672,6 +1950,76 @@ class TqJSRegExpStringIterator : public TqJSObject {
   Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqRegExpData : public TqExposedTrustedObject {
+ public:
+  inline TqRegExpData(uintptr_t address) : TqExposedTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetTypeTagAddress() const;
+  Value<uintptr_t> GetTypeTagValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetSourceAddress() const;
+  Value<uintptr_t> GetSourceValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetWrapperAddress() const;
+  Value<uintptr_t> GetWrapperValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqAtomRegExpData : public TqRegExpData {
+ public:
+  inline TqAtomRegExpData(uintptr_t address) : TqRegExpData(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetPatternAddress() const;
+  Value<uintptr_t> GetPatternValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqIrRegExpData : public TqRegExpData {
+ public:
+  inline TqIrRegExpData(uintptr_t address) : TqRegExpData(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetLatin1BytecodeAddress() const;
+  Value<uintptr_t> GetLatin1BytecodeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUc16BytecodeAddress() const;
+  Value<uintptr_t> GetUc16BytecodeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetLatin1CodeAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetLatin1CodeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUc16CodeAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetUc16CodeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCaptureNameMapAddress() const;
+  Value<uintptr_t> GetCaptureNameMapValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetMaxRegisterCountAddress() const;
+  Value<uintptr_t> GetMaxRegisterCountValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCaptureCountAddress() const;
+  Value<uintptr_t> GetCaptureCountValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTicksUntilTierUpAddress() const;
+  Value<uintptr_t> GetTicksUntilTierUpValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBacktrackLimitAddress() const;
+  Value<uintptr_t> GetBacktrackLimitValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqRegExpDataWrapper : public TqStruct {
+ public:
+  inline TqRegExpDataWrapper(uintptr_t address) : TqStruct(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetDataValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqJSRegExp : public TqJSObject {
  public:
   inline TqJSRegExp(uintptr_t address) : TqJSObject(address) {}
@@ -1681,7 +2029,7 @@ class TqJSRegExp : public TqJSObject {
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetDataAddress() const;
-  Value<uintptr_t> GetDataValue(d::MemoryAccessor accessor ) const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSourceAddress() const;
   Value<uintptr_t> GetSourceValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFlagsAddress() const;
@@ -1962,6 +2310,24 @@ class TqJSWeakRef : public TqJSObject {
   Value<uintptr_t> GetTargetValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqObjectBoilerplateDescription : public TqHeapObject {
+ public:
+  inline TqObjectBoilerplateDescription(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCapacityAddress() const;
+  Value<uintptr_t> GetCapacityValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetBackingStoreSizeAddress() const;
+  Value<uintptr_t> GetBackingStoreSizeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetRawEntriesAddress() const;
+  Value<uintptr_t> GetRawEntriesValue(d::MemoryAccessor accessor , size_t offset) const;
+};
+
 class TqArrayBoilerplateDescription : public TqStruct {
  public:
   inline TqArrayBoilerplateDescription(uintptr_t address) : TqStruct(address) {}
@@ -1985,11 +2351,35 @@ class TqRegExpBoilerplateDescription : public TqStruct {
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetDataAddress() const;
-  Value<uintptr_t> GetDataValue(d::MemoryAccessor accessor ) const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSourceAddress() const;
   Value<uintptr_t> GetSourceValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFlagsAddress() const;
   Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqClassBoilerplate : public TqStruct {
+ public:
+  inline TqClassBoilerplate(uintptr_t address) : TqStruct(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetArgumentsCountAddress() const;
+  Value<uintptr_t> GetArgumentsCountValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetStaticPropertiesTemplateAddress() const;
+  Value<uintptr_t> GetStaticPropertiesTemplateValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetStaticElementsTemplateAddress() const;
+  Value<uintptr_t> GetStaticElementsTemplateValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetStaticComputedPropertiesAddress() const;
+  Value<uintptr_t> GetStaticComputedPropertiesValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInstancePropertiesTemplateAddress() const;
+  Value<uintptr_t> GetInstancePropertiesTemplateValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInstanceElementsTemplateAddress() const;
+  Value<uintptr_t> GetInstanceElementsTemplateValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInstanceComputedPropertiesAddress() const;
+  Value<uintptr_t> GetInstanceComputedPropertiesValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqMegaDomHandler : public TqHeapObject {
@@ -2014,6 +2404,8 @@ class TqMicrotask : public TqStruct {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetContinuationPreservedEmbedderDataAddress() const;
+  Value<uintptr_t> GetContinuationPreservedEmbedderDataValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqCallbackTask : public TqMicrotask {
@@ -2192,6 +2584,8 @@ class TqPromiseReaction : public TqStruct {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetContinuationPreservedEmbedderDataAddress() const;
+  Value<uintptr_t> GetContinuationPreservedEmbedderDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetNextAddress() const;
   Value<uintptr_t> GetNextValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetRejectHandlerAddress() const;
@@ -2200,8 +2594,6 @@ class TqPromiseReaction : public TqStruct {
   Value<uintptr_t> GetFulfillHandlerValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetPromiseOrCapabilityAddress() const;
   Value<uintptr_t> GetPromiseOrCapabilityValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetContinuationPreservedEmbedderDataAddress() const;
-  Value<uintptr_t> GetContinuationPreservedEmbedderDataValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqPromiseReactionJobTask : public TqMicrotask {
@@ -2220,8 +2612,6 @@ class TqPromiseReactionJobTask : public TqMicrotask {
   Value<uintptr_t> GetHandlerValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetPromiseOrCapabilityAddress() const;
   Value<uintptr_t> GetPromiseOrCapabilityValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetContinuationPreservedEmbedderDataAddress() const;
-  Value<uintptr_t> GetContinuationPreservedEmbedderDataValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqPromiseFulfillReactionJobTask : public TqPromiseReactionJobTask {
@@ -2292,6 +2682,18 @@ class TqPropertyCell : public TqHeapObject {
   Value<uintptr_t> GetDependentCodeValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqConstTrackingLetCell : public TqHeapObject {
+ public:
+  inline TqConstTrackingLetCell(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetDependentCodeAddress() const;
+  Value<uintptr_t> GetDependentCodeValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqPropertyDescriptorObject : public TqStruct {
  public:
   inline TqPropertyDescriptorObject(uintptr_t address) : TqStruct(address) {}
@@ -2328,8 +2730,8 @@ class TqPrototypeInfo : public TqStruct {
   Value<uintptr_t> GetRegistrySlotValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetBitFieldAddress() const;
   Value<uintptr_t> GetBitFieldValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetObjectCreateMapAddress() const;
-  Value<uintptr_t> GetObjectCreateMapValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetDerivedMapsAddress() const;
+  Value<uintptr_t> GetDerivedMapsValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqScript : public TqStruct {
@@ -2360,8 +2762,8 @@ class TqScript : public TqStruct {
   Value<uintptr_t> GetEvalFromSharedOrWrappedArgumentsValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetEvalFromPositionAddress() const;
   Value<uintptr_t> GetEvalFromPositionValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetSharedFunctionInfosAddress() const;
-  Value<uintptr_t> GetSharedFunctionInfosValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInfosAddress() const;
+  Value<uintptr_t> GetInfosValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCompiledLazyFunctionPositionsAddress() const;
   Value<uintptr_t> GetCompiledLazyFunctionPositionsValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFlagsAddress() const;
@@ -2390,9 +2792,9 @@ class TqPreparseData : public TqHeapObject {
   Value<int32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetChildrenLengthValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqInterpreterData : public TqStruct {
+class TqInterpreterData : public TqExposedTrustedObject {
  public:
-  inline TqInterpreterData(uintptr_t address) : TqStruct(address) {}
+  inline TqInterpreterData(uintptr_t address) : TqExposedTrustedObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -2412,8 +2814,10 @@ class TqSharedFunctionInfo : public TqHeapObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetFunctionDataAddress() const;
-  Value<uintptr_t> GetFunctionDataValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTrustedFunctionDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedFunctionDataValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUntrustedFunctionDataAddress() const;
+  Value<uintptr_t> GetUntrustedFunctionDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetNameOrScopeInfoAddress() const;
   Value<uintptr_t> GetNameOrScopeInfoValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetOuterScopeInfoOrFeedbackMetadataAddress() const;
@@ -2442,9 +2846,21 @@ class TqSharedFunctionInfo : public TqHeapObject {
   Value<uint16_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetPaddingValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqUncompiledData : public TqHeapObject {
+class TqSharedFunctionInfoWrapper : public TqTrustedObject {
  public:
-  inline TqUncompiledData(uintptr_t address) : TqHeapObject(address) {}
+  inline TqSharedFunctionInfoWrapper(uintptr_t address) : TqTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetSharedInfoAddress() const;
+  Value<uintptr_t> GetSharedInfoValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqUncompiledData : public TqExposedTrustedObject {
+ public:
+  inline TqUncompiledData(uintptr_t address) : TqExposedTrustedObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -2570,10 +2986,10 @@ class TqModuleRequest : public TqStruct {
   bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetSpecifierAddress() const;
   Value<uintptr_t> GetSpecifierValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetImportAssertionsAddress() const;
-  Value<uintptr_t> GetImportAssertionsValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetPositionAddress() const;
-  Value<uintptr_t> GetPositionValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetImportAttributesAddress() const;
+  Value<uintptr_t> GetImportAttributesValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFlagsAddress() const;
+  Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqSourceTextModuleInfoEntry : public TqStruct {
@@ -2780,26 +3196,6 @@ class TqTemplateObjectDescription : public TqStruct {
   Value<uintptr_t> GetCookedStringsValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqTemplateInfo : public TqStruct {
- public:
-  inline TqTemplateInfo(uintptr_t address) : TqStruct(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetTagAddress() const;
-  Value<uintptr_t> GetTagValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetSerialNumberAddress() const;
-  Value<uintptr_t> GetSerialNumberValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetNumberOfPropertiesAddress() const;
-  Value<uintptr_t> GetNumberOfPropertiesValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetPropertyListAddress() const;
-  Value<uintptr_t> GetPropertyListValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetPropertyAccessorsAddress() const;
-  Value<uintptr_t> GetPropertyAccessorsValue(d::MemoryAccessor accessor ) const;
-};
-
 class TqFunctionTemplateRareData : public TqStruct {
  public:
   inline TqFunctionTemplateRareData(uintptr_t address) : TqStruct(address) {}
@@ -2828,34 +3224,6 @@ class TqFunctionTemplateRareData : public TqStruct {
   Value<uintptr_t> GetCFunctionOverloadsValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqFunctionTemplateInfo : public TqTemplateInfo {
- public:
-  inline TqFunctionTemplateInfo(uintptr_t address) : TqTemplateInfo(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetCallCodeAddress() const;
-  Value<uintptr_t> GetCallCodeValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetClassNameAddress() const;
-  Value<uintptr_t> GetClassNameValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetSignatureAddress() const;
-  Value<uintptr_t> GetSignatureValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetRareDataAddress() const;
-  Value<uintptr_t> GetRareDataValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetSharedFunctionInfoAddress() const;
-  Value<uintptr_t> GetSharedFunctionInfoValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetFlagAddress() const;
-  Value<uintptr_t> GetFlagValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetLengthAddress() const;
-  Value<uintptr_t> GetLengthValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetCachedPropertyNameAddress() const;
-  Value<uintptr_t> GetCachedPropertyNameValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetInstanceTypeAddress() const;
-  Value<uintptr_t> GetInstanceTypeValue(d::MemoryAccessor accessor ) const;
-};
-
 class TqObjectTemplateInfo : public TqTemplateInfo {
  public:
   inline TqObjectTemplateInfo(uintptr_t address) : TqTemplateInfo(address) {}
@@ -2868,6 +3236,20 @@ class TqObjectTemplateInfo : public TqTemplateInfo {
   Value<uintptr_t> GetConstructorValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetDataAddress() const;
   Value<uintptr_t> GetDataValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqDictionaryTemplateInfo : public TqHeapObject {
+ public:
+  inline TqDictionaryTemplateInfo(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetPropertyNamesAddress() const;
+  Value<uintptr_t> GetPropertyNamesValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetSerialNumberAddress() const;
+  Value<uintptr_t> GetSerialNumberValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqTurbofanType : public TqHeapObject {
@@ -3454,6 +3836,34 @@ class TqJSSegmentIterator : public TqJSObject {
   Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqJSSegmentDataObject : public TqJSObject {
+ public:
+  inline TqJSSegmentDataObject(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetSegmentAddress() const;
+  Value<uintptr_t> GetSegmentValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIndexAddress() const;
+  Value<uintptr_t> GetIndexValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetInputAddress() const;
+  Value<uintptr_t> GetInputValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqJSSegmentDataObjectWithIsWordLike : public TqJSSegmentDataObject {
+ public:
+  inline TqJSSegmentDataObjectWithIsWordLike(uintptr_t address) : TqJSSegmentDataObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetIsWordLikeAddress() const;
+  Value<uintptr_t> GetIsWordLikeValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqJSSegmenter : public TqJSObject {
  public:
   inline TqJSSegmenter(uintptr_t address) : TqJSObject(address) {}
@@ -3488,20 +3898,20 @@ class TqJSSegments : public TqJSObject {
   Value<uintptr_t> GetFlagsValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqWasmApiFunctionRef : public TqHeapObject {
+class TqWasmImportData : public TqTrustedObject {
  public:
-  inline TqWasmApiFunctionRef(uintptr_t address) : TqHeapObject(address) {}
+  inline TqWasmImportData(uintptr_t address) : TqTrustedObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetProtectedInstanceDataAddress() const;
+  Value<uintptr_t> GetProtectedInstanceDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetNativeContextAddress() const;
   Value<uintptr_t> GetNativeContextValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCallableAddress() const;
   Value<uintptr_t> GetCallableValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetInstanceAddress() const;
-  Value<uintptr_t> GetInstanceValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSuspendAddress() const;
   Value<uintptr_t> GetSuspendValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetWrapperBudgetAddress() const;
@@ -3510,22 +3920,76 @@ class TqWasmApiFunctionRef : public TqHeapObject {
   Value<uintptr_t> GetCallOriginValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSigAddress() const;
   Value<uintptr_t> GetSigValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCodeAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCodeValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqWasmFunctionData : public TqHeapObject {
+class TqWasmInstanceObject : public TqJSObject {
  public:
-  inline TqWasmFunctionData(uintptr_t address) : TqHeapObject(address) {}
+  inline TqWasmInstanceObject(uintptr_t address) : TqJSObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetInternalAddress() const;
-  Value<uintptr_t> GetInternalValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTrustedDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedDataValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetModuleObjectAddress() const;
+  Value<uintptr_t> GetModuleObjectValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetExportsObjectAddress() const;
+  Value<uintptr_t> GetExportsObjectValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqWasmFastApiCallData : public TqHeapObject {
+ public:
+  inline TqWasmFastApiCallData(uintptr_t address) : TqHeapObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetSignatureAddress() const;
+  Value<uintptr_t> GetSignatureValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCallbackDataAddress() const;
+  Value<uintptr_t> GetCallbackDataValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCachedMapAddress() const;
+  Value<uintptr_t> GetCachedMapValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqWasmInternalFunction : public TqExposedTrustedObject {
+ public:
+  inline TqWasmInternalFunction(uintptr_t address) : TqExposedTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetProtectedImplicitArgAddress() const;
+  Value<uintptr_t> GetProtectedImplicitArgValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetExternalAddress() const;
+  Value<uintptr_t> GetExternalValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFunctionIndexAddress() const;
+  Value<uintptr_t> GetFunctionIndexValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCallTargetAddress() const;
+  Value<Address /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCallTargetValue(d::MemoryAccessor accessor ) const;
+};
+
+class TqWasmFunctionData : public TqExposedTrustedObject {
+ public:
+  inline TqWasmFunctionData(uintptr_t address) : TqExposedTrustedObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
   uintptr_t GetWrapperCodeAddress() const;
-  Value<uintptr_t> GetWrapperCodeValue(d::MemoryAccessor accessor ) const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetWrapperCodeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetFuncRefAddress() const;
+  Value<uintptr_t> GetFuncRefValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetJsPromiseFlagsAddress() const;
   Value<uintptr_t> GetJsPromiseFlagsValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetProtectedInternalAddress() const;
+  Value<uintptr_t> GetProtectedInternalValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqWasmExportedFunctionData : public TqWasmFunctionData {
@@ -3536,20 +4000,20 @@ class TqWasmExportedFunctionData : public TqWasmFunctionData {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetInstanceAddress() const;
-  Value<uintptr_t> GetInstanceValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetProtectedInstanceDataAddress() const;
+  Value<uintptr_t> GetProtectedInstanceDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetFunctionIndexAddress() const;
   Value<uintptr_t> GetFunctionIndexValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetWrapperBudgetAddress() const;
   Value<uintptr_t> GetWrapperBudgetValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetCWrapperCodeAddress() const;
-  Value<uintptr_t> GetCWrapperCodeValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetPackedArgsSizeAddress() const;
-  Value<uintptr_t> GetPackedArgsSizeValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCanonicalTypeIndexAddress() const;
   Value<uintptr_t> GetCanonicalTypeIndexValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetPackedArgsSizeAddress() const;
+  Value<uintptr_t> GetPackedArgsSizeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCWrapperCodeAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetCWrapperCodeValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSigAddress() const;
-  Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetSigValue(d::MemoryAccessor accessor ) const;
+  Value<const wasm::FunctionSig* /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetSigValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqWasmJSFunctionData : public TqWasmFunctionData {
@@ -3560,8 +4024,8 @@ class TqWasmJSFunctionData : public TqWasmFunctionData {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetSerializedSignatureAddress() const;
-  Value<uintptr_t> GetSerializedSignatureValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetCanonicalSigIndexAddress() const;
+  Value<uintptr_t> GetCanonicalSigIndexValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqWasmCapiFunctionData : public TqWasmFunctionData {
@@ -3592,26 +4056,6 @@ class TqWasmResumeData : public TqHeapObject {
   Value<uintptr_t> GetOnResumeValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqWasmIndirectFunctionTable : public TqStruct {
- public:
-  inline TqWasmIndirectFunctionTable(uintptr_t address) : TqStruct(address) {}
-  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
-      d::MemoryAccessor accessor) const override;
-  const char* GetName() const override;
-  void Visit(TqObjectVisitor* visitor) const override;
-  bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetSigIdsAddress() const;
-  Value<uintptr_t> GetSigIdsValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetTargetsAddress() const;
-  Value<uintptr_t> GetTargetsValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetRefsAddress() const;
-  Value<uintptr_t> GetRefsValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetSizeAddress() const;
-  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetSizeValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetOptionalPaddingAddress() const;
-  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
-};
-
 class TqWasmContinuationObject : public TqHeapObject {
  public:
   inline TqWasmContinuationObject(uintptr_t address) : TqHeapObject(address) {}
@@ -3620,17 +4064,17 @@ class TqWasmContinuationObject : public TqHeapObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetStackAddress() const;
-  Value<uintptr_t> GetStackValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetParentAddress() const;
   Value<uintptr_t> GetParentValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetStackAddress() const;
+  Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetStackValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetJmpbufAddress() const;
   Value<ExternalPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetJmpbufValue(d::MemoryAccessor accessor ) const;
 };
 
-class TqWasmSuspenderObject : public TqJSObject {
+class TqWasmSuspenderObject : public TqHeapObject {
  public:
-  inline TqWasmSuspenderObject(uintptr_t address) : TqJSObject(address) {}
+  inline TqWasmSuspenderObject(uintptr_t address) : TqHeapObject(address) {}
   std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
       d::MemoryAccessor accessor) const override;
   const char* GetName() const override;
@@ -3648,10 +4092,8 @@ class TqWasmSuspenderObject : public TqJSObject {
   Value<uintptr_t> GetRejectValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetStateAddress() const;
   Value<uintptr_t> GetStateValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetWasmToJsCounterAddress() const;
-  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetWasmToJsCounterValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetOptionalPaddingAddress() const;
-  Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetHasJsFramesAddress() const;
+  Value<uintptr_t> GetHasJsFramesValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqWasmExceptionTag : public TqStruct {
@@ -3688,18 +4130,20 @@ class TqWasmTableObject : public TqJSObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetInstanceAddress() const;
-  Value<uintptr_t> GetInstanceValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetEntriesAddress() const;
   Value<uintptr_t> GetEntriesValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCurrentLengthAddress() const;
   Value<uintptr_t> GetCurrentLengthValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetMaximumLengthAddress() const;
   Value<uintptr_t> GetMaximumLengthValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetDispatchTablesAddress() const;
-  Value<uintptr_t> GetDispatchTablesValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetUsesAddress() const;
+  Value<uintptr_t> GetUsesValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetRawTypeAddress() const;
   Value<uintptr_t> GetRawTypeValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetIsTable64Address() const;
+  Value<uintptr_t> GetIsTable64Value(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTrustedDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedDataValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqWasmMemoryObject : public TqJSObject {
@@ -3728,8 +4172,8 @@ class TqWasmGlobalObject : public TqJSObject {
   const char* GetName() const override;
   void Visit(TqObjectVisitor* visitor) const override;
   bool IsSuperclassOf(const TqObject* other) const override;
-  uintptr_t GetInstanceAddress() const;
-  Value<uintptr_t> GetInstanceValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTrustedDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetUntaggedBufferAddress() const;
   Value<uintptr_t> GetUntaggedBufferValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetTaggedBufferAddress() const;
@@ -3756,6 +4200,8 @@ class TqWasmTagObject : public TqJSObject {
   Value<uintptr_t> GetTagValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetCanonicalTypeIndexAddress() const;
   Value<uintptr_t> GetCanonicalTypeIndexValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTrustedDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedDataValue(d::MemoryAccessor accessor ) const;
 };
 
 class TqAsmWasmData : public TqStruct {
@@ -3786,8 +4232,8 @@ class TqWasmTypeInfo : public TqHeapObject {
   Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTypeIndexValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetOptionalPaddingAddress() const;
   Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
-  uintptr_t GetInstanceAddress() const;
-  Value<uintptr_t> GetInstanceValue(d::MemoryAccessor accessor ) const;
+  uintptr_t GetTrustedDataAddress() const;
+  Value<TrustedPointer_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetTrustedDataValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSupertypesLengthAddress() const;
   Value<uintptr_t> GetSupertypesLengthValue(d::MemoryAccessor accessor ) const;
   uintptr_t GetSupertypesAddress() const;
@@ -3844,14 +4290,23 @@ class TqWasmStringViewIter : public TqHeapObject {
   Value<uint32_t /*Failing? Ensure constexpr type name is correct, and the necessary #include is in any .tq file*/> GetOptionalPaddingValue(d::MemoryAccessor accessor ) const;
 };
 
+class TqWasmSuspendingObject : public TqJSObject {
+ public:
+  inline TqWasmSuspendingObject(uintptr_t address) : TqJSObject(address) {}
+  std::vector<std::unique_ptr<ObjectProperty>> GetProperties(
+      d::MemoryAccessor accessor) const override;
+  const char* GetName() const override;
+  void Visit(TqObjectVisitor* visitor) const override;
+  bool IsSuperclassOf(const TqObject* other) const override;
+  uintptr_t GetCallableAddress() const;
+  Value<uintptr_t> GetCallableValue(d::MemoryAccessor accessor ) const;
+};
+
 class TqObjectVisitor {
  public:
   virtual void VisitObject(const TqObject* object) {}
   virtual void VisitHeapObject(const TqHeapObject* object) {
     VisitObject(object);
-  }
-  virtual void VisitJSReceiver(const TqJSReceiver* object) {
-    VisitHeapObject(object);
   }
   virtual void VisitPrimitiveHeapObject(const TqPrimitiveHeapObject* object) {
     VisitHeapObject(object);
@@ -3880,6 +4335,9 @@ class TqObjectVisitor {
   virtual void VisitUndefined(const TqUndefined* object) {
     VisitOddball(object);
   }
+  virtual void VisitJSReceiver(const TqJSReceiver* object) {
+    VisitHeapObject(object);
+  }
   virtual void VisitContext(const TqContext* object) {
     VisitHeapObject(object);
   }
@@ -3904,6 +4362,9 @@ class TqObjectVisitor {
   virtual void VisitFixedArray(const TqFixedArray* object) {
     VisitFixedArrayBase(object);
   }
+  virtual void VisitTrustedObject(const TqTrustedObject* object) {
+    VisitHeapObject(object);
+  }
   virtual void VisitWeakFixedArray(const TqWeakFixedArray* object) {
     VisitHeapObject(object);
   }
@@ -3922,6 +4383,9 @@ class TqObjectVisitor {
   virtual void VisitHole(const TqHole* object) {
     VisitHeapObject(object);
   }
+  virtual void VisitJSAPIObjectWithEmbedderSlots(const TqJSAPIObjectWithEmbedderSlots* object) {
+    VisitJSObject(object);
+  }
   virtual void VisitJSCustomElementsObject(const TqJSCustomElementsObject* object) {
     VisitJSObject(object);
   }
@@ -3934,11 +4398,26 @@ class TqObjectVisitor {
   virtual void VisitWeakCell(const TqWeakCell* object) {
     VisitHeapObject(object);
   }
-  virtual void VisitWasmInternalFunction(const TqWasmInternalFunction* object) {
+  virtual void VisitTemplateInfo(const TqTemplateInfo* object) {
+    VisitHeapObject(object);
+  }
+  virtual void VisitFunctionTemplateInfo(const TqFunctionTemplateInfo* object) {
+    VisitTemplateInfo(object);
+  }
+  virtual void VisitWasmFuncRef(const TqWasmFuncRef* object) {
     VisitHeapObject(object);
   }
   virtual void VisitWasmNull(const TqWasmNull* object) {
     VisitHeapObject(object);
+  }
+  virtual void VisitJSCollection(const TqJSCollection* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSSet(const TqJSSet* object) {
+    VisitJSCollection(object);
+  }
+  virtual void VisitJSMap(const TqJSMap* object) {
+    VisitJSCollection(object);
   }
   virtual void VisitStruct(const TqStruct* object) {
     VisitHeapObject(object);
@@ -3947,7 +4426,7 @@ class TqObjectVisitor {
     VisitStruct(object);
   }
   virtual void VisitJSArrayBufferView(const TqJSArrayBufferView* object) {
-    VisitJSObjectWithEmbedderSlots(object);
+    VisitJSAPIObjectWithEmbedderSlots(object);
   }
   virtual void VisitJSTypedArray(const TqJSTypedArray* object) {
     VisitJSArrayBufferView(object);
@@ -3957,9 +4436,6 @@ class TqObjectVisitor {
   }
   virtual void VisitAllocationMemento(const TqAllocationMemento* object) {
     VisitStruct(object);
-  }
-  virtual void VisitCallHandlerInfo(const TqCallHandlerInfo* object) {
-    VisitHeapObject(object);
   }
   virtual void VisitInterceptorInfo(const TqInterceptorInfo* object) {
     VisitStruct(object);
@@ -3991,14 +4467,20 @@ class TqObjectVisitor {
   virtual void VisitCell(const TqCell* object) {
     VisitHeapObject(object);
   }
-  virtual void VisitBytecodeArray(const TqBytecodeArray* object) {
-    VisitFixedArrayBase(object);
-  }
-  virtual void VisitTrustedObject(const TqTrustedObject* object) {
+  virtual void VisitWeakArrayList(const TqWeakArrayList* object) {
     VisitHeapObject(object);
   }
   virtual void VisitExposedTrustedObject(const TqExposedTrustedObject* object) {
     VisitTrustedObject(object);
+  }
+  virtual void VisitBytecodeArray(const TqBytecodeArray* object) {
+    VisitExposedTrustedObject(object);
+  }
+  virtual void VisitBytecodeWrapper(const TqBytecodeWrapper* object) {
+    VisitStruct(object);
+  }
+  virtual void VisitScriptContextTable(const TqScriptContextTable* object) {
+    VisitHeapObject(object);
   }
   virtual void VisitScopeInfo(const TqScopeInfo* object) {
     VisitHeapObject(object);
@@ -4007,7 +4489,7 @@ class TqObjectVisitor {
     VisitFixedArrayBase(object);
   }
   virtual void VisitRegExpMatchInfo(const TqRegExpMatchInfo* object) {
-    VisitFixedArray(object);
+    VisitHeapObject(object);
   }
   virtual void VisitBreakPoint(const TqBreakPoint* object) {
     VisitStruct(object);
@@ -4025,9 +4507,6 @@ class TqObjectVisitor {
     VisitStruct(object);
   }
   virtual void VisitErrorStackData(const TqErrorStackData* object) {
-    VisitStruct(object);
-  }
-  virtual void VisitPromiseOnStack(const TqPromiseOnStack* object) {
     VisitStruct(object);
   }
   virtual void VisitEnumCache(const TqEnumCache* object) {
@@ -4051,26 +4530,41 @@ class TqObjectVisitor {
   virtual void VisitFeedbackCell(const TqFeedbackCell* object) {
     VisitStruct(object);
   }
+  virtual void VisitClosureFeedbackCellArray(const TqClosureFeedbackCellArray* object) {
+    VisitHeapObject(object);
+  }
   virtual void VisitFeedbackVector(const TqFeedbackVector* object) {
     VisitHeapObject(object);
   }
+  virtual void VisitTrustedFixedArray(const TqTrustedFixedArray* object) {
+    VisitTrustedObject(object);
+  }
+  virtual void VisitProtectedFixedArray(const TqProtectedFixedArray* object) {
+    VisitTrustedObject(object);
+  }
+  virtual void VisitTrustedWeakFixedArray(const TqTrustedWeakFixedArray* object) {
+    VisitTrustedObject(object);
+  }
   virtual void VisitByteArray(const TqByteArray* object) {
     VisitFixedArrayBase(object);
+  }
+  virtual void VisitTrustedByteArray(const TqTrustedByteArray* object) {
+    VisitTrustedObject(object);
   }
   virtual void VisitExternalPointerArray(const TqExternalPointerArray* object) {
     VisitFixedArrayBase(object);
   }
   virtual void VisitArrayList(const TqArrayList* object) {
-    VisitFixedArray(object);
-  }
-  virtual void VisitWeakArrayList(const TqWeakArrayList* object) {
     VisitHeapObject(object);
+  }
+  virtual void VisitTrustedForeign(const TqTrustedForeign* object) {
+    VisitTrustedObject(object);
   }
   virtual void VisitFreeSpace(const TqFreeSpace* object) {
     VisitHeapObject(object);
   }
   virtual void VisitJSArrayBuffer(const TqJSArrayBuffer* object) {
-    VisitJSObjectWithEmbedderSlots(object);
+    VisitJSAPIObjectWithEmbedderSlots(object);
   }
   virtual void VisitJSDataViewOrRabGsabDataView(const TqJSDataViewOrRabGsabDataView* object) {
     VisitJSArrayBufferView(object);
@@ -4105,15 +4599,6 @@ class TqObjectVisitor {
   virtual void VisitJSCollectionIterator(const TqJSCollectionIterator* object) {
     VisitJSObject(object);
   }
-  virtual void VisitJSCollection(const TqJSCollection* object) {
-    VisitJSObject(object);
-  }
-  virtual void VisitJSSet(const TqJSSet* object) {
-    VisitJSCollection(object);
-  }
-  virtual void VisitJSMap(const TqJSMap* object) {
-    VisitJSCollection(object);
-  }
   virtual void VisitJSWeakCollection(const TqJSWeakCollection* object) {
     VisitJSObject(object);
   }
@@ -4122,6 +4607,15 @@ class TqObjectVisitor {
   }
   virtual void VisitJSWeakMap(const TqJSWeakMap* object) {
     VisitJSWeakCollection(object);
+  }
+  virtual void VisitJSDisposableStackBase(const TqJSDisposableStackBase* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSSyncDisposableStack(const TqJSSyncDisposableStack* object) {
+    VisitJSDisposableStackBase(object);
+  }
+  virtual void VisitJSAsyncDisposableStack(const TqJSAsyncDisposableStack* object) {
+    VisitJSDisposableStackBase(object);
   }
   virtual void VisitJSGeneratorObject(const TqJSGeneratorObject* object) {
     VisitJSObject(object);
@@ -4189,6 +4683,18 @@ class TqObjectVisitor {
   virtual void VisitJSRegExpStringIterator(const TqJSRegExpStringIterator* object) {
     VisitJSObject(object);
   }
+  virtual void VisitRegExpData(const TqRegExpData* object) {
+    VisitExposedTrustedObject(object);
+  }
+  virtual void VisitAtomRegExpData(const TqAtomRegExpData* object) {
+    VisitRegExpData(object);
+  }
+  virtual void VisitIrRegExpData(const TqIrRegExpData* object) {
+    VisitRegExpData(object);
+  }
+  virtual void VisitRegExpDataWrapper(const TqRegExpDataWrapper* object) {
+    VisitStruct(object);
+  }
   virtual void VisitJSRegExp(const TqJSRegExp* object) {
     VisitJSObject(object);
   }
@@ -4246,10 +4752,16 @@ class TqObjectVisitor {
   virtual void VisitJSWeakRef(const TqJSWeakRef* object) {
     VisitJSObject(object);
   }
+  virtual void VisitObjectBoilerplateDescription(const TqObjectBoilerplateDescription* object) {
+    VisitHeapObject(object);
+  }
   virtual void VisitArrayBoilerplateDescription(const TqArrayBoilerplateDescription* object) {
     VisitStruct(object);
   }
   virtual void VisitRegExpBoilerplateDescription(const TqRegExpBoilerplateDescription* object) {
+    VisitStruct(object);
+  }
+  virtual void VisitClassBoilerplate(const TqClassBoilerplate* object) {
     VisitStruct(object);
   }
   virtual void VisitMegaDomHandler(const TqMegaDomHandler* object) {
@@ -4312,6 +4824,9 @@ class TqObjectVisitor {
   virtual void VisitPropertyCell(const TqPropertyCell* object) {
     VisitHeapObject(object);
   }
+  virtual void VisitConstTrackingLetCell(const TqConstTrackingLetCell* object) {
+    VisitHeapObject(object);
+  }
   virtual void VisitPropertyDescriptorObject(const TqPropertyDescriptorObject* object) {
     VisitStruct(object);
   }
@@ -4325,13 +4840,16 @@ class TqObjectVisitor {
     VisitHeapObject(object);
   }
   virtual void VisitInterpreterData(const TqInterpreterData* object) {
-    VisitStruct(object);
+    VisitExposedTrustedObject(object);
   }
   virtual void VisitSharedFunctionInfo(const TqSharedFunctionInfo* object) {
     VisitHeapObject(object);
   }
+  virtual void VisitSharedFunctionInfoWrapper(const TqSharedFunctionInfoWrapper* object) {
+    VisitTrustedObject(object);
+  }
   virtual void VisitUncompiledData(const TqUncompiledData* object) {
-    VisitHeapObject(object);
+    VisitExposedTrustedObject(object);
   }
   virtual void VisitUncompiledDataWithoutPreparseData(const TqUncompiledDataWithoutPreparseData* object) {
     VisitUncompiledData(object);
@@ -4399,17 +4917,14 @@ class TqObjectVisitor {
   virtual void VisitTemplateObjectDescription(const TqTemplateObjectDescription* object) {
     VisitStruct(object);
   }
-  virtual void VisitTemplateInfo(const TqTemplateInfo* object) {
-    VisitStruct(object);
-  }
   virtual void VisitFunctionTemplateRareData(const TqFunctionTemplateRareData* object) {
     VisitStruct(object);
   }
-  virtual void VisitFunctionTemplateInfo(const TqFunctionTemplateInfo* object) {
-    VisitTemplateInfo(object);
-  }
   virtual void VisitObjectTemplateInfo(const TqObjectTemplateInfo* object) {
     VisitTemplateInfo(object);
+  }
+  virtual void VisitDictionaryTemplateInfo(const TqDictionaryTemplateInfo* object) {
+    VisitHeapObject(object);
   }
   virtual void VisitTurbofanType(const TqTurbofanType* object) {
     VisitHeapObject(object);
@@ -4525,17 +5040,32 @@ class TqObjectVisitor {
   virtual void VisitJSSegmentIterator(const TqJSSegmentIterator* object) {
     VisitJSObject(object);
   }
+  virtual void VisitJSSegmentDataObject(const TqJSSegmentDataObject* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitJSSegmentDataObjectWithIsWordLike(const TqJSSegmentDataObjectWithIsWordLike* object) {
+    VisitJSSegmentDataObject(object);
+  }
   virtual void VisitJSSegmenter(const TqJSSegmenter* object) {
     VisitJSObject(object);
   }
   virtual void VisitJSSegments(const TqJSSegments* object) {
     VisitJSObject(object);
   }
-  virtual void VisitWasmApiFunctionRef(const TqWasmApiFunctionRef* object) {
+  virtual void VisitWasmImportData(const TqWasmImportData* object) {
+    VisitTrustedObject(object);
+  }
+  virtual void VisitWasmInstanceObject(const TqWasmInstanceObject* object) {
+    VisitJSObject(object);
+  }
+  virtual void VisitWasmFastApiCallData(const TqWasmFastApiCallData* object) {
     VisitHeapObject(object);
   }
+  virtual void VisitWasmInternalFunction(const TqWasmInternalFunction* object) {
+    VisitExposedTrustedObject(object);
+  }
   virtual void VisitWasmFunctionData(const TqWasmFunctionData* object) {
-    VisitHeapObject(object);
+    VisitExposedTrustedObject(object);
   }
   virtual void VisitWasmExportedFunctionData(const TqWasmExportedFunctionData* object) {
     VisitWasmFunctionData(object);
@@ -4549,14 +5079,11 @@ class TqObjectVisitor {
   virtual void VisitWasmResumeData(const TqWasmResumeData* object) {
     VisitHeapObject(object);
   }
-  virtual void VisitWasmIndirectFunctionTable(const TqWasmIndirectFunctionTable* object) {
-    VisitStruct(object);
-  }
   virtual void VisitWasmContinuationObject(const TqWasmContinuationObject* object) {
     VisitHeapObject(object);
   }
   virtual void VisitWasmSuspenderObject(const TqWasmSuspenderObject* object) {
-    VisitJSObject(object);
+    VisitHeapObject(object);
   }
   virtual void VisitWasmExceptionTag(const TqWasmExceptionTag* object) {
     VisitStruct(object);
@@ -4593,6 +5120,9 @@ class TqObjectVisitor {
   }
   virtual void VisitWasmStringViewIter(const TqWasmStringViewIter* object) {
     VisitHeapObject(object);
+  }
+  virtual void VisitWasmSuspendingObject(const TqWasmSuspendingObject* object) {
+    VisitJSObject(object);
   }
 };
 }  // namespace debug_helper_internal

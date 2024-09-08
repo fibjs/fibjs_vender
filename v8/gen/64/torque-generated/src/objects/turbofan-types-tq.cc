@@ -15,12 +15,12 @@ bool IsTurbofanType_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTurbofanType<TurbofanType, HeapObject>::TurbofanTypeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TurbofanTypeVerify(TurbofanType::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TurbofanTypeVerify(Cast<TurbofanType>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=59&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
 bool IsTurbofanBitsetType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanBitsetType(o);
 }
@@ -29,12 +29,12 @@ bool IsTurbofanBitsetType_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTurbofanBitsetType<TurbofanBitsetType, TurbofanType>::TurbofanBitsetTypeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TurbofanBitsetTypeVerify(TurbofanBitsetType::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TurbofanBitsetTypeVerify(Cast<TurbofanBitsetType>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=65&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
 bool IsTurbofanUnionType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanUnionType(o);
 }
@@ -43,12 +43,12 @@ bool IsTurbofanUnionType_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTurbofanUnionType<TurbofanUnionType, TurbofanType>::TurbofanUnionTypeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TurbofanUnionTypeVerify(TurbofanUnionType::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TurbofanUnionTypeVerify(Cast<TurbofanUnionType>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=71&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
 bool IsTurbofanRangeType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanRangeType(o);
 }
@@ -57,12 +57,12 @@ bool IsTurbofanRangeType_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTurbofanRangeType<TurbofanRangeType, TurbofanType>::TurbofanRangeTypeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TurbofanRangeTypeVerify(TurbofanRangeType::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TurbofanRangeTypeVerify(Cast<TurbofanRangeType>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=77&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
 bool IsTurbofanHeapConstantType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanHeapConstantType(o);
 }
@@ -71,12 +71,12 @@ bool IsTurbofanHeapConstantType_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTurbofanHeapConstantType<TurbofanHeapConstantType, TurbofanType>::TurbofanHeapConstantTypeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TurbofanHeapConstantTypeVerify(TurbofanHeapConstantType::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TurbofanHeapConstantTypeVerify(Cast<TurbofanHeapConstantType>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=82&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
 bool IsTurbofanOtherNumberConstantType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanOtherNumberConstantType(o);
 }
@@ -85,7 +85,7 @@ bool IsTurbofanOtherNumberConstantType_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTurbofanOtherNumberConstantType<TurbofanOtherNumberConstantType, TurbofanType>::TurbofanOtherNumberConstantTypeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TurbofanOtherNumberConstantTypeVerify(TurbofanOtherNumberConstantType::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TurbofanOtherNumberConstantTypeVerify(Cast<TurbofanOtherNumberConstantType>(*this), isolate);
 }
 
 

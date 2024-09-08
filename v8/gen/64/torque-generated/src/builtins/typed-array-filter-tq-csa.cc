@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-filter-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -287,7 +291,7 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_11, &phi_bb25_12, &phi_bb25_13, &phi_bb25_15, &phi_bb25_17, &phi_bb25_19, &phi_bb25_20);
     tmp24 = (TNode<JSTypedArray>{tmp16});
-tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(1)).descriptor(), tmp18, TNode<Object>(), tmp24, phi_bb25_17));
+tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(1)), tmp18, TNode<Object>(), tmp24, phi_bb25_17));
     ca_.Goto(&block17, phi_bb25_11, phi_bb25_12, phi_bb25_13, tmp24, phi_bb25_17, tmp25);
   }
 
@@ -341,7 +345,8 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
   TNode<IntPtrT> tmp36;
-  TNode<FixedArray> tmp37;
+  TNode<Hole> tmp37;
+  TNode<FixedArray> tmp38;
   if (block36.is_used()) {
     ca_.Bind(&block36, &phi_bb36_11, &phi_bb36_12, &phi_bb36_13, &phi_bb36_17);
     tmp31 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
@@ -350,31 +355,32 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
     tmp34 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp35 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp33}, TNode<IntPtrT>{tmp34});
     tmp36 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp37 = ExtractFixedArray_0(state_, TNode<FixedArray>{phi_bb36_11}, TNode<IntPtrT>{tmp36}, TNode<IntPtrT>{phi_bb36_13}, TNode<IntPtrT>{tmp35});
-    ca_.Goto(&block37, tmp37, tmp35, phi_bb36_13, phi_bb36_17);
+    tmp37 = TheHole_0(state_);
+    tmp38 = ExtractFixedArray_0(state_, TNode<FixedArray>{phi_bb36_11}, TNode<IntPtrT>{tmp36}, TNode<IntPtrT>{phi_bb36_13}, TNode<IntPtrT>{tmp35}, TNode<Hole>{tmp37});
+    ca_.Goto(&block37, tmp38, tmp35, phi_bb36_13, phi_bb36_17);
   }
 
   TNode<FixedArray> phi_bb37_11;
   TNode<IntPtrT> phi_bb37_12;
   TNode<IntPtrT> phi_bb37_13;
   TNode<UintPtrT> phi_bb37_17;
-  TNode<Object> tmp38;
-  TNode<IntPtrT> tmp39;
+  TNode<Object> tmp39;
   TNode<IntPtrT> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<UintPtrT> tmp43;
+  TNode<IntPtrT> tmp43;
   TNode<UintPtrT> tmp44;
-  TNode<BoolT> tmp45;
+  TNode<UintPtrT> tmp45;
+  TNode<BoolT> tmp46;
   if (block37.is_used()) {
     ca_.Bind(&block37, &phi_bb37_11, &phi_bb37_12, &phi_bb37_13, &phi_bb37_17);
-    std::tie(tmp38, tmp39, tmp40) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb37_11}).Flatten();
-    tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
-    tmp42 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb37_13}, TNode<IntPtrT>{tmp41});
-    tmp43 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb37_13});
-    tmp44 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp40});
-    tmp45 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp43}, TNode<UintPtrT>{tmp44});
-    ca_.Branch(tmp45, &block55, std::vector<compiler::Node*>{phi_bb37_17, phi_bb37_13, phi_bb37_13, phi_bb37_13, phi_bb37_13}, &block56, std::vector<compiler::Node*>{phi_bb37_17, phi_bb37_13, phi_bb37_13, phi_bb37_13, phi_bb37_13});
+    std::tie(tmp39, tmp40, tmp41) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{phi_bb37_11}).Flatten();
+    tmp42 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
+    tmp43 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb37_13}, TNode<IntPtrT>{tmp42});
+    tmp44 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb37_13});
+    tmp45 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp41});
+    tmp46 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp44}, TNode<UintPtrT>{tmp45});
+    ca_.Branch(tmp46, &block55, std::vector<compiler::Node*>{phi_bb37_17, phi_bb37_13, phi_bb37_13, phi_bb37_13, phi_bb37_13}, &block56, std::vector<compiler::Node*>{phi_bb37_17, phi_bb37_13, phi_bb37_13, phi_bb37_13, phi_bb37_13});
   }
 
   TNode<UintPtrT> phi_bb55_17;
@@ -382,17 +388,17 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<IntPtrT> phi_bb55_27;
   TNode<IntPtrT> phi_bb55_31;
   TNode<IntPtrT> phi_bb55_32;
-  TNode<IntPtrT> tmp46;
   TNode<IntPtrT> tmp47;
-  TNode<Object> tmp48;
-  TNode<IntPtrT> tmp49;
+  TNode<IntPtrT> tmp48;
+  TNode<Object> tmp49;
+  TNode<IntPtrT> tmp50;
   if (block55.is_used()) {
     ca_.Bind(&block55, &phi_bb55_17, &phi_bb55_26, &phi_bb55_27, &phi_bb55_31, &phi_bb55_32);
-    tmp46 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb55_32});
-    tmp47 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp39}, TNode<IntPtrT>{tmp46});
-    std::tie(tmp48, tmp49) = NewReference_Object_0(state_, TNode<Object>{tmp38}, TNode<IntPtrT>{tmp47}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp48, tmp49}, phi_bb17_18);
-    ca_.Goto(&block29, phi_bb37_11, phi_bb37_12, tmp42, phi_bb55_17);
+    tmp47 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb55_32});
+    tmp48 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp47});
+    std::tie(tmp49, tmp50) = NewReference_Object_0(state_, TNode<Object>{tmp39}, TNode<IntPtrT>{tmp48}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp49, tmp50}, phi_bb17_18);
+    ca_.Goto(&block29, phi_bb37_11, phi_bb37_12, tmp43, phi_bb55_17);
   }
 
   TNode<UintPtrT> phi_bb56_17;
@@ -409,13 +415,13 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<IntPtrT> phi_bb29_12;
   TNode<IntPtrT> phi_bb29_13;
   TNode<UintPtrT> phi_bb29_17;
-  TNode<UintPtrT> tmp50;
   TNode<UintPtrT> tmp51;
+  TNode<UintPtrT> tmp52;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_11, &phi_bb29_12, &phi_bb29_13, &phi_bb29_17);
-    tmp50 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
-    tmp51 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb29_17}, TNode<UintPtrT>{tmp50});
-    ca_.Goto(&block15, phi_bb29_11, phi_bb29_12, phi_bb29_13, phi_bb17_15, tmp51);
+    tmp51 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
+    tmp52 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb29_17}, TNode<UintPtrT>{tmp51});
+    ca_.Goto(&block15, phi_bb29_11, phi_bb29_12, phi_bb29_13, phi_bb17_15, tmp52);
   }
 
   TNode<FixedArray> phi_bb14_11;
@@ -423,30 +429,32 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::Calla
   TNode<IntPtrT> phi_bb14_13;
   TNode<JSTypedArray> phi_bb14_15;
   TNode<UintPtrT> phi_bb14_17;
-  TNode<UintPtrT> tmp52;
-  TNode<JSTypedArray> tmp53;
-  TNode<UintPtrT> tmp54;
-  TNode<Number> tmp55;
-  TNode<NativeContext> tmp56;
-  TNode<Map> tmp57;
-  TNode<IntPtrT> tmp58;
-  TNode<FixedArray> tmp59;
-  TNode<Smi> tmp60;
-  TNode<JSArray> tmp61;
+  TNode<UintPtrT> tmp53;
+  TNode<JSTypedArray> tmp54;
+  TNode<UintPtrT> tmp55;
+  TNode<Number> tmp56;
+  TNode<NativeContext> tmp57;
+  TNode<Map> tmp58;
+  TNode<IntPtrT> tmp59;
+  TNode<Hole> tmp60;
+  TNode<FixedArray> tmp61;
+  TNode<Smi> tmp62;
+  TNode<JSArray> tmp63;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_11, &phi_bb14_12, &phi_bb14_13, &phi_bb14_15, &phi_bb14_17);
-    tmp52 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{phi_bb14_13});
-    tmp53 = TypedArraySpeciesCreateByLength_0(state_, TNode<Context>{parameter0}, kBuiltinNameFilter_0(state_), TNode<JSTypedArray>{tmp0}, TNode<UintPtrT>{tmp52});
-    tmp54 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{phi_bb14_13});
-    tmp55 = Convert_Number_uintptr_0(state_, TNode<UintPtrT>{tmp54});
-    tmp56 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{parameter0});
-    tmp57 = CodeStubAssembler(state_).LoadJSArrayElementsMap(ElementsKind::PACKED_ELEMENTS, TNode<NativeContext>{tmp56});
-    tmp58 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp59 = ExtractFixedArray_0(state_, TNode<FixedArray>{phi_bb14_11}, TNode<IntPtrT>{tmp58}, TNode<IntPtrT>{phi_bb14_13}, TNode<IntPtrT>{phi_bb14_13});
-    tmp60 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb14_13});
-    tmp61 = CodeStubAssembler(state_).AllocateJSArray(TNode<Map>{tmp57}, TNode<FixedArrayBase>{tmp59}, TNode<Smi>{tmp60});
-    CodeStubAssembler(state_).CallRuntime(Runtime::kTypedArrayCopyElements, parameter0, tmp53, tmp61, tmp55);
-    arguments.PopAndReturn(tmp53);
+    tmp53 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{phi_bb14_13});
+    tmp54 = TypedArraySpeciesCreateByLength_0(state_, TNode<Context>{parameter0}, kBuiltinNameFilter_0(state_), TNode<JSTypedArray>{tmp0}, TNode<UintPtrT>{tmp53});
+    tmp55 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{phi_bb14_13});
+    tmp56 = Convert_Number_uintptr_0(state_, TNode<UintPtrT>{tmp55});
+    tmp57 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{parameter0});
+    tmp58 = CodeStubAssembler(state_).LoadJSArrayElementsMap(ElementsKind::PACKED_ELEMENTS, TNode<NativeContext>{tmp57});
+    tmp59 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp60 = TheHole_0(state_);
+    tmp61 = ExtractFixedArray_0(state_, TNode<FixedArray>{phi_bb14_11}, TNode<IntPtrT>{tmp59}, TNode<IntPtrT>{phi_bb14_13}, TNode<IntPtrT>{phi_bb14_13}, TNode<Hole>{tmp60});
+    tmp62 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb14_13});
+    tmp63 = CodeStubAssembler(state_).AllocateJSArray(TNode<Map>{tmp58}, TNode<FixedArrayBase>{tmp61}, TNode<Smi>{tmp62});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kTypedArrayCopyElements, parameter0, tmp54, tmp63, tmp56);
+    arguments.PopAndReturn(tmp54);
   }
 }
 

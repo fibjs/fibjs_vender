@@ -23,22 +23,22 @@ void TorqueGeneratedJSArrayIterator<D, P>::set_iterated_object(Tagged<JSReceiver
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSArrayIterator<D, P>::next_index() const {
+Tagged<Number> TorqueGeneratedJSArrayIterator<D, P>::next_index() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSArrayIterator::next_index(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSArrayIterator<D, P>::next_index(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kNextIndexOffset);
+Tagged<Number> TorqueGeneratedJSArrayIterator<D, P>::next_index(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kNextIndexOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
 template<class D, class P>
-void TorqueGeneratedJSArrayIterator<D, P>::set_next_index(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSArrayIterator<D, P>::set_next_index(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kNextIndexOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextIndexOffset, value, mode);
@@ -57,12 +57,6 @@ void TorqueGeneratedJSArrayIterator<D, P>::set_kind(int value) {
   WRITE_FIELD(*this, kKindOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSArrayIterator<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSArrayIterator<D, P>::TorqueGeneratedJSArrayIterator(Address ptr)
     : P(ptr) {
@@ -70,31 +64,25 @@ inline TorqueGeneratedJSArrayIterator<D, P>::TorqueGeneratedJSArrayIterator(Addr
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSArray<D, P>::length() const {
+Tagged<Number> TorqueGeneratedJSArray<D, P>::length() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSArray::length(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSArray<D, P>::length(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kLengthOffset);
+Tagged<Number> TorqueGeneratedJSArray<D, P>::length(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kLengthOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
 template<class D, class P>
-void TorqueGeneratedJSArray<D, P>::set_length(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSArray<D, P>::set_length(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kLengthOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLengthOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSArray<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -149,12 +137,6 @@ int TorqueGeneratedTemplateLiteralObject<D, P>::slot_id() const {
 template<class D, class P>
 void TorqueGeneratedTemplateLiteralObject<D, P>::set_slot_id(int value) {
   WRITE_FIELD(*this, kSlotIdOffset, Smi::FromInt(value));
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=68&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedTemplateLiteralObject<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

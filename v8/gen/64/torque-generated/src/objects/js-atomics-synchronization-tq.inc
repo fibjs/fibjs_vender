@@ -19,26 +19,22 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSSynchronizationPrimitive<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=7&c=28
-  inline uintptr_t state() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=7&c=28
-  inline void set_state(uintptr_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=8&c=3
+  inline uint32_t state() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=8&c=3
+  inline void set_state(uint32_t value);
 
 #ifdef VERIFY_HEAP
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
   V8_EXPORT_PRIVATE void JSSynchronizationPrimitiveVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=7&c=28
-  static constexpr int kStateOffset = P::kHeaderSize;
-  static constexpr int kStateOffsetEnd = kStateOffset + kIntptrSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=7&c=3
+  static constexpr int kWaiterQueueHeadOffset = P::kHeaderSize;
+  static constexpr int kWaiterQueueHeadOffsetEnd = kWaiterQueueHeadOffset + kExternalPointerSlotSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=8&c=3
+  static constexpr int kStateOffset = kWaiterQueueHeadOffsetEnd + 1;
+  static constexpr int kStateOffsetEnd = kStateOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kStateOffsetEnd + 1;
   static constexpr int kEndOfWeakFieldsOffset = kStateOffsetEnd + 1;
   static constexpr int kStartOfStrongFieldsOffset = kStateOffsetEnd + 1;
@@ -83,18 +79,6 @@ class TorqueGeneratedJSAtomicsMutex : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=12&c=3
   inline void set_owner_thread_id(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=14&c=28
-  inline uint32_t optional_padding() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=14&c=28
-  inline void set_optional_padding(uint32_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSAtomicsMutex)
 
 #ifdef VERIFY_HEAP
@@ -105,14 +89,11 @@ class TorqueGeneratedJSAtomicsMutex : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=12&c=3
   static constexpr int kOwnerThreadIdOffset = P::kHeaderSize;
   static constexpr int kOwnerThreadIdOffsetEnd = kOwnerThreadIdOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=14&c=28
-  static constexpr int kOptionalPaddingOffset = kOwnerThreadIdOffsetEnd + 1;
-  static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + kInt32Size - 1;
-  static constexpr int kStartOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kStartOfStrongFieldsOffset = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kEndOfStrongFieldsOffset = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kOwnerThreadIdOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kOwnerThreadIdOffsetEnd + 1;
+  static constexpr int kStartOfStrongFieldsOffset = kOwnerThreadIdOffsetEnd + 1;
+  static constexpr int kEndOfStrongFieldsOffset = kOwnerThreadIdOffsetEnd + 1;
+  static constexpr int kHeaderSize = kOwnerThreadIdOffsetEnd + 1;
 
   friend class Factory;
 
@@ -130,10 +111,10 @@ class TorqueGeneratedJSAtomicsMutex : public P {
 };
 
 // Alias for IsJSAtomicsCondition() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=15&c=1
 V8_EXPORT_PRIVATE bool IsJSAtomicsCondition_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=15&c=1
 template <class D, class P>
 class TorqueGeneratedJSAtomicsCondition : public P {
   static_assert(
@@ -147,25 +128,26 @@ class TorqueGeneratedJSAtomicsCondition : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSAtomicsCondition<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=16&c=28
+  inline uint32_t optional_padding() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=16&c=28
+  inline void set_optional_padding(uint32_t value);
 
   DECL_PRINTER(JSAtomicsCondition)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=15&c=1
   V8_EXPORT_PRIVATE void JSAtomicsConditionVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
-  static constexpr int kEndOfWeakFieldsOffset = P::kHeaderSize;
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
-  static constexpr int kHeaderSize = P::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=16&c=28
+  static constexpr int kOptionalPaddingOffset = P::kHeaderSize;
+  static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + kInt32Size - 1;
+  static constexpr int kStartOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kStartOfStrongFieldsOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kEndOfStrongFieldsOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
 
   friend class Factory;
 

@@ -15,7 +15,7 @@ bool IsMap_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedMap<Map, HeapObject>::MapVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::MapVerify(Map::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::MapVerify(Cast<Map>(*this), isolate);
 }
 
 

@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-spliced-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -76,9 +80,9 @@
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/number-tq-csa.h"
+#include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/fixed-array-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
-#include "torque-generated/test/torque/test-torque-tq-csa.h"
 
 namespace v8 {
 namespace internal {
@@ -494,7 +498,7 @@ TNode<JSArray> GenericArrayToSpliced_0(compiler::CodeAssemblerState* state_, TNo
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_10);
     tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{phi_bb2_10});
-    tmp5 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), p_context, tmp0, phi_bb2_10, tmp4);
+    tmp5 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, p_context, tmp0, phi_bb2_10, tmp4);
     tmp6 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp7 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_10}, TNode<Number>{tmp6});
     ca_.Goto(&block4, tmp7);
@@ -538,7 +542,7 @@ TNode<JSArray> GenericArrayToSpliced_0(compiler::CodeAssemblerState* state_, TNo
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_12);
     tmp12 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_args.frame}, TNode<RawPtrT>{p_args.base}, TNode<IntPtrT>{p_args.length}, TNode<IntPtrT>{p_args.actual_count}}, TNode<IntPtrT>{phi_bb7_12});
-    tmp13 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), p_context, tmp0, phi_bb7_10, tmp12);
+    tmp13 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, p_context, tmp0, phi_bb7_10, tmp12);
     tmp14 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp15 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb7_10}, TNode<Number>{tmp14});
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
@@ -579,7 +583,7 @@ TNode<JSArray> GenericArrayToSpliced_0(compiler::CodeAssemblerState* state_, TNo
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_10, &phi_bb11_11);
     tmp19 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{phi_bb11_11});
-    tmp20 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), p_context, tmp0, phi_bb11_10, tmp19);
+    tmp20 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, p_context, tmp0, phi_bb11_10, tmp19);
     tmp21 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp22 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb11_10}, TNode<Number>{tmp21});
     tmp23 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
@@ -645,7 +649,7 @@ TF_BUILTIN(ArrayPrototypeToSpliced, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = ca_.CallStub<JSReceiver>(Builtins::CallableFor(ca_.isolate(), Builtin::kToObject), parameter0, parameter1);
+    tmp4 = ca_.CallBuiltin<JSReceiver>(Builtin::kToObject, parameter0, parameter1);
     tmp5 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4});
     tmp6 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp1});
     tmp7 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));

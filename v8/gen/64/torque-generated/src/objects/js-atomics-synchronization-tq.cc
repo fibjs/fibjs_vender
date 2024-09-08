@@ -15,7 +15,7 @@ bool IsJSSynchronizationPrimitive_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSSynchronizationPrimitive<JSSynchronizationPrimitive, AlwaysSharedSpaceJSObject>::JSSynchronizationPrimitiveVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSSynchronizationPrimitiveVerify(JSSynchronizationPrimitive::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSSynchronizationPrimitiveVerify(Cast<JSSynchronizationPrimitive>(*this), isolate);
 }
 
 
@@ -29,12 +29,12 @@ bool IsJSAtomicsMutex_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSAtomicsMutex<JSAtomicsMutex, JSSynchronizationPrimitive>::JSAtomicsMutexVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSAtomicsMutexVerify(JSAtomicsMutex::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSAtomicsMutexVerify(Cast<JSAtomicsMutex>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=15&c=1
 bool IsJSAtomicsCondition_NonInline(Tagged<HeapObject> o) {
   return IsJSAtomicsCondition(o);
 }
@@ -43,7 +43,7 @@ bool IsJSAtomicsCondition_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSAtomicsCondition<JSAtomicsCondition, JSSynchronizationPrimitive>::JSAtomicsConditionVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSAtomicsConditionVerify(JSAtomicsCondition::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSAtomicsConditionVerify(Cast<JSAtomicsCondition>(*this), isolate);
 }
 
 

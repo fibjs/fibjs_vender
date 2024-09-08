@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-of-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
@@ -100,13 +104,11 @@ TF_BUILTIN(TypedArrayOf, CodeStubAssembler) {
   TNode<Object> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<UintPtrT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<UintPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<UintPtrT, UintPtrT, UintPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<UintPtrT, UintPtrT, UintPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<UintPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<UintPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<UintPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<UintPtrT> tmp0;
@@ -116,15 +118,15 @@ TF_BUILTIN(TypedArrayOf, CodeStubAssembler) {
     tmp0 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{torque_arguments.length});
     compiler::CodeAssemblerLabel label2(&ca_);
     tmp1 = Cast_Constructor_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label2);
-    ca_.Goto(&block5);
+    ca_.Goto(&block3);
     if (label2.is_used()) {
       ca_.Bind(&label2);
-      ca_.Goto(&block6);
+      ca_.Goto(&block4);
     }
   }
 
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kNotConstructor, TNode<Object>{parameter1});
   }
 
@@ -135,63 +137,43 @@ TF_BUILTIN(TypedArrayOf, CodeStubAssembler) {
   TNode<BuiltinPtr> tmp7;
   TNode<BuiltinPtr> tmp8;
   TNode<UintPtrT> tmp9;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
     tmp3 = Convert_Number_uintptr_0(state_, TNode<UintPtrT>{tmp0});
     tmp4 = TypedArrayCreateByLength_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp1}, TNode<Number>{tmp3}, kBuiltinNameOf_0(state_));
     tmp5 = CodeStubAssembler(state_).LoadElementsKind(TNode<JSTypedArray>{tmp4});
     std::tie(tmp6, tmp7, tmp8) = GetTypedArrayAccessor_0(state_, TNode<Int32T>{tmp5}).Flatten();
     tmp9 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block9, tmp9);
-  }
-
-  TNode<UintPtrT> phi_bb9_12;
-  TNode<BoolT> tmp10;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_12);
-    tmp10 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{phi_bb9_12}, TNode<UintPtrT>{tmp0});
-    ca_.Branch(tmp10, &block7, std::vector<compiler::Node*>{phi_bb9_12}, &block8, std::vector<compiler::Node*>{phi_bb9_12});
+    ca_.Goto(&block7, tmp9);
   }
 
   TNode<UintPtrT> phi_bb7_12;
+  TNode<BoolT> tmp10;
+  if (block7.is_used()) {
+    ca_.Bind(&block7, &phi_bb7_12);
+    tmp10 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{phi_bb7_12}, TNode<UintPtrT>{tmp0});
+    ca_.Branch(tmp10, &block5, std::vector<compiler::Node*>{phi_bb7_12}, &block6, std::vector<compiler::Node*>{phi_bb7_12});
+  }
+
+  TNode<UintPtrT> phi_bb5_12;
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
   TNode<Smi> tmp13;
-  TNode<Smi> tmp14;
-  TNode<BoolT> tmp15;
-  if (block7.is_used()) {
-    ca_.Bind(&block7, &phi_bb7_12);
-    tmp11 = CodeStubAssembler(state_).Signed(TNode<UintPtrT>{phi_bb7_12});
+  TNode<UintPtrT> tmp14;
+  TNode<UintPtrT> tmp15;
+  if (block5.is_used()) {
+    ca_.Bind(&block5, &phi_bb5_12);
+    tmp11 = CodeStubAssembler(state_).Signed(TNode<UintPtrT>{phi_bb5_12});
     tmp12 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp11});
-tmp13 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(3)).descriptor(), tmp8, parameter0, tmp4, phi_bb7_12, tmp12));
-    tmp14 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
-    tmp15 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp13}, TNode<Smi>{tmp14});
-    ca_.Branch(tmp15, &block12, std::vector<compiler::Node*>{phi_bb7_12, phi_bb7_12, phi_bb7_12}, &block13, std::vector<compiler::Node*>{phi_bb7_12, phi_bb7_12, phi_bb7_12});
+tmp13 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(3)), tmp8, parameter0, tmp4, phi_bb5_12, tmp12));
+    tmp14 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
+    tmp15 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb5_12}, TNode<UintPtrT>{tmp14});
+    ca_.Goto(&block7, tmp15);
   }
 
-  TNode<UintPtrT> phi_bb12_12;
-  TNode<UintPtrT> phi_bb12_19;
-  TNode<UintPtrT> phi_bb12_23;
-  if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_12, &phi_bb12_19, &phi_bb12_23);
-    CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kDetachedOperation, kBuiltinNameOf_0(state_));
-  }
-
-  TNode<UintPtrT> phi_bb13_12;
-  TNode<UintPtrT> phi_bb13_19;
-  TNode<UintPtrT> phi_bb13_23;
-  TNode<UintPtrT> tmp16;
-  TNode<UintPtrT> tmp17;
-  if (block13.is_used()) {
-    ca_.Bind(&block13, &phi_bb13_12, &phi_bb13_19, &phi_bb13_23);
-    tmp16 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
-    tmp17 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb13_12}, TNode<UintPtrT>{tmp16});
-    ca_.Goto(&block9, tmp17);
-  }
-
-  TNode<UintPtrT> phi_bb8_12;
-  if (block8.is_used()) {
-    ca_.Bind(&block8, &phi_bb8_12);
+  TNode<UintPtrT> phi_bb6_12;
+  if (block6.is_used()) {
+    ca_.Bind(&block6, &phi_bb6_12);
     arguments.PopAndReturn(tmp4);
   }
 }

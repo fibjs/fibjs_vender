@@ -301,66 +301,69 @@ TNode<Float32T> Convert_float32_float64_0(compiler::CodeAssemblerState* state_, 
 TNode<Float32T> Convert_float32_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=358&c=1
+TNode<Float16T> Convert_float16_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=362&c=1
+TNode<Float64T> Convert_float64_float16_0(compiler::CodeAssemblerState* state_, TNode<Float16T> p_n);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=365&c=1
 TNode<Float32T> Convert_float32_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_n);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=361&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=368&c=1
 TNode<Float32T> Convert_float32_HeapNumber_0(compiler::CodeAssemblerState* state_, TNode<HeapNumber> p_h);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=364&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=371&c=1
 TNode<Number> Convert_Number_float32_0(compiler::CodeAssemblerState* state_, TNode<Float32T> p_d);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=367&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=374&c=1
 TNode<Number> Convert_Number_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_d);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=370&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=377&c=1
 TNode<Float64T> Convert_float64_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=373&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=380&c=1
 TNode<Number> Convert_Number_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=376&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=383&c=1
 TNode<Number> Convert_Number_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=379&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=386&c=1
 TNode<UintPtrT> Convert_uintptr_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_d);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=382&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=389&c=1
 TNode<UintPtrT> Convert_uintptr_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=385&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=392&c=1
 TNode<UintPtrT> Convert_uintptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_r);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=395&c=1
 TNode<IntPtrT> Convert_intptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_r);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=391&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=398&c=1
 TNode<IntPtrT> Convert_intptr_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=394&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=401&c=1
 TNode<BInt> Convert_bint_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=398&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=405&c=1
 TNode<Float64T> FromConstexpr_float64_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=403&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=410&c=1
 TNode<BInt> Convert_bint_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=407&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=414&c=1
 TNode<IntPtrT> Convert_intptr_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=411&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=418&c=1
 TNode<BInt> Convert_bint_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=415&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=422&c=1
 TNode<Smi> Convert_Smi_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=418&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=425&c=1
 TNode<Int32T> Convert_PromiseState_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_s);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=421&c=1
-TNode<Uint32T> Convert_ScopeFlags_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_s);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=424&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=428&c=1
 TNode<I8x16T> Convert_I8X16_Simd128_0(compiler::CodeAssemblerState* state_, TNode<Simd128T> p_s);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=57&c=10

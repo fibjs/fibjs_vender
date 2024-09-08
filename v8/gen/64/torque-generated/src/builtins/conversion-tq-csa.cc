@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,12 +67,15 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/conversion-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
+#include "torque-generated/src/builtins/builtins-string-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/conversion-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
@@ -159,7 +164,7 @@ TF_BUILTIN(ToNumeric, CodeStubAssembler) {
   TNode<Numeric> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), parameter0, ca_.UncheckedCast<HeapObject>(parameter1));
+    tmp2 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, parameter0, ca_.UncheckedCast<HeapObject>(parameter1));
     CodeStubAssembler(state_).Return(tmp2);
   }
 
@@ -542,7 +547,7 @@ TF_BUILTIN(ToName, CodeStubAssembler) {
   TNode<Object> tmp10;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_2, &phi_bb19_3);
-    tmp10 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonPrimitiveToPrimitive_String), parameter0, ca_.UncheckedCast<JSReceiver>(phi_bb19_3));
+    tmp10 = ca_.CallBuiltin<Object>(Builtin::kNonPrimitiveToPrimitive_String, parameter0, ca_.UncheckedCast<JSReceiver>(phi_bb19_3));
     ca_.Goto(&block3, tmp10);
   }
 
@@ -794,7 +799,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Default, CodeStubAssembler) {
   TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number_Inline), parameter0, parameter1);
+    tmp2 = ca_.CallBuiltin<Object>(Builtin::kOrdinaryToPrimitive_Number_Inline, parameter0, parameter1);
     CodeStubAssembler(state_).Return(tmp2);
   }
 
@@ -834,7 +839,7 @@ TF_BUILTIN(NonPrimitiveToPrimitive_Number, CodeStubAssembler) {
   TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number_Inline), parameter0, parameter1);
+    tmp2 = ca_.CallBuiltin<Object>(Builtin::kOrdinaryToPrimitive_Number_Inline, parameter0, parameter1);
     CodeStubAssembler(state_).Return(tmp2);
   }
 
@@ -991,7 +996,7 @@ TF_BUILTIN(OrdinaryToPrimitive_Number, CodeStubAssembler) {
   TNode<Object> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kOrdinaryToPrimitive_Number_Inline), parameter0, parameter1);
+    tmp0 = ca_.CallBuiltin<Object>(Builtin::kOrdinaryToPrimitive_Number_Inline, parameter0, parameter1);
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -1195,25 +1200,6 @@ TNode<Name> Cast_Name_1(compiler::CodeAssemblerState* state_, TNode<Context> p_c
 
     ca_.Bind(&block7);
   return TNode<Name>{tmp2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/conversion.tq?l=152&c=22
-TNode<Map> UnsafeCast_Map_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Map> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<Map>{tmp0};
 }
 
 } // namespace internal

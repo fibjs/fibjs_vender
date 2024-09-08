@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-delete-property-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -144,7 +148,7 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
   TNode<Boolean> tmp9;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp9 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp6, parameter2, parameter3);
+    tmp9 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, parameter0, tmp6, parameter2, parameter3);
     CodeStubAssembler(state_).Return(tmp9);
   }
 
@@ -239,7 +243,7 @@ TNode<BoolT> Is_Name_PropertyKey_0(compiler::CodeAssemblerState* state_, TNode<C
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-delete-property.tq?l=26&c=37
-TNode<BoolT> Is_JSReceiver_JSReceiver_OR_Null_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
+TNode<BoolT> Is_JSReceiver_Null_OR_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

@@ -17,25 +17,18 @@ class TorqueGeneratedFeedbackCell : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedFeedbackCell<D,P>;
 
-  // Torque type: (class Undefined | class FixedArray | class FeedbackVector)
+  // Torque type: (class Undefined | class ClosureFeedbackCellArray | class FeedbackVector)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
-  inline Tagged<HeapObject> value() const;
+  inline Tagged<Union<ClosureFeedbackCellArray, FeedbackVector, Undefined>> value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
-  inline Tagged<HeapObject> value(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<ClosureFeedbackCellArray, FeedbackVector, Undefined>> value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
-  inline void set_value(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_value(Tagged<Union<ClosureFeedbackCellArray, FeedbackVector, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=7&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=8&c=3
   inline int32_t interrupt_budget() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=7&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=8&c=3
   inline void set_interrupt_budget(int32_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(FeedbackCell)
 
@@ -49,7 +42,7 @@ class TorqueGeneratedFeedbackCell : public P {
   static constexpr int kValueOffset = P::kHeaderSize;
   static constexpr int kValueOffsetEnd = kValueOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kValueOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=7&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=8&c=3
   static constexpr int kInterruptBudgetOffset = kValueOffsetEnd + 1;
   static constexpr int kInterruptBudgetOffsetEnd = kInterruptBudgetOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kInterruptBudgetOffsetEnd + 1;

@@ -1,9 +1,3 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=5&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedStruct<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedStruct<D, P>::TorqueGeneratedStruct(Address ptr)
     : P(ptr) {
@@ -20,14 +14,14 @@ Tagged<Object> TorqueGeneratedAccessorPair<D, P>::getter() const {
 template<class D, class P>
 Tagged<Object> TorqueGeneratedAccessorPair<D, P>::getter(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kGetterOffset);
-  DCHECK(IsHeapObject(value) || IsSmi(value));
+  DCHECK(IsSmi(value) || IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=19&c=3
 template<class D, class P>
 void TorqueGeneratedAccessorPair<D, P>::set_getter(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
+  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
   WRITE_FIELD(*this, kGetterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kGetterOffset, value, mode);
 }
@@ -43,22 +37,16 @@ Tagged<Object> TorqueGeneratedAccessorPair<D, P>::setter() const {
 template<class D, class P>
 Tagged<Object> TorqueGeneratedAccessorPair<D, P>::setter(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kSetterOffset);
-  DCHECK(IsHeapObject(value) || IsSmi(value));
+  DCHECK(IsSmi(value) || IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedAccessorPair<D, P>::set_setter(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
+  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
   WRITE_FIELD(*this, kSetterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSetterOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=18&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedAccessorPair<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -92,12 +80,6 @@ void TorqueGeneratedClassPositions<D, P>::set_end(int value) {
   WRITE_FIELD(*this, kEndOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=13&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedClassPositions<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedClassPositions<D, P>::TorqueGeneratedClassPositions(Address ptr)
     : P(ptr) {
@@ -114,14 +96,14 @@ Tagged<Object> TorqueGeneratedTuple2<D, P>::value1() const {
 template<class D, class P>
 Tagged<Object> TorqueGeneratedTuple2<D, P>::value1(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kValue1Offset);
-  DCHECK(IsHeapObject(value) || IsSmi(value));
+  DCHECK(IsSmi(value) || IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=9&c=3
 template<class D, class P>
 void TorqueGeneratedTuple2<D, P>::set_value1(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
+  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
   WRITE_FIELD(*this, kValue1Offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValue1Offset, value, mode);
 }
@@ -137,22 +119,16 @@ Tagged<Object> TorqueGeneratedTuple2<D, P>::value2() const {
 template<class D, class P>
 Tagged<Object> TorqueGeneratedTuple2<D, P>::value2(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kValue2Offset);
-  DCHECK(IsHeapObject(value) || IsSmi(value));
+  DCHECK(IsSmi(value) || IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedTuple2<D, P>::set_value2(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
+  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
   WRITE_FIELD(*this, kValue2Offset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValue2Offset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/struct.tq?l=8&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedTuple2<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

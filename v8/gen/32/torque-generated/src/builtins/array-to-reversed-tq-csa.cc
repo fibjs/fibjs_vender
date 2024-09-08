@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-reversed-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -510,7 +514,7 @@ TF_BUILTIN(GenericArrayToReversed, CodeStubAssembler) {
     tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp5}, TNode<Number>{tmp6});
     tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Object>{tmp7});
-    tmp9 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), parameter0, tmp2, phi_bb1_5, tmp8);
+    tmp9 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, tmp2, phi_bb1_5, tmp8);
     tmp10 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp11 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb1_5}, TNode<Number>{tmp10});
     ca_.Goto(&block3, tmp11);
@@ -554,7 +558,7 @@ TF_BUILTIN(ArrayPrototypeToReversed, CodeStubAssembler) {
   TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kGenericArrayToReversed), parameter0, parameter1);
+    tmp2 = ca_.CallBuiltin<Object>(Builtin::kGenericArrayToReversed, parameter0, parameter1);
     arguments.PopAndReturn(tmp2);
   }
 

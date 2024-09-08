@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,11 +67,13 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
-#include "torque-generated/src/builtins/array-isarray-tq-csa.h"
+#include "torque-generated/src/builtins/array-flat-tq-csa.h"
 #include "torque-generated/src/builtins/array-map-tq-csa.h"
 #include "torque-generated/src/builtins/array-reverse-tq-csa.h"
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
@@ -91,7 +95,45 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=79&c=1
+TNode<HeapObject> MaybeObjectToStrong_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_maybeObject, compiler::CodeAssemblerLabel* label_IfCleared) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<MaybeObject> tmp0;
+  TNode<HeapObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = (TNode<MaybeObject>{p_maybeObject});
+    compiler::CodeAssemblerLabel label2(&ca_);
+    tmp1 = WeakToStrong_HeapObject_0(state_, TNode<MaybeObject>{tmp0}, &label2);
+    ca_.Goto(&block7);
+    if (label2.is_used()) {
+      ca_.Bind(&label2);
+      ca_.Goto(&block8);
+    }
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(label_IfCleared);
+  }
+
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    ca_.Goto(&block9);
+  }
+
+    ca_.Bind(&block9);
+  return TNode<HeapObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=186&c=1
 TorqueStructfloat64_or_hole_0 kDoubleHole_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -104,7 +146,7 @@ TorqueStructfloat64_or_hole_0 kDoubleHole_0(compiler::CodeAssemblerState* state_
     tmp1 = FromConstexpr_float64_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
   return TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp0}, TNode<Float64T>{tmp1}};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=218&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=227&c=1
 TNode<OrderedHashMap> Cast_OrderedHashMap_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -140,7 +182,7 @@ TNode<OrderedHashMap> Cast_OrderedHashMap_0(compiler::CodeAssemblerState* state_
   return TNode<OrderedHashMap>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=219&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=228&c=1
 TNode<OrderedHashSet> Cast_OrderedHashSet_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -176,7 +218,7 @@ TNode<OrderedHashSet> Cast_OrderedHashSet_0(compiler::CodeAssemblerState* state_
   return TNode<OrderedHashSet>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=229&c=1
 TNode<OrderedNameDictionary> Cast_OrderedNameDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -212,7 +254,7 @@ TNode<OrderedNameDictionary> Cast_OrderedNameDictionary_0(compiler::CodeAssemble
   return TNode<OrderedNameDictionary>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=221&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=230&c=1
 TNode<NameToIndexHashTable> Cast_NameToIndexHashTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -248,7 +290,7 @@ TNode<NameToIndexHashTable> Cast_NameToIndexHashTable_0(compiler::CodeAssemblerS
   return TNode<NameToIndexHashTable>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=222&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=231&c=1
 TNode<RegisteredSymbolTable> Cast_RegisteredSymbolTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -284,7 +326,7 @@ TNode<RegisteredSymbolTable> Cast_RegisteredSymbolTable_0(compiler::CodeAssemble
   return TNode<RegisteredSymbolTable>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=223&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=232&c=1
 TNode<NameDictionary> Cast_NameDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -320,7 +362,7 @@ TNode<NameDictionary> Cast_NameDictionary_0(compiler::CodeAssemblerState* state_
   return TNode<NameDictionary>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=224&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=233&c=1
 TNode<GlobalDictionary> Cast_GlobalDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -356,7 +398,7 @@ TNode<GlobalDictionary> Cast_GlobalDictionary_0(compiler::CodeAssemblerState* st
   return TNode<GlobalDictionary>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=225&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=234&c=1
 TNode<SimpleNumberDictionary> Cast_SimpleNumberDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -392,7 +434,7 @@ TNode<SimpleNumberDictionary> Cast_SimpleNumberDictionary_0(compiler::CodeAssemb
   return TNode<SimpleNumberDictionary>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=226&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=235&c=1
 TNode<EphemeronHashTable> Cast_EphemeronHashTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -428,7 +470,7 @@ TNode<EphemeronHashTable> Cast_EphemeronHashTable_0(compiler::CodeAssemblerState
   return TNode<EphemeronHashTable>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=229&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=238&c=1
 TNode<NumberDictionary> Cast_NumberDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -464,7 +506,7 @@ TNode<NumberDictionary> Cast_NumberDictionary_0(compiler::CodeAssemblerState* st
   return TNode<NumberDictionary>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=240&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=252&c=1
 TNode<InstructionStream> Cast_InstructionStream_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -500,115 +542,7 @@ TNode<InstructionStream> Cast_InstructionStream_0(compiler::CodeAssemblerState* 
   return TNode<InstructionStream>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=246&c=1
-TNode<ObjectBoilerplateDescription> Cast_ObjectBoilerplateDescription_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<ObjectBoilerplateDescription> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = DownCastForTorqueClass_ObjectBoilerplateDescription_0(state_, TNode<HeapObject>{p_obj}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(label_CastError);
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    ca_.Goto(&block5);
-  }
-
-    ca_.Bind(&block5);
-  return TNode<ObjectBoilerplateDescription>{tmp0};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=247&c=1
-TNode<ClosureFeedbackCellArray> Cast_ClosureFeedbackCellArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<ClosureFeedbackCellArray> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = DownCastForTorqueClass_ClosureFeedbackCellArray_0(state_, TNode<HeapObject>{p_obj}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(label_CastError);
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    ca_.Goto(&block5);
-  }
-
-    ca_.Bind(&block5);
-  return TNode<ClosureFeedbackCellArray>{tmp0};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=248&c=1
-TNode<ScriptContextTable> Cast_ScriptContextTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<ScriptContextTable> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = DownCastForTorqueClass_ScriptContextTable_0(state_, TNode<HeapObject>{p_obj}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(label_CastError);
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    ca_.Goto(&block5);
-  }
-
-    ca_.Bind(&block5);
-  return TNode<ScriptContextTable>{tmp0};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=250&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=258&c=1
 TNode<TransitionArray> Cast_TransitionArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -644,7 +578,7 @@ TNode<TransitionArray> Cast_TransitionArray_0(compiler::CodeAssemblerState* stat
   return TNode<TransitionArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=285&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=293&c=1
 TNode<Int32T> FromConstexpr_CallFeedbackContent_constexpr_kTarget_0(compiler::CodeAssemblerState* state_, CallFeedbackContent p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -665,7 +599,7 @@ TNode<Int32T> FromConstexpr_CallFeedbackContent_constexpr_kTarget_0(compiler::Co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=285&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=293&c=1
 TNode<Int32T> FromConstexpr_CallFeedbackContent_constexpr_kReceiver_0(compiler::CodeAssemblerState* state_, CallFeedbackContent p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -686,7 +620,7 @@ TNode<Int32T> FromConstexpr_CallFeedbackContent_constexpr_kReceiver_0(compiler::
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=290&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=298&c=1
 TNode<Int32T> FromConstexpr_PromiseState_constexpr_kPending_0(compiler::CodeAssemblerState* state_, Promise::PromiseState p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -707,7 +641,7 @@ TNode<Int32T> FromConstexpr_PromiseState_constexpr_kPending_0(compiler::CodeAsse
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=290&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=298&c=1
 TNode<Int32T> FromConstexpr_PromiseState_constexpr_kFulfilled_0(compiler::CodeAssemblerState* state_, Promise::PromiseState p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -728,7 +662,7 @@ TNode<Int32T> FromConstexpr_PromiseState_constexpr_kFulfilled_0(compiler::CodeAs
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=290&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=298&c=1
 TNode<Int32T> FromConstexpr_PromiseState_constexpr_kRejected_0(compiler::CodeAssemblerState* state_, Promise::PromiseState p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -749,7 +683,7 @@ TNode<Int32T> FromConstexpr_PromiseState_constexpr_kRejected_0(compiler::CodeAss
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_NO_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -770,7 +704,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_NO_ELEMENTS_0(compiler::CodeA
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_PACKED_SMI_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -791,7 +725,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_PACKED_SMI_ELEMENTS_0(compile
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_HOLEY_SMI_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -812,7 +746,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_HOLEY_SMI_ELEMENTS_0(compiler
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_PACKED_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -833,7 +767,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_PACKED_ELEMENTS_0(compiler::C
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_HOLEY_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -854,7 +788,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_HOLEY_ELEMENTS_0(compiler::Co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_PACKED_DOUBLE_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -875,7 +809,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_PACKED_DOUBLE_ELEMENTS_0(comp
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_HOLEY_DOUBLE_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -896,7 +830,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_HOLEY_DOUBLE_ELEMENTS_0(compi
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_LAST_ANY_NONEXTENSIBLE_ELEMENTS_KIND_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -917,7 +851,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_LAST_ANY_NONEXTENSIBLE_ELEMEN
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_DICTIONARY_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -938,7 +872,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_DICTIONARY_ELEMENTS_0(compile
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT8_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -959,7 +893,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT8_ELEMENTS_0(compiler::Co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_INT8_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -980,7 +914,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_INT8_ELEMENTS_0(compiler::Cod
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT16_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1001,7 +935,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT16_ELEMENTS_0(compiler::C
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_INT16_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1022,7 +956,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_INT16_ELEMENTS_0(compiler::Co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT32_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1043,7 +977,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT32_ELEMENTS_0(compiler::C
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_INT32_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1064,7 +998,28 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_INT32_ELEMENTS_0(compiler::Co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
+TNode<Int32T> FromConstexpr_ElementsKind_constexpr_FLOAT16_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Int32T> tmp0;
+  TNode<Int32T> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.Int32Constant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<Int32T>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Int32T>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_FLOAT32_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1085,7 +1040,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_FLOAT32_ELEMENTS_0(compiler::
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_FLOAT64_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1106,7 +1061,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_FLOAT64_ELEMENTS_0(compiler::
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT8_CLAMPED_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1127,7 +1082,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_UINT8_CLAMPED_ELEMENTS_0(comp
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_BIGUINT64_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1148,7 +1103,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_BIGUINT64_ELEMENTS_0(compiler
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_BIGINT64_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1169,7 +1124,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_BIGINT64_ELEMENTS_0(compiler:
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1190,7 +1145,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_ELEMENTS_0(com
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT8_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1211,7 +1166,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT8_ELEMENTS_0(comp
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT16_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1232,7 +1187,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT16_ELEMENTS_0(co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT16_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1253,7 +1208,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT16_ELEMENTS_0(com
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT32_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1274,7 +1229,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT32_ELEMENTS_0(co
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT32_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1295,7 +1250,28 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT32_ELEMENTS_0(com
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
+TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT16_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Int32T> tmp0;
+  TNode<Int32T> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ca_.Int32Constant(CastToUnderlyingTypeIfEnum(p_o));
+    tmp1 = (TNode<Int32T>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Int32T>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT32_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1316,7 +1292,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT32_ELEMENTS_0(c
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT64_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1337,7 +1313,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT64_ELEMENTS_0(c
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_CLAMPED_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1358,7 +1334,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_CLAMPED_ELEMEN
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGUINT64_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1379,7 +1355,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGUINT64_ELEMENTS_0
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1
 TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGINT64_ELEMENTS_0(compiler::CodeAssemblerState* state_, ElementsKind p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1400,7 +1376,7 @@ TNode<Int32T> FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGINT64_ELEMENTS_0(
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=346&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=356&c=1
 ElementsKind kFirstFixedTypedArrayElementsKind_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1409,7 +1385,7 @@ ElementsKind kFirstFixedTypedArrayElementsKind_0(compiler::CodeAssemblerState* s
     ca_.Bind(&block0);
   return ElementsKind::UINT8_ELEMENTS;}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=348&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=358&c=1
 ElementsKind kFirstRabGsabFixedTypedArrayElementsKind_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1418,7 +1394,7 @@ ElementsKind kFirstRabGsabFixedTypedArrayElementsKind_0(compiler::CodeAssemblerS
     ca_.Bind(&block0);
   return ElementsKind::RAB_GSAB_UINT8_ELEMENTS;}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=351&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=361&c=1
 TNode<Int32T> FromConstexpr_AllocationFlag_constexpr_kNone_0(compiler::CodeAssemblerState* state_, CodeStubAssembler::AllocationFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1439,7 +1415,7 @@ TNode<Int32T> FromConstexpr_AllocationFlag_constexpr_kNone_0(compiler::CodeAssem
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=351&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=361&c=1
 TNode<Int32T> FromConstexpr_AllocationFlag_constexpr_kDoubleAlignment_0(compiler::CodeAssemblerState* state_, CodeStubAssembler::AllocationFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1460,7 +1436,7 @@ TNode<Int32T> FromConstexpr_AllocationFlag_constexpr_kDoubleAlignment_0(compiler
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=351&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=361&c=1
 TNode<Int32T> FromConstexpr_AllocationFlag_constexpr_kPretenured_0(compiler::CodeAssemblerState* state_, CodeStubAssembler::AllocationFlag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1481,7 +1457,7 @@ TNode<Int32T> FromConstexpr_AllocationFlag_constexpr_kPretenured_0(compiler::Cod
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=378&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=388&c=1
 TNode<IntPtrT> kBigIntDigitBits_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1496,7 +1472,7 @@ TNode<IntPtrT> kBigIntDigitBits_0(compiler::CodeAssemblerState* state_) {
     tmp2 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1});
   return TNode<IntPtrT>{tmp2};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1
 TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_NONE_0(compiler::CodeAssemblerState* state_, PropertyAttributes p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1517,7 +1493,7 @@ TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_NONE_0(compiler::CodeAs
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1
 TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_READ_ONLY_0(compiler::CodeAssemblerState* state_, PropertyAttributes p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1538,7 +1514,7 @@ TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_READ_ONLY_0(compiler::C
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1
 TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_DONT_ENUM_0(compiler::CodeAssemblerState* state_, PropertyAttributes p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1559,7 +1535,7 @@ TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_DONT_ENUM_0(compiler::C
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1
 TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_DONT_DELETE_0(compiler::CodeAssemblerState* state_, PropertyAttributes p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1580,7 +1556,7 @@ TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_DONT_DELETE_0(compiler:
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1
 TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_ALL_ATTRIBUTES_MASK_0(compiler::CodeAssemblerState* state_, PropertyAttributes p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1601,7 +1577,7 @@ TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_ALL_ATTRIBUTES_MASK_0(c
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1
 TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_FROZEN_0(compiler::CodeAssemblerState* state_, PropertyAttributes p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1622,7 +1598,7 @@ TNode<Int32T> FromConstexpr_PropertyAttributes_constexpr_FROZEN_0(compiler::Code
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=500&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=515&c=1
 TNode<UintPtrT> kSmiMax_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1633,7 +1609,7 @@ TNode<UintPtrT> kSmiMax_0(compiler::CodeAssemblerState* state_) {
     tmp0 = FromConstexpr_uintptr_constexpr_uintptr_0(state_, kSmiMaxValue);
   return TNode<UintPtrT>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=575&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=599&c=1
 TNode<Hole> TheHole_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1644,7 +1620,18 @@ TNode<Hole> TheHole_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).TheHoleConstant();
   return TNode<Hole>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=576&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=600&c=1
+TNode<Hole> PromiseHole_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+    ca_.Bind(&block0);
+  TNode<Hole> tmp0;
+    tmp0 = CodeStubAssembler(state_).PromiseHoleConstant();
+  return TNode<Hole>{tmp0};}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=601&c=1
 TNode<Null> Null_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1655,7 +1642,7 @@ TNode<Null> Null_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).NullConstant();
   return TNode<Null>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=577&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=602&c=1
 TNode<Undefined> Undefined_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1666,7 +1653,7 @@ TNode<Undefined> Undefined_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).UndefinedConstant();
   return TNode<Undefined>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=578&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=603&c=1
 TNode<True> True_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1677,7 +1664,7 @@ TNode<True> True_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).TrueConstant();
   return TNode<True>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=579&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=604&c=1
 TNode<False> False_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1688,7 +1675,7 @@ TNode<False> False_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).FalseConstant();
   return TNode<False>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=580&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=605&c=1
 TNode<String> kEmptyString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1699,7 +1686,7 @@ TNode<String> kEmptyString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).EmptyStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=581&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=606&c=1
 TNode<String> kLengthString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1710,7 +1697,7 @@ TNode<String> kLengthString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).LengthStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=582&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=607&c=1
 TNode<String> kMessageString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1721,7 +1708,7 @@ TNode<String> kMessageString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).MessageStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=583&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=608&c=1
 TNode<String> kNextString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1732,7 +1719,7 @@ TNode<String> kNextString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).NextStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=584&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=609&c=1
 TNode<String> kReturnString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1743,7 +1730,7 @@ TNode<String> kReturnString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).ReturnStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=585&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=610&c=1
 TNode<String> kSizeString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1754,7 +1741,7 @@ TNode<String> kSizeString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).SizeStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=586&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=611&c=1
 TNode<String> kHasString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1765,7 +1752,7 @@ TNode<String> kHasString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).HasStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=587&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=612&c=1
 TNode<String> kKeysString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1776,7 +1763,7 @@ TNode<String> kKeysString_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).KeysStringConstant();
   return TNode<String>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=589&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=614&c=1
 TNode<HeapNumber> kNaN_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1787,7 +1774,7 @@ TNode<HeapNumber> kNaN_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).NanConstant();
   return TNode<HeapNumber>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=590&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=615&c=1
 TNode<Smi> kZero_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1800,7 +1787,7 @@ TNode<Smi> kZero_0(compiler::CodeAssemblerState* state_) {
     tmp1 = (TNode<Smi>{tmp0});
   return TNode<Smi>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=591&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=616&c=1
 TNode<TaggedIndex> kZeroBitPattern_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1817,7 +1804,7 @@ TNode<TaggedIndex> kZeroBitPattern_0(compiler::CodeAssemblerState* state_) {
     tmp3 = TORQUE_CAST(TNode<MaybeObject>{tmp2});
   return TNode<TaggedIndex>{tmp3};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=597&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=622&c=1
 TNode<BoolT> FromConstexpr_LanguageMode_constexpr_kStrict_0(compiler::CodeAssemblerState* state_, LanguageMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1838,7 +1825,7 @@ TNode<BoolT> FromConstexpr_LanguageMode_constexpr_kStrict_0(compiler::CodeAssemb
   return TNode<BoolT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=597&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=622&c=1
 TNode<BoolT> FromConstexpr_LanguageMode_constexpr_kSloppy_0(compiler::CodeAssemblerState* state_, LanguageMode p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1859,7 +1846,7 @@ TNode<BoolT> FromConstexpr_LanguageMode_constexpr_kSloppy_0(compiler::CodeAssemb
   return TNode<BoolT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=608&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1
 TNode<HeapObject> Cast_Filler_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1895,7 +1882,7 @@ TNode<HeapObject> Cast_Filler_0(compiler::CodeAssemblerState* state_, TNode<Heap
   return TNode<HeapObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=628&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=653&c=1
 TNode<JSSpecialObject> Cast_JSSpecialApiObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1931,7 +1918,7 @@ TNode<JSSpecialObject> Cast_JSSpecialApiObject_0(compiler::CodeAssemblerState* s
   return TNode<JSSpecialObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=631&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=656&c=1
 TNode<JSObject> Cast_JSContextExtensionObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1967,7 +1954,7 @@ TNode<JSObject> Cast_JSContextExtensionObject_0(compiler::CodeAssemblerState* st
   return TNode<JSObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=658&c=1
 TNode<JSObject> Cast_JSError_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2003,7 +1990,7 @@ TNode<JSObject> Cast_JSError_0(compiler::CodeAssemblerState* state_, TNode<HeapO
   return TNode<JSObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=651&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=676&c=1
 TNode<Number> ToIntegerImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2077,7 +2064,7 @@ TNode<Number> ToIntegerImpl_0(compiler::CodeAssemblerState* state_, TNode<Contex
   TNode<Number> tmp5;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_2, &phi_bb12_3);
-    tmp5 = ca_.CallStub<Number>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumber), p_context, ca_.UncheckedCast<HeapObject>(phi_bb12_3));
+    tmp5 = ca_.CallBuiltin<Number>(Builtin::kNonNumberToNumber, p_context, ca_.UncheckedCast<HeapObject>(phi_bb12_3));
     ca_.Goto(&block4, tmp5);
   }
 
@@ -2166,7 +2153,7 @@ TF_BUILTIN(ToInteger, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=683&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=708&c=1
 TNode<Number> ToInteger_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_input) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2192,7 +2179,7 @@ TNode<Number> ToInteger_Inline_0(compiler::CodeAssemblerState* state_, TNode<Con
   TNode<Number> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp2 = ca_.CallStub<Number>(Builtins::CallableFor(ca_.isolate(), Builtin::kToInteger), p_context, p_input);
+    tmp2 = ca_.CallBuiltin<Number>(Builtin::kToInteger, p_context, p_input);
     ca_.Goto(&block1, tmp2);
   }
 
@@ -2211,7 +2198,7 @@ TNode<Number> ToInteger_Inline_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<Number>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=698&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=723&c=1
 TNode<Int32T> FromConstexpr_BigIntHandling_constexpr_kConvertToNumber_0(compiler::CodeAssemblerState* state_, CodeStubAssembler::BigIntHandling p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2232,7 +2219,7 @@ TNode<Int32T> FromConstexpr_BigIntHandling_constexpr_kConvertToNumber_0(compiler
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=698&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=723&c=1
 TNode<Int32T> FromConstexpr_BigIntHandling_constexpr_kThrow_0(compiler::CodeAssemblerState* state_, CodeStubAssembler::BigIntHandling p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2253,7 +2240,7 @@ TNode<Int32T> FromConstexpr_BigIntHandling_constexpr_kThrow_0(compiler::CodeAsse
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=822&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=847&c=1
 TNode<Object> ToPrimitiveDefault_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2284,7 +2271,7 @@ TNode<Object> ToPrimitiveDefault_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<Object> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonPrimitiveToPrimitive_Default), p_context, tmp0);
+    tmp2 = ca_.CallBuiltin<Object>(Builtin::kNonPrimitiveToPrimitive_Default, p_context, tmp0);
     ca_.Goto(&block1, tmp2);
   }
 
@@ -2298,7 +2285,7 @@ TNode<Object> ToPrimitiveDefault_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Object>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=862&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=887&c=1
 TNode<Boolean> Equal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_left, TNode<Object> p_right) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2317,7 +2304,7 @@ TNode<Boolean> Equal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   return TNode<Boolean>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=898&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=923&c=1
 TNode<BoolT> ElementsKindNotEqual_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_k1, TNode<Int32T> p_k2) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2338,7 +2325,7 @@ TNode<BoolT> ElementsKindNotEqual_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=956&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=981&c=1
 TNode<BoolT> IsNumberEqual_0(compiler::CodeAssemblerState* state_, TNode<Number> p_a, TNode<Number> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2388,7 +2375,7 @@ TNode<BoolT> IsNumberEqual_0(compiler::CodeAssemblerState* state_, TNode<Number>
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=959&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=984&c=1
 TNode<BoolT> IsNumberNotEqual_0(compiler::CodeAssemblerState* state_, TNode<Number> p_a, TNode<Number> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2409,7 +2396,7 @@ TNode<BoolT> IsNumberNotEqual_0(compiler::CodeAssemblerState* state_, TNode<Numb
   return TNode<BoolT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=964&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=989&c=1
 TNode<BoolT> NumberIsLessThan_0(compiler::CodeAssemblerState* state_, TNode<Number> p_a, TNode<Number> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2459,7 +2446,7 @@ TNode<BoolT> NumberIsLessThan_0(compiler::CodeAssemblerState* state_, TNode<Numb
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=969&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=994&c=1
 TNode<BoolT> NumberIsLessThanOrEqual_0(compiler::CodeAssemblerState* state_, TNode<Number> p_a, TNode<Number> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2509,7 +2496,7 @@ TNode<BoolT> NumberIsLessThanOrEqual_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=973&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=998&c=1
 TNode<BoolT> NumberIsGreaterThan_0(compiler::CodeAssemblerState* state_, TNode<Number> p_a, TNode<Number> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2528,7 +2515,7 @@ TNode<BoolT> NumberIsGreaterThan_0(compiler::CodeAssemblerState* state_, TNode<N
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=976&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1001&c=1
 TNode<BoolT> NumberIsGreaterThanOrEqual_0(compiler::CodeAssemblerState* state_, TNode<Number> p_a, TNode<Number> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2547,7 +2534,7 @@ TNode<BoolT> NumberIsGreaterThanOrEqual_0(compiler::CodeAssemblerState* state_, 
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=982&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1007&c=1
 TNode<BoolT> Float64IsNaN_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2597,7 +2584,7 @@ TNode<BoolT> Float64IsNaN_0(compiler::CodeAssemblerState* state_, TNode<Float64T
   return TNode<BoolT>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1160&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1185&c=1
 TNode<Number> Min_0(compiler::CodeAssemblerState* state_, TNode<Number> p_x, TNode<Number> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2616,7 +2603,7 @@ TNode<Number> Min_0(compiler::CodeAssemblerState* state_, TNode<Number> p_x, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1163&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1188&c=1
 TNode<Number> Max_0(compiler::CodeAssemblerState* state_, TNode<Number> p_x, TNode<Number> p_y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2635,7 +2622,7 @@ TNode<Number> Max_0(compiler::CodeAssemblerState* state_, TNode<Number> p_x, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1201&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1226&c=1
 TNode<UintPtrT> LoadJSArrayLengthAsUintPtr_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_array) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2658,7 +2645,7 @@ TNode<UintPtrT> LoadJSArrayLengthAsUintPtr_0(compiler::CodeAssemblerState* state
   return TNode<UintPtrT>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1207&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1232&c=1
 TNode<UintPtrT> LoadStringLengthAsUintPtr_0(compiler::CodeAssemblerState* state_, TNode<String> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2679,7 +2666,7 @@ TNode<UintPtrT> LoadStringLengthAsUintPtr_0(compiler::CodeAssemblerState* state_
   return TNode<UintPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1215&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1240&c=1
 TNode<String> StringAdd_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_a, TNode<String> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2690,7 +2677,7 @@ TNode<String> StringAdd_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   TNode<String> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringAdd_CheckNone), p_context, p_a, p_b);
+    tmp0 = ca_.CallBuiltin<String>(Builtin::kStringAdd_CheckNone, p_context, p_a, p_b);
     ca_.Goto(&block2);
   }
 
@@ -2698,7 +2685,7 @@ TNode<String> StringAdd_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   return TNode<String>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1245&c=1
 TNode<BoolT> PromiseStateEquals_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_s1, TNode<Int32T> p_s2) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2717,7 +2704,7 @@ TNode<BoolT> PromiseStateEquals_0(compiler::CodeAssemblerState* state_, TNode<In
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1306&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1333&c=1
 TNode<Int32T> Int32Constant_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2736,7 +2723,7 @@ TNode<Int32T> Int32Constant_0(compiler::CodeAssemblerState* state_, IntegerLiter
   return TNode<Int32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1319&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1346&c=1
 TNode<Smi> SmiConstant_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_il) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2755,7 +2742,7 @@ TNode<Smi> SmiConstant_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1326&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1353&c=1
 TNode<IntPtrT> IntPtrConstant_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_il) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2774,7 +2761,7 @@ TNode<IntPtrT> IntPtrConstant_0(compiler::CodeAssemblerState* state_, IntegerLit
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1350&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1379&c=1
 TNode<Map> kFixedArrayMap_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2785,7 +2772,7 @@ TNode<Map> kFixedArrayMap_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).FixedArrayMapConstant();
   return TNode<Map>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1351&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1380&c=1
 TNode<Map> kFixedDoubleArrayMap_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2796,7 +2783,7 @@ TNode<Map> kFixedDoubleArrayMap_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).FixedDoubleArrayMapConstant();
   return TNode<Map>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1352&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1381&c=1
 TNode<Map> kCOWMap_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2807,7 +2794,7 @@ TNode<Map> kCOWMap_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).FixedCOWArrayMapConstant();
   return TNode<Map>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1353&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1382&c=1
 TNode<ByteArray> kEmptyByteArray_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2818,7 +2805,7 @@ TNode<ByteArray> kEmptyByteArray_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).EmptyByteArrayConstant();
   return TNode<ByteArray>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1354&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1383&c=1
 TNode<FixedArray> kEmptyFixedArray_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2829,7 +2816,7 @@ TNode<FixedArray> kEmptyFixedArray_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).EmptyFixedArrayConstant();
   return TNode<FixedArray>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1355&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1384&c=1
 TNode<Map> kPromiseCapabilityMap_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2840,7 +2827,7 @@ TNode<Map> kPromiseCapabilityMap_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).PromiseCapabilityMapConstant();
   return TNode<Map>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1357&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1386&c=1
 TNode<Map> kSeqOneByteStringMap_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2851,7 +2838,7 @@ TNode<Map> kSeqOneByteStringMap_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).SeqOneByteStringMapConstant();
   return TNode<Map>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1359&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1388&c=1
 TNode<Map> kSeqTwoByteStringMap_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2862,7 +2849,7 @@ TNode<Map> kSeqTwoByteStringMap_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).SeqTwoByteStringMapConstant();
   return TNode<Map>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1389&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1419&c=1
 void StoreFastJSArrayLength_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_array, TNode<Smi> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2881,7 +2868,7 @@ void StoreFastJSArrayLength_0(compiler::CodeAssemblerState* state_, TNode<JSArra
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1409&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1439&c=1
 TNode<Int32T> FastHoleyElementsKind_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2944,7 +2931,7 @@ TNode<Int32T> FastHoleyElementsKind_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Int32T>{phi_bb11_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1419&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1449&c=1
 TNode<Int32T> AllowDoubleElements_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3005,7 +2992,7 @@ TNode<Int32T> AllowDoubleElements_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Int32T>{phi_bb7_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1428&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1458&c=1
 TNode<Int32T> AllowNonNumberElements_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3102,7 +3089,7 @@ TNode<Int32T> AllowNonNumberElements_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Int32T>{phi_bb13_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1441&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1471&c=1
 TNode<JSFunction> GetObjectFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3126,7 +3113,7 @@ TNode<JSFunction> GetObjectFunction_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<JSFunction>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1444&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1474&c=1
 TNode<JSFunction> GetArrayFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3150,7 +3137,7 @@ TNode<JSFunction> GetArrayFunction_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<JSFunction>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1447&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1477&c=1
 TNode<JSReceiver> GetArrayBufferFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3174,7 +3161,7 @@ TNode<JSReceiver> GetArrayBufferFunction_0(compiler::CodeAssemblerState* state_,
   return TNode<JSReceiver>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1450&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1480&c=1
 TNode<JSFunction> GetArrayBufferNoInitFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3198,7 +3185,7 @@ TNode<JSFunction> GetArrayBufferNoInitFunction_0(compiler::CodeAssemblerState* s
   return TNode<JSFunction>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1453&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1483&c=1
 TNode<JSFunction> GetIteratorFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3222,7 +3209,31 @@ TNode<JSFunction> GetIteratorFunction_0(compiler::CodeAssemblerState* state_, TN
   return TNode<JSFunction>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1456&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1486&c=1
+TNode<JSFunction> GetStringFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  TNode<IntPtrT> tmp2;
+  TNode<JSFunction> tmp3;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = STRING_FUNCTION_INDEX_0(state_);
+    std::tie(tmp1, tmp2) = NativeContextSlot_Context_JSFunction_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp0}).Flatten();
+    tmp3 = CodeStubAssembler(state_).LoadReference<JSFunction>(CodeStubAssembler::Reference{tmp1, tmp2});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<JSFunction>{tmp3};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1489&c=1
 TNode<Map> GetFastPackedElementsJSArrayMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3246,7 +3257,7 @@ TNode<Map> GetFastPackedElementsJSArrayMap_0(compiler::CodeAssemblerState* state
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1459&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1492&c=1
 TNode<Map> GetFastPackedSmiElementsJSArrayMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3270,7 +3281,7 @@ TNode<Map> GetFastPackedSmiElementsJSArrayMap_0(compiler::CodeAssemblerState* st
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1463&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1496&c=1
 TNode<Map> GetProxyRevocableResultMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3294,7 +3305,7 @@ TNode<Map> GetProxyRevocableResultMap_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1466&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1499&c=1
 TNode<Map> GetIteratorResultMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3318,7 +3329,7 @@ TNode<Map> GetIteratorResultMap_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1469&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1502&c=1
 TNode<Map> GetInitialStringIteratorMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3342,7 +3353,7 @@ TNode<Map> GetInitialStringIteratorMap_0(compiler::CodeAssemblerState* state_, T
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1472&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1505&c=1
 TNode<JSReceiver> GetReflectApply_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3366,7 +3377,7 @@ TNode<JSReceiver> GetReflectApply_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<JSReceiver>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1475&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1508&c=1
 TNode<RegExpMatchInfo> GetRegExpLastMatchInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3390,7 +3401,7 @@ TNode<RegExpMatchInfo> GetRegExpLastMatchInfo_0(compiler::CodeAssemblerState* st
   return TNode<RegExpMatchInfo>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1478&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1511&c=1
 TNode<Map> GetStrictArgumentsMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3414,7 +3425,7 @@ TNode<Map> GetStrictArgumentsMap_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1514&c=1
 TNode<Map> GetSloppyArgumentsMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3438,7 +3449,7 @@ TNode<Map> GetSloppyArgumentsMap_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1484&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1517&c=1
 TNode<Map> GetFastAliasedArgumentsMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3462,7 +3473,7 @@ TNode<Map> GetFastAliasedArgumentsMap_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Map>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1487&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1520&c=1
 TNode<Map> GetWeakCellMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3481,7 +3492,7 @@ TNode<Map> GetWeakCellMap_0(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<Map>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1490&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1523&c=1
 TNode<JSFunction> GetPrototypeApplyFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3505,7 +3516,31 @@ TNode<JSFunction> GetPrototypeApplyFunction_0(compiler::CodeAssemblerState* stat
   return TNode<JSFunction>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1516&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1526&c=1
+TNode<JSObject> GetIteratorPrototype_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  TNode<IntPtrT> tmp2;
+  TNode<JSObject> tmp3;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = INITIAL_ITERATOR_PROTOTYPE_INDEX_0(state_);
+    std::tie(tmp1, tmp2) = NativeContextSlot_Context_JSObject_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp0}).Flatten();
+    tmp3 = CodeStubAssembler(state_).LoadReference<JSObject>(CodeStubAssembler::Reference{tmp1, tmp2});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<JSObject>{tmp3};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1552&c=1
 TNode<BoolT> NumberIsNaN_0(compiler::CodeAssemblerState* state_, TNode<Number> p_number) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3554,7 +3589,7 @@ TNode<BoolT> NumberIsNaN_0(compiler::CodeAssemblerState* state_, TNode<Number> p
   return TNode<BoolT>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1529&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1565&c=1
 TNode<BoolT> IsForceSlowPath_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3600,7 +3635,7 @@ TNode<BoolT> IsForceSlowPath_0(compiler::CodeAssemblerState* state_) {
   return TNode<BoolT>{phi_bb1_0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1539&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1575&c=1
 TNode<BoolT> ToBoolean_0(compiler::CodeAssemblerState* state_, TNode<Object> p_obj) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3650,7 +3685,7 @@ TNode<BoolT> ToBoolean_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o
   return TNode<BoolT>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1543&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1579&c=1
 TNode<Object> RequireObjectCoercible_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, const char* p_name) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3681,7 +3716,7 @@ TNode<Object> RequireObjectCoercible_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Object>{p_value};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1553&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1591&c=1
 TNode<BoolT> SameValue_0(compiler::CodeAssemblerState* state_, TNode<Object> p_a, TNode<Object> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3731,77 +3766,7 @@ TNode<BoolT> SameValue_0(compiler::CodeAssemblerState* state_, TNode<Object> p_a
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1556&c=1
-TNode<BoolT> SameValue_1(compiler::CodeAssemblerState* state_, TNode<Object> p_a, TNode<Object> p_b) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Hole> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_TheHole_0(state_, TNode<Object>{p_a}, &label1);
-    ca_.Goto(&block4);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block5);
-    }
-  }
-
-  TNode<Hole> tmp2;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_TheHole_0(state_, TNode<Object>{p_b}, &label3);
-    ca_.Goto(&block18);
-    if (label3.is_used()) {
-      ca_.Bind(&label3);
-      ca_.Goto(&block19);
-    }
-  }
-
-  TNode<Hole> tmp4;
-  TNode<BoolT> tmp5;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp4 = TORQUE_CAST(TNode<Object>{p_b});
-    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{tmp0});
-    ca_.Goto(&block1, tmp5);
-  }
-
-  TNode<BoolT> tmp6;
-  if (block19.is_used()) {
-    ca_.Bind(&block19);
-    tmp6 = SameValue_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(p_a)}, TNode<Object>{ca_.UncheckedCast<Object>(p_b)});
-    ca_.Goto(&block1, tmp6);
-  }
-
-  TNode<BoolT> tmp7;
-  if (block18.is_used()) {
-    ca_.Bind(&block18);
-    tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block1, tmp7);
-  }
-
-  TNode<BoolT> phi_bb1_2;
-  if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_2);
-    ca_.Goto(&block20);
-  }
-
-    ca_.Bind(&block20);
-  return TNode<BoolT>{phi_bb1_2};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1576&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1598&c=1
 void CheckIntegerIndexAdditionOverflow_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_index1, TNode<UintPtrT> p_index2, TNode<UintPtrT> p_limit, compiler::CodeAssemblerLabel* label_IfOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3891,7 +3856,7 @@ void CheckIntegerIndexAdditionOverflow_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block20);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1600&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1622&c=1
 int31_t kModeValueIsSafeIntegerUintPtr_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3900,7 +3865,7 @@ int31_t kModeValueIsSafeIntegerUintPtr_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1603&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1625&c=1
 int31_t kModeValueIsSafeInteger_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3909,7 +3874,7 @@ int31_t kModeValueIsSafeInteger_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1605&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1627&c=1
 int31_t kModeValueIsAnyNumber_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3918,7 +3883,7 @@ int31_t kModeValueIsAnyNumber_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1607&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1629&c=1
 TNode<UintPtrT> TryNumberToUintPtr_0(compiler::CodeAssemblerState* state_, TNode<Number> p_valueNumber, int31_t p_kMode, compiler::CodeAssemblerLabel* label_IfLessThanZero, compiler::CodeAssemblerLabel* label_IfUIntPtrOverflow, compiler::CodeAssemblerLabel* label_IfSafeIntegerOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4142,7 +4107,7 @@ TNode<UintPtrT> TryNumberToUintPtr_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<UintPtrT>{phi_bb56_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1655&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1677&c=1
 TNode<UintPtrT> ChangeUintPtrNumberToUintPtr_0(compiler::CodeAssemblerState* state_, TNode<Number> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4206,7 +4171,7 @@ TNode<UintPtrT> ChangeUintPtrNumberToUintPtr_0(compiler::CodeAssemblerState* sta
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1665&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1687&c=1
 TNode<UintPtrT> ChangeSafeIntegerNumberToUintPtr_0(compiler::CodeAssemblerState* state_, TNode<Number> p_value, compiler::CodeAssemblerLabel* label_IfUIntPtrOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4270,7 +4235,7 @@ TNode<UintPtrT> ChangeSafeIntegerNumberToUintPtr_0(compiler::CodeAssemblerState*
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1676&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1698&c=1
 TNode<UintPtrT> ToUintPtr_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_IfLessThanZero, compiler::CodeAssemblerLabel* label_IfUIntPtrOverflow, compiler::CodeAssemblerLabel* label_IfSafeIntegerOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4356,7 +4321,7 @@ TNode<UintPtrT> ToUintPtr_0(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<UintPtrT>{phi_bb11_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1689&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1711&c=1
 TNode<UintPtrT> ToIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_IfRangeError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4448,7 +4413,7 @@ TNode<UintPtrT> ToIndex_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   return TNode<UintPtrT>{phi_bb9_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1700&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1722&c=1
 TNode<Number> GetLengthProperty_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4555,7 +4520,7 @@ TNode<Number> GetLengthProperty_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Number>{phi_bb16_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1722&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1744&c=1
 TNode<JSReceiver> GetMethod_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<Name> p_name, compiler::CodeAssemblerLabel* label_IfNullOrUndefined, compiler::CodeAssemblerLabel* label_IfMethodNotCallable, compiler::TypedCodeAssemblerVariable<Object>* label_IfMethodNotCallable_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4635,7 +4600,7 @@ TNode<JSReceiver> GetMethod_0(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<JSReceiver>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1737&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1759&c=1
 TNode<JSReceiver> GetMethod_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_name, compiler::CodeAssemblerLabel* label_IfNullOrUndefined) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4683,7 +4648,7 @@ TNode<JSReceiver> GetMethod_1(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<JSReceiver>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1750&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1772&c=1
 TNode<JSReceiver> GetMethod_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, const char* p_name, compiler::CodeAssemblerLabel* label_IfNullOrUndefined) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4721,7 +4686,7 @@ TNode<JSReceiver> GetMethod_2(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<JSReceiver>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1756&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1778&c=1
 TNode<JSReceiver> GetMethod_3(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<Symbol> p_symbol, compiler::CodeAssemblerLabel* label_IfNullOrUndefined) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4800,7 +4765,7 @@ TNode<JSReceiver> GetMethod_3(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<JSReceiver>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1769&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1791&c=1
 TNode<JSReceiver> GetInterestingMethod_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<String> p_name, compiler::CodeAssemblerLabel* label_IfNullOrUndefined) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4902,7 +4867,7 @@ TNode<JSReceiver> GetInterestingMethod_0(compiler::CodeAssemblerState* state_, T
   return TNode<JSReceiver>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1788&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1810&c=1
 TNode<UintPtrT> ConvertAndClampRelativeIndex_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_index, TNode<UintPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4923,7 +4888,7 @@ TNode<UintPtrT> ConvertAndClampRelativeIndex_1(compiler::CodeAssemblerState* sta
   return TNode<UintPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1797&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1819&c=1
 TNode<UintPtrT> ConvertAndClampRelativeIndex_2(compiler::CodeAssemblerState* state_, TNode<Number> p_indexNumber, TNode<UintPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4979,7 +4944,7 @@ TNode<UintPtrT> ConvertAndClampRelativeIndex_2(compiler::CodeAssemblerState* sta
   return TNode<UintPtrT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1811&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1833&c=1
 TNode<UintPtrT> ConvertRelativeIndex_1(compiler::CodeAssemblerState* state_, TNode<Number> p_indexNumber, TNode<UintPtrT> p_length, compiler::CodeAssemblerLabel* label_OutOfBoundsLow, compiler::CodeAssemblerLabel* label_OutOfBoundsHigh) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5142,7 +5107,7 @@ TNode<UintPtrT> ConvertRelativeIndex_1(compiler::CodeAssemblerState* state_, TNo
   return TNode<UintPtrT>{phi_bb3_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1856&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1878&c=1
 TNode<UintPtrT> ClampToIndexRange_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_index, TNode<UintPtrT> p_limit) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5163,7 +5128,7 @@ TNode<UintPtrT> ClampToIndexRange_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<UintPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1865&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1887&c=1
 TNode<UintPtrT> ClampToIndexRange_1(compiler::CodeAssemblerState* state_, TNode<Number> p_indexNumber, TNode<UintPtrT> p_limit) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5280,7 +5245,7 @@ TNode<UintPtrT> ClampToIndexRange_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<UintPtrT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1902&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1924&c=1
 TNode<BoolT> IsFastJSArray_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5322,7 +5287,7 @@ TNode<BoolT> IsFastJSArray_0(compiler::CodeAssemblerState* state_, TNode<Object>
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1910&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1932&c=1
 void BranchIfFastJSArray_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_True, compiler::CodeAssemblerLabel* label_False) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5349,7 +5314,7 @@ void BranchIfFastJSArray_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1920&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1942&c=1
 void BranchIfFastJSArrayForRead_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_True, compiler::CodeAssemblerLabel* label_False) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5396,7 +5361,7 @@ void BranchIfFastJSArrayForRead_0(compiler::CodeAssemblerState* state_, TNode<Ob
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1933&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1955&c=1
 TNode<BoolT> IsFastJSArrayWithNoCustomIteration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5415,7 +5380,7 @@ TNode<BoolT> IsFastJSArrayWithNoCustomIteration_0(compiler::CodeAssemblerState* 
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1938&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1960&c=1
 TNode<BoolT> IsFastJSArrayForReadWithNoCustomIteration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5844,7 +5809,7 @@ TF_BUILTIN(FastCreateDataProperty, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2012&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2034&c=1
 void VerifiedUnreachable_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5855,12 +5820,12 @@ void VerifiedUnreachable_0(compiler::CodeAssemblerState* state_) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp0}, "static_assert(false) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2013&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp0}, "static_assert(false) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2035&c=3");
     CodeStubAssembler(state_).Unreachable();
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2017&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2039&c=1
 TNode<BoolT> Float64IsSomeInfinity_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5910,7 +5875,7 @@ TNode<BoolT> Float64IsSomeInfinity_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<BoolT>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2024&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2046&c=1
 TNode<BoolT> IsIntegerOrSomeInfinity_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5996,7 +5961,7 @@ TNode<BoolT> IsIntegerOrSomeInfinity_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<BoolT>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2041&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2063&c=1
 TNode<BoolT> NumberIsSomeInfinity_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6045,7 +6010,7 @@ TNode<BoolT> NumberIsSomeInfinity_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2052&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2074&c=1
 TNode<Object> ReplaceTheHoleWithUndefined_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6090,7 +6055,7 @@ TNode<Object> ReplaceTheHoleWithUndefined_0(compiler::CodeAssemblerState* state_
   return TNode<Object>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2087&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2109&c=1
 TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kHash_0(compiler::CodeAssemblerState* state_, Name::HashFieldType p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6111,7 +6076,7 @@ TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kHash_0(compiler::CodeAssem
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2087&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2109&c=1
 TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kIntegerIndex_0(compiler::CodeAssemblerState* state_, Name::HashFieldType p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6132,7 +6097,7 @@ TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kIntegerIndex_0(compiler::C
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2087&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2109&c=1
 TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kForwardingIndex_0(compiler::CodeAssemblerState* state_, Name::HashFieldType p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6153,7 +6118,7 @@ TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kForwardingIndex_0(compiler
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2087&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2109&c=1
 TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kEmpty_0(compiler::CodeAssemblerState* state_, Name::HashFieldType p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6174,7 +6139,7 @@ TNode<Uint32T> FromConstexpr_HashFieldType_constexpr_kEmpty_0(compiler::CodeAsse
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2094&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2116&c=1
 TNode<BoolT> HashFieldTypeEquals_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_s1, TNode<Uint32T> p_s2) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6193,7 +6158,45 @@ TNode<BoolT> HashFieldTypeEquals_0(compiler::CodeAssemblerState* state_, TNode<U
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=218&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=83&c=10
+TNode<HeapObject> WeakToStrong_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_x, compiler::CodeAssemblerLabel* label_ClearedWeakPointer) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<HeapObject> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = CodeStubAssembler(state_).GetHeapObjectAssumeWeak(TNode<MaybeObject>{p_x}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(label_ClearedWeakPointer);
+  }
+
+  TNode<HeapObject> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp2 = (TNode<HeapObject>{tmp0});
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<HeapObject>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=227&c=1
 TNode<OrderedHashMap> DownCastForTorqueClass_OrderedHashMap_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6220,7 +6223,7 @@ TNode<OrderedHashMap> DownCastForTorqueClass_OrderedHashMap_0(compiler::CodeAsse
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(182), static_cast<InstanceType>(182))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(212), static_cast<InstanceType>(212))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6263,7 +6266,7 @@ TNode<OrderedHashMap> DownCastForTorqueClass_OrderedHashMap_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(182));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(212));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6297,12 +6300,12 @@ TNode<OrderedHashMap> DownCastForTorqueClass_OrderedHashMap_0(compiler::CodeAsse
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(182), static_cast<InstanceType>(182))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(212), static_cast<InstanceType>(212))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(182));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(212));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6338,7 +6341,7 @@ TNode<OrderedHashMap> DownCastForTorqueClass_OrderedHashMap_0(compiler::CodeAsse
   return TNode<OrderedHashMap>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=219&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=228&c=1
 TNode<OrderedHashSet> DownCastForTorqueClass_OrderedHashSet_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6365,7 +6368,7 @@ TNode<OrderedHashSet> DownCastForTorqueClass_OrderedHashSet_0(compiler::CodeAsse
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(183), static_cast<InstanceType>(183))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(213), static_cast<InstanceType>(213))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6408,7 +6411,7 @@ TNode<OrderedHashSet> DownCastForTorqueClass_OrderedHashSet_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(183));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(213));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6442,12 +6445,12 @@ TNode<OrderedHashSet> DownCastForTorqueClass_OrderedHashSet_0(compiler::CodeAsse
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(183), static_cast<InstanceType>(183))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(213), static_cast<InstanceType>(213))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(183));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(213));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6483,7 +6486,7 @@ TNode<OrderedHashSet> DownCastForTorqueClass_OrderedHashSet_0(compiler::CodeAsse
   return TNode<OrderedHashSet>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=229&c=1
 TNode<OrderedNameDictionary> DownCastForTorqueClass_OrderedNameDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6510,7 +6513,7 @@ TNode<OrderedNameDictionary> DownCastForTorqueClass_OrderedNameDictionary_0(comp
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(184), static_cast<InstanceType>(184))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(214), static_cast<InstanceType>(214))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6553,7 +6556,7 @@ TNode<OrderedNameDictionary> DownCastForTorqueClass_OrderedNameDictionary_0(comp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(184));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(214));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6587,12 +6590,12 @@ TNode<OrderedNameDictionary> DownCastForTorqueClass_OrderedNameDictionary_0(comp
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(184), static_cast<InstanceType>(184))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(214), static_cast<InstanceType>(214))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(184));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(214));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6628,7 +6631,7 @@ TNode<OrderedNameDictionary> DownCastForTorqueClass_OrderedNameDictionary_0(comp
   return TNode<OrderedNameDictionary>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=221&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=230&c=1
 TNode<NameToIndexHashTable> DownCastForTorqueClass_NameToIndexHashTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6655,7 +6658,7 @@ TNode<NameToIndexHashTable> DownCastForTorqueClass_NameToIndexHashTable_0(compil
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(180), static_cast<InstanceType>(180))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(210), static_cast<InstanceType>(210))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6698,7 +6701,7 @@ TNode<NameToIndexHashTable> DownCastForTorqueClass_NameToIndexHashTable_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(180));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(210));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6732,12 +6735,12 @@ TNode<NameToIndexHashTable> DownCastForTorqueClass_NameToIndexHashTable_0(compil
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(180), static_cast<InstanceType>(180))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(210), static_cast<InstanceType>(210))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(180));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(210));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6773,7 +6776,7 @@ TNode<NameToIndexHashTable> DownCastForTorqueClass_NameToIndexHashTable_0(compil
   return TNode<NameToIndexHashTable>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=222&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=231&c=1
 TNode<RegisteredSymbolTable> DownCastForTorqueClass_RegisteredSymbolTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6800,7 +6803,7 @@ TNode<RegisteredSymbolTable> DownCastForTorqueClass_RegisteredSymbolTable_0(comp
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(185), static_cast<InstanceType>(185))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(215), static_cast<InstanceType>(215))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6843,7 +6846,7 @@ TNode<RegisteredSymbolTable> DownCastForTorqueClass_RegisteredSymbolTable_0(comp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(185));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(215));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6877,12 +6880,12 @@ TNode<RegisteredSymbolTable> DownCastForTorqueClass_RegisteredSymbolTable_0(comp
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(185), static_cast<InstanceType>(185))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(215), static_cast<InstanceType>(215))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(185));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(215));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6918,7 +6921,7 @@ TNode<RegisteredSymbolTable> DownCastForTorqueClass_RegisteredSymbolTable_0(comp
   return TNode<RegisteredSymbolTable>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=223&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=232&c=1
 TNode<NameDictionary> DownCastForTorqueClass_NameDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6945,7 +6948,7 @@ TNode<NameDictionary> DownCastForTorqueClass_NameDictionary_0(compiler::CodeAsse
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(179), static_cast<InstanceType>(179))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(209), static_cast<InstanceType>(209))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6988,7 +6991,7 @@ TNode<NameDictionary> DownCastForTorqueClass_NameDictionary_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(179));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(209));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7022,12 +7025,12 @@ TNode<NameDictionary> DownCastForTorqueClass_NameDictionary_0(compiler::CodeAsse
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(179), static_cast<InstanceType>(179))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(209), static_cast<InstanceType>(209))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(179));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(209));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7063,7 +7066,7 @@ TNode<NameDictionary> DownCastForTorqueClass_NameDictionary_0(compiler::CodeAsse
   return TNode<NameDictionary>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=224&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=233&c=1
 TNode<GlobalDictionary> DownCastForTorqueClass_GlobalDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7090,7 +7093,7 @@ TNode<GlobalDictionary> DownCastForTorqueClass_GlobalDictionary_0(compiler::Code
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(178), static_cast<InstanceType>(178))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(208), static_cast<InstanceType>(208))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7133,7 +7136,7 @@ TNode<GlobalDictionary> DownCastForTorqueClass_GlobalDictionary_0(compiler::Code
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(178));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(208));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7167,12 +7170,12 @@ TNode<GlobalDictionary> DownCastForTorqueClass_GlobalDictionary_0(compiler::Code
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(178), static_cast<InstanceType>(178))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(208), static_cast<InstanceType>(208))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(178));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(208));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7208,7 +7211,7 @@ TNode<GlobalDictionary> DownCastForTorqueClass_GlobalDictionary_0(compiler::Code
   return TNode<GlobalDictionary>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=225&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=234&c=1
 TNode<SimpleNumberDictionary> DownCastForTorqueClass_SimpleNumberDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7235,7 +7238,7 @@ TNode<SimpleNumberDictionary> DownCastForTorqueClass_SimpleNumberDictionary_0(co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(186), static_cast<InstanceType>(186))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(216), static_cast<InstanceType>(216))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7278,7 +7281,7 @@ TNode<SimpleNumberDictionary> DownCastForTorqueClass_SimpleNumberDictionary_0(co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(186));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(216));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7312,12 +7315,12 @@ TNode<SimpleNumberDictionary> DownCastForTorqueClass_SimpleNumberDictionary_0(co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(186), static_cast<InstanceType>(186))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(216), static_cast<InstanceType>(216))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(186));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(216));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7353,7 +7356,7 @@ TNode<SimpleNumberDictionary> DownCastForTorqueClass_SimpleNumberDictionary_0(co
   return TNode<SimpleNumberDictionary>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=226&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=235&c=1
 TNode<EphemeronHashTable> DownCastForTorqueClass_EphemeronHashTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7380,7 +7383,7 @@ TNode<EphemeronHashTable> DownCastForTorqueClass_EphemeronHashTable_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(177), static_cast<InstanceType>(177))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(207), static_cast<InstanceType>(207))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7423,7 +7426,7 @@ TNode<EphemeronHashTable> DownCastForTorqueClass_EphemeronHashTable_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(177));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(207));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7457,12 +7460,12 @@ TNode<EphemeronHashTable> DownCastForTorqueClass_EphemeronHashTable_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(177), static_cast<InstanceType>(177))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(207), static_cast<InstanceType>(207))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(177));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(207));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7498,7 +7501,7 @@ TNode<EphemeronHashTable> DownCastForTorqueClass_EphemeronHashTable_0(compiler::
   return TNode<EphemeronHashTable>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=229&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=238&c=1
 TNode<NumberDictionary> DownCastForTorqueClass_NumberDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7525,7 +7528,7 @@ TNode<NumberDictionary> DownCastForTorqueClass_NumberDictionary_0(compiler::Code
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(181), static_cast<InstanceType>(181))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(211), static_cast<InstanceType>(211))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7568,7 +7571,7 @@ TNode<NumberDictionary> DownCastForTorqueClass_NumberDictionary_0(compiler::Code
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(181));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(211));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7602,12 +7605,12 @@ TNode<NumberDictionary> DownCastForTorqueClass_NumberDictionary_0(compiler::Code
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(181), static_cast<InstanceType>(181))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(211), static_cast<InstanceType>(211))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(181));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(211));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7643,7 +7646,7 @@ TNode<NumberDictionary> DownCastForTorqueClass_NumberDictionary_0(compiler::Code
   return TNode<NumberDictionary>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=240&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=252&c=1
 TNode<InstructionStream> DownCastForTorqueClass_InstructionStream_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7670,7 +7673,7 @@ TNode<InstructionStream> DownCastForTorqueClass_InstructionStream_0(compiler::Co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(252), static_cast<InstanceType>(252))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(190), static_cast<InstanceType>(190))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7713,7 +7716,7 @@ TNode<InstructionStream> DownCastForTorqueClass_InstructionStream_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(252));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(190));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7747,12 +7750,12 @@ TNode<InstructionStream> DownCastForTorqueClass_InstructionStream_0(compiler::Co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(252), static_cast<InstanceType>(252))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(190), static_cast<InstanceType>(190))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(252));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(190));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7788,442 +7791,7 @@ TNode<InstructionStream> DownCastForTorqueClass_InstructionStream_0(compiler::Co
   return TNode<InstructionStream>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=246&c=1
-TNode<ObjectBoilerplateDescription> DownCastForTorqueClass_ObjectBoilerplateDescription_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(188), static_cast<InstanceType>(188))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<ObjectBoilerplateDescription>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<ObjectBoilerplateDescription>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(188));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(188), static_cast<InstanceType>(188))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(188));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<ObjectBoilerplateDescription> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<ObjectBoilerplateDescription>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=247&c=1
-TNode<ClosureFeedbackCellArray> DownCastForTorqueClass_ClosureFeedbackCellArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(187), static_cast<InstanceType>(187))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<ClosureFeedbackCellArray>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<ClosureFeedbackCellArray>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(187));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(187), static_cast<InstanceType>(187))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(187));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<ClosureFeedbackCellArray> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<ClosureFeedbackCellArray>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=248&c=1
-TNode<ScriptContextTable> DownCastForTorqueClass_ScriptContextTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(189), static_cast<InstanceType>(189))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<ScriptContextTable>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<ScriptContextTable>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(189));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(189), static_cast<InstanceType>(189))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(189));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<ScriptContextTable> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<ScriptContextTable>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=250&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=258&c=1
 TNode<TransitionArray> DownCastForTorqueClass_TransitionArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8250,7 +7818,7 @@ TNode<TransitionArray> DownCastForTorqueClass_TransitionArray_0(compiler::CodeAs
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(241), static_cast<InstanceType>(241))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(255), static_cast<InstanceType>(255))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -8293,7 +7861,7 @@ TNode<TransitionArray> DownCastForTorqueClass_TransitionArray_0(compiler::CodeAs
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(241));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(255));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -8327,12 +7895,12 @@ TNode<TransitionArray> DownCastForTorqueClass_TransitionArray_0(compiler::CodeAs
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(241), static_cast<InstanceType>(241))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(255), static_cast<InstanceType>(255))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(241));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(255));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -8368,7 +7936,7 @@ TNode<TransitionArray> DownCastForTorqueClass_TransitionArray_0(compiler::CodeAs
   return TNode<TransitionArray>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=592&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=617&c=47
 TNode<IntPtrT> Convert_intptr_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8387,7 +7955,7 @@ TNode<IntPtrT> Convert_intptr_constexpr_IntegerLiteral_0(compiler::CodeAssembler
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=592&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=617&c=5
 TNode<MaybeObject> Convert_Tagged_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8404,7 +7972,7 @@ TNode<MaybeObject> Convert_Tagged_Smi_0(compiler::CodeAssemblerState* state_, TN
   return TNode<MaybeObject>{p_i};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=608&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1
 TNode<HeapObject> DownCastForTorqueClass_Filler_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8431,7 +7999,7 @@ TNode<HeapObject> DownCastForTorqueClass_Filler_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(249), static_cast<InstanceType>(249))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(266), static_cast<InstanceType>(266))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -8474,7 +8042,7 @@ TNode<HeapObject> DownCastForTorqueClass_Filler_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(249));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(266));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -8508,12 +8076,12 @@ TNode<HeapObject> DownCastForTorqueClass_Filler_0(compiler::CodeAssemblerState* 
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(249), static_cast<InstanceType>(249))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(266), static_cast<InstanceType>(266))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(249));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(266));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -8549,7 +8117,7 @@ TNode<HeapObject> DownCastForTorqueClass_Filler_0(compiler::CodeAssemblerState* 
   return TNode<HeapObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=628&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=653&c=1
 TNode<JSSpecialObject> DownCastForTorqueClass_JSSpecialApiObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8694,153 +8262,8 @@ TNode<JSSpecialObject> DownCastForTorqueClass_JSSpecialApiObject_0(compiler::Cod
   return TNode<JSSpecialObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=631&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=656&c=1
 TNode<JSObject> DownCastForTorqueClass_JSContextExtensionObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2118), static_cast<InstanceType>(2118))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((false)) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<void>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2118));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2118), static_cast<InstanceType>(2118))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2118));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<JSObject> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<JSObject>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=633&c=1
-TNode<JSObject> DownCastForTorqueClass_JSError_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -8984,7 +8407,152 @@ TNode<JSObject> DownCastForTorqueClass_JSError_0(compiler::CodeAssemblerState* s
   return TNode<JSObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1442&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=658&c=1
+TNode<JSObject> DownCastForTorqueClass_JSError_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2128), static_cast<InstanceType>(2128))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((false)) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<void>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2128));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2128), static_cast<InstanceType>(2128))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2128));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<JSObject> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<JSObject>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1472&c=11
 TorqueStructReference_JSFunction_0 NativeContextSlot_Context_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9004,7 +8572,7 @@ TorqueStructReference_JSFunction_0 NativeContextSlot_Context_JSFunction_0(compil
   return TorqueStructReference_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1448&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1478&c=11
 TorqueStructReference_Constructor_0 NativeContextSlot_Context_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9024,7 +8592,7 @@ TorqueStructReference_Constructor_0 NativeContextSlot_Context_Constructor_0(comp
   return TorqueStructReference_Constructor_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1457&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1490&c=11
 TorqueStructReference_Map_0 NativeContextSlot_Context_Map_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9036,7 +8604,7 @@ TorqueStructReference_Map_0 NativeContextSlot_Context_Map_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = NativeContextSlot_Map_1(state_, TNode<Context>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
+    std::tie(tmp0, tmp1) = NativeContextSlot_Map_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
     ca_.Goto(&block2);
   }
 
@@ -9044,7 +8612,7 @@ TorqueStructReference_Map_0 NativeContextSlot_Context_Map_0(compiler::CodeAssemb
   return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1473&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1506&c=11
 TorqueStructReference_Callable_0 NativeContextSlot_Context_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9064,7 +8632,7 @@ TorqueStructReference_Callable_0 NativeContextSlot_Context_Callable_0(compiler::
   return TorqueStructReference_Callable_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1476&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1509&c=11
 TorqueStructReference_RegExpMatchInfo_0 NativeContextSlot_Context_RegExpMatchInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9084,26 +8652,27 @@ TorqueStructReference_RegExpMatchInfo_0 NativeContextSlot_Context_RegExpMatchInf
   return TorqueStructReference_RegExpMatchInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1559&c=14
-TNode<Hole> UnsafeCast_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1527&c=11
+TorqueStructReference_JSObject_0 NativeContextSlot_Context_JSObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Hole> tmp0;
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
-    ca_.Goto(&block6);
+    std::tie(tmp0, tmp1) = NativeContextSlot_JSObject_1(state_, TNode<Context>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
+    ca_.Goto(&block2);
   }
 
-    ca_.Bind(&block6);
-  return TNode<Hole>{tmp0};
+    ca_.Bind(&block2);
+  return TorqueStructReference_JSObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1907&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1929&c=10
 TNode<BoolT> Is_FastJSArray_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9150,7 +8719,7 @@ TNode<BoolT> Is_FastJSArray_Object_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1926&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1948&c=7
 TNode<BoolT> Is_FastJSArrayForRead_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9197,7 +8766,7 @@ TNode<BoolT> Is_FastJSArrayForRead_Object_0(compiler::CodeAssemblerState* state_
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1935&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1957&c=10
 TNode<BoolT> Is_FastJSArrayWithNoCustomIteration_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9244,7 +8813,7 @@ TNode<BoolT> Is_FastJSArrayWithNoCustomIteration_Object_0(compiler::CodeAssemble
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1941&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1963&c=10
 TNode<BoolT> Is_FastJSArrayForReadWithNoCustomIteration_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9291,7 +8860,7 @@ TNode<BoolT> Is_FastJSArrayForReadWithNoCustomIteration_Object_0(compiler::CodeA
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2021&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2043&c=20
 TNode<Float64T> Convert_float64_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9310,7 +8879,7 @@ TNode<Float64T> Convert_float64_constexpr_IntegerLiteral_0(compiler::CodeAssembl
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1262&c=46
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=1287&c=46
 TNode<Smi> Convert_Smi_SmiTagged_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

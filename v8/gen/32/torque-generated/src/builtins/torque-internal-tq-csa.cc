@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -744,6 +748,47 @@ TorqueStructReference_char8_0 NewReference_char8_0(compiler::CodeAssemblerState*
   return TorqueStructReference_char8_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
+    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_MaybeObject_0 NewReference_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_MaybeObject_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_MaybeObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+}
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=303&c=6
 TorqueStructReference_Zero_0 NewReference_Zero_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
@@ -948,7 +993,7 @@ TorqueStructReference_char16_0 NewReference_char16_0(compiler::CodeAssemblerStat
   return TorqueStructReference_char16_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=140&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_int32_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -967,26 +1012,6 @@ TNode<IntPtrT> TimesSizeOf_int32_0(compiler::CodeAssemblerState* state_, TNode<I
 
     ca_.Bind(&block2);
   return TNode<IntPtrT>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=246&c=20
-TorqueStructReference_int32_0 NewReference_int32_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_int32_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_int32_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
@@ -1052,7 +1077,7 @@ TorqueStructReference_uint8_0 NewReference_uint8_0(compiler::CodeAssemblerState*
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
+TNode<IntPtrT> TimesSizeOf_Context_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1073,7 +1098,7 @@ TNode<IntPtrT> TimesSizeOf_MaybeObject_0(compiler::CodeAssemblerState* state_, T
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_MaybeObject_0 NewReference_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+TorqueStructReference_Context_0 NewReference_Context_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1084,53 +1109,12 @@ TorqueStructReference_MaybeObject_0 NewReference_MaybeObject_0(compiler::CodeAss
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_MaybeObject_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1) = (TorqueStructReference_Context_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_MaybeObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
-    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<IntPtrT>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_SmiTagged_VariableProperties_0 NewReference_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_SmiTagged_VariableProperties_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_SmiTagged_VariableProperties_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Context_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
@@ -1172,6 +1156,47 @@ TorqueStructReference_Smi_0 NewReference_Smi_0(compiler::CodeAssemblerState* sta
 
     ca_.Bind(&block2);
   return TorqueStructReference_Smi_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
+    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_SmiTagged_VariableProperties_0 NewReference_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_SmiTagged_VariableProperties_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_SmiTagged_VariableProperties_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
@@ -1257,47 +1282,6 @@ TorqueStructReference_TheHole_OR_ScopeInfo_0 NewReference_TheHole_OR_ScopeInfo_0
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_HashTable_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
-    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<IntPtrT>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_HashTable_0 NewReference_HashTable_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_HashTable_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_HashTable_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_SourceTextModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1336,6 +1320,88 @@ TorqueStructReference_SourceTextModuleInfo_0 NewReference_SourceTextModuleInfo_0
 
     ca_.Bind(&block2);
   return TorqueStructReference_SourceTextModuleInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_FeedbackCell_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
+    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_FeedbackCell_0 NewReference_FeedbackCell_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_FeedbackCell_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_FeedbackCell_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_Smi_OR_TrustedObject_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
+    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<IntPtrT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_Smi_OR_TrustedObject_0 NewReference_Smi_OR_TrustedObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_Smi_OR_TrustedObject_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_Smi_OR_TrustedObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
@@ -1380,7 +1446,7 @@ TorqueStructReference_ExternalPointer_0 NewReference_ExternalPointer_0(compiler:
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
+TNode<IntPtrT> TimesSizeOf_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1401,7 +1467,7 @@ TNode<IntPtrT> TimesSizeOf_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_O
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0 NewReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+TorqueStructReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0 NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1412,12 +1478,12 @@ TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Sym
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1) = (TorqueStructReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
@@ -1459,47 +1525,6 @@ TorqueStructReference_FunctionVariableInfo_0 NewReference_FunctionVariableInfo_0
 
     ca_.Bind(&block2);
   return TorqueStructReference_FunctionVariableInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_PositionInfo_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{p_i}, TNode<IntPtrT>{tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<IntPtrT>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_PositionInfo_0 NewReference_PositionInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_PositionInfo_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_PositionInfo_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
@@ -1795,7 +1820,7 @@ TorqueStructReference_JSPromise_0 NewReference_JSPromise_0(compiler::CodeAssembl
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
-TorqueStructReference_Undefined_OR_JSFunction_0 NewReference_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+TorqueStructReference_Number_0 NewReference_Number_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1806,31 +1831,12 @@ TorqueStructReference_Undefined_OR_JSFunction_0 NewReference_Undefined_OR_JSFunc
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1) = (TorqueStructReference_Number_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=90&c=3
-TNode<HeapObject> UnsafeCast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<HeapObject> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<HeapObject>{tmp0};
+  return TorqueStructReference_Number_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
@@ -1890,26 +1896,6 @@ TNode<PromiseCapability> UnsafeCast_PromiseCapability_0(compiler::CodeAssemblerS
 
     ca_.Bind(&block6);
   return TNode<PromiseCapability>{tmp0};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
-TorqueStructReference_Map_0 NewReference_Map_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_Map_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
@@ -1973,26 +1959,6 @@ TorqueStructReference_Constructor_0 NewReference_Constructor_0(compiler::CodeAss
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
-TorqueStructReference_HeapObject_0 NewReference_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Object> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = (TorqueStructReference_HeapObject_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructReference_HeapObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
 TorqueStructReference_Null_OR_JSProxy_0 NewReference_Null_OR_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2029,6 +1995,46 @@ TNode<HeapObject> UnsafeCast_Null_OR_JSProxy_0(compiler::CodeAssemblerState* sta
 
     ca_.Bind(&block6);
   return TNode<HeapObject>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
+TorqueStructReference_Map_0 NewReference_Map_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_Map_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
+TorqueStructReference_HeapObject_0 NewReference_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_HeapObject_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_HeapObject_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
@@ -2083,7 +2089,7 @@ TNode<RawPtrT> Convert_RawPtr_RawPtr_RawPtr_intptr_0(compiler::CodeAssemblerStat
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
-TNode<RawPtrT> Convert_RawPtr_RawPtr_float32_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i) {
+TNode<RawPtrT> Convert_RawPtr_RawPtr_int64_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2101,6 +2107,23 @@ TNode<RawPtrT> Convert_RawPtr_RawPtr_float32_0(compiler::CodeAssemblerState* sta
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
 TNode<RawPtrT> Convert_RawPtr_RawPtr_float64_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<RawPtrT>{p_i};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
+TNode<RawPtrT> Convert_RawPtr_RawPtr_float32_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2170,6 +2193,45 @@ TNode<ScopeInfo> UnsafeCast_ScopeInfo_0(compiler::CodeAssemblerState* state_, TN
 
     ca_.Bind(&block6);
   return TNode<ScopeInfo>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
+TorqueStructReference_Undefined_OR_JSFunction_0 NewReference_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    std::tie(tmp0, tmp1) = (TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=90&c=3
+TNode<HeapObject> UnsafeCast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<HeapObject> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<HeapObject>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15

@@ -6,26 +6,18 @@
 namespace v8 {
 namespace internal {
 template <>
-void TorqueGeneratedHeapNumber<HeapNumber, PrimitiveHeapObject>::HeapNumberPrint(std::ostream& os) {
-  this->PrintHeader(os, "HeapNumber");
-  os << "\n - value: " << this->value();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedSymbol<Symbol, Name>::SymbolPrint(std::ostream& os) {
-  this->PrintHeader(os, "Symbol");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - flags: " << this->flags();
-  os << "\n - description: " << Brief(this->description());
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedJSObject<JSObject, JSReceiver>::JSObjectPrint(std::ostream& os) {
   this->PrintHeader(os, "JSObject");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->elements());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSObjectWithEmbedderSlots<JSObjectWithEmbedderSlots, JSObject>::JSObjectWithEmbedderSlotsPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSObjectWithEmbedderSlots");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << '\n';
 }
 
@@ -44,18 +36,10 @@ void TorqueGeneratedJSFunction<JSFunction, JSFunctionOrBoundFunctionOrWrappedFun
   this->PrintHeader(os, "JSFunction");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - code: " << Brief(this->code());
   os << "\n - shared_function_info: " << Brief(this->shared_function_info());
   os << "\n - context: " << Brief(this->context());
   os << "\n - feedback_cell: " << Brief(this->feedback_cell());
   os << "\n - prototype_or_initial_map: " << Brief(this->prototype_or_initial_map());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedWeakFixedArray<WeakFixedArray, HeapObject>::WeakFixedArrayPrint(std::ostream& os) {
-  this->PrintHeader(os, "WeakFixedArray");
-  os << "\n - length: " << this->length();
   os << '\n';
 }
 
@@ -131,18 +115,54 @@ void TorqueGeneratedWeakCell<WeakCell, HeapObject>::WeakCellPrint(std::ostream& 
 }
 
 template <>
-void TorqueGeneratedWasmInternalFunction<WasmInternalFunction, HeapObject>::WasmInternalFunctionPrint(std::ostream& os) {
-  this->PrintHeader(os, "WasmInternalFunction");
-  os << "\n - ref: " << Brief(this->ref());
-  os << "\n - external: " << Brief(this->external());
-  os << "\n - code: " << Brief(this->code());
-  os << "\n - function_index: " << this->function_index();
+void TorqueGeneratedFunctionTemplateInfo<FunctionTemplateInfo, TemplateInfo>::FunctionTemplateInfoPrint(std::ostream& os) {
+  this->PrintHeader(os, "FunctionTemplateInfo");
+  os << "\n - serial_number: " << this->TemplateInfo::TorqueGeneratedClass::serial_number();
+  os << "\n - number_of_properties: " << this->TemplateInfo::TorqueGeneratedClass::number_of_properties();
+  os << "\n - property_list: " << Brief(this->TemplateInfo::TorqueGeneratedClass::property_list());
+  os << "\n - property_accessors: " << Brief(this->TemplateInfo::TorqueGeneratedClass::property_accessors());
+  os << "\n - class_name: " << Brief(this->class_name());
+  os << "\n - interface_name: " << Brief(this->interface_name());
+  os << "\n - signature: " << Brief(this->signature());
+  os << "\n - rare_data: " << Brief(this->rare_data(kAcquireLoad));
+  os << "\n - shared_function_info: " << Brief(this->shared_function_info());
+  os << "\n - cached_property_name: " << Brief(this->cached_property_name());
+  os << "\n - callback_data: " << Brief(this->callback_data(kAcquireLoad));
+  os << "\n - flag: " << this->flag();
+  os << "\n - length: " << this->length();
+  os << "\n - instance_type: " << this->instance_type();
+  os << "\n - exception_context: " << this->exception_context();
+  os << "\n - optional_padding: " << this->optional_padding();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedWasmFuncRef<WasmFuncRef, HeapObject>::WasmFuncRefPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmFuncRef");
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedWasmNull<WasmNull, HeapObject>::WasmNullPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmNull");
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSSet<JSSet, JSCollection>::JSSetPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSet");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - table: " << Brief(this->JSCollection::TorqueGeneratedClass::table());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSMap<JSMap, JSCollection>::JSMapPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSMap");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - table: " << Brief(this->JSCollection::TorqueGeneratedClass::table());
   os << '\n';
 }
 
@@ -160,11 +180,12 @@ void TorqueGeneratedJSTypedArray<JSTypedArray, JSArrayBufferView>::JSTypedArrayP
   this->PrintHeader(os, "JSTypedArray");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - cpp_heap_wrappable: " << this->JSAPIObjectWithEmbedderSlots::TorqueGeneratedClass::cpp_heap_wrappable();
   os << "\n - buffer: " << Brief(this->JSArrayBufferView::TorqueGeneratedClass::buffer());
-  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
-  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - bit_field: " << this->JSArrayBufferView::TorqueGeneratedClass::bit_field();
   os << "\n - optional_padding: " << this->JSArrayBufferView::TorqueGeneratedClass::optional_padding();
+  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
+  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - raw_length: " << this->raw_length();
   os << "\n - external_pointer: " << this->external_pointer();
   os << "\n - base_pointer: " << Brief(this->base_pointer());
@@ -175,14 +196,6 @@ template <>
 void TorqueGeneratedAllocationMemento<AllocationMemento, Struct>::AllocationMementoPrint(std::ostream& os) {
   this->PrintHeader(os, "AllocationMemento");
   os << "\n - allocation_site: " << Brief(this->allocation_site());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedCallHandlerInfo<CallHandlerInfo, HeapObject>::CallHandlerInfoPrint(std::ostream& os) {
-  this->PrintHeader(os, "CallHandlerInfo");
-  os << "\n - data: " << Brief(this->data());
-  os << "\n - owner_template: " << Brief(this->owner_template());
   os << '\n';
 }
 
@@ -260,7 +273,6 @@ void TorqueGeneratedCallSiteInfo<CallSiteInfo, Struct>::CallSiteInfoPrint(std::o
   this->PrintHeader(os, "CallSiteInfo");
   os << "\n - receiver_or_instance: " << Brief(this->receiver_or_instance());
   os << "\n - function: " << Brief(this->function());
-  os << "\n - code_object: " << Brief(this->code_object());
   os << "\n - code_offset_or_source_position: " << this->code_offset_or_source_position();
   os << "\n - flags: " << this->flags();
   os << "\n - parameters: " << Brief(this->parameters());
@@ -275,11 +287,21 @@ void TorqueGeneratedCell<Cell, HeapObject>::CellPrint(std::ostream& os) {
 }
 
 template <>
+void TorqueGeneratedWeakArrayList<WeakArrayList, HeapObject>::WeakArrayListPrint(std::ostream& os) {
+  this->PrintHeader(os, "WeakArrayList");
+  os << "\n - capacity: " << this->capacity();
+  os << "\n - length: " << this->length();
+  os << '\n';
+}
+
+template <>
 void TorqueGeneratedScopeInfo<ScopeInfo, HeapObject>::ScopeInfoPrint(std::ostream& os) {
   this->PrintHeader(os, "ScopeInfo");
   os << "\n - flags: " << this->flags();
+  os << "\n - optional_padding: " << this->optional_padding();
   os << "\n - parameter_count: " << this->parameter_count();
   os << "\n - context_local_count: " << this->context_local_count();
+  os << "\n - position_info: " << " <struct field printing still unimplemented>";
   os << '\n';
 }
 
@@ -304,8 +326,6 @@ void TorqueGeneratedDebugInfo<DebugInfo, Struct>::DebugInfoPrint(std::ostream& o
   this->PrintHeader(os, "DebugInfo");
   os << "\n - shared: " << Brief(this->shared());
   os << "\n - debugger_hints: " << this->debugger_hints();
-  os << "\n - original_bytecode_array: " << Brief(this->original_bytecode_array(kAcquireLoad));
-  os << "\n - debug_bytecode_array: " << Brief(this->debug_bytecode_array(kAcquireLoad));
   os << "\n - break_points: " << Brief(this->break_points());
   os << "\n - flags: " << this->flags(kRelaxedLoad);
   os << "\n - coverage_info: " << Brief(this->coverage_info());
@@ -333,14 +353,6 @@ void TorqueGeneratedErrorStackData<ErrorStackData, Struct>::ErrorStackDataPrint(
   this->PrintHeader(os, "ErrorStackData");
   os << "\n - call_site_infos_or_formatted_stack: " << Brief(this->call_site_infos_or_formatted_stack());
   os << "\n - limit_or_stack_frame_infos: " << Brief(this->limit_or_stack_frame_infos());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedPromiseOnStack<PromiseOnStack, Struct>::PromiseOnStackPrint(std::ostream& os) {
-  this->PrintHeader(os, "PromiseOnStack");
-  os << "\n - prev: " << Brief(this->prev());
-  os << "\n - promise: " << Brief(this->promise());
   os << '\n';
 }
 
@@ -409,7 +421,7 @@ void TorqueGeneratedFeedbackVector<FeedbackVector, HeapObject>::FeedbackVectorPr
   os << "\n - length: " << this->length();
   os << "\n - invocation_count: " << this->invocation_count();
   os << "\n - optional_padding: " << this->optional_padding();
-  os << "\n - placeholder0: " << this->placeholder0();
+  os << "\n - invocation_count_before_stable: " << this->invocation_count_before_stable();
   os << "\n - osr_state: " << this->osr_state();
   os << "\n - flags: " << this->flags();
   os << "\n - shared_function_info: " << Brief(this->shared_function_info());
@@ -420,10 +432,9 @@ void TorqueGeneratedFeedbackVector<FeedbackVector, HeapObject>::FeedbackVectorPr
 }
 
 template <>
-void TorqueGeneratedWeakArrayList<WeakArrayList, HeapObject>::WeakArrayListPrint(std::ostream& os) {
-  this->PrintHeader(os, "WeakArrayList");
-  os << "\n - capacity: " << this->capacity();
-  os << "\n - length: " << this->length();
+void TorqueGeneratedTrustedForeign<TrustedForeign, TrustedObject>::TrustedForeignPrint(std::ostream& os) {
+  this->PrintHeader(os, "TrustedForeign");
+  os << "\n - foreign_address: " << this->foreign_address();
   os << '\n';
 }
 
@@ -436,10 +447,11 @@ void TorqueGeneratedFreeSpace<FreeSpace, HeapObject>::FreeSpacePrint(std::ostrea
 }
 
 template <>
-void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSObjectWithEmbedderSlots>::JSArrayBufferPrint(std::ostream& os) {
+void TorqueGeneratedJSArrayBuffer<JSArrayBuffer, JSAPIObjectWithEmbedderSlots>::JSArrayBufferPrint(std::ostream& os) {
   this->PrintHeader(os, "JSArrayBuffer");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - cpp_heap_wrappable: " << this->JSAPIObjectWithEmbedderSlots::TorqueGeneratedClass::cpp_heap_wrappable();
   os << "\n - detach_key: " << Brief(this->detach_key());
   os << "\n - raw_byte_length: " << this->raw_byte_length();
   os << "\n - raw_max_byte_length: " << this->raw_max_byte_length();
@@ -454,11 +466,12 @@ void TorqueGeneratedJSDataView<JSDataView, JSDataViewOrRabGsabDataView>::JSDataV
   this->PrintHeader(os, "JSDataView");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - cpp_heap_wrappable: " << this->JSAPIObjectWithEmbedderSlots::TorqueGeneratedClass::cpp_heap_wrappable();
   os << "\n - buffer: " << Brief(this->JSArrayBufferView::TorqueGeneratedClass::buffer());
-  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
-  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - bit_field: " << this->JSArrayBufferView::TorqueGeneratedClass::bit_field();
   os << "\n - optional_padding: " << this->JSArrayBufferView::TorqueGeneratedClass::optional_padding();
+  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
+  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - data_pointer: " << this->JSDataViewOrRabGsabDataView::TorqueGeneratedClass::data_pointer();
   os << '\n';
 }
@@ -468,11 +481,12 @@ void TorqueGeneratedJSRabGsabDataView<JSRabGsabDataView, JSDataViewOrRabGsabData
   this->PrintHeader(os, "JSRabGsabDataView");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - cpp_heap_wrappable: " << this->JSAPIObjectWithEmbedderSlots::TorqueGeneratedClass::cpp_heap_wrappable();
   os << "\n - buffer: " << Brief(this->JSArrayBufferView::TorqueGeneratedClass::buffer());
-  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
-  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - bit_field: " << this->JSArrayBufferView::TorqueGeneratedClass::bit_field();
   os << "\n - optional_padding: " << this->JSArrayBufferView::TorqueGeneratedClass::optional_padding();
+  os << "\n - raw_byte_offset: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_offset();
+  os << "\n - raw_byte_length: " << this->JSArrayBufferView::TorqueGeneratedClass::raw_byte_length();
   os << "\n - data_pointer: " << this->JSDataViewOrRabGsabDataView::TorqueGeneratedClass::data_pointer();
   os << '\n';
 }
@@ -516,7 +530,6 @@ void TorqueGeneratedJSAtomicsMutex<JSAtomicsMutex, JSSynchronizationPrimitive>::
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - state: " << this->JSSynchronizationPrimitive::TorqueGeneratedClass::state();
   os << "\n - owner_thread_id: " << this->owner_thread_id();
-  os << "\n - optional_padding: " << this->optional_padding();
   os << '\n';
 }
 
@@ -526,24 +539,7 @@ void TorqueGeneratedJSAtomicsCondition<JSAtomicsCondition, JSSynchronizationPrim
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - state: " << this->JSSynchronizationPrimitive::TorqueGeneratedClass::state();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedJSSet<JSSet, JSCollection>::JSSetPrint(std::ostream& os) {
-  this->PrintHeader(os, "JSSet");
-  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
-  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - table: " << Brief(this->JSCollection::TorqueGeneratedClass::table());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedJSMap<JSMap, JSCollection>::JSMapPrint(std::ostream& os) {
-  this->PrintHeader(os, "JSMap");
-  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
-  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - table: " << Brief(this->JSCollection::TorqueGeneratedClass::table());
+  os << "\n - optional_padding: " << this->optional_padding();
   os << '\n';
 }
 
@@ -562,6 +558,36 @@ void TorqueGeneratedJSWeakMap<JSWeakMap, JSWeakCollection>::JSWeakMapPrint(std::
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - table: " << Brief(this->JSWeakCollection::TorqueGeneratedClass::table());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSDisposableStackBase<JSDisposableStackBase, JSObject>::JSDisposableStackBasePrint(std::ostream& os) {
+  this->PrintHeader(os, "JSDisposableStackBase");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - stack: " << Brief(this->stack());
+  os << "\n - status: " << this->status();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSSyncDisposableStack<JSSyncDisposableStack, JSDisposableStackBase>::JSSyncDisposableStackPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSyncDisposableStack");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - stack: " << Brief(this->JSDisposableStackBase::TorqueGeneratedClass::stack());
+  os << "\n - status: " << this->JSDisposableStackBase::TorqueGeneratedClass::status();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSAsyncDisposableStack<JSAsyncDisposableStack, JSDisposableStackBase>::JSAsyncDisposableStackPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSAsyncDisposableStack");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - stack: " << Brief(this->JSDisposableStackBase::TorqueGeneratedClass::stack());
+  os << "\n - status: " << this->JSDisposableStackBase::TorqueGeneratedClass::status();
   os << '\n';
 }
 
@@ -628,7 +654,8 @@ void TorqueGeneratedJSIteratorMapHelper<JSIteratorMapHelper, JSIteratorHelper>::
   this->PrintHeader(os, "JSIteratorMapHelper");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - underlying: " << " <struct field printing still unimplemented>";
+  os << "\n - underlying_object: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_object());
+  os << "\n - underlying_next: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_next());
   os << "\n - mapper: " << Brief(this->mapper());
   os << "\n - counter: " << Brief(this->counter());
   os << '\n';
@@ -639,7 +666,8 @@ void TorqueGeneratedJSIteratorFilterHelper<JSIteratorFilterHelper, JSIteratorHel
   this->PrintHeader(os, "JSIteratorFilterHelper");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - underlying: " << " <struct field printing still unimplemented>";
+  os << "\n - underlying_object: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_object());
+  os << "\n - underlying_next: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_next());
   os << "\n - predicate: " << Brief(this->predicate());
   os << "\n - counter: " << Brief(this->counter());
   os << '\n';
@@ -650,7 +678,8 @@ void TorqueGeneratedJSIteratorTakeHelper<JSIteratorTakeHelper, JSIteratorHelper>
   this->PrintHeader(os, "JSIteratorTakeHelper");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - underlying: " << " <struct field printing still unimplemented>";
+  os << "\n - underlying_object: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_object());
+  os << "\n - underlying_next: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_next());
   os << "\n - remaining: " << Brief(this->remaining());
   os << '\n';
 }
@@ -660,7 +689,8 @@ void TorqueGeneratedJSIteratorDropHelper<JSIteratorDropHelper, JSIteratorHelper>
   this->PrintHeader(os, "JSIteratorDropHelper");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - underlying: " << " <struct field printing still unimplemented>";
+  os << "\n - underlying_object: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_object());
+  os << "\n - underlying_next: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_next());
   os << "\n - remaining: " << Brief(this->remaining());
   os << '\n';
 }
@@ -670,7 +700,8 @@ void TorqueGeneratedJSIteratorFlatMapHelper<JSIteratorFlatMapHelper, JSIteratorH
   this->PrintHeader(os, "JSIteratorFlatMapHelper");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - underlying: " << " <struct field printing still unimplemented>";
+  os << "\n - underlying_object: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_object());
+  os << "\n - underlying_next: " << Brief(this->JSIteratorHelper::TorqueGeneratedClass::underlying_next());
   os << "\n - mapper: " << Brief(this->mapper());
   os << "\n - counter: " << Brief(this->counter());
   os << "\n - innerIterator: " << " <struct field printing still unimplemented>";
@@ -691,7 +722,7 @@ void TorqueGeneratedJSGlobalProxy<JSGlobalProxy, JSSpecialObject>::JSGlobalProxy
   this->PrintHeader(os, "JSGlobalProxy");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - native_context: " << Brief(this->native_context());
+  os << "\n - cpp_heap_wrappable: " << this->JSSpecialObject::TorqueGeneratedClass::cpp_heap_wrappable();
   os << '\n';
 }
 
@@ -700,7 +731,7 @@ void TorqueGeneratedJSGlobalObject<JSGlobalObject, JSSpecialObject>::JSGlobalObj
   this->PrintHeader(os, "JSGlobalObject");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - native_context: " << Brief(this->native_context());
+  os << "\n - cpp_heap_wrappable: " << this->JSSpecialObject::TorqueGeneratedClass::cpp_heap_wrappable();
   os << "\n - global_proxy: " << Brief(this->global_proxy());
   os << '\n';
 }
@@ -736,7 +767,7 @@ void TorqueGeneratedJSDate<JSDate, JSObject>::JSDatePrint(std::ostream& os) {
   this->PrintHeader(os, "JSDate");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - value: " << Brief(this->value());
+  os << "\n - value: " << this->value();
   os << "\n - year: " << Brief(this->year());
   os << "\n - month: " << Brief(this->month());
   os << "\n - day: " << Brief(this->day());
@@ -811,7 +842,6 @@ void TorqueGeneratedJSRegExp<JSRegExp, JSObject>::JSRegExpPrint(std::ostream& os
   this->PrintHeader(os, "JSRegExp");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - data: " << Brief(this->data());
   os << "\n - source: " << Brief(this->source());
   os << "\n - flags: " << Brief(this->flags());
   os << '\n';
@@ -1026,15 +1056,6 @@ void TorqueGeneratedArrayBoilerplateDescription<ArrayBoilerplateDescription, Str
 }
 
 template <>
-void TorqueGeneratedRegExpBoilerplateDescription<RegExpBoilerplateDescription, Struct>::RegExpBoilerplateDescriptionPrint(std::ostream& os) {
-  this->PrintHeader(os, "RegExpBoilerplateDescription");
-  os << "\n - data: " << Brief(this->data());
-  os << "\n - source: " << Brief(this->source());
-  os << "\n - flags: " << this->flags();
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedMegaDomHandler<MegaDomHandler, HeapObject>::MegaDomHandlerPrint(std::ostream& os) {
   this->PrintHeader(os, "MegaDomHandler");
   os << "\n - accessor: " << Brief(this->accessor());
@@ -1045,6 +1066,7 @@ void TorqueGeneratedMegaDomHandler<MegaDomHandler, HeapObject>::MegaDomHandlerPr
 template <>
 void TorqueGeneratedCallbackTask<CallbackTask, Microtask>::CallbackTaskPrint(std::ostream& os) {
   this->PrintHeader(os, "CallbackTask");
+  os << "\n - continuation_preserved_embedder_data: " << Brief(this->Microtask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << "\n - callback: " << Brief(this->callback());
   os << "\n - data: " << Brief(this->data());
   os << '\n';
@@ -1053,6 +1075,7 @@ void TorqueGeneratedCallbackTask<CallbackTask, Microtask>::CallbackTaskPrint(std
 template <>
 void TorqueGeneratedCallableTask<CallableTask, Microtask>::CallableTaskPrint(std::ostream& os) {
   this->PrintHeader(os, "CallableTask");
+  os << "\n - continuation_preserved_embedder_data: " << Brief(this->Microtask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << "\n - callable: " << Brief(this->callable());
   os << "\n - context: " << Brief(this->context());
   os << '\n';
@@ -1063,6 +1086,7 @@ void TorqueGeneratedJSModuleNamespace<JSModuleNamespace, JSSpecialObject>::JSMod
   this->PrintHeader(os, "JSModuleNamespace");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - cpp_heap_wrappable: " << this->JSSpecialObject::TorqueGeneratedClass::cpp_heap_wrappable();
   os << "\n - module: " << Brief(this->module());
   os << '\n';
 }
@@ -1078,39 +1102,40 @@ void TorqueGeneratedScriptOrModule<ScriptOrModule, Struct>::ScriptOrModulePrint(
 template <>
 void TorqueGeneratedPromiseReaction<PromiseReaction, Struct>::PromiseReactionPrint(std::ostream& os) {
   this->PrintHeader(os, "PromiseReaction");
+  os << "\n - continuation_preserved_embedder_data: " << Brief(this->continuation_preserved_embedder_data());
   os << "\n - next: " << Brief(this->next());
   os << "\n - reject_handler: " << Brief(this->reject_handler());
   os << "\n - fulfill_handler: " << Brief(this->fulfill_handler());
   os << "\n - promise_or_capability: " << Brief(this->promise_or_capability());
-  os << "\n - continuation_preserved_embedder_data: " << Brief(this->continuation_preserved_embedder_data());
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedPromiseFulfillReactionJobTask<PromiseFulfillReactionJobTask, PromiseReactionJobTask>::PromiseFulfillReactionJobTaskPrint(std::ostream& os) {
   this->PrintHeader(os, "PromiseFulfillReactionJobTask");
+  os << "\n - continuation_preserved_embedder_data: " << Brief(this->Microtask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << "\n - argument: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::argument());
   os << "\n - context: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::context());
   os << "\n - handler: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::handler());
   os << "\n - promise_or_capability: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::promise_or_capability());
-  os << "\n - continuation_preserved_embedder_data: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedPromiseRejectReactionJobTask<PromiseRejectReactionJobTask, PromiseReactionJobTask>::PromiseRejectReactionJobTaskPrint(std::ostream& os) {
   this->PrintHeader(os, "PromiseRejectReactionJobTask");
+  os << "\n - continuation_preserved_embedder_data: " << Brief(this->Microtask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << "\n - argument: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::argument());
   os << "\n - context: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::context());
   os << "\n - handler: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::handler());
   os << "\n - promise_or_capability: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::promise_or_capability());
-  os << "\n - continuation_preserved_embedder_data: " << Brief(this->PromiseReactionJobTask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedPromiseResolveThenableJobTask<PromiseResolveThenableJobTask, Microtask>::PromiseResolveThenableJobTaskPrint(std::ostream& os) {
   this->PrintHeader(os, "PromiseResolveThenableJobTask");
+  os << "\n - continuation_preserved_embedder_data: " << Brief(this->Microtask::TorqueGeneratedClass::continuation_preserved_embedder_data());
   os << "\n - context: " << Brief(this->context());
   os << "\n - promise_to_resolve: " << Brief(this->promise_to_resolve());
   os << "\n - thenable: " << Brief(this->thenable());
@@ -1136,6 +1161,13 @@ void TorqueGeneratedPropertyCell<PropertyCell, HeapObject>::PropertyCellPrint(st
 }
 
 template <>
+void TorqueGeneratedConstTrackingLetCell<ConstTrackingLetCell, HeapObject>::ConstTrackingLetCellPrint(std::ostream& os) {
+  this->PrintHeader(os, "ConstTrackingLetCell");
+  os << "\n - dependent_code: " << Brief(this->dependent_code());
+  os << '\n';
+}
+
+template <>
 void TorqueGeneratedPropertyDescriptorObject<PropertyDescriptorObject, Struct>::PropertyDescriptorObjectPrint(std::ostream& os) {
   this->PrintHeader(os, "PropertyDescriptorObject");
   os << "\n - flags: " << this->flags();
@@ -1153,7 +1185,7 @@ void TorqueGeneratedPrototypeInfo<PrototypeInfo, Struct>::PrototypeInfoPrint(std
   os << "\n - prototype_chain_enum_cache: " << Brief(this->prototype_chain_enum_cache());
   os << "\n - registry_slot: " << this->registry_slot();
   os << "\n - bit_field: " << this->bit_field();
-  os << "\n - object_create_map: " << Brief(this->object_create_map());
+  os << "\n - derived_maps: " << Brief(this->derived_maps());
   os << '\n';
 }
 
@@ -1170,7 +1202,7 @@ void TorqueGeneratedScript<Script, Struct>::ScriptPrint(std::ostream& os) {
   os << "\n - id: " << this->id();
   os << "\n - eval_from_shared_or_wrapped_arguments: " << Brief(this->eval_from_shared_or_wrapped_arguments());
   os << "\n - eval_from_position: " << Brief(this->eval_from_position());
-  os << "\n - shared_function_infos: " << Brief(this->shared_function_infos());
+  os << "\n - infos: " << Brief(this->infos());
   os << "\n - compiled_lazy_function_positions: " << Brief(this->compiled_lazy_function_positions());
   os << "\n - flags: " << this->flags();
   os << "\n - source_url: " << Brief(this->source_url());
@@ -1189,17 +1221,15 @@ void TorqueGeneratedPreparseData<PreparseData, HeapObject>::PreparseDataPrint(st
 }
 
 template <>
-void TorqueGeneratedInterpreterData<InterpreterData, Struct>::InterpreterDataPrint(std::ostream& os) {
+void TorqueGeneratedInterpreterData<InterpreterData, ExposedTrustedObject>::InterpreterDataPrint(std::ostream& os) {
   this->PrintHeader(os, "InterpreterData");
-  os << "\n - bytecode_array: " << Brief(this->bytecode_array());
-  os << "\n - interpreter_trampoline: " << Brief(this->interpreter_trampoline());
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedSharedFunctionInfo<SharedFunctionInfo, HeapObject>::SharedFunctionInfoPrint(std::ostream& os) {
   this->PrintHeader(os, "SharedFunctionInfo");
-  os << "\n - function_data: " << Brief(this->function_data());
+  os << "\n - untrusted_function_data: " << Brief(this->untrusted_function_data());
   os << "\n - name_or_scope_info: " << Brief(this->name_or_scope_info());
   os << "\n - outer_scope_info_or_feedback_metadata: " << Brief(this->outer_scope_info_or_feedback_metadata());
   os << "\n - script: " << Brief(this->script());
@@ -1296,8 +1326,8 @@ template <>
 void TorqueGeneratedModuleRequest<ModuleRequest, Struct>::ModuleRequestPrint(std::ostream& os) {
   this->PrintHeader(os, "ModuleRequest");
   os << "\n - specifier: " << Brief(this->specifier());
-  os << "\n - import_assertions: " << Brief(this->import_assertions());
-  os << "\n - position: " << this->position();
+  os << "\n - import_attributes: " << Brief(this->import_attributes());
+  os << "\n - flags: " << this->flags();
   os << '\n';
 }
 
@@ -1311,75 +1341,6 @@ void TorqueGeneratedSourceTextModuleInfoEntry<SourceTextModuleInfoEntry, Struct>
   os << "\n - cell_index: " << this->cell_index();
   os << "\n - beg_pos: " << this->beg_pos();
   os << "\n - end_pos: " << this->end_pos();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedConsString<ConsString, String>::ConsStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "ConsString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << "\n - first: " << Brief(this->first());
-  os << "\n - second: " << Brief(this->second());
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedExternalOneByteString<ExternalOneByteString, ExternalString>::ExternalOneByteStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "ExternalOneByteString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedExternalTwoByteString<ExternalTwoByteString, ExternalString>::ExternalTwoByteStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "ExternalTwoByteString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedInternalizedString<InternalizedString, String>::InternalizedStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "InternalizedString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedSeqOneByteString<SeqOneByteString, SeqString>::SeqOneByteStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "SeqOneByteString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedSeqTwoByteString<SeqTwoByteString, SeqString>::SeqTwoByteStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "SeqTwoByteString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedSlicedString<SlicedString, String>::SlicedStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "SlicedString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << "\n - parent: " << Brief(this->parent());
-  os << "\n - offset: " << this->offset();
-  os << '\n';
-}
-
-template <>
-void TorqueGeneratedThinString<ThinString, String>::ThinStringPrint(std::ostream& os) {
-  this->PrintHeader(os, "ThinString");
-  os << "\n - raw_hash_field: " << this->Name::TorqueGeneratedClass::raw_hash_field();
-  os << "\n - length: " << this->String::TorqueGeneratedClass::length();
-  os << "\n - actual: " << Brief(this->actual());
   os << '\n';
 }
 
@@ -1430,35 +1391,22 @@ void TorqueGeneratedFunctionTemplateRareData<FunctionTemplateRareData, Struct>::
 }
 
 template <>
-void TorqueGeneratedFunctionTemplateInfo<FunctionTemplateInfo, TemplateInfo>::FunctionTemplateInfoPrint(std::ostream& os) {
-  this->PrintHeader(os, "FunctionTemplateInfo");
-  os << "\n - tag: " << this->TemplateInfo::TorqueGeneratedClass::tag();
-  os << "\n - serial_number: " << this->TemplateInfo::TorqueGeneratedClass::serial_number();
-  os << "\n - number_of_properties: " << this->TemplateInfo::TorqueGeneratedClass::number_of_properties();
-  os << "\n - property_list: " << Brief(this->TemplateInfo::TorqueGeneratedClass::property_list());
-  os << "\n - property_accessors: " << Brief(this->TemplateInfo::TorqueGeneratedClass::property_accessors());
-  os << "\n - call_code: " << Brief(this->call_code(kAcquireLoad));
-  os << "\n - class_name: " << Brief(this->class_name());
-  os << "\n - signature: " << Brief(this->signature());
-  os << "\n - rare_data: " << Brief(this->rare_data(kAcquireLoad));
-  os << "\n - shared_function_info: " << Brief(this->shared_function_info());
-  os << "\n - flag: " << this->flag(kRelaxedLoad);
-  os << "\n - length: " << this->length();
-  os << "\n - cached_property_name: " << Brief(this->cached_property_name());
-  os << "\n - instance_type: " << this->instance_type();
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedObjectTemplateInfo<ObjectTemplateInfo, TemplateInfo>::ObjectTemplateInfoPrint(std::ostream& os) {
   this->PrintHeader(os, "ObjectTemplateInfo");
-  os << "\n - tag: " << this->TemplateInfo::TorqueGeneratedClass::tag();
   os << "\n - serial_number: " << this->TemplateInfo::TorqueGeneratedClass::serial_number();
   os << "\n - number_of_properties: " << this->TemplateInfo::TorqueGeneratedClass::number_of_properties();
   os << "\n - property_list: " << Brief(this->TemplateInfo::TorqueGeneratedClass::property_list());
   os << "\n - property_accessors: " << Brief(this->TemplateInfo::TorqueGeneratedClass::property_accessors());
   os << "\n - constructor: " << Brief(this->constructor());
   os << "\n - data: " << this->data();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedDictionaryTemplateInfo<DictionaryTemplateInfo, HeapObject>::DictionaryTemplateInfoPrint(std::ostream& os) {
+  this->PrintHeader(os, "DictionaryTemplateInfo");
+  os << "\n - property_names: " << Brief(this->property_names());
+  os << "\n - serial_number: " << this->serial_number();
   os << '\n';
 }
 
@@ -1811,6 +1759,29 @@ void TorqueGeneratedJSSegmentIterator<JSSegmentIterator, JSObject>::JSSegmentIte
 }
 
 template <>
+void TorqueGeneratedJSSegmentDataObject<JSSegmentDataObject, JSObject>::JSSegmentDataObjectPrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSegmentDataObject");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - segment: " << Brief(this->segment());
+  os << "\n - index: " << Brief(this->index());
+  os << "\n - input: " << Brief(this->input());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedJSSegmentDataObjectWithIsWordLike<JSSegmentDataObjectWithIsWordLike, JSSegmentDataObject>::JSSegmentDataObjectWithIsWordLikePrint(std::ostream& os) {
+  this->PrintHeader(os, "JSSegmentDataObjectWithIsWordLike");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - segment: " << Brief(this->JSSegmentDataObject::TorqueGeneratedClass::segment());
+  os << "\n - index: " << Brief(this->JSSegmentDataObject::TorqueGeneratedClass::index());
+  os << "\n - input: " << Brief(this->JSSegmentDataObject::TorqueGeneratedClass::input());
+  os << "\n - is_word_like: " << Brief(this->is_word_like());
+  os << '\n';
+}
+
+template <>
 void TorqueGeneratedJSSegmenter<JSSegmenter, JSObject>::JSSegmenterPrint(std::ostream& os) {
   this->PrintHeader(os, "JSSegmenter");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
@@ -1834,11 +1805,10 @@ void TorqueGeneratedJSSegments<JSSegments, JSObject>::JSSegmentsPrint(std::ostre
 }
 
 template <>
-void TorqueGeneratedWasmApiFunctionRef<WasmApiFunctionRef, HeapObject>::WasmApiFunctionRefPrint(std::ostream& os) {
-  this->PrintHeader(os, "WasmApiFunctionRef");
+void TorqueGeneratedWasmImportData<WasmImportData, TrustedObject>::WasmImportDataPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmImportData");
   os << "\n - native_context: " << Brief(this->native_context());
   os << "\n - callable: " << Brief(this->callable());
-  os << "\n - instance: " << Brief(this->instance());
   os << "\n - suspend: " << this->suspend();
   os << "\n - wrapper_budget: " << this->wrapper_budget();
   os << "\n - call_origin: " << Brief(this->call_origin());
@@ -1847,10 +1817,37 @@ void TorqueGeneratedWasmApiFunctionRef<WasmApiFunctionRef, HeapObject>::WasmApiF
 }
 
 template <>
-void TorqueGeneratedWasmFunctionData<WasmFunctionData, HeapObject>::WasmFunctionDataPrint(std::ostream& os) {
+void TorqueGeneratedWasmInstanceObject<WasmInstanceObject, JSObject>::WasmInstanceObjectPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmInstanceObject");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - module_object: " << Brief(this->module_object());
+  os << "\n - exports_object: " << Brief(this->exports_object());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedWasmFastApiCallData<WasmFastApiCallData, HeapObject>::WasmFastApiCallDataPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmFastApiCallData");
+  os << "\n - signature: " << Brief(this->signature());
+  os << "\n - callback_data: " << Brief(this->callback_data());
+  os << "\n - cached_map: " << Brief(this->cached_map());
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedWasmInternalFunction<WasmInternalFunction, ExposedTrustedObject>::WasmInternalFunctionPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmInternalFunction");
+  os << "\n - external: " << Brief(this->external());
+  os << "\n - function_index: " << this->function_index();
+  os << "\n - call_target: " << this->call_target();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedWasmFunctionData<WasmFunctionData, ExposedTrustedObject>::WasmFunctionDataPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmFunctionData");
-  os << "\n - internal: " << Brief(this->internal());
-  os << "\n - wrapper_code: " << Brief(this->wrapper_code());
+  os << "\n - func_ref: " << Brief(this->func_ref());
   os << "\n - js_promise_flags: " << this->js_promise_flags();
   os << '\n';
 }
@@ -1858,33 +1855,29 @@ void TorqueGeneratedWasmFunctionData<WasmFunctionData, HeapObject>::WasmFunction
 template <>
 void TorqueGeneratedWasmExportedFunctionData<WasmExportedFunctionData, WasmFunctionData>::WasmExportedFunctionDataPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmExportedFunctionData");
-  os << "\n - internal: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::internal());
-  os << "\n - wrapper_code: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::wrapper_code());
+  os << "\n - func_ref: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::func_ref());
   os << "\n - js_promise_flags: " << this->WasmFunctionData::TorqueGeneratedClass::js_promise_flags();
-  os << "\n - instance: " << Brief(this->instance());
   os << "\n - function_index: " << this->function_index();
-  os << "\n - wrapper_budget: " << this->wrapper_budget();
-  os << "\n - c_wrapper_code: " << Brief(this->c_wrapper_code());
-  os << "\n - packed_args_size: " << this->packed_args_size();
+  os << "\n - wrapper_budget: " << Brief(this->wrapper_budget());
   os << "\n - canonical_type_index: " << this->canonical_type_index();
+  os << "\n - packed_args_size: " << this->packed_args_size();
+  os << "\n - sig: " << this->sig();
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedWasmJSFunctionData<WasmJSFunctionData, WasmFunctionData>::WasmJSFunctionDataPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmJSFunctionData");
-  os << "\n - internal: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::internal());
-  os << "\n - wrapper_code: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::wrapper_code());
+  os << "\n - func_ref: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::func_ref());
   os << "\n - js_promise_flags: " << this->WasmFunctionData::TorqueGeneratedClass::js_promise_flags();
-  os << "\n - serialized_signature: " << Brief(this->serialized_signature());
+  os << "\n - canonical_sig_index: " << this->canonical_sig_index();
   os << '\n';
 }
 
 template <>
 void TorqueGeneratedWasmCapiFunctionData<WasmCapiFunctionData, WasmFunctionData>::WasmCapiFunctionDataPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmCapiFunctionData");
-  os << "\n - internal: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::internal());
-  os << "\n - wrapper_code: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::wrapper_code());
+  os << "\n - func_ref: " << Brief(this->WasmFunctionData::TorqueGeneratedClass::func_ref());
   os << "\n - js_promise_flags: " << this->WasmFunctionData::TorqueGeneratedClass::js_promise_flags();
   os << "\n - embedder_data: " << Brief(this->embedder_data());
   os << "\n - serialized_signature: " << Brief(this->serialized_signature());
@@ -1900,37 +1893,22 @@ void TorqueGeneratedWasmResumeData<WasmResumeData, HeapObject>::WasmResumeDataPr
 }
 
 template <>
-void TorqueGeneratedWasmIndirectFunctionTable<WasmIndirectFunctionTable, Struct>::WasmIndirectFunctionTablePrint(std::ostream& os) {
-  this->PrintHeader(os, "WasmIndirectFunctionTable");
-  os << "\n - sig_ids: " << Brief(this->sig_ids());
-  os << "\n - targets: " << Brief(this->targets());
-  os << "\n - refs: " << Brief(this->refs());
-  os << "\n - size: " << this->size();
-  os << "\n - optional_padding: " << this->optional_padding();
-  os << '\n';
-}
-
-template <>
 void TorqueGeneratedWasmContinuationObject<WasmContinuationObject, HeapObject>::WasmContinuationObjectPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmContinuationObject");
-  os << "\n - stack: " << Brief(this->stack());
   os << "\n - parent: " << Brief(this->parent());
   os << '\n';
 }
 
 template <>
-void TorqueGeneratedWasmSuspenderObject<WasmSuspenderObject, JSObject>::WasmSuspenderObjectPrint(std::ostream& os) {
+void TorqueGeneratedWasmSuspenderObject<WasmSuspenderObject, HeapObject>::WasmSuspenderObjectPrint(std::ostream& os) {
   this->PrintHeader(os, "WasmSuspenderObject");
-  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
-  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
   os << "\n - continuation: " << Brief(this->continuation());
   os << "\n - parent: " << Brief(this->parent());
   os << "\n - promise: " << Brief(this->promise());
   os << "\n - resume: " << Brief(this->resume());
   os << "\n - reject: " << Brief(this->reject());
   os << "\n - state: " << this->state();
-  os << "\n - wasm_to_js_counter: " << this->wasm_to_js_counter();
-  os << "\n - optional_padding: " << this->optional_padding();
+  os << "\n - has_js_frames: " << this->has_js_frames();
   os << '\n';
 }
 
@@ -1956,12 +1934,12 @@ void TorqueGeneratedWasmTableObject<WasmTableObject, JSObject>::WasmTableObjectP
   this->PrintHeader(os, "WasmTableObject");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - instance: " << Brief(this->instance());
   os << "\n - entries: " << Brief(this->entries());
   os << "\n - current_length: " << this->current_length();
   os << "\n - maximum_length: " << Brief(this->maximum_length());
-  os << "\n - dispatch_tables: " << Brief(this->dispatch_tables());
+  os << "\n - uses: " << Brief(this->uses());
   os << "\n - raw_type: " << this->raw_type();
+  os << "\n - is_table64: " << this->is_table64();
   os << '\n';
 }
 
@@ -1982,7 +1960,6 @@ void TorqueGeneratedWasmGlobalObject<WasmGlobalObject, JSObject>::WasmGlobalObje
   this->PrintHeader(os, "WasmGlobalObject");
   os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
   os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
-  os << "\n - instance: " << Brief(this->instance());
   os << "\n - untagged_buffer: " << Brief(this->untagged_buffer());
   os << "\n - tagged_buffer: " << Brief(this->tagged_buffer());
   os << "\n - offset: " << this->offset();
@@ -2015,7 +1992,6 @@ void TorqueGeneratedWasmTypeInfo<WasmTypeInfo, HeapObject>::WasmTypeInfoPrint(st
   this->PrintHeader(os, "WasmTypeInfo");
   os << "\n - type_index: " << this->type_index();
   os << "\n - optional_padding: " << this->optional_padding();
-  os << "\n - instance: " << Brief(this->instance());
   os << "\n - supertypes_length: " << this->supertypes_length();
   os << '\n';
 }
@@ -2042,6 +2018,15 @@ void TorqueGeneratedWasmStringViewIter<WasmStringViewIter, HeapObject>::WasmStri
   os << "\n - string: " << Brief(this->string());
   os << "\n - offset: " << this->offset();
   os << "\n - optional_padding: " << this->optional_padding();
+  os << '\n';
+}
+
+template <>
+void TorqueGeneratedWasmSuspendingObject<WasmSuspendingObject, JSObject>::WasmSuspendingObjectPrint(std::ostream& os) {
+  this->PrintHeader(os, "WasmSuspendingObject");
+  os << "\n - properties_or_hash: " << Brief(this->JSReceiver::TorqueGeneratedClass::properties_or_hash());
+  os << "\n - elements: " << Brief(this->JSObject::TorqueGeneratedClass::elements());
+  os << "\n - callable: " << Brief(this->callable());
   os << '\n';
 }
 

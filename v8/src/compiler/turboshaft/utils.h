@@ -6,9 +6,11 @@
 #define V8_COMPILER_TURBOSHAFT_UTILS_H_
 
 #include <iostream>
+#include <limits>
 #include <tuple>
 
 #include "src/base/logging.h"
+#include "src/base/macros.h"
 
 namespace v8::internal::compiler::turboshaft {
 
@@ -77,9 +79,9 @@ std::ostream& operator<<(std::ostream& os, all_of<Ts...> all) {
 }
 
 #ifdef DEBUG
-bool ShouldSkipOptimizationStep();
+V8_EXPORT_PRIVATE bool ShouldSkipOptimizationStep();
 #else
-inline bool ShouldSkipOptimizationStep() { return false; }
+V8_EXPORT_PRIVATE inline bool ShouldSkipOptimizationStep() { return false; }
 #endif
 
 // Set `*ptr` to `new_value` while the scope is active, reset to the previous
@@ -165,8 +167,8 @@ template <typename Head, typename Next, typename... Rest>
 constexpr uint64_t multi_encode(const Head& head, const Next& next,
                                 const Rest&... rest) {
   uint64_t v = multi_encode(next, rest...);
-  // DCHECK_LT(
-  //     v, std::numeric_limits<uint64_t>::max() / MultiSwitch<Head>::max_value);
+  DCHECK_LT(
+      v, std::numeric_limits<uint64_t>::max() / MultiSwitch<Head>::max_value);
   return (v * MultiSwitch<Head>::max_value) + MultiSwitch<Head>::encode(head);
 }
 }  // namespace detail

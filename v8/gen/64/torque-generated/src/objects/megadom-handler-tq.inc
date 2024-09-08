@@ -19,26 +19,19 @@ class TorqueGeneratedMegaDomHandler : public P {
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-  inline MaybeObject accessor() const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> accessor() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-  inline MaybeObject accessor(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> accessor(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-  inline void set_accessor(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_accessor(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-  inline MaybeObject context() const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> context() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-  inline MaybeObject context(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> context(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-  inline void set_context(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_context(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(MegaDomHandler)
 

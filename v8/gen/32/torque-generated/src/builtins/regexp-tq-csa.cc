@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,15 +67,17 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
+#include "torque-generated/src/builtins/array-flat-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
-#include "torque-generated/src/builtins/array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
+#include "torque-generated/src/builtins/builtins-string-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
-#include "torque-generated/src/builtins/conversion-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-exec-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-match-all-tq-csa.h"
@@ -361,7 +365,7 @@ TNode<Object> RegExpExec_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<Object> tmp10;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp10 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kRegExpPrototypeExecSlow), p_context, tmp4, p_string);
+    tmp10 = ca_.CallBuiltin<Object>(Builtin::kRegExpPrototypeExecSlow, p_context, tmp4, p_string);
     ca_.Goto(&block1, tmp10);
   }
 
@@ -519,7 +523,7 @@ TNode<RegExpMatchInfo> RegExpPrototypeExecBodyWithoutResult_0(compiler::CodeAsse
   TNode<Smi> tmp22;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_4);
-    tmp22 = Method_RegExpMatchInfo_GetEndOfCapture_0(state_, TNode<Context>{p_context}, TNode<RegExpMatchInfo>{tmp21}, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull))));
+    tmp22 = Method_RegExpMatchInfo_GetEndOfCapture_0(state_, TNode<RegExpMatchInfo>{tmp21}, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull))));
     StoreLastIndex_0(state_, TNode<Context>{p_context}, TNode<Object>{p_regexp}, TNode<Number>{tmp22}, p_isFastPath);
     ca_.Goto(&block21, phi_bb20_4);
   }
@@ -1452,7 +1456,7 @@ TNode<Object> RegExpCreate_0(compiler::CodeAssemblerState* state_, TNode<Context
   return TNode<Object>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=444&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp.tq?l=448&c=1
 TNode<Object> RegExpCreate_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Map> p_initialMap, TNode<Object> p_maybeString, TNode<String> p_flags) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1494,6 +1498,7 @@ TNode<Object> RegExpCreate_1(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block4, &phi_bb4_4);
     tmp4 = AllocateFastOrSlowJSObjectFromMap_0(state_, TNode<Context>{p_context}, TNode<Map>{p_initialMap});
     tmp5 = UnsafeCast_JSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp4});
+    CodeStubAssembler(state_).ClearTrustedPointerField(TNode<HeapObject>{tmp5}, JSRegExp::kDataOffset);
     tmp6 = CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpInitializeAndCompile, p_context, tmp5, phi_bb4_4, p_flags); 
     ca_.Goto(&block6);
   }

@@ -10,7 +10,7 @@ namespace internal {
 TNode<BoolT> Is_Name_PropertyKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Name> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-delete-property.tq?l=26&c=37
-TNode<BoolT> Is_JSReceiver_JSReceiver_OR_Null_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
+TNode<BoolT> Is_JSReceiver_Null_OR_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
 
 } // namespace internal
 } // namespace v8

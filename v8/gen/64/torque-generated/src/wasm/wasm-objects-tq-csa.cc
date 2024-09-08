@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/wasm/wasm-objects-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -79,7 +83,43 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=18&c=1
+TNode<WasmTrustedInstanceData> Cast_WasmTrustedInstanceData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<WasmTrustedInstanceData> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = DownCastForTorqueClass_WasmTrustedInstanceData_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(label_CastError);
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<WasmTrustedInstanceData>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1
 TNode<WasmInstanceObject> Cast_WasmInstanceObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -115,8 +155,8 @@ TNode<WasmInstanceObject> Cast_WasmInstanceObject_0(compiler::CodeAssemblerState
   return TNode<WasmInstanceObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1
-TNode<WasmApiFunctionRef> Cast_WasmApiFunctionRef_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=28&c=1
+TNode<WasmImportData> Cast_WasmImportData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -125,11 +165,11 @@ TNode<WasmApiFunctionRef> Cast_WasmApiFunctionRef_0(compiler::CodeAssemblerState
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<WasmApiFunctionRef> tmp0;
+  TNode<WasmImportData> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = DownCastForTorqueClass_WasmApiFunctionRef_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    tmp0 = DownCastForTorqueClass_WasmImportData_0(state_, TNode<HeapObject>{p_obj}, &label1);
     ca_.Goto(&block3);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -148,10 +188,46 @@ TNode<WasmApiFunctionRef> Cast_WasmApiFunctionRef_0(compiler::CodeAssemblerState
   }
 
     ca_.Bind(&block5);
-  return TNode<WasmApiFunctionRef>{tmp0};
+  return TNode<WasmImportData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+TNode<WasmFastApiCallData> Cast_WasmFastApiCallData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<WasmFastApiCallData> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = DownCastForTorqueClass_WasmFastApiCallData_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(label_CastError);
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<WasmFastApiCallData>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=55&c=1
 TNode<WasmInternalFunction> Cast_WasmInternalFunction_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -187,7 +263,43 @@ TNode<WasmInternalFunction> Cast_WasmInternalFunction_0(compiler::CodeAssemblerS
   return TNode<WasmInternalFunction>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1
+TNode<WasmFuncRef> Cast_WasmFuncRef_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<WasmFuncRef> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = DownCastForTorqueClass_WasmFuncRef_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(label_CastError);
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<WasmFuncRef>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1
 TNode<WasmFunctionData> Cast_WasmFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -223,7 +335,7 @@ TNode<WasmFunctionData> Cast_WasmFunctionData_0(compiler::CodeAssemblerState* st
   return TNode<WasmFunctionData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=1
 TNode<WasmExportedFunctionData> Cast_WasmExportedFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -259,7 +371,7 @@ TNode<WasmExportedFunctionData> Cast_WasmExportedFunctionData_0(compiler::CodeAs
   return TNode<WasmExportedFunctionData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=131&c=1
 TNode<WasmJSFunctionData> Cast_WasmJSFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -295,7 +407,7 @@ TNode<WasmJSFunctionData> Cast_WasmJSFunctionData_0(compiler::CodeAssemblerState
   return TNode<WasmJSFunctionData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=135&c=1
 TNode<WasmCapiFunctionData> Cast_WasmCapiFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -331,7 +443,7 @@ TNode<WasmCapiFunctionData> Cast_WasmCapiFunctionData_0(compiler::CodeAssemblerS
   return TNode<WasmCapiFunctionData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=140&c=1
 TNode<WasmResumeData> Cast_WasmResumeData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -367,43 +479,7 @@ TNode<WasmResumeData> Cast_WasmResumeData_0(compiler::CodeAssemblerState* state_
   return TNode<WasmResumeData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=97&c=1
-TNode<WasmIndirectFunctionTable> Cast_WasmIndirectFunctionTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<WasmIndirectFunctionTable> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = DownCastForTorqueClass_WasmIndirectFunctionTable_0(state_, TNode<HeapObject>{p_obj}, &label1);
-    ca_.Goto(&block3);
-    if (label1.is_used()) {
-      ca_.Bind(&label1);
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    ca_.Goto(label_CastError);
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    ca_.Goto(&block5);
-  }
-
-    ca_.Bind(&block5);
-  return TNode<WasmIndirectFunctionTable>{tmp0};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=145&c=1
 TNode<WasmContinuationObject> Cast_WasmContinuationObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -439,7 +515,7 @@ TNode<WasmContinuationObject> Cast_WasmContinuationObject_0(compiler::CodeAssemb
   return TNode<WasmContinuationObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=1
 TNode<WasmSuspenderObject> Cast_WasmSuspenderObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -475,7 +551,7 @@ TNode<WasmSuspenderObject> Cast_WasmSuspenderObject_0(compiler::CodeAssemblerSta
   return TNode<WasmSuspenderObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=164&c=1
 TNode<WasmExceptionTag> Cast_WasmExceptionTag_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -511,7 +587,7 @@ TNode<WasmExceptionTag> Cast_WasmExceptionTag_0(compiler::CodeAssemblerState* st
   return TNode<WasmExceptionTag>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=134&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=171&c=1
 TNode<WasmExceptionPackage> Cast_WasmExceptionPackage_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -547,7 +623,7 @@ TNode<WasmExceptionPackage> Cast_WasmExceptionPackage_0(compiler::CodeAssemblerS
   return TNode<WasmExceptionPackage>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=136&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=173&c=1
 TNode<WasmModuleObject> Cast_WasmModuleObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -583,7 +659,43 @@ TNode<WasmModuleObject> Cast_WasmModuleObject_0(compiler::CodeAssemblerState* st
   return TNode<WasmModuleObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=1
+TNode<WasmDispatchTable> Cast_WasmDispatchTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<WasmDispatchTable> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = DownCastForTorqueClass_WasmDispatchTable_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(label_CastError);
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<WasmDispatchTable>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=180&c=1
 TNode<WasmTableObject> Cast_WasmTableObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -619,7 +731,7 @@ TNode<WasmTableObject> Cast_WasmTableObject_0(compiler::CodeAssemblerState* stat
   return TNode<WasmTableObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=156&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=203&c=1
 TNode<WasmMemoryObject> Cast_WasmMemoryObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -655,7 +767,7 @@ TNode<WasmMemoryObject> Cast_WasmMemoryObject_0(compiler::CodeAssemblerState* st
   return TNode<WasmMemoryObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=210&c=1
 TNode<WasmGlobalObject> Cast_WasmGlobalObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -691,7 +803,7 @@ TNode<WasmGlobalObject> Cast_WasmGlobalObject_0(compiler::CodeAssemblerState* st
   return TNode<WasmGlobalObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=1
 TNode<WasmTagObject> Cast_WasmTagObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -727,7 +839,7 @@ TNode<WasmTagObject> Cast_WasmTagObject_0(compiler::CodeAssemblerState* state_, 
   return TNode<WasmTagObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=186&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=233&c=1
 TNode<AsmWasmData> Cast_AsmWasmData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -763,7 +875,7 @@ TNode<AsmWasmData> Cast_AsmWasmData_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<AsmWasmData>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=238&c=1
 TNode<WasmTypeInfo> Cast_WasmTypeInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -799,7 +911,7 @@ TNode<WasmTypeInfo> Cast_WasmTypeInfo_0(compiler::CodeAssemblerState* state_, TN
   return TNode<WasmTypeInfo>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=261&c=1
 TNode<WasmObject> Cast_WasmObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -835,7 +947,7 @@ TNode<WasmObject> Cast_WasmObject_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<WasmObject>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=264&c=1
 TNode<WasmStruct> Cast_WasmStruct_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -871,7 +983,7 @@ TNode<WasmStruct> Cast_WasmStruct_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<WasmStruct>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=267&c=1
 TNode<WasmArray> Cast_WasmArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -907,7 +1019,7 @@ TNode<WasmArray> Cast_WasmArray_0(compiler::CodeAssemblerState* state_, TNode<He
   return TNode<WasmArray>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
 TNode<WasmStringViewIter> Cast_WasmStringViewIter_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -943,7 +1055,7 @@ TNode<WasmStringViewIter> Cast_WasmStringViewIter_0(compiler::CodeAssemblerState
   return TNode<WasmStringViewIter>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=236&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=283&c=1
 TNode<WasmNull> Cast_WasmNull_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -979,7 +1091,7 @@ TNode<WasmNull> Cast_WasmNull_0(compiler::CodeAssemblerState* state_, TNode<Heap
   return TNode<WasmNull>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=239&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=286&c=1
 TNode<WasmNull> kWasmNull_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -990,8 +1102,524 @@ TNode<WasmNull> kWasmNull_0(compiler::CodeAssemblerState* state_) {
     tmp0 = CodeStubAssembler(state_).WasmNullConstant();
   return TNode<WasmNull>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=42&c=3
-TNode<HeapObject> LoadWasmInternalFunctionRef_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=288&c=1
+TNode<WasmSuspendingObject> Cast_WasmSuspendingObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<WasmSuspendingObject> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = DownCastForTorqueClass_WasmSuspendingObject_0(state_, TNode<HeapObject>{p_obj}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(label_CastError);
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<WasmSuspendingObject>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=85&c=3
+TNode<TrustedPointerT> LoadWasmFuncRefTrustedInternal_0(compiler::CodeAssemblerState* state_, TNode<WasmFuncRef> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<TrustedPointerT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<TrustedPointerT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=85&c=3
+void StoreWasmFuncRefTrustedInternal_0(compiler::CodeAssemblerState* state_, TNode<WasmFuncRef> p_o, TNode<TrustedPointerT> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=32&c=3
+TNode<MaybeObject> LoadWasmImportDataProtectedInstanceData_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<MaybeObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<MaybeObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=32&c=3
+void StoreWasmImportDataProtectedInstanceData_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<MaybeObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=33&c=3
+TNode<NativeContext> LoadWasmImportDataNativeContext_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<NativeContext> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp1 = CodeStubAssembler(state_).LoadReference<NativeContext>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<NativeContext>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=33&c=3
+void StoreWasmImportDataNativeContext_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<NativeContext> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<NativeContext>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=34&c=3
+TNode<HeapObject> LoadWasmImportDataCallable_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<HeapObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<HeapObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=34&c=3
+void StoreWasmImportDataCallable_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<HeapObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=3
+TNode<Smi> LoadWasmImportDataSuspend_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Smi> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Smi>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=3
+void StoreWasmImportDataSuspend_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<Smi> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=36&c=3
+TNode<Smi> LoadWasmImportDataWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Smi> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Smi>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=36&c=3
+void StoreWasmImportDataWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<Smi> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=37&c=3
+TNode<Object> LoadWasmImportDataCallOrigin_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Object>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=37&c=3
+void StoreWasmImportDataCallOrigin_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<Object> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=39&c=3
+TNode<ByteArray> LoadWasmImportDataSig_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<ByteArray> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    tmp1 = CodeStubAssembler(state_).LoadReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<ByteArray>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=39&c=3
+void StoreWasmImportDataSig_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<ByteArray> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    CodeStubAssembler(state_).StoreReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=41&c=3
+TNode<TrustedPointerT> LoadWasmImportDataCode_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<TrustedPointerT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<TrustedPointerT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=41&c=3
+void StoreWasmImportDataCode_0(compiler::CodeAssemblerState* state_, TNode<WasmImportData> p_o, TNode<TrustedPointerT> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
+TNode<TrustedPointerT> LoadWasmInstanceObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmInstanceObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<TrustedPointerT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<TrustedPointerT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
+void StoreWasmInstanceObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmInstanceObject> p_o, TNode<TrustedPointerT> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
+TNode<WasmModuleObject> LoadWasmInstanceObjectModuleObject_0(compiler::CodeAssemblerState* state_, TNode<WasmInstanceObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<WasmModuleObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp1 = CodeStubAssembler(state_).LoadReference<WasmModuleObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<WasmModuleObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
+void StoreWasmInstanceObjectModuleObject_0(compiler::CodeAssemblerState* state_, TNode<WasmInstanceObject> p_o, TNode<WasmModuleObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<WasmModuleObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=23&c=3
+TNode<JSObject> LoadWasmInstanceObjectExportsObject_0(compiler::CodeAssemblerState* state_, TNode<WasmInstanceObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<JSObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp1 = CodeStubAssembler(state_).LoadReference<JSObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<JSObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=23&c=3
+void StoreWasmInstanceObjectExportsObject_0(compiler::CodeAssemblerState* state_, TNode<WasmInstanceObject> p_o, TNode<JSObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<JSObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+TNode<HeapObject> LoadWasmFastApiCallDataSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmFastApiCallData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1011,8 +1639,8 @@ TNode<HeapObject> LoadWasmInternalFunctionRef_0(compiler::CodeAssemblerState* st
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=42&c=3
-void StoreWasmInternalFunctionRef_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+void StoreWasmFastApiCallDataSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmFastApiCallData> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1030,7 +1658,127 @@ void StoreWasmInternalFunctionRef_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=49&c=3
+TNode<Object> LoadWasmFastApiCallDataCallbackData_0(compiler::CodeAssemblerState* state_, TNode<WasmFastApiCallData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Object>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=49&c=3
+void StoreWasmFastApiCallDataCallbackData_0(compiler::CodeAssemblerState* state_, TNode<WasmFastApiCallData> p_o, TNode<Object> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
+TNode<MaybeObject> LoadWasmFastApiCallDataCachedMap_0(compiler::CodeAssemblerState* state_, TNode<WasmFastApiCallData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<MaybeObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<MaybeObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
+void StoreWasmFastApiCallDataCachedMap_0(compiler::CodeAssemblerState* state_, TNode<WasmFastApiCallData> p_o, TNode<MaybeObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=62&c=3
+TNode<MaybeObject> LoadWasmInternalFunctionProtectedImplicitArg_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<MaybeObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<MaybeObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=62&c=3
+void StoreWasmInternalFunctionProtectedImplicitArg_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<MaybeObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=3
 TNode<HeapObject> LoadWasmInternalFunctionExternal_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1051,7 +1799,7 @@ TNode<HeapObject> LoadWasmInternalFunctionExternal_0(compiler::CodeAssemblerStat
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=44&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=3
 void StoreWasmInternalFunctionExternal_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1070,47 +1818,7 @@ void StoreWasmInternalFunctionExternal_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=46&c=3
-TNode<Code> LoadWasmInternalFunctionCode_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Code> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Code>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Code>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=46&c=3
-void StoreWasmInternalFunctionCode_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<Code> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Code>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=68&c=3
 TNode<Smi> LoadWasmInternalFunctionFunctionIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1122,7 +1830,7 @@ TNode<Smi> LoadWasmInternalFunctionFunctionIndex_0(compiler::CodeAssemblerState*
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -1131,7 +1839,7 @@ TNode<Smi> LoadWasmInternalFunctionFunctionIndex_0(compiler::CodeAssemblerState*
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=68&c=3
 void StoreWasmInternalFunctionFunctionIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1142,157 +1850,16 @@ void StoreWasmInternalFunctionFunctionIndex_0(compiler::CodeAssemblerState* stat
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
-TNode<ExternalPointerT> LoadWasmInternalFunctionCallTarget_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<ExternalPointerT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    tmp1 = CodeStubAssembler(state_).LoadReference<ExternalPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<ExternalPointerT>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
-void StoreWasmInternalFunctionCallTarget_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<ExternalPointerT> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<ExternalPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
-TNode<NativeContext> LoadWasmApiFunctionRefNativeContext_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<NativeContext> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).LoadReference<NativeContext>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<NativeContext>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=21&c=3
-void StoreWasmApiFunctionRefNativeContext_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<NativeContext> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<NativeContext>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
-TNode<HeapObject> LoadWasmApiFunctionRefCallable_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=22&c=3
-void StoreWasmApiFunctionRefCallable_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<HeapObject> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=25&c=3
-TNode<HeapObject> LoadWasmApiFunctionRefInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=25&c=3
-void StoreWasmApiFunctionRefInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=70&c=3
+TNode<RawPtrT> LoadWasmInternalFunctionCallTarget_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1300,39 +1867,20 @@ void StoreWasmApiFunctionRefInstance_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=26&c=3
-TNode<Smi> LoadWasmApiFunctionRefSuspend_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Smi> tmp1;
+  TNode<RawPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<RawPtrT>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Smi>{tmp1};
+  return TNode<RawPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=26&c=3
-void StoreWasmApiFunctionRefSuspend_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<Smi> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=70&c=3
+void StoreWasmInternalFunctionCallTarget_0(compiler::CodeAssemblerState* state_, TNode<WasmInternalFunction> p_o, TNode<RawPtrT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1343,15 +1891,15 @@ void StoreWasmApiFunctionRefSuspend_0(compiler::CodeAssemblerState* state_, TNod
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<RawPtrT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=27&c=3
-TNode<Smi> LoadWasmApiFunctionRefWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=94&c=3
+TNode<TrustedPointerT> LoadWasmFunctionDataWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1359,140 +1907,20 @@ TNode<Smi> LoadWasmApiFunctionRefWrapperBudget_0(compiler::CodeAssemblerState* s
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Smi> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Smi>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=27&c=3
-void StoreWasmApiFunctionRefWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<Smi> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=28&c=3
-TNode<Object> LoadWasmApiFunctionRefCallOrigin_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=28&c=3
-void StoreWasmApiFunctionRefCallOrigin_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<Object> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=30&c=3
-TNode<ByteArray> LoadWasmApiFunctionRefSig_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<ByteArray> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
-    tmp1 = CodeStubAssembler(state_).LoadReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<ByteArray>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=30&c=3
-void StoreWasmApiFunctionRefSig_0(compiler::CodeAssemblerState* state_, TNode<WasmApiFunctionRef> p_o, TNode<ByteArray> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
-    CodeStubAssembler(state_).StoreReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=58&c=3
-TNode<WasmInternalFunction> LoadWasmFunctionDataInternal_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<WasmInternalFunction> tmp1;
+  TNode<TrustedPointerT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).LoadReference<WasmInternalFunction>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<WasmInternalFunction>{tmp1};
+  return TNode<TrustedPointerT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=58&c=3
-void StoreWasmFunctionDataInternal_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o, TNode<WasmInternalFunction> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=94&c=3
+void StoreWasmFunctionDataWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o, TNode<TrustedPointerT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1503,15 +1931,15 @@ void StoreWasmFunctionDataInternal_0(compiler::CodeAssemblerState* state_, TNode
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<WasmInternalFunction>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=60&c=3
-TNode<Code> LoadWasmFunctionDataWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=97&c=3
+TNode<WasmFuncRef> LoadWasmFunctionDataFuncRef_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1519,20 +1947,20 @@ TNode<Code> LoadWasmFunctionDataWrapperCode_0(compiler::CodeAssemblerState* stat
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Code> tmp1;
+  TNode<WasmFuncRef> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Code>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<WasmFuncRef>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Code>{tmp1};
+  return TNode<WasmFuncRef>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=60&c=3
-void StoreWasmFunctionDataWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o, TNode<Code> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=97&c=3
+void StoreWasmFunctionDataFuncRef_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o, TNode<WasmFuncRef> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1543,14 +1971,14 @@ void StoreWasmFunctionDataWrapperCode_0(compiler::CodeAssemblerState* state_, TN
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<Code>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<WasmFuncRef>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=99&c=3
 TNode<Smi> LoadWasmFunctionDataJsPromiseFlags_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1571,7 +1999,7 @@ TNode<Smi> LoadWasmFunctionDataJsPromiseFlags_0(compiler::CodeAssemblerState* st
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=99&c=3
 void StoreWasmFunctionDataJsPromiseFlags_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1590,8 +2018,8 @@ void StoreWasmFunctionDataJsPromiseFlags_0(compiler::CodeAssemblerState* state_,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=69&c=3
-TNode<WasmInstanceObject> LoadWasmExportedFunctionDataInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=3
+TNode<MaybeObject> LoadWasmFunctionDataProtectedInternal_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1599,20 +2027,20 @@ TNode<WasmInstanceObject> LoadWasmExportedFunctionDataInstance_0(compiler::CodeA
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<WasmInstanceObject> tmp1;
+  TNode<MaybeObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp1 = CodeStubAssembler(state_).LoadReference<WasmInstanceObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<WasmInstanceObject>{tmp1};
+  return TNode<MaybeObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=69&c=3
-void StoreWasmExportedFunctionDataInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<WasmInstanceObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=3
+void StoreWasmFunctionDataProtectedInternal_0(compiler::CodeAssemblerState* state_, TNode<WasmFunctionData> p_o, TNode<MaybeObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1623,14 +2051,54 @@ void StoreWasmExportedFunctionDataInstance_0(compiler::CodeAssemblerState* state
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<WasmInstanceObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=3
+TNode<MaybeObject> LoadWasmExportedFunctionDataProtectedInstanceData_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<MaybeObject> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<MaybeObject>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=3
+void StoreWasmExportedFunctionDataProtectedInstanceData_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<MaybeObject> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=113&c=3
 TNode<Smi> LoadWasmExportedFunctionDataFunctionIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1642,7 +2110,7 @@ TNode<Smi> LoadWasmExportedFunctionDataFunctionIndex_0(compiler::CodeAssemblerSt
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -1651,7 +2119,7 @@ TNode<Smi> LoadWasmExportedFunctionDataFunctionIndex_0(compiler::CodeAssemblerSt
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=113&c=3
 void StoreWasmExportedFunctionDataFunctionIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1662,46 +2130,6 @@ void StoreWasmExportedFunctionDataFunctionIndex_0(compiler::CodeAssemblerState* 
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=71&c=3
-TNode<Smi> LoadWasmExportedFunctionDataWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Smi> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Smi>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=71&c=3
-void StoreWasmExportedFunctionDataWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
@@ -1710,8 +2138,8 @@ void StoreWasmExportedFunctionDataWrapperBudget_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=74&c=3
-TNode<Code> LoadWasmExportedFunctionDataCWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=115&c=3
+TNode<Cell> LoadWasmExportedFunctionDataWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1719,20 +2147,20 @@ TNode<Code> LoadWasmExportedFunctionDataCWrapperCode_0(compiler::CodeAssemblerSt
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Code> tmp1;
+  TNode<Cell> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Code>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Cell>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Code>{tmp1};
+  return TNode<Cell>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=74&c=3
-void StoreWasmExportedFunctionDataCWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Code> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=115&c=3
+void StoreWasmExportedFunctionDataWrapperBudget_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Cell> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1743,54 +2171,14 @@ void StoreWasmExportedFunctionDataCWrapperCode_0(compiler::CodeAssemblerState* s
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
-    CodeStubAssembler(state_).StoreReference<Code>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Cell>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=75&c=3
-TNode<Smi> LoadWasmExportedFunctionDataPackedArgsSize_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Smi> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Smi>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=75&c=3
-void StoreWasmExportedFunctionDataPackedArgsSize_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
-    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
 TNode<Smi> LoadWasmExportedFunctionDataCanonicalTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1802,6 +2190,46 @@ TNode<Smi> LoadWasmExportedFunctionDataCanonicalTypeIndex_0(compiler::CodeAssemb
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Smi>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+void StoreWasmExportedFunctionDataCanonicalTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=121&c=3
+TNode<Smi> LoadWasmExportedFunctionDataPackedArgsSize_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Smi> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
@@ -1811,8 +2239,8 @@ TNode<Smi> LoadWasmExportedFunctionDataCanonicalTypeIndex_0(compiler::CodeAssemb
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=76&c=3
-void StoreWasmExportedFunctionDataCanonicalTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=121&c=3
+void StoreWasmExportedFunctionDataPackedArgsSize_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1830,8 +2258,8 @@ void StoreWasmExportedFunctionDataCanonicalTypeIndex_0(compiler::CodeAssemblerSt
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=77&c=3
-TNode<ExternalPointerT> LoadWasmExportedFunctionDataSig_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=122&c=3
+TNode<TrustedPointerT> LoadWasmExportedFunctionDataCWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1839,20 +2267,20 @@ TNode<ExternalPointerT> LoadWasmExportedFunctionDataSig_0(compiler::CodeAssemble
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<ExternalPointerT> tmp1;
+  TNode<TrustedPointerT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 80);
-    tmp1 = CodeStubAssembler(state_).LoadReference<ExternalPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<ExternalPointerT>{tmp1};
+  return TNode<TrustedPointerT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=77&c=3
-void StoreWasmExportedFunctionDataSig_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<ExternalPointerT> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=122&c=3
+void StoreWasmExportedFunctionDataCWrapperCode_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<TrustedPointerT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1863,15 +2291,15 @@ void StoreWasmExportedFunctionDataSig_0(compiler::CodeAssemblerState* state_, TN
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 80);
-    CodeStubAssembler(state_).StoreReference<ExternalPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=84&c=3
-TNode<ByteArray> LoadWasmJSFunctionDataSerializedSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmJSFunctionData> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=124&c=3
+TNode<RawPtrT> LoadWasmExportedFunctionDataSig_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1879,20 +2307,20 @@ TNode<ByteArray> LoadWasmJSFunctionDataSerializedSignature_0(compiler::CodeAssem
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<ByteArray> tmp1;
+  TNode<RawPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp1 = CodeStubAssembler(state_).LoadReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 88);
+    tmp1 = CodeStubAssembler(state_).LoadReference<RawPtrT>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<ByteArray>{tmp1};
+  return TNode<RawPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=84&c=3
-void StoreWasmJSFunctionDataSerializedSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmJSFunctionData> p_o, TNode<ByteArray> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=124&c=3
+void StoreWasmExportedFunctionDataSig_0(compiler::CodeAssemblerState* state_, TNode<WasmExportedFunctionData> p_o, TNode<RawPtrT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1902,15 +2330,55 @@ void StoreWasmJSFunctionDataSerializedSignature_0(compiler::CodeAssemblerState* 
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 88);
+    CodeStubAssembler(state_).StoreReference<RawPtrT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=88&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=132&c=3
+TNode<Smi> LoadWasmJSFunctionDataCanonicalSigIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmJSFunctionData> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Smi> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Smi>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=132&c=3
+void StoreWasmJSFunctionDataCanonicalSigIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmJSFunctionData> p_o, TNode<Smi> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=136&c=3
 TNode<Foreign> LoadWasmCapiFunctionDataEmbedderData_0(compiler::CodeAssemblerState* state_, TNode<WasmCapiFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1922,7 +2390,7 @@ TNode<Foreign> LoadWasmCapiFunctionDataEmbedderData_0(compiler::CodeAssemblerSta
   TNode<Foreign> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp1 = CodeStubAssembler(state_).LoadReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -1931,7 +2399,7 @@ TNode<Foreign> LoadWasmCapiFunctionDataEmbedderData_0(compiler::CodeAssemblerSta
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=88&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=136&c=3
 void StoreWasmCapiFunctionDataEmbedderData_0(compiler::CodeAssemblerState* state_, TNode<WasmCapiFunctionData> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1942,7 +2410,7 @@ void StoreWasmCapiFunctionDataEmbedderData_0(compiler::CodeAssemblerState* state
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     CodeStubAssembler(state_).StoreReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -1950,7 +2418,7 @@ void StoreWasmCapiFunctionDataEmbedderData_0(compiler::CodeAssemblerState* state
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=89&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=137&c=3
 TNode<ByteArray> LoadWasmCapiFunctionDataSerializedSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmCapiFunctionData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1962,7 +2430,7 @@ TNode<ByteArray> LoadWasmCapiFunctionDataSerializedSignature_0(compiler::CodeAss
   TNode<ByteArray> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp1 = CodeStubAssembler(state_).LoadReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -1971,7 +2439,7 @@ TNode<ByteArray> LoadWasmCapiFunctionDataSerializedSignature_0(compiler::CodeAss
   return TNode<ByteArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=89&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=137&c=3
 void StoreWasmCapiFunctionDataSerializedSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmCapiFunctionData> p_o, TNode<ByteArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1982,7 +2450,7 @@ void StoreWasmCapiFunctionDataSerializedSignature_0(compiler::CodeAssemblerState
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     CodeStubAssembler(state_).StoreReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -1990,7 +2458,7 @@ void StoreWasmCapiFunctionDataSerializedSignature_0(compiler::CodeAssemblerState
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=93&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=3
 TNode<WasmSuspenderObject> LoadWasmResumeDataSuspender_0(compiler::CodeAssemblerState* state_, TNode<WasmResumeData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2011,7 +2479,7 @@ TNode<WasmSuspenderObject> LoadWasmResumeDataSuspender_0(compiler::CodeAssembler
   return TNode<WasmSuspenderObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=93&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=3
 void StoreWasmResumeDataSuspender_0(compiler::CodeAssemblerState* state_, TNode<WasmResumeData> p_o, TNode<WasmSuspenderObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2030,7 +2498,7 @@ void StoreWasmResumeDataSuspender_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=94&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=142&c=3
 TNode<Smi> LoadWasmResumeDataOnResume_0(compiler::CodeAssemblerState* state_, TNode<WasmResumeData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2051,7 +2519,7 @@ TNode<Smi> LoadWasmResumeDataOnResume_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=94&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=142&c=3
 void StoreWasmResumeDataOnResume_0(compiler::CodeAssemblerState* state_, TNode<WasmResumeData> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2070,247 +2538,7 @@ void StoreWasmResumeDataOnResume_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=98&c=3
-TNode<ByteArray> LoadWasmIndirectFunctionTableSigIds_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<ByteArray> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).LoadReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<ByteArray>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=98&c=3
-void StoreWasmIndirectFunctionTableSigIds_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o, TNode<ByteArray> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<ByteArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=99&c=3
-TNode<ExternalPointerArray> LoadWasmIndirectFunctionTableTargets_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<ExternalPointerArray> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<ExternalPointerArray>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<ExternalPointerArray>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=99&c=3
-void StoreWasmIndirectFunctionTableTargets_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o, TNode<ExternalPointerArray> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<ExternalPointerArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=100&c=3
-TNode<FixedArray> LoadWasmIndirectFunctionTableRefs_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<FixedArray> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<FixedArray>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=100&c=3
-void StoreWasmIndirectFunctionTableRefs_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o, TNode<FixedArray> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=101&c=3
-TNode<Uint32T> LoadWasmIndirectFunctionTableSize_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Uint32T> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Uint32T>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=101&c=3
-void StoreWasmIndirectFunctionTableSize_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o, TNode<Uint32T> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=28
-TNode<Uint32T> LoadWasmIndirectFunctionTableOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Uint32T> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Uint32T>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=102&c=28
-void StoreWasmIndirectFunctionTableOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmIndirectFunctionTable> p_o, TNode<Uint32T> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=107&c=3
-TNode<Foreign> LoadWasmContinuationObjectStack_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Foreign> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Foreign>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=107&c=3
-void StoreWasmContinuationObjectStack_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o, TNode<Foreign> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=146&c=3
 TNode<HeapObject> LoadWasmContinuationObjectParent_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2322,7 +2550,7 @@ TNode<HeapObject> LoadWasmContinuationObjectParent_0(compiler::CodeAssemblerStat
   TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2331,7 +2559,7 @@ TNode<HeapObject> LoadWasmContinuationObjectParent_0(compiler::CodeAssemblerStat
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=146&c=3
 void StoreWasmContinuationObjectParent_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2342,7 +2570,7 @@ void StoreWasmContinuationObjectParent_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2350,7 +2578,47 @@ void StoreWasmContinuationObjectParent_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=109&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=147&c=3
+TNode<ExternalPointerT> LoadWasmContinuationObjectStack_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<ExternalPointerT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp1 = CodeStubAssembler(state_).LoadReference<ExternalPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<ExternalPointerT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=147&c=3
+void StoreWasmContinuationObjectStack_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o, TNode<ExternalPointerT> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<ExternalPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=148&c=3
 TNode<ExternalPointerT> LoadWasmContinuationObjectJmpbuf_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2371,7 +2639,7 @@ TNode<ExternalPointerT> LoadWasmContinuationObjectJmpbuf_0(compiler::CodeAssembl
   return TNode<ExternalPointerT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=109&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=148&c=3
 void StoreWasmContinuationObjectJmpbuf_0(compiler::CodeAssemblerState* state_, TNode<WasmContinuationObject> p_o, TNode<ExternalPointerT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2390,7 +2658,7 @@ void StoreWasmContinuationObjectJmpbuf_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=113&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
 TNode<HeapObject> LoadWasmSuspenderObjectContinuation_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2402,7 +2670,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectContinuation_0(compiler::CodeAssemblerS
   TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2411,7 +2679,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectContinuation_0(compiler::CodeAssemblerS
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=113&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
 void StoreWasmSuspenderObjectContinuation_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2422,7 +2690,7 @@ void StoreWasmSuspenderObjectContinuation_0(compiler::CodeAssemblerState* state_
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2430,7 +2698,7 @@ void StoreWasmSuspenderObjectContinuation_0(compiler::CodeAssemblerState* state_
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=153&c=3
 TNode<HeapObject> LoadWasmSuspenderObjectParent_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2442,7 +2710,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectParent_0(compiler::CodeAssemblerState* 
   TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2451,7 +2719,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectParent_0(compiler::CodeAssemblerState* 
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=114&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=153&c=3
 void StoreWasmSuspenderObjectParent_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2462,7 +2730,7 @@ void StoreWasmSuspenderObjectParent_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2470,7 +2738,7 @@ void StoreWasmSuspenderObjectParent_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=154&c=3
 TNode<JSPromise> LoadWasmSuspenderObjectPromise_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2482,7 +2750,7 @@ TNode<JSPromise> LoadWasmSuspenderObjectPromise_0(compiler::CodeAssemblerState* 
   TNode<JSPromise> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp1 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2491,7 +2759,7 @@ TNode<JSPromise> LoadWasmSuspenderObjectPromise_0(compiler::CodeAssemblerState* 
   return TNode<JSPromise>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=115&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=154&c=3
 void StoreWasmSuspenderObjectPromise_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<JSPromise> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2502,7 +2770,7 @@ void StoreWasmSuspenderObjectPromise_0(compiler::CodeAssemblerState* state_, TNo
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<JSPromise>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2510,7 +2778,7 @@ void StoreWasmSuspenderObjectPromise_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=155&c=3
 TNode<HeapObject> LoadWasmSuspenderObjectResume_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2522,7 +2790,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectResume_0(compiler::CodeAssemblerState* 
   TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2531,7 +2799,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectResume_0(compiler::CodeAssemblerState* 
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=116&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=155&c=3
 void StoreWasmSuspenderObjectResume_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2542,7 +2810,7 @@ void StoreWasmSuspenderObjectResume_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2550,7 +2818,7 @@ void StoreWasmSuspenderObjectResume_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=117&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=156&c=3
 TNode<HeapObject> LoadWasmSuspenderObjectReject_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2562,7 +2830,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectReject_0(compiler::CodeAssemblerState* 
   TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2571,7 +2839,7 @@ TNode<HeapObject> LoadWasmSuspenderObjectReject_0(compiler::CodeAssemblerState* 
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=117&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=156&c=3
 void StoreWasmSuspenderObjectReject_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2582,7 +2850,7 @@ void StoreWasmSuspenderObjectReject_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2590,7 +2858,7 @@ void StoreWasmSuspenderObjectReject_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=118&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=157&c=3
 TNode<Smi> LoadWasmSuspenderObjectState_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2602,7 +2870,7 @@ TNode<Smi> LoadWasmSuspenderObjectState_0(compiler::CodeAssemblerState* state_, 
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2611,7 +2879,7 @@ TNode<Smi> LoadWasmSuspenderObjectState_0(compiler::CodeAssemblerState* state_, 
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=118&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=157&c=3
 void StoreWasmSuspenderObjectState_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2622,7 +2890,7 @@ void StoreWasmSuspenderObjectState_0(compiler::CodeAssemblerState* state_, TNode
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2630,8 +2898,8 @@ void StoreWasmSuspenderObjectState_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=122&c=3
-TNode<Uint32T> LoadWasmSuspenderObjectWasmToJsCounter_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=161&c=3
+TNode<Smi> LoadWasmSuspenderObjectHasJsFrames_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2639,60 +2907,20 @@ TNode<Uint32T> LoadWasmSuspenderObjectWasmToJsCounter_0(compiler::CodeAssemblerS
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Uint32T> tmp1;
+  TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Uint32T>{tmp1};
+  return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=122&c=3
-void StoreWasmSuspenderObjectWasmToJsCounter_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<Uint32T> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=123&c=28
-TNode<Uint32T> LoadWasmSuspenderObjectOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Uint32T> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 76);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<Uint32T>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=123&c=28
-void StoreWasmSuspenderObjectOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<Uint32T> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=161&c=3
+void StoreWasmSuspenderObjectHasJsFrames_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspenderObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2702,15 +2930,15 @@ void StoreWasmSuspenderObjectOptionalPadding_0(compiler::CodeAssemblerState* sta
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 76);
-    CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=131&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=168&c=3
 TNode<Smi> LoadWasmExceptionTagIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExceptionTag> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2731,7 +2959,7 @@ TNode<Smi> LoadWasmExceptionTagIndex_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=131&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=168&c=3
 void StoreWasmExceptionTagIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmExceptionTag> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2750,7 +2978,7 @@ void StoreWasmExceptionTagIndex_0(compiler::CodeAssemblerState* state_, TNode<Wa
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=137&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=174&c=3
 TNode<Foreign> LoadWasmModuleObjectManagedNativeModule_0(compiler::CodeAssemblerState* state_, TNode<WasmModuleObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2771,7 +2999,7 @@ TNode<Foreign> LoadWasmModuleObjectManagedNativeModule_0(compiler::CodeAssembler
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=137&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=174&c=3
 void StoreWasmModuleObjectManagedNativeModule_0(compiler::CodeAssemblerState* state_, TNode<WasmModuleObject> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2790,7 +3018,7 @@ void StoreWasmModuleObjectManagedNativeModule_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=138&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=175&c=3
 TNode<Script> LoadWasmModuleObjectScript_0(compiler::CodeAssemblerState* state_, TNode<WasmModuleObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2811,7 +3039,7 @@ TNode<Script> LoadWasmModuleObjectScript_0(compiler::CodeAssemblerState* state_,
   return TNode<Script>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=138&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=175&c=3
 void StoreWasmModuleObjectScript_0(compiler::CodeAssemblerState* state_, TNode<WasmModuleObject> p_o, TNode<Script> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2830,47 +3058,7 @@ void StoreWasmModuleObjectScript_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=146&c=3
-TNode<HeapObject> LoadWasmTableObjectInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=146&c=3
-void StoreWasmTableObjectInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<HeapObject> p_v) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=149&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=189&c=3
 TNode<FixedArray> LoadWasmTableObjectEntries_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2882,7 +3070,7 @@ TNode<FixedArray> LoadWasmTableObjectEntries_0(compiler::CodeAssemblerState* sta
   TNode<FixedArray> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp1 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2891,7 +3079,7 @@ TNode<FixedArray> LoadWasmTableObjectEntries_0(compiler::CodeAssemblerState* sta
   return TNode<FixedArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=149&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=189&c=3
 void StoreWasmTableObjectEntries_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<FixedArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2902,7 +3090,7 @@ void StoreWasmTableObjectEntries_0(compiler::CodeAssemblerState* state_, TNode<W
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2910,7 +3098,7 @@ void StoreWasmTableObjectEntries_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=150&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=190&c=3
 TNode<Smi> LoadWasmTableObjectCurrentLength_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2922,7 +3110,7 @@ TNode<Smi> LoadWasmTableObjectCurrentLength_0(compiler::CodeAssemblerState* stat
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2931,7 +3119,7 @@ TNode<Smi> LoadWasmTableObjectCurrentLength_0(compiler::CodeAssemblerState* stat
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=150&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=190&c=3
 void StoreWasmTableObjectCurrentLength_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2942,7 +3130,7 @@ void StoreWasmTableObjectCurrentLength_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2950,7 +3138,7 @@ void StoreWasmTableObjectCurrentLength_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=3
 TNode<Object> LoadWasmTableObjectMaximumLength_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2962,7 +3150,7 @@ TNode<Object> LoadWasmTableObjectMaximumLength_0(compiler::CodeAssemblerState* s
   TNode<Object> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -2971,7 +3159,7 @@ TNode<Object> LoadWasmTableObjectMaximumLength_0(compiler::CodeAssemblerState* s
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=3
 void StoreWasmTableObjectMaximumLength_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2982,7 +3170,7 @@ void StoreWasmTableObjectMaximumLength_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -2990,8 +3178,8 @@ void StoreWasmTableObjectMaximumLength_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
-TNode<FixedArray> LoadWasmTableObjectDispatchTables_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=194&c=3
+TNode<FixedArray> LoadWasmTableObjectUses_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3002,7 +3190,7 @@ TNode<FixedArray> LoadWasmTableObjectDispatchTables_0(compiler::CodeAssemblerSta
   TNode<FixedArray> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp1 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -3011,8 +3199,48 @@ TNode<FixedArray> LoadWasmTableObjectDispatchTables_0(compiler::CodeAssemblerSta
   return TNode<FixedArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=152&c=3
-void StoreWasmTableObjectDispatchTables_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<FixedArray> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=194&c=3
+void StoreWasmTableObjectUses_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<FixedArray> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=195&c=3
+TNode<Smi> LoadWasmTableObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Smi> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Smi>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=195&c=3
+void StoreWasmTableObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3023,15 +3251,15 @@ void StoreWasmTableObjectDispatchTables_0(compiler::CodeAssemblerState* state_, 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 56);
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=153&c=3
-TNode<Smi> LoadWasmTableObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=196&c=3
+TNode<Smi> LoadWasmTableObjectIsTable64_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3051,8 +3279,8 @@ TNode<Smi> LoadWasmTableObjectRawType_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=153&c=3
-void StoreWasmTableObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<Smi> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=196&c=3
+void StoreWasmTableObjectIsTable64_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3070,7 +3298,47 @@ void StoreWasmTableObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
+TNode<TrustedPointerT> LoadWasmTableObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<TrustedPointerT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<TrustedPointerT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
+void StoreWasmTableObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmTableObject> p_o, TNode<TrustedPointerT> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=204&c=3
 TNode<JSArrayBuffer> LoadWasmMemoryObjectArrayBuffer_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3091,7 +3359,7 @@ TNode<JSArrayBuffer> LoadWasmMemoryObjectArrayBuffer_0(compiler::CodeAssemblerSt
   return TNode<JSArrayBuffer>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=204&c=3
 void StoreWasmMemoryObjectArrayBuffer_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o, TNode<JSArrayBuffer> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3110,7 +3378,7 @@ void StoreWasmMemoryObjectArrayBuffer_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=158&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=205&c=3
 TNode<Smi> LoadWasmMemoryObjectMaximumPages_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3131,7 +3399,7 @@ TNode<Smi> LoadWasmMemoryObjectMaximumPages_0(compiler::CodeAssemblerState* stat
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=158&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=205&c=3
 void StoreWasmMemoryObjectMaximumPages_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3150,7 +3418,7 @@ void StoreWasmMemoryObjectMaximumPages_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=159&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=206&c=3
 TNode<Smi> LoadWasmMemoryObjectIsMemory64_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3171,7 +3439,7 @@ TNode<Smi> LoadWasmMemoryObjectIsMemory64_0(compiler::CodeAssemblerState* state_
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=159&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=206&c=3
 void StoreWasmMemoryObjectIsMemory64_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3190,8 +3458,8 @@ void StoreWasmMemoryObjectIsMemory64_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=160&c=3
-TNode<HeapObject> LoadWasmMemoryObjectInstances_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=3
+TNode<WeakArrayList> LoadWasmMemoryObjectInstances_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3199,20 +3467,20 @@ TNode<HeapObject> LoadWasmMemoryObjectInstances_0(compiler::CodeAssemblerState* 
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<WeakArrayList> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<WeakArrayList>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
+  return TNode<WeakArrayList>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=160&c=3
-void StoreWasmMemoryObjectInstances_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=3
+void StoreWasmMemoryObjectInstances_0(compiler::CodeAssemblerState* state_, TNode<WasmMemoryObject> p_o, TNode<WeakArrayList> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3223,15 +3491,15 @@ void StoreWasmMemoryObjectInstances_0(compiler::CodeAssemblerState* state_, TNod
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<WeakArrayList>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=168&c=3
-TNode<HeapObject> LoadWasmGlobalObjectInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=3
+TNode<TrustedPointerT> LoadWasmGlobalObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3239,20 +3507,20 @@ TNode<HeapObject> LoadWasmGlobalObjectInstance_0(compiler::CodeAssemblerState* s
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<TrustedPointerT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
+  return TNode<TrustedPointerT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=168&c=3
-void StoreWasmGlobalObjectInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=3
+void StoreWasmGlobalObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<TrustedPointerT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3263,14 +3531,14 @@ void StoreWasmGlobalObjectInstance_0(compiler::CodeAssemblerState* state_, TNode
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=215&c=3
 TNode<HeapObject> LoadWasmGlobalObjectUntaggedBuffer_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3291,7 +3559,7 @@ TNode<HeapObject> LoadWasmGlobalObjectUntaggedBuffer_0(compiler::CodeAssemblerSt
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=169&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=215&c=3
 void StoreWasmGlobalObjectUntaggedBuffer_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3310,7 +3578,7 @@ void StoreWasmGlobalObjectUntaggedBuffer_0(compiler::CodeAssemblerState* state_,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=170&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=216&c=3
 TNode<HeapObject> LoadWasmGlobalObjectTaggedBuffer_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3331,7 +3599,7 @@ TNode<HeapObject> LoadWasmGlobalObjectTaggedBuffer_0(compiler::CodeAssemblerStat
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=170&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=216&c=3
 void StoreWasmGlobalObjectTaggedBuffer_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3350,7 +3618,7 @@ void StoreWasmGlobalObjectTaggedBuffer_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=3
 TNode<Smi> LoadWasmGlobalObjectOffset_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3371,7 +3639,7 @@ TNode<Smi> LoadWasmGlobalObjectOffset_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=171&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=3
 void StoreWasmGlobalObjectOffset_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3390,7 +3658,7 @@ void StoreWasmGlobalObjectOffset_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=172&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=218&c=3
 TNode<Smi> LoadWasmGlobalObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3411,7 +3679,7 @@ TNode<Smi> LoadWasmGlobalObjectRawType_0(compiler::CodeAssemblerState* state_, T
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=172&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=218&c=3
 void StoreWasmGlobalObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3430,7 +3698,7 @@ void StoreWasmGlobalObjectRawType_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=175&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
 TNode<Smi> LoadWasmGlobalObjectIsMutable_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3451,7 +3719,7 @@ TNode<Smi> LoadWasmGlobalObjectIsMutable_0(compiler::CodeAssemblerState* state_,
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=175&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=221&c=3
 void StoreWasmGlobalObjectIsMutable_0(compiler::CodeAssemblerState* state_, TNode<WasmGlobalObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3470,7 +3738,7 @@ void StoreWasmGlobalObjectIsMutable_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=179&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
 TNode<ByteArray> LoadWasmTagObjectSerializedSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3491,7 +3759,7 @@ TNode<ByteArray> LoadWasmTagObjectSerializedSignature_0(compiler::CodeAssemblerS
   return TNode<ByteArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=179&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=225&c=3
 void StoreWasmTagObjectSerializedSignature_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o, TNode<ByteArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3510,7 +3778,7 @@ void StoreWasmTagObjectSerializedSignature_0(compiler::CodeAssemblerState* state
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=226&c=3
 TNode<HeapObject> LoadWasmTagObjectTag_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3531,7 +3799,7 @@ TNode<HeapObject> LoadWasmTagObjectTag_0(compiler::CodeAssemblerState* state_, T
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=226&c=3
 void StoreWasmTagObjectTag_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3550,7 +3818,7 @@ void StoreWasmTagObjectTag_0(compiler::CodeAssemblerState* state_, TNode<WasmTag
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=181&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=227&c=3
 TNode<Smi> LoadWasmTagObjectCanonicalTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3571,7 +3839,7 @@ TNode<Smi> LoadWasmTagObjectCanonicalTypeIndex_0(compiler::CodeAssemblerState* s
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=181&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=227&c=3
 void StoreWasmTagObjectCanonicalTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3590,7 +3858,47 @@ void StoreWasmTagObjectCanonicalTypeIndex_0(compiler::CodeAssemblerState* state_
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=187&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=3
+TNode<TrustedPointerT> LoadWasmTagObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<TrustedPointerT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<TrustedPointerT>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=3
+void StoreWasmTagObjectTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmTagObject> p_o, TNode<TrustedPointerT> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=234&c=3
 TNode<Foreign> LoadAsmWasmDataManagedNativeModule_0(compiler::CodeAssemblerState* state_, TNode<AsmWasmData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3611,7 +3919,7 @@ TNode<Foreign> LoadAsmWasmDataManagedNativeModule_0(compiler::CodeAssemblerState
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=187&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=234&c=3
 void StoreAsmWasmDataManagedNativeModule_0(compiler::CodeAssemblerState* state_, TNode<AsmWasmData> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3630,7 +3938,7 @@ void StoreAsmWasmDataManagedNativeModule_0(compiler::CodeAssemblerState* state_,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=188&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=235&c=3
 TNode<HeapNumber> LoadAsmWasmDataUsesBitset_0(compiler::CodeAssemblerState* state_, TNode<AsmWasmData> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3651,7 +3959,7 @@ TNode<HeapNumber> LoadAsmWasmDataUsesBitset_0(compiler::CodeAssemblerState* stat
   return TNode<HeapNumber>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=188&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=235&c=3
 void StoreAsmWasmDataUsesBitset_0(compiler::CodeAssemblerState* state_, TNode<AsmWasmData> p_o, TNode<HeapNumber> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3670,7 +3978,7 @@ void StoreAsmWasmDataUsesBitset_0(compiler::CodeAssemblerState* state_, TNode<As
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=247&c=3
 TNode<ExternalPointerT> LoadWasmTypeInfoNativeType_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3691,7 +3999,7 @@ TNode<ExternalPointerT> LoadWasmTypeInfoNativeType_0(compiler::CodeAssemblerStat
   return TNode<ExternalPointerT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=200&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=247&c=3
 void StoreWasmTypeInfoNativeType_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<ExternalPointerT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3710,7 +4018,7 @@ void StoreWasmTypeInfoNativeType_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=201&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=248&c=3
 TNode<Uint32T> LoadWasmTypeInfoTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3731,7 +4039,7 @@ TNode<Uint32T> LoadWasmTypeInfoTypeIndex_0(compiler::CodeAssemblerState* state_,
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=201&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=248&c=3
 void StoreWasmTypeInfoTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3750,7 +4058,7 @@ void StoreWasmTypeInfoTypeIndex_0(compiler::CodeAssemblerState* state_, TNode<Wa
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=202&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=249&c=28
 TNode<Uint32T> LoadWasmTypeInfoOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3771,7 +4079,7 @@ TNode<Uint32T> LoadWasmTypeInfoOptionalPadding_0(compiler::CodeAssemblerState* s
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=202&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=249&c=28
 void StoreWasmTypeInfoOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3790,8 +4098,8 @@ void StoreWasmTypeInfoOptionalPadding_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=205&c=3
-TNode<HeapObject> LoadWasmTypeInfoInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=252&c=3
+TNode<TrustedPointerT> LoadWasmTypeInfoTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3799,20 +4107,20 @@ TNode<HeapObject> LoadWasmTypeInfoInstance_0(compiler::CodeAssemblerState* state
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<TrustedPointerT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
+  return TNode<TrustedPointerT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=205&c=3
-void StoreWasmTypeInfoInstance_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=252&c=3
+void StoreWasmTypeInfoTrustedData_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<TrustedPointerT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3823,14 +4131,14 @@ void StoreWasmTypeInfoInstance_0(compiler::CodeAssemblerState* state_, TNode<Was
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<TrustedPointerT>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=206&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=253&c=9
 TNode<Smi> LoadWasmTypeInfoSupertypesLength_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3851,7 +4159,7 @@ TNode<Smi> LoadWasmTypeInfoSupertypesLength_0(compiler::CodeAssemblerState* stat
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=254&c=3
 TorqueStructSlice_Object_MutableReference_Object_0 FieldSliceWasmTypeInfoSupertypes_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3880,7 +4188,7 @@ TorqueStructSlice_Object_MutableReference_Object_0 FieldSliceWasmTypeInfoSuperty
   return TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=254&c=3
 TNode<Object> LoadWasmTypeInfoSupertypes_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3928,7 +4236,7 @@ TNode<Object> LoadWasmTypeInfoSupertypes_0(compiler::CodeAssemblerState* state_,
   return TNode<Object>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=207&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=254&c=3
 void StoreWasmTypeInfoSupertypes_0(compiler::CodeAssemblerState* state_, TNode<WasmTypeInfo> p_o, TNode<IntPtrT> p_i, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3974,7 +4282,7 @@ void StoreWasmTypeInfoSupertypes_0(compiler::CodeAssemblerState* state_, TNode<W
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=269&c=3
 TNode<Uint32T> LoadWasmArrayLength_0(compiler::CodeAssemblerState* state_, TNode<WasmArray> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3995,7 +4303,7 @@ TNode<Uint32T> LoadWasmArrayLength_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=222&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=269&c=3
 void StoreWasmArrayLength_0(compiler::CodeAssemblerState* state_, TNode<WasmArray> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4014,7 +4322,7 @@ void StoreWasmArrayLength_0(compiler::CodeAssemblerState* state_, TNode<WasmArra
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=271&c=28
 TNode<Uint32T> LoadWasmArrayOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmArray> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4035,7 +4343,7 @@ TNode<Uint32T> LoadWasmArrayOptionalPadding_0(compiler::CodeAssemblerState* stat
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=271&c=28
 void StoreWasmArrayOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmArray> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4054,7 +4362,7 @@ void StoreWasmArrayOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=276&c=3
 TNode<String> LoadWasmStringViewIterString_0(compiler::CodeAssemblerState* state_, TNode<WasmStringViewIter> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4075,7 +4383,7 @@ TNode<String> LoadWasmStringViewIterString_0(compiler::CodeAssemblerState* state
   return TNode<String>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=276&c=3
 void StoreWasmStringViewIterString_0(compiler::CodeAssemblerState* state_, TNode<WasmStringViewIter> p_o, TNode<String> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4094,7 +4402,7 @@ void StoreWasmStringViewIterString_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=277&c=3
 TNode<Uint32T> LoadWasmStringViewIterOffset_0(compiler::CodeAssemblerState* state_, TNode<WasmStringViewIter> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4115,7 +4423,7 @@ TNode<Uint32T> LoadWasmStringViewIterOffset_0(compiler::CodeAssemblerState* stat
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=277&c=3
 void StoreWasmStringViewIterOffset_0(compiler::CodeAssemblerState* state_, TNode<WasmStringViewIter> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4134,7 +4442,7 @@ void StoreWasmStringViewIterOffset_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=232&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=279&c=28
 TNode<Uint32T> LoadWasmStringViewIterOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmStringViewIter> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4155,7 +4463,7 @@ TNode<Uint32T> LoadWasmStringViewIterOptionalPadding_0(compiler::CodeAssemblerSt
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=232&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=279&c=28
 void StoreWasmStringViewIterOptionalPadding_0(compiler::CodeAssemblerState* state_, TNode<WasmStringViewIter> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4174,7 +4482,192 @@ void StoreWasmStringViewIterOptionalPadding_0(compiler::CodeAssemblerState* stat
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=12&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=289&c=3
+TNode<JSReceiver> LoadWasmSuspendingObjectCallable_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspendingObject> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<JSReceiver> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp1 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<JSReceiver>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=289&c=3
+void StoreWasmSuspendingObjectCallable_0(compiler::CodeAssemblerState* state_, TNode<WasmSuspendingObject> p_o, TNode<JSReceiver> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=18&c=1
+TNode<WasmTrustedInstanceData> DownCastForTorqueClass_WasmTrustedInstanceData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(189), static_cast<InstanceType>(189))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmTrustedInstanceData>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmTrustedInstanceData>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(189));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(189), static_cast<InstanceType>(189))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(189));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmTrustedInstanceData> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmTrustedInstanceData>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1
 TNode<WasmInstanceObject> DownCastForTorqueClass_WasmInstanceObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4201,7 +4694,7 @@ TNode<WasmInstanceObject> DownCastForTorqueClass_WasmInstanceObject_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2155), static_cast<InstanceType>(2155))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2160), static_cast<InstanceType>(2160))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -4244,7 +4737,7 @@ TNode<WasmInstanceObject> DownCastForTorqueClass_WasmInstanceObject_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2155));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2160));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -4278,12 +4771,12 @@ TNode<WasmInstanceObject> DownCastForTorqueClass_WasmInstanceObject_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2155), static_cast<InstanceType>(2155))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2160), static_cast<InstanceType>(2160))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2155));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2160));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -4319,8 +4812,8 @@ TNode<WasmInstanceObject> DownCastForTorqueClass_WasmInstanceObject_0(compiler::
   return TNode<WasmInstanceObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=20&c=1
-TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=28&c=1
+TNode<WasmImportData> DownCastForTorqueClass_WasmImportData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -4346,7 +4839,7 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(268), static_cast<InstanceType>(268))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(198), static_cast<InstanceType>(198))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -4355,7 +4848,7 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
 
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmApiFunctionRef>())) {
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmImportData>())) {
       ca_.Goto(&block6);
     } else {
       ca_.Goto(&block7);
@@ -4366,7 +4859,7 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
   TNode<BoolT> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmApiFunctionRef>();
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmImportData>();
     tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
@@ -4389,7 +4882,7 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(268));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(198));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -4423,12 +4916,12 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(268), static_cast<InstanceType>(268))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(198), static_cast<InstanceType>(198))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(268));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(198));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -4448,7 +4941,7 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
     ca_.Goto(&block5);
   }
 
-  TNode<WasmApiFunctionRef> tmp20;
+  TNode<WasmImportData> tmp20;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
@@ -4461,10 +4954,155 @@ TNode<WasmApiFunctionRef> DownCastForTorqueClass_WasmApiFunctionRef_0(compiler::
   }
 
     ca_.Bind(&block15);
-  return TNode<WasmApiFunctionRef>{tmp20};
+  return TNode<WasmImportData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=35&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+TNode<WasmFastApiCallData> DownCastForTorqueClass_WasmFastApiCallData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(287), static_cast<InstanceType>(287))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmFastApiCallData>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmFastApiCallData>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(287));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(287), static_cast<InstanceType>(287))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(287));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmFastApiCallData> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmFastApiCallData>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=55&c=1
 TNode<WasmInternalFunction> DownCastForTorqueClass_WasmInternalFunction_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4491,7 +5129,7 @@ TNode<WasmInternalFunction> DownCastForTorqueClass_WasmInternalFunction_0(compil
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(270), static_cast<InstanceType>(270))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(188), static_cast<InstanceType>(188))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -4534,7 +5172,7 @@ TNode<WasmInternalFunction> DownCastForTorqueClass_WasmInternalFunction_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(270));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(188));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -4568,12 +5206,12 @@ TNode<WasmInternalFunction> DownCastForTorqueClass_WasmInternalFunction_0(compil
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(270), static_cast<InstanceType>(270))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(188), static_cast<InstanceType>(188))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(270));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(188));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -4609,7 +5247,152 @@ TNode<WasmInternalFunction> DownCastForTorqueClass_WasmInternalFunction_0(compil
   return TNode<WasmInternalFunction>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=56&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1
+TNode<WasmFuncRef> DownCastForTorqueClass_WasmFuncRef_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(288), static_cast<InstanceType>(288))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmFuncRef>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmFuncRef>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(288));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(288), static_cast<InstanceType>(288))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(288));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmFuncRef> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmFuncRef>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1
 TNode<WasmFunctionData> DownCastForTorqueClass_WasmFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4636,7 +5419,7 @@ TNode<WasmFunctionData> DownCastForTorqueClass_WasmFunctionData_0(compiler::Code
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(224), static_cast<InstanceType>(227))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(178), static_cast<InstanceType>(181))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -4679,7 +5462,7 @@ TNode<WasmFunctionData> DownCastForTorqueClass_WasmFunctionData_0(compiler::Code
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(224));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(178));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -4713,12 +5496,12 @@ TNode<WasmFunctionData> DownCastForTorqueClass_WasmFunctionData_0(compiler::Code
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(227), static_cast<InstanceType>(224))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(181), static_cast<InstanceType>(178))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(224));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(178));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -4754,7 +5537,7 @@ TNode<WasmFunctionData> DownCastForTorqueClass_WasmFunctionData_0(compiler::Code
   return TNode<WasmFunctionData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=65&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=108&c=1
 TNode<WasmExportedFunctionData> DownCastForTorqueClass_WasmExportedFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4781,7 +5564,7 @@ TNode<WasmExportedFunctionData> DownCastForTorqueClass_WasmExportedFunctionData_
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(226), static_cast<InstanceType>(226))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(180), static_cast<InstanceType>(180))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -4824,7 +5607,7 @@ TNode<WasmExportedFunctionData> DownCastForTorqueClass_WasmExportedFunctionData_
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(226));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(180));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -4858,12 +5641,12 @@ TNode<WasmExportedFunctionData> DownCastForTorqueClass_WasmExportedFunctionData_
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(226), static_cast<InstanceType>(226))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(180), static_cast<InstanceType>(180))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(226));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(180));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -4899,7 +5682,7 @@ TNode<WasmExportedFunctionData> DownCastForTorqueClass_WasmExportedFunctionData_
   return TNode<WasmExportedFunctionData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=131&c=1
 TNode<WasmJSFunctionData> DownCastForTorqueClass_WasmJSFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4926,7 +5709,7 @@ TNode<WasmJSFunctionData> DownCastForTorqueClass_WasmJSFunctionData_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(227), static_cast<InstanceType>(227))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(181), static_cast<InstanceType>(181))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -4969,7 +5752,7 @@ TNode<WasmJSFunctionData> DownCastForTorqueClass_WasmJSFunctionData_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(227));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(181));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -5003,12 +5786,12 @@ TNode<WasmJSFunctionData> DownCastForTorqueClass_WasmJSFunctionData_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(227), static_cast<InstanceType>(227))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(181), static_cast<InstanceType>(181))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(227));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(181));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -5044,7 +5827,7 @@ TNode<WasmJSFunctionData> DownCastForTorqueClass_WasmJSFunctionData_0(compiler::
   return TNode<WasmJSFunctionData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=87&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=135&c=1
 TNode<WasmCapiFunctionData> DownCastForTorqueClass_WasmCapiFunctionData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5071,7 +5854,7 @@ TNode<WasmCapiFunctionData> DownCastForTorqueClass_WasmCapiFunctionData_0(compil
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(225), static_cast<InstanceType>(225))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(179), static_cast<InstanceType>(179))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -5114,7 +5897,7 @@ TNode<WasmCapiFunctionData> DownCastForTorqueClass_WasmCapiFunctionData_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(225));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(179));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -5148,12 +5931,12 @@ TNode<WasmCapiFunctionData> DownCastForTorqueClass_WasmCapiFunctionData_0(compil
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(225), static_cast<InstanceType>(225))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(179), static_cast<InstanceType>(179))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(225));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(179));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -5189,7 +5972,7 @@ TNode<WasmCapiFunctionData> DownCastForTorqueClass_WasmCapiFunctionData_0(compil
   return TNode<WasmCapiFunctionData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=92&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=140&c=1
 TNode<WasmResumeData> DownCastForTorqueClass_WasmResumeData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5216,7 +5999,7 @@ TNode<WasmResumeData> DownCastForTorqueClass_WasmResumeData_0(compiler::CodeAsse
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(272), static_cast<InstanceType>(272))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(290), static_cast<InstanceType>(290))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -5259,7 +6042,7 @@ TNode<WasmResumeData> DownCastForTorqueClass_WasmResumeData_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(272));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(290));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -5293,12 +6076,12 @@ TNode<WasmResumeData> DownCastForTorqueClass_WasmResumeData_0(compiler::CodeAsse
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(272), static_cast<InstanceType>(272))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(290), static_cast<InstanceType>(290))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(272));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(290));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -5334,152 +6117,7 @@ TNode<WasmResumeData> DownCastForTorqueClass_WasmResumeData_0(compiler::CodeAsse
   return TNode<WasmResumeData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=97&c=1
-TNode<WasmIndirectFunctionTable> DownCastForTorqueClass_WasmIndirectFunctionTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(174), static_cast<InstanceType>(174))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmIndirectFunctionTable>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmIndirectFunctionTable>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(174));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(174), static_cast<InstanceType>(174))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(174));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<WasmIndirectFunctionTable> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<WasmIndirectFunctionTable>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=106&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=145&c=1
 TNode<WasmContinuationObject> DownCastForTorqueClass_WasmContinuationObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5506,7 +6144,7 @@ TNode<WasmContinuationObject> DownCastForTorqueClass_WasmContinuationObject_0(co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(269), static_cast<InstanceType>(269))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(286), static_cast<InstanceType>(286))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -5549,7 +6187,7 @@ TNode<WasmContinuationObject> DownCastForTorqueClass_WasmContinuationObject_0(co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(269));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(286));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -5583,12 +6221,12 @@ TNode<WasmContinuationObject> DownCastForTorqueClass_WasmContinuationObject_0(co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(269), static_cast<InstanceType>(269))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(286), static_cast<InstanceType>(286))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(269));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(286));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -5624,7 +6262,7 @@ TNode<WasmContinuationObject> DownCastForTorqueClass_WasmContinuationObject_0(co
   return TNode<WasmContinuationObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=112&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=151&c=1
 TNode<WasmSuspenderObject> DownCastForTorqueClass_WasmSuspenderObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5651,7 +6289,7 @@ TNode<WasmSuspenderObject> DownCastForTorqueClass_WasmSuspenderObject_0(compiler
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2158), static_cast<InstanceType>(2158))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(292), static_cast<InstanceType>(292))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -5694,7 +6332,7 @@ TNode<WasmSuspenderObject> DownCastForTorqueClass_WasmSuspenderObject_0(compiler
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2158));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(292));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -5728,12 +6366,12 @@ TNode<WasmSuspenderObject> DownCastForTorqueClass_WasmSuspenderObject_0(compiler
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2158), static_cast<InstanceType>(2158))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(292), static_cast<InstanceType>(292))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2158));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(292));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -5769,7 +6407,7 @@ TNode<WasmSuspenderObject> DownCastForTorqueClass_WasmSuspenderObject_0(compiler
   return TNode<WasmSuspenderObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=164&c=1
 TNode<WasmExceptionTag> DownCastForTorqueClass_WasmExceptionTag_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5914,7 +6552,7 @@ TNode<WasmExceptionTag> DownCastForTorqueClass_WasmExceptionTag_0(compiler::Code
   return TNode<WasmExceptionTag>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=134&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=171&c=1
 TNode<WasmExceptionPackage> DownCastForTorqueClass_WasmExceptionPackage_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5941,7 +6579,7 @@ TNode<WasmExceptionPackage> DownCastForTorqueClass_WasmExceptionPackage_0(compil
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2153), static_cast<InstanceType>(2153))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2158), static_cast<InstanceType>(2158))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -5984,7 +6622,7 @@ TNode<WasmExceptionPackage> DownCastForTorqueClass_WasmExceptionPackage_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2153));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2158));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6018,12 +6656,12 @@ TNode<WasmExceptionPackage> DownCastForTorqueClass_WasmExceptionPackage_0(compil
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2153), static_cast<InstanceType>(2153))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2158), static_cast<InstanceType>(2158))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2153));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2158));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6059,7 +6697,7 @@ TNode<WasmExceptionPackage> DownCastForTorqueClass_WasmExceptionPackage_0(compil
   return TNode<WasmExceptionPackage>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=136&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=173&c=1
 TNode<WasmModuleObject> DownCastForTorqueClass_WasmModuleObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6086,7 +6724,7 @@ TNode<WasmModuleObject> DownCastForTorqueClass_WasmModuleObject_0(compiler::Code
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2157), static_cast<InstanceType>(2157))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2162), static_cast<InstanceType>(2162))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6129,7 +6767,7 @@ TNode<WasmModuleObject> DownCastForTorqueClass_WasmModuleObject_0(compiler::Code
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2157));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2162));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6163,12 +6801,12 @@ TNode<WasmModuleObject> DownCastForTorqueClass_WasmModuleObject_0(compiler::Code
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2157), static_cast<InstanceType>(2157))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2162), static_cast<InstanceType>(2162))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2157));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2162));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6204,8 +6842,443 @@ TNode<WasmModuleObject> DownCastForTorqueClass_WasmModuleObject_0(compiler::Code
   return TNode<WasmModuleObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=141&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=1
+TNode<WasmDispatchTable> DownCastForTorqueClass_WasmDispatchTable_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(197), static_cast<InstanceType>(197))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmDispatchTable>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmDispatchTable>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(197));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(197), static_cast<InstanceType>(197))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(197));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmDispatchTable> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmDispatchTable>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=180&c=1
 TNode<WasmTableObject> DownCastForTorqueClass_WasmTableObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2164), static_cast<InstanceType>(2164))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmTableObject>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmTableObject>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2164));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2164), static_cast<InstanceType>(2164))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2164));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmTableObject> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmTableObject>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=203&c=1
+TNode<WasmMemoryObject> DownCastForTorqueClass_WasmMemoryObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2161), static_cast<InstanceType>(2161))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmMemoryObject>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmMemoryObject>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2161));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2161), static_cast<InstanceType>(2161))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2161));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmMemoryObject> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmMemoryObject>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=210&c=1
+TNode<WasmGlobalObject> DownCastForTorqueClass_WasmGlobalObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -6240,7 +7313,7 @@ TNode<WasmTableObject> DownCastForTorqueClass_WasmTableObject_0(compiler::CodeAs
 
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmTableObject>())) {
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmGlobalObject>())) {
       ca_.Goto(&block6);
     } else {
       ca_.Goto(&block7);
@@ -6251,7 +7324,7 @@ TNode<WasmTableObject> DownCastForTorqueClass_WasmTableObject_0(compiler::CodeAs
   TNode<BoolT> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmTableObject>();
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmGlobalObject>();
     tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
@@ -6333,296 +7406,6 @@ TNode<WasmTableObject> DownCastForTorqueClass_WasmTableObject_0(compiler::CodeAs
     ca_.Goto(&block5);
   }
 
-  TNode<WasmTableObject> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<WasmTableObject>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=156&c=1
-TNode<WasmMemoryObject> DownCastForTorqueClass_WasmMemoryObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2156), static_cast<InstanceType>(2156))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmMemoryObject>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmMemoryObject>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2156));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2156), static_cast<InstanceType>(2156))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2156));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<WasmMemoryObject> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<WasmMemoryObject>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=163&c=1
-TNode<WasmGlobalObject> DownCastForTorqueClass_WasmGlobalObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2154), static_cast<InstanceType>(2154))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmGlobalObject>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmGlobalObject>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2154));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2154), static_cast<InstanceType>(2154))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2154));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
   TNode<WasmGlobalObject> tmp20;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -6639,7 +7422,7 @@ TNode<WasmGlobalObject> DownCastForTorqueClass_WasmGlobalObject_0(compiler::Code
   return TNode<WasmGlobalObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=178&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=224&c=1
 TNode<WasmTagObject> DownCastForTorqueClass_WasmTagObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6666,7 +7449,7 @@ TNode<WasmTagObject> DownCastForTorqueClass_WasmTagObject_0(compiler::CodeAssemb
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2160), static_cast<InstanceType>(2160))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2165), static_cast<InstanceType>(2165))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6709,7 +7492,7 @@ TNode<WasmTagObject> DownCastForTorqueClass_WasmTagObject_0(compiler::CodeAssemb
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2160));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2165));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6743,12 +7526,12 @@ TNode<WasmTagObject> DownCastForTorqueClass_WasmTagObject_0(compiler::CodeAssemb
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2160), static_cast<InstanceType>(2160))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2165), static_cast<InstanceType>(2165))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2160));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2165));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6784,7 +7567,7 @@ TNode<WasmTagObject> DownCastForTorqueClass_WasmTagObject_0(compiler::CodeAssemb
   return TNode<WasmTagObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=186&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=233&c=1
 TNode<AsmWasmData> DownCastForTorqueClass_AsmWasmData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6811,7 +7594,7 @@ TNode<AsmWasmData> DownCastForTorqueClass_AsmWasmData_0(compiler::CodeAssemblerS
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(147), static_cast<InstanceType>(147))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(145), static_cast<InstanceType>(145))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6854,7 +7637,7 @@ TNode<AsmWasmData> DownCastForTorqueClass_AsmWasmData_0(compiler::CodeAssemblerS
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(147));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(145));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -6888,12 +7671,12 @@ TNode<AsmWasmData> DownCastForTorqueClass_AsmWasmData_0(compiler::CodeAssemblerS
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(147), static_cast<InstanceType>(147))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(145), static_cast<InstanceType>(145))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(147));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(145));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -6929,7 +7712,7 @@ TNode<AsmWasmData> DownCastForTorqueClass_AsmWasmData_0(compiler::CodeAssemblerS
   return TNode<AsmWasmData>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=191&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=238&c=1
 TNode<WasmTypeInfo> DownCastForTorqueClass_WasmTypeInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6956,7 +7739,7 @@ TNode<WasmTypeInfo> DownCastForTorqueClass_WasmTypeInfo_0(compiler::CodeAssemble
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(274), static_cast<InstanceType>(274))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(293), static_cast<InstanceType>(293))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -6999,7 +7782,7 @@ TNode<WasmTypeInfo> DownCastForTorqueClass_WasmTypeInfo_0(compiler::CodeAssemble
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(274));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(293));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7033,12 +7816,12 @@ TNode<WasmTypeInfo> DownCastForTorqueClass_WasmTypeInfo_0(compiler::CodeAssemble
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(274), static_cast<InstanceType>(274))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(293), static_cast<InstanceType>(293))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(274));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(293));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7074,7 +7857,7 @@ TNode<WasmTypeInfo> DownCastForTorqueClass_WasmTypeInfo_0(compiler::CodeAssemble
   return TNode<WasmTypeInfo>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=214&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=261&c=1
 TNode<WasmObject> DownCastForTorqueClass_WasmObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7101,7 +7884,7 @@ TNode<WasmObject> DownCastForTorqueClass_WasmObject_0(compiler::CodeAssemblerSta
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(277), static_cast<InstanceType>(278))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(296), static_cast<InstanceType>(297))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7144,7 +7927,7 @@ TNode<WasmObject> DownCastForTorqueClass_WasmObject_0(compiler::CodeAssemblerSta
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(277));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(296));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7178,12 +7961,12 @@ TNode<WasmObject> DownCastForTorqueClass_WasmObject_0(compiler::CodeAssemblerSta
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(278), static_cast<InstanceType>(277))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(297), static_cast<InstanceType>(296))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(277));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(296));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7219,7 +8002,7 @@ TNode<WasmObject> DownCastForTorqueClass_WasmObject_0(compiler::CodeAssemblerSta
   return TNode<WasmObject>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=217&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=264&c=1
 TNode<WasmStruct> DownCastForTorqueClass_WasmStruct_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7246,7 +8029,7 @@ TNode<WasmStruct> DownCastForTorqueClass_WasmStruct_0(compiler::CodeAssemblerSta
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(278), static_cast<InstanceType>(278))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(297), static_cast<InstanceType>(297))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7289,7 +8072,7 @@ TNode<WasmStruct> DownCastForTorqueClass_WasmStruct_0(compiler::CodeAssemblerSta
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(278));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(297));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7323,12 +8106,12 @@ TNode<WasmStruct> DownCastForTorqueClass_WasmStruct_0(compiler::CodeAssemblerSta
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(278), static_cast<InstanceType>(278))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(297), static_cast<InstanceType>(297))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(278));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(297));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7364,7 +8147,7 @@ TNode<WasmStruct> DownCastForTorqueClass_WasmStruct_0(compiler::CodeAssemblerSta
   return TNode<WasmStruct>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=220&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=267&c=1
 TNode<WasmArray> DownCastForTorqueClass_WasmArray_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7391,7 +8174,7 @@ TNode<WasmArray> DownCastForTorqueClass_WasmArray_0(compiler::CodeAssemblerState
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(277), static_cast<InstanceType>(277))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(296), static_cast<InstanceType>(296))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7434,7 +8217,7 @@ TNode<WasmArray> DownCastForTorqueClass_WasmArray_0(compiler::CodeAssemblerState
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(277));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(296));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7468,12 +8251,12 @@ TNode<WasmArray> DownCastForTorqueClass_WasmArray_0(compiler::CodeAssemblerState
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(277), static_cast<InstanceType>(277))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(296), static_cast<InstanceType>(296))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(277));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(296));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7509,7 +8292,7 @@ TNode<WasmArray> DownCastForTorqueClass_WasmArray_0(compiler::CodeAssemblerState
   return TNode<WasmArray>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
 TNode<WasmStringViewIter> DownCastForTorqueClass_WasmStringViewIter_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7536,7 +8319,7 @@ TNode<WasmStringViewIter> DownCastForTorqueClass_WasmStringViewIter_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(273), static_cast<InstanceType>(273))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(291), static_cast<InstanceType>(291))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7579,7 +8362,7 @@ TNode<WasmStringViewIter> DownCastForTorqueClass_WasmStringViewIter_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(273));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(291));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7613,12 +8396,12 @@ TNode<WasmStringViewIter> DownCastForTorqueClass_WasmStringViewIter_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(273), static_cast<InstanceType>(273))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(291), static_cast<InstanceType>(291))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(273));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(291));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7654,7 +8437,7 @@ TNode<WasmStringViewIter> DownCastForTorqueClass_WasmStringViewIter_0(compiler::
   return TNode<WasmStringViewIter>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=236&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=283&c=1
 TNode<WasmNull> DownCastForTorqueClass_WasmNull_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7681,7 +8464,7 @@ TNode<WasmNull> DownCastForTorqueClass_WasmNull_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(271), static_cast<InstanceType>(271))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(289), static_cast<InstanceType>(289))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -7724,7 +8507,7 @@ TNode<WasmNull> DownCastForTorqueClass_WasmNull_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(271));
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(289));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -7758,12 +8541,12 @@ TNode<WasmNull> DownCastForTorqueClass_WasmNull_0(compiler::CodeAssemblerState* 
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(271), static_cast<InstanceType>(271))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(289), static_cast<InstanceType>(289))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(271));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(289));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -7797,6 +8580,151 @@ TNode<WasmNull> DownCastForTorqueClass_WasmNull_0(compiler::CodeAssemblerState* 
 
     ca_.Bind(&block15);
   return TNode<WasmNull>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=288&c=1
+TNode<WasmSuspendingObject> DownCastForTorqueClass_WasmSuspendingObject_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(2163), static_cast<InstanceType>(2163))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<WasmSuspendingObject>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<WasmSuspendingObject>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2163));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(2163), static_cast<InstanceType>(2163))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(2163));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
+  TNode<WasmSuspendingObject> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<WasmSuspendingObject>{tmp20};
 }
 
 } // namespace internal

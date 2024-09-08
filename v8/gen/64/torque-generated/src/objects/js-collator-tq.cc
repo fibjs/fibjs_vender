@@ -15,7 +15,7 @@ bool IsJSCollator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSCollator<JSCollator, JSObject>::JSCollatorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSCollatorVerify(JSCollator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSCollatorVerify(Cast<JSCollator>(*this), isolate);
 }
 
 

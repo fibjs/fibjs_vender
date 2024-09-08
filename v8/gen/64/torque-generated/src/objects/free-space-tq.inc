@@ -24,18 +24,11 @@ class TorqueGeneratedFreeSpace : public P {
 
   // Torque type: (Smi | Uninitialized | class FreeSpace)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
-  inline MaybeObject next() const;
+  inline Tagged<Union<FreeSpace, MaybeObject, Smi>> next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
-  inline MaybeObject next(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<FreeSpace, MaybeObject, Smi>> next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
-  inline void set_next(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_next(Tagged<Union<FreeSpace, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(FreeSpace)
 

@@ -7,7 +7,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-symmetric-difference.tq?l=135&c=1
-TorqueStructOrderedHashSetAndNumberOfElements_0 FastSymmetricDifference_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_nextValue, TNode<OrderedHashSet> p_table, TorqueStructOrderedHashSetAndNumberOfElements_0 p_resultSetDataAndNumberOfElements, const char* p_methodName);
+TorqueStructOrderedHashSetAndNumberOfElements_0 FastSymmetricDifference_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_nextValue, TorqueStructStableJSSetBackingTableWitness_0 p_table, TorqueStructOrderedHashSetAndNumberOfElements_0 p_resultSetDataAndNumberOfElements, const char* p_methodName);
 
 } // namespace internal
 } // namespace v8

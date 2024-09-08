@@ -40,50 +40,43 @@ class TorqueGeneratedJSV8BreakIterator : public P {
 
   // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
-  inline Tagged<HeapObject> bound_adopt_text() const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_adopt_text() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
-  inline Tagged<HeapObject> bound_adopt_text(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_adopt_text(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
-  inline void set_bound_adopt_text(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_adopt_text(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
-  inline Tagged<HeapObject> bound_first() const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_first() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
-  inline Tagged<HeapObject> bound_first(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_first(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
-  inline void set_bound_first(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_first(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
-  inline Tagged<HeapObject> bound_next() const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
-  inline Tagged<HeapObject> bound_next(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
-  inline void set_bound_next(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_next(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
-  inline Tagged<HeapObject> bound_current() const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_current() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
-  inline Tagged<HeapObject> bound_current(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_current(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
-  inline void set_bound_current(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_bound_current(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
-  inline Tagged<HeapObject> bound_break_type() const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_break_type() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
-  inline Tagged<HeapObject> bound_break_type(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_break_type(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
-  inline void set_bound_break_type(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_bound_break_type(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSV8BreakIterator)
 

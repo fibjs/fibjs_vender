@@ -17,13 +17,6 @@ class TorqueGeneratedJSSharedArray : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSSharedArray<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shared-array.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSSharedArray)
 
 #ifdef VERIFY_HEAP

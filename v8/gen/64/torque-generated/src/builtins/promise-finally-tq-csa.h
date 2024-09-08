@@ -27,31 +27,31 @@ TNode<IntPtrT> FromConstexpr_PromiseFinallyContextSlot_constexpr_kPromiseFinally
 TNode<IntPtrT> kOnFinallySlot_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=18&c=1
 TNode<IntPtrT> kConstructorSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=40&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=43&c=1
 TNode<JSFunction> CreateThrowerFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_reason);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=85&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=89&c=1
 TNode<JSFunction> CreateValueThunkFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=137&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=143&c=1
 TorqueStructPromiseFinallyFunctions_0 CreatePromiseFinallyFunctions_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSReceiver> p_onFinally, TNode<JSReceiver> p_constructor);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=28&c=11
 TorqueStructReference_JSAny_0 ContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=51&c=3
 void InitContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=62&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=63&c=8
 TorqueStructReference_Callable_0 ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=69&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=70&c=8
 TorqueStructReference_Constructor_0 ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=144&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=150&c=3
 void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=146&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=152&c=3
 void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value);
 
 } // namespace internal

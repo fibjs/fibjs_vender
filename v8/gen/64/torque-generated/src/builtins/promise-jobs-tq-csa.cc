@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,13 +67,16 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
+#include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/promise-then-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
@@ -198,71 +203,72 @@ TF_BUILTIN(PromiseResolveThenableJob, CodeStubAssembler) {
     tmp15 = UnsafeCast_JSPromise_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
     tmp16 = CodeStubAssembler(state_).UndefinedConstant();
     tmp17 = CodeStubAssembler(state_).UndefinedConstant();
-    tmp18 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kPerformPromiseThen), parameter0, tmp15, tmp16, tmp17, parameter1);
+    tmp18 = ca_.CallBuiltin<Object>(Builtin::kPerformPromiseThen, parameter0, tmp15, tmp16, tmp17, parameter1);
     CodeStubAssembler(state_).Return(tmp18);
   }
 
   TNode<False> tmp19;
   TNode<JSFunction> tmp20;
   TNode<JSFunction> tmp21;
-  TNode<JSReceiver> tmp22;
-      TNode<Object> tmp24;
-  TNode<Object> tmp25;
-      TNode<Object> tmp27;
+  TNode<Context> tmp22;
+  TNode<JSReceiver> tmp23;
+      TNode<Object> tmp25;
+  TNode<Object> tmp26;
+      TNode<Object> tmp28;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp19 = False_0(state_);
-    std::tie(tmp20, tmp21) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<Boolean>{tmp19}, TNode<NativeContext>{tmp0}).Flatten();
-    compiler::CodeAssemblerExceptionHandlerLabel catch23__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch23__label);
-    tmp22 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
+    std::tie(tmp20, tmp21, tmp22) = CreatePromiseResolvingFunctions_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<Boolean>{tmp19}, TNode<NativeContext>{tmp0}).Flatten();
+    compiler::CodeAssemblerExceptionHandlerLabel catch24__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch24__label);
+    tmp23 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
     }
-    if (catch23__label.is_used()) {
-      compiler::CodeAssemblerLabel catch23_skip(&ca_);
-      ca_.Goto(&catch23_skip);
-      ca_.Bind(&catch23__label, &tmp24);
+    if (catch24__label.is_used()) {
+      compiler::CodeAssemblerLabel catch24_skip(&ca_);
+      ca_.Goto(&catch24_skip);
+      ca_.Bind(&catch24__label, &tmp25);
       ca_.Goto(&block15);
-      ca_.Bind(&catch23_skip);
+      ca_.Bind(&catch24_skip);
     }
-    compiler::CodeAssemblerExceptionHandlerLabel catch26__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch26__label);
-    tmp25 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp22}, TNode<Object>{parameter2}, TNode<Object>{tmp20}, TNode<Object>{tmp21});
+    compiler::CodeAssemblerExceptionHandlerLabel catch27__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch27__label);
+    tmp26 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp23}, TNode<Object>{parameter2}, TNode<Object>{tmp20}, TNode<Object>{tmp21});
     }
-    if (catch26__label.is_used()) {
-      compiler::CodeAssemblerLabel catch26_skip(&ca_);
-      ca_.Goto(&catch26_skip);
-      ca_.Bind(&catch26__label, &tmp27);
+    if (catch27__label.is_used()) {
+      compiler::CodeAssemblerLabel catch27_skip(&ca_);
+      ca_.Goto(&catch27_skip);
+      ca_.Bind(&catch27__label, &tmp28);
       ca_.Goto(&block16);
-      ca_.Bind(&catch26_skip);
+      ca_.Bind(&catch27_skip);
     }
-    CodeStubAssembler(state_).Return(tmp25);
-  }
-
-  TNode<HeapObject> tmp28;
-  if (block15.is_used()) {
-    ca_.Bind(&block15);
-    tmp28 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block14, tmp24, tmp28);
+    CodeStubAssembler(state_).Return(tmp26);
   }
 
   TNode<HeapObject> tmp29;
-  if (block16.is_used()) {
-    ca_.Bind(&block16);
+  if (block15.is_used()) {
+    ca_.Bind(&block15);
     tmp29 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block14, tmp27, tmp29);
+    ca_.Goto(&block14, tmp25, tmp29);
   }
 
-  TNode<Object> phi_bb14_11;
-  TNode<HeapObject> phi_bb14_12;
-  TNode<JSReceiver> tmp30;
-  TNode<Undefined> tmp31;
-  TNode<Object> tmp32;
+  TNode<HeapObject> tmp30;
+  if (block16.is_used()) {
+    ca_.Bind(&block16);
+    tmp30 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block14, tmp28, tmp30);
+  }
+
+  TNode<Object> phi_bb14_12;
+  TNode<HeapObject> phi_bb14_13;
+  TNode<JSReceiver> tmp31;
+  TNode<Undefined> tmp32;
+  TNode<Object> tmp33;
   if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_11, &phi_bb14_12);
-    tmp30 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp21});
-    tmp31 = Undefined_0(state_);
-    tmp32 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp30}, TNode<Object>{tmp31}, TNode<Object>{phi_bb14_11});
-    CodeStubAssembler(state_).Return(tmp32);
+    ca_.Bind(&block14, &phi_bb14_12, &phi_bb14_13);
+    tmp31 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp21});
+    tmp32 = Undefined_0(state_);
+    tmp33 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp31}, TNode<Object>{tmp32}, TNode<Object>{phi_bb14_12});
+    CodeStubAssembler(state_).Return(tmp33);
   }
 }
 

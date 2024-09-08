@@ -30,11 +30,17 @@ const arch_opts = {
 const skip_list = [
     "^src/base/ubsan.cc",
 
+    "^src/base/debug/stack_trace_zos.cc",
+
     "^src/base/platform/platform-\\w*.cc",
     "^src/base/platform/mutex.cc",
     "^src/base/platform/condition-variable.cc",
     "^src/base/platform/semaphore.cc",
     "^src/base/platform/platform.cc",
+
+    "^src/baseline/baseline-batch-compiler.cc",
+
+    "^src/compiler/turboshaft/maglev-graph-building-phase.cc",
 
     "^src/debug/wasm/gdb-server/",
 
@@ -48,6 +54,8 @@ const skip_list = [
     "^src/d8/",
 
     "^src/extensions/vtunedomain-support-extension.cc",
+
+    "^src/fuzzilli/*",
 
     "^src/heap/conservative-stack-visitor.cc",
     "^src/heap/cppgc/caged-heap.cc",
@@ -65,10 +73,21 @@ const skip_list = [
     "^src/snapshot/snapshot-external.cc",
     "^src/snapshot/embedded/embedded-empty.cc",
 
+    "^src/tracing/code-data-source.cc",
+    "^src/tracing/perfetto-logger.cc",
+
     "^src/trap-handler/handler-inside-",
     "^src/trap-handler/handler-outside-",
 
     "^src/third_party/vtune/",
+
+    "^src/wasm/interpreter/*.",
+];
+
+const revect_list = [
+    "^src/compiler/revectorizer.cc",
+    "^src/compiler/turboshaft/wasm-revec-reducer.cc",
+    "^src/compiler/turboshaft/wasm-revec-phase.cc"
 ];
 
 function get_src() {
@@ -134,10 +153,11 @@ function gen_list(arch, os) {
         var s390_list = get_list("/s390/");
         var ia32_shared_list = get_list("/shared-ia32-x64/");
         var x64_list = get_list("/x64/");
+        var zos_list = get_list("/zos/");
 
         src_list = util.difference(src_list, arm_list, arm64_list, ia32_list,
             loong64_list, mips64_list, ppc_list, riscv_list, s390_list,
-            ia32_shared_list, x64_list);
+            ia32_shared_list, x64_list, zos_list);
 
         switch (arch) {
             case "x64":
@@ -170,6 +190,9 @@ function gen_list(arch, os) {
                 break;
         }
     }
+
+    if(arch !== 'x64')
+        revect_list.forEach(skip_name);
 
     function filter_os() {
         var win_list = get_list("[-_]win.cc");

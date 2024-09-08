@@ -15,7 +15,7 @@ bool IsJSCollectionIterator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSCollectionIterator<JSCollectionIterator, JSObject>::JSCollectionIteratorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSCollectionIteratorVerify(JSCollectionIterator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSCollectionIteratorVerify(Cast<JSCollectionIterator>(*this), isolate);
 }
 
 

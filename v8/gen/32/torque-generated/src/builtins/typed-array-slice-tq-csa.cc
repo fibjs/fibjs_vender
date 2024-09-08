@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -147,9 +151,9 @@ void FastCopy_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_src,
   TNode<BoolT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp6 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{p_dest, tmp5});
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp8 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{p_src, tmp7});
     tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp6}, TNode<HeapObject>{tmp8});
     ca_.Branch(tmp9, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
@@ -207,7 +211,7 @@ void FastCopy_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_src,
     tmp18 = CodeStubAssembler(state_).LoadJSTypedArrayDataPtr(TNode<JSTypedArray>{p_src});
     tmp19 = Convert_intptr_uintptr_0(state_, TNode<UintPtrT>{tmp17});
     tmp20 = CodeStubAssembler(state_).RawPtrAdd(TNode<RawPtrT>{tmp18}, TNode<IntPtrT>{tmp19});
-    tmp21 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp21 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp22 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{p_src, tmp21});
     tmp23 = IsSharedArrayBuffer_0(state_, TNode<JSArrayBuffer>{tmp22});
     ca_.Branch(tmp23, &block19, std::vector<compiler::Node*>{}, &block20, std::vector<compiler::Node*>{});

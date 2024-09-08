@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-createtypedarray-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -140,7 +144,7 @@ TNode<JSTypedArray> AllocateTypedArray_0(compiler::CodeAssemblerState* state_, T
     tmp5 = UnsafeCast_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp5, tmp6}, phi_bb4_7);
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     CodeStubAssembler(state_).StoreReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp5, tmp7}, p_buffer);
     CodeStubAssembler(state_).StoreJSArrayBufferViewByteOffset(TNode<JSArrayBufferView>{tmp5}, TNode<UintPtrT>{p_byteOffset});
     ca_.Branch(p_isLengthTracking, &block20, std::vector<compiler::Node*>{}, &block21, std::vector<compiler::Node*>{});
@@ -171,11 +175,11 @@ TNode<JSTypedArray> AllocateTypedArray_0(compiler::CodeAssemblerState* state_, T
   TNode<BoolT> tmp14;
   if (block22.is_used()) {
     ca_.Bind(&block22);
-    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp11 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp10});
     tmp12 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp11), ca_.UncheckedCast<Uint32T>(p_isLengthTracking)));
     CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp5, tmp10}, tmp12);
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp14 = IsResizableArrayBuffer_0(state_, TNode<JSArrayBuffer>{p_buffer});
     ca_.Branch(tmp14, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
   }
@@ -517,7 +521,7 @@ TNode<JSTypedArray> ConstructByArrayLike_0(compiler::CodeAssemblerState* state_,
   TNode<UintPtrT> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp6 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp3, tmp5});
     compiler::CodeAssemblerLabel label8(&ca_);
     tmp7 = LoadJSArrayBufferViewByteLength_0(state_, TNode<JSArrayBufferView>{tmp3}, TNode<JSArrayBuffer>{tmp6}, &label8);
@@ -569,7 +573,7 @@ TNode<JSTypedArray> ConstructByArrayLike_0(compiler::CodeAssemblerState* state_,
   TNode<BoolT> tmp19;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    tmp17 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp17 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp18 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp3, tmp17});
     tmp19 = IsSharedArrayBuffer_0(state_, TNode<JSArrayBuffer>{tmp18});
     ca_.Branch(tmp19, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
@@ -657,7 +661,7 @@ void ConstructByIterable_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<UintPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ca_.CallStub<JSArray>(Builtins::CallableFor(ca_.isolate(), Builtin::kIterableToListConvertHoles), p_context, p_iterable, p_iteratorFn);
+    tmp0 = ca_.CallBuiltin<JSArray>(Builtin::kIterableToListConvertHoles, p_context, p_iterable, p_iteratorFn);
     tmp1 = LoadJSArrayLengthAsUintPtr_0(state_, TNode<JSArray>{tmp0});
     *label_IfConstructByArrayLike_parameter_1 = tmp1;
     *label_IfConstructByArrayLike_parameter_0 = tmp0;
@@ -1226,7 +1230,7 @@ TNode<JSTypedArray> TypedArrayCreateByLength_0(compiler::CodeAssemblerState* sta
     tmp0 = CodeStubAssembler(state_).Construct(TNode<Context>{p_context}, TNode<JSReceiver>{p_constructor}, TNode<Object>{p_length});
     tmp1 = TypedArrayBuiltinsAssembler(state_).ValidateTypedArrayAndGetLength(TNode<Context>{p_context}, TNode<Object>{tmp0}, p_methodName);
     tmp2 = UnsafeCast_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
-    tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp4 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp2, tmp3});
     tmp5 = IsDetachedBuffer_0(state_, TNode<JSArrayBuffer>{tmp4});
     ca_.Branch(tmp5, &block20, std::vector<compiler::Node*>{}, &block21, std::vector<compiler::Node*>{});
@@ -1577,7 +1581,7 @@ TNode<JSTypedArray> TypedArraySpeciesCreate_0(compiler::CodeAssemblerState* stat
   TNode<JSTypedArray> tmp6;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp6 = ca_.CallStub<JSTypedArray>(Builtins::CallableFor(ca_.isolate(), Builtin::kCreateTypedArray), p_context, tmp0, tmp0, p_arg0, p_arg1, p_arg2);
+    tmp6 = ca_.CallBuiltin<JSTypedArray>(Builtin::kCreateTypedArray, p_context, tmp0, tmp0, p_arg0, p_arg1, p_arg2);
     ca_.Goto(&block1, tmp6);
   }
 
@@ -1742,7 +1746,7 @@ TNode<JSTypedArray> TypedArrayCreateSameType_0(compiler::CodeAssemblerState* sta
     tmp1 = Convert_Number_uintptr_0(state_, TNode<UintPtrT>{p_newLength});
     tmp2 = Undefined_0(state_);
     tmp3 = Undefined_0(state_);
-    tmp4 = ca_.CallStub<JSTypedArray>(Builtins::CallableFor(ca_.isolate(), Builtin::kCreateTypedArray), p_context, tmp0, tmp0, tmp1, tmp2, tmp3);
+    tmp4 = ca_.CallBuiltin<JSTypedArray>(Builtin::kCreateTypedArray, p_context, tmp0, tmp0, tmp1, tmp2, tmp3);
     ca_.Goto(&block10);
   }
 

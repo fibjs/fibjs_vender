@@ -2,6 +2,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -32,6 +33,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -45,7 +47,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -66,6 +68,7 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
 
 namespace v8 {
@@ -90,28 +93,47 @@ class EnumVerifier {
     }
   }
 
-  // ArrayFromAsyncResolveContextSlots (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1)
-  void VerifyEnum_ArrayFromAsyncResolveContextSlots(ArrayBuiltins::ArrayFromAsyncResolveContextSlots x) {
+  // ArrayFromAsyncIterableResolveContextSlots (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1)
+  void VerifyEnum_ArrayFromAsyncIterableResolveContextSlots(ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots x) {
     switch(x) {
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateStepSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateAwaitedValueSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateLenSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResumeStateIndexSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolvePromiseSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolvePromiseFunctionSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveOnFulfilledFunctionSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveOnRejectedFunctionSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveResultArraySlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveIteratorSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveNextMethodSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveErrorSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveMapfnSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveThisArgSlot: break;
-      case ArrayBuiltins::ArrayFromAsyncResolveContextSlots::kArrayFromAsyncResolveLength: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveResumeStateStepSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveResumeStateAwaitedValueSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveResumeStateIndexSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolvePromiseSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolvePromiseFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveOnFulfilledFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveOnRejectedFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveResultArraySlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveIteratorSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveNextMethodSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveErrorSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveMapfnSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveThisArgSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots::kArrayFromAsyncIterableResolveLength: break;
     }
   }
 
-  // UpdateFeedbackMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=277&c=1)
+  // ArrayFromAsyncArrayLikeResolveContextSlots (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1)
+  void VerifyEnum_ArrayFromAsyncArrayLikeResolveContextSlots(ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots x) {
+    switch(x) {
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveResumeStateStepSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveResumeStateLenSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolvePromiseSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveResultArraySlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveArrayLikeSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveErrorSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveMapfnSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveThisArgSlot: break;
+      case ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots::kArrayFromAsyncArrayLikeResolveLength: break;
+    }
+  }
+
+  // UpdateFeedbackMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=285&c=1)
   void VerifyEnum_UpdateFeedbackMode(UpdateFeedbackMode x) {
     switch(x) {
       case UpdateFeedbackMode::kOptionalFeedback: break;
@@ -120,7 +142,7 @@ class EnumVerifier {
     }
   }
 
-  // CallFeedbackContent (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=285&c=1)
+  // CallFeedbackContent (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=293&c=1)
   void VerifyEnum_CallFeedbackContent(CallFeedbackContent x) {
     switch(x) {
       case CallFeedbackContent::kTarget: break;
@@ -128,7 +150,7 @@ class EnumVerifier {
     }
   }
 
-  // UnicodeEncoding (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=287&c=1)
+  // UnicodeEncoding (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=295&c=1)
   void VerifyEnum_UnicodeEncoding(UnicodeEncoding x) {
     switch(x) {
       case UnicodeEncoding::UTF16: break;
@@ -136,7 +158,7 @@ class EnumVerifier {
     }
   }
 
-  // PromiseState (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=290&c=1)
+  // PromiseState (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=298&c=1)
   void VerifyEnum_PromiseState(Promise::PromiseState x) {
     switch(x) {
       case Promise::PromiseState::kPending: break;
@@ -145,7 +167,7 @@ class EnumVerifier {
     }
   }
 
-  // ElementsKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=306&c=1)
+  // ElementsKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=314&c=1)
   void VerifyEnum_ElementsKind(ElementsKind x) {
     switch(x) {
       case ElementsKind::NO_ELEMENTS: break;
@@ -163,6 +185,7 @@ class EnumVerifier {
       case ElementsKind::INT16_ELEMENTS: break;
       case ElementsKind::UINT32_ELEMENTS: break;
       case ElementsKind::INT32_ELEMENTS: break;
+      case ElementsKind::FLOAT16_ELEMENTS: break;
       case ElementsKind::FLOAT32_ELEMENTS: break;
       case ElementsKind::FLOAT64_ELEMENTS: break;
       case ElementsKind::UINT8_CLAMPED_ELEMENTS: break;
@@ -174,6 +197,7 @@ class EnumVerifier {
       case ElementsKind::RAB_GSAB_INT16_ELEMENTS: break;
       case ElementsKind::RAB_GSAB_UINT32_ELEMENTS: break;
       case ElementsKind::RAB_GSAB_INT32_ELEMENTS: break;
+      case ElementsKind::RAB_GSAB_FLOAT16_ELEMENTS: break;
       case ElementsKind::RAB_GSAB_FLOAT32_ELEMENTS: break;
       case ElementsKind::RAB_GSAB_FLOAT64_ELEMENTS: break;
       case ElementsKind::RAB_GSAB_UINT8_CLAMPED_ELEMENTS: break;
@@ -183,7 +207,7 @@ class EnumVerifier {
     }
   }
 
-  // AllocationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=351&c=1)
+  // AllocationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=361&c=1)
   void VerifyEnum_AllocationFlag(CodeStubAssembler::AllocationFlag x) {
     switch(x) {
       case CodeStubAssembler::AllocationFlag::kNone: break;
@@ -192,7 +216,7 @@ class EnumVerifier {
     }
   }
 
-  // SlackTrackingMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=358&c=1)
+  // SlackTrackingMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=368&c=1)
   void VerifyEnum_SlackTrackingMode(CodeStubAssembler::SlackTrackingMode x) {
     switch(x) {
       case CodeStubAssembler::SlackTrackingMode::kWithSlackTracking: break;
@@ -201,7 +225,7 @@ class EnumVerifier {
     }
   }
 
-  // ExtractFixedArrayFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=365&c=1)
+  // ExtractFixedArrayFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=375&c=1)
   void VerifyEnum_ExtractFixedArrayFlag(CodeStubAssembler::ExtractFixedArrayFlag x) {
     switch(x) {
       case CodeStubAssembler::ExtractFixedArrayFlag::kFixedDoubleArrays: break;
@@ -211,7 +235,7 @@ class EnumVerifier {
     }
   }
 
-  // MessageTemplate (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=380&c=1)
+  // MessageTemplate (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=390&c=1)
   void VerifyEnum_MessageTemplate(MessageTemplate x) {
     switch(x) {
       case MessageTemplate::kAllPromisesRejected: break;
@@ -252,6 +276,7 @@ class EnumVerifier {
       case MessageTemplate::kTypedArraySetOffsetOutOfBounds: break;
       case MessageTemplate::kInvalidArgument: break;
       case MessageTemplate::kInvalidRegExpExecResult: break;
+      case MessageTemplate::kInvalidSizeValue: break;
       case MessageTemplate::kRegExpNonRegExp: break;
       case MessageTemplate::kRegExpNonObject: break;
       case MessageTemplate::kPromiseNonCallable: break;
@@ -308,11 +333,15 @@ class EnumVerifier {
       case MessageTemplate::kGeneratorRunning: break;
       case MessageTemplate::kFirstArgumentAsyncIteratorSymbolNonCallable: break;
       case MessageTemplate::kIteratorResultNotAnObject: break;
+      case MessageTemplate::kFlattenPastSafeLength: break;
+      case MessageTemplate::kStrictReadOnlyProperty: break;
+      case MessageTemplate::kInvalidUsingInForInLoop: break;
+      case MessageTemplate::kIllegalInvocation: break;
       default: break;
     }
   }
 
-  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=478&c=1)
+  // PropertyAttributes (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=493&c=1)
   void VerifyEnum_PropertyAttributes(PropertyAttributes x) {
     switch(x) {
       case PropertyAttributes::NONE: break;
@@ -325,7 +354,7 @@ class EnumVerifier {
     }
   }
 
-  // PrimitiveType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=525&c=1)
+  // PrimitiveType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=540&c=1)
   void VerifyEnum_PrimitiveType(PrimitiveType x) {
     switch(x) {
       case PrimitiveType::kString: break;
@@ -335,7 +364,7 @@ class EnumVerifier {
     }
   }
 
-  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=597&c=1)
+  // LanguageMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=622&c=1)
   void VerifyEnum_LanguageMode(LanguageMode x) {
     switch(x) {
       case LanguageMode::kStrict: break;
@@ -343,7 +372,7 @@ class EnumVerifier {
     }
   }
 
-  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=698&c=1)
+  // BigIntHandling (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=723&c=1)
   void VerifyEnum_BigIntHandling(CodeStubAssembler::BigIntHandling x) {
     switch(x) {
       case CodeStubAssembler::BigIntHandling::kConvertToNumber: break;
@@ -351,7 +380,7 @@ class EnumVerifier {
     }
   }
 
-  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2087&c=1)
+  // HashFieldType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=2109&c=1)
   void VerifyEnum_HashFieldType(Name::HashFieldType x) {
     switch(x) {
       case Name::HashFieldType::kHash: break;
@@ -413,7 +442,7 @@ class EnumVerifier {
     }
   }
 
-  // PromiseResolvingFunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=264&c=1)
+  // PromiseResolvingFunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=272&c=1)
   void VerifyEnum_PromiseResolvingFunctionContextSlot(PromiseBuiltins::PromiseResolvingFunctionContextSlot x) {
     switch(x) {
       case PromiseBuiltins::PromiseResolvingFunctionContextSlot::kPromiseSlot: break;
@@ -423,7 +452,7 @@ class EnumVerifier {
     }
   }
 
-  // FunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=273&c=1)
+  // FunctionContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-abstract-operations.tq?l=281&c=1)
   void VerifyEnum_FunctionContextSlot(PromiseBuiltins::FunctionContextSlot x) {
     switch(x) {
       case PromiseBuiltins::FunctionContextSlot::kCapabilitySlot: break;
@@ -431,7 +460,7 @@ class EnumVerifier {
     }
   }
 
-  // PromiseAllResolveElementContextSlots (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=66&c=1)
+  // PromiseAllResolveElementContextSlots (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=69&c=1)
   void VerifyEnum_PromiseAllResolveElementContextSlots(PromiseBuiltins::PromiseAllResolveElementContextSlots x) {
     switch(x) {
       case PromiseBuiltins::PromiseAllResolveElementContextSlots::kPromiseAllResolveElementRemainingSlot: break;
@@ -501,7 +530,7 @@ class EnumVerifier {
     }
   }
 
-  // ContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=90&c=1)
+  // ContextSlot (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=98&c=1)
   void VerifyEnum_ContextSlot(Context::Field x) {
     switch(x) {
       case Context::Field::SCOPE_INFO_INDEX: break;
@@ -534,18 +563,21 @@ class EnumVerifier {
       case Context::Field::REGEXP_LAST_MATCH_INFO_INDEX: break;
       case Context::Field::INITIAL_STRING_ITERATOR_MAP_INDEX: break;
       case Context::Field::INITIAL_ARRAY_ITERATOR_MAP_INDEX: break;
+      case Context::Field::INITIAL_ITERATOR_PROTOTYPE_INDEX: break;
       case Context::Field::SLOW_OBJECT_WITH_NULL_PROTOTYPE_MAP: break;
       case Context::Field::STRICT_ARGUMENTS_MAP_INDEX: break;
       case Context::Field::SLOPPY_ARGUMENTS_MAP_INDEX: break;
       case Context::Field::FAST_ALIASED_ARGUMENTS_MAP_INDEX: break;
       case Context::Field::FUNCTION_CONTEXT_MAP_INDEX: break;
       case Context::Field::FUNCTION_PROTOTYPE_APPLY_INDEX: break;
+      case Context::Field::STRING_FUNCTION_INDEX: break;
       case Context::Field::UINT8_ARRAY_FUN_INDEX: break;
       case Context::Field::INT8_ARRAY_FUN_INDEX: break;
       case Context::Field::UINT16_ARRAY_FUN_INDEX: break;
       case Context::Field::INT16_ARRAY_FUN_INDEX: break;
       case Context::Field::UINT32_ARRAY_FUN_INDEX: break;
       case Context::Field::INT32_ARRAY_FUN_INDEX: break;
+      case Context::Field::FLOAT16_ARRAY_FUN_INDEX: break;
       case Context::Field::FLOAT32_ARRAY_FUN_INDEX: break;
       case Context::Field::FLOAT64_ARRAY_FUN_INDEX: break;
       case Context::Field::UINT8_CLAMPED_ARRAY_FUN_INDEX: break;
@@ -557,6 +589,7 @@ class EnumVerifier {
       case Context::Field::RAB_GSAB_INT16_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_UINT32_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_INT32_ARRAY_MAP_INDEX: break;
+      case Context::Field::RAB_GSAB_FLOAT16_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_FLOAT32_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_FLOAT64_ARRAY_MAP_INDEX: break;
       case Context::Field::RAB_GSAB_UINT8_CLAMPED_ARRAY_MAP_INDEX: break;
@@ -577,8 +610,10 @@ class EnumVerifier {
       case Context::Field::BOUND_FUNCTION_WITHOUT_CONSTRUCTOR_MAP_INDEX: break;
       case Context::Field::WRAPPED_FUNCTION_MAP_INDEX: break;
       case Context::Field::MIN_CONTEXT_SLOTS: break;
+      case Context::Field::MIN_CONTEXT_EXTENDED_SLOTS: break;
       default: break;
     }
+    static_assert(Context::Field::CONST_TRACKING_LET_SIDE_DATA_INDEX == Context::Field::MIN_CONTEXT_SLOTS);
   }
 
   // IterationKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=5&c=1)
@@ -590,14 +625,47 @@ class EnumVerifier {
     }
   }
 
+  // DisposableStackState (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=5&c=1)
+  void VerifyEnum_DisposableStackState(DisposableStackState x) {
+    switch(x) {
+      case DisposableStackState::kDisposed: break;
+      case DisposableStackState::kPending: break;
+    }
+  }
+
+  // DisposeMethodCallType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=6&c=1)
+  void VerifyEnum_DisposeMethodCallType(DisposeMethodCallType x) {
+    switch(x) {
+      case DisposeMethodCallType::kValueIsReceiver: break;
+      case DisposeMethodCallType::kValueIsArgument: break;
+    }
+  }
+
+  // DisposeMethodHint (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=10&c=1)
+  void VerifyEnum_DisposeMethodHint(DisposeMethodHint x) {
+    switch(x) {
+      case DisposeMethodHint::kSyncDispose: break;
+      case DisposeMethodHint::kAsyncDispose: break;
+    }
+  }
+
+  // DisposableStackResourcesType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=11&c=1)
+  void VerifyEnum_DisposableStackResourcesType(DisposableStackResourcesType x) {
+    switch(x) {
+      case DisposableStackResourcesType::kAllSync: break;
+      case DisposableStackResourcesType::kAtLeastOneAsync: break;
+    }
+  }
+
   // ScopeType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=8&c=1)
   void VerifyEnum_ScopeType(ScopeType x) {
     switch(x) {
+      case ScopeType::SCRIPT_SCOPE: break;
+      case ScopeType::REPL_MODE_SCOPE: break;
       case ScopeType::CLASS_SCOPE: break;
       case ScopeType::EVAL_SCOPE: break;
       case ScopeType::FUNCTION_SCOPE: break;
       case ScopeType::MODULE_SCOPE: break;
-      case ScopeType::SCRIPT_SCOPE: break;
       case ScopeType::CATCH_SCOPE: break;
       case ScopeType::BLOCK_SCOPE: break;
       case ScopeType::WITH_SCOPE: break;
@@ -605,7 +673,7 @@ class EnumVerifier {
     }
   }
 
-  // VariableAllocationInfo (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=24&c=1)
+  // VariableAllocationInfo (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=25&c=1)
   void VerifyEnum_VariableAllocationInfo(VariableAllocationInfo x) {
     switch(x) {
       case VariableAllocationInfo::NONE: break;
@@ -615,11 +683,13 @@ class EnumVerifier {
     }
   }
 
-  // VariableMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=31&c=1)
+  // VariableMode (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=32&c=1)
   void VerifyEnum_VariableMode(VariableMode x) {
     switch(x) {
       case VariableMode::kLet: break;
       case VariableMode::kConst: break;
+      case VariableMode::kUsing: break;
+      case VariableMode::kAwaitUsing: break;
       case VariableMode::kVar: break;
       case VariableMode::kTemporary: break;
       case VariableMode::kDynamic: break;
@@ -632,7 +702,7 @@ class EnumVerifier {
     }
   }
 
-  // InitializationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=45&c=1)
+  // InitializationFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=48&c=1)
   void VerifyEnum_InitializationFlag(InitializationFlag x) {
     switch(x) {
       case InitializationFlag::kNeedsInitialization: break;
@@ -640,7 +710,7 @@ class EnumVerifier {
     }
   }
 
-  // IsStaticFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=50&c=1)
+  // IsStaticFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=53&c=1)
   void VerifyEnum_IsStaticFlag(IsStaticFlag x) {
     switch(x) {
       case IsStaticFlag::kNotStatic: break;
@@ -648,7 +718,7 @@ class EnumVerifier {
     }
   }
 
-  // MaybeAssignedFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=52&c=1)
+  // MaybeAssignedFlag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=55&c=1)
   void VerifyEnum_MaybeAssignedFlag(MaybeAssignedFlag x) {
     switch(x) {
       case MaybeAssignedFlag::kNotAssigned: break;
@@ -656,7 +726,7 @@ class EnumVerifier {
     }
   }
 
-  // StringRepresentationTag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=49&c=1)
+  // StringRepresentationTag (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=1)
   void VerifyEnum_StringRepresentationTag(StringRepresentationTag x) {
     switch(x) {
       case StringRepresentationTag::kSeqStringTag: break;
@@ -667,7 +737,15 @@ class EnumVerifier {
     }
   }
 
-  // ValueKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=61&c=1)
+  // AbortReason (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=7&c=1)
+  void VerifyEnum_AbortReason(AbortReason x) {
+    switch(x) {
+      case AbortReason::kTurboshaftTypeAssertionFailed: break;
+      default: break;
+    }
+  }
+
+  // ValueKind (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=67&c=1)
   void VerifyEnum_ValueKind(wasm::ValueKind x) {
     switch(x) {
       case wasm::ValueKind::kRef: break;
@@ -676,7 +754,15 @@ class EnumVerifier {
     }
   }
 
-  // HeapType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=67&c=1)
+  // Promise (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=73&c=1)
+  void VerifyEnum_Promise(wasm::Promise x) {
+    switch(x) {
+      case wasm::Promise::kPromise: break;
+      case wasm::Promise::kNoPromise: break;
+    }
+  }
+
+  // HeapType (https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq?l=78&c=1)
   void VerifyEnum_HeapType(wasm::HeapType::Representation x) {
     switch(x) {
       case wasm::HeapType::Representation::kExtern: break;
@@ -688,7 +774,10 @@ class EnumVerifier {
       case wasm::HeapType::Representation::kArray: break;
       case wasm::HeapType::Representation::kAny: break;
       case wasm::HeapType::Representation::kNone: break;
+      case wasm::HeapType::Representation::kFunc: break;
       case wasm::HeapType::Representation::kNoFunc: break;
+      case wasm::HeapType::Representation::kExn: break;
+      case wasm::HeapType::Representation::kNoExn: break;
       default: break;
     }
   }

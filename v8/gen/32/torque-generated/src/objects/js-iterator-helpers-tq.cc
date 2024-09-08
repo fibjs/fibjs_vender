@@ -15,12 +15,12 @@ bool IsJSIteratorHelper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSIteratorHelper<JSIteratorHelper, JSObject>::JSIteratorHelperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSIteratorHelperVerify(JSIteratorHelper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSIteratorHelperVerify(Cast<JSIteratorHelper>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=13&c=1
 bool IsJSIteratorMapHelper_NonInline(Tagged<HeapObject> o) {
   return IsJSIteratorMapHelper(o);
 }
@@ -29,12 +29,12 @@ bool IsJSIteratorMapHelper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSIteratorMapHelper<JSIteratorMapHelper, JSIteratorHelper>::JSIteratorMapHelperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSIteratorMapHelperVerify(JSIteratorMapHelper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSIteratorMapHelperVerify(Cast<JSIteratorMapHelper>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=18&c=1
 bool IsJSIteratorFilterHelper_NonInline(Tagged<HeapObject> o) {
   return IsJSIteratorFilterHelper(o);
 }
@@ -43,12 +43,12 @@ bool IsJSIteratorFilterHelper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSIteratorFilterHelper<JSIteratorFilterHelper, JSIteratorHelper>::JSIteratorFilterHelperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSIteratorFilterHelperVerify(JSIteratorFilterHelper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSIteratorFilterHelperVerify(Cast<JSIteratorFilterHelper>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=23&c=1
 bool IsJSIteratorTakeHelper_NonInline(Tagged<HeapObject> o) {
   return IsJSIteratorTakeHelper(o);
 }
@@ -57,12 +57,12 @@ bool IsJSIteratorTakeHelper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSIteratorTakeHelper<JSIteratorTakeHelper, JSIteratorHelper>::JSIteratorTakeHelperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSIteratorTakeHelperVerify(JSIteratorTakeHelper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSIteratorTakeHelperVerify(Cast<JSIteratorTakeHelper>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=27&c=1
 bool IsJSIteratorDropHelper_NonInline(Tagged<HeapObject> o) {
   return IsJSIteratorDropHelper(o);
 }
@@ -71,12 +71,12 @@ bool IsJSIteratorDropHelper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSIteratorDropHelper<JSIteratorDropHelper, JSIteratorHelper>::JSIteratorDropHelperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSIteratorDropHelperVerify(JSIteratorDropHelper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSIteratorDropHelperVerify(Cast<JSIteratorDropHelper>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=31&c=1
 bool IsJSIteratorFlatMapHelper_NonInline(Tagged<HeapObject> o) {
   return IsJSIteratorFlatMapHelper(o);
 }
@@ -85,7 +85,7 @@ bool IsJSIteratorFlatMapHelper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSIteratorFlatMapHelper<JSIteratorFlatMapHelper, JSIteratorHelper>::JSIteratorFlatMapHelperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSIteratorFlatMapHelperVerify(JSIteratorFlatMapHelper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSIteratorFlatMapHelperVerify(Cast<JSIteratorFlatMapHelper>(*this), isolate);
 }
 
 

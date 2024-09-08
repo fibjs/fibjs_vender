@@ -18,28 +18,21 @@ class TorqueGeneratedJSProxy : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSProxy<D,P>;
 
-  // Torque type: (class JSReceiver | class Null)
+  // Torque type: (class Null | class JSReceiver)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
-  inline Tagged<HeapObject> target() const;
+  inline Tagged<Union<JSReceiver, Null>> target() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
-  inline Tagged<HeapObject> target(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSReceiver, Null>> target(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=6&c=3
-  inline void set_target(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_target(Tagged<Union<JSReceiver, Null>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | class Null)
+  // Torque type: (class Null | class JSReceiver)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=7&c=3
-  inline Tagged<HeapObject> handler() const;
+  inline Tagged<Union<JSReceiver, Null>> handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=7&c=3
-  inline Tagged<HeapObject> handler(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSReceiver, Null>> handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=7&c=3
-  inline void set_handler(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=5&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_handler(Tagged<Union<JSReceiver, Null>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSProxy)
 
@@ -104,26 +97,19 @@ class TorqueGeneratedJSProxyRevocableResult : public P {
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
-  inline Tagged<Object> proxy() const;
+  inline Tagged<JSAny> proxy() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
-  inline Tagged<Object> proxy(PtrComprCageBase cage_base) const;
+  inline Tagged<JSAny> proxy(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=11&c=3
-  inline void set_proxy(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_proxy(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=12&c=3
-  inline Tagged<Object> revoke() const;
+  inline Tagged<JSAny> revoke() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=12&c=3
-  inline Tagged<Object> revoke(PtrComprCageBase cage_base) const;
+  inline Tagged<JSAny> revoke(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=12&c=3
-  inline void set_revoke(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=10&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-proxy.tq?l=10&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_revoke(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSProxyRevocableResult)
 

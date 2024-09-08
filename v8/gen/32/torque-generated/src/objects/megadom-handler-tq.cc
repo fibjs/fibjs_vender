@@ -15,7 +15,7 @@ bool IsMegaDomHandler_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedMegaDomHandler<MegaDomHandler, HeapObject>::MegaDomHandlerVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::MegaDomHandlerVerify(MegaDomHandler::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::MegaDomHandlerVerify(Cast<MegaDomHandler>(*this), isolate);
 }
 
 

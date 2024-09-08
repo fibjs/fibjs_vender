@@ -21,12 +21,6 @@ void TorqueGeneratedJSLocale<D, P>::set_icu_locale(Tagged<Foreign> value, WriteB
   CONDITIONAL_WRITE_BARRIER(*this, kIcuLocaleOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=7&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSLocale<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSLocale<D, P>::TorqueGeneratedJSLocale(Address ptr)
     : P(ptr) {

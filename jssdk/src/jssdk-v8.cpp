@@ -188,7 +188,7 @@ public:
             (int32_t)soname.length())
                                              .FromMaybe(v8::Local<v8::String>());
 
-        v8::ScriptOrigin origin(m_isolate, str_name);
+        v8::ScriptOrigin origin(str_name);
         v8::Local<v8::Script> script = v8::Script::Compile(context, str_code, &origin).FromMaybe(v8::Local<v8::Script>());
 
         if (script.IsEmpty())

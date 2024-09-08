@@ -15,7 +15,7 @@ bool IsEmbedderDataArray_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedEmbedderDataArray<EmbedderDataArray, HeapObject>::EmbedderDataArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::EmbedderDataArrayVerify(EmbedderDataArray::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::EmbedderDataArrayVerify(Cast<EmbedderDataArray>(*this), isolate);
 }
 
 

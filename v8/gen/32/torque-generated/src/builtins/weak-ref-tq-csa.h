@@ -6,10 +6,10 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=32&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=37&c=19
 TNode<JSWeakRef> UnsafeCast_JSWeakRef_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=46&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=50&c=19
 TNode<JSWeakRef> Cast_JSWeakRef_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 } // namespace internal

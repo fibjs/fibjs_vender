@@ -15,7 +15,7 @@ bool IsJSPluralRules_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSPluralRules<JSPluralRules, JSObject>::JSPluralRulesVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSPluralRulesVerify(JSPluralRules::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSPluralRulesVerify(Cast<JSPluralRules>(*this), isolate);
 }
 
 

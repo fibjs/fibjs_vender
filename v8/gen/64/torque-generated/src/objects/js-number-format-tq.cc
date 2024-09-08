@@ -15,7 +15,7 @@ bool IsJSNumberFormat_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSNumberFormat<JSNumberFormat, JSObject>::JSNumberFormatVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSNumberFormatVerify(JSNumberFormat::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSNumberFormatVerify(Cast<JSNumberFormat>(*this), isolate);
 }
 
 

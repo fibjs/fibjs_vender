@@ -15,7 +15,7 @@ bool IsJSArgumentsObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSArgumentsObject<JSArgumentsObject, JSObject>::JSArgumentsObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSArgumentsObjectVerify(JSArgumentsObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSArgumentsObjectVerify(Cast<JSArgumentsObject>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsAliasedArgumentsEntry_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAliasedArgumentsEntry<AliasedArgumentsEntry, Struct>::AliasedArgumentsEntryVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AliasedArgumentsEntryVerify(AliasedArgumentsEntry::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AliasedArgumentsEntryVerify(Cast<AliasedArgumentsEntry>(*this), isolate);
 }
 
 

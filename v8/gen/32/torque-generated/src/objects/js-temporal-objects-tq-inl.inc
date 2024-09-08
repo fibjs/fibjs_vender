@@ -11,12 +11,6 @@ void TorqueGeneratedJSTemporalCalendar<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalCalendar<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSTemporalCalendar<D, P>::TorqueGeneratedJSTemporalCalendar(Address ptr)
     : P(ptr) {
@@ -24,22 +18,22 @@ inline TorqueGeneratedJSTemporalCalendar<D, P>::TorqueGeneratedJSTemporalCalenda
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::years() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::years() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::years(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::years(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kYearsOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::years(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kYearsOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_years(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_years(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kYearsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kYearsOffset, value, mode);
@@ -47,22 +41,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_years(Tagged<Object> value, Wr
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::months() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::months() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::months(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::months(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kMonthsOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::months(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kMonthsOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_months(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_months(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kMonthsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMonthsOffset, value, mode);
@@ -70,22 +64,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_months(Tagged<Object> value, W
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::weeks() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::weeks() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::weeks(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::weeks(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kWeeksOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::weeks(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kWeeksOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_weeks(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_weeks(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kWeeksOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kWeeksOffset, value, mode);
@@ -93,22 +87,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_weeks(Tagged<Object> value, Wr
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::days() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::days() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::days(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::days(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kDaysOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::days(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kDaysOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_days(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_days(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kDaysOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDaysOffset, value, mode);
@@ -116,22 +110,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_days(Tagged<Object> value, Wri
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::hours() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::hours() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::hours(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::hours(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kHoursOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::hours(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kHoursOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_hours(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_hours(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kHoursOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHoursOffset, value, mode);
@@ -139,22 +133,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_hours(Tagged<Object> value, Wr
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::minutes() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::minutes() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::minutes(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::minutes(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kMinutesOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::minutes(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kMinutesOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_minutes(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_minutes(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kMinutesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMinutesOffset, value, mode);
@@ -162,22 +156,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_minutes(Tagged<Object> value, 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::seconds() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::seconds() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::seconds(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::seconds(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kSecondsOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::seconds(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kSecondsOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_seconds(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_seconds(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kSecondsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSecondsOffset, value, mode);
@@ -185,22 +179,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_seconds(Tagged<Object> value, 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::milliseconds() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::milliseconds() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::milliseconds(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::milliseconds(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kMillisecondsOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::milliseconds(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kMillisecondsOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_milliseconds(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_milliseconds(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kMillisecondsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMillisecondsOffset, value, mode);
@@ -208,22 +202,22 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_milliseconds(Tagged<Object> va
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::microseconds() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::microseconds() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::microseconds(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::microseconds(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kMicrosecondsOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::microseconds(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kMicrosecondsOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_microseconds(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_microseconds(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kMicrosecondsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMicrosecondsOffset, value, mode);
@@ -231,31 +225,25 @@ void TorqueGeneratedJSTemporalDuration<D, P>::set_microseconds(Tagged<Object> va
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::nanoseconds() const {
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::nanoseconds() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSTemporalDuration::nanoseconds(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSTemporalDuration<D, P>::nanoseconds(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kNanosecondsOffset);
+Tagged<Number> TorqueGeneratedJSTemporalDuration<D, P>::nanoseconds(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kNanosecondsOffset);
   DCHECK(IsSmi(value) || IsHeapNumber(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
 template<class D, class P>
-void TorqueGeneratedJSTemporalDuration<D, P>::set_nanoseconds(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSTemporalDuration<D, P>::set_nanoseconds(Tagged<Number> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
   WRITE_FIELD(*this, kNanosecondsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNanosecondsOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalDuration<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -284,12 +272,6 @@ void TorqueGeneratedJSTemporalInstant<D, P>::set_nanoseconds(Tagged<BigInt> valu
   SLOW_DCHECK(IsBigInt(value));
   WRITE_FIELD(*this, kNanosecondsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNanosecondsOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalInstant<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -359,12 +341,6 @@ void TorqueGeneratedJSTemporalPlainDateTime<D, P>::set_calendar(Tagged<JSReceive
   CONDITIONAL_WRITE_BARRIER(*this, kCalendarOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalPlainDateTime<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSTemporalPlainDateTime<D, P>::TorqueGeneratedJSTemporalPlainDateTime(Address ptr)
     : P(ptr) {
@@ -406,12 +382,6 @@ void TorqueGeneratedJSTemporalPlainDate<D, P>::set_calendar(Tagged<JSReceiver> v
   CONDITIONAL_WRITE_BARRIER(*this, kCalendarOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalPlainDate<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSTemporalPlainDate<D, P>::TorqueGeneratedJSTemporalPlainDate(Address ptr)
     : P(ptr) {
@@ -451,12 +421,6 @@ void TorqueGeneratedJSTemporalPlainMonthDay<D, P>::set_calendar(Tagged<JSReceive
   SLOW_DCHECK(IsJSReceiver(value));
   WRITE_FIELD(*this, kCalendarOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCalendarOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalPlainMonthDay<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -513,12 +477,6 @@ void TorqueGeneratedJSTemporalPlainTime<D, P>::set_calendar(Tagged<JSReceiver> v
   CONDITIONAL_WRITE_BARRIER(*this, kCalendarOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalPlainTime<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSTemporalPlainTime<D, P>::TorqueGeneratedJSTemporalPlainTime(Address ptr)
     : P(ptr) {
@@ -560,12 +518,6 @@ void TorqueGeneratedJSTemporalPlainYearMonth<D, P>::set_calendar(Tagged<JSReceiv
   CONDITIONAL_WRITE_BARRIER(*this, kCalendarOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalPlainYearMonth<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSTemporalPlainYearMonth<D, P>::TorqueGeneratedJSTemporalPlainYearMonth(Address ptr)
     : P(ptr) {
@@ -595,12 +547,6 @@ int TorqueGeneratedJSTemporalTimeZone<D, P>::details() const {
 template<class D, class P>
 void TorqueGeneratedJSTemporalTimeZone<D, P>::set_details(int value) {
   WRITE_FIELD(*this, kDetailsOffset, Smi::FromInt(value));
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalTimeZone<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -675,12 +621,6 @@ void TorqueGeneratedJSTemporalZonedDateTime<D, P>::set_calendar(Tagged<JSReceive
   SLOW_DCHECK(IsJSReceiver(value));
   WRITE_FIELD(*this, kCalendarOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCalendarOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSTemporalZonedDateTime<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

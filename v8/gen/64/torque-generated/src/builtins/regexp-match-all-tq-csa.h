@@ -21,9 +21,6 @@ TNode<JSRegExpStringIterator> Cast_JSRegExpStringIterator_1(compiler::CodeAssemb
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=170&c=23
 TNode<JSArray> UnsafeCast_JSRegExpResult_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=172&c=26
-TNode<String> UnsafeCast_String_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
-
 } // namespace internal
 } // namespace v8
 

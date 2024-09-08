@@ -15,12 +15,12 @@ bool IsSourceTextModule_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSourceTextModule<SourceTextModule, Module>::SourceTextModuleVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SourceTextModuleVerify(SourceTextModule::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SourceTextModuleVerify(Cast<SourceTextModule>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=1
 bool IsModuleRequest_NonInline(Tagged<HeapObject> o) {
   return IsModuleRequest(o);
 }
@@ -29,12 +29,12 @@ bool IsModuleRequest_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedModuleRequest<ModuleRequest, Struct>::ModuleRequestVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ModuleRequestVerify(ModuleRequest::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ModuleRequestVerify(Cast<ModuleRequest>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=1
 bool IsSourceTextModuleInfoEntry_NonInline(Tagged<HeapObject> o) {
   return IsSourceTextModuleInfoEntry(o);
 }
@@ -43,7 +43,7 @@ bool IsSourceTextModuleInfoEntry_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSourceTextModuleInfoEntry<SourceTextModuleInfoEntry, Struct>::SourceTextModuleInfoEntryVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SourceTextModuleInfoEntryVerify(SourceTextModuleInfoEntry::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SourceTextModuleInfoEntryVerify(Cast<SourceTextModuleInfoEntry>(*this), isolate);
 }
 
 

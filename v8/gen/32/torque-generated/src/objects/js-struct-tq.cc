@@ -15,7 +15,7 @@ bool IsAlwaysSharedSpaceJSObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAlwaysSharedSpaceJSObject<AlwaysSharedSpaceJSObject, JSObject>::AlwaysSharedSpaceJSObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AlwaysSharedSpaceJSObjectVerify(AlwaysSharedSpaceJSObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AlwaysSharedSpaceJSObjectVerify(Cast<AlwaysSharedSpaceJSObject>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSSharedStruct_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSSharedStruct<JSSharedStruct, AlwaysSharedSpaceJSObject>::JSSharedStructVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSSharedStructVerify(JSSharedStruct::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSSharedStructVerify(Cast<JSSharedStruct>(*this), isolate);
 }
 
 

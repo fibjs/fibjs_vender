@@ -15,7 +15,7 @@ bool IsStruct_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedStruct<Struct, HeapObject>::StructVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::StructVerify(Struct::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::StructVerify(Cast<Struct>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsAccessorPair_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAccessorPair<AccessorPair, Struct>::AccessorPairVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AccessorPairVerify(AccessorPair::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AccessorPairVerify(Cast<AccessorPair>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsClassPositions_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedClassPositions<ClassPositions, Struct>::ClassPositionsVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ClassPositionsVerify(ClassPositions::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ClassPositionsVerify(Cast<ClassPositions>(*this), isolate);
 }
 
 
@@ -57,7 +57,7 @@ bool IsTuple2_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTuple2<Tuple2, Struct>::Tuple2Verify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::Tuple2Verify(Tuple2::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::Tuple2Verify(Cast<Tuple2>(*this), isolate);
 }
 
 

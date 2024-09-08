@@ -28,23 +28,16 @@ class TorqueGeneratedJSArrayIterator : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
-  inline Tagged<Object> next_index() const;
+  inline Tagged<Number> next_index() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
-  inline Tagged<Object> next_index(PtrComprCageBase cage_base) const;
+  inline Tagged<Number> next_index(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
-  inline void set_next_index(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_next_index(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=35&c=3
   inline int kind() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=35&c=3
   inline void set_kind(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=7&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(JSArrayIterator)
 
@@ -103,18 +96,11 @@ class TorqueGeneratedJSArray : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
-  inline Tagged<Object> length() const;
+  inline Tagged<Number> length() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
-  inline Tagged<Object> length(PtrComprCageBase cage_base) const;
+  inline Tagged<Number> length(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
-  inline void set_length(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=61&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_length(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSArray)
 
@@ -181,13 +167,6 @@ class TorqueGeneratedTemplateLiteralObject : public P {
   inline int slot_id() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=73&c=3
   inline void set_slot_id(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=68&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=68&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(TemplateLiteralObject)
 

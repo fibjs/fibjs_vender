@@ -15,7 +15,7 @@ bool IsWeakCell_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedWeakCell<WeakCell, HeapObject>::WeakCellVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::WeakCellVerify(WeakCell::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::WeakCellVerify(Cast<WeakCell>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSFinalizationRegistry_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSFinalizationRegistry<JSFinalizationRegistry, JSObject>::JSFinalizationRegistryVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSFinalizationRegistryVerify(JSFinalizationRegistry::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSFinalizationRegistryVerify(Cast<JSFinalizationRegistry>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsJSWeakRef_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSWeakRef<JSWeakRef, JSObject>::JSWeakRefVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSWeakRefVerify(JSWeakRef::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSWeakRefVerify(Cast<JSWeakRef>(*this), isolate);
 }
 
 

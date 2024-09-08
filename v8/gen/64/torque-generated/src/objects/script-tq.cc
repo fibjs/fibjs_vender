@@ -6,7 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=1
 bool IsScript_NonInline(Tagged<HeapObject> o) {
   return IsScript(o);
 }
@@ -15,7 +15,7 @@ bool IsScript_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedScript<Script, Struct>::ScriptVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ScriptVerify(Script::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ScriptVerify(Cast<Script>(*this), isolate);
 }
 
 

@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/builtins-string-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -713,6 +717,8 @@ USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<String> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -798,20 +804,67 @@ USE(parameter3);
   }
 
   TNode<String> phi_bb11_9;
-  TNode<JSReceiver> tmp16;
-  TNode<Map> tmp17;
-  TNode<JSObject> tmp18;
-  TNode<JSPrimitiveWrapper> tmp19;
-  TNode<IntPtrT> tmp20;
+  TNode<BoolT> tmp16;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_9);
-    tmp16 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    tmp17 = GetDerivedMap_0(state_, TNode<Context>{parameter0}, TNode<JSFunction>{parameter3}, TNode<JSReceiver>{tmp16});
-    tmp18 = AllocateFastOrSlowJSObjectFromMap_0(state_, TNode<Context>{parameter0}, TNode<Map>{tmp17});
-    tmp19 = UnsafeCast_JSPrimitiveWrapper_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp18});
-    tmp20 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp19, tmp20}, phi_bb11_9);
-    arguments.PopAndReturn(tmp19);
+    tmp16 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{parameter3}, TNode<Object>{parameter2});
+    ca_.Branch(tmp16, &block12, std::vector<compiler::Node*>{phi_bb11_9}, &block13, std::vector<compiler::Node*>{phi_bb11_9});
+  }
+
+  TNode<String> phi_bb12_9;
+  if (block12.is_used()) {
+    ca_.Bind(&block12, &phi_bb12_9);
+    CodeStubAssembler(state_).InvalidateStringWrapperToPrimitiveProtector();
+    ca_.Goto(&block13, phi_bb12_9);
+  }
+
+  TNode<String> phi_bb13_9;
+  TNode<JSReceiver> tmp17;
+  TNode<Map> tmp18;
+  TNode<JSObject> tmp19;
+  TNode<JSPrimitiveWrapper> tmp20;
+  TNode<IntPtrT> tmp21;
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_9);
+    tmp17 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp18 = GetDerivedMap_0(state_, TNode<Context>{parameter0}, TNode<JSFunction>{parameter3}, TNode<JSReceiver>{tmp17});
+    tmp19 = AllocateFastOrSlowJSObjectFromMap_0(state_, TNode<Context>{parameter0}, TNode<Map>{tmp18});
+    tmp20 = UnsafeCast_JSPrimitiveWrapper_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp19});
+    tmp21 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp20, tmp21}, phi_bb13_9);
+    arguments.PopAndReturn(tmp20);
+  }
+}
+
+TF_BUILTIN(StringCreateLazyDeoptContinuation, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kValue);
+  USE(parameter1);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSFunction> tmp0;
+  TNode<IntPtrT> tmp1;
+  TNode<HeapObject> tmp2;
+  TNode<Map> tmp3;
+  TNode<JSObject> tmp4;
+  TNode<JSPrimitiveWrapper> tmp5;
+  TNode<IntPtrT> tmp6;
+  TNode<String> tmp7;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = GetStringFunction_0(state_, TNode<Context>{parameter0});
+    tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 28);
+    tmp2 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp0, tmp1});
+    tmp3 = UnsafeCast_Map_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp2});
+    tmp4 = AllocateFastOrSlowJSObjectFromMap_0(state_, TNode<Context>{parameter0}, TNode<Map>{tmp3});
+    tmp5 = UnsafeCast_JSPrimitiveWrapper_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4});
+    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp7 = UnsafeCast_String_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp6}, tmp7);
+    CodeStubAssembler(state_).Return(tmp5);
   }
 }
 
@@ -960,7 +1013,45 @@ TNode<Symbol> Cast_Symbol_1(compiler::CodeAssemblerState* state_, TNode<Context>
   return TNode<Symbol>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=275&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=248&c=22
+TNode<Map> UnsafeCast_Map_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Map> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<Map>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=251&c=15
+TNode<String> UnsafeCast_String_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<String> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<String>{tmp0};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=291&c=14
 TorqueStructReference_char8_0 AddOffset_char8_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char8_0 p_ref, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -984,7 +1075,7 @@ TorqueStructReference_char8_0 AddOffset_char8_0(compiler::CodeAssemblerState* st
   return TorqueStructReference_char8_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=277&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=293&c=14
 TorqueStructReference_char16_0 AddOffset_char16_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char16_0 p_ref, TNode<IntPtrT> p_offset) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

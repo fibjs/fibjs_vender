@@ -15,7 +15,7 @@ bool IsJSRawJson_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSRawJson<JSRawJson, JSObject>::JSRawJsonVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSRawJsonVerify(JSRawJson::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSRawJsonVerify(Cast<JSRawJson>(*this), isolate);
 }
 
 

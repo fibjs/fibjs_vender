@@ -15,7 +15,7 @@ bool IsJSLocale_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSLocale<JSLocale, JSObject>::JSLocaleVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSLocaleVerify(JSLocale::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSLocaleVerify(Cast<JSLocale>(*this), isolate);
 }
 
 

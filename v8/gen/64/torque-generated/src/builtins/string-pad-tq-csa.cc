@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,10 +67,12 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-pad-tq-csa.h"
-#include "torque-generated/src/builtins/array-slice-tq-csa.h"
+#include "torque-generated/src/builtins/array-flat-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
@@ -303,7 +307,7 @@ TNode<String> StringPad_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   TNode<String> tmp31;
   if (block32.is_used()) {
     ca_.Bind(&block32, &phi_bb32_9, &phi_bb32_10);
-    tmp31 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringRepeat), p_context, phi_bb32_9, tmp28);
+    tmp31 = ca_.CallBuiltin<String>(Builtin::kStringRepeat, p_context, phi_bb32_9, tmp28);
     ca_.Goto(&block34, phi_bb32_9, phi_bb32_10, tmp31);
   }
 
@@ -324,7 +328,7 @@ TNode<String> StringPad_0(compiler::CodeAssemblerState* state_, TNode<Context> p
     tmp34 = CodeStubAssembler(state_).Int32Div(TNode<Int32T>{tmp33}, TNode<Int32T>{tmp32});
     tmp35 = CodeStubAssembler(state_).Int32Mod(TNode<Int32T>{tmp33}, TNode<Int32T>{tmp32});
     tmp36 = Convert_Smi_int32_0(state_, TNode<Int32T>{tmp34});
-    tmp37 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringRepeat), p_context, phi_bb33_9, tmp36);
+    tmp37 = ca_.CallBuiltin<String>(Builtin::kStringRepeat, p_context, phi_bb33_9, tmp36);
     tmp38 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp39 = CodeStubAssembler(state_).Word32NotEqual(TNode<Int32T>{tmp35}, TNode<Int32T>{tmp38});
     ca_.Branch(tmp39, &block35, std::vector<compiler::Node*>{phi_bb33_9, phi_bb33_10}, &block36, std::vector<compiler::Node*>{phi_bb33_9, phi_bb33_10, tmp37});
@@ -340,7 +344,7 @@ TNode<String> StringPad_0(compiler::CodeAssemblerState* state_, TNode<Context> p
     ca_.Bind(&block35, &phi_bb35_9, &phi_bb35_10);
     tmp40 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp35});
     tmp41 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp42 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringSubstring), p_context, phi_bb35_9, tmp41, tmp40);
+    tmp42 = ca_.CallBuiltin<String>(Builtin::kStringSubstring, p_context, phi_bb35_9, tmp41, tmp40);
     tmp43 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{tmp37}, TNode<String>{tmp42});
     ca_.Goto(&block36, phi_bb35_9, phi_bb35_10, tmp43);
   }

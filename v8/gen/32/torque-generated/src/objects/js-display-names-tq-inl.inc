@@ -34,12 +34,6 @@ void TorqueGeneratedJSDisplayNames<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=18&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSDisplayNames<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSDisplayNames<D, P>::TorqueGeneratedJSDisplayNames(Address ptr)
     : P(ptr) {

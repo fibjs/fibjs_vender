@@ -27,13 +27,13 @@ TNode<IntPtrT> kPromiseAnyRejectElementErrorsSlot_0(compiler::CodeAssemblerState
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=32&c=1
 TNode<Context> CreatePromiseAnyRejectElementContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<PromiseCapability> p_capability, TNode<NativeContext> p_nativeContext);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=56&c=1
-TNode<JSFunction> CreatePromiseAnyRejectElementFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_rejectElementContext, TNode<Smi> p_index, TNode<NativeContext> p_nativeContext);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=59&c=1
+TNode<JSFunction> CreatePromiseAnyRejectElementFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_rejectElementContext, TNode<Smi> p_index, TNode<NativeContext> p__nativeContext);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=171&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=172&c=1
 TNode<Object> PerformPromiseAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TorqueStructIteratorRecord p_iteratorRecord, TNode<JSReceiver> p_constructor, TNode<PromiseCapability> p_resultCapability, TNode<Object> p_promiseResolveFunction, compiler::CodeAssemblerLabel* label_Reject, compiler::TypedCodeAssemblerVariable<Object>* label_Reject_parameter_0);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=394&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=395&c=1
 TNode<JSObject> ConstructAggregateError_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_errors);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=39&c=3
@@ -51,13 +51,16 @@ TorqueStructReference_FixedArray_0 ContextSlot_PromiseAnyRejectElementContext_Pr
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=116&c=33
 TorqueStructReference_Smi_0 ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=160&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=161&c=25
 TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseAnyRejectElementContext_PromiseAnyRejectElementContext_PromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=289&c=30
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=193&c=36
+TorqueStructReference_Map_0 NativeContextSlot_Map_1(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=290&c=30
 TNode<BoolT> Is_JSPromise_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=349&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-any.tq?l=350&c=10
 TNode<BoolT> Is_Constructor_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o);
 
 } // namespace internal

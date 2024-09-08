@@ -15,7 +15,7 @@ bool IsFreeSpace_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedFreeSpace<FreeSpace, HeapObject>::FreeSpaceVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::FreeSpaceVerify(FreeSpace::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::FreeSpaceVerify(Cast<FreeSpace>(*this), isolate);
 }
 
 

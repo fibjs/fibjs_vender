@@ -75,6 +75,12 @@ TNode<IntPtrT> TimesSizeOf_char8_0(compiler::CodeAssemblerState* state_, TNode<I
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 TorqueStructReference_char8_0 NewReference_char8_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_MaybeObject_0 NewReference_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=303&c=6
 TorqueStructReference_Zero_0 NewReference_Zero_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
@@ -105,11 +111,8 @@ TNode<IntPtrT> TimesSizeOf_float64_0(compiler::CodeAssemblerState* state_, TNode
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=238&c=22
 TorqueStructReference_char16_0 NewReference_char16_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=140&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_int32_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=246&c=20
-TorqueStructReference_int32_0 NewReference_int32_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_char16_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
@@ -121,22 +124,22 @@ TNode<IntPtrT> TimesSizeOf_uint8_0(compiler::CodeAssemblerState* state_, TNode<I
 TorqueStructReference_uint8_0 NewReference_uint8_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
+TNode<IntPtrT> TimesSizeOf_Context_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_MaybeObject_0 NewReference_MaybeObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_SmiTagged_VariableProperties_0 NewReference_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+TorqueStructReference_Context_0 NewReference_Context_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_Smi_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 TorqueStructReference_Smi_0 NewReference_Smi_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_SmiTagged_VariableProperties_0 NewReference_SmiTagged_VariableProperties_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_String_OR_Undefined_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
@@ -151,16 +154,22 @@ TNode<IntPtrT> TimesSizeOf_TheHole_OR_ScopeInfo_0(compiler::CodeAssemblerState* 
 TorqueStructReference_TheHole_OR_ScopeInfo_0 NewReference_TheHole_OR_ScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_HashTable_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_HashTable_0 NewReference_HashTable_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_SourceTextModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 TorqueStructReference_SourceTextModuleInfo_0 NewReference_SourceTextModuleInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_FeedbackCell_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_FeedbackCell_0 NewReference_FeedbackCell_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
+TNode<IntPtrT> TimesSizeOf_Smi_OR_TrustedObject_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
+TorqueStructReference_Smi_OR_TrustedObject_0 NewReference_Smi_OR_TrustedObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_ExternalPointer_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
@@ -169,22 +178,16 @@ TNode<IntPtrT> TimesSizeOf_ExternalPointer_0(compiler::CodeAssemblerState* state
 TorqueStructReference_ExternalPointer_0 NewReference_ExternalPointer_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
+TNode<IntPtrT> TimesSizeOf_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0 NewReference_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+TorqueStructReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0 NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_FunctionVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
 TorqueStructReference_FunctionVariableInfo_0 NewReference_FunctionVariableInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
-TNode<IntPtrT> TimesSizeOf_PositionInfo_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=108&c=12
-TorqueStructReference_PositionInfo_0 NewReference_PositionInfo_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=109&c=36
 TNode<IntPtrT> TimesSizeOf_ModuleVariable_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i);
@@ -232,10 +235,7 @@ TorqueStructReference_JSAny_0 NewReference_JSAny_0(compiler::CodeAssemblerState*
 TorqueStructReference_JSPromise_0 NewReference_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
-TorqueStructReference_Undefined_OR_JSFunction_0 NewReference_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=90&c=3
-TNode<HeapObject> UnsafeCast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+TorqueStructReference_Number_0 NewReference_Number_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
 TorqueStructReference_Boolean_0 NewReference_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
@@ -247,9 +247,6 @@ TorqueStructReference_PromiseCapability_0 NewReference_PromiseCapability_0(compi
 TNode<PromiseCapability> UnsafeCast_PromiseCapability_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
-TorqueStructReference_Map_0 NewReference_Map_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
 TorqueStructReference_FixedArray_0 NewReference_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
@@ -259,13 +256,16 @@ TorqueStructReference_Callable_0 NewReference_Callable_0(compiler::CodeAssembler
 TorqueStructReference_Constructor_0 NewReference_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
-TorqueStructReference_HeapObject_0 NewReference_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
 TorqueStructReference_Null_OR_JSProxy_0 NewReference_Null_OR_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=90&c=3
 TNode<HeapObject> UnsafeCast_Null_OR_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
+TorqueStructReference_Map_0 NewReference_Map_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
+TorqueStructReference_HeapObject_0 NewReference_HeapObject_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
 TNode<RawPtrT> Convert_RawPtr_RawPtr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
@@ -277,10 +277,13 @@ TNode<RawPtrT> Convert_RawPtr_RawPtr_bool_0(compiler::CodeAssemblerState* state_
 TNode<RawPtrT> Convert_RawPtr_RawPtr_RawPtr_intptr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
-TNode<RawPtrT> Convert_RawPtr_RawPtr_float32_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
+TNode<RawPtrT> Convert_RawPtr_RawPtr_int64_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
 TNode<RawPtrT> Convert_RawPtr_RawPtr_float64_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
+TNode<RawPtrT> Convert_RawPtr_RawPtr_float32_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=84&c=29
 TNode<RawPtrT> Convert_RawPtr_RawPtr_uintptr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_i);
@@ -290,6 +293,12 @@ TorqueStructReference_ScopeInfo_0 NewReference_ScopeInfo_0(compiler::CodeAssembl
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=90&c=3
 TNode<ScopeInfo> UnsafeCast_ScopeInfo_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
+TorqueStructReference_Undefined_OR_JSFunction_0 NewReference_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=90&c=3
+TNode<HeapObject> UnsafeCast_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=89&c=15
 TorqueStructReference_JSFunction_0 NewReference_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);

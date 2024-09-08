@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/microtask-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -113,7 +117,7 @@ TNode<Microtask> Cast_Microtask_0(compiler::CodeAssemblerState* state_, TNode<He
   return TNode<Microtask>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=1
 TNode<CallbackTask> Cast_CallbackTask_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -149,7 +153,7 @@ TNode<CallbackTask> Cast_CallbackTask_0(compiler::CodeAssemblerState* state_, TN
   return TNode<CallbackTask>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=1
 TNode<CallableTask> Cast_CallableTask_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -185,7 +189,47 @@ TNode<CallableTask> Cast_CallableTask_0(compiler::CodeAssemblerState* state_, TN
   return TNode<CallableTask>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=3
+TNode<Object> LoadMicrotaskContinuationPreservedEmbedderData_0(compiler::CodeAssemblerState* state_, TNode<Microtask> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<Object>{tmp1};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=3
+void StoreMicrotaskContinuationPreservedEmbedderData_0(compiler::CodeAssemblerState* state_, TNode<Microtask> p_o, TNode<Object> p_v) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=12&c=3
 TNode<Foreign> LoadCallbackTaskCallback_0(compiler::CodeAssemblerState* state_, TNode<CallbackTask> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -197,7 +241,7 @@ TNode<Foreign> LoadCallbackTaskCallback_0(compiler::CodeAssemblerState* state_, 
   TNode<Foreign> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp1 = CodeStubAssembler(state_).LoadReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -206,7 +250,7 @@ TNode<Foreign> LoadCallbackTaskCallback_0(compiler::CodeAssemblerState* state_, 
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=9&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=12&c=3
 void StoreCallbackTaskCallback_0(compiler::CodeAssemblerState* state_, TNode<CallbackTask> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -217,7 +261,7 @@ void StoreCallbackTaskCallback_0(compiler::CodeAssemblerState* state_, TNode<Cal
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -225,7 +269,7 @@ void StoreCallbackTaskCallback_0(compiler::CodeAssemblerState* state_, TNode<Cal
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=3
 TNode<Foreign> LoadCallbackTaskData_0(compiler::CodeAssemblerState* state_, TNode<CallbackTask> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -237,7 +281,7 @@ TNode<Foreign> LoadCallbackTaskData_0(compiler::CodeAssemblerState* state_, TNod
   TNode<Foreign> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp1 = CodeStubAssembler(state_).LoadReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -246,7 +290,7 @@ TNode<Foreign> LoadCallbackTaskData_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Foreign>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=10&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=3
 void StoreCallbackTaskData_0(compiler::CodeAssemblerState* state_, TNode<CallbackTask> p_o, TNode<Foreign> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -257,7 +301,7 @@ void StoreCallbackTaskData_0(compiler::CodeAssemblerState* state_, TNode<Callbac
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<Foreign>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -265,7 +309,7 @@ void StoreCallbackTaskData_0(compiler::CodeAssemblerState* state_, TNode<Callbac
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=17&c=3
 TNode<JSReceiver> LoadCallableTaskCallable_0(compiler::CodeAssemblerState* state_, TNode<CallableTask> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -277,7 +321,7 @@ TNode<JSReceiver> LoadCallableTaskCallable_0(compiler::CodeAssemblerState* state
   TNode<JSReceiver> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp1 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -286,7 +330,7 @@ TNode<JSReceiver> LoadCallableTaskCallable_0(compiler::CodeAssemblerState* state
   return TNode<JSReceiver>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=14&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=17&c=3
 void StoreCallableTaskCallable_0(compiler::CodeAssemblerState* state_, TNode<CallableTask> p_o, TNode<JSReceiver> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -297,7 +341,7 @@ void StoreCallableTaskCallable_0(compiler::CodeAssemblerState* state_, TNode<Cal
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -305,7 +349,7 @@ void StoreCallableTaskCallable_0(compiler::CodeAssemblerState* state_, TNode<Cal
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=18&c=3
 TNode<Context> LoadCallableTaskContext_0(compiler::CodeAssemblerState* state_, TNode<CallableTask> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -317,7 +361,7 @@ TNode<Context> LoadCallableTaskContext_0(compiler::CodeAssemblerState* state_, T
   TNode<Context> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp1 = CodeStubAssembler(state_).LoadReference<Context>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
@@ -326,7 +370,7 @@ TNode<Context> LoadCallableTaskContext_0(compiler::CodeAssemblerState* state_, T
   return TNode<Context>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=15&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=18&c=3
 void StoreCallableTaskContext_0(compiler::CodeAssemblerState* state_, TNode<CallableTask> p_o, TNode<Context> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -337,7 +381,7 @@ void StoreCallableTaskContext_0(compiler::CodeAssemblerState* state_, TNode<Call
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<Context>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
@@ -490,7 +534,7 @@ TNode<Microtask> DownCastForTorqueClass_Microtask_0(compiler::CodeAssemblerState
   return TNode<Microtask>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=1
 TNode<CallbackTask> DownCastForTorqueClass_CallbackTask_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -635,7 +679,7 @@ TNode<CallbackTask> DownCastForTorqueClass_CallbackTask_0(compiler::CodeAssemble
   return TNode<CallbackTask>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=1
 TNode<CallableTask> DownCastForTorqueClass_CallableTask_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

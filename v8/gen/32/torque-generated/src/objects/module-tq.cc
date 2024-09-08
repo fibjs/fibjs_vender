@@ -15,7 +15,7 @@ bool IsModule_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedModule<Module, HeapObject>::ModuleVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ModuleVerify(Module::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ModuleVerify(Cast<Module>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSModuleNamespace_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSModuleNamespace<JSModuleNamespace, JSSpecialObject>::JSModuleNamespaceVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSModuleNamespaceVerify(JSModuleNamespace::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSModuleNamespaceVerify(Cast<JSModuleNamespace>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsScriptOrModule_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedScriptOrModule<ScriptOrModule, Struct>::ScriptOrModuleVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ScriptOrModuleVerify(ScriptOrModule::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ScriptOrModuleVerify(Cast<ScriptOrModule>(*this), isolate);
 }
 
 

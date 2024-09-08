@@ -6,13 +6,16 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=29&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=24&c=1
 TNode<BoolT> HasAccessCheckFailed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_promiseFun, TNode<Object> p_executor);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=100&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=65&c=14
+TNode<JSPromise> UnsafeCast_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=98&c=9
 TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=101&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=99&c=25
 TNode<NativeContext> UnsafeCast_NativeContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 } // namespace internal

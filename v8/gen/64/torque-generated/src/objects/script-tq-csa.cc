@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/script-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -77,7 +81,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=1
 TNode<Script> Cast_Script_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -113,7 +117,7 @@ TNode<Script> Cast_Script_0(compiler::CodeAssemblerState* state_, TNode<HeapObje
   return TNode<Script>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=21&c=3
 TNode<PrimitiveHeapObject> LoadScriptSource_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -134,7 +138,7 @@ TNode<PrimitiveHeapObject> LoadScriptSource_0(compiler::CodeAssemblerState* stat
   return TNode<PrimitiveHeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=20&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=21&c=3
 void StoreScriptSource_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -153,7 +157,7 @@ void StoreScriptSource_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=24&c=3
 TNode<Object> LoadScriptName_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -174,7 +178,7 @@ TNode<Object> LoadScriptName_0(compiler::CodeAssemblerState* state_, TNode<Scrip
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=23&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=24&c=3
 void StoreScriptName_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -193,7 +197,7 @@ void StoreScriptName_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=27&c=3
 TNode<Smi> LoadScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -214,7 +218,7 @@ TNode<Smi> LoadScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Sc
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=26&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=27&c=3
 void StoreScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -233,7 +237,7 @@ void StoreScriptLineOffset_0(compiler::CodeAssemblerState* state_, TNode<Script>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=31&c=3
 TNode<Smi> LoadScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -254,7 +258,7 @@ TNode<Smi> LoadScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=30&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=31&c=3
 void StoreScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -273,7 +277,7 @@ void StoreScriptColumnOffset_0(compiler::CodeAssemblerState* state_, TNode<Scrip
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
 TNode<Object> LoadScriptContextData_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -294,7 +298,7 @@ TNode<Object> LoadScriptContextData_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=33&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
 void StoreScriptContextData_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -313,7 +317,7 @@ void StoreScriptContextData_0(compiler::CodeAssemblerState* state_, TNode<Script
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=36&c=3
 TNode<Smi> LoadScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -334,7 +338,7 @@ TNode<Smi> LoadScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Sc
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=36&c=3
 void StoreScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -353,7 +357,7 @@ void StoreScriptScriptType_0(compiler::CodeAssemblerState* state_, TNode<Script>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=39&c=3
 TNode<Object> LoadScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -374,7 +378,7 @@ TNode<Object> LoadScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<S
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=39&c=3
 void StoreScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -393,7 +397,7 @@ void StoreScriptLineEnds_0(compiler::CodeAssemblerState* state_, TNode<Script> p
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=42&c=3
 TNode<Smi> LoadScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -414,7 +418,7 @@ TNode<Smi> LoadScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=41&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=42&c=3
 void StoreScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -433,7 +437,7 @@ void StoreScriptId_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TN
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=47&c=3
 TNode<HeapObject> LoadScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -454,7 +458,7 @@ TNode<HeapObject> LoadScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAss
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=46&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=47&c=3
 void StoreScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -473,7 +477,7 @@ void StoreScriptEvalFromSharedOrWrappedArguments_0(compiler::CodeAssemblerState*
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
 TNode<Object> LoadScriptEvalFromPosition_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -494,7 +498,7 @@ TNode<Object> LoadScriptEvalFromPosition_0(compiler::CodeAssemblerState* state_,
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
 void StoreScriptEvalFromPosition_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -513,8 +517,8 @@ void StoreScriptEvalFromPosition_0(compiler::CodeAssemblerState* state_, TNode<S
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
-TNode<HeapObject> LoadScriptSharedFunctionInfos_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=50&c=3
+TNode<HeapObject> LoadScriptInfos_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -534,8 +538,8 @@ TNode<HeapObject> LoadScriptSharedFunctionInfos_0(compiler::CodeAssemblerState* 
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
-void StoreScriptSharedFunctionInfos_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=50&c=3
+void StoreScriptInfos_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -553,7 +557,7 @@ void StoreScriptSharedFunctionInfos_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=54&c=3
 TNode<HeapObject> LoadScriptCompiledLazyFunctionPositions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -574,7 +578,7 @@ TNode<HeapObject> LoadScriptCompiledLazyFunctionPositions_0(compiler::CodeAssemb
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=53&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=54&c=3
 void StoreScriptCompiledLazyFunctionPositions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -593,7 +597,7 @@ void StoreScriptCompiledLazyFunctionPositions_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=57&c=3
 TNode<Smi> LoadScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -614,7 +618,7 @@ TNode<Smi> LoadScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script>
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=56&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=57&c=3
 void StoreScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -633,7 +637,7 @@ void StoreScriptFlags_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=60&c=3
 TNode<PrimitiveHeapObject> LoadScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -654,7 +658,7 @@ TNode<PrimitiveHeapObject> LoadScriptSourceUrl_0(compiler::CodeAssemblerState* s
   return TNode<PrimitiveHeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=59&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=60&c=3
 void StoreScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -673,7 +677,7 @@ void StoreScriptSourceUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=63&c=3
 TNode<Object> LoadScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -694,7 +698,7 @@ TNode<Object> LoadScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_,
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=63&c=3
 void StoreScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -713,7 +717,7 @@ void StoreScriptSourceMappingUrl_0(compiler::CodeAssemblerState* state_, TNode<S
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
 TNode<FixedArray> LoadScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -734,7 +738,7 @@ TNode<FixedArray> LoadScriptHostDefinedOptions_0(compiler::CodeAssemblerState* s
   return TNode<FixedArray>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=65&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
 void StoreScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<FixedArray> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -753,7 +757,7 @@ void StoreScriptHostDefinedOptions_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
 TNode<PrimitiveHeapObject> LoadScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -774,7 +778,7 @@ TNode<PrimitiveHeapObject> LoadScriptSourceHash_0(compiler::CodeAssemblerState* 
   return TNode<PrimitiveHeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
 void StoreScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script> p_o, TNode<PrimitiveHeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -793,7 +797,7 @@ void StoreScriptSourceHash_0(compiler::CodeAssemblerState* state_, TNode<Script>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=1
 TNode<Script> DownCastForTorqueClass_Script_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
