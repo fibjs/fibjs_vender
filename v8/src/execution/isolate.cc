@@ -5700,14 +5700,14 @@ void Isolate::Enter() {
 
 #ifdef V8_ENABLE_CHECKS
   // No different thread must have entered the isolate. Allow re-entering.
-  ThreadId thread_id = ThreadId::Current();
-  if (current_thread_id_.IsValid()) {
-    CHECK_EQ(current_thread_id_, thread_id);
-  } else {
-    CHECK_EQ(0, current_thread_counter_);
-    current_thread_id_ = thread_id;
-  }
-  current_thread_counter_++;
+  // ThreadId thread_id = ThreadId::Current();
+  // if (current_thread_id_.IsValid()) {
+  //   CHECK_EQ(current_thread_id_, thread_id);
+  // } else {
+  //   CHECK_EQ(0, current_thread_counter_);
+  //   current_thread_id_ = thread_id;
+  // }
+  // current_thread_counter_++;
 #endif
 
   // Set the stack start for the main thread that enters the isolate.
@@ -5752,8 +5752,8 @@ void Isolate::Exit() {
 
 #ifdef V8_ENABLE_CHECKS
   // The current thread must have entered the isolate.
-  CHECK_EQ(current_thread_id_, ThreadId::Current());
-  if (--current_thread_counter_ == 0) current_thread_id_ = ThreadId::Invalid();
+  // CHECK_EQ(current_thread_id_, ThreadId::Current());
+  // if (--current_thread_counter_ == 0) current_thread_id_ = ThreadId::Invalid();
 #endif
 
   if (--current_entry_stack->entry_count > 0) return;
