@@ -14,15 +14,9 @@ endif()
 
 include_directories("${CMAKE_CURRENT_LIST_DIR}/../../abseil")
 
-include(CheckIncludeFileCXX)
-unset(HAS_COMPARE CACHE)
-CHECK_INCLUDE_FILE_CXX(compare HAS_COMPARE)
+include(${CMAKE_CURRENT_LIST_DIR}/../../libc/options.cmake)
 
-if(NOT HAS_COMPARE)
-	include_directories("${CMAKE_CURRENT_LIST_DIR}/../../libc/include/10")
-endif()
-
-if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+if(${BUILD_OS} STREQUAL "Windows")
 	add_definitions(
 		-D_WIN32_WINNT=0x0602
 		-DV8_ENABLE_ETW_STACK_WALKING
