@@ -103,3 +103,9 @@ bool OS::IsHardwareEnforcedShadowStacksEnabled() {
   return false;
 }
 ```
+#### src/snapshot/embedded/platform-embedded-file-writer-win.cc
+```cpp
+// #if defined(_MSC_VER) && !defined(__clang__)
+#define V8_COMPILER_IS_MSVC
+// #endif
+```

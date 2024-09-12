@@ -19,9 +19,9 @@
 // __asm__-style inline assembly but MSVC cannot, and thus we need a more
 // precise compiler detection that can distinguish between the two. clang on
 // windows sets both __clang__ and _MSC_VER, MSVC sets only _MSC_VER.
-#if defined(_MSC_VER) && !defined(__clang__)
+// #if defined(_MSC_VER) && !defined(__clang__)
 #define V8_COMPILER_IS_MSVC
-#endif
+// #endif
 
 #if defined(V8_COMPILER_IS_MSVC)
 #include "src/flags/flags.h"
