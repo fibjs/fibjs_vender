@@ -57,7 +57,7 @@ src_list.forEach(fname => {
             if (def.init == 'nullptr' || def.init == 'false' || def.init == '0')
                 def.init = '';
 
-            var m2 = `\n${def.modifier ? def.modifier + " " : ""}exlib::fiber_local<${def.type}> ${def.name}${def.init ? "(" + def.init + ")" : ""};`;
+            var m2 = `\n${def.modifier ? def.modifier + " " : ""}exlib::fiber_local<${def.type}> ${def.name}${def.init ? "{" + def.init + "}" : ""};`;
             console.log(JSON.stringify(m2));
 
             f = f.replace(m, m2);

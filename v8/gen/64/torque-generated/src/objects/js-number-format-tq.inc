@@ -33,18 +33,11 @@ class TorqueGeneratedJSNumberFormat : public P {
 
   // Torque type: (class Undefined | class JSFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
-  inline Tagged<HeapObject> bound_format() const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_format() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
-  inline Tagged<HeapObject> bound_format(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, Undefined>> bound_format(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
-  inline void set_bound_format(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_bound_format(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSNumberFormat)
 

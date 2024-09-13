@@ -42,153 +42,267 @@ TNode<Uint32T> FromConstexpr_ArrayFromAsyncLabels_constexpr_kCloseAsyncIterator_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=7&c=1
 TNode<Uint32T> FromConstexpr_ArrayFromAsyncLabels_constexpr_kRejectPromise_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncLabels p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveResumeStateLenSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolvePromiseSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolvePromiseSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveResultArraySlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveResultArraySlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveIteratorSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveIteratorSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveNextMethodSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveNextMethodSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveErrorSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveErrorSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveMapfnSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveMapfnSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveThisArgSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveThisArgSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncIterableResolveContextSlots_constexpr_kArrayFromAsyncIterableResolveLength_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncIterableResolveContextSlots p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> FromConstexpr_ArrayFromAsyncResolveContextSlots_constexpr_kArrayFromAsyncResolveLength_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncResolveContextSlots p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolvePromiseSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveResultArraySlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveIteratorSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveNextMethodSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveErrorSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveMapfnSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=63&c=1
+TNode<IntPtrT> kArrayFromAsyncIterableResolveThisArgSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=102&c=1
+TNode<Context> CreateArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncIterableResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<JSReceiver> p_iterator, TNode<Object> p_next, TNode<JSReceiver> p_arr, TNode<Object> p_error, TNode<Object> p_mapfn, TNode<Object> p_thisArg, TNode<NativeContext> p_nativeContext);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveResumeStateLenSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolvePromiseSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveResultArraySlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveIteratorSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveNextMethodSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveErrorSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveMapfnSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=31&c=1
-TNode<IntPtrT> kArrayFromAsyncResolveThisArgSlot_0(compiler::CodeAssemblerState* state_);
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=61&c=1
-TNode<Context> CreateArrayFromAsyncResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<Map> p_map, TNode<JSReceiver> p_iterator, TNode<Object> p_next, TNode<JSReceiver> p_arr, TNode<Object> p_error, TNode<Object> p_mapfn, TNode<Object> p_thisArg, TNode<NativeContext> p_nativeContext);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=182&c=1
+TorqueStructIteratorRecord GetIteratorRecordFromArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=138&c=1
-TorqueStructIteratorRecord GetIteratorRecordFromArrayFromAsyncResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=151&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=197&c=1
 TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=392&c=1
-TNode<Object> ArrayFromAsyncAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<Object> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=383&c=1
+TNode<Object> ArrayFromAsyncIterableAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=461&c=1
-TNode<Object> RejectArrayFromAsyncPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=477&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=436&c=1
 void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_iterator, compiler::CodeAssemblerLabel* label_RejectPromise);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=74&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolvePromiseSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResultArraySlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveErrorSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveMapfnSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveThisArgSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveLength_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolvePromiseSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResultArraySlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveErrorSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveMapfnSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveThisArgSlot_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=517&c=1
+TNode<Context> CreateArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncArrayLikeResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<JSReceiver> p_arrayLike, TNode<JSReceiver> p_arr, TNode<Object> p_error, TNode<Object> p_mapfn, TNode<Object> p_thisArg, TNode<NativeContext> p_nativeContext);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=597&c=1
+TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=741&c=1
+TNode<Object> ArrayFromAsyncArrayLikeAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<Object> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=116&c=7
 TNode<Smi> SmiTag_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=70&c=3
-void InitContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_Smi_SmiTagged_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=112&c=3
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Smi_SmiTagged_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=75&c=3
-void InitContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=117&c=3
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=80&c=3
-void InitContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=122&c=3
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=90&c=3
-void InitContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_JSPromise_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSPromise> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=127&c=3
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSPromise_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSPromise> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=94&c=3
-void InitContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_JSReceiver_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=132&c=3
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=99&c=3
-void InitContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_Undefined_OR_JSFunction_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSFunction> p_value);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=137&c=3
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Undefined_OR_JSFunction_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSFunction> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=140&c=21
-TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=184&c=21
+TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=144&c=23
-TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=189&c=23
+TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=171&c=58
-TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=219&c=58
+TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=170&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=218&c=13
 TNode<Uint32T> SmiUntag_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=252&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=295&c=22
 TNode<JSReceiver> UnsafeCast_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=317&c=16
-TNode<BoolT> Is_Callable_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=330&c=26
+TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=351&c=26
-TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=351&c=16
+TNode<Object> RejectArrayFromAsyncPromise_ArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_errorSlot, TNode<IntPtrT> p_promiseSlot);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=406&c=20
-TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncResolveContext_ArrayFromAsyncResolveContext_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=386&c=10
+TNode<Object> ArrayFromAsyncAwaitPoint_ArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_stepSlot, TNode<IntPtrT> p_promiseFunSlot, TNode<IntPtrT> p_resolveSlot, TNode<IntPtrT> p_rejectSlot, TNode<Uint32T> p_step, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=420&c=7
-TNode<JSPromise> UnsafeCast_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=527&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_SmiTagged_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=606&c=7
-TNode<JSReceiver> Cast_Constructor_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=532&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=631&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=537&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Number_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Number> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=542&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=547&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSPromise_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSPromise> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=552&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=557&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSFunction> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=600&c=20
+TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=610&c=18
+TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=617&c=58
+TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=625&c=13
+TorqueStructReference_Number_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=708&c=26
+TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=716&c=16
+TNode<Object> RejectArrayFromAsyncPromise_ArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_errorSlot, TNode<IntPtrT> p_promiseSlot);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=744&c=10
+TNode<Object> ArrayFromAsyncAwaitPoint_ArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_stepSlot, TNode<IntPtrT> p_promiseFunSlot, TNode<IntPtrT> p_resolveSlot, TNode<IntPtrT> p_rejectSlot, TNode<Uint32T> p_step, TNode<Object> p_value);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=815&c=23
 TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=633&c=16
-TorqueStructReference_Map_0 NativeContextSlot_Map_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=828&c=12
+TNode<BoolT> Is_Callable_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=861&c=9
+TNode<JSReceiver> Cast_Constructor_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=32&c=20
+TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=32&c=20
+TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index);
 
 } // namespace internal
 } // namespace v8

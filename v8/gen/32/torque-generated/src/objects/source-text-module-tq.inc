@@ -21,11 +21,11 @@ class TorqueGeneratedSourceTextModule : public P {
 
   // Torque type: (class JSFunction | class JSGeneratorObject | class SharedFunctionInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
-  inline Tagged<HeapObject> code() const;
+  inline Tagged<Union<JSFunction, JSGeneratorObject, SharedFunctionInfo>> code() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
-  inline Tagged<HeapObject> code(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFunction, JSGeneratorObject, SharedFunctionInfo>> code(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
-  inline void set_code(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_code(Tagged<Union<JSFunction, JSGeneratorObject, SharedFunctionInfo>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=20&c=3
   inline Tagged<FixedArray> regular_exports() const;
@@ -50,19 +50,19 @@ class TorqueGeneratedSourceTextModule : public P {
 
   // Torque type: (class JSObject | TheHole)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
-  inline Tagged<HeapObject> import_meta(AcquireLoadTag) const;
+  inline Tagged<Union<Hole, JSObject>> import_meta(AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
-  inline Tagged<HeapObject> import_meta(PtrComprCageBase cage_base, AcquireLoadTag) const;
+  inline Tagged<Union<Hole, JSObject>> import_meta(PtrComprCageBase cage_base, AcquireLoadTag) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
-  inline void set_import_meta(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_import_meta(Tagged<Union<Hole, JSObject>> value, ReleaseStoreTag, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (TheHole | class SourceTextModule)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
-  inline Tagged<HeapObject> cycle_root() const;
+  inline Tagged<Union<Hole, SourceTextModule>> cycle_root() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
-  inline Tagged<HeapObject> cycle_root(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Hole, SourceTextModule>> cycle_root(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
-  inline void set_cycle_root(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cycle_root(Tagged<Union<Hole, SourceTextModule>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=38&c=3
   inline Tagged<ArrayList> async_parent_modules() const;
@@ -90,13 +90,6 @@ class TorqueGeneratedSourceTextModule : public P {
   inline int flags() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=47&c=3
   inline void set_flags(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=12&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(SourceTextModule)
 
@@ -173,10 +166,10 @@ class TorqueGeneratedSourceTextModule : public P {
 };
 
 // Alias for IsModuleRequest() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=1
 V8_EXPORT_PRIVATE bool IsModuleRequest_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=1
 template <class D, class P>
 class TorqueGeneratedModuleRequest : public P {
   static_assert(
@@ -190,63 +183,56 @@ class TorqueGeneratedModuleRequest : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedModuleRequest<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=59&c=3
   inline Tagged<String> specifier() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=59&c=3
   inline Tagged<String> specifier(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=59&c=3
   inline void set_specifier(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  inline Tagged<FixedArray> import_assertions() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  inline Tagged<FixedArray> import_assertions(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  inline void set_import_assertions(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
+  inline Tagged<FixedArray> import_attributes() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
+  inline Tagged<FixedArray> import_attributes(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
+  inline void set_import_attributes(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=3
-  inline int position() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=3
-  inline void set_position(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
+  inline int flags() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
+  inline void set_flags(int value);
 
   DECL_PRINTER(ModuleRequest)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=1
   V8_EXPORT_PRIVATE void ModuleRequestVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=51&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=59&c=3
   static constexpr int kSpecifierOffset = P::kHeaderSize;
   static constexpr int kSpecifierOffsetEnd = kSpecifierOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=55&c=3
-  static constexpr int kImportAssertionsOffset = kSpecifierOffsetEnd + 1;
-  static constexpr int kImportAssertionsOffsetEnd = kImportAssertionsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=3
-  static constexpr int kPositionOffset = kImportAssertionsOffsetEnd + 1;
-  static constexpr int kPositionOffsetEnd = kPositionOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kPositionOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kPositionOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kPositionOffsetEnd + 1;
-  static constexpr int kHeaderSize = kPositionOffsetEnd + 1;
-  static constexpr int kSize = kPositionOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
+  static constexpr int kImportAttributesOffset = kSpecifierOffsetEnd + 1;
+  static constexpr int kImportAttributesOffsetEnd = kImportAttributesOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
+  static constexpr int kFlagsOffset = kImportAttributesOffsetEnd + 1;
+  static constexpr int kFlagsOffsetEnd = kFlagsOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kFlagsOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kFlagsOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kFlagsOffsetEnd + 1;
+  static constexpr int kHeaderSize = kFlagsOffsetEnd + 1;
+  static constexpr int kSize = kFlagsOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=50&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=58&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -267,10 +253,10 @@ class TorqueGeneratedModuleRequest : public P {
 };
 
 // Alias for IsSourceTextModuleInfoEntry() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=1
 V8_EXPORT_PRIVATE bool IsSourceTextModuleInfoEntry_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=1
 template <class D, class P>
 class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   static_assert(
@@ -285,83 +271,76 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   using TorqueGeneratedClass = TorqueGeneratedSourceTextModuleInfoEntry<D,P>;
 
   // Torque type: (class String | class Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
-  inline Tagged<PrimitiveHeapObject> export_name() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
-  inline Tagged<PrimitiveHeapObject> export_name(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
-  inline void set_export_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=69&c=3
+  inline Tagged<Union<String, Undefined>> export_name() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=69&c=3
+  inline Tagged<Union<String, Undefined>> export_name(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=69&c=3
+  inline void set_export_name(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class String | class Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
-  inline Tagged<PrimitiveHeapObject> local_name() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
-  inline Tagged<PrimitiveHeapObject> local_name(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
-  inline void set_local_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=70&c=3
+  inline Tagged<Union<String, Undefined>> local_name() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=70&c=3
+  inline Tagged<Union<String, Undefined>> local_name(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=70&c=3
+  inline void set_local_name(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class String | class Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
-  inline Tagged<PrimitiveHeapObject> import_name() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
-  inline Tagged<PrimitiveHeapObject> import_name(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
-  inline void set_import_name(Tagged<PrimitiveHeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=71&c=3
+  inline Tagged<Union<String, Undefined>> import_name() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=71&c=3
+  inline Tagged<Union<String, Undefined>> import_name(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=71&c=3
+  inline void set_import_name(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=72&c=3
   inline int module_request() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=72&c=3
   inline void set_module_request(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=66&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=73&c=3
   inline int cell_index() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=66&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=73&c=3
   inline void set_cell_index(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=67&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=74&c=3
   inline int beg_pos() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=67&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=74&c=3
   inline void set_beg_pos(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=75&c=3
   inline int end_pos() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=75&c=3
   inline void set_end_pos(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(SourceTextModuleInfoEntry)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=1
   V8_EXPORT_PRIVATE void SourceTextModuleInfoEntryVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=69&c=3
   static constexpr int kExportNameOffset = P::kHeaderSize;
   static constexpr int kExportNameOffsetEnd = kExportNameOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=70&c=3
   static constexpr int kLocalNameOffset = kExportNameOffsetEnd + 1;
   static constexpr int kLocalNameOffsetEnd = kLocalNameOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=64&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=71&c=3
   static constexpr int kImportNameOffset = kLocalNameOffsetEnd + 1;
   static constexpr int kImportNameOffsetEnd = kImportNameOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=72&c=3
   static constexpr int kModuleRequestOffset = kImportNameOffsetEnd + 1;
   static constexpr int kModuleRequestOffsetEnd = kModuleRequestOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=66&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=73&c=3
   static constexpr int kCellIndexOffset = kModuleRequestOffsetEnd + 1;
   static constexpr int kCellIndexOffsetEnd = kCellIndexOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=67&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=74&c=3
   static constexpr int kBegPosOffset = kCellIndexOffsetEnd + 1;
   static constexpr int kBegPosOffsetEnd = kBegPosOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=75&c=3
   static constexpr int kEndPosOffset = kBegPosOffsetEnd + 1;
   static constexpr int kEndPosOffsetEnd = kEndPosOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kEndPosOffsetEnd + 1;
@@ -370,14 +349,14 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   static constexpr int kHeaderSize = kEndPosOffsetEnd + 1;
   static constexpr int kSize = kEndPosOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 32);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=61&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=68&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }

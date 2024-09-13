@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,10 +67,13 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/array-concat-tq-csa.h"
+#include "torque-generated/src/builtins/array-flat-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
 #include "torque-generated/src/builtins/array-slice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -489,7 +494,7 @@ TNode<JSArray> HandleFastAliasedSloppyArgumentsSlice_0(compiler::CodeAssemblerSt
   TNode<Smi> tmp69;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_15, &phi_bb25_17);
-    tmp65 = UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb25_17});
+    tmp65 = UnsafeCast_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb25_17});
     tmp66 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp67 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb25_12}, TNode<Smi>{tmp66});
     CodeStubAssembler(state_).StoreFixedArrayElement(TNode<FixedArray>{tmp23}, TNode<Smi>{phi_bb25_12}, TNode<Object>{tmp65}, UNSAFE_SKIP_WRITE_BARRIER);
@@ -635,7 +640,7 @@ TNode<JSArray> HandleFastSlice_0(compiler::CodeAssemblerState* state_, TNode<Nat
   TNode<JSArray> tmp11;
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    tmp11 = ca_.CallStub<JSArray>(Builtins::CallableFor(ca_.isolate(), Builtin::kExtractFastJSArray), p_context, tmp4, tmp0, tmp2);
+    tmp11 = ca_.CallBuiltin<JSArray>(Builtin::kExtractFastJSArray, p_context, tmp4, tmp0, tmp2);
     ca_.Goto(&block2, tmp11);
   }
 
@@ -931,7 +936,7 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
   TNode<JSArray> tmp26;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    tmp26 = ca_.CallStub<JSArray>(Builtins::CallableFor(ca_.isolate(), Builtin::kCloneFastJSArray), parameter0, tmp24);
+    tmp26 = ca_.CallBuiltin<JSArray>(Builtin::kCloneFastJSArray, parameter0, tmp24);
     arguments.PopAndReturn(tmp26);
   }
 
@@ -1011,7 +1016,7 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
   TNode<BoolT> tmp43;
   if (block53.is_used()) {
     ca_.Bind(&block53, &phi_bb53_10, &phi_bb53_16);
-    tmp41 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, phi_bb53_10);
+    tmp41 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, parameter0, tmp0, phi_bb53_10);
     tmp42 = True_0(state_);
     tmp43 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp41}, TNode<HeapObject>{tmp42});
     ca_.Branch(tmp43, &block56, std::vector<compiler::Node*>{phi_bb53_10, phi_bb53_16, phi_bb53_10}, &block57, std::vector<compiler::Node*>{phi_bb53_10, phi_bb53_16, phi_bb53_10});
@@ -1025,7 +1030,7 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_10, &phi_bb56_16, &phi_bb56_17);
     tmp44 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Object>{phi_bb56_17});
-    tmp45 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), parameter0, tmp38, phi_bb56_16, tmp44);
+    tmp45 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, tmp38, phi_bb56_16, tmp44);
     ca_.Goto(&block57, phi_bb56_10, phi_bb56_16, phi_bb56_17);
   }
 
@@ -1052,32 +1057,13 @@ TF_BUILTIN(ArrayPrototypeSlice, CodeStubAssembler) {
   if (block54.is_used()) {
     ca_.Bind(&block54, &phi_bb54_10, &phi_bb54_16);
     tmp50 = kLengthString_0(state_);
-    tmp51 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), parameter0, tmp38, tmp50, phi_bb54_16);
+    tmp51 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, parameter0, tmp38, tmp50, phi_bb54_16);
     arguments.PopAndReturn(tmp38);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=65&c=50
-TNode<Smi> UnsafeCast_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Smi> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<Smi>{tmp0};
-}
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-slice.tq?l=64&c=24
-TNode<Object> UnsafeCast_JSReceiver_OR_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+TNode<Object> UnsafeCast_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

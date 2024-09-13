@@ -92,22 +92,22 @@ void TorqueGeneratedJSDateTimeFormat<D, P>::set_icu_date_interval_format(Tagged<
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=21&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSDateTimeFormat<D, P>::bound_format() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSDateTimeFormat<D, P>::bound_format() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDateTimeFormat::bound_format(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=21&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSDateTimeFormat<D, P>::bound_format(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundFormatOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSDateTimeFormat<D, P>::bound_format(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundFormatOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=21&c=3
 template<class D, class P>
-void TorqueGeneratedJSDateTimeFormat<D, P>::set_bound_format(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSDateTimeFormat<D, P>::set_bound_format(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundFormatOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundFormatOffset, value, mode);
@@ -124,12 +124,6 @@ int TorqueGeneratedJSDateTimeFormat<D, P>::flags() const {
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=16&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSDateTimeFormat<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

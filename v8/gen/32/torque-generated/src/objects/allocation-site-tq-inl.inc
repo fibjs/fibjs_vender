@@ -21,12 +21,6 @@ void TorqueGeneratedAllocationMemento<D, P>::set_allocation_site(Tagged<Allocati
   CONDITIONAL_WRITE_BARRIER(*this, kAllocationSiteOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/allocation-site.tq?l=7&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedAllocationMemento<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedAllocationMemento<D, P>::TorqueGeneratedAllocationMemento(Address ptr)
     : P(ptr) {

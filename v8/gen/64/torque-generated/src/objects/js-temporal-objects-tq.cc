@@ -15,7 +15,7 @@ bool IsJSTemporalCalendar_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalCalendar<JSTemporalCalendar, JSObject>::JSTemporalCalendarVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalCalendarVerify(JSTemporalCalendar::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalCalendarVerify(Cast<JSTemporalCalendar>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSTemporalDuration_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalDuration<JSTemporalDuration, JSObject>::JSTemporalDurationVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalDurationVerify(JSTemporalDuration::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalDurationVerify(Cast<JSTemporalDuration>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsJSTemporalInstant_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalInstant<JSTemporalInstant, JSObject>::JSTemporalInstantVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalInstantVerify(JSTemporalInstant::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalInstantVerify(Cast<JSTemporalInstant>(*this), isolate);
 }
 
 
@@ -57,7 +57,7 @@ bool IsJSTemporalPlainDateTime_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalPlainDateTime<JSTemporalPlainDateTime, JSObject>::JSTemporalPlainDateTimeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalPlainDateTimeVerify(JSTemporalPlainDateTime::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalPlainDateTimeVerify(Cast<JSTemporalPlainDateTime>(*this), isolate);
 }
 
 
@@ -71,7 +71,7 @@ bool IsJSTemporalPlainDate_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalPlainDate<JSTemporalPlainDate, JSObject>::JSTemporalPlainDateVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalPlainDateVerify(JSTemporalPlainDate::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalPlainDateVerify(Cast<JSTemporalPlainDate>(*this), isolate);
 }
 
 
@@ -85,7 +85,7 @@ bool IsJSTemporalPlainMonthDay_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalPlainMonthDay<JSTemporalPlainMonthDay, JSObject>::JSTemporalPlainMonthDayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalPlainMonthDayVerify(JSTemporalPlainMonthDay::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalPlainMonthDayVerify(Cast<JSTemporalPlainMonthDay>(*this), isolate);
 }
 
 
@@ -99,7 +99,7 @@ bool IsJSTemporalPlainTime_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalPlainTime<JSTemporalPlainTime, JSObject>::JSTemporalPlainTimeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalPlainTimeVerify(JSTemporalPlainTime::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalPlainTimeVerify(Cast<JSTemporalPlainTime>(*this), isolate);
 }
 
 
@@ -113,7 +113,7 @@ bool IsJSTemporalPlainYearMonth_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalPlainYearMonth<JSTemporalPlainYearMonth, JSObject>::JSTemporalPlainYearMonthVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalPlainYearMonthVerify(JSTemporalPlainYearMonth::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalPlainYearMonthVerify(Cast<JSTemporalPlainYearMonth>(*this), isolate);
 }
 
 
@@ -127,7 +127,7 @@ bool IsJSTemporalTimeZone_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalTimeZone<JSTemporalTimeZone, JSObject>::JSTemporalTimeZoneVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalTimeZoneVerify(JSTemporalTimeZone::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalTimeZoneVerify(Cast<JSTemporalTimeZone>(*this), isolate);
 }
 
 
@@ -141,7 +141,7 @@ bool IsJSTemporalZonedDateTime_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSTemporalZonedDateTime<JSTemporalZonedDateTime, JSObject>::JSTemporalZonedDateTimeVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSTemporalZonedDateTimeVerify(JSTemporalZonedDateTime::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSTemporalZonedDateTimeVerify(Cast<JSTemporalZonedDateTime>(*this), isolate);
 }
 
 

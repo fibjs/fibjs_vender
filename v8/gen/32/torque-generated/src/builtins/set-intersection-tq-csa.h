@@ -6,11 +6,11 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-intersection.tq?l=43&c=27
-TNode<OrderedHashSet> FastIntersect_OrderedHashSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<OrderedHashSet> p_collectionToIterate, TNode<OrderedHashSet> p_tableToLookup, TNode<String> p_methodName, TNode<OrderedHashSet> p_resultSetData);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-intersection.tq?l=40&c=27
+TNode<OrderedHashSet> FastIntersect_StableJSSetBackingTableWitness_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructStableJSSetBackingTableWitness_0 p_collectionToIterate, TorqueStructStableJSSetBackingTableWitness_0 p_tableToLookup, TNode<String> p_methodName, TNode<OrderedHashSet> p_resultSetData);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-intersection.tq?l=63&c=27
-TNode<OrderedHashSet> FastIntersect_OrderedHashMap_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<OrderedHashSet> p_collectionToIterate, TNode<OrderedHashMap> p_tableToLookup, TNode<String> p_methodName, TNode<OrderedHashSet> p_resultSetData);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-intersection.tq?l=58&c=27
+TNode<OrderedHashSet> FastIntersect_StableJSMapBackingTableWitness_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructStableJSSetBackingTableWitness_0 p_collectionToIterate, TorqueStructStableJSMapBackingTableWitness_0 p_tableToLookup, TNode<String> p_methodName, TNode<OrderedHashSet> p_resultSetData);
 
 } // namespace internal
 } // namespace v8

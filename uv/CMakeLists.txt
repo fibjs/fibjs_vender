@@ -123,7 +123,7 @@ if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
   list(APPEND uv_sources src/unix/random-getentropy.c)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+if("${BUILD_OS}" STREQUAL "Android")
   list(APPEND uv_sources src/unix/pthread-fixes.c)
 endif()
 

@@ -1,5 +1,5 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
-inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceCoverageInfoSlots(Tagged<CoverageInfo> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
+inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeFieldSliceCoverageInfoSlots(Tagged<CoverageInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
@@ -10,8 +10,8 @@ inline intptr_t TqRuntimeConvert_intptr_int32_0(int32_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
-inline std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_CoverageInfoSlot_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
+inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_CoverageInfoSlot_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
@@ -19,14 +19,14 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_intptr_0(intptr_t p_i);
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFieldSliceCoverageInfoSlots
 #define V8_INTERNAL_DEFINED_TqRuntimeFieldSliceCoverageInfoSlots
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
-std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeFieldSliceCoverageInfoSlots(Tagged<CoverageInfo> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
+std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeFieldSliceCoverageInfoSlots(Tagged<CoverageInfo> p_o) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
   int32_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   intptr_t tmp3{}; USE(tmp3);
-  Tagged<Object> tmp4{}; USE(tmp4);
+  Tagged<Union<HeapObject, TaggedIndex>> tmp4{}; USE(tmp4);
   intptr_t tmp5{}; USE(tmp5);
   intptr_t tmp6{}; USE(tmp6);
   goto block0;
@@ -101,10 +101,10 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_CoverageInfoSlot_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_CoverageInfoSlot_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
-std::tuple<Tagged<Object>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_CoverageInfoSlot_0(Tagged<Object> p_object, intptr_t p_offset, intptr_t p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
+std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_CoverageInfoSlot_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
-  Tagged<Object> tmp0{}; USE(tmp0);
+  Tagged<Union<HeapObject, TaggedIndex>> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
   goto block0;
@@ -172,12 +172,6 @@ void TorqueGeneratedBreakPoint<D, P>::set_condition(Tagged<String> value, WriteB
   CONDITIONAL_WRITE_BARRIER(*this, kConditionOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=5&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedBreakPoint<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedBreakPoint<D, P>::TorqueGeneratedBreakPoint(Address ptr)
     : P(ptr) {
@@ -198,31 +192,25 @@ void TorqueGeneratedBreakPointInfo<D, P>::set_source_position(int value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=14&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedBreakPointInfo<D, P>::break_points() const {
+Tagged<Union<BreakPoint, FixedArray, Undefined>> TorqueGeneratedBreakPointInfo<D, P>::break_points() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedBreakPointInfo::break_points(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=14&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedBreakPointInfo<D, P>::break_points(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBreakPointsOffset);
+Tagged<Union<BreakPoint, FixedArray, Undefined>> TorqueGeneratedBreakPointInfo<D, P>::break_points(PtrComprCageBase cage_base) const {
+  Tagged<Union<BreakPoint, FixedArray, Undefined>> value = TaggedField<Tagged<Union<BreakPoint, FixedArray, Undefined>>>::load(cage_base, *this, kBreakPointsOffset);
   DCHECK(IsUndefined(value) || IsFixedArray(value) || IsBreakPoint(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=14&c=3
 template<class D, class P>
-void TorqueGeneratedBreakPointInfo<D, P>::set_break_points(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedBreakPointInfo<D, P>::set_break_points(Tagged<Union<BreakPoint, FixedArray, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsFixedArray(value) || IsBreakPoint(value));
   WRITE_FIELD(*this, kBreakPointsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBreakPointsOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=10&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedBreakPointInfo<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -266,60 +254,14 @@ void TorqueGeneratedDebugInfo<D, P>::set_debugger_hints(int value) {
   WRITE_FIELD(*this, kDebuggerHintsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
-template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedDebugInfo<D, P>::original_bytecode_array(AcquireLoadTag) const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedDebugInfo::original_bytecode_array(cage_base, kAcquireLoad);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
-template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedDebugInfo<D, P>::original_bytecode_array(PtrComprCageBase cage_base, AcquireLoadTag) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::Acquire_Load(cage_base, *this, kOriginalBytecodeArrayOffset);
-  DCHECK(IsUndefined(value) || IsBytecodeArray(value));
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
-template<class D, class P>
-void TorqueGeneratedDebugInfo<D, P>::set_original_bytecode_array(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsBytecodeArray(value));
-  RELEASE_WRITE_FIELD(*this, kOriginalBytecodeArrayOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kOriginalBytecodeArrayOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=46&c=3
-template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedDebugInfo<D, P>::debug_bytecode_array(AcquireLoadTag) const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedDebugInfo::debug_bytecode_array(cage_base, kAcquireLoad);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=46&c=3
-template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedDebugInfo<D, P>::debug_bytecode_array(PtrComprCageBase cage_base, AcquireLoadTag) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::Acquire_Load(cage_base, *this, kDebugBytecodeArrayOffset);
-  DCHECK(IsUndefined(value) || IsBytecodeArray(value));
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=46&c=3
-template<class D, class P>
-void TorqueGeneratedDebugInfo<D, P>::set_debug_bytecode_array(Tagged<HeapObject> value, ReleaseStoreTag, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsBytecodeArray(value));
-  RELEASE_WRITE_FIELD(*this, kDebugBytecodeArrayOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kDebugBytecodeArrayOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=38&c=3
 template<class D, class P>
 Tagged<FixedArray> TorqueGeneratedDebugInfo<D, P>::break_points() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDebugInfo::break_points(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=38&c=3
 template<class D, class P>
 Tagged<FixedArray> TorqueGeneratedDebugInfo<D, P>::break_points(PtrComprCageBase cage_base) const {
   Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kBreakPointsOffset);
@@ -327,7 +269,7 @@ Tagged<FixedArray> TorqueGeneratedDebugInfo<D, P>::break_points(PtrComprCageBase
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=38&c=3
 template<class D, class P>
 void TorqueGeneratedDebugInfo<D, P>::set_break_points(Tagged<FixedArray> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsFixedArray(value));
@@ -335,46 +277,40 @@ void TorqueGeneratedDebugInfo<D, P>::set_break_points(Tagged<FixedArray> value, 
   CONDITIONAL_WRITE_BARRIER(*this, kBreakPointsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=50&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=40&c=36
 template<class D, class P>
 int TorqueGeneratedDebugInfo<D, P>::flags(RelaxedLoadTag) const {
   int value = TaggedField<Smi>::Relaxed_Load(*this, kFlagsOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=50&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=40&c=36
 template<class D, class P>
 void TorqueGeneratedDebugInfo<D, P>::set_flags(int value, RelaxedStoreTag) {
   RELAXED_WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedDebugInfo<D, P>::coverage_info() const {
+Tagged<Union<CoverageInfo, Undefined>> TorqueGeneratedDebugInfo<D, P>::coverage_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedDebugInfo::coverage_info(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedDebugInfo<D, P>::coverage_info(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kCoverageInfoOffset);
+Tagged<Union<CoverageInfo, Undefined>> TorqueGeneratedDebugInfo<D, P>::coverage_info(PtrComprCageBase cage_base) const {
+  Tagged<Union<CoverageInfo, Undefined>> value = TaggedField<Tagged<Union<CoverageInfo, Undefined>>>::load(cage_base, *this, kCoverageInfoOffset);
   DCHECK(IsUndefined(value) || IsCoverageInfo(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=51&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
 template<class D, class P>
-void TorqueGeneratedDebugInfo<D, P>::set_coverage_info(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedDebugInfo<D, P>::set_coverage_info(Tagged<Union<CoverageInfo, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsCoverageInfo(value));
   WRITE_FIELD(*this, kCoverageInfoOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCoverageInfoOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=33&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedDebugInfo<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -382,20 +318,20 @@ inline TorqueGeneratedDebugInfo<D, P>::TorqueGeneratedDebugInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsDebugInfo_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=65&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=63&c=9
 template<class D, class P>
 int32_t TorqueGeneratedCoverageInfo<D, P>::slot_count() const {
   int32_t value = this->template ReadField<int32_t>(kSlotCountOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=65&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=63&c=9
 template<class D, class P>
 void TorqueGeneratedCoverageInfo<D, P>::set_slot_count(int32_t value) {
   this->template WriteField<int32_t>(kSlotCountOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 int32_t TorqueGeneratedCoverageInfo<D, P>::slots_start_source_position(int i) const {
   DCHECK_GE(i, 0);
@@ -405,7 +341,7 @@ int32_t TorqueGeneratedCoverageInfo<D, P>::slots_start_source_position(int i) co
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 void TorqueGeneratedCoverageInfo<D, P>::set_slots_start_source_position(int i, int32_t value) {
   DCHECK_GE(i, 0);
@@ -414,7 +350,7 @@ void TorqueGeneratedCoverageInfo<D, P>::set_slots_start_source_position(int i, i
   this->template WriteField<int32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 int32_t TorqueGeneratedCoverageInfo<D, P>::slots_end_source_position(int i) const {
   DCHECK_GE(i, 0);
@@ -424,7 +360,7 @@ int32_t TorqueGeneratedCoverageInfo<D, P>::slots_end_source_position(int i) cons
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 void TorqueGeneratedCoverageInfo<D, P>::set_slots_end_source_position(int i, int32_t value) {
   DCHECK_GE(i, 0);
@@ -433,7 +369,7 @@ void TorqueGeneratedCoverageInfo<D, P>::set_slots_end_source_position(int i, int
   this->template WriteField<int32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 int32_t TorqueGeneratedCoverageInfo<D, P>::slots_block_count(int i) const {
   DCHECK_GE(i, 0);
@@ -443,7 +379,7 @@ int32_t TorqueGeneratedCoverageInfo<D, P>::slots_block_count(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 void TorqueGeneratedCoverageInfo<D, P>::set_slots_block_count(int i, int32_t value) {
   DCHECK_GE(i, 0);
@@ -452,7 +388,7 @@ void TorqueGeneratedCoverageInfo<D, P>::set_slots_block_count(int i, int32_t val
   this->template WriteField<int32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 int32_t TorqueGeneratedCoverageInfo<D, P>::slots_padding(int i) const {
   DCHECK_GE(i, 0);
@@ -462,7 +398,7 @@ int32_t TorqueGeneratedCoverageInfo<D, P>::slots_padding(int i) const {
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
 template<class D, class P>
 void TorqueGeneratedCoverageInfo<D, P>::set_slots_padding(int i, int32_t value) {
   DCHECK_GE(i, 0);
@@ -471,48 +407,42 @@ void TorqueGeneratedCoverageInfo<D, P>::set_slots_padding(int i, int32_t value) 
   this->template WriteField<int32_t>(offset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedCoverageInfo<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedCoverageInfo<D, P>::TorqueGeneratedCoverageInfo(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsCoverageInfo_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=81&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=79&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedStackFrameInfo<D, P>::shared_or_script() const {
+Tagged<Union<Script, SharedFunctionInfo>> TorqueGeneratedStackFrameInfo<D, P>::shared_or_script() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedStackFrameInfo::shared_or_script(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=81&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=79&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedStackFrameInfo<D, P>::shared_or_script(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kSharedOrScriptOffset);
+Tagged<Union<Script, SharedFunctionInfo>> TorqueGeneratedStackFrameInfo<D, P>::shared_or_script(PtrComprCageBase cage_base) const {
+  Tagged<Union<Script, SharedFunctionInfo>> value = TaggedField<Tagged<Union<Script, SharedFunctionInfo>>>::load(cage_base, *this, kSharedOrScriptOffset);
   DCHECK(IsScript(value) || IsSharedFunctionInfo(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=81&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=79&c=3
 template<class D, class P>
-void TorqueGeneratedStackFrameInfo<D, P>::set_shared_or_script(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedStackFrameInfo<D, P>::set_shared_or_script(Tagged<Union<Script, SharedFunctionInfo>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsScript(value) || IsSharedFunctionInfo(value));
   WRITE_FIELD(*this, kSharedOrScriptOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSharedOrScriptOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=82&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=80&c=3
 template<class D, class P>
 Tagged<String> TorqueGeneratedStackFrameInfo<D, P>::function_name() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedStackFrameInfo::function_name(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=82&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=80&c=3
 template<class D, class P>
 Tagged<String> TorqueGeneratedStackFrameInfo<D, P>::function_name(PtrComprCageBase cage_base) const {
   Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kFunctionNameOffset);
@@ -520,7 +450,7 @@ Tagged<String> TorqueGeneratedStackFrameInfo<D, P>::function_name(PtrComprCageBa
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=82&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=80&c=3
 template<class D, class P>
 void TorqueGeneratedStackFrameInfo<D, P>::set_function_name(Tagged<String> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsString(value));
@@ -528,23 +458,17 @@ void TorqueGeneratedStackFrameInfo<D, P>::set_function_name(Tagged<String> value
   CONDITIONAL_WRITE_BARRIER(*this, kFunctionNameOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=83&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=81&c=3
 template<class D, class P>
 int TorqueGeneratedStackFrameInfo<D, P>::flags() const {
   int value = TaggedField<Smi>::load(*this, kFlagsOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=83&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=81&c=3
 template<class D, class P>
 void TorqueGeneratedStackFrameInfo<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=74&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedStackFrameInfo<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -552,117 +476,54 @@ inline TorqueGeneratedStackFrameInfo<D, P>::TorqueGeneratedStackFrameInfo(Addres
     : P(ptr) {
   SLOW_DCHECK(IsStackFrameInfo_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=119&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedErrorStackData<D, P>::call_site_infos_or_formatted_stack() const {
+Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> TorqueGeneratedErrorStackData<D, P>::call_site_infos_or_formatted_stack() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedErrorStackData::call_site_infos_or_formatted_stack(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=119&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedErrorStackData<D, P>::call_site_infos_or_formatted_stack(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kCallSiteInfosOrFormattedStackOffset);
-  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsFixedArray(value));
+Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> TorqueGeneratedErrorStackData<D, P>::call_site_infos_or_formatted_stack(PtrComprCageBase cage_base) const {
+  Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> value = TaggedField<Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>>>::load(cage_base, *this, kCallSiteInfosOrFormattedStackOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsFixedArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=119&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
 template<class D, class P>
-void TorqueGeneratedErrorStackData<D, P>::set_call_site_infos_or_formatted_stack(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsFixedArray(value));
+void TorqueGeneratedErrorStackData<D, P>::set_call_site_infos_or_formatted_stack(Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsFixedArray(value));
   WRITE_FIELD(*this, kCallSiteInfosOrFormattedStackOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCallSiteInfosOrFormattedStackOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=126&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedErrorStackData<D, P>::limit_or_stack_frame_infos() const {
+Tagged<Union<FixedArray, Smi>> TorqueGeneratedErrorStackData<D, P>::limit_or_stack_frame_infos() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedErrorStackData::limit_or_stack_frame_infos(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=126&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedErrorStackData<D, P>::limit_or_stack_frame_infos(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kLimitOrStackFrameInfosOffset);
+Tagged<Union<FixedArray, Smi>> TorqueGeneratedErrorStackData<D, P>::limit_or_stack_frame_infos(PtrComprCageBase cage_base) const {
+  Tagged<Union<FixedArray, Smi>> value = TaggedField<Tagged<Union<FixedArray, Smi>>>::load(cage_base, *this, kLimitOrStackFrameInfosOffset);
   DCHECK(IsSmi(value) || IsFixedArray(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=126&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
 template<class D, class P>
-void TorqueGeneratedErrorStackData<D, P>::set_limit_or_stack_frame_infos(Tagged<Object> value, WriteBarrierMode mode) {
+void TorqueGeneratedErrorStackData<D, P>::set_limit_or_stack_frame_infos(Tagged<Union<FixedArray, Smi>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsSmi(value) || IsFixedArray(value));
   WRITE_FIELD(*this, kLimitOrStackFrameInfosOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLimitOrStackFrameInfosOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=115&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedErrorStackData<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
 inline TorqueGeneratedErrorStackData<D, P>::TorqueGeneratedErrorStackData(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsErrorStackData_NonInline(*this));
-}
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=130&c=3
-template<class D, class P>
-Tagged<Object> TorqueGeneratedPromiseOnStack<D, P>::prev() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedPromiseOnStack::prev(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=130&c=3
-template<class D, class P>
-Tagged<Object> TorqueGeneratedPromiseOnStack<D, P>::prev(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kPrevOffset);
-  DCHECK(IsZero(value) || IsPromiseOnStack(value));
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=130&c=3
-template<class D, class P>
-void TorqueGeneratedPromiseOnStack<D, P>::set_prev(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsZero(value) || IsPromiseOnStack(value));
-  WRITE_FIELD(*this, kPrevOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kPrevOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=131&c=3
-template<class D, class P>
-MaybeObject TorqueGeneratedPromiseOnStack<D, P>::promise() const {
-  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedPromiseOnStack::promise(cage_base);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=131&c=3
-template<class D, class P>
-MaybeObject TorqueGeneratedPromiseOnStack<D, P>::promise(PtrComprCageBase cage_base) const {
-  MaybeObject value = TaggedField<MaybeObject>::load(cage_base, *this, kPromiseOffset);
-  DCHECK(value.IsCleared() || (value.IsWeak() && IsJSObject(value.GetHeapObjectOrSmi())));
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=131&c=3
-template<class D, class P>
-void TorqueGeneratedPromiseOnStack<D, P>::set_promise(MaybeObject value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (value.IsWeak() && IsJSObject(value.GetHeapObjectOrSmi())));
-  RELAXED_WRITE_WEAK_FIELD(*this, kPromiseOffset, value);
-  CONDITIONAL_WEAK_WRITE_BARRIER(*this, kPromiseOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=129&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedPromiseOnStack<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
-template<class D, class P>
-inline TorqueGeneratedPromiseOnStack<D, P>::TorqueGeneratedPromiseOnStack(Address ptr)
-    : P(ptr) {
-  SLOW_DCHECK(IsPromiseOnStack_NonInline(*this));
 }

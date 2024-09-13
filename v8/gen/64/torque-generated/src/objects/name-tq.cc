@@ -1,38 +1,44 @@
-#include "src/objects/name-inl.h"
-
-#include "torque-generated/class-verifiers.h"
-#include "src/objects/instance-type-inl.h"
+#include "src/objects/name.h"
 
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
-bool IsName_NonInline(Tagged<HeapObject> o) {
-  return IsName(o);
-}
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=5&c=1
+class TorqueGeneratedNameAsserts {
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=8&c=3
+  static constexpr int kRawHashFieldOffset = sizeof(PrimitiveHeapObject);
+  static constexpr int kRawHashFieldOffsetEnd = kRawHashFieldOffset + kInt32Size - 1;
+  static constexpr int kStartOfWeakFieldsOffset = kRawHashFieldOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kRawHashFieldOffsetEnd + 1;
+  static constexpr int kStartOfStrongFieldsOffset = kRawHashFieldOffsetEnd + 1;
+  static constexpr int kEndOfStrongFieldsOffset = kRawHashFieldOffsetEnd + 1;
+  static constexpr int kHeaderSize = kRawHashFieldOffsetEnd + 1;
 
-#ifdef VERIFY_HEAP
+  static_assert(kRawHashFieldOffset == offsetof(Name, raw_hash_field_),
+                "Value of Name::kRawHashFieldOffset defined in Torque and offset of field Name::raw_hash_field in C++ do not match");
+};
 
-template <>
-void TorqueGeneratedName<Name, PrimitiveHeapObject>::NameVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::NameVerify(Name::cast(*this), isolate);
-}
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=30&c=1
+class TorqueGeneratedSymbolAsserts {
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=32&c=3
+  static constexpr int kFlagsOffset = sizeof(Name);
+  static constexpr int kFlagsOffsetEnd = kFlagsOffset + kInt32Size - 1;
+  static constexpr int kStartOfStrongFieldsOffset = kFlagsOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=33&c=3
+  static constexpr int kDescriptionOffset = kFlagsOffsetEnd + 1;
+  static constexpr int kDescriptionOffsetEnd = kDescriptionOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kDescriptionOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kDescriptionOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kDescriptionOffsetEnd + 1;
+  static constexpr int kHeaderSize = kDescriptionOffsetEnd + 1;
+  static constexpr int kSize = kDescriptionOffsetEnd + 1;
 
+  static_assert(kFlagsOffset == offsetof(Symbol, flags_),
+                "Value of Symbol::kFlagsOffset defined in Torque and offset of field Symbol::flags in C++ do not match");
+  static_assert(kDescriptionOffset == offsetof(Symbol, description_),
+                "Value of Symbol::kDescriptionOffset defined in Torque and offset of field Symbol::description in C++ do not match");
+  static_assert(kSize == sizeof(Symbol));
+};
 
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=29&c=1
-bool IsSymbol_NonInline(Tagged<HeapObject> o) {
-  return IsSymbol(o);
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedSymbol<Symbol, Name>::SymbolVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SymbolVerify(Symbol::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
 } // namespace internal
 } // namespace v8

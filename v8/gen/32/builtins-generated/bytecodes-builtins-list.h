@@ -49,6 +49,8 @@ namespace internal {
   V(StaGlobalHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaGlobal) \
   V(StaContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaContextSlot) \
   V(StaCurrentContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaCurrentContextSlot) \
+  V(StaScriptContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaScriptContextSlot) \
+  V(StaCurrentScriptContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaCurrentScriptContextSlot) \
   V(LdaLookupSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupSlot) \
   V(LdaLookupContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupContextSlot) \
   V(LdaLookupGlobalSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupGlobalSlot) \
@@ -59,6 +61,7 @@ namespace internal {
   V(GetNamedPropertyHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kGetNamedProperty) \
   V(GetNamedPropertyFromSuperHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kGetNamedPropertyFromSuper) \
   V(GetKeyedPropertyHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kGetKeyedProperty) \
+  V(GetEnumeratedKeyedPropertyHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kGetEnumeratedKeyedProperty) \
   V(LdaModuleVariableHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaModuleVariable) \
   V(StaModuleVariableHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaModuleVariable) \
   V(SetNamedPropertyHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSetNamedProperty) \
@@ -118,6 +121,7 @@ namespace internal {
   V(InvokeIntrinsicHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kInvokeIntrinsic) \
   V(ConstructHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kConstruct) \
   V(ConstructWithSpreadHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kConstructWithSpread) \
+  V(ConstructForwardAllArgsHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kConstructForwardAllArgs) \
   V(TestEqualHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kTestEqual) \
   V(TestEqualStrictHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kTestEqualStrict) \
   V(TestLessThanHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kTestLessThan) \
@@ -160,6 +164,7 @@ namespace internal {
   V(JumpIfTrueConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfTrueConstant) \
   V(JumpIfFalseConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfFalseConstant) \
   V(JumpIfJSReceiverConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfJSReceiverConstant) \
+  V(JumpIfForInDoneConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfForInDoneConstant) \
   V(JumpIfToBooleanTrueConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfToBooleanTrueConstant) \
   V(JumpIfToBooleanFalseConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfToBooleanFalseConstant) \
   V(JumpIfToBooleanTrueHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfToBooleanTrue) \
@@ -172,10 +177,10 @@ namespace internal {
   V(JumpIfNotUndefinedHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfNotUndefined) \
   V(JumpIfUndefinedOrNullHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfUndefinedOrNull) \
   V(JumpIfJSReceiverHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfJSReceiver) \
+  V(JumpIfForInDoneHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kJumpIfForInDone) \
   V(SwitchOnSmiNoFeedbackHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSwitchOnSmiNoFeedback) \
   V(ForInEnumerateHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kForInEnumerate) \
   V(ForInPrepareHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kForInPrepare) \
-  V(ForInContinueHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kForInContinue) \
   V(ForInNextHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kForInNext) \
   V(ForInStepHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kForInStep) \
   V(SetPendingMessageHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSetPendingMessage) \
@@ -218,6 +223,8 @@ namespace internal {
   V(StaGlobalWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaGlobal) \
   V(StaContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaContextSlot) \
   V(StaCurrentContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaCurrentContextSlot) \
+  V(StaScriptContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaScriptContextSlot) \
+  V(StaCurrentScriptContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaCurrentScriptContextSlot) \
   V(LdaLookupSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupSlot) \
   V(LdaLookupContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupContextSlot) \
   V(LdaLookupGlobalSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupGlobalSlot) \
@@ -228,6 +235,7 @@ namespace internal {
   V(GetNamedPropertyWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kGetNamedProperty) \
   V(GetNamedPropertyFromSuperWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kGetNamedPropertyFromSuper) \
   V(GetKeyedPropertyWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kGetKeyedProperty) \
+  V(GetEnumeratedKeyedPropertyWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kGetEnumeratedKeyedProperty) \
   V(LdaModuleVariableWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaModuleVariable) \
   V(StaModuleVariableWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaModuleVariable) \
   V(SetNamedPropertyWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kSetNamedProperty) \
@@ -264,6 +272,7 @@ namespace internal {
   V(DecWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kDec) \
   V(NegateWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kNegate) \
   V(BitwiseNotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kBitwiseNot) \
+  V(TypeOfWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kTypeOf) \
   V(DeletePropertyStrictWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kDeletePropertyStrict) \
   V(DeletePropertySloppyWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kDeletePropertySloppy) \
   V(GetSuperConstructorWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kGetSuperConstructor) \
@@ -284,6 +293,7 @@ namespace internal {
   V(InvokeIntrinsicWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kInvokeIntrinsic) \
   V(ConstructWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kConstruct) \
   V(ConstructWithSpreadWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kConstructWithSpread) \
+  V(ConstructForwardAllArgsWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kConstructForwardAllArgs) \
   V(TestEqualWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kTestEqual) \
   V(TestEqualStrictWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kTestEqualStrict) \
   V(TestLessThanWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kTestLessThan) \
@@ -318,6 +328,7 @@ namespace internal {
   V(JumpIfTrueConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfTrueConstant) \
   V(JumpIfFalseConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfFalseConstant) \
   V(JumpIfJSReceiverConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfJSReceiverConstant) \
+  V(JumpIfForInDoneConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfForInDoneConstant) \
   V(JumpIfToBooleanTrueConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfToBooleanTrueConstant) \
   V(JumpIfToBooleanFalseConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfToBooleanFalseConstant) \
   V(JumpIfToBooleanTrueWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfToBooleanTrue) \
@@ -330,10 +341,10 @@ namespace internal {
   V(JumpIfNotUndefinedWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfNotUndefined) \
   V(JumpIfUndefinedOrNullWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfUndefinedOrNull) \
   V(JumpIfJSReceiverWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfJSReceiver) \
+  V(JumpIfForInDoneWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpIfForInDone) \
   V(SwitchOnSmiNoFeedbackWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kSwitchOnSmiNoFeedback) \
   V(ForInEnumerateWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kForInEnumerate) \
   V(ForInPrepareWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kForInPrepare) \
-  V(ForInContinueWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kForInContinue) \
   V(ForInNextWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kForInNext) \
   V(ForInStepWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kForInStep) \
   V(ThrowReferenceErrorIfHoleWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kThrowReferenceErrorIfHole) \
@@ -367,6 +378,8 @@ namespace internal {
   V(StaGlobalExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaGlobal) \
   V(StaContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaContextSlot) \
   V(StaCurrentContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaCurrentContextSlot) \
+  V(StaScriptContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaScriptContextSlot) \
+  V(StaCurrentScriptContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaCurrentScriptContextSlot) \
   V(LdaLookupSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupSlot) \
   V(LdaLookupContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupContextSlot) \
   V(LdaLookupGlobalSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupGlobalSlot) \
@@ -377,6 +390,7 @@ namespace internal {
   V(GetNamedPropertyExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kGetNamedProperty) \
   V(GetNamedPropertyFromSuperExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kGetNamedPropertyFromSuper) \
   V(GetKeyedPropertyExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kGetKeyedProperty) \
+  V(GetEnumeratedKeyedPropertyExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kGetEnumeratedKeyedProperty) \
   V(LdaModuleVariableExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaModuleVariable) \
   V(StaModuleVariableExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaModuleVariable) \
   V(SetNamedPropertyExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kSetNamedProperty) \
@@ -413,6 +427,7 @@ namespace internal {
   V(DecExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kDec) \
   V(NegateExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kNegate) \
   V(BitwiseNotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kBitwiseNot) \
+  V(TypeOfExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kTypeOf) \
   V(DeletePropertyStrictExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kDeletePropertyStrict) \
   V(DeletePropertySloppyExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kDeletePropertySloppy) \
   V(GetSuperConstructorExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kGetSuperConstructor) \
@@ -433,6 +448,7 @@ namespace internal {
   V(InvokeIntrinsicExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kInvokeIntrinsic) \
   V(ConstructExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kConstruct) \
   V(ConstructWithSpreadExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kConstructWithSpread) \
+  V(ConstructForwardAllArgsExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kConstructForwardAllArgs) \
   V(TestEqualExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kTestEqual) \
   V(TestEqualStrictExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kTestEqualStrict) \
   V(TestLessThanExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kTestLessThan) \
@@ -467,6 +483,7 @@ namespace internal {
   V(JumpIfTrueConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfTrueConstant) \
   V(JumpIfFalseConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfFalseConstant) \
   V(JumpIfJSReceiverConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfJSReceiverConstant) \
+  V(JumpIfForInDoneConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfForInDoneConstant) \
   V(JumpIfToBooleanTrueConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfToBooleanTrueConstant) \
   V(JumpIfToBooleanFalseConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfToBooleanFalseConstant) \
   V(JumpIfToBooleanTrueExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfToBooleanTrue) \
@@ -479,10 +496,10 @@ namespace internal {
   V(JumpIfNotUndefinedExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfNotUndefined) \
   V(JumpIfUndefinedOrNullExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfUndefinedOrNull) \
   V(JumpIfJSReceiverExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfJSReceiver) \
+  V(JumpIfForInDoneExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpIfForInDone) \
   V(SwitchOnSmiNoFeedbackExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kSwitchOnSmiNoFeedback) \
   V(ForInEnumerateExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kForInEnumerate) \
   V(ForInPrepareExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kForInPrepare) \
-  V(ForInContinueExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kForInContinue) \
   V(ForInNextExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kForInNext) \
   V(ForInStepExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kForInStep) \
   V(ThrowReferenceErrorIfHoleExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kThrowReferenceErrorIfHole) \
@@ -494,15 +511,15 @@ namespace internal {
   V(IncBlockCounterExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kIncBlockCounter) \
   V(AbortExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kAbort)
 
-constexpr int kNumberOfBytecodeHandlers = 184;
-constexpr int kNumberOfWideBytecodeHandlers = 149;
+constexpr int kNumberOfBytecodeHandlers = 189;
+constexpr int kNumberOfWideBytecodeHandlers = 155;
 
 constexpr uint8_t kIllegalBytecodeHandlerEncoding = 255;
 
 // Mapping from Bytecode to a dense form with all the illegal
 // wide Bytecodes removed. Used to index into the builtins table.
-constexpr uint8_t kWideBytecodeToBuiltinsMapping[199] = {    
-255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 255, 7, 255, 255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 255, 255, 255, 255, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 255, 255, 255, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 255, 97, 98, 99, 255, 255, 100, 101, 255, 102, 103, 255, 104, 105, 106, 107, 108, 109, 110, 111, 255, 255, 255, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 255, 255, 255, 255, 141, 255, 255, 142, 143, 144, 145, 146, 255, 147, 148, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, };
+constexpr uint8_t kWideBytecodeToBuiltinsMapping[204] = {    
+255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 255, 7, 255, 255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 255, 255, 255, 255, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 255, 255, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 255, 102, 103, 104, 255, 255, 105, 106, 255, 107, 108, 255, 109, 110, 111, 112, 113, 114, 115, 116, 255, 255, 255, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 255, 255, 255, 255, 147, 255, 255, 148, 149, 150, 151, 152, 255, 153, 154, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, };
 
 }  // namespace internal
 }  // namespace v8

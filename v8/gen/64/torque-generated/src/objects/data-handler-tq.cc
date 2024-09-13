@@ -15,7 +15,7 @@ bool IsDataHandler_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedDataHandler<DataHandler, Struct>::DataHandlerVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::DataHandlerVerify(DataHandler::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::DataHandlerVerify(Cast<DataHandler>(*this), isolate);
 }
 
 

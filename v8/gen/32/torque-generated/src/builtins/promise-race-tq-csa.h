@@ -6,8 +6,8 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-race.tq?l=88&c=33
-TNode<BoolT> Is_JSPromise_JSReceiver_OR_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-race.tq?l=88&c=32
+TNode<BoolT> Is_JSPromise_Undefined_OR_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o);
 
 } // namespace internal
 } // namespace v8

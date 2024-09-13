@@ -19,50 +19,43 @@ class TorqueGeneratedDataHandler : public P {
 
   // Torque type: (Smi | class Code)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
-  inline Tagged<Object> smi_handler() const;
+  inline Tagged<Union<Code, Smi>> smi_handler() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
-  inline Tagged<Object> smi_handler(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Code, Smi>> smi_handler(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=13&c=3
-  inline void set_smi_handler(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_smi_handler(Tagged<Union<Code, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class Cell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
-  inline Tagged<Object> validity_cell() const;
+  inline Tagged<Union<Cell, Smi>> validity_cell() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
-  inline Tagged<Object> validity_cell(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Cell, Smi>> validity_cell(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=16&c=3
-  inline void set_validity_cell(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_validity_cell(Tagged<Union<Cell, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
-  inline MaybeObject data1() const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> data1() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
-  inline MaybeObject data1(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> data1(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=19&c=3
-  inline void set_data1(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_data1(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
-  inline MaybeObject data2() const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> data2() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
-  inline MaybeObject data2(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> data2(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=20&c=3
-  inline void set_data2(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_data2(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
-  inline MaybeObject data3() const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> data3() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
-  inline MaybeObject data3(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeObject, Smi>> data3(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=21&c=3
-  inline void set_data3(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_data3(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
 #ifdef VERIFY_HEAP
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/data-handler.tq?l=7&c=1

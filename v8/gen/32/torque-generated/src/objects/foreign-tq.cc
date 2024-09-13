@@ -15,7 +15,21 @@ bool IsForeign_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedForeign<Foreign, HeapObject>::ForeignVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ForeignVerify(Foreign::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ForeignVerify(Cast<Foreign>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/foreign.tq?l=10&c=1
+bool IsTrustedForeign_NonInline(Tagged<HeapObject> o) {
+  return IsTrustedForeign(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedTrustedForeign<TrustedForeign, TrustedObject>::TrustedForeignVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::TrustedForeignVerify(Cast<TrustedForeign>(*this), isolate);
 }
 
 

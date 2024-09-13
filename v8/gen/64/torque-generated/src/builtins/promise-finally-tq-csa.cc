@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-finally-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -74,7 +78,6 @@
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
-#include "torque-generated/src/builtins/promise-all-tq-csa.h"
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/promise-finally-tq-csa.h"
 #include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
@@ -280,7 +283,7 @@ TF_BUILTIN(PromiseThrowerFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=40&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=43&c=1
 TNode<JSFunction> CreateThrowerFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_reason) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -292,12 +295,7 @@ TNode<JSFunction> CreateThrowerFunction_0(compiler::CodeAssemblerState* state_, 
   TNode<Context> tmp1;
   TNode<Context> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<IntPtrT> tmp6;
-  TNode<Map> tmp7;
-  TNode<SharedFunctionInfo> tmp8;
-  TNode<JSFunction> tmp9;
+  TNode<JSFunction> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_intptr_0(state_, PromiseBuiltins::PromiseValueThunkOrReasonContextSlot::kPromiseValueThunkOrReasonContextLength);
@@ -305,16 +303,12 @@ TNode<JSFunction> CreateThrowerFunction_0(compiler::CodeAssemblerState* state_, 
     tmp2 = (TNode<Context>{tmp1});
     tmp3 = kValueSlot_0(state_);
     InitContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Object>{p_reason});
-    tmp4 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp5, tmp6) = ContextSlot_NativeContext_NativeContext_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp4}).Flatten();
-    tmp7 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp5, tmp6});
-    tmp8 = CodeStubAssembler(state_).PromiseThrowerFinallySharedFunConstant();
-    tmp9 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp7}, TNode<SharedFunctionInfo>{tmp8}, TNode<Context>{tmp2});
+    tmp4 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kPromiseThrowerFinallySharedFun, TNode<Context>{tmp2});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<JSFunction>{tmp9};
+  return TNode<JSFunction>{tmp4};
 }
 
 TF_BUILTIN(PromiseCatchFinally, CodeStubAssembler) {
@@ -355,7 +349,7 @@ TF_BUILTIN(PromiseCatchFinally, CodeStubAssembler) {
     tmp7 = kConstructorSlot_0(state_);
     std::tie(tmp8, tmp9) = ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp8, tmp9});
-    tmp11 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kPromiseResolve), tmp0, tmp10, tmp6);
+    tmp11 = ca_.CallBuiltin<Object>(Builtin::kPromiseResolve, tmp0, tmp10, tmp6);
     tmp12 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{tmp0});
     tmp13 = CreateThrowerFunction_0(state_, TNode<Context>{tmp0}, TNode<NativeContext>{tmp12}, TNode<Object>{parameter2});
     tmp14 = InvokeThen_0(state_, TNode<Context>{tmp0}, TNode<NativeContext>{tmp12}, TNode<Object>{tmp11}, TNode<Object>{tmp13});
@@ -364,7 +358,7 @@ TF_BUILTIN(PromiseCatchFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=85&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=89&c=1
 TNode<JSFunction> CreateValueThunkFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -376,12 +370,7 @@ TNode<JSFunction> CreateValueThunkFunction_0(compiler::CodeAssemblerState* state
   TNode<Context> tmp1;
   TNode<Context> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<IntPtrT> tmp6;
-  TNode<Map> tmp7;
-  TNode<SharedFunctionInfo> tmp8;
-  TNode<JSFunction> tmp9;
+  TNode<JSFunction> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_intptr_0(state_, PromiseBuiltins::PromiseValueThunkOrReasonContextSlot::kPromiseValueThunkOrReasonContextLength);
@@ -389,16 +378,12 @@ TNode<JSFunction> CreateValueThunkFunction_0(compiler::CodeAssemblerState* state
     tmp2 = (TNode<Context>{tmp1});
     tmp3 = kValueSlot_0(state_);
     InitContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Object>{p_value});
-    tmp4 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp5, tmp6) = ContextSlot_NativeContext_NativeContext_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp4}).Flatten();
-    tmp7 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp5, tmp6});
-    tmp8 = CodeStubAssembler(state_).PromiseValueThunkFinallySharedFunConstant();
-    tmp9 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp7}, TNode<SharedFunctionInfo>{tmp8}, TNode<Context>{tmp2});
+    tmp4 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kPromiseValueThunkFinallySharedFun, TNode<Context>{tmp2});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<JSFunction>{tmp9};
+  return TNode<JSFunction>{tmp4};
 }
 
 TF_BUILTIN(PromiseThenFinally, CodeStubAssembler) {
@@ -439,7 +424,7 @@ TF_BUILTIN(PromiseThenFinally, CodeStubAssembler) {
     tmp7 = kConstructorSlot_0(state_);
     std::tie(tmp8, tmp9) = ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp8, tmp9});
-    tmp11 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kPromiseResolve), tmp0, tmp10, tmp6);
+    tmp11 = ca_.CallBuiltin<Object>(Builtin::kPromiseResolve, tmp0, tmp10, tmp6);
     tmp12 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{tmp0});
     tmp13 = CreateValueThunkFunction_0(state_, TNode<Context>{tmp0}, TNode<NativeContext>{tmp12}, TNode<Object>{parameter2});
     tmp14 = InvokeThen_0(state_, TNode<Context>{tmp0}, TNode<NativeContext>{tmp12}, TNode<Object>{tmp11}, TNode<Object>{tmp13});
@@ -448,7 +433,7 @@ TF_BUILTIN(PromiseThenFinally, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=137&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=143&c=1
 TorqueStructPromiseFinallyFunctions_0 CreatePromiseFinallyFunctions_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSReceiver> p_onFinally, TNode<JSReceiver> p_constructor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -461,14 +446,8 @@ TorqueStructPromiseFinallyFunctions_0 CreatePromiseFinallyFunctions_0(compiler::
   TNode<Context> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<IntPtrT> tmp5;
-  TNode<Object> tmp6;
-  TNode<IntPtrT> tmp7;
-  TNode<Map> tmp8;
-  TNode<SharedFunctionInfo> tmp9;
-  TNode<JSFunction> tmp10;
-  TNode<SharedFunctionInfo> tmp11;
-  TNode<JSFunction> tmp12;
+  TNode<JSFunction> tmp5;
+  TNode<JSFunction> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_intptr_0(state_, PromiseBuiltins::PromiseFinallyContextSlot::kPromiseFinallyContextLength);
@@ -478,18 +457,13 @@ TorqueStructPromiseFinallyFunctions_0 CreatePromiseFinallyFunctions_0(compiler::
     InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_Callable_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<JSReceiver>{p_onFinally});
     tmp4 = kConstructorSlot_0(state_);
     InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_Constructor_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp4}, TNode<JSReceiver>{p_constructor});
-    tmp5 = STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX_0(state_);
-    std::tie(tmp6, tmp7) = ContextSlot_NativeContext_NativeContext_Map_0(state_, TNode<NativeContext>{p_nativeContext}, TNode<IntPtrT>{tmp5}).Flatten();
-    tmp8 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp6, tmp7});
-    tmp9 = CodeStubAssembler(state_).PromiseThenFinallySharedFunConstant();
-    tmp10 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp8}, TNode<SharedFunctionInfo>{tmp9}, TNode<Context>{tmp2});
-    tmp11 = CodeStubAssembler(state_).PromiseCatchFinallySharedFunConstant();
-    tmp12 = CodeStubAssembler(state_).AllocateFunctionWithMapAndContext(TNode<Map>{tmp8}, TNode<SharedFunctionInfo>{tmp11}, TNode<Context>{tmp2});
+    tmp5 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kPromiseThenFinallySharedFun, TNode<Context>{tmp2});
+    tmp6 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kPromiseCatchFinallySharedFun, TNode<Context>{tmp2});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructPromiseFinallyFunctions_0{TNode<JSFunction>{tmp10}, TNode<JSFunction>{tmp12}};
+  return TorqueStructPromiseFinallyFunctions_0{TNode<JSFunction>{tmp5}, TNode<JSFunction>{tmp6}};
 }
 
 TF_BUILTIN(PromisePrototypeFinally, CodeStubAssembler) {
@@ -543,7 +517,7 @@ TF_BUILTIN(PromisePrototypeFinally, CodeStubAssembler) {
     ca_.Bind(&block6);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-finally.tq", 173});
+      pos_stack.push_back({"src/builtins/promise-finally.tq", 175});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Is<NativeContext>(context)' failed", pos_stack);
     }
   }
@@ -690,7 +664,7 @@ TorqueStructReference_JSAny_0 ContextSlot_PromiseValueThunkOrReasonContext_Promi
   return TorqueStructReference_JSAny_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=48&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=51&c=3
 void InitContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -736,7 +710,7 @@ void InitContextSlot_PromiseValueThunkOrReasonContext_PromiseValueThunkOrReasonC
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=62&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=63&c=8
 TorqueStructReference_Callable_0 ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -785,7 +759,7 @@ TorqueStructReference_Callable_0 ContextSlot_PromiseFinallyContext_PromiseFinall
   return TorqueStructReference_Callable_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=69&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=70&c=8
 TorqueStructReference_Constructor_0 ContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -834,7 +808,7 @@ TorqueStructReference_Constructor_0 ContextSlot_PromiseFinallyContext_PromiseFin
   return TorqueStructReference_Constructor_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=144&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=150&c=3
 void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -880,7 +854,7 @@ void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Callable_Callab
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=146&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-finally.tq?l=152&c=3
 void InitContextSlot_PromiseFinallyContext_PromiseFinallyContext_Constructor_Constructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

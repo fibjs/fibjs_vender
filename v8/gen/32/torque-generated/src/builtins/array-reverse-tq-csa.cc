@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-reverse-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -352,7 +356,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2, &phi_bb2_4, &phi_bb2_5);
     tmp6 = Undefined_0(state_);
     tmp7 = Undefined_0(state_);
-    tmp8 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb2_4);
+    tmp8 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, tmp0, phi_bb2_4);
     tmp9 = True_0(state_);
     tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
     ca_.Branch(tmp10, &block5, std::vector<compiler::Node*>{phi_bb2_4, phi_bb2_5}, &block6, std::vector<compiler::Node*>{phi_bb2_4, phi_bb2_5, tmp6});
@@ -375,7 +379,7 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<BoolT> tmp14;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_4, &phi_bb6_5, &phi_bb6_6);
-    tmp12 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, tmp0, phi_bb6_5);
+    tmp12 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, tmp0, phi_bb6_5);
     tmp13 = True_0(state_);
     tmp14 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp12}, TNode<HeapObject>{tmp13});
     ca_.Branch(tmp14, &block7, std::vector<compiler::Node*>{phi_bb6_4, phi_bb6_5}, &block8, std::vector<compiler::Node*>{phi_bb6_4, phi_bb6_5, tmp7});
@@ -436,8 +440,8 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Object> tmp22;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_4, &phi_bb9_5);
-    tmp21 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, tmp0, phi_bb9_4, phi_bb8_7);
-    tmp22 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, tmp0, phi_bb9_5, phi_bb6_6);
+    tmp21 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, phi_bb9_4, phi_bb8_7);
+    tmp22 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, phi_bb9_5, phi_bb6_6);
     ca_.Goto(&block14, phi_bb9_4, phi_bb9_5);
   }
 
@@ -487,9 +491,9 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Boolean> tmp30;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_4, &phi_bb15_5);
-    tmp28 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, tmp0, phi_bb15_4, phi_bb8_7);
+    tmp28 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, phi_bb15_4, phi_bb8_7);
     tmp29 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp30 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, phi_bb15_5, tmp29);
+    tmp30 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, p_context, tmp0, phi_bb15_5, tmp29);
     ca_.Goto(&block20, phi_bb15_4, phi_bb15_5);
   }
 
@@ -540,8 +544,8 @@ TNode<Object> GenericArrayReverse_0(compiler::CodeAssemblerState* state_, TNode<
   if (block21.is_used()) {
     ca_.Bind(&block21, &phi_bb21_4, &phi_bb21_5);
     tmp36 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp37 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, tmp0, phi_bb21_4, tmp36);
-    tmp38 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, tmp0, phi_bb21_5, phi_bb6_6);
+    tmp37 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, p_context, tmp0, phi_bb21_4, tmp36);
+    tmp38 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, phi_bb21_5, phi_bb6_6);
     ca_.Goto(&block22, phi_bb21_4, phi_bb21_5);
   }
 

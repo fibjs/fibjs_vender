@@ -29,6 +29,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlast-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlastindex-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-findlastindex-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-flat-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-flat-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-foreach-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-foreach-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/array-from-async-tq-csa.cc
@@ -119,6 +121,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-helpers-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/iterator-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/js-to-js-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/js-to-js-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/js-to-wasm-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/js-to-wasm-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/map-groupby-tq-csa.cc
@@ -157,6 +161,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-resolve-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-then-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-then-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-try-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-try-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-withresolvers-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/promise-withresolvers-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/proxy-constructor-tq-csa.cc
@@ -251,6 +257,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-towellformed-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-trim-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/string-trim-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/suppressed-error-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/suppressed-error-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/symbol-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/symbol-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/builtins/torque-internal-tq-csa.cc
@@ -377,6 +385,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-date-time-format-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-display-names-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-display-names-tq.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-disposable-stack-tq-csa.cc
+	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-disposable-stack-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-duration-format-tq-csa.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-duration-format-tq.cc
 	${PROJECT_SOURCE_DIR}/gen/64/torque-generated/src/objects/js-function-tq-csa.cc
@@ -512,6 +522,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/ast/scopes.cc
 	${PROJECT_SOURCE_DIR}/src/ast/source-range-ast-visitor.cc
 	${PROJECT_SOURCE_DIR}/src/ast/variables.cc
+	${PROJECT_SOURCE_DIR}/src/base/abort-mode.cc
 	${PROJECT_SOURCE_DIR}/src/base/bits.cc
 	${PROJECT_SOURCE_DIR}/src/base/bounded-page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/cpu.cc
@@ -543,7 +554,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/base/virtual-address-space-page-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/base/virtual-address-space.cc
 	${PROJECT_SOURCE_DIR}/src/base/vlq-base64.cc
-	${PROJECT_SOURCE_DIR}/src/baseline/baseline-batch-compiler.cc
 	${PROJECT_SOURCE_DIR}/src/baseline/baseline-compiler.cc
 	${PROJECT_SOURCE_DIR}/src/baseline/baseline.cc
 	${PROJECT_SOURCE_DIR}/src/baseline/bytecode-offset-iterator.cc
@@ -562,10 +572,12 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/bigint/vector-arithmetic.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/accessors.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/arm64/builtins-arm64.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/builtins-abstract-module-source.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-api.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-array-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-array.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-arraybuffer.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/builtins-async-disposable-stack.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-async-function-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-async-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-async-generator-gen.cc
@@ -584,6 +596,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-dataview.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-date-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-date.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/builtins-disposable-stack.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-error.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-function.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-generator-gen.cc
@@ -615,6 +628,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-sharedarraybuffer-gen.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-sharedarraybuffer.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-string-gen.cc
+	${PROJECT_SOURCE_DIR}/src/builtins/builtins-string-tsa.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-string.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-struct.cc
 	${PROJECT_SOURCE_DIR}/src/builtins/builtins-symbol.cc
@@ -689,7 +703,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/instruction-selector.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/instruction.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/jump-threading.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/backend/mid-tier-register-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/move-optimizer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/register-allocator-verifier.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/backend/register-allocator.cc
@@ -708,13 +721,12 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/common-operator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/compilation-dependencies.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/compiler-source-position-table.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/const-tracking-let-helpers.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/constant-folding-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/control-equivalence.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/control-flow-optimizer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/csa-load-elimination.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/dead-code-elimination.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/decompression-optimizer.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/effect-control-linearizer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/escape-analysis-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/escape-analysis.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/fast-api-calls.cc
@@ -775,7 +787,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/redundancy-elimination.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/refs-map.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/representation-change.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/revectorizer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/schedule.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/scheduler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/select-lowering.cc
@@ -784,12 +795,16 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/simplified-operator-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/simplified-operator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/state-values-utils.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/store-store-elimination.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/string-builder-optimizer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turbofan-enabled.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/analyzer-iterator.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/assembler.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/block-instrumentation-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/block-instrumentation-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/build-graph-phase.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/dead-code-elimination-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/code-elimination-and-simplification-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/copying-phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/csa-optimize-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/debug-feature-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/decompression-optimization-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/decompression-optimization.cc
@@ -800,18 +815,22 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/int64-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/late-escape-analysis-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/late-load-elimination-reducer.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/loop-finder.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/loop-peeling-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/loop-unrolling-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/loop-unrolling-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/machine-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/memory-optimization-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/operations.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/optimization-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/optimize-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/phase.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/pipelines.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/pretenuring-propagation-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/recreate-schedule-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/recreate-schedule.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/representations.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/sidetable.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/simplified-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/simplify-tf-loops.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/store-store-elimination-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/type-assertions-phase.cc
@@ -823,7 +842,8 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/utils.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-dead-code-elimination-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-gc-optimize-phase.cc
-	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-gc-type-reducer.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-gc-typed-optimization-reducer.cc
+	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-lowering-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-optimize-phase.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/turboshaft/wasm-turboshaft-compiler.cc
 	${PROJECT_SOURCE_DIR}/src/compiler/type-cache.cc
@@ -928,12 +948,10 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/base/memory-tagging.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/stack.cc
 	${PROJECT_SOURCE_DIR}/src/heap/base/worklist.cc
-	${PROJECT_SOURCE_DIR}/src/heap/basic-memory-chunk.cc
 	${PROJECT_SOURCE_DIR}/src/heap/code-range.cc
 	${PROJECT_SOURCE_DIR}/src/heap/code-stats.cc
 	${PROJECT_SOURCE_DIR}/src/heap/collection-barrier.cc
 	${PROJECT_SOURCE_DIR}/src/heap/combined-heap.cc
-	${PROJECT_SOURCE_DIR}/src/heap/concurrent-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/heap/concurrent-marking.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/cpp-heap.cc
 	${PROJECT_SOURCE_DIR}/src/heap/cppgc-js/cpp-snapshot.cc
@@ -995,7 +1013,6 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/factory.cc
 	${PROJECT_SOURCE_DIR}/src/heap/finalization-registry-cleanup-task.cc
 	${PROJECT_SOURCE_DIR}/src/heap/free-list.cc
-	${PROJECT_SOURCE_DIR}/src/heap/gc-idle-time-handler.cc
 	${PROJECT_SOURCE_DIR}/src/heap/gc-tracer.cc
 	${PROJECT_SOURCE_DIR}/src/heap/heap-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/heap/heap-controller.cc
@@ -1006,7 +1023,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/incremental-marking-job.cc
 	${PROJECT_SOURCE_DIR}/src/heap/incremental-marking.cc
 	${PROJECT_SOURCE_DIR}/src/heap/index-generator.cc
-	${PROJECT_SOURCE_DIR}/src/heap/large-page.cc
+	${PROJECT_SOURCE_DIR}/src/heap/large-page-metadata.cc
 	${PROJECT_SOURCE_DIR}/src/heap/large-spaces.cc
 	${PROJECT_SOURCE_DIR}/src/heap/local-factory.cc
 	${PROJECT_SOURCE_DIR}/src/heap/local-heap.cc
@@ -1019,15 +1036,17 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/memory-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/heap/memory-balancer.cc
 	${PROJECT_SOURCE_DIR}/src/heap/memory-chunk-layout.cc
+	${PROJECT_SOURCE_DIR}/src/heap/memory-chunk-metadata.cc
 	${PROJECT_SOURCE_DIR}/src/heap/memory-chunk.cc
 	${PROJECT_SOURCE_DIR}/src/heap/memory-measurement.cc
 	${PROJECT_SOURCE_DIR}/src/heap/memory-reducer.cc
 	${PROJECT_SOURCE_DIR}/src/heap/minor-gc-job.cc
 	${PROJECT_SOURCE_DIR}/src/heap/minor-mark-sweep.cc
+	${PROJECT_SOURCE_DIR}/src/heap/mutable-page-metadata.cc
 	${PROJECT_SOURCE_DIR}/src/heap/new-spaces.cc
 	${PROJECT_SOURCE_DIR}/src/heap/object-stats.cc
 	${PROJECT_SOURCE_DIR}/src/heap/objects-visiting.cc
-	${PROJECT_SOURCE_DIR}/src/heap/page.cc
+	${PROJECT_SOURCE_DIR}/src/heap/page-metadata.cc
 	${PROJECT_SOURCE_DIR}/src/heap/paged-spaces.cc
 	${PROJECT_SOURCE_DIR}/src/heap/pretenuring-handler.cc
 	${PROJECT_SOURCE_DIR}/src/heap/read-only-heap.cc
@@ -1043,6 +1062,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/heap/sweeper.cc
 	${PROJECT_SOURCE_DIR}/src/heap/third-party/heap-api-stub.cc
 	${PROJECT_SOURCE_DIR}/src/heap/traced-handles-marking-visitor.cc
+	${PROJECT_SOURCE_DIR}/src/heap/trusted-range.cc
 	${PROJECT_SOURCE_DIR}/src/heap/weak-object-worklists.cc
 	${PROJECT_SOURCE_DIR}/src/heap/zapping.cc
 	${PROJECT_SOURCE_DIR}/src/ic/accessor-assembler.cc
@@ -1056,7 +1076,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/ic/unary-op-assembler.cc
 	${PROJECT_SOURCE_DIR}/src/init/bootstrapper.cc
 	${PROJECT_SOURCE_DIR}/src/init/icu_util.cc
-	${PROJECT_SOURCE_DIR}/src/init/isolate-allocator.cc
+	${PROJECT_SOURCE_DIR}/src/init/isolate-group.cc
 	${PROJECT_SOURCE_DIR}/src/init/setup-isolate-deserialize.cc
 	${PROJECT_SOURCE_DIR}/src/init/startup-data-util.cc
 	${PROJECT_SOURCE_DIR}/src/init/v8.cc
@@ -1065,7 +1085,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-array-random-iterator.cc
 	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-array-writer.cc
 	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-decoder.cc
-	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-flags.cc
+	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-flags-and-tokens.cc
 	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-generator.cc
 	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-label.cc
 	${PROJECT_SOURCE_DIR}/src/interpreter/bytecode-node.cc
@@ -1133,6 +1153,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/objects/js-collator.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-date-time-format.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-display-names.cc
+	${PROJECT_SOURCE_DIR}/src/objects/js-disposable-stack.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-duration-format.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-function.cc
 	${PROJECT_SOURCE_DIR}/src/objects/js-list-format.cc
@@ -1162,6 +1183,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/objects/ordered-hash-table.cc
 	${PROJECT_SOURCE_DIR}/src/objects/property-descriptor.cc
 	${PROJECT_SOURCE_DIR}/src/objects/property.cc
+	${PROJECT_SOURCE_DIR}/src/objects/regexp-match-info.cc
 	${PROJECT_SOURCE_DIR}/src/objects/scope-info.cc
 	${PROJECT_SOURCE_DIR}/src/objects/shared-function-info.cc
 	${PROJECT_SOURCE_DIR}/src/objects/simd.cc
@@ -1180,6 +1202,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/objects/type-hints.cc
 	${PROJECT_SOURCE_DIR}/src/objects/value-serializer.cc
 	${PROJECT_SOURCE_DIR}/src/objects/visitors.cc
+	${PROJECT_SOURCE_DIR}/src/objects/waiter-queue-node.cc
 	${PROJECT_SOURCE_DIR}/src/parsing/func-name-inferrer.cc
 	${PROJECT_SOURCE_DIR}/src/parsing/import-assertions.cc
 	${PROJECT_SOURCE_DIR}/src/parsing/literal-buffer.cc
@@ -1262,10 +1285,14 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime-weak-refs.cc
 	${PROJECT_SOURCE_DIR}/src/runtime/runtime.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/code-pointer-table.cc
+	${PROJECT_SOURCE_DIR}/src/sandbox/cppheap-pointer-table.cc
+	${PROJECT_SOURCE_DIR}/src/sandbox/external-buffer-table.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/external-pointer-table.cc
-	${PROJECT_SOURCE_DIR}/src/sandbox/indirect-pointer-table.cc
+	${PROJECT_SOURCE_DIR}/src/sandbox/hardware-support.cc
+	${PROJECT_SOURCE_DIR}/src/sandbox/js-dispatch-table.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/sandbox.cc
 	${PROJECT_SOURCE_DIR}/src/sandbox/testing.cc
+	${PROJECT_SOURCE_DIR}/src/sandbox/trusted-pointer-table.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/code-serializer.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/context-deserializer.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/context-serializer.cc
@@ -1277,6 +1304,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/snapshot/embedded/platform-embedded-file-writer-generic.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/embedded/platform-embedded-file-writer-mac.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+	${PROJECT_SOURCE_DIR}/src/snapshot/embedded/platform-embedded-file-writer-zos.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/object-deserializer.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/read-only-deserializer.cc
 	${PROJECT_SOURCE_DIR}/src/snapshot/read-only-serializer.cc
@@ -1332,6 +1360,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/torque/type-visitor.cc
 	${PROJECT_SOURCE_DIR}/src/torque/types.cc
 	${PROJECT_SOURCE_DIR}/src/torque/utils.cc
+	${PROJECT_SOURCE_DIR}/src/tracing/perfetto-utils.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/trace-categories.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/trace-event.cc
 	${PROJECT_SOURCE_DIR}/src/tracing/traced-value.cc
@@ -1354,6 +1383,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/utils/version.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/baseline/liftoff-assembler.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/baseline/liftoff-compiler.cc
+	${PROJECT_SOURCE_DIR}/src/wasm/baseline/parallel-move.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/c-api.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/canonical-types.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/code-space-access.cc
@@ -1361,6 +1391,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/wasm/constant-expression.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/function-body-decoder.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/function-compiler.cc
+	${PROJECT_SOURCE_DIR}/src/wasm/fuzzing/random-module-generation.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/graph-builder-interface.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/jump-table-assembler.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/local-decl-encoder.cc
@@ -1378,6 +1409,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/wasm/value-type.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-code-manager.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-debug.cc
+	${PROJECT_SOURCE_DIR}/src/wasm/wasm-deopt-data.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-disassembler.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-engine.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-external-refs.cc
@@ -1393,6 +1425,7 @@ set(src_list
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-serialization.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/wasm-subtyping.cc
 	${PROJECT_SOURCE_DIR}/src/wasm/well-known-imports.cc
+	${PROJECT_SOURCE_DIR}/src/wasm/wrappers.cc
 	${PROJECT_SOURCE_DIR}/src/zone/accounting-allocator.cc
 	${PROJECT_SOURCE_DIR}/src/zone/type-stats.cc
 	${PROJECT_SOURCE_DIR}/src/zone/zone-segment.cc

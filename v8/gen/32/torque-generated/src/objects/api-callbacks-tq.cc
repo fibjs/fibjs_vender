@@ -6,21 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=5&c=1
-bool IsCallHandlerInfo_NonInline(Tagged<HeapObject> o) {
-  return IsCallHandlerInfo(o);
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedCallHandlerInfo<CallHandlerInfo, HeapObject>::CallHandlerInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::CallHandlerInfoVerify(CallHandlerInfo::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=23&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=13&c=1
 bool IsInterceptorInfo_NonInline(Tagged<HeapObject> o) {
   return IsInterceptorInfo(o);
 }
@@ -29,12 +15,12 @@ bool IsInterceptorInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedInterceptorInfo<InterceptorInfo, Struct>::InterceptorInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::InterceptorInfoVerify(InterceptorInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::InterceptorInfoVerify(Cast<InterceptorInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=35&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=25&c=1
 bool IsAccessCheckInfo_NonInline(Tagged<HeapObject> o) {
   return IsAccessCheckInfo(o);
 }
@@ -43,12 +29,12 @@ bool IsAccessCheckInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAccessCheckInfo<AccessCheckInfo, Struct>::AccessCheckInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AccessCheckInfoVerify(AccessCheckInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AccessCheckInfoVerify(Cast<AccessCheckInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=55&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/api-callbacks.tq?l=42&c=1
 bool IsAccessorInfo_NonInline(Tagged<HeapObject> o) {
   return IsAccessorInfo(o);
 }
@@ -57,7 +43,7 @@ bool IsAccessorInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAccessorInfo<AccessorInfo, HeapObject>::AccessorInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AccessorInfoVerify(AccessorInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AccessorInfoVerify(Cast<AccessorInfo>(*this), isolate);
 }
 
 

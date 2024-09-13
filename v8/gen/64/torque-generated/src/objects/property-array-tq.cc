@@ -15,7 +15,7 @@ bool IsPropertyArray_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedPropertyArray<PropertyArray, HeapObject>::PropertyArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::PropertyArrayVerify(PropertyArray::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::PropertyArrayVerify(Cast<PropertyArray>(*this), isolate);
 }
 
 

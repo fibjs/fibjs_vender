@@ -15,7 +15,7 @@ bool IsJSSegmenter_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSSegmenter<JSSegmenter, JSObject>::JSSegmenterVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSSegmenterVerify(JSSegmenter::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSSegmenterVerify(Cast<JSSegmenter>(*this), isolate);
 }
 
 

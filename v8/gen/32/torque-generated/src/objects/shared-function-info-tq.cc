@@ -3,10 +3,12 @@
 #include "torque-generated/class-verifiers.h"
 #include "src/objects/instance-type-inl.h"
 
+#include "src/objects/shared-function-info.h"
+
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=5&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=7&c=1
 bool IsPreparseData_NonInline(Tagged<HeapObject> o) {
   return IsPreparseData(o);
 }
@@ -15,12 +17,12 @@ bool IsPreparseData_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedPreparseData<PreparseData, HeapObject>::PreparseDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::PreparseDataVerify(PreparseData::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::PreparseDataVerify(Cast<PreparseData>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=11&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=13&c=1
 bool IsInterpreterData_NonInline(Tagged<HeapObject> o) {
   return IsInterpreterData(o);
 }
@@ -28,13 +30,13 @@ bool IsInterpreterData_NonInline(Tagged<HeapObject> o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedInterpreterData<InterpreterData, Struct>::InterpreterDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::InterpreterDataVerify(InterpreterData::cast(*this), isolate);
+void TorqueGeneratedInterpreterData<InterpreterData, ExposedTrustedObject>::InterpreterDataVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::InterpreterDataVerify(Cast<InterpreterData>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=49&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=1
 bool IsSharedFunctionInfo_NonInline(Tagged<HeapObject> o) {
   return IsSharedFunctionInfo(o);
 }
@@ -43,12 +45,29 @@ bool IsSharedFunctionInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSharedFunctionInfo<SharedFunctionInfo, HeapObject>::SharedFunctionInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SharedFunctionInfoVerify(SharedFunctionInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SharedFunctionInfoVerify(Cast<SharedFunctionInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=1
+class TorqueGeneratedSharedFunctionInfoWrapperAsserts {
+  static constexpr int kStartOfStrongFieldsOffset = TrustedObject::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=115&c=3
+  static constexpr int kSharedInfoOffset = TrustedObject::kHeaderSize;
+  static constexpr int kSharedInfoOffsetEnd = kSharedInfoOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kSharedInfoOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kSharedInfoOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kSharedInfoOffsetEnd + 1;
+  static constexpr int kHeaderSize = kSharedInfoOffsetEnd + 1;
+  static constexpr int kSize = kSharedInfoOffsetEnd + 1;
+
+  static_assert(kSharedInfoOffset == SharedFunctionInfoWrapper::kSharedInfoOffset,
+                "Values of SharedFunctionInfoWrapper::kSharedInfoOffset defined in Torque and C++ do not match");
+  static_assert(kSize == SharedFunctionInfoWrapper::kSize);
+};
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=144&c=1
 bool IsUncompiledData_NonInline(Tagged<HeapObject> o) {
   return IsUncompiledData(o);
 }
@@ -56,13 +75,13 @@ bool IsUncompiledData_NonInline(Tagged<HeapObject> o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedUncompiledData<UncompiledData, HeapObject>::UncompiledDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::UncompiledDataVerify(UncompiledData::cast(*this), isolate);
+void TorqueGeneratedUncompiledData<UncompiledData, ExposedTrustedObject>::UncompiledDataVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::UncompiledDataVerify(Cast<UncompiledData>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=122&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=151&c=1
 bool IsUncompiledDataWithoutPreparseData_NonInline(Tagged<HeapObject> o) {
   return IsUncompiledDataWithoutPreparseData(o);
 }
@@ -71,12 +90,12 @@ bool IsUncompiledDataWithoutPreparseData_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedUncompiledDataWithoutPreparseData<UncompiledDataWithoutPreparseData, UncompiledData>::UncompiledDataWithoutPreparseDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::UncompiledDataWithoutPreparseDataVerify(UncompiledDataWithoutPreparseData::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::UncompiledDataWithoutPreparseDataVerify(Cast<UncompiledDataWithoutPreparseData>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
 bool IsUncompiledDataWithPreparseData_NonInline(Tagged<HeapObject> o) {
   return IsUncompiledDataWithPreparseData(o);
 }
@@ -85,12 +104,12 @@ bool IsUncompiledDataWithPreparseData_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedUncompiledDataWithPreparseData<UncompiledDataWithPreparseData, UncompiledData>::UncompiledDataWithPreparseDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::UncompiledDataWithPreparseDataVerify(UncompiledDataWithPreparseData::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::UncompiledDataWithPreparseDataVerify(Cast<UncompiledDataWithPreparseData>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=134&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
 bool IsUncompiledDataWithoutPreparseDataWithJob_NonInline(Tagged<HeapObject> o) {
   return IsUncompiledDataWithoutPreparseDataWithJob(o);
 }
@@ -99,12 +118,12 @@ bool IsUncompiledDataWithoutPreparseDataWithJob_NonInline(Tagged<HeapObject> o) 
 
 template <>
 void TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<UncompiledDataWithoutPreparseDataWithJob, UncompiledDataWithoutPreparseData>::UncompiledDataWithoutPreparseDataWithJobVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::UncompiledDataWithoutPreparseDataWithJobVerify(UncompiledDataWithoutPreparseDataWithJob::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::UncompiledDataWithoutPreparseDataWithJobVerify(Cast<UncompiledDataWithoutPreparseDataWithJob>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=143&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=1
 bool IsUncompiledDataWithPreparseDataAndJob_NonInline(Tagged<HeapObject> o) {
   return IsUncompiledDataWithPreparseDataAndJob(o);
 }
@@ -113,12 +132,12 @@ bool IsUncompiledDataWithPreparseDataAndJob_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedUncompiledDataWithPreparseDataAndJob<UncompiledDataWithPreparseDataAndJob, UncompiledDataWithPreparseData>::UncompiledDataWithPreparseDataAndJobVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::UncompiledDataWithPreparseDataAndJobVerify(UncompiledDataWithPreparseDataAndJob::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::UncompiledDataWithPreparseDataAndJobVerify(Cast<UncompiledDataWithPreparseDataAndJob>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=185&c=1
 bool IsOnHeapBasicBlockProfilerData_NonInline(Tagged<HeapObject> o) {
   return IsOnHeapBasicBlockProfilerData(o);
 }
@@ -127,7 +146,7 @@ bool IsOnHeapBasicBlockProfilerData_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedOnHeapBasicBlockProfilerData<OnHeapBasicBlockProfilerData, HeapObject>::OnHeapBasicBlockProfilerDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::OnHeapBasicBlockProfilerDataVerify(OnHeapBasicBlockProfilerData::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::OnHeapBasicBlockProfilerDataVerify(Cast<OnHeapBasicBlockProfilerData>(*this), isolate);
 }
 
 

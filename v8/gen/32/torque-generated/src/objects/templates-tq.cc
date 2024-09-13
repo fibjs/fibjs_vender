@@ -14,27 +14,13 @@ bool IsTemplateInfo_NonInline(Tagged<HeapObject> o) {
 #ifdef VERIFY_HEAP
 
 template <>
-void TorqueGeneratedTemplateInfo<TemplateInfo, Struct>::TemplateInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TemplateInfoVerify(TemplateInfo::cast(*this), isolate);
+void TorqueGeneratedTemplateInfo<TemplateInfo, HeapObject>::TemplateInfoVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::TemplateInfoVerify(Cast<TemplateInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=14&c=1
-bool IsFunctionTemplateRareData_NonInline(Tagged<HeapObject> o) {
-  return IsFunctionTemplateRareData(o);
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedFunctionTemplateRareData<FunctionTemplateRareData, Struct>::FunctionTemplateRareDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::FunctionTemplateRareDataVerify(FunctionTemplateRareData::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=41&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=44&c=1
 bool IsFunctionTemplateInfo_NonInline(Tagged<HeapObject> o) {
   return IsFunctionTemplateInfo(o);
 }
@@ -43,12 +29,26 @@ bool IsFunctionTemplateInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedFunctionTemplateInfo<FunctionTemplateInfo, TemplateInfo>::FunctionTemplateInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::FunctionTemplateInfoVerify(FunctionTemplateInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::FunctionTemplateInfoVerify(Cast<FunctionTemplateInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=77&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=13&c=1
+bool IsFunctionTemplateRareData_NonInline(Tagged<HeapObject> o) {
+  return IsFunctionTemplateRareData(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedFunctionTemplateRareData<FunctionTemplateRareData, Struct>::FunctionTemplateRareDataVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::FunctionTemplateRareDataVerify(Cast<FunctionTemplateRareData>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=104&c=1
 bool IsObjectTemplateInfo_NonInline(Tagged<HeapObject> o) {
   return IsObjectTemplateInfo(o);
 }
@@ -57,7 +57,21 @@ bool IsObjectTemplateInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedObjectTemplateInfo<ObjectTemplateInfo, TemplateInfo>::ObjectTemplateInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ObjectTemplateInfoVerify(ObjectTemplateInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ObjectTemplateInfoVerify(Cast<ObjectTemplateInfo>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/templates.tq?l=110&c=1
+bool IsDictionaryTemplateInfo_NonInline(Tagged<HeapObject> o) {
+  return IsDictionaryTemplateInfo(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedDictionaryTemplateInfo<DictionaryTemplateInfo, HeapObject>::DictionaryTemplateInfoVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::DictionaryTemplateInfoVerify(Cast<DictionaryTemplateInfo>(*this), isolate);
 }
 
 

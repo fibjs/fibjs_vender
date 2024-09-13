@@ -43,6 +43,7 @@
 #include "src/codegen/assembler.h"
 #include "src/codegen/source-position-table.h"
 #include "src/diagnostics/eh-frame.h"
+#include "src/objects/code-kind.h"
 #include "src/objects/objects-inl.h"
 #include "src/objects/shared-function-info.h"
 #include "src/snapshot/embedded/embedded-data.h"
@@ -225,9 +226,7 @@ void LinuxPerfJitLogger::LogRecordedBuffer(
   DisallowGarbageCollection no_gc;
   if (v8_flags.perf_basic_prof_only_functions) {
     CodeKind code_kind = abstract_code->kind(isolate_);
-    if (code_kind != CodeKind::INTERPRETED_FUNCTION &&
-        code_kind != CodeKind::TURBOFAN && code_kind != CodeKind::MAGLEV &&
-        code_kind != CodeKind::BASELINE) {
+    if (!CodeKindIsJSFunction(code_kind)) {
       return;
     }
   }
@@ -238,7 +237,7 @@ void LinuxPerfJitLogger::LogRecordedBuffer(
 
   // We only support non-interpreted functions.
   if (!IsCode(abstract_code, isolate_)) return;
-  Tagged<Code> code = Code::cast(abstract_code);
+  Tagged<Code> code = Cast<Code>(abstract_code);
 
   // Debug info has to be emitted first.
   Handle<SharedFunctionInfo> sfi;
@@ -248,7 +247,7 @@ void LinuxPerfJitLogger::LogRecordedBuffer(
     if (kind != CodeKind::JS_TO_WASM_FUNCTION &&
         kind != CodeKind::WASM_TO_JS_FUNCTION) {
       DCHECK_IMPLIES(IsScript(sfi->script()),
-                     Script::cast(sfi->script())->has_line_ends());
+                     Cast<Script>(sfi->script())->has_line_ends());
       LogWriteDebugInfo(code, sfi);
     }
   }
@@ -312,15 +311,15 @@ base::Vector<const char> GetScriptName(Tagged<Object> maybeScript,
                                        const DisallowGarbageCollection& no_gc) {
   if (IsScript(maybeScript)) {
     Tagged<Object> name_or_url =
-        Script::cast(maybeScript)->GetNameOrSourceURL();
+        Cast<Script>(maybeScript)->GetNameOrSourceURL();
     if (IsSeqOneByteString(name_or_url)) {
-      Tagged<SeqOneByteString> str = SeqOneByteString::cast(name_or_url);
+      Tagged<SeqOneByteString> str = Cast<SeqOneByteString>(name_or_url);
       return {reinterpret_cast<char*>(str->GetChars(no_gc)),
               static_cast<size_t>(str->length())};
     } else if (IsString(name_or_url)) {
       int length;
       *storage =
-          String::cast(name_or_url)
+          Cast<String>(name_or_url)
               ->ToCString(DISALLOW_NULLS, FAST_STRING_TRAVERSAL, &length);
       return {storage->get(), static_cast<size_t>(length)};
     }
@@ -354,7 +353,7 @@ void LinuxPerfJitLogger::LogWriteDebugInfo(Tagged<Code> code,
   PerfJitCodeDebugInfo debug_info;
   uint32_t size = sizeof(debug_info);
 
-  Tagged<ByteArray> source_position_table =
+  Tagged<TrustedByteArray> source_position_table =
       code->SourcePositionTable(isolate_, raw_shared);
   // Compute the entry count and get the names of all scripts.
   // Avoid additional work if the script name is repeated. Multiple script
@@ -428,6 +427,10 @@ void LinuxPerfJitLogger::LogWriteDebugInfo(Tagged<Code> code,
 
 #if V8_ENABLE_WEBASSEMBLY
 void LinuxPerfJitLogger::LogWriteDebugInfo(const wasm::WasmCode* code) {
+  if (code->IsAnonymous()) {
+    return;
+  }
+
   wasm::WasmModuleSourceMap* source_map =
       code->native_module()->GetWasmSourceMap();
   wasm::WireBytesRef code_ref =

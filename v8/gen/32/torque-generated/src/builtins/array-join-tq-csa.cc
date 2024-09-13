@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -493,7 +497,7 @@ TNode<BoolT> CannotUseSameArrayAccessor_JSTypedArray_0(compiler::CodeAssemblerSt
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = UnsafeCast_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver});
-    tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp2 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp0, tmp1});
     tmp3 = IsDetachedBuffer_0(state_, TNode<JSArrayBuffer>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -770,7 +774,7 @@ TNode<String> BufferJoin_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<String> tmp22;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp22 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringRepeat), p_context, p_sep, tmp20);
+    tmp22 = ca_.CallBuiltin<String>(Builtin::kStringRepeat, p_context, p_sep, tmp20);
     ca_.Goto(&block1, tmp22);
   }
 
@@ -1005,7 +1009,7 @@ TNode<Object> ArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<String> tmp28;
   if (block28.is_used()) {
     ca_.Bind(&block28);
-    tmp28 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kStringRepeat), p_context, p_sep, tmp26);
+    tmp28 = ca_.CallBuiltin<String>(Builtin::kStringRepeat, p_context, p_sep, tmp26);
     ca_.Goto(&block1, tmp28);
   }
 
@@ -1095,6 +1099,12 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
   compiler::CodeAssemblerParameterizedLabel<> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block60(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block55(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block52(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1112,22 +1122,22 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block60(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block68(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block69(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block71(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block72(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block73(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block61(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block71(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block77(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -1161,229 +1171,269 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
   TNode<BoolT> tmp7;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = FromConstexpr_ElementsKind_constexpr_FLOAT32_ELEMENTS_0(state_, ElementsKind::FLOAT32_ELEMENTS);
+    tmp6 = FromConstexpr_ElementsKind_constexpr_FLOAT16_ELEMENTS_0(state_, ElementsKind::FLOAT16_ELEMENTS);
     tmp7 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp6});
     ca_.Branch(tmp7, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
   }
 
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    ca_.Goto(&block10, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float32Elements_0)));
+    ca_.Goto(&block10, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float16Elements_0)));
   }
 
   TNode<Int32T> tmp8;
   TNode<BoolT> tmp9;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp8 = FromConstexpr_ElementsKind_constexpr_FLOAT64_ELEMENTS_0(state_, ElementsKind::FLOAT64_ELEMENTS);
+    tmp8 = FromConstexpr_ElementsKind_constexpr_FLOAT32_ELEMENTS_0(state_, ElementsKind::FLOAT32_ELEMENTS);
     tmp9 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp8});
     ca_.Branch(tmp9, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
 
   if (block11.is_used()) {
     ca_.Bind(&block11);
-    ca_.Goto(&block13, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float64Elements_0)));
+    ca_.Goto(&block13, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float32Elements_0)));
   }
 
   TNode<Int32T> tmp10;
   TNode<BoolT> tmp11;
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    tmp10 = FromConstexpr_ElementsKind_constexpr_UINT8_CLAMPED_ELEMENTS_0(state_, ElementsKind::UINT8_CLAMPED_ELEMENTS);
+    tmp10 = FromConstexpr_ElementsKind_constexpr_FLOAT64_ELEMENTS_0(state_, ElementsKind::FLOAT64_ELEMENTS);
     tmp11 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp10});
     ca_.Branch(tmp11, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
   if (block14.is_used()) {
     ca_.Bind(&block14);
-    ca_.Goto(&block16, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8ClampedElements_0)));
+    ca_.Goto(&block16, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float64Elements_0)));
   }
 
   TNode<Int32T> tmp12;
   TNode<BoolT> tmp13;
   if (block15.is_used()) {
     ca_.Bind(&block15);
-    tmp12 = FromConstexpr_ElementsKind_constexpr_BIGUINT64_ELEMENTS_0(state_, ElementsKind::BIGUINT64_ELEMENTS);
+    tmp12 = FromConstexpr_ElementsKind_constexpr_UINT8_CLAMPED_ELEMENTS_0(state_, ElementsKind::UINT8_CLAMPED_ELEMENTS);
     tmp13 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp12});
     ca_.Branch(tmp13, &block17, std::vector<compiler::Node*>{}, &block18, std::vector<compiler::Node*>{});
   }
 
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    ca_.Goto(&block19, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigUint64Elements_0)));
+    ca_.Goto(&block19, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8ClampedElements_0)));
   }
 
   TNode<Int32T> tmp14;
   TNode<BoolT> tmp15;
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    tmp14 = FromConstexpr_ElementsKind_constexpr_BIGINT64_ELEMENTS_0(state_, ElementsKind::BIGINT64_ELEMENTS);
+    tmp14 = FromConstexpr_ElementsKind_constexpr_BIGUINT64_ELEMENTS_0(state_, ElementsKind::BIGUINT64_ELEMENTS);
     tmp15 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp14});
     ca_.Branch(tmp15, &block20, std::vector<compiler::Node*>{}, &block21, std::vector<compiler::Node*>{});
   }
 
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    ca_.Goto(&block22, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigInt64Elements_0)));
+    ca_.Goto(&block22, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigUint64Elements_0)));
   }
 
   TNode<Int32T> tmp16;
   TNode<BoolT> tmp17;
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    tmp16 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT8_ELEMENTS);
+    tmp16 = FromConstexpr_ElementsKind_constexpr_BIGINT64_ELEMENTS_0(state_, ElementsKind::BIGINT64_ELEMENTS);
     tmp17 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp16});
     ca_.Branch(tmp17, &block23, std::vector<compiler::Node*>{}, &block24, std::vector<compiler::Node*>{});
   }
 
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    ca_.Goto(&block25, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8Elements_0)));
+    ca_.Goto(&block25, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigInt64Elements_0)));
   }
 
   TNode<Int32T> tmp18;
   TNode<BoolT> tmp19;
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    tmp18 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT8_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_INT8_ELEMENTS);
+    tmp18 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT8_ELEMENTS);
     tmp19 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp18});
     ca_.Branch(tmp19, &block26, std::vector<compiler::Node*>{}, &block27, std::vector<compiler::Node*>{});
   }
 
   if (block26.is_used()) {
     ca_.Bind(&block26);
-    ca_.Goto(&block28, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int8Elements_0)));
+    ca_.Goto(&block28, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8Elements_0)));
   }
 
   TNode<Int32T> tmp20;
   TNode<BoolT> tmp21;
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    tmp20 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT16_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT16_ELEMENTS);
+    tmp20 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT8_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_INT8_ELEMENTS);
     tmp21 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp20});
     ca_.Branch(tmp21, &block29, std::vector<compiler::Node*>{}, &block30, std::vector<compiler::Node*>{});
   }
 
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    ca_.Goto(&block31, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint16Elements_0)));
+    ca_.Goto(&block31, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int8Elements_0)));
   }
 
   TNode<Int32T> tmp22;
   TNode<BoolT> tmp23;
   if (block30.is_used()) {
     ca_.Bind(&block30);
-    tmp22 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT16_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_INT16_ELEMENTS);
+    tmp22 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT16_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT16_ELEMENTS);
     tmp23 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp22});
     ca_.Branch(tmp23, &block32, std::vector<compiler::Node*>{}, &block33, std::vector<compiler::Node*>{});
   }
 
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    ca_.Goto(&block34, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int16Elements_0)));
+    ca_.Goto(&block34, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint16Elements_0)));
   }
 
   TNode<Int32T> tmp24;
   TNode<BoolT> tmp25;
   if (block33.is_used()) {
     ca_.Bind(&block33);
-    tmp24 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT32_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT32_ELEMENTS);
+    tmp24 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT16_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_INT16_ELEMENTS);
     tmp25 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp24});
     ca_.Branch(tmp25, &block35, std::vector<compiler::Node*>{}, &block36, std::vector<compiler::Node*>{});
   }
 
   if (block35.is_used()) {
     ca_.Bind(&block35);
-    ca_.Goto(&block37, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint32Elements_0)));
+    ca_.Goto(&block37, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int16Elements_0)));
   }
 
   TNode<Int32T> tmp26;
   TNode<BoolT> tmp27;
   if (block36.is_used()) {
     ca_.Bind(&block36);
-    tmp26 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT32_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_INT32_ELEMENTS);
+    tmp26 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT32_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT32_ELEMENTS);
     tmp27 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp26});
     ca_.Branch(tmp27, &block38, std::vector<compiler::Node*>{}, &block39, std::vector<compiler::Node*>{});
   }
 
   if (block38.is_used()) {
     ca_.Bind(&block38);
-    ca_.Goto(&block40, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int32Elements_0)));
+    ca_.Goto(&block40, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint32Elements_0)));
   }
 
   TNode<Int32T> tmp28;
   TNode<BoolT> tmp29;
   if (block39.is_used()) {
     ca_.Bind(&block39);
-    tmp28 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT32_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_FLOAT32_ELEMENTS);
+    tmp28 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_INT32_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_INT32_ELEMENTS);
     tmp29 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp28});
     ca_.Branch(tmp29, &block41, std::vector<compiler::Node*>{}, &block42, std::vector<compiler::Node*>{});
   }
 
   if (block41.is_used()) {
     ca_.Bind(&block41);
-    ca_.Goto(&block43, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float32Elements_0)));
+    ca_.Goto(&block43, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int32Elements_0)));
   }
 
   TNode<Int32T> tmp30;
   TNode<BoolT> tmp31;
   if (block42.is_used()) {
     ca_.Bind(&block42);
-    tmp30 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT64_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_FLOAT64_ELEMENTS);
+    tmp30 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT16_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_FLOAT16_ELEMENTS);
     tmp31 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp30});
     ca_.Branch(tmp31, &block44, std::vector<compiler::Node*>{}, &block45, std::vector<compiler::Node*>{});
   }
 
   if (block44.is_used()) {
     ca_.Bind(&block44);
-    ca_.Goto(&block46, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float64Elements_0)));
+    ca_.Goto(&block46, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float16Elements_0)));
   }
 
   TNode<Int32T> tmp32;
   TNode<BoolT> tmp33;
   if (block45.is_used()) {
     ca_.Bind(&block45);
-    tmp32 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_CLAMPED_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT8_CLAMPED_ELEMENTS);
+    tmp32 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT32_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_FLOAT32_ELEMENTS);
     tmp33 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp32});
     ca_.Branch(tmp33, &block47, std::vector<compiler::Node*>{}, &block48, std::vector<compiler::Node*>{});
   }
 
   if (block47.is_used()) {
     ca_.Bind(&block47);
-    ca_.Goto(&block49, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8ClampedElements_0)));
+    ca_.Goto(&block49, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float32Elements_0)));
   }
 
   TNode<Int32T> tmp34;
   TNode<BoolT> tmp35;
   if (block48.is_used()) {
     ca_.Bind(&block48);
-    tmp34 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGUINT64_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_BIGUINT64_ELEMENTS);
+    tmp34 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_FLOAT64_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_FLOAT64_ELEMENTS);
     tmp35 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp34});
     ca_.Branch(tmp35, &block50, std::vector<compiler::Node*>{}, &block51, std::vector<compiler::Node*>{});
   }
 
   if (block50.is_used()) {
     ca_.Bind(&block50);
-    ca_.Goto(&block52, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigUint64Elements_0)));
+    ca_.Goto(&block52, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Float64Elements_0)));
   }
 
   TNode<Int32T> tmp36;
   TNode<BoolT> tmp37;
   if (block51.is_used()) {
     ca_.Bind(&block51);
-    tmp36 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGINT64_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_BIGINT64_ELEMENTS);
+    tmp36 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_UINT8_CLAMPED_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_UINT8_CLAMPED_ELEMENTS);
     tmp37 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp36});
     ca_.Branch(tmp37, &block53, std::vector<compiler::Node*>{}, &block54, std::vector<compiler::Node*>{});
   }
 
   if (block53.is_used()) {
     ca_.Bind(&block53);
-    ca_.Goto(&block52, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigInt64Elements_0)));
+    ca_.Goto(&block55, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8ClampedElements_0)));
   }
 
+  TNode<Int32T> tmp38;
+  TNode<BoolT> tmp39;
   if (block54.is_used()) {
     ca_.Bind(&block54);
+    tmp38 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGUINT64_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_BIGUINT64_ELEMENTS);
+    tmp39 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp38});
+    ca_.Branch(tmp39, &block56, std::vector<compiler::Node*>{}, &block57, std::vector<compiler::Node*>{});
+  }
+
+  if (block56.is_used()) {
+    ca_.Bind(&block56);
+    ca_.Goto(&block58, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigUint64Elements_0)));
+  }
+
+  TNode<Int32T> tmp40;
+  TNode<BoolT> tmp41;
+  if (block57.is_used()) {
+    ca_.Bind(&block57);
+    tmp40 = FromConstexpr_ElementsKind_constexpr_RAB_GSAB_BIGINT64_ELEMENTS_0(state_, ElementsKind::RAB_GSAB_BIGINT64_ELEMENTS);
+    tmp41 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp40});
+    ca_.Branch(tmp41, &block59, std::vector<compiler::Node*>{}, &block60, std::vector<compiler::Node*>{});
+  }
+
+  if (block59.is_used()) {
+    ca_.Bind(&block59);
+    ca_.Goto(&block58, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_BigInt64Elements_0)));
+  }
+
+  if (block60.is_used()) {
+    ca_.Bind(&block60);
     CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<BuiltinPtr> phi_bb58_8;
+  if (block58.is_used()) {
+    ca_.Bind(&block58, &phi_bb58_8);
+    ca_.Goto(&block55, phi_bb58_8);
+  }
+
+  TNode<BuiltinPtr> phi_bb55_8;
+  if (block55.is_used()) {
+    ca_.Bind(&block55, &phi_bb55_8);
+    ca_.Goto(&block52, phi_bb55_8);
   }
 
   TNode<BuiltinPtr> phi_bb52_8;
@@ -1482,79 +1532,91 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Goto(&block4, phi_bb7_8);
   }
 
-  TNode<Int32T> tmp38;
-  TNode<BoolT> tmp39;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    tmp38 = FromConstexpr_ElementsKind_constexpr_UINT8_ELEMENTS_0(state_, ElementsKind::UINT8_ELEMENTS);
-    tmp39 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp38});
-    ca_.Branch(tmp39, &block56, std::vector<compiler::Node*>{}, &block57, std::vector<compiler::Node*>{});
-  }
-
-  if (block56.is_used()) {
-    ca_.Bind(&block56);
-    ca_.Goto(&block58, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8Elements_0)));
-  }
-
-  TNode<Int32T> tmp40;
-  TNode<BoolT> tmp41;
-  if (block57.is_used()) {
-    ca_.Bind(&block57);
-    tmp40 = FromConstexpr_ElementsKind_constexpr_INT8_ELEMENTS_0(state_, ElementsKind::INT8_ELEMENTS);
-    tmp41 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp40});
-    ca_.Branch(tmp41, &block59, std::vector<compiler::Node*>{}, &block60, std::vector<compiler::Node*>{});
-  }
-
-  if (block59.is_used()) {
-    ca_.Bind(&block59);
-    ca_.Goto(&block61, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int8Elements_0)));
-  }
-
   TNode<Int32T> tmp42;
   TNode<BoolT> tmp43;
-  if (block60.is_used()) {
-    ca_.Bind(&block60);
-    tmp42 = FromConstexpr_ElementsKind_constexpr_UINT16_ELEMENTS_0(state_, ElementsKind::UINT16_ELEMENTS);
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp42 = FromConstexpr_ElementsKind_constexpr_UINT8_ELEMENTS_0(state_, ElementsKind::UINT8_ELEMENTS);
     tmp43 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp42});
     ca_.Branch(tmp43, &block62, std::vector<compiler::Node*>{}, &block63, std::vector<compiler::Node*>{});
   }
 
   if (block62.is_used()) {
     ca_.Bind(&block62);
-    ca_.Goto(&block64, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint16Elements_0)));
+    ca_.Goto(&block64, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint8Elements_0)));
   }
 
   TNode<Int32T> tmp44;
   TNode<BoolT> tmp45;
   if (block63.is_used()) {
     ca_.Bind(&block63);
-    tmp44 = FromConstexpr_ElementsKind_constexpr_INT16_ELEMENTS_0(state_, ElementsKind::INT16_ELEMENTS);
+    tmp44 = FromConstexpr_ElementsKind_constexpr_INT8_ELEMENTS_0(state_, ElementsKind::INT8_ELEMENTS);
     tmp45 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp44});
     ca_.Branch(tmp45, &block65, std::vector<compiler::Node*>{}, &block66, std::vector<compiler::Node*>{});
   }
 
   if (block65.is_used()) {
     ca_.Bind(&block65);
-    ca_.Goto(&block67, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int16Elements_0)));
+    ca_.Goto(&block67, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int8Elements_0)));
   }
 
   TNode<Int32T> tmp46;
   TNode<BoolT> tmp47;
   if (block66.is_used()) {
     ca_.Bind(&block66);
-    tmp46 = FromConstexpr_ElementsKind_constexpr_UINT32_ELEMENTS_0(state_, ElementsKind::UINT32_ELEMENTS);
+    tmp46 = FromConstexpr_ElementsKind_constexpr_UINT16_ELEMENTS_0(state_, ElementsKind::UINT16_ELEMENTS);
     tmp47 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp46});
     ca_.Branch(tmp47, &block68, std::vector<compiler::Node*>{}, &block69, std::vector<compiler::Node*>{});
   }
 
   if (block68.is_used()) {
     ca_.Bind(&block68);
-    ca_.Goto(&block67, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint32Elements_0)));
+    ca_.Goto(&block70, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint16Elements_0)));
   }
 
+  TNode<Int32T> tmp48;
+  TNode<BoolT> tmp49;
   if (block69.is_used()) {
     ca_.Bind(&block69);
+    tmp48 = FromConstexpr_ElementsKind_constexpr_INT16_ELEMENTS_0(state_, ElementsKind::INT16_ELEMENTS);
+    tmp49 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp48});
+    ca_.Branch(tmp49, &block71, std::vector<compiler::Node*>{}, &block72, std::vector<compiler::Node*>{});
+  }
+
+  if (block71.is_used()) {
+    ca_.Bind(&block71);
+    ca_.Goto(&block73, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Int16Elements_0)));
+  }
+
+  TNode<Int32T> tmp50;
+  TNode<BoolT> tmp51;
+  if (block72.is_used()) {
+    ca_.Bind(&block72);
+    tmp50 = FromConstexpr_ElementsKind_constexpr_UINT32_ELEMENTS_0(state_, ElementsKind::UINT32_ELEMENTS);
+    tmp51 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{tmp2}, TNode<Int32T>{tmp50});
+    ca_.Branch(tmp51, &block74, std::vector<compiler::Node*>{}, &block75, std::vector<compiler::Node*>{});
+  }
+
+  if (block74.is_used()) {
+    ca_.Bind(&block74);
+    ca_.Goto(&block73, ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadJoinTypedElement_Uint32Elements_0)));
+  }
+
+  if (block75.is_used()) {
+    ca_.Bind(&block75);
     CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<BuiltinPtr> phi_bb73_8;
+  if (block73.is_used()) {
+    ca_.Bind(&block73, &phi_bb73_8);
+    ca_.Goto(&block70, phi_bb73_8);
+  }
+
+  TNode<BuiltinPtr> phi_bb70_8;
+  if (block70.is_used()) {
+    ca_.Bind(&block70, &phi_bb70_8);
+    ca_.Goto(&block67, phi_bb70_8);
   }
 
   TNode<BuiltinPtr> phi_bb67_8;
@@ -1566,34 +1628,22 @@ TNode<Object> ArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNo
   TNode<BuiltinPtr> phi_bb64_8;
   if (block64.is_used()) {
     ca_.Bind(&block64, &phi_bb64_8);
-    ca_.Goto(&block61, phi_bb64_8);
-  }
-
-  TNode<BuiltinPtr> phi_bb61_8;
-  if (block61.is_used()) {
-    ca_.Bind(&block61, &phi_bb61_8);
-    ca_.Goto(&block58, phi_bb61_8);
-  }
-
-  TNode<BuiltinPtr> phi_bb58_8;
-  if (block58.is_used()) {
-    ca_.Bind(&block58, &phi_bb58_8);
-    ca_.Goto(&block4, phi_bb58_8);
+    ca_.Goto(&block4, phi_bb64_8);
   }
 
   TNode<BuiltinPtr> phi_bb4_8;
-  TNode<String> tmp48;
+  TNode<String> tmp52;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_8);
-    tmp48 = ArrayJoinImpl_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_receiver}, TNode<String>{p_sep}, TNode<Number>{p_lenNumber}, p_useToLocaleString, TNode<Object>{p_locales}, TNode<Object>{p_options}, TNode<BuiltinPtr>{phi_bb4_8});
-    ca_.Goto(&block71);
+    tmp52 = ArrayJoinImpl_JSTypedArray_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_receiver}, TNode<String>{p_sep}, TNode<Number>{p_lenNumber}, p_useToLocaleString, TNode<Object>{p_locales}, TNode<Object>{p_options}, TNode<BuiltinPtr>{phi_bb4_8});
+    ca_.Goto(&block77);
   }
 
-    ca_.Bind(&block71);
-  return TNode<Object>{tmp48};
+    ca_.Bind(&block77);
+  return TNode<Object>{tmp52};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=507&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=511&c=1
 TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, compiler::CodeAssemblerLabel* label_IfUninitialized) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1636,7 +1686,7 @@ TNode<FixedArray> LoadJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<FixedArray>{ca_.UncheckedCast<FixedArray>(tmp3)};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=519&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=523&c=1
 void SetJoinStack_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_stack) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1830,7 +1880,7 @@ TF_BUILTIN(JoinStackPush, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=552&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=556&c=1
 TNode<BoolT> JoinStackPushInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1972,7 +2022,7 @@ TNode<BoolT> JoinStackPushInline_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<BoolT> tmp41;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp39 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kJoinStackPush), p_context, tmp0, p_receiver);
+    tmp39 = ca_.CallBuiltin<Boolean>(Builtin::kJoinStackPush, p_context, tmp0, p_receiver);
     tmp40 = False_0(state_);
     tmp41 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp39}, TNode<HeapObject>{tmp40});
     ca_.Branch(tmp41, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
@@ -2239,7 +2289,7 @@ TF_BUILTIN(JoinStackPop, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=597&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=601&c=1
 void JoinStackPopInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2382,7 +2432,7 @@ void JoinStackPopInline_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   TNode<Object> tmp33;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp33 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kJoinStackPop), p_context, tmp0, p_receiver);
+    tmp33 = ca_.CallBuiltin<Object>(Builtin::kJoinStackPop, p_context, tmp0, p_receiver);
     ca_.Goto(&block20);
   }
 
@@ -2533,7 +2583,7 @@ TF_BUILTIN(ArrayPrototypeToString, CodeStubAssembler) {
   TNode<String> tmp5;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp5 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kObjectToString), parameter0, tmp0);
+    tmp5 = ca_.CallBuiltin<String>(Builtin::kObjectToString, parameter0, tmp0);
     arguments.PopAndReturn(tmp5);
   }
 
@@ -2995,7 +3045,7 @@ TNode<String> ArrayJoinImpl_JSArray_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block8, &phi_bb8_10, &phi_bb8_12, &phi_bb8_13, &phi_bb8_14, &phi_bb8_15, &phi_bb8_16, &phi_bb8_17);
     tmp17 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
     tmp18 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb8_17}, TNode<UintPtrT>{tmp17});
-tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(0)).descriptor(), phi_bb6_11, p_context, p_receiver, phi_bb8_17);
+tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(0)), phi_bb6_11, p_context, p_receiver, phi_bb8_17);
     if ((p_useToLocaleString)) {
       ca_.Goto(&block9, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15, phi_bb8_16);
     } else {
@@ -3013,7 +3063,7 @@ tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<BoolT> tmp22;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13, &phi_bb9_14, &phi_bb9_15, &phi_bb9_16);
-    tmp20 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kConvertToLocaleString), p_context, tmp19, p_locales, p_options);
+    tmp20 = ca_.CallBuiltin<String>(Builtin::kConvertToLocaleString, p_context, tmp19, p_locales, p_options);
     tmp21 = kEmptyString_0(state_);
     tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp20}, TNode<HeapObject>{tmp21});
     ca_.Branch(tmp22, &block12, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16}, &block13, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16});
@@ -3886,6 +3936,29 @@ TF_BUILTIN(LoadJoinTypedElement_Int32Elements_0, CodeStubAssembler) {
   }
 }
 
+TF_BUILTIN(LoadJoinTypedElement_Float16Elements_0, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<JSReceiver> parameter1 = UncheckedParameter<JSReceiver>(Descriptor::kReceiver);
+  USE(parameter1);
+  TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kK);
+  USE(parameter2);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<JSTypedArray> tmp0;
+  TNode<RawPtrT> tmp1;
+  TNode<Numeric> tmp2;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = UnsafeCast_JSTypedArray_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp1 = CodeStubAssembler(state_).LoadJSTypedArrayDataPtr(TNode<JSTypedArray>{tmp0});
+    tmp2 = CodeStubAssembler(state_).LoadFixedTypedArrayElementAsTagged(TNode<RawPtrT>{tmp1}, TNode<UintPtrT>{parameter2}, (KindForArrayType_Float16Elements_0(state_)));
+    CodeStubAssembler(state_).Return(tmp2);
+  }
+}
+
 TF_BUILTIN(LoadJoinTypedElement_Float32Elements_0, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
@@ -4116,7 +4189,7 @@ TF_BUILTIN(LoadJoinTypedElement_Uint32Elements_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=496&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=500&c=10
 TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_sep, TNode<Number> p_lengthNumber, bool p_useToLocaleString, TNode<Object> p_locales, TNode<Object> p_options, TNode<BuiltinPtr> p_initialLoadFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4296,7 +4369,7 @@ TNode<String> ArrayJoinImpl_JSTypedArray_0(compiler::CodeAssemblerState* state_,
     ca_.Bind(&block8, &phi_bb8_10, &phi_bb8_12, &phi_bb8_13, &phi_bb8_14, &phi_bb8_15, &phi_bb8_16, &phi_bb8_17);
     tmp17 = FromConstexpr_uintptr_constexpr_int31_0(state_, 1);
     tmp18 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{phi_bb8_17}, TNode<UintPtrT>{tmp17});
-tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.isolate(),ExampleBuiltinForTorqueFunctionPointerType(0)).descriptor(), phi_bb6_11, p_context, p_receiver, phi_bb8_17);
+tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(0)), phi_bb6_11, p_context, p_receiver, phi_bb8_17);
     if ((p_useToLocaleString)) {
       ca_.Goto(&block9, phi_bb8_12, phi_bb8_13, phi_bb8_14, phi_bb8_15, phi_bb8_16);
     } else {
@@ -4314,7 +4387,7 @@ tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   TNode<BoolT> tmp22;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13, &phi_bb9_14, &phi_bb9_15, &phi_bb9_16);
-    tmp20 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kConvertToLocaleString), p_context, tmp19, p_locales, p_options);
+    tmp20 = ca_.CallBuiltin<String>(Builtin::kConvertToLocaleString, p_context, tmp19, p_locales, p_options);
     tmp21 = kEmptyString_0(state_);
     tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp20}, TNode<HeapObject>{tmp21});
     ca_.Branch(tmp22, &block12, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16}, &block13, std::vector<compiler::Node*>{phi_bb9_12, phi_bb9_13, phi_bb9_14, phi_bb9_15, phi_bb9_16});
@@ -5164,7 +5237,7 @@ tmp19 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallableFor(ca_.i
   return TNode<String>{tmp115};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=509&c=16
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=513&c=16
 TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefined_OR_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5184,7 +5257,7 @@ TorqueStructReference_Undefined_OR_FixedArray_0 NativeContextSlot_Context_Undefi
   return TorqueStructReference_Undefined_OR_FixedArray_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=545&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=549&c=7
 TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_fixedArray, TNode<IntPtrT> p_index, TNode<JSReceiver> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5242,37 +5315,39 @@ TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerSta
   }
 
   TNode<IntPtrT> tmp12;
-  TNode<IntPtrT> tmp13;
-  TNode<FixedArray> tmp14;
-  TNode<Object> tmp15;
-  TNode<IntPtrT> tmp16;
+  TNode<Hole> tmp13;
+  TNode<IntPtrT> tmp14;
+  TNode<FixedArray> tmp15;
+  TNode<Object> tmp16;
   TNode<IntPtrT> tmp17;
-  TNode<UintPtrT> tmp18;
+  TNode<IntPtrT> tmp18;
   TNode<UintPtrT> tmp19;
-  TNode<BoolT> tmp20;
+  TNode<UintPtrT> tmp20;
+  TNode<BoolT> tmp21;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp12 = CodeStubAssembler(state_).CalculateNewElementsCapacity(TNode<IntPtrT>{tmp0});
-    tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp14 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_fixedArray}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp12});
-    std::tie(tmp15, tmp16, tmp17) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp14}).Flatten();
-    tmp18 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{p_index});
-    tmp19 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp17});
-    tmp20 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp18}, TNode<UintPtrT>{tmp19});
-    ca_.Branch(tmp20, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
+    tmp13 = TheHole_0(state_);
+    tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp15 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_fixedArray}, TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp12}, TNode<Hole>{tmp13});
+    std::tie(tmp16, tmp17, tmp18) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp15}).Flatten();
+    tmp19 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{p_index});
+    tmp20 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp18});
+    tmp21 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp19}, TNode<UintPtrT>{tmp20});
+    ca_.Branch(tmp21, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
   }
 
-  TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
-  TNode<Object> tmp23;
-  TNode<IntPtrT> tmp24;
+  TNode<IntPtrT> tmp23;
+  TNode<Object> tmp24;
+  TNode<IntPtrT> tmp25;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp21 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
-    tmp22 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp21});
-    std::tie(tmp23, tmp24) = NewReference_Object_0(state_, TNode<Object>{tmp15}, TNode<IntPtrT>{tmp22}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp23, tmp24}, p_element);
-    ca_.Goto(&block1, tmp14);
+    tmp22 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
+    tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp17}, TNode<IntPtrT>{tmp22});
+    std::tie(tmp24, tmp25) = NewReference_Object_0(state_, TNode<Object>{tmp16}, TNode<IntPtrT>{tmp23}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp24, tmp25}, p_element);
+    ca_.Goto(&block1, tmp15);
   }
 
   if (block26.is_used()) {
@@ -5290,7 +5365,7 @@ TNode<FixedArray> StoreAndGrowFixedArray_JSReceiver_0(compiler::CodeAssemblerSta
   return TNode<FixedArray>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=656&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=660&c=10
 TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5433,7 +5508,7 @@ TNode<Object> CycleProtectedArrayJoin_JSArray_0(compiler::CodeAssemblerState* st
   return TNode<Object>{phi_bb1_6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=712&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-join.tq?l=716&c=10
 TNode<Object> CycleProtectedArrayJoin_JSTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, bool p_useToLocaleString, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Object> p_sepObj, TNode<Object> p_locales, TNode<Object> p_options) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5634,37 +5709,39 @@ TNode<FixedArray> StoreAndGrowFixedArray_Smi_0(compiler::CodeAssemblerState* sta
   }
 
   TNode<IntPtrT> tmp12;
-  TNode<IntPtrT> tmp13;
-  TNode<FixedArray> tmp14;
-  TNode<Object> tmp15;
-  TNode<IntPtrT> tmp16;
+  TNode<Hole> tmp13;
+  TNode<IntPtrT> tmp14;
+  TNode<FixedArray> tmp15;
+  TNode<Object> tmp16;
   TNode<IntPtrT> tmp17;
-  TNode<UintPtrT> tmp18;
+  TNode<IntPtrT> tmp18;
   TNode<UintPtrT> tmp19;
-  TNode<BoolT> tmp20;
+  TNode<UintPtrT> tmp20;
+  TNode<BoolT> tmp21;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp12 = CodeStubAssembler(state_).CalculateNewElementsCapacity(TNode<IntPtrT>{tmp0});
-    tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp14 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_fixedArray}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp12});
-    std::tie(tmp15, tmp16, tmp17) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp14}).Flatten();
-    tmp18 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{p_index});
-    tmp19 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp17});
-    tmp20 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp18}, TNode<UintPtrT>{tmp19});
-    ca_.Branch(tmp20, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
+    tmp13 = TheHole_0(state_);
+    tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp15 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_fixedArray}, TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp12}, TNode<Hole>{tmp13});
+    std::tie(tmp16, tmp17, tmp18) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp15}).Flatten();
+    tmp19 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{p_index});
+    tmp20 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp18});
+    tmp21 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp19}, TNode<UintPtrT>{tmp20});
+    ca_.Branch(tmp21, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
   }
 
-  TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
-  TNode<Object> tmp23;
-  TNode<IntPtrT> tmp24;
+  TNode<IntPtrT> tmp23;
+  TNode<Object> tmp24;
+  TNode<IntPtrT> tmp25;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp21 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
-    tmp22 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp21});
-    std::tie(tmp23, tmp24) = NewReference_Object_0(state_, TNode<Object>{tmp15}, TNode<IntPtrT>{tmp22}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp23, tmp24}, p_element);
-    ca_.Goto(&block1, tmp14);
+    tmp22 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
+    tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp17}, TNode<IntPtrT>{tmp22});
+    std::tie(tmp24, tmp25) = NewReference_Object_0(state_, TNode<Object>{tmp16}, TNode<IntPtrT>{tmp23}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp24, tmp25}, p_element);
+    ca_.Goto(&block1, tmp15);
   }
 
   if (block26.is_used()) {
@@ -5740,37 +5817,39 @@ TNode<FixedArray> StoreAndGrowFixedArray_String_0(compiler::CodeAssemblerState* 
   }
 
   TNode<IntPtrT> tmp12;
-  TNode<IntPtrT> tmp13;
-  TNode<FixedArray> tmp14;
-  TNode<Object> tmp15;
-  TNode<IntPtrT> tmp16;
+  TNode<Hole> tmp13;
+  TNode<IntPtrT> tmp14;
+  TNode<FixedArray> tmp15;
+  TNode<Object> tmp16;
   TNode<IntPtrT> tmp17;
-  TNode<UintPtrT> tmp18;
+  TNode<IntPtrT> tmp18;
   TNode<UintPtrT> tmp19;
-  TNode<BoolT> tmp20;
+  TNode<UintPtrT> tmp20;
+  TNode<BoolT> tmp21;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp12 = CodeStubAssembler(state_).CalculateNewElementsCapacity(TNode<IntPtrT>{tmp0});
-    tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp14 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_fixedArray}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp12});
-    std::tie(tmp15, tmp16, tmp17) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp14}).Flatten();
-    tmp18 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{p_index});
-    tmp19 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp17});
-    tmp20 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp18}, TNode<UintPtrT>{tmp19});
-    ca_.Branch(tmp20, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
+    tmp13 = TheHole_0(state_);
+    tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp15 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_fixedArray}, TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp12}, TNode<Hole>{tmp13});
+    std::tie(tmp16, tmp17, tmp18) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp15}).Flatten();
+    tmp19 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{p_index});
+    tmp20 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp18});
+    tmp21 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp19}, TNode<UintPtrT>{tmp20});
+    ca_.Branch(tmp21, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
   }
 
-  TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
-  TNode<Object> tmp23;
-  TNode<IntPtrT> tmp24;
+  TNode<IntPtrT> tmp23;
+  TNode<Object> tmp24;
+  TNode<IntPtrT> tmp25;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp21 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
-    tmp22 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp21});
-    std::tie(tmp23, tmp24) = NewReference_Object_0(state_, TNode<Object>{tmp15}, TNode<IntPtrT>{tmp22}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp23, tmp24}, p_element);
-    ca_.Goto(&block1, tmp14);
+    tmp22 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
+    tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp17}, TNode<IntPtrT>{tmp22});
+    std::tie(tmp24, tmp25) = NewReference_Object_0(state_, TNode<Object>{tmp16}, TNode<IntPtrT>{tmp23}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp24, tmp25}, p_element);
+    ca_.Goto(&block1, tmp15);
   }
 
   if (block26.is_used()) {

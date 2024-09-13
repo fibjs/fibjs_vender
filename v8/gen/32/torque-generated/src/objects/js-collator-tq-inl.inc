@@ -23,22 +23,22 @@ void TorqueGeneratedJSCollator<D, P>::set_icu_collator(Tagged<Foreign> value, Wr
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSCollator<D, P>::bound_compare() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSCollator<D, P>::bound_compare() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSCollator::bound_compare(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSCollator<D, P>::bound_compare(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundCompareOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSCollator<D, P>::bound_compare(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundCompareOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
 template<class D, class P>
-void TorqueGeneratedJSCollator<D, P>::set_bound_compare(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSCollator<D, P>::set_bound_compare(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundCompareOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundCompareOffset, value, mode);
@@ -65,12 +65,6 @@ void TorqueGeneratedJSCollator<D, P>::set_locale(Tagged<String> value, WriteBarr
   SLOW_DCHECK(IsString(value));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=7&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSCollator<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

@@ -15,7 +15,7 @@ bool IsJSDateTimeFormat_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSDateTimeFormat<JSDateTimeFormat, JSObject>::JSDateTimeFormatVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSDateTimeFormatVerify(JSDateTimeFormat::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSDateTimeFormatVerify(Cast<JSDateTimeFormat>(*this), isolate);
 }
 
 

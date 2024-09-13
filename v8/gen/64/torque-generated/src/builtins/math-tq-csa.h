@@ -12,10 +12,13 @@ void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context>
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=119&c=1
 TNode<Number> MathPowImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_base, TNode<Object> p_exponent);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=440&c=24
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=398&c=1
+TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_arguments, compiler::CodeAssemblerLabel* label_Slow);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=516&c=24
 TorqueStructReference_Smi_0 NativeContextSlot_NativeContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=449&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=525&c=8
 TorqueStructReference_FixedDoubleArray_0 NativeContextSlot_NativeContext_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index);
 
 } // namespace internal

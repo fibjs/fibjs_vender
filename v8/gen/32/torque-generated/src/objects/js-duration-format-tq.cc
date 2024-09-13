@@ -15,7 +15,7 @@ bool IsJSDurationFormat_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSDurationFormat<JSDurationFormat, JSObject>::JSDurationFormatVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSDurationFormatVerify(JSDurationFormat::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSDurationFormatVerify(Cast<JSDurationFormat>(*this), isolate);
 }
 
 

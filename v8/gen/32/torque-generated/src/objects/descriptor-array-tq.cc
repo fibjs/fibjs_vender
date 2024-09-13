@@ -15,12 +15,12 @@ bool IsEnumCache_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedEnumCache<EnumCache, Struct>::EnumCacheVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::EnumCacheVerify(EnumCache::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::EnumCacheVerify(Cast<EnumCache>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=17&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=18&c=1
 bool IsDescriptorArray_NonInline(Tagged<HeapObject> o) {
   return IsDescriptorArray(o);
 }
@@ -29,7 +29,7 @@ bool IsDescriptorArray_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedDescriptorArray<DescriptorArray, HeapObject>::DescriptorArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::DescriptorArrayVerify(DescriptorArray::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::DescriptorArrayVerify(Cast<DescriptorArray>(*this), isolate);
 }
 
 

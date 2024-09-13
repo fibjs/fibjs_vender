@@ -15,7 +15,7 @@ bool IsJSShadowRealm_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSShadowRealm<JSShadowRealm, JSObject>::JSShadowRealmVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSShadowRealmVerify(JSShadowRealm::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSShadowRealmVerify(Cast<JSShadowRealm>(*this), isolate);
 }
 
 

@@ -15,7 +15,7 @@ bool IsSyntheticModule_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSyntheticModule<SyntheticModule, Module>::SyntheticModuleVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SyntheticModuleVerify(SyntheticModule::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SyntheticModuleVerify(Cast<SyntheticModule>(*this), isolate);
 }
 
 

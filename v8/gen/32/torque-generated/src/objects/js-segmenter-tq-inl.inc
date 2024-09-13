@@ -57,12 +57,6 @@ void TorqueGeneratedJSSegmenter<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segmenter.tq?l=13&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSSegmenter<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSSegmenter<D, P>::TorqueGeneratedJSSegmenter(Address ptr)
     : P(ptr) {

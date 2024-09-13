@@ -69,22 +69,22 @@ void TorqueGeneratedJSV8BreakIterator<D, P>::set_unicode_string(Tagged<Foreign> 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_adopt_text() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_adopt_text() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSV8BreakIterator::bound_adopt_text(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_adopt_text(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundAdoptTextOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_adopt_text(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundAdoptTextOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
 template<class D, class P>
-void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_adopt_text(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_adopt_text(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundAdoptTextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundAdoptTextOffset, value, mode);
@@ -92,22 +92,22 @@ void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_adopt_text(Tagged<HeapObj
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_first() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_first() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSV8BreakIterator::bound_first(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_first(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundFirstOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_first(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundFirstOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
 template<class D, class P>
-void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_first(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_first(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundFirstOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundFirstOffset, value, mode);
@@ -115,22 +115,22 @@ void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_first(Tagged<HeapObject> 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_next() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_next() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSV8BreakIterator::bound_next(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_next(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundNextOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_next(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundNextOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
 template<class D, class P>
-void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_next(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_next(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundNextOffset, value, mode);
@@ -138,22 +138,22 @@ void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_next(Tagged<HeapObject> v
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_current() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_current() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSV8BreakIterator::bound_current(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_current(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundCurrentOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_current(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundCurrentOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
 template<class D, class P>
-void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_current(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_current(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundCurrentOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundCurrentOffset, value, mode);
@@ -161,31 +161,25 @@ void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_current(Tagged<HeapObject
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_break_type() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_break_type() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSV8BreakIterator::bound_break_type(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSV8BreakIterator<D, P>::bound_break_type(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundBreakTypeOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bound_break_type(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundBreakTypeOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
 template<class D, class P>
-void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_break_type(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_break_type(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundBreakTypeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundBreakTypeOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=7&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSV8BreakIterator<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

@@ -21,12 +21,6 @@ void TorqueGeneratedJSShadowRealm<D, P>::set_native_context(Tagged<NativeContext
   CONDITIONAL_WRITE_BARRIER(*this, kNativeContextOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=5&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSShadowRealm<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSShadowRealm<D, P>::TorqueGeneratedJSShadowRealm(Address ptr)
     : P(ptr) {

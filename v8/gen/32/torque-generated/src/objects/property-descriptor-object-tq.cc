@@ -15,7 +15,7 @@ bool IsPropertyDescriptorObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedPropertyDescriptorObject<PropertyDescriptorObject, Struct>::PropertyDescriptorObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::PropertyDescriptorObjectVerify(PropertyDescriptorObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::PropertyDescriptorObjectVerify(Cast<PropertyDescriptorObject>(*this), isolate);
 }
 
 

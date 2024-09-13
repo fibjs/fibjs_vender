@@ -15,7 +15,7 @@ bool IsAllocationMemento_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAllocationMemento<AllocationMemento, Struct>::AllocationMementoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AllocationMementoVerify(AllocationMemento::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AllocationMementoVerify(Cast<AllocationMemento>(*this), isolate);
 }
 
 

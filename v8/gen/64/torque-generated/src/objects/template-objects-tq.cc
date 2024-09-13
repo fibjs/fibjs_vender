@@ -15,7 +15,7 @@ bool IsTemplateObjectDescription_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedTemplateObjectDescription<TemplateObjectDescription, Struct>::TemplateObjectDescriptionVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::TemplateObjectDescriptionVerify(TemplateObjectDescription::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::TemplateObjectDescriptionVerify(Cast<TemplateObjectDescription>(*this), isolate);
 }
 
 

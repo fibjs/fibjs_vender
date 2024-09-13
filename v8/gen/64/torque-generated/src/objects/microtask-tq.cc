@@ -15,12 +15,12 @@ bool IsMicrotask_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedMicrotask<Microtask, Struct>::MicrotaskVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::MicrotaskVerify(Microtask::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::MicrotaskVerify(Cast<Microtask>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=11&c=1
 bool IsCallbackTask_NonInline(Tagged<HeapObject> o) {
   return IsCallbackTask(o);
 }
@@ -29,12 +29,12 @@ bool IsCallbackTask_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedCallbackTask<CallbackTask, Microtask>::CallbackTaskVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::CallbackTaskVerify(CallbackTask::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::CallbackTaskVerify(Cast<CallbackTask>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=16&c=1
 bool IsCallableTask_NonInline(Tagged<HeapObject> o) {
   return IsCallableTask(o);
 }
@@ -43,7 +43,7 @@ bool IsCallableTask_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedCallableTask<CallableTask, Microtask>::CallableTaskVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::CallableTaskVerify(CallableTask::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::CallableTaskVerify(Cast<CallableTask>(*this), isolate);
 }
 
 

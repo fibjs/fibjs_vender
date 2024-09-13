@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-foreach-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -179,7 +183,7 @@ TF_BUILTIN(ArrayForEachLoopEagerDeoptContinuation, CodeStubAssembler) {
     ca_.Bind(&block15);
     tmp8 = Undefined_0(state_);
     tmp9 = Undefined_0(state_);
-    tmp10 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayForEachLoopContinuation), parameter0, tmp0, tmp2, parameter3, tmp8, tmp0, tmp4, tmp6, tmp9);
+    tmp10 = ca_.CallBuiltin<Object>(Builtin::kArrayForEachLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp8, tmp0, tmp4, tmp6, tmp9);
     CodeStubAssembler(state_).Return(tmp10);
   }
 }
@@ -286,7 +290,7 @@ TF_BUILTIN(ArrayForEachLoopLazyDeoptContinuation, CodeStubAssembler) {
     ca_.Bind(&block15);
     tmp8 = Undefined_0(state_);
     tmp9 = Undefined_0(state_);
-    tmp10 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayForEachLoopContinuation), parameter0, tmp0, tmp2, parameter3, tmp8, tmp0, tmp4, tmp6, tmp9);
+    tmp10 = ca_.CallBuiltin<Object>(Builtin::kArrayForEachLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp8, tmp0, tmp4, tmp6, tmp9);
     CodeStubAssembler(state_).Return(tmp10);
   }
 }
@@ -731,7 +735,7 @@ TF_BUILTIN(ArrayForEach, CodeStubAssembler) {
     ca_.Bind(&block10);
     tmp15 = Undefined_0(state_);
     tmp16 = Undefined_0(state_);
-    tmp17 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayForEachLoopContinuation), parameter0, tmp1, tmp7, tmp10, tmp15, tmp1, tmp14.value(), tmp2, tmp16);
+    tmp17 = ca_.CallBuiltin<Object>(Builtin::kArrayForEachLoopContinuation, parameter0, tmp1, tmp7, tmp10, tmp15, tmp1, tmp14.value(), tmp2, tmp16);
     arguments.PopAndReturn(tmp17);
   }
 

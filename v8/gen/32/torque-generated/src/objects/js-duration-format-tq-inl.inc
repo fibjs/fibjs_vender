@@ -70,12 +70,6 @@ void TorqueGeneratedJSDurationFormat<D, P>::set_icu_number_formatter(Tagged<Fore
   CONDITIONAL_WRITE_BARRIER(*this, kIcuNumberFormatterOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-duration-format.tq?l=43&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSDurationFormat<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSDurationFormat<D, P>::TorqueGeneratedJSDurationFormat(Address ptr)
     : P(ptr) {

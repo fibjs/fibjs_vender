@@ -15,7 +15,7 @@ bool IsJSListFormat_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSListFormat<JSListFormat, JSObject>::JSListFormatVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSListFormatVerify(JSListFormat::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSListFormatVerify(Cast<JSListFormat>(*this), isolate);
 }
 
 

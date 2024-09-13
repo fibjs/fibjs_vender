@@ -15,7 +15,7 @@ bool IsJSGeneratorObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSGeneratorObject<JSGeneratorObject, JSObject>::JSGeneratorObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSGeneratorObjectVerify(JSGeneratorObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSGeneratorObjectVerify(Cast<JSGeneratorObject>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSAsyncFunctionObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSAsyncFunctionObject<JSAsyncFunctionObject, JSGeneratorObject>::JSAsyncFunctionObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSAsyncFunctionObjectVerify(JSAsyncFunctionObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSAsyncFunctionObjectVerify(Cast<JSAsyncFunctionObject>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsJSAsyncGeneratorObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSAsyncGeneratorObject<JSAsyncGeneratorObject, JSGeneratorObject>::JSAsyncGeneratorObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSAsyncGeneratorObjectVerify(JSAsyncGeneratorObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSAsyncGeneratorObjectVerify(Cast<JSAsyncGeneratorObject>(*this), isolate);
 }
 
 
@@ -57,7 +57,7 @@ bool IsAsyncGeneratorRequest_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAsyncGeneratorRequest<AsyncGeneratorRequest, Struct>::AsyncGeneratorRequestVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AsyncGeneratorRequestVerify(AsyncGeneratorRequest::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AsyncGeneratorRequestVerify(Cast<AsyncGeneratorRequest>(*this), isolate);
 }
 
 

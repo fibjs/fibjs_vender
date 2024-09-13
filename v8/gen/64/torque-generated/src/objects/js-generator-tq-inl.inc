@@ -46,23 +46,23 @@ void TorqueGeneratedJSGeneratorObject<D, P>::set_context(Tagged<Context> value, 
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSGeneratorObject<D, P>::receiver() const {
+Tagged<JSAny> TorqueGeneratedJSGeneratorObject<D, P>::receiver() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSGeneratorObject::receiver(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSGeneratorObject<D, P>::receiver(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kReceiverOffset);
-  DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
+Tagged<JSAny> TorqueGeneratedJSGeneratorObject<D, P>::receiver(PtrComprCageBase cage_base) const {
+  Tagged<JSAny> value = TaggedField<Tagged<JSAny>>::load(cage_base, *this, kReceiverOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
 template<class D, class P>
-void TorqueGeneratedJSGeneratorObject<D, P>::set_receiver(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value) || IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value));
+void TorqueGeneratedJSGeneratorObject<D, P>::set_receiver(Tagged<JSAny> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
   WRITE_FIELD(*this, kReceiverOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kReceiverOffset, value, mode);
 }
@@ -78,14 +78,14 @@ Tagged<Object> TorqueGeneratedJSGeneratorObject<D, P>::input_or_debug_pos() cons
 template<class D, class P>
 Tagged<Object> TorqueGeneratedJSGeneratorObject<D, P>::input_or_debug_pos(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kInputOrDebugPosOffset);
-  DCHECK(IsHeapObject(value) || IsSmi(value));
+  DCHECK(IsSmi(value) || IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSGeneratorObject<D, P>::set_input_or_debug_pos(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
+  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
   WRITE_FIELD(*this, kInputOrDebugPosOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInputOrDebugPosOffset, value, mode);
 }
@@ -139,12 +139,6 @@ void TorqueGeneratedJSGeneratorObject<D, P>::set_parameters_and_registers(Tagged
   CONDITIONAL_WRITE_BARRIER(*this, kParametersAndRegistersOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=5&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSGeneratorObject<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSGeneratorObject<D, P>::TorqueGeneratedJSGeneratorObject(Address ptr)
     : P(ptr) {
@@ -171,12 +165,6 @@ void TorqueGeneratedJSAsyncFunctionObject<D, P>::set_promise(Tagged<JSPromise> v
   SLOW_DCHECK(IsJSPromise(value));
   WRITE_FIELD(*this, kPromiseOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=28&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSAsyncFunctionObject<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>
@@ -220,12 +208,6 @@ void TorqueGeneratedJSAsyncGeneratorObject<D, P>::set_is_awaiting(int value) {
   WRITE_FIELD(*this, kIsAwaitingOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=32&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSAsyncGeneratorObject<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSAsyncGeneratorObject<D, P>::TorqueGeneratedJSAsyncGeneratorObject(Address ptr)
     : P(ptr) {
@@ -233,22 +215,22 @@ inline TorqueGeneratedJSAsyncGeneratorObject<D, P>::TorqueGeneratedJSAsyncGenera
 }
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedAsyncGeneratorRequest<D, P>::next() const {
+Tagged<Union<AsyncGeneratorRequest, Undefined>> TorqueGeneratedAsyncGeneratorRequest<D, P>::next() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedAsyncGeneratorRequest::next(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedAsyncGeneratorRequest<D, P>::next(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kNextOffset);
+Tagged<Union<AsyncGeneratorRequest, Undefined>> TorqueGeneratedAsyncGeneratorRequest<D, P>::next(PtrComprCageBase cage_base) const {
+  Tagged<Union<AsyncGeneratorRequest, Undefined>> value = TaggedField<Tagged<Union<AsyncGeneratorRequest, Undefined>>>::load(cage_base, *this, kNextOffset);
   DCHECK(IsUndefined(value) || IsAsyncGeneratorRequest(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
 template<class D, class P>
-void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_next(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_next(Tagged<Union<AsyncGeneratorRequest, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsAsyncGeneratorRequest(value));
   WRITE_FIELD(*this, kNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextOffset, value, mode);
@@ -278,14 +260,14 @@ Tagged<Object> TorqueGeneratedAsyncGeneratorRequest<D, P>::value() const {
 template<class D, class P>
 Tagged<Object> TorqueGeneratedAsyncGeneratorRequest<D, P>::value(PtrComprCageBase cage_base) const {
   Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kValueOffset);
-  DCHECK(IsHeapObject(value) || IsSmi(value));
+  DCHECK(IsSmi(value) || IsHeapObject(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=43&c=3
 template<class D, class P>
 void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_value(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value) || IsSmi(value));
+  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
@@ -311,12 +293,6 @@ void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_promise(Tagged<JSPromise> v
   SLOW_DCHECK(IsJSPromise(value));
   WRITE_FIELD(*this, kPromiseOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=40&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedAsyncGeneratorRequest<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

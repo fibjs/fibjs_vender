@@ -6,7 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=19&c=1
 bool IsCallSiteInfo_NonInline(Tagged<HeapObject> o) {
   return IsCallSiteInfo(o);
 }
@@ -15,7 +15,7 @@ bool IsCallSiteInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedCallSiteInfo<CallSiteInfo, Struct>::CallSiteInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::CallSiteInfoVerify(CallSiteInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::CallSiteInfoVerify(Cast<CallSiteInfo>(*this), isolate);
 }
 
 

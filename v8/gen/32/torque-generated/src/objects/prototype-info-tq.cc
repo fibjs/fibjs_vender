@@ -15,7 +15,7 @@ bool IsPrototypeInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedPrototypeInfo<PrototypeInfo, Struct>::PrototypeInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::PrototypeInfoVerify(PrototypeInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::PrototypeInfoVerify(Cast<PrototypeInfo>(*this), isolate);
 }
 
 

@@ -15,7 +15,7 @@ bool IsJSProxy_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSProxy<JSProxy, JSReceiver>::JSProxyVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSProxyVerify(JSProxy::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSProxyVerify(Cast<JSProxy>(*this), isolate);
 }
 
 

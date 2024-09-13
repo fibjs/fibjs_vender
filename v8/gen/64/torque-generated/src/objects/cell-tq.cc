@@ -15,7 +15,7 @@ bool IsCell_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedCell<Cell, HeapObject>::CellVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::CellVerify(Cell::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::CellVerify(Cast<Cell>(*this), isolate);
 }
 
 

@@ -15,7 +15,7 @@ bool IsJSRegExpStringIterator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSRegExpStringIterator<JSRegExpStringIterator, JSObject>::JSRegExpStringIteratorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSRegExpStringIteratorVerify(JSRegExpStringIterator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSRegExpStringIteratorVerify(Cast<JSRegExpStringIterator>(*this), isolate);
 }
 
 

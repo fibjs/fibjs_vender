@@ -15,7 +15,7 @@ bool IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(Tagged<HeapObject> o
 
 template <>
 void TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction<JSFunctionOrBoundFunctionOrWrappedFunction, JSObject>::JSFunctionOrBoundFunctionOrWrappedFunctionVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSFunctionOrBoundFunctionOrWrappedFunctionVerify(JSFunctionOrBoundFunctionOrWrappedFunction::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSFunctionOrBoundFunctionOrWrappedFunctionVerify(Cast<JSFunctionOrBoundFunctionOrWrappedFunction>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsJSFunction_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSFunction<JSFunction, JSFunctionOrBoundFunctionOrWrappedFunction>::JSFunctionVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSFunctionVerify(JSFunction::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSFunctionVerify(Cast<JSFunction>(*this), isolate);
 }
 
 
@@ -43,7 +43,7 @@ bool IsJSBoundFunction_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSBoundFunction<JSBoundFunction, JSFunctionOrBoundFunctionOrWrappedFunction>::JSBoundFunctionVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSBoundFunctionVerify(JSBoundFunction::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSBoundFunctionVerify(Cast<JSBoundFunction>(*this), isolate);
 }
 
 
@@ -57,7 +57,7 @@ bool IsJSWrappedFunction_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSWrappedFunction<JSWrappedFunction, JSFunctionOrBoundFunctionOrWrappedFunction>::JSWrappedFunctionVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSWrappedFunctionVerify(JSWrappedFunction::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSWrappedFunctionVerify(Cast<JSWrappedFunction>(*this), isolate);
 }
 
 

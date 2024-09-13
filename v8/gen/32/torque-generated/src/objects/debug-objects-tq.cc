@@ -15,7 +15,7 @@ bool IsBreakPoint_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedBreakPoint<BreakPoint, Struct>::BreakPointVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::BreakPointVerify(BreakPoint::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::BreakPointVerify(Cast<BreakPoint>(*this), isolate);
 }
 
 
@@ -29,7 +29,7 @@ bool IsBreakPointInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedBreakPointInfo<BreakPointInfo, Struct>::BreakPointInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::BreakPointInfoVerify(BreakPointInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::BreakPointInfoVerify(Cast<BreakPointInfo>(*this), isolate);
 }
 
 
@@ -43,12 +43,12 @@ bool IsDebugInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedDebugInfo<DebugInfo, Struct>::DebugInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::DebugInfoVerify(DebugInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::DebugInfoVerify(Cast<DebugInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=62&c=1
 bool IsCoverageInfo_NonInline(Tagged<HeapObject> o) {
   return IsCoverageInfo(o);
 }
@@ -57,12 +57,12 @@ bool IsCoverageInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedCoverageInfo<CoverageInfo, HeapObject>::CoverageInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::CoverageInfoVerify(CoverageInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::CoverageInfoVerify(Cast<CoverageInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=74&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=72&c=1
 bool IsStackFrameInfo_NonInline(Tagged<HeapObject> o) {
   return IsStackFrameInfo(o);
 }
@@ -71,12 +71,12 @@ bool IsStackFrameInfo_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedStackFrameInfo<StackFrameInfo, Struct>::StackFrameInfoVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::StackFrameInfoVerify(StackFrameInfo::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::StackFrameInfoVerify(Cast<StackFrameInfo>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=115&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
 bool IsErrorStackData_NonInline(Tagged<HeapObject> o) {
   return IsErrorStackData(o);
 }
@@ -85,21 +85,7 @@ bool IsErrorStackData_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedErrorStackData<ErrorStackData, Struct>::ErrorStackDataVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ErrorStackDataVerify(ErrorStackData::cast(*this), isolate);
-}
-
-
-#endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=129&c=1
-bool IsPromiseOnStack_NonInline(Tagged<HeapObject> o) {
-  return IsPromiseOnStack(o);
-}
-
-#ifdef VERIFY_HEAP
-
-template <>
-void TorqueGeneratedPromiseOnStack<PromiseOnStack, Struct>::PromiseOnStackVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::PromiseOnStackVerify(PromiseOnStack::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ErrorStackDataVerify(Cast<ErrorStackData>(*this), isolate);
 }
 
 

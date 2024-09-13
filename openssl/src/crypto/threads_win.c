@@ -18,6 +18,9 @@
 
 #if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG) && defined(OPENSSL_SYS_WINDOWS)
 
+#undef _InterlockedAdd64
+int64_t _InterlockedAdd64(int64_t volatile *Addend, int64_t Value);
+
 # ifdef USE_RWLOCK
 typedef struct {
     SRWLOCK lock;

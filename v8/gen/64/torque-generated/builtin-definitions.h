@@ -29,12 +29,18 @@ TFC(ArrayFindLastLoopContinuation, ArrayFindLastLoopContinuation) \
 TFJ(ArrayPrototypeFindLast, kDontAdaptArgumentsSentinel) \
 TFC(ArrayFindLastIndexLoopContinuation, ArrayFindLastIndexLoopContinuation) \
 TFJ(ArrayPrototypeFindLastIndex, kDontAdaptArgumentsSentinel) \
+TFC(FlattenIntoArrayWithoutMapFn, FlattenIntoArrayWithoutMapFn) \
+TFC(FlattenIntoArrayWithMapFn, FlattenIntoArrayWithMapFn) \
+TFJ(ArrayPrototypeFlat, kDontAdaptArgumentsSentinel) \
+TFJ(ArrayPrototypeFlatMap, kDontAdaptArgumentsSentinel) \
 TFJ(ArrayForEachLoopEagerDeoptContinuation, JSParameterCount(4), kReceiver, kCallback, kThisArg, kInitialK, kLength) \
 TFJ(ArrayForEachLoopLazyDeoptContinuation, JSParameterCount(5), kReceiver, kCallback, kThisArg, kInitialK, kLength, kResult) \
 TFC(ArrayForEachLoopContinuation, ArrayForEachLoopContinuation) \
 TFJ(ArrayForEach, kDontAdaptArgumentsSentinel) \
-TFJ(ArrayFromAsyncOnFulfilled, JSParameterCount(1), kReceiver, kResult) \
-TFJ(ArrayFromAsyncOnRejected, JSParameterCount(1), kReceiver, kResult) \
+TFJ(ArrayFromAsyncIterableOnFulfilled, JSParameterCount(1), kReceiver, kResult) \
+TFJ(ArrayFromAsyncIterableOnRejected, JSParameterCount(1), kReceiver, kResult) \
+TFJ(ArrayFromAsyncArrayLikeOnFulfilled, JSParameterCount(1), kReceiver, kResult) \
+TFJ(ArrayFromAsyncArrayLikeOnRejected, JSParameterCount(1), kReceiver, kResult) \
 TFJ(ArrayFromAsync, kDontAdaptArgumentsSentinel) \
 TFJ(ArrayFrom, kDontAdaptArgumentsSentinel) \
 TFJ(ArrayIsArray, JSParameterCount(1), kReceiver, kArg) \
@@ -129,6 +135,7 @@ TFJ(StringPrototypeCharCodeAt, JSParameterCount(1), kReceiver, kPosition) \
 TFJ(StringPrototypeCodePointAt, JSParameterCount(1), kReceiver, kPosition) \
 TFJ(StringPrototypeConcat, kDontAdaptArgumentsSentinel) \
 TFJ(StringConstructor, kDontAdaptArgumentsSentinel) \
+TFJ(StringCreateLazyDeoptContinuation, JSParameterCount(1), kReceiver, kValue) \
 TFC(StringAddConvertLeft, StringAddConvertLeft) \
 TFC(StringAddConvertRight, StringAddConvertRight) \
 TFC(StringCharAt, StringCharAt) \
@@ -169,6 +176,7 @@ TFJ(DataViewPrototypeGetUint16, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetInt16, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetUint32, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetInt32, kDontAdaptArgumentsSentinel) \
+TFJ(DataViewPrototypeGetFloat16, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetFloat32, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetFloat64, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeGetBigUint64, kDontAdaptArgumentsSentinel) \
@@ -179,11 +187,12 @@ TFJ(DataViewPrototypeSetUint16, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetInt16, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetUint32, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetInt32, kDontAdaptArgumentsSentinel) \
+TFJ(DataViewPrototypeSetFloat16, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetFloat32, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetFloat64, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetBigUint64, kDontAdaptArgumentsSentinel) \
 TFJ(DataViewPrototypeSetBigInt64, kDontAdaptArgumentsSentinel) \
-TFJ(FinalizationRegistryConstructor, JSParameterCount(1), kReceiver, kCleanupCallback) \
+TFJ(FinalizationRegistryConstructor, kDontAdaptArgumentsSentinel) \
 TFJ(FinalizationRegistryRegister, kDontAdaptArgumentsSentinel) \
 TFJ(FinalizationRegistryPrototypeCleanupSome, kDontAdaptArgumentsSentinel) \
 TFJ(FunctionPrototypeHasInstance, JSParameterCount(1), kReceiver, kValue) \
@@ -197,6 +206,10 @@ TFC(GetIteratorBaseline, GetIteratorBaseline) \
 TFC(CreateAsyncFromSyncIteratorBaseline, CreateAsyncFromSyncIteratorBaseline) \
 TFC(CallIteratorWithFeedback, CallIteratorWithFeedback) \
 TFJ(IteratorConstructor, JSParameterCount(0), kReceiver) \
+TFJ(IteratorPrototypeGetToStringTag, JSParameterCount(0), kReceiver) \
+TFJ(IteratorPrototypeSetToStringTag, JSParameterCount(1), kReceiver, kValue) \
+TFJ(IteratorPrototypeGetConstructor, JSParameterCount(0), kReceiver) \
+TFJ(IteratorPrototypeSetConstructor, JSParameterCount(1), kReceiver, kValue) \
 TFJ(IteratorFrom, JSParameterCount(1), kReceiver, kObjArg) \
 TFJ(WrapForValidIteratorPrototypeNext, JSParameterCount(0), kReceiver) \
 TFJ(WrapForValidIteratorPrototypeReturn, JSParameterCount(0), kReceiver) \
@@ -241,6 +254,7 @@ TFJ(MathCosh, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathExp, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathExpm1, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathFround, JSParameterCount(1), kReceiver, kX) \
+TFJ(MathF16round, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathImul, JSParameterCount(2), kReceiver, kX, kY) \
 TFJ(MathLog, JSParameterCount(1), kReceiver, kX) \
 TFJ(MathLog1p, JSParameterCount(1), kReceiver, kX) \
@@ -320,6 +334,8 @@ TFJ(PromiseCatchFinally, JSParameterCount(1), kReceiver, kReason) \
 TFJ(PromiseThenFinally, JSParameterCount(1), kReceiver, kValue) \
 TFJ(PromisePrototypeFinally, JSParameterCount(1), kReceiver, kOnFinally) \
 TFC(PromiseResolveThenableJob, PromiseResolveThenableJob) \
+TFJ(GetContinuationPreservedEmbedderData, JSParameterCount(0), kReceiver) \
+TFJ(SetContinuationPreservedEmbedderData, JSParameterCount(1), kReceiver, kData) \
 TFJ(PromiseRace, JSParameterCount(1), kReceiver, kIterable) \
 TFC(PromiseFulfillReactionJob, PromiseFulfillReactionJob) \
 TFC(PromiseRejectReactionJob, PromiseRejectReactionJob) \
@@ -327,6 +343,7 @@ TFJ(PromiseResolveTrampoline, JSParameterCount(1), kReceiver, kValue) \
 TFC(PromiseResolve, PromiseResolve) \
 TFC(ResolvePromise, ResolvePromise) \
 TFJ(PromisePrototypeThen, JSParameterCount(2), kReceiver, kOnFulfilled, kOnRejected) \
+TFJ(PromiseTry, kDontAdaptArgumentsSentinel) \
 TFJ(PromiseWithResolvers, JSParameterCount(0), kReceiver) \
 TFJ(ProxyConstructor, JSParameterCount(2), kReceiver, kTarget, kHandler) \
 TFC(ProxyDeleteProperty, ProxyDeleteProperty) \
@@ -415,6 +432,7 @@ TFJ(StringPrototypeToWellFormed, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeTrim, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeTrimStart, kDontAdaptArgumentsSentinel) \
 TFJ(StringPrototypeTrimEnd, kDontAdaptArgumentsSentinel) \
+TFJ(SuppressedErrorConstructor, kDontAdaptArgumentsSentinel) \
 TFJ(SymbolPrototypeDescriptionGetter, JSParameterCount(0), kReceiver) \
 TFJ(SymbolPrototypeToPrimitive, JSParameterCount(1), kReceiver, kHint) \
 TFJ(SymbolPrototypeToString, JSParameterCount(0), kReceiver) \
@@ -444,7 +462,7 @@ TFJ(TypedArrayPrototypeToReversed, kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeToSorted, kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeValues, kDontAdaptArgumentsSentinel) \
 TFJ(TypedArrayPrototypeWith, JSParameterCount(2), kReceiver, kIndex, kValueArg) \
-TFJ(WeakRefConstructor, JSParameterCount(1), kReceiver, kWeakTarget) \
+TFJ(WeakRefConstructor, kDontAdaptArgumentsSentinel) \
 TFJ(WeakRefDeref, JSParameterCount(0), kReceiver) \
 TFC(NewSloppyArgumentsElements, NewSloppyArgumentsElements) \
 TFC(NewStrictArgumentsElements, NewStrictArgumentsElements) \
@@ -452,6 +470,8 @@ TFC(NewRestArgumentsElements, NewRestArgumentsElements) \
 TFC(FastNewSloppyArguments, FastNewSloppyArguments) \
 TFC(FastNewStrictArguments, FastNewStrictArguments) \
 TFC(FastNewRestArguments, FastNewRestArguments) \
+TFC(StoreCurrentScriptContextSlotBaseline, StoreCurrentScriptContextSlotBaseline) \
+TFC(StoreScriptContextSlotBaseline, StoreScriptContextSlotBaseline) \
 TFC(StringSlowFlatten, StringSlowFlatten) \
 TFC(StringIndexOf, StringIndexOf) \
 TFC(TestTurbofanType, TestTurbofanType) \
@@ -488,8 +508,10 @@ TFC(GallopRight, GallopRight) \
 TFC(ArrayTimSort, ArrayTimSort) \
 TFJ(ArrayPrototypeSort, kDontAdaptArgumentsSentinel) \
 TFC(StringFastLocaleCompare, StringFastLocaleCompare) \
+TFJ(JSToJSWrapperInvalidSig, JSParameterCount(0), kReceiver) \
+TFJ(JSToJSWrapper, kDontAdaptArgumentsSentinel) \
 TFJ(JSToWasmWrapper, kDontAdaptArgumentsSentinel) \
-TFJ(WasmReturnPromiseOnSuspend, kDontAdaptArgumentsSentinel) \
+TFJ(WasmPromising, kDontAdaptArgumentsSentinel) \
 TFC(JSToWasmHandleReturns, JSToWasmHandleReturns) \
 TFC(WasmInt32ToHeapNumber, WasmInt32ToHeapNumber) \
 TFC(WasmFuncRefToJS, WasmFuncRefToJS) \
@@ -504,11 +526,13 @@ TFC(WasmTableGrow, WasmTableGrow) \
 TFC(WasmTableGet, WasmTableGet) \
 TFC(WasmTableSet, WasmTableSet) \
 TFC(WasmTableGetFuncRef, WasmTableGetFuncRef) \
+TFC(WasmFunctionTableGet, WasmFunctionTableGet) \
 TFC(WasmTableSetFuncRef, WasmTableSetFuncRef) \
 TFC(WasmRefFunc, WasmRefFunc) \
 TFC(WasmInternalFunctionCreateExternal, WasmInternalFunctionCreateExternal) \
 TFC(WasmAllocateZeroedFixedArray, WasmAllocateZeroedFixedArray) \
 TFC(WasmAllocateFixedArray, WasmAllocateFixedArray) \
+TFC(WasmLiftoffDeoptFinish, WasmLiftoffDeoptFinish) \
 TFC(WasmThrow, WasmThrow) \
 TFC(WasmRethrow, WasmRethrow) \
 TFC(WasmRethrowExplicitContext, WasmRethrowExplicitContext) \
@@ -523,17 +547,18 @@ TFC(WasmAllocateStructWithRtt, WasmAllocateStructWithRtt) \
 TFC(WasmAllocateArray_Uninitialized, WasmAllocateArray_Uninitialized) \
 TFC(WasmArrayNewSegment, WasmArrayNewSegment) \
 TFC(WasmArrayInitSegment, WasmArrayInitSegment) \
-TFC(WasmArrayCopyWithChecks, WasmArrayCopyWithChecks) \
 TFC(WasmArrayCopy, WasmArrayCopy) \
 TFC(WasmUint32ToNumber, WasmUint32ToNumber) \
 TFC(UintPtr53ToNumber, UintPtr53ToNumber) \
-TFC(WasmAtomicNotify, WasmAtomicNotify) \
 TFC(WasmI32AtomicWait, WasmI32AtomicWait) \
 TFC(WasmI64AtomicWait, WasmI64AtomicWait) \
 TFC(CallRefIC, CallRefIC) \
+TFC(CallIndirectIC, CallIndirectIC) \
 TFC(WasmGetOwnProperty, WasmGetOwnProperty) \
 TFC(WasmTrap, WasmTrap) \
 TFC(ThrowWasmTrapUnreachable, ThrowWasmTrapUnreachable) \
+TFC(WasmTrapHandlerThrowTrap, WasmTrapHandlerThrowTrap) \
+TFC(WasmPropagateException, WasmPropagateException) \
 TFC(ThrowWasmTrapMemOutOfBounds, ThrowWasmTrapMemOutOfBounds) \
 TFC(ThrowWasmTrapUnalignedAccess, ThrowWasmTrapUnalignedAccess) \
 TFC(ThrowWasmTrapDivByZero, ThrowWasmTrapDivByZero) \
@@ -561,13 +586,14 @@ TFC(WasmStringMeasureUtf8, WasmStringMeasureUtf8) \
 TFC(WasmStringMeasureWtf8, WasmStringMeasureWtf8) \
 TFC(WasmStringEncodeWtf8, WasmStringEncodeWtf8) \
 TFC(WasmStringEncodeWtf8Array, WasmStringEncodeWtf8Array) \
+TFC(WasmStringToUtf8Array, WasmStringToUtf8Array) \
 TFC(WasmStringEncodeWtf16, WasmStringEncodeWtf16) \
 TFC(WasmStringEncodeWtf16Array, WasmStringEncodeWtf16Array) \
 TFC(ThrowToLowerCaseCalledOnNull, ThrowToLowerCaseCalledOnNull) \
 TFC(ThrowIndexOfCalledOnNull, ThrowIndexOfCalledOnNull) \
-TFC(ThrowDataViewGetInt32DetachedError, ThrowDataViewGetInt32DetachedError) \
-TFC(ThrowDataViewGetInt32OutOfBounds, ThrowDataViewGetInt32OutOfBounds) \
-TFC(ThrowDataViewGetInt32TypeError, ThrowDataViewGetInt32TypeError) \
+TFC(ThrowDataViewTypeError, ThrowDataViewTypeError) \
+TFC(ThrowDataViewDetachedError, ThrowDataViewDetachedError) \
+TFC(ThrowDataViewOutOfBounds, ThrowDataViewOutOfBounds) \
 TFC(WasmStringConcat, WasmStringConcat) \
 TFC(WasmStringEqual, WasmStringEqual) \
 TFC(WasmStringIsUSVSequence, WasmStringIsUSVSequence) \
@@ -588,21 +614,28 @@ TFC(WasmIntToString, WasmIntToString) \
 TFC(WasmStringToDouble, WasmStringToDouble) \
 TFC(WasmStringFromCodePoint, WasmStringFromCodePoint) \
 TFC(WasmStringHash, WasmStringHash) \
-TFC(WasmExternInternalize, WasmExternInternalize) \
+TFC(WasmAnyConvertExtern, WasmAnyConvertExtern) \
+TFC(WasmFastApiCallTypeCheckAndUpdateIC, WasmFastApiCallTypeCheckAndUpdateIC) \
+TFJ(WebAssemblyStringCast, kDontAdaptArgumentsSentinel) \
+TFJ(WebAssemblyStringTest, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringFromWtf16Array, kDontAdaptArgumentsSentinel) \
-TFJ(WebAssemblyStringFromWtf8Array, kDontAdaptArgumentsSentinel) \
+TFJ(WebAssemblyStringFromUtf8Array, kDontAdaptArgumentsSentinel) \
+TFJ(WebAssemblyStringIntoUtf8Array, kDontAdaptArgumentsSentinel) \
+TFJ(WebAssemblyStringToUtf8Array, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringToWtf16Array, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringFromCharCode, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringFromCodePoint, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringCodePointAt, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringCharCodeAt, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringLength, kDontAdaptArgumentsSentinel) \
+TFJ(WebAssemblyStringMeasureUtf8, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringConcat, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringSubstring, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringEquals, kDontAdaptArgumentsSentinel) \
 TFJ(WebAssemblyStringCompare, kDontAdaptArgumentsSentinel) \
 TFC(LoadJoinElement_GenericElementsAccessor_0, LoadJoinElement_GenericElementsAccessor_0) \
 TFC(LoadJoinTypedElement_Int32Elements_0, LoadJoinTypedElement_Int32Elements_0) \
+TFC(LoadJoinTypedElement_Float16Elements_0, LoadJoinTypedElement_Float16Elements_0) \
 TFC(LoadJoinTypedElement_Float32Elements_0, LoadJoinTypedElement_Float32Elements_0) \
 TFC(LoadJoinTypedElement_Float64Elements_0, LoadJoinTypedElement_Float64Elements_0) \
 TFC(LoadJoinTypedElement_Uint8ClampedElements_0, LoadJoinTypedElement_Uint8ClampedElements_0) \
@@ -624,6 +657,9 @@ TFC(Delete_GenericElementsAccessor_0, Delete_GenericElementsAccessor_0) \
 TFC(LoadTypedElement_Int32Elements_0, LoadTypedElement_Int32Elements_0) \
 TFC(StoreTypedElementNumeric_Int32Elements_0, StoreTypedElementNumeric_Int32Elements_0) \
 TFC(StoreTypedElementJSAny_Int32Elements_0, StoreTypedElementJSAny_Int32Elements_0) \
+TFC(LoadTypedElement_Float16Elements_0, LoadTypedElement_Float16Elements_0) \
+TFC(StoreTypedElementNumeric_Float16Elements_0, StoreTypedElementNumeric_Float16Elements_0) \
+TFC(StoreTypedElementJSAny_Float16Elements_0, StoreTypedElementJSAny_Float16Elements_0) \
 TFC(LoadTypedElement_Float32Elements_0, LoadTypedElement_Float32Elements_0) \
 TFC(StoreTypedElementNumeric_Float32Elements_0, StoreTypedElementNumeric_Float32Elements_0) \
 TFC(StoreTypedElementJSAny_Float32Elements_0, StoreTypedElementJSAny_Float32Elements_0) \

@@ -1,20 +1,14 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=7&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=8&c=3
 template<class D, class P>
-uintptr_t TorqueGeneratedJSSynchronizationPrimitive<D, P>::state() const {
-  uintptr_t value = this->template ReadField<uintptr_t>(kStateOffset);
+uint32_t TorqueGeneratedJSSynchronizationPrimitive<D, P>::state() const {
+  uint32_t value = this->template ReadField<uint32_t>(kStateOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=7&c=28
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=8&c=3
 template<class D, class P>
-void TorqueGeneratedJSSynchronizationPrimitive<D, P>::set_state(uintptr_t value) {
-  this->template WriteField<uintptr_t>(kStateOffset, value);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=5&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSSynchronizationPrimitive<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
+void TorqueGeneratedJSSynchronizationPrimitive<D, P>::set_state(uint32_t value) {
+  this->template WriteField<uint32_t>(kStateOffset, value);
 }
 
 template<class D, class P>
@@ -35,34 +29,22 @@ void TorqueGeneratedJSAtomicsMutex<D, P>::set_owner_thread_id(int32_t value) {
   this->template WriteField<int32_t>(kOwnerThreadIdOffset, value);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=14&c=28
-template<class D, class P>
-uint32_t TorqueGeneratedJSAtomicsMutex<D, P>::optional_padding() const {
-  uint32_t value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
-  return value;
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=14&c=28
-template<class D, class P>
-void TorqueGeneratedJSAtomicsMutex<D, P>::set_optional_padding(uint32_t value) {
-  this->template WriteField<uint32_t>(kOptionalPaddingOffset, value);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=11&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSAtomicsMutex<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSAtomicsMutex<D, P>::TorqueGeneratedJSAtomicsMutex(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSAtomicsMutex_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=16&c=28
 template<class D, class P>
-Tagged<D> TorqueGeneratedJSAtomicsCondition<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
+uint32_t TorqueGeneratedJSAtomicsCondition<D, P>::optional_padding() const {
+  uint32_t value = this->template ReadField<uint32_t>(kOptionalPaddingOffset);
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-atomics-synchronization.tq?l=16&c=28
+template<class D, class P>
+void TorqueGeneratedJSAtomicsCondition<D, P>::set_optional_padding(uint32_t value) {
+  this->template WriteField<uint32_t>(kOptionalPaddingOffset, value);
 }
 
 template<class D, class P>

@@ -80,12 +80,6 @@ void TorqueGeneratedJSPluralRules<D, P>::set_icu_number_formatter(Tagged<Foreign
   CONDITIONAL_WRITE_BARRIER(*this, kIcuNumberFormatterOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=12&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSPluralRules<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSPluralRules<D, P>::TorqueGeneratedJSPluralRules(Address ptr)
     : P(ptr) {

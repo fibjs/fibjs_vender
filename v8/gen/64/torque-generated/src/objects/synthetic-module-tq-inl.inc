@@ -67,12 +67,6 @@ void TorqueGeneratedSyntheticModule<D, P>::set_evaluation_steps(Tagged<Foreign> 
   CONDITIONAL_WRITE_BARRIER(*this, kEvaluationStepsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=5&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedSyntheticModule<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedSyntheticModule<D, P>::TorqueGeneratedSyntheticModule(Address ptr)
     : P(ptr) {

@@ -251,7 +251,7 @@ class GlobalHandleVector {
     bool operator==(const Iterator& that) const { return it_ == that.it_; }
     bool operator!=(const Iterator& that) const { return it_ != that.it_; }
 
-    Tagged<T> raw() { return T::cast(Tagged<Object>(*it_)); }
+    Tagged<T> raw() { return Cast<T>(Tagged<Object>(*it_)); }
 
    private:
     std::vector<Address, StrongRootAllocator<Address>>::iterator it_;
@@ -266,6 +266,7 @@ class GlobalHandleVector {
   size_t size() const { return locations_.size(); }
   bool empty() const { return locations_.empty(); }
 
+  void Reserve(size_t size) { locations_.reserve(size); }
   void Push(Tagged<T> val) { locations_.push_back(val.ptr()); }
   // Handles into the GlobalHandleVector become invalid when they are removed,
   // so "pop" returns a raw object rather than a handle.

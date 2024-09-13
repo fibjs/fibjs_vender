@@ -15,7 +15,7 @@ bool IsJSDisplayNames_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSDisplayNames<JSDisplayNames, JSObject>::JSDisplayNamesVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSDisplayNamesVerify(JSDisplayNames::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSDisplayNamesVerify(Cast<JSDisplayNames>(*this), isolate);
 }
 
 

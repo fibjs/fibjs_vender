@@ -6,7 +6,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=5&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=1
 bool IsPropertyCell_NonInline(Tagged<HeapObject> o) {
   return IsPropertyCell(o);
 }
@@ -15,7 +15,21 @@ bool IsPropertyCell_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedPropertyCell<PropertyCell, HeapObject>::PropertyCellVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::PropertyCellVerify(PropertyCell::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::PropertyCellVerify(Cast<PropertyCell>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=15&c=1
+bool IsConstTrackingLetCell_NonInline(Tagged<HeapObject> o) {
+  return IsConstTrackingLetCell(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedConstTrackingLetCell<ConstTrackingLetCell, HeapObject>::ConstTrackingLetCellVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::ConstTrackingLetCellVerify(Cast<ConstTrackingLetCell>(*this), isolate);
 }
 
 

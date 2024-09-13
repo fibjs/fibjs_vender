@@ -21,74 +21,67 @@ class TorqueGeneratedWeakCell : public P {
 
   // Torque type: (class Undefined | class JSFinalizationRegistry)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=22&c=3
-  inline Tagged<HeapObject> finalization_registry() const;
+  inline Tagged<Union<JSFinalizationRegistry, Undefined>> finalization_registry() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=22&c=3
-  inline Tagged<HeapObject> finalization_registry(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFinalizationRegistry, Undefined>> finalization_registry(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=22&c=3
-  inline void set_finalization_registry(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_finalization_registry(Tagged<Union<JSFinalizationRegistry, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | class Symbol | class Undefined)
+  // Torque type: (class Symbol | class Undefined | class JSReceiver)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=23&c=3
-  inline Tagged<HeapObject> target() const;
+  inline Tagged<Union<JSReceiver, Symbol, Undefined>> target() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=23&c=3
-  inline Tagged<HeapObject> target(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSReceiver, Symbol, Undefined>> target(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=23&c=3
-  inline void set_target(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_target(Tagged<Union<JSReceiver, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (class JSReceiver | class Symbol | class Undefined)
+  // Torque type: (class Symbol | class Undefined | class JSReceiver)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=24&c=3
-  inline Tagged<HeapObject> unregister_token() const;
+  inline Tagged<Union<JSReceiver, Symbol, Undefined>> unregister_token() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=24&c=3
-  inline Tagged<HeapObject> unregister_token(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSReceiver, Symbol, Undefined>> unregister_token(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=24&c=3
-  inline void set_unregister_token(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_unregister_token(Tagged<Union<JSReceiver, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: JSAny
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=25&c=3
-  inline Tagged<Object> holdings() const;
+  inline Tagged<JSAny> holdings() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=25&c=3
-  inline Tagged<Object> holdings(PtrComprCageBase cage_base) const;
+  inline Tagged<JSAny> holdings(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=25&c=3
-  inline void set_holdings(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_holdings(Tagged<JSAny> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class WeakCell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=29&c=3
-  inline Tagged<HeapObject> prev() const;
+  inline Tagged<Union<Undefined, WeakCell>> prev() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=29&c=3
-  inline Tagged<HeapObject> prev(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Undefined, WeakCell>> prev(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=29&c=3
-  inline void set_prev(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prev(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class WeakCell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=30&c=3
-  inline Tagged<HeapObject> next() const;
+  inline Tagged<Union<Undefined, WeakCell>> next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=30&c=3
-  inline Tagged<HeapObject> next(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Undefined, WeakCell>> next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=30&c=3
-  inline void set_next(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_next(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class WeakCell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=38&c=3
-  inline Tagged<HeapObject> key_list_prev() const;
+  inline Tagged<Union<Undefined, WeakCell>> key_list_prev() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=38&c=3
-  inline Tagged<HeapObject> key_list_prev(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Undefined, WeakCell>> key_list_prev(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=38&c=3
-  inline void set_key_list_prev(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_key_list_prev(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class WeakCell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=39&c=3
-  inline Tagged<HeapObject> key_list_next() const;
+  inline Tagged<Union<Undefined, WeakCell>> key_list_next() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=39&c=3
-  inline Tagged<HeapObject> key_list_next(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Undefined, WeakCell>> key_list_next(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=39&c=3
-  inline void set_key_list_next(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=21&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_key_list_next(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(WeakCell)
 
@@ -182,27 +175,27 @@ class TorqueGeneratedJSFinalizationRegistry : public P {
 
   // Torque type: Callable
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=11&c=3
-  inline Tagged<JSReceiver> cleanup() const;
+  inline Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> cleanup() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=11&c=3
-  inline Tagged<JSReceiver> cleanup(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> cleanup(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=11&c=3
-  inline void set_cleanup(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cleanup(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class WeakCell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=12&c=3
-  inline Tagged<HeapObject> active_cells() const;
+  inline Tagged<Union<Undefined, WeakCell>> active_cells() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=12&c=3
-  inline Tagged<HeapObject> active_cells(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Undefined, WeakCell>> active_cells(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=12&c=3
-  inline void set_active_cells(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_active_cells(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class WeakCell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=13&c=3
-  inline Tagged<HeapObject> cleared_cells() const;
+  inline Tagged<Union<Undefined, WeakCell>> cleared_cells() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=13&c=3
-  inline Tagged<HeapObject> cleared_cells(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Undefined, WeakCell>> cleared_cells(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=13&c=3
-  inline void set_cleared_cells(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cleared_cells(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=14&c=3
   inline Tagged<Object> key_map() const;
@@ -213,23 +206,16 @@ class TorqueGeneratedJSFinalizationRegistry : public P {
 
   // Torque type: (class Undefined | class JSFinalizationRegistry)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=17&c=3
-  inline Tagged<HeapObject> next_dirty() const;
+  inline Tagged<Union<JSFinalizationRegistry, Undefined>> next_dirty() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=17&c=3
-  inline Tagged<HeapObject> next_dirty(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSFinalizationRegistry, Undefined>> next_dirty(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=17&c=3
-  inline void set_next_dirty(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_next_dirty(Tagged<Union<JSFinalizationRegistry, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=18&c=3
   inline int flags() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=18&c=3
   inline void set_flags(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=9&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(JSFinalizationRegistry)
 
@@ -298,20 +284,13 @@ class TorqueGeneratedJSWeakRef : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSWeakRef<D,P>;
 
-  // Torque type: (class JSReceiver | class Symbol | class Undefined)
+  // Torque type: (class Symbol | class Undefined | class JSReceiver)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=43&c=3
-  inline Tagged<HeapObject> target() const;
+  inline Tagged<Union<JSReceiver, Symbol, Undefined>> target() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=43&c=3
-  inline Tagged<HeapObject> target(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSReceiver, Symbol, Undefined>> target(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=43&c=3
-  inline void set_target(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=42&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_target(Tagged<Union<JSReceiver, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSWeakRef)
 

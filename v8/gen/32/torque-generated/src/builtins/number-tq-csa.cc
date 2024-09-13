@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/number-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -549,7 +553,7 @@ TNode<Uint32T> FromConstexpr_Operation_constexpr_kGreaterThanOrEqual_0(compiler:
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=56&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=55&c=1
 TNode<Number> ThisNumberValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -570,7 +574,7 @@ TNode<Number> ThisNumberValue_0(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=63&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=62&c=1
 TNode<Uint8T> ToCharCode_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_input) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -626,7 +630,7 @@ TNode<Uint8T> ToCharCode_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> 
   return TNode<Uint8T>{phi_bb8_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=70&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=69&c=1
 TNode<String> IntToDecimalStringImpl_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_x, TNode<RawPtrT> p_log10OffsetsTable, bool p_isPositive) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -890,7 +894,7 @@ TNode<String> IntToDecimalStringImpl_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<String>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=105&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=104&c=1
 TNode<String> IntToDecimalString_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -996,7 +1000,7 @@ TNode<String> IntToDecimalString_0(compiler::CodeAssemblerState* state_, TNode<I
   return TNode<String>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=126&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=125&c=1
 TNode<String> IntToString_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_x, TNode<Uint32T> p_radix) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1903,7 +1907,7 @@ TF_BUILTIN(NumberParseFloat, CodeStubAssembler) {
   TNode<String> tmp10;
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    tmp10 = ca_.CallStub<String>(Builtins::CallableFor(ca_.isolate(), Builtin::kToString), parameter0, parameter1);
+    tmp10 = ca_.CallBuiltin<String>(Builtin::kToString, parameter0, parameter1);
     ca_.Goto(&block2, tmp10);
   }
 
@@ -2251,12 +2255,12 @@ TF_BUILTIN(NumberParseInt, CodeStubAssembler) {
   TNode<Number> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ca_.CallStub<Number>(Builtins::CallableFor(ca_.isolate(), Builtin::kParseInt), parameter0, parameter1, parameter2);
+    tmp0 = ca_.CallBuiltin<Number>(Builtin::kParseInt, parameter0, parameter1, parameter2);
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=386&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=385&c=1
 TNode<Object> ToNumericOrPrimitive_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2282,14 +2286,14 @@ TNode<Object> ToNumericOrPrimitive_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Numeric> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp2 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, ca_.UncheckedCast<Object>(p_value));
+    tmp2 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, ca_.UncheckedCast<Object>(p_value));
     ca_.Goto(&block1, tmp2);
   }
 
   TNode<Object> tmp3;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp3 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonPrimitiveToPrimitive_Default), p_context, tmp0);
+    tmp3 = ca_.CallBuiltin<Object>(Builtin::kNonPrimitiveToPrimitive_Default, p_context, tmp0);
     ca_.Goto(&block1, tmp3);
   }
 
@@ -2840,7 +2844,7 @@ TF_BUILTIN(Add, CodeStubAssembler) {
   TNode<Numeric> tmp49;
   if (block83.is_used()) {
     ca_.Bind(&block83, &phi_bb83_3, &phi_bb83_4, &phi_bb83_5, &phi_bb83_7);
-    tmp49 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), parameter0, phi_bb83_3);
+    tmp49 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, parameter0, phi_bb83_3);
     ca_.Goto(&block11, tmp49, phi_bb83_4);
   }
 
@@ -2894,7 +2898,7 @@ TF_BUILTIN(Add, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=500&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=499&c=1
 void UnaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Number, compiler::TypedCodeAssemblerVariable<Number>* label_Number_parameter_0, compiler::CodeAssemblerLabel* label_BigInt, compiler::TypedCodeAssemblerVariable<BigInt>* label_BigInt_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2963,7 +2967,7 @@ void UnaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, 
   TNode<Numeric> tmp5;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_2, &phi_bb13_3);
-    tmp5 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, phi_bb13_2);
+    tmp5 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, phi_bb13_2);
     ca_.Goto(&block5, tmp5);
   }
 
@@ -2982,7 +2986,7 @@ void UnaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, 
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=520&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=519&c=1
 void UnaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Smi, compiler::TypedCodeAssemblerVariable<Smi>* label_Smi_parameter_0, compiler::CodeAssemblerLabel* label_HeapNumber, compiler::TypedCodeAssemblerVariable<HeapNumber>* label_HeapNumber_parameter_0, compiler::CodeAssemblerLabel* label_BigInt, compiler::TypedCodeAssemblerVariable<BigInt>* label_BigInt_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3075,7 +3079,7 @@ void UnaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, 
   TNode<Numeric> tmp7;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_2, &phi_bb18_3);
-    tmp7 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, phi_bb18_2);
+    tmp7 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, phi_bb18_2);
     ca_.Goto(&block6, tmp7);
   }
 
@@ -3094,7 +3098,7 @@ void UnaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, 
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=543&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=542&c=1
 void BinaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_leftVal, TNode<Object> p_rightVal, compiler::CodeAssemblerLabel* label_Number, compiler::TypedCodeAssemblerVariable<Number>* label_Number_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Number_parameter_1, compiler::CodeAssemblerLabel* label_AtLeastOneBigInt, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_0, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3230,7 +3234,7 @@ void BinaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context,
   TNode<Numeric> tmp9;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_3, &phi_bb23_4, &phi_bb23_5);
-    tmp9 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, phi_bb23_3);
+    tmp9 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, phi_bb23_3);
     ca_.Goto(&block6, tmp9, phi_bb23_4);
   }
 
@@ -3274,7 +3278,7 @@ void BinaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context,
   TNode<Numeric> tmp12;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_3, &phi_bb7_4);
-    tmp12 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, phi_bb7_4);
+    tmp12 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, phi_bb7_4);
     ca_.Goto(&block6, phi_bb7_3, tmp12);
   }
 
@@ -3302,7 +3306,7 @@ void BinaryOp1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context,
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=586&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=585&c=1
 void BinaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_leftVal, TNode<Object> p_rightVal, compiler::CodeAssemblerLabel* label_Smis, compiler::TypedCodeAssemblerVariable<Smi>* label_Smis_parameter_0, compiler::TypedCodeAssemblerVariable<Smi>* label_Smis_parameter_1, compiler::CodeAssemblerLabel* label_Float64s, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64s_parameter_0, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64s_parameter_1, compiler::CodeAssemblerLabel* label_AtLeastOneBigInt, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_0, compiler::TypedCodeAssemblerVariable<Numeric>* label_AtLeastOneBigInt_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3586,7 +3590,7 @@ void BinaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context,
   TNode<Numeric> tmp25;
   if (block44.is_used()) {
     ca_.Bind(&block44, &phi_bb44_3, &phi_bb44_4, &phi_bb44_5);
-    tmp25 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, phi_bb44_3);
+    tmp25 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, phi_bb44_3);
     ca_.Goto(&block7, tmp25, phi_bb44_4);
   }
 
@@ -3630,7 +3634,7 @@ void BinaryOp2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context,
   TNode<Numeric> tmp28;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_3, &phi_bb8_4);
-    tmp28 = ca_.CallStub<Numeric>(Builtins::CallableFor(ca_.isolate(), Builtin::kNonNumberToNumeric), p_context, phi_bb8_4);
+    tmp28 = ca_.CallBuiltin<Numeric>(Builtin::kNonNumberToNumeric, p_context, phi_bb8_4);
     ca_.Goto(&block7, phi_bb8_3, tmp28);
   }
 
@@ -3820,7 +3824,7 @@ TF_BUILTIN(Multiply, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=681&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=680&c=1
 TNode<Int32T> kMinimumDividend_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -4155,13 +4159,9 @@ TF_BUILTIN(Exponentiate, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp6);
   }
 
-  TNode<Uint32T> tmp7;
-  TNode<Smi> tmp8;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp7 = FromConstexpr_Operation_constexpr_kExponentiate_0(state_, Operation::kExponentiate);
-    tmp8 = SmiTag_Operation_0(state_, TNode<Uint32T>{tmp7});
-    CodeStubAssembler(state_).TailCallRuntime(Runtime::kBigIntBinaryOp, parameter0, tmp4.value(), tmp5.value(), tmp8);
+    CodeStubAssembler(state_).TailCallRuntime(Runtime::kBigIntExponentiate, parameter0, tmp4.value(), tmp5.value());
   }
 }
 
@@ -4695,7 +4695,7 @@ TF_BUILTIN(StrictEqual, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=59&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=58&c=10
 TNode<Number> UnsafeCast_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4714,7 +4714,7 @@ TNode<Number> UnsafeCast_Number_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=94&c=6
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=93&c=6
 TorqueStructReference_char8_0 UnsafeConstCast_char8_0(compiler::CodeAssemblerState* state_, TorqueStructReference_char8_0 p_r) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4734,7 +4734,7 @@ TorqueStructReference_char8_0 UnsafeConstCast_char8_0(compiler::CodeAssemblerSta
   return TorqueStructReference_char8_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=148&c=36
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=147&c=36
 TNode<Int32T> Convert_int32_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4753,7 +4753,7 @@ TNode<Int32T> Convert_int32_constexpr_IntegerLiteral_0(compiler::CodeAssemblerSt
   return TNode<Int32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=739&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/number.tq?l=750&c=21
 TNode<Smi> SmiTag_Operation_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

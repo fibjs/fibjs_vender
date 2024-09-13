@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-from-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
@@ -476,7 +480,7 @@ TF_BUILTIN(ArrayFrom, CodeStubAssembler) {
     ca_.Bind(&block43, &phi_bb43_10, &phi_bb43_16, &phi_bb43_19);
     compiler::CodeAssemblerExceptionHandlerLabel catch54__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch54__label);
-    tmp53 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), parameter0, phi_bb26_12, phi_bb43_16, phi_bb43_19);
+    tmp53 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, phi_bb26_12, phi_bb43_16, phi_bb43_19);
     }
     if (catch54__label.is_used()) {
       compiler::CodeAssemblerLabel catch54_skip(&ca_);
@@ -639,7 +643,7 @@ TF_BUILTIN(ArrayFrom, CodeStubAssembler) {
   TNode<Smi> tmp76;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_10, &phi_bb66_13, &phi_bb66_14, &phi_bb66_16);
-    tmp74 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), parameter0, phi_bb66_13, phi_bb66_14, phi_bb66_16);
+    tmp74 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, phi_bb66_13, phi_bb66_14, phi_bb66_16);
     tmp75 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp76 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb66_14}, TNode<Smi>{tmp75});
     ca_.Goto(&block63, phi_bb66_10, phi_bb66_13, tmp76);

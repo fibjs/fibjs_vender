@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-copywithin-tq-csa.h"
 #include "torque-generated/src/builtins/array-at-tq-csa.h"
@@ -291,7 +295,7 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   TNode<BoolT> tmp37;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_9, &phi_bb8_11, &phi_bb8_14);
-    tmp35 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), parameter0, tmp0, phi_bb8_11);
+    tmp35 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, parameter0, tmp0, phi_bb8_11);
     tmp36 = True_0(state_);
     tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp35}, TNode<HeapObject>{tmp36});
     ca_.Branch(tmp37, &block11, std::vector<compiler::Node*>{phi_bb8_9, phi_bb8_11, phi_bb8_14}, &block12, std::vector<compiler::Node*>{phi_bb8_9, phi_bb8_11, phi_bb8_14});
@@ -305,7 +309,7 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_9, &phi_bb11_11, &phi_bb11_14);
     tmp38 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Object>{phi_bb11_11});
-    tmp39 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), parameter0, tmp0, phi_bb11_9, tmp38);
+    tmp39 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, parameter0, tmp0, phi_bb11_9, tmp38);
     ca_.Goto(&block13, phi_bb11_9, phi_bb11_11, phi_bb11_14);
   }
 
@@ -317,7 +321,7 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_9, &phi_bb12_11, &phi_bb12_14);
     tmp40 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp41 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), parameter0, tmp0, phi_bb12_9, tmp40);
+    tmp41 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, parameter0, tmp0, phi_bb12_9, tmp40);
     ca_.Goto(&block13, phi_bb12_9, phi_bb12_11, phi_bb12_14);
   }
 

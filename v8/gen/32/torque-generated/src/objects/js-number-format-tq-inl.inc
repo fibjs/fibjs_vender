@@ -46,31 +46,25 @@ void TorqueGeneratedJSNumberFormat<D, P>::set_icu_number_formatter(Tagged<Foreig
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSNumberFormat<D, P>::bound_format() const {
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSNumberFormat<D, P>::bound_format() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSNumberFormat::bound_format(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
 template<class D, class P>
-Tagged<HeapObject> TorqueGeneratedJSNumberFormat<D, P>::bound_format(PtrComprCageBase cage_base) const {
-  Tagged<HeapObject> value = TaggedField<Tagged<HeapObject>>::load(cage_base, *this, kBoundFormatOffset);
+Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSNumberFormat<D, P>::bound_format(PtrComprCageBase cage_base) const {
+  Tagged<Union<JSFunction, Undefined>> value = TaggedField<Tagged<Union<JSFunction, Undefined>>>::load(cage_base, *this, kBoundFormatOffset);
   DCHECK(IsUndefined(value) || IsJSFunction(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=11&c=3
 template<class D, class P>
-void TorqueGeneratedJSNumberFormat<D, P>::set_bound_format(Tagged<HeapObject> value, WriteBarrierMode mode) {
+void TorqueGeneratedJSNumberFormat<D, P>::set_bound_format(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
   SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
   WRITE_FIELD(*this, kBoundFormatOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundFormatOffset, value, mode);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-number-format.tq?l=7&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSNumberFormat<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
 }
 
 template<class D, class P>

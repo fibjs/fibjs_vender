@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-filter-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
@@ -218,7 +222,7 @@ TF_BUILTIN(ArrayFilterLoopEagerDeoptContinuation, CodeStubAssembler) {
   TNode<Object> tmp12;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp12 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayFilterLoopContinuation), parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp6, tmp10, tmp8);
+    tmp12 = ca_.CallBuiltin<Object>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp6, tmp10, tmp8);
     CodeStubAssembler(state_).Return(tmp12);
   }
 }
@@ -376,7 +380,7 @@ TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation, CodeStubAssembler) {
   TNode<Number> tmp15;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp13 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), parameter0, tmp4, tmp8, parameter7);
+    tmp13 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, tmp4, tmp8, parameter7);
     tmp14 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp15 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{tmp8}, TNode<Number>{tmp14});
     ca_.Goto(&block26, tmp15);
@@ -390,7 +394,7 @@ TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation, CodeStubAssembler) {
     ca_.Bind(&block26, &phi_bb26_14);
     tmp16 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp17 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{tmp6}, TNode<Number>{tmp16});
-    tmp18 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayFilterLoopContinuation), parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp17, tmp10, phi_bb26_14);
+    tmp18 = ca_.CallBuiltin<Object>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp17, tmp10, phi_bb26_14);
     CodeStubAssembler(state_).Return(tmp18);
   }
 }
@@ -472,7 +476,7 @@ TF_BUILTIN(ArrayFilterLoopContinuation, CodeStubAssembler) {
   TNode<Number> tmp9;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_9, &phi_bb7_10);
-    tmp7 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), parameter0, parameter4, phi_bb7_9, tmp4);
+    tmp7 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, parameter4, phi_bb7_9, tmp4);
     tmp8 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp9 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb7_9}, TNode<Number>{tmp8});
     ca_.Goto(&block8, tmp9, phi_bb7_10);
@@ -971,7 +975,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   TNode<Object> tmp41;
   if (block36.is_used()) {
     ca_.Bind(&block36, &phi_bb36_6, &phi_bb36_7, &phi_bb36_15);
-    tmp41 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), p_context, tmp8, phi_bb36_7, phi_bb24_24);
+    tmp41 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, p_context, tmp8, phi_bb36_7, phi_bb24_24);
     ca_.Goto(&block35, phi_bb36_6, phi_bb36_7, phi_bb36_15);
   }
 
@@ -1286,7 +1290,7 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   TNode<Object> tmp26;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_11, &phi_bb7_12);
-    tmp26 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kArrayFilterLoopContinuation), parameter0, tmp1, tmp7, tmp10, phi_bb7_10, tmp1, phi_bb7_11, tmp2, phi_bb7_12);
+    tmp26 = ca_.CallBuiltin<Object>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp1, tmp7, tmp10, phi_bb7_10, tmp1, phi_bb7_11, tmp2, phi_bb7_12);
     arguments.PopAndReturn(tmp26);
   }
 

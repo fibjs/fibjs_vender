@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/array-join-tq-csa.h"
@@ -93,18 +97,20 @@ TNode<FixedArray> Extract_0(compiler::CodeAssemblerState* state_, TNode<Context>
   TNode<IntPtrT> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<FixedArray> tmp3;
+  TNode<Hole> tmp3;
+  TNode<FixedArray> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_startIndex});
     tmp1 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_count});
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_resultCapacity});
-    tmp3 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_source}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2});
+    tmp3 = TheHole_0(state_);
+    tmp4 = ExtractFixedArray_0(state_, TNode<FixedArray>{p_source}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TNode<Hole>{tmp3});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<FixedArray>{tmp3};
+  return TNode<FixedArray>{tmp4};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=20&c=1
@@ -574,7 +580,7 @@ TNode<Object> FastArraySplice_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp28;
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    tmp26 = ca_.CallStub<JSArray>(Builtins::CallableFor(ca_.isolate(), Builtin::kExtractFastJSArray), p_context, tmp8, tmp2, tmp4);
+    tmp26 = ca_.CallBuiltin<JSArray>(Builtin::kExtractFastJSArray, p_context, tmp8, tmp2, tmp4);
     tmp27 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp28 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp7}, TNode<Smi>{tmp27});
     ca_.Branch(tmp28, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
@@ -669,7 +675,7 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_5);
     tmp2 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{p_actualStart}, TNode<Number>{phi_bb2_5});
-    tmp3 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp2);
+    tmp3 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_o, tmp2);
     tmp4 = True_0(state_);
     tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp3}, TNode<HeapObject>{tmp4});
     ca_.Branch(tmp5, &block5, std::vector<compiler::Node*>{phi_bb2_5}, &block6, std::vector<compiler::Node*>{phi_bb2_5});
@@ -681,7 +687,7 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_5);
     tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{tmp2});
-    tmp7 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kFastCreateDataProperty), p_context, p_a, phi_bb5_5, tmp6);
+    tmp7 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, p_context, p_a, phi_bb5_5, tmp6);
     ca_.Goto(&block6, phi_bb5_5);
   }
 
@@ -701,7 +707,7 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_5);
     tmp10 = kLengthString_0(state_);
-    tmp11 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, p_a, tmp10, p_actualDeleteCount);
+    tmp11 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_a, tmp10, p_actualDeleteCount);
     ca_.Goto(&block7);
   }
 
@@ -751,7 +757,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     ca_.Bind(&block2, &phi_bb2_6);
     tmp2 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_actualDeleteCount});
     tmp3 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_itemCount});
-    tmp4 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp2);
+    tmp4 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_o, tmp2);
     tmp5 = True_0(state_);
     tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{tmp5});
     ca_.Branch(tmp6, &block5, std::vector<compiler::Node*>{phi_bb2_6}, &block6, std::vector<compiler::Node*>{phi_bb2_6});
@@ -763,7 +769,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6);
     tmp7 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{tmp2});
-    tmp8 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, p_o, tmp3, tmp7);
+    tmp8 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, tmp3, tmp7);
     ca_.Goto(&block7, phi_bb5_6);
   }
 
@@ -773,7 +779,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_6);
     tmp9 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp10 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp3, tmp9);
+    tmp10 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, p_context, p_o, tmp3, tmp9);
     ca_.Goto(&block7, phi_bb6_6);
   }
 
@@ -817,7 +823,7 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     tmp16 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp17 = CodeStubAssembler(state_).NumberSub(TNode<Number>{phi_bb8_6}, TNode<Number>{tmp16});
     tmp18 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp19 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp17, tmp18);
+    tmp19 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, p_context, p_o, tmp17, tmp18);
     tmp20 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp21 = CodeStubAssembler(state_).NumberSub(TNode<Number>{phi_bb8_6}, TNode<Number>{tmp20});
     ca_.Goto(&block10, tmp21);
@@ -879,7 +885,7 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
     tmp5 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_itemCount});
     tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp5}, TNode<Number>{tmp6});
-    tmp8 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kHasProperty), p_context, p_o, tmp4);
+    tmp8 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_o, tmp4);
     tmp9 = True_0(state_);
     tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
     ca_.Branch(tmp10, &block5, std::vector<compiler::Node*>{phi_bb2_6}, &block6, std::vector<compiler::Node*>{phi_bb2_6});
@@ -891,7 +897,7 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6);
     tmp11 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{tmp4});
-    tmp12 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, p_o, tmp7, tmp11);
+    tmp12 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, tmp7, tmp11);
     ca_.Goto(&block7, phi_bb5_6);
   }
 
@@ -901,7 +907,7 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_6);
     tmp13 = FromConstexpr_LanguageModeSmi_constexpr_LanguageMode_0(state_, LanguageMode::kStrict);
-    tmp14 = ca_.CallStub<Boolean>(Builtins::CallableFor(ca_.isolate(), Builtin::kDeleteProperty), p_context, p_o, tmp7, tmp13);
+    tmp14 = ca_.CallBuiltin<Boolean>(Builtin::kDeleteProperty, p_context, p_o, tmp7, tmp13);
     ca_.Goto(&block7, phi_bb6_6);
   }
 
@@ -1013,7 +1019,7 @@ TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13);
     tmp8 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{phi_bb9_13});
-    tmp9 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, p_o, phi_bb9_12, tmp8);
+    tmp9 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, phi_bb9_12, tmp8);
     tmp10 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp11 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb9_12}, TNode<Number>{tmp10});
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
@@ -1038,7 +1044,7 @@ TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     tmp14 = kLengthString_0(state_);
     tmp15 = CodeStubAssembler(state_).NumberSub(TNode<Number>{p_len}, TNode<Number>{p_actualDeleteCount});
     tmp16 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{tmp15}, TNode<Number>{p_insertCount});
-    tmp17 = ca_.CallStub<Object>(Builtins::CallableFor(ca_.isolate(), Builtin::kSetProperty), p_context, p_o, tmp14, tmp16);
+    tmp17 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, tmp14, tmp16);
     ca_.Goto(&block13);
   }
 
@@ -1082,7 +1088,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
   TNode<BoolT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ca_.CallStub<JSReceiver>(Builtins::CallableFor(ca_.isolate(), Builtin::kToObject), parameter0, parameter1);
+    tmp0 = ca_.CallBuiltin<JSReceiver>(Builtin::kToObject, parameter0, parameter1);
     tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});

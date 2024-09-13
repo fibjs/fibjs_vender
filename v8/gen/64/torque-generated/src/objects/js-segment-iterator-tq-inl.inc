@@ -80,14 +80,110 @@ void TorqueGeneratedJSSegmentIterator<D, P>::set_flags(int value) {
   WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=11&c=1
-template<class D, class P>
-Tagged<D> TorqueGeneratedJSSegmentIterator<D, P>::cast(Tagged<Object> object) {
-    return Tagged<D>(D(object.ptr()));
-}
-
 template<class D, class P>
 inline TorqueGeneratedJSSegmentIterator<D, P>::TorqueGeneratedJSSegmentIterator(Address ptr)
     : P(ptr) {
   SLOW_DCHECK(IsJSSegmentIterator_NonInline(*this));
+}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=21&c=3
+template<class D, class P>
+Tagged<String> TorqueGeneratedJSSegmentDataObject<D, P>::segment() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSSegmentDataObject::segment(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=21&c=3
+template<class D, class P>
+Tagged<String> TorqueGeneratedJSSegmentDataObject<D, P>::segment(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kSegmentOffset);
+  DCHECK(IsString(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=21&c=3
+template<class D, class P>
+void TorqueGeneratedJSSegmentDataObject<D, P>::set_segment(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
+  WRITE_FIELD(*this, kSegmentOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kSegmentOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=22&c=3
+template<class D, class P>
+Tagged<Number> TorqueGeneratedJSSegmentDataObject<D, P>::index() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSSegmentDataObject::index(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=22&c=3
+template<class D, class P>
+Tagged<Number> TorqueGeneratedJSSegmentDataObject<D, P>::index(PtrComprCageBase cage_base) const {
+  Tagged<Number> value = TaggedField<Tagged<Number>>::load(cage_base, *this, kIndexOffset);
+  DCHECK(IsSmi(value) || IsHeapNumber(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=22&c=3
+template<class D, class P>
+void TorqueGeneratedJSSegmentDataObject<D, P>::set_index(Tagged<Number> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  WRITE_FIELD(*this, kIndexOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kIndexOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=23&c=3
+template<class D, class P>
+Tagged<String> TorqueGeneratedJSSegmentDataObject<D, P>::input() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSSegmentDataObject::input(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=23&c=3
+template<class D, class P>
+Tagged<String> TorqueGeneratedJSSegmentDataObject<D, P>::input(PtrComprCageBase cage_base) const {
+  Tagged<String> value = TaggedField<Tagged<String>>::load(cage_base, *this, kInputOffset);
+  DCHECK(IsString(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=23&c=3
+template<class D, class P>
+void TorqueGeneratedJSSegmentDataObject<D, P>::set_input(Tagged<String> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsString(value));
+  WRITE_FIELD(*this, kInputOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kInputOffset, value, mode);
+}
+
+template<class D, class P>
+inline TorqueGeneratedJSSegmentDataObject<D, P>::TorqueGeneratedJSSegmentDataObject(Address ptr)
+    : P(ptr) {
+  SLOW_DCHECK(IsJSSegmentDataObject_NonInline(*this));
+}
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=29&c=3
+template<class D, class P>
+Tagged<Boolean> TorqueGeneratedJSSegmentDataObjectWithIsWordLike<D, P>::is_word_like() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSSegmentDataObjectWithIsWordLike::is_word_like(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=29&c=3
+template<class D, class P>
+Tagged<Boolean> TorqueGeneratedJSSegmentDataObjectWithIsWordLike<D, P>::is_word_like(PtrComprCageBase cage_base) const {
+  Tagged<Boolean> value = TaggedField<Tagged<Boolean>>::load(cage_base, *this, kIsWordLikeOffset);
+  DCHECK(IsBoolean(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=29&c=3
+template<class D, class P>
+void TorqueGeneratedJSSegmentDataObjectWithIsWordLike<D, P>::set_is_word_like(Tagged<Boolean> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(IsBoolean(value));
+  WRITE_FIELD(*this, kIsWordLikeOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kIsWordLikeOffset, value, mode);
+}
+
+template<class D, class P>
+inline TorqueGeneratedJSSegmentDataObjectWithIsWordLike<D, P>::TorqueGeneratedJSSegmentDataObjectWithIsWordLike(Address ptr)
+    : P(ptr) {
+  SLOW_DCHECK(IsJSSegmentDataObjectWithIsWordLike_NonInline(*this));
 }

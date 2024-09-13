@@ -15,7 +15,7 @@ bool IsJSV8BreakIterator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSV8BreakIterator<JSV8BreakIterator, JSObject>::JSV8BreakIteratorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSV8BreakIteratorVerify(JSV8BreakIterator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSV8BreakIteratorVerify(Cast<JSV8BreakIterator>(*this), isolate);
 }
 
 

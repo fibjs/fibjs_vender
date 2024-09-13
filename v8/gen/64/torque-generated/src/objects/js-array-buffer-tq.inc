@@ -15,8 +15,8 @@ class TorqueGeneratedJSArrayBufferView : public P {
       std::is_same<JSArrayBufferView, D>::value,
       "Use this class as direct base for JSArrayBufferView.");
   static_assert(
-      std::is_same<JSObjectWithEmbedderSlots, P>::value,
-      "Pass in JSObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSArrayBufferView.");
+      std::is_same<JSAPIObjectWithEmbedderSlots, P>::value,
+      "Pass in JSAPIObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSArrayBufferView.");
 
  public: 
   using Super = P;
@@ -29,32 +29,25 @@ class TorqueGeneratedJSArrayBufferView : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
   inline void set_buffer(Tagged<JSArrayBuffer> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=3
-  inline uintptr_t raw_byte_offset() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=3
-  inline void set_raw_byte_offset(uintptr_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
-  inline uintptr_t raw_byte_length() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
-  inline void set_raw_byte_length(uintptr_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=70&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=66&c=3
   inline uint32_t bit_field() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=70&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=66&c=3
   inline void set_bit_field(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=72&c=28
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=28
   inline uint32_t optional_padding() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=72&c=28
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=28
   inline void set_optional_padding(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
+  inline uintptr_t raw_byte_offset() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
+  inline void set_raw_byte_offset(uintptr_t value);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=71&c=3
+  inline uintptr_t raw_byte_length() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=71&c=3
+  inline void set_raw_byte_length(uintptr_t value);
 
 #ifdef VERIFY_HEAP
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=63&c=1
@@ -66,21 +59,21 @@ class TorqueGeneratedJSArrayBufferView : public P {
   static constexpr int kBufferOffset = P::kHeaderSize;
   static constexpr int kBufferOffsetEnd = kBufferOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kBufferOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=3
-  static constexpr int kRawByteOffsetOffset = kBufferOffsetEnd + 1;
-  static constexpr int kRawByteOffsetOffsetEnd = kRawByteOffsetOffset + kIntptrSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
-  static constexpr int kRawByteLengthOffset = kRawByteOffsetOffsetEnd + 1;
-  static constexpr int kRawByteLengthOffsetEnd = kRawByteLengthOffset + kIntptrSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=70&c=3
-  static constexpr int kBitFieldOffset = kRawByteLengthOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=66&c=3
+  static constexpr int kBitFieldOffset = kBufferOffsetEnd + 1;
   static constexpr int kBitFieldOffsetEnd = kBitFieldOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=72&c=28
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=67&c=28
   static constexpr int kOptionalPaddingOffset = kBitFieldOffsetEnd + 1;
   static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + kInt32Size - 1;
-  static constexpr int kStartOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
-  static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=69&c=3
+  static constexpr int kRawByteOffsetOffset = kOptionalPaddingOffsetEnd + 1;
+  static constexpr int kRawByteOffsetOffsetEnd = kRawByteOffsetOffset + kIntptrSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=71&c=3
+  static constexpr int kRawByteLengthOffset = kRawByteOffsetOffsetEnd + 1;
+  static constexpr int kRawByteLengthOffsetEnd = kRawByteLengthOffset + kIntptrSize - 1;
+  static constexpr int kStartOfWeakFieldsOffset = kRawByteLengthOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kRawByteLengthOffsetEnd + 1;
+  static constexpr int kHeaderSize = kRawByteLengthOffsetEnd + 1;
 
   friend class Factory;
 
@@ -98,10 +91,10 @@ class TorqueGeneratedJSArrayBufferView : public P {
 };
 
 // Alias for IsJSTypedArray() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=107&c=1
 V8_EXPORT_PRIVATE bool IsJSTypedArray_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=107&c=1
 template <class D, class P>
 class TorqueGeneratedJSTypedArray : public P {
   static_assert(
@@ -115,46 +108,39 @@ class TorqueGeneratedJSTypedArray : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTypedArray<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=3
   inline uintptr_t raw_length() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=3
   inline void set_raw_length(uintptr_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=113&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
   inline Address external_pointer() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=113&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
   inline void set_external_pointer(Address value);
 
   // Torque type: (Smi | class ByteArray)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
-  inline Tagged<Object> base_pointer() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
-  inline Tagged<Object> base_pointer(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
-  inline void set_base_pointer(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=112&c=3
+  inline Tagged<Union<ByteArray, Smi>> base_pointer() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=112&c=3
+  inline Tagged<Union<ByteArray, Smi>> base_pointer(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=112&c=3
+  inline void set_base_pointer(Tagged<Union<ByteArray, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTypedArray)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=107&c=1
   V8_EXPORT_PRIVATE void JSTypedArrayVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=109&c=3
   static constexpr int kRawLengthOffset = P::kHeaderSize;
   static constexpr int kRawLengthOffsetEnd = kRawLengthOffset + kIntptrSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=113&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=111&c=3
   static constexpr int kExternalPointerOffset = kRawLengthOffsetEnd + 1;
   static constexpr int kExternalPointerOffsetEnd = kExternalPointerOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfStrongFieldsOffset = kExternalPointerOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=114&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=112&c=3
   static constexpr int kBasePointerOffset = kExternalPointerOffsetEnd + 1;
   static constexpr int kBasePointerOffsetEnd = kBasePointerOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kBasePointerOffsetEnd + 1;
@@ -188,8 +174,8 @@ class TorqueGeneratedJSArrayBuffer : public P {
       std::is_same<JSArrayBuffer, D>::value,
       "Use this class as direct base for JSArrayBuffer.");
   static_assert(
-      std::is_same<JSObjectWithEmbedderSlots, P>::value,
-      "Pass in JSObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSArrayBuffer.");
+      std::is_same<JSAPIObjectWithEmbedderSlots, P>::value,
+      "Pass in JSAPIObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSArrayBuffer.");
 
  public: 
   using Super = P;
@@ -226,13 +212,6 @@ class TorqueGeneratedJSArrayBuffer : public P {
   inline uint32_t optional_padding() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=25&c=28
   inline void set_optional_padding(uint32_t value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=14&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(JSArrayBuffer)
 
@@ -284,10 +263,10 @@ class TorqueGeneratedJSArrayBuffer : public P {
 };
 
 // Alias for IsJSDataViewOrRabGsabDataView() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
 V8_EXPORT_PRIVATE bool IsJSDataViewOrRabGsabDataView_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
 template <class D, class P>
 class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   static_assert(
@@ -301,24 +280,17 @@ class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSDataViewOrRabGsabDataView<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
   inline Address data_pointer() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
   inline void set_data_pointer(Address value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=127&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
   V8_EXPORT_PRIVATE void JSDataViewOrRabGsabDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=130&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
   static constexpr int kDataPointerOffset = P::kHeaderSize;
   static constexpr int kDataPointerOffsetEnd = kDataPointerOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kDataPointerOffsetEnd + 1;
@@ -343,10 +315,10 @@ class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
 };
 
 // Alias for IsJSDataView() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
 V8_EXPORT_PRIVATE bool IsJSDataView_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
 template <class D, class P>
 class TorqueGeneratedJSDataView : public P {
   static_assert(
@@ -360,17 +332,10 @@ class TorqueGeneratedJSDataView : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSDataView<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSDataView)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
   V8_EXPORT_PRIVATE void JSDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -396,10 +361,10 @@ class TorqueGeneratedJSDataView : public P {
 };
 
 // Alias for IsJSRabGsabDataView() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
 V8_EXPORT_PRIVATE bool IsJSRabGsabDataView_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
 template <class D, class P>
 class TorqueGeneratedJSRabGsabDataView : public P {
   static_assert(
@@ -413,17 +378,10 @@ class TorqueGeneratedJSRabGsabDataView : public P {
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSRabGsabDataView<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(JSRabGsabDataView)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=135&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
   V8_EXPORT_PRIVATE void JSRabGsabDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 

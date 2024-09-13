@@ -57,13 +57,13 @@ class TorqueGeneratedMap : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=66&c=3
   inline void set_bit_field3(uint32_t value);
 
-  // Torque type: (class JSReceiver | class Null)
+  // Torque type: (class Null | class JSReceiver)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-  inline Tagged<HeapObject> prototype() const;
+  inline Tagged<Union<JSReceiver, Null>> prototype() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-  inline Tagged<HeapObject> prototype(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSReceiver, Null>> prototype(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-  inline void set_prototype(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype(Tagged<Union<JSReceiver, Null>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
   inline Tagged<Object> constructor_or_back_pointer_or_native_context() const;
@@ -81,34 +81,27 @@ class TorqueGeneratedMap : public P {
 
   // Torque type: DependentCode
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
-  inline Tagged<WeakFixedArray> dependent_code() const;
+  inline Tagged<WeakArrayList> dependent_code() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
-  inline Tagged<WeakFixedArray> dependent_code(PtrComprCageBase cage_base) const;
+  inline Tagged<WeakArrayList> dependent_code(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
-  inline void set_dependent_code(Tagged<WeakFixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_dependent_code(Tagged<WeakArrayList> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class Cell)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-  inline Tagged<Object> prototype_validity_cell() const;
+  inline Tagged<Union<Cell, Smi>> prototype_validity_cell() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-  inline Tagged<Object> prototype_validity_cell(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Cell, Smi>> prototype_validity_cell(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-  inline void set_prototype_validity_cell(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_prototype_validity_cell(Tagged<Union<Cell, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class TransitionArray | class Map | Weak<class Map> | class PrototypeInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-  inline MaybeObject transitions_or_prototype_info() const;
+  inline Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> transitions_or_prototype_info() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-  inline MaybeObject transitions_or_prototype_info(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> transitions_or_prototype_info(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-  inline void set_transitions_or_prototype_info(MaybeObject value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=37&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
+  inline void set_transitions_or_prototype_info(Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(Map)
 

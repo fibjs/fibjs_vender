@@ -15,7 +15,7 @@ bool IsJSReceiver_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSReceiver<JSReceiver, HeapObject>::JSReceiverVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSReceiverVerify(JSReceiver::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSReceiverVerify(Cast<JSReceiver>(*this), isolate);
 }
 
 
@@ -29,12 +29,12 @@ bool IsJSObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSObject<JSObject, JSReceiver>::JSObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSObjectVerify(JSObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSObjectVerify(Cast<JSObject>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=48&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=50&c=1
 bool IsJSObjectWithEmbedderSlots_NonInline(Tagged<HeapObject> o) {
   return IsJSObjectWithEmbedderSlots(o);
 }
@@ -43,12 +43,26 @@ bool IsJSObjectWithEmbedderSlots_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSObjectWithEmbedderSlots<JSObjectWithEmbedderSlots, JSObject>::JSObjectWithEmbedderSlotsVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSObjectWithEmbedderSlotsVerify(JSObjectWithEmbedderSlots::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSObjectWithEmbedderSlotsVerify(Cast<JSObjectWithEmbedderSlots>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=51&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=54&c=1
+bool IsJSAPIObjectWithEmbedderSlots_NonInline(Tagged<HeapObject> o) {
+  return IsJSAPIObjectWithEmbedderSlots(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedJSAPIObjectWithEmbedderSlots<JSAPIObjectWithEmbedderSlots, JSObject>::JSAPIObjectWithEmbedderSlotsVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::JSAPIObjectWithEmbedderSlotsVerify(Cast<JSAPIObjectWithEmbedderSlots>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=59&c=1
 bool IsJSCustomElementsObject_NonInline(Tagged<HeapObject> o) {
   return IsJSCustomElementsObject(o);
 }
@@ -57,12 +71,12 @@ bool IsJSCustomElementsObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSCustomElementsObject<JSCustomElementsObject, JSObject>::JSCustomElementsObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSCustomElementsObjectVerify(JSCustomElementsObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSCustomElementsObjectVerify(Cast<JSCustomElementsObject>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=57&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=66&c=1
 bool IsJSSpecialObject_NonInline(Tagged<HeapObject> o) {
   return IsJSSpecialObject(o);
 }
@@ -71,7 +85,7 @@ bool IsJSSpecialObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSSpecialObject<JSSpecialObject, JSCustomElementsObject>::JSSpecialObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSSpecialObjectVerify(JSSpecialObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSSpecialObjectVerify(Cast<JSSpecialObject>(*this), isolate);
 }
 
 
@@ -85,12 +99,12 @@ bool IsJSExternalObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSExternalObject<JSExternalObject, JSObject>::JSExternalObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSExternalObjectVerify(JSExternalObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSExternalObjectVerify(Cast<JSExternalObject>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=104&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=116&c=1
 bool IsJSGlobalProxy_NonInline(Tagged<HeapObject> o) {
   return IsJSGlobalProxy(o);
 }
@@ -99,12 +113,12 @@ bool IsJSGlobalProxy_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSGlobalProxy<JSGlobalProxy, JSSpecialObject>::JSGlobalProxyVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSGlobalProxyVerify(JSGlobalProxy::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSGlobalProxyVerify(Cast<JSGlobalProxy>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=110&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=118&c=1
 bool IsJSGlobalObject_NonInline(Tagged<HeapObject> o) {
   return IsJSGlobalObject(o);
 }
@@ -113,12 +127,12 @@ bool IsJSGlobalObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSGlobalObject<JSGlobalObject, JSSpecialObject>::JSGlobalObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSGlobalObjectVerify(JSGlobalObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSGlobalObjectVerify(Cast<JSGlobalObject>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=118&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=123&c=1
 bool IsJSPrimitiveWrapper_NonInline(Tagged<HeapObject> o) {
   return IsJSPrimitiveWrapper(o);
 }
@@ -127,12 +141,12 @@ bool IsJSPrimitiveWrapper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSPrimitiveWrapper<JSPrimitiveWrapper, JSCustomElementsObject>::JSPrimitiveWrapperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSPrimitiveWrapperVerify(JSPrimitiveWrapper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSPrimitiveWrapperVerify(Cast<JSPrimitiveWrapper>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=122&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=127&c=1
 bool IsJSMessageObject_NonInline(Tagged<HeapObject> o) {
   return IsJSMessageObject(o);
 }
@@ -141,12 +155,12 @@ bool IsJSMessageObject_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSMessageObject<JSMessageObject, JSObject>::JSMessageObjectVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSMessageObjectVerify(JSMessageObject::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSMessageObjectVerify(Cast<JSMessageObject>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=141&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=146&c=1
 bool IsJSDate_NonInline(Tagged<HeapObject> o) {
   return IsJSDate(o);
 }
@@ -155,12 +169,12 @@ bool IsJSDate_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSDate<JSDate, JSObject>::JSDateVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSDateVerify(JSDate::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSDateVerify(Cast<JSDate>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=161&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=166&c=1
 bool IsJSAsyncFromSyncIterator_NonInline(Tagged<HeapObject> o) {
   return IsJSAsyncFromSyncIterator(o);
 }
@@ -169,12 +183,12 @@ bool IsJSAsyncFromSyncIterator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSAsyncFromSyncIterator<JSAsyncFromSyncIterator, JSObject>::JSAsyncFromSyncIteratorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSAsyncFromSyncIteratorVerify(JSAsyncFromSyncIterator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSAsyncFromSyncIteratorVerify(Cast<JSAsyncFromSyncIterator>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=168&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=173&c=1
 bool IsJSStringIterator_NonInline(Tagged<HeapObject> o) {
   return IsJSStringIterator(o);
 }
@@ -183,12 +197,12 @@ bool IsJSStringIterator_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSStringIterator<JSStringIterator, JSObject>::JSStringIteratorVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSStringIteratorVerify(JSStringIterator::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSStringIteratorVerify(Cast<JSStringIterator>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=182&c=1
 bool IsJSValidIteratorWrapper_NonInline(Tagged<HeapObject> o) {
   return IsJSValidIteratorWrapper(o);
 }
@@ -197,7 +211,7 @@ bool IsJSValidIteratorWrapper_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedJSValidIteratorWrapper<JSValidIteratorWrapper, JSObject>::JSValidIteratorWrapperVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::JSValidIteratorWrapperVerify(JSValidIteratorWrapper::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::JSValidIteratorWrapperVerify(Cast<JSValidIteratorWrapper>(*this), isolate);
 }
 
 

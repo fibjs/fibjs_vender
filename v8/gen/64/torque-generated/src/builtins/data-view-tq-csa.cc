@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/data-view-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -88,7 +92,7 @@ const char* kBuiltinNameByteLength_0(compiler::CodeAssemblerState* state_) {
     ca_.Goto(&block0);
 
     ca_.Bind(&block0);
-  return "DataView.prototype.byteLength";}
+  return "get DataView.prototype.byteLength";}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=11&c=1
 const char* kBuiltinNameByteOffset_0(compiler::CodeAssemblerState* state_) {
@@ -97,7 +101,7 @@ const char* kBuiltinNameByteOffset_0(compiler::CodeAssemblerState* state_) {
     ca_.Goto(&block0);
 
     ca_.Bind(&block0);
-  return "DataView.prototype.byteOffset";}
+  return "get DataView.prototype.byteOffset";}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=14&c=1
 TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state_, ElementsKind p_kind) {
@@ -124,8 +128,10 @@ TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state
   compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   if (block0.is_used()) {
@@ -226,7 +232,7 @@ TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state
 
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT16_ELEMENTS)))) {
       ca_.Goto(&block20);
     } else {
       ca_.Goto(&block21);
@@ -236,13 +242,13 @@ TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp6;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp6 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getFloat32");
+    tmp6 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getFloat16");
     ca_.Goto(&block1, tmp6);
   }
 
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
       ca_.Goto(&block23);
     } else {
       ca_.Goto(&block24);
@@ -252,13 +258,13 @@ TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp7;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp7 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getFloat64");
+    tmp7 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getFloat32");
     ca_.Goto(&block1, tmp7);
   }
 
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGINT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
       ca_.Goto(&block26);
     } else {
       ca_.Goto(&block27);
@@ -268,13 +274,13 @@ TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp8;
   if (block26.is_used()) {
     ca_.Bind(&block26);
-    tmp8 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getBigInt64");
+    tmp8 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getFloat64");
     ca_.Goto(&block1, tmp8);
   }
 
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGUINT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGINT64_ELEMENTS)))) {
       ca_.Goto(&block29);
     } else {
       ca_.Goto(&block30);
@@ -284,27 +290,43 @@ TNode<String> MakeDataViewGetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp9;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp9 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getBigUint64");
+    tmp9 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getBigInt64");
     ca_.Goto(&block1, tmp9);
   }
 
   if (block30.is_used()) {
     ca_.Bind(&block30);
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGUINT64_ELEMENTS)))) {
+      ca_.Goto(&block32);
+    } else {
+      ca_.Goto(&block33);
+    }
+  }
+
+  TNode<String> tmp10;
+  if (block32.is_used()) {
+    ca_.Bind(&block32);
+    tmp10 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.getBigUint64");
+    ca_.Goto(&block1, tmp10);
+  }
+
+  if (block33.is_used()) {
+    ca_.Bind(&block33);
     CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<String> phi_bb1_0;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_0);
-    ca_.Goto(&block32, phi_bb1_0);
+    ca_.Goto(&block35, phi_bb1_0);
   }
 
-  TNode<String> phi_bb32_0;
-    ca_.Bind(&block32, &phi_bb32_0);
-  return TNode<String>{phi_bb32_0};
+  TNode<String> phi_bb35_0;
+    ca_.Bind(&block35, &phi_bb35_0);
+  return TNode<String>{phi_bb35_0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=40&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=42&c=1
 TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state_, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -329,8 +351,10 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
   compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   if (block0.is_used()) {
@@ -431,7 +455,7 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
 
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT16_ELEMENTS)))) {
       ca_.Goto(&block20);
     } else {
       ca_.Goto(&block21);
@@ -441,13 +465,13 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp6;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp6 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setFloat32");
+    tmp6 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setFloat16");
     ca_.Goto(&block1, tmp6);
   }
 
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
       ca_.Goto(&block23);
     } else {
       ca_.Goto(&block24);
@@ -457,13 +481,13 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp7;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp7 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setFloat64");
+    tmp7 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setFloat32");
     ca_.Goto(&block1, tmp7);
   }
 
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGINT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
       ca_.Goto(&block26);
     } else {
       ca_.Goto(&block27);
@@ -473,13 +497,13 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp8;
   if (block26.is_used()) {
     ca_.Bind(&block26);
-    tmp8 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setBigInt64");
+    tmp8 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setFloat64");
     ca_.Goto(&block1, tmp8);
   }
 
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGUINT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGINT64_ELEMENTS)))) {
       ca_.Goto(&block29);
     } else {
       ca_.Goto(&block30);
@@ -489,27 +513,43 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
   TNode<String> tmp9;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp9 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setBigUint64");
+    tmp9 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setBigInt64");
     ca_.Goto(&block1, tmp9);
   }
 
   if (block30.is_used()) {
     ca_.Bind(&block30);
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGUINT64_ELEMENTS)))) {
+      ca_.Goto(&block32);
+    } else {
+      ca_.Goto(&block33);
+    }
+  }
+
+  TNode<String> tmp10;
+  if (block32.is_used()) {
+    ca_.Bind(&block32);
+    tmp10 = FromConstexpr_String_constexpr_string_0(state_, "DataView.prototype.setBigUint64");
+    ca_.Goto(&block1, tmp10);
+  }
+
+  if (block33.is_used()) {
+    ca_.Bind(&block33);
     CodeStubAssembler(state_).Unreachable();
   }
 
   TNode<String> phi_bb1_0;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_0);
-    ca_.Goto(&block32, phi_bb1_0);
+    ca_.Goto(&block35, phi_bb1_0);
   }
 
-  TNode<String> phi_bb32_0;
-    ca_.Bind(&block32, &phi_bb32_0);
-  return TNode<String>{phi_bb32_0};
+  TNode<String> phi_bb35_0;
+    ca_.Bind(&block35, &phi_bb35_0);
+  return TNode<String>{phi_bb35_0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=66&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=70&c=1
 TNode<BoolT> WasDetached_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBufferView> p_view) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -522,7 +562,7 @@ TNode<BoolT> WasDetached_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp1 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{p_view, tmp0});
     tmp2 = IsDetachedBuffer_0(state_, TNode<JSArrayBuffer>{tmp1});
     ca_.Goto(&block2);
@@ -532,7 +572,7 @@ TNode<BoolT> WasDetached_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
   return TNode<BoolT>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=70&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=74&c=1
 TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -620,7 +660,7 @@ TF_BUILTIN(DataViewPrototypeGetBuffer, CodeStubAssembler) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.buffer");
     tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
-    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp3 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp2});
     arguments.PopAndReturn(tmp3);
   }
@@ -651,7 +691,7 @@ TF_BUILTIN(DataViewPrototypeGetByteLength, CodeStubAssembler) {
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byte_length");
+    tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byteLength");
     tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
     tmp2 = IsVariableLengthJSArrayBufferView_0(state_, TNode<JSArrayBufferView>{tmp1});
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
@@ -662,7 +702,7 @@ TF_BUILTIN(DataViewPrototypeGetByteLength, CodeStubAssembler) {
   TNode<UintPtrT> tmp5;
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp4 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp3});
     compiler::CodeAssemblerLabel label6(&ca_);
     tmp5 = CodeStubAssembler(state_).LoadVariableLengthJSArrayBufferViewByteLength(TNode<JSArrayBufferView>{tmp1}, TNode<JSArrayBuffer>{tmp4}, &label6);
@@ -727,7 +767,7 @@ TF_BUILTIN(DataViewPrototypeGetByteOffset, CodeStubAssembler) {
   TNode<JSDataViewOrRabGsabDataView> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byte_offset");
+    tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byteOffset");
     tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
     compiler::CodeAssemblerLabel label2(&ca_);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -757,7 +797,7 @@ TF_BUILTIN(DataViewPrototypeGetByteOffset, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=144&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=148&c=1
 TNode<Smi> LoadDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -809,7 +849,7 @@ TNode<Smi> LoadDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
   return TNode<Smi>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=153&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=157&c=1
 TNode<Number> LoadDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -912,7 +952,7 @@ TNode<Number> LoadDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   return TNode<Number>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=180&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=184&c=1
 TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1074,7 +1114,71 @@ TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   return TNode<Number>{phi_bb14_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=209&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=212&c=1
+TNode<Number> LoadDataViewFloat16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<RawPtrT> tmp0;
+  TNode<Uint32T> tmp1;
+  TNode<UintPtrT> tmp2;
+  TNode<UintPtrT> tmp3;
+  TNode<Uint32T> tmp4;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
+    tmp1 = DataViewBuiltinsAssembler(state_).LoadUint8(TNode<RawPtrT>{tmp0}, TNode<UintPtrT>{p_offset});
+    tmp2 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp3 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{p_offset}, TNode<UintPtrT>{tmp2});
+    tmp4 = DataViewBuiltinsAssembler(state_).LoadUint8(TNode<RawPtrT>{tmp0}, TNode<UintPtrT>{tmp3});
+    ca_.Branch(p_requestedLittleEndian, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+  }
+
+  TNode<Uint32T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<Uint32T> tmp7;
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    tmp5 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp6 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp5});
+    tmp7 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp6}, TNode<Uint32T>{tmp1});
+    ca_.Goto(&block4, tmp7);
+  }
+
+  TNode<Uint32T> tmp8;
+  TNode<Uint32T> tmp9;
+  TNode<Uint32T> tmp10;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp8 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp9 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp8});
+    tmp10 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp9}, TNode<Uint32T>{tmp4});
+    ca_.Goto(&block4, tmp10);
+  }
+
+  TNode<Uint32T> phi_bb4_6;
+  TNode<Float16T> tmp11;
+  TNode<Float64T> tmp12;
+  TNode<Number> tmp13;
+  if (block4.is_used()) {
+    ca_.Bind(&block4, &phi_bb4_6);
+    tmp11 = CodeStubAssembler(state_).BitcastUint32ToFloat16(TNode<Uint32T>{phi_bb4_6});
+    tmp12 = Convert_float64_float16_0(state_, TNode<Float16T>{tmp11});
+    tmp13 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp12});
+    ca_.Goto(&block5);
+  }
+
+    ca_.Bind(&block5);
+  return TNode<Number>{tmp13};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=230&c=1
 TNode<Number> LoadDataViewFloat64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1237,7 +1341,7 @@ TNode<Number> LoadDataViewFloat64_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<Number>{tmp62};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=240&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=261&c=1
 int31_t kZeroDigitBigInt_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1246,7 +1350,7 @@ int31_t kZeroDigitBigInt_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=241&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=262&c=1
 int31_t kOneDigitBigInt_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1255,7 +1359,7 @@ int31_t kOneDigitBigInt_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=242&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=263&c=1
 int31_t kTwoDigitBigInt_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1264,7 +1368,7 @@ int31_t kTwoDigitBigInt_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=245&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=266&c=1
 TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1411,7 +1515,7 @@ TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BigInt>{phi_bb12_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=274&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=295&c=1
 TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1692,7 +1796,7 @@ TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<BigInt>{phi_bb24_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=342&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=363&c=1
 TNode<BigInt> MakeBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1736,7 +1840,7 @@ TNode<BigInt> MakeBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   return TNode<BigInt>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=354&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=375&c=1
 TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, bool p_signed) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1893,7 +1997,7 @@ TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BigInt>{tmp59};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=386&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=407&c=1
 TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1929,9 +2033,11 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   compiler::CodeAssemblerParameterizedLabel<> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block48(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block52(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Numeric> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Numeric> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Numeric> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
@@ -1961,7 +2067,7 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp4 = ToBoolean_0(state_, TNode<Object>{p_requestedLittleEndian});
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp6 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp5});
     compiler::CodeAssemblerLabel label7(&ca_);
     compiler::CodeAssemblerLabel label8(&ca_);
@@ -1990,7 +2096,7 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp10 = CodeStubAssembler(state_).LoadJSArrayBufferViewByteOffset(TNode<JSArrayBufferView>{tmp1});
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp12 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp1, tmp11});
     tmp13 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp12)));
     ca_.Branch(tmp13, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
@@ -2001,7 +2107,7 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   TNode<UintPtrT> tmp16;
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp15 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp14});
     compiler::CodeAssemblerLabel label17(&ca_);
     tmp16 = CodeStubAssembler(state_).LoadVariableLengthJSArrayBufferViewByteLength(TNode<JSArrayBufferView>{tmp1}, TNode<JSArrayBuffer>{tmp15}, &label17);
@@ -2148,7 +2254,7 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
 
   if (block37.is_used()) {
     ca_.Bind(&block37);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT16_ELEMENTS)))) {
       ca_.Goto(&block39);
     } else {
       ca_.Goto(&block40);
@@ -2158,13 +2264,13 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   TNode<Number> tmp28;
   if (block39.is_used()) {
     ca_.Bind(&block39);
-    tmp28 = LoadDataView32_0(state_, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4}, p_kind);
+    tmp28 = LoadDataViewFloat16_0(state_, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4});
     ca_.Goto(&block1, tmp28);
   }
 
   if (block40.is_used()) {
     ca_.Bind(&block40);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
       ca_.Goto(&block42);
     } else {
       ca_.Goto(&block43);
@@ -2174,29 +2280,29 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   TNode<Number> tmp29;
   if (block42.is_used()) {
     ca_.Bind(&block42);
-    tmp29 = LoadDataViewFloat64_0(state_, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4});
+    tmp29 = LoadDataView32_0(state_, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4}, p_kind);
     ca_.Goto(&block1, tmp29);
   }
 
   if (block43.is_used()) {
     ca_.Bind(&block43);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGUINT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
       ca_.Goto(&block45);
     } else {
       ca_.Goto(&block46);
     }
   }
 
-  TNode<BigInt> tmp30;
+  TNode<Number> tmp30;
   if (block45.is_used()) {
     ca_.Bind(&block45);
-    tmp30 = LoadDataViewBigInt_0(state_, TNode<Context>{p_context}, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4}, false);
+    tmp30 = LoadDataViewFloat64_0(state_, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4});
     ca_.Goto(&block1, tmp30);
   }
 
   if (block46.is_used()) {
     ca_.Bind(&block46);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGINT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGUINT64_ELEMENTS)))) {
       ca_.Goto(&block48);
     } else {
       ca_.Goto(&block49);
@@ -2206,12 +2312,28 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   TNode<BigInt> tmp31;
   if (block48.is_used()) {
     ca_.Bind(&block48);
-    tmp31 = LoadDataViewBigInt_0(state_, TNode<Context>{p_context}, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4}, true);
+    tmp31 = LoadDataViewBigInt_0(state_, TNode<Context>{p_context}, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4}, false);
     ca_.Goto(&block1, tmp31);
   }
 
   if (block49.is_used()) {
     ca_.Bind(&block49);
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::BIGINT64_ELEMENTS)))) {
+      ca_.Goto(&block51);
+    } else {
+      ca_.Goto(&block52);
+    }
+  }
+
+  TNode<BigInt> tmp32;
+  if (block51.is_used()) {
+    ca_.Bind(&block51);
+    tmp32 = LoadDataViewBigInt_0(state_, TNode<Context>{p_context}, TNode<JSArrayBuffer>{tmp6}, TNode<UintPtrT>{tmp21}, TNode<BoolT>{tmp4}, true);
+    ca_.Goto(&block1, tmp32);
+  }
+
+  if (block52.is_used()) {
+    ca_.Bind(&block52);
     CodeStubAssembler(state_).Unreachable();
   }
 
@@ -2223,12 +2345,12 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   TNode<Numeric> phi_bb1_4;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_4);
-    ca_.Goto(&block51, phi_bb1_4);
+    ca_.Goto(&block54, phi_bb1_4);
   }
 
-  TNode<Numeric> phi_bb51_4;
-    ca_.Bind(&block51, &phi_bb51_4);
-  return TNode<Numeric>{phi_bb51_4};
+  TNode<Numeric> phi_bb54_4;
+    ca_.Bind(&block54, &phi_bb54_4);
+  return TNode<Numeric>{phi_bb54_4};
 }
 
 TF_BUILTIN(DataViewPrototypeGetUint8, CodeStubAssembler) {
@@ -2407,6 +2529,36 @@ TF_BUILTIN(DataViewPrototypeGetInt32, CodeStubAssembler) {
   }
 }
 
+TF_BUILTIN(DataViewPrototypeGetFloat16, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Word32T> argc = UncheckedParameter<Word32T>(Descriptor::kJSActualArgumentsCount);
+  TNode<IntPtrT> arguments_length(ChangeInt32ToIntPtr(UncheckedCast<Int32T>(argc)));
+  TNode<RawPtrT> arguments_frame = UncheckedCast<RawPtrT>(LoadFramePointer());
+  TorqueStructArguments torque_arguments(GetFrameArguments(arguments_frame, arguments_length, FrameArgumentsArgcType::kCountIncludesReceiver));
+  CodeStubArguments arguments(this, torque_arguments);
+  TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = arguments.GetReceiver();
+  USE(parameter1);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  TNode<IntPtrT> tmp2;
+  TNode<Object> tmp3;
+  TNode<Numeric> tmp4;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
+    tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::FLOAT16_ELEMENTS);
+    arguments.PopAndReturn(tmp4);
+  }
+}
+
 TF_BUILTIN(DataViewPrototypeGetFloat32, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Word32T> argc = UncheckedParameter<Word32T>(Descriptor::kJSActualArgumentsCount);
@@ -2527,7 +2679,7 @@ TF_BUILTIN(DataViewPrototypeGetBigInt64, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=556&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=588&c=1
 void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2550,7 +2702,7 @@ void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=561&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=593&c=1
 void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2610,7 +2762,7 @@ void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=578&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=610&c=1
 void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2702,7 +2854,7 @@ void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=601&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=633&c=1
 void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2858,7 +3010,7 @@ void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=645&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=677&c=1
 void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BigInt> p_bigIntValue, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3029,7 +3181,7 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block13);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=684&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=716&c=1
 TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_value, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3062,6 +3214,9 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block45(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3069,7 +3224,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   compiler::CodeAssemblerParameterizedLabel<> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
@@ -3124,7 +3279,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_7);
     tmp6 = ToBoolean_0(state_, TNode<Object>{p_requestedLittleEndian});
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp8 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp7});
     tmp9 = IsDetachedBuffer_0(state_, TNode<JSArrayBuffer>{tmp8});
     ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
@@ -3166,7 +3321,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp14 = CodeStubAssembler(state_).LoadJSArrayBufferViewByteOffset(TNode<JSArrayBufferView>{tmp1});
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     tmp16 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp1, tmp15});
     tmp17 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp16)));
     ca_.Branch(tmp17, &block17, std::vector<compiler::Node*>{}, &block18, std::vector<compiler::Node*>{});
@@ -3177,7 +3332,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   TNode<UintPtrT> tmp20;
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    tmp18 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp18 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
     tmp19 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp18});
     compiler::CodeAssemblerLabel label21(&ca_);
     tmp20 = CodeStubAssembler(state_).LoadVariableLengthJSArrayBufferViewByteLength(TNode<JSArrayBufferView>{tmp1}, TNode<JSArrayBuffer>{tmp19}, &label21);
@@ -3283,61 +3438,85 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
 
   if (block33.is_used()) {
     ca_.Bind(&block33);
-    if ((((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::UINT32_ELEMENTS)) || (CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::INT32_ELEMENTS))))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT16_ELEMENTS)))) {
       ca_.Goto(&block35);
     } else {
       ca_.Goto(&block36);
     }
   }
 
-  TNode<Uint32T> tmp31;
+  TNode<Float16T> tmp31;
+  TNode<Uint32T> tmp32;
   if (block35.is_used()) {
     ca_.Bind(&block35);
-    tmp31 = CodeStubAssembler(state_).TruncateFloat64ToWord32(TNode<Float64T>{tmp28});
-    StoreDataView32_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp31}, TNode<BoolT>{tmp6});
+    tmp31 = CodeStubAssembler(state_).TruncateFloat64ToFloat16(TNode<Float64T>{tmp28});
+    tmp32 = CodeStubAssembler(state_).BitcastFloat16ToUint32(TNode<Float16T>{tmp31});
+    StoreDataView16_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp32}, TNode<BoolT>{tmp6});
     ca_.Goto(&block37);
   }
 
   if (block36.is_used()) {
     ca_.Bind(&block36);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
+    if ((((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::UINT32_ELEMENTS)) || (CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::INT32_ELEMENTS))))) {
       ca_.Goto(&block38);
     } else {
       ca_.Goto(&block39);
     }
   }
 
-  TNode<Float32T> tmp32;
   TNode<Uint32T> tmp33;
   if (block38.is_used()) {
     ca_.Bind(&block38);
-    tmp32 = CodeStubAssembler(state_).TruncateFloat64ToFloat32(TNode<Float64T>{tmp28});
-    tmp33 = CodeStubAssembler(state_).BitcastFloat32ToInt32(TNode<Float32T>{tmp32});
+    tmp33 = CodeStubAssembler(state_).TruncateFloat64ToWord32(TNode<Float64T>{tmp28});
     StoreDataView32_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp33}, TNode<BoolT>{tmp6});
     ca_.Goto(&block40);
   }
 
   if (block39.is_used()) {
     ca_.Bind(&block39);
-    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT32_ELEMENTS)))) {
       ca_.Goto(&block41);
     } else {
       ca_.Goto(&block42);
     }
   }
 
-  TNode<Uint32T> tmp34;
+  TNode<Float32T> tmp34;
   TNode<Uint32T> tmp35;
   if (block41.is_used()) {
     ca_.Bind(&block41);
-    tmp34 = CodeStubAssembler(state_).Float64ExtractLowWord32(TNode<Float64T>{tmp28});
-    tmp35 = CodeStubAssembler(state_).Float64ExtractHighWord32(TNode<Float64T>{tmp28});
-    StoreDataView64_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp34}, TNode<Uint32T>{tmp35}, TNode<BoolT>{tmp6});
+    tmp34 = CodeStubAssembler(state_).TruncateFloat64ToFloat32(TNode<Float64T>{tmp28});
+    tmp35 = CodeStubAssembler(state_).BitcastFloat32ToInt32(TNode<Float32T>{tmp34});
+    StoreDataView32_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp35}, TNode<BoolT>{tmp6});
     ca_.Goto(&block43);
   }
 
   if (block42.is_used()) {
     ca_.Bind(&block42);
+    if (((CodeStubAssembler(state_).ElementsKindEqual(p_kind, ElementsKind::FLOAT64_ELEMENTS)))) {
+      ca_.Goto(&block44);
+    } else {
+      ca_.Goto(&block45);
+    }
+  }
+
+  TNode<Uint32T> tmp36;
+  TNode<Uint32T> tmp37;
+  if (block44.is_used()) {
+    ca_.Bind(&block44);
+    tmp36 = CodeStubAssembler(state_).Float64ExtractLowWord32(TNode<Float64T>{tmp28});
+    tmp37 = CodeStubAssembler(state_).Float64ExtractHighWord32(TNode<Float64T>{tmp28});
+    StoreDataView64_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp36}, TNode<Uint32T>{tmp37}, TNode<BoolT>{tmp6});
+    ca_.Goto(&block46);
+  }
+
+  if (block45.is_used()) {
+    ca_.Bind(&block45);
+    ca_.Goto(&block46);
+  }
+
+  if (block46.is_used()) {
+    ca_.Bind(&block46);
     ca_.Goto(&block43);
   }
 
@@ -3366,11 +3545,11 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
     ca_.Goto(&block28);
   }
 
-  TNode<Undefined> tmp36;
+  TNode<Undefined> tmp38;
   if (block28.is_used()) {
     ca_.Bind(&block28);
-    tmp36 = Undefined_0(state_);
-    ca_.Goto(&block44);
+    tmp38 = Undefined_0(state_);
+    ca_.Goto(&block47);
   }
 
   if (block3.is_used()) {
@@ -3378,8 +3557,8 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
     CodeStubAssembler(state_).ThrowRangeError(TNode<Context>{p_context}, MessageTemplate::kInvalidDataViewAccessorOffset);
   }
 
-    ca_.Bind(&block44);
-  return TNode<Object>{tmp36};
+    ca_.Bind(&block47);
+  return TNode<Object>{tmp38};
 }
 
 TF_BUILTIN(DataViewPrototypeSetUint8, CodeStubAssembler) {
@@ -3582,6 +3761,40 @@ TF_BUILTIN(DataViewPrototypeSetInt32, CodeStubAssembler) {
   }
 }
 
+TF_BUILTIN(DataViewPrototypeSetFloat16, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Word32T> argc = UncheckedParameter<Word32T>(Descriptor::kJSActualArgumentsCount);
+  TNode<IntPtrT> arguments_length(ChangeInt32ToIntPtr(UncheckedCast<Int32T>(argc)));
+  TNode<RawPtrT> arguments_frame = UncheckedCast<RawPtrT>(LoadFramePointer());
+  TorqueStructArguments torque_arguments(GetFrameArguments(arguments_frame, arguments_length, FrameArgumentsArgcType::kCountIncludesReceiver));
+  CodeStubArguments arguments(this, torque_arguments);
+  TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<Object> parameter1 = arguments.GetReceiver();
+  USE(parameter1);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Object> tmp1;
+  TNode<IntPtrT> tmp2;
+  TNode<Object> tmp3;
+  TNode<IntPtrT> tmp4;
+  TNode<Object> tmp5;
+  TNode<Object> tmp6;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
+    tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
+    tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
+    tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::FLOAT16_ELEMENTS);
+    arguments.PopAndReturn(tmp6);
+  }
+}
+
 TF_BUILTIN(DataViewPrototypeSetFloat32, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Word32T> argc = UncheckedParameter<Word32T>(Descriptor::kJSActualArgumentsCount);
@@ -3718,7 +3931,7 @@ TF_BUILTIN(DataViewPrototypeSetBigInt64, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=73&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=77&c=5
 TNode<JSDataView> Cast_JSDataView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3779,7 +3992,7 @@ TNode<JSDataView> Cast_JSDataView_1(compiler::CodeAssemblerState* state_, TNode<
   return TNode<JSDataView>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=74&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=78&c=14
 TNode<JSDataView> UnsafeCast_JSDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3798,7 +4011,7 @@ TNode<JSDataView> UnsafeCast_JSDataView_0(compiler::CodeAssemblerState* state_, 
   return TNode<JSDataView>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=76&c=5
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=80&c=5
 TNode<JSRabGsabDataView> Cast_JSRabGsabDataView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3859,7 +4072,7 @@ TNode<JSRabGsabDataView> Cast_JSRabGsabDataView_1(compiler::CodeAssemblerState* 
   return TNode<JSRabGsabDataView>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=77&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=81&c=14
 TNode<JSRabGsabDataView> UnsafeCast_JSRabGsabDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

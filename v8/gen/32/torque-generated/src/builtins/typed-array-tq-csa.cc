@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,7 +67,9 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
@@ -75,7 +79,7 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=96&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=97&c=1
 TNode<Smi> kStoreSucceded_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -86,7 +90,7 @@ TNode<Smi> kStoreSucceded_0(compiler::CodeAssemblerState* state_) {
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
   return TNode<Smi>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=97&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=98&c=1
 TNode<Smi> kStoreFailureArrayDetachedOrOutOfBounds_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -97,7 +101,7 @@ TNode<Smi> kStoreFailureArrayDetachedOrOutOfBounds_0(compiler::CodeAssemblerStat
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
   return TNode<Smi>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=137&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=149&c=1
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_elementsKindParam) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -117,9 +121,9 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -128,9 +132,11 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   compiler::CodeAssemblerParameterizedLabel<> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BuiltinPtr, BuiltinPtr, BuiltinPtr> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<BoolT> tmp0;
@@ -185,7 +191,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp13;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp12 = FromConstexpr_ElementsKind_constexpr_FLOAT32_ELEMENTS_0(state_, ElementsKind::FLOAT32_ELEMENTS);
+    tmp12 = FromConstexpr_ElementsKind_constexpr_FLOAT16_ELEMENTS_0(state_, ElementsKind::FLOAT16_ELEMENTS);
     tmp13 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp12});
     ca_.Branch(tmp13, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
@@ -195,7 +201,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp16;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    std::tie(tmp14, tmp15, tmp16) = GetTypedArrayAccessor_Float32Elements_0(state_).Flatten();
+    std::tie(tmp14, tmp15, tmp16) = GetTypedArrayAccessor_Float16Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp14, tmp15, tmp16);
   }
 
@@ -203,7 +209,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp18;
   if (block11.is_used()) {
     ca_.Bind(&block11);
-    tmp17 = FromConstexpr_ElementsKind_constexpr_FLOAT64_ELEMENTS_0(state_, ElementsKind::FLOAT64_ELEMENTS);
+    tmp17 = FromConstexpr_ElementsKind_constexpr_FLOAT32_ELEMENTS_0(state_, ElementsKind::FLOAT32_ELEMENTS);
     tmp18 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp17});
     ca_.Branch(tmp18, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
   }
@@ -213,7 +219,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp21;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    std::tie(tmp19, tmp20, tmp21) = GetTypedArrayAccessor_Float64Elements_0(state_).Flatten();
+    std::tie(tmp19, tmp20, tmp21) = GetTypedArrayAccessor_Float32Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp19, tmp20, tmp21);
   }
 
@@ -221,7 +227,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp23;
   if (block14.is_used()) {
     ca_.Bind(&block14);
-    tmp22 = FromConstexpr_ElementsKind_constexpr_UINT8_CLAMPED_ELEMENTS_0(state_, ElementsKind::UINT8_CLAMPED_ELEMENTS);
+    tmp22 = FromConstexpr_ElementsKind_constexpr_FLOAT64_ELEMENTS_0(state_, ElementsKind::FLOAT64_ELEMENTS);
     tmp23 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp22});
     ca_.Branch(tmp23, &block16, std::vector<compiler::Node*>{}, &block17, std::vector<compiler::Node*>{});
   }
@@ -231,7 +237,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp26;
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    std::tie(tmp24, tmp25, tmp26) = GetTypedArrayAccessor_Uint8ClampedElements_0(state_).Flatten();
+    std::tie(tmp24, tmp25, tmp26) = GetTypedArrayAccessor_Float64Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp24, tmp25, tmp26);
   }
 
@@ -239,7 +245,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp28;
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    tmp27 = FromConstexpr_ElementsKind_constexpr_BIGUINT64_ELEMENTS_0(state_, ElementsKind::BIGUINT64_ELEMENTS);
+    tmp27 = FromConstexpr_ElementsKind_constexpr_UINT8_CLAMPED_ELEMENTS_0(state_, ElementsKind::UINT8_CLAMPED_ELEMENTS);
     tmp28 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp27});
     ca_.Branch(tmp28, &block19, std::vector<compiler::Node*>{}, &block20, std::vector<compiler::Node*>{});
   }
@@ -249,7 +255,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp31;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    std::tie(tmp29, tmp30, tmp31) = GetTypedArrayAccessor_BigUint64Elements_0(state_).Flatten();
+    std::tie(tmp29, tmp30, tmp31) = GetTypedArrayAccessor_Uint8ClampedElements_0(state_).Flatten();
     ca_.Goto(&block1, tmp29, tmp30, tmp31);
   }
 
@@ -257,7 +263,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp33;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp32 = FromConstexpr_ElementsKind_constexpr_BIGINT64_ELEMENTS_0(state_, ElementsKind::BIGINT64_ELEMENTS);
+    tmp32 = FromConstexpr_ElementsKind_constexpr_BIGUINT64_ELEMENTS_0(state_, ElementsKind::BIGUINT64_ELEMENTS);
     tmp33 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp32});
     ca_.Branch(tmp33, &block22, std::vector<compiler::Node*>{}, &block23, std::vector<compiler::Node*>{});
   }
@@ -267,38 +273,38 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp36;
   if (block22.is_used()) {
     ca_.Bind(&block22);
-    std::tie(tmp34, tmp35, tmp36) = GetTypedArrayAccessor_BigInt64Elements_0(state_).Flatten();
+    std::tie(tmp34, tmp35, tmp36) = GetTypedArrayAccessor_BigUint64Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp34, tmp35, tmp36);
-  }
-
-  if (block23.is_used()) {
-    ca_.Bind(&block23);
-    ca_.Goto(&block6);
   }
 
   TNode<Int32T> tmp37;
   TNode<BoolT> tmp38;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp37 = FromConstexpr_ElementsKind_constexpr_UINT8_ELEMENTS_0(state_, ElementsKind::UINT8_ELEMENTS);
+  if (block23.is_used()) {
+    ca_.Bind(&block23);
+    tmp37 = FromConstexpr_ElementsKind_constexpr_BIGINT64_ELEMENTS_0(state_, ElementsKind::BIGINT64_ELEMENTS);
     tmp38 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp37});
-    ca_.Branch(tmp38, &block24, std::vector<compiler::Node*>{}, &block25, std::vector<compiler::Node*>{});
+    ca_.Branch(tmp38, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{});
   }
 
   TNode<BuiltinPtr> tmp39;
   TNode<BuiltinPtr> tmp40;
   TNode<BuiltinPtr> tmp41;
-  if (block24.is_used()) {
-    ca_.Bind(&block24);
-    std::tie(tmp39, tmp40, tmp41) = GetTypedArrayAccessor_Uint8Elements_0(state_).Flatten();
+  if (block25.is_used()) {
+    ca_.Bind(&block25);
+    std::tie(tmp39, tmp40, tmp41) = GetTypedArrayAccessor_BigInt64Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp39, tmp40, tmp41);
+  }
+
+  if (block26.is_used()) {
+    ca_.Bind(&block26);
+    ca_.Goto(&block6);
   }
 
   TNode<Int32T> tmp42;
   TNode<BoolT> tmp43;
-  if (block25.is_used()) {
-    ca_.Bind(&block25);
-    tmp42 = FromConstexpr_ElementsKind_constexpr_INT8_ELEMENTS_0(state_, ElementsKind::INT8_ELEMENTS);
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp42 = FromConstexpr_ElementsKind_constexpr_UINT8_ELEMENTS_0(state_, ElementsKind::UINT8_ELEMENTS);
     tmp43 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp42});
     ca_.Branch(tmp43, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
   }
@@ -308,7 +314,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp46;
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    std::tie(tmp44, tmp45, tmp46) = GetTypedArrayAccessor_Int8Elements_0(state_).Flatten();
+    std::tie(tmp44, tmp45, tmp46) = GetTypedArrayAccessor_Uint8Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp44, tmp45, tmp46);
   }
 
@@ -316,7 +322,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp48;
   if (block28.is_used()) {
     ca_.Bind(&block28);
-    tmp47 = FromConstexpr_ElementsKind_constexpr_UINT16_ELEMENTS_0(state_, ElementsKind::UINT16_ELEMENTS);
+    tmp47 = FromConstexpr_ElementsKind_constexpr_INT8_ELEMENTS_0(state_, ElementsKind::INT8_ELEMENTS);
     tmp48 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp47});
     ca_.Branch(tmp48, &block30, std::vector<compiler::Node*>{}, &block31, std::vector<compiler::Node*>{});
   }
@@ -326,7 +332,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp51;
   if (block30.is_used()) {
     ca_.Bind(&block30);
-    std::tie(tmp49, tmp50, tmp51) = GetTypedArrayAccessor_Uint16Elements_0(state_).Flatten();
+    std::tie(tmp49, tmp50, tmp51) = GetTypedArrayAccessor_Int8Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp49, tmp50, tmp51);
   }
 
@@ -334,7 +340,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp53;
   if (block31.is_used()) {
     ca_.Bind(&block31);
-    tmp52 = FromConstexpr_ElementsKind_constexpr_INT16_ELEMENTS_0(state_, ElementsKind::INT16_ELEMENTS);
+    tmp52 = FromConstexpr_ElementsKind_constexpr_UINT16_ELEMENTS_0(state_, ElementsKind::UINT16_ELEMENTS);
     tmp53 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp52});
     ca_.Branch(tmp53, &block33, std::vector<compiler::Node*>{}, &block34, std::vector<compiler::Node*>{});
   }
@@ -344,7 +350,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp56;
   if (block33.is_used()) {
     ca_.Bind(&block33);
-    std::tie(tmp54, tmp55, tmp56) = GetTypedArrayAccessor_Int16Elements_0(state_).Flatten();
+    std::tie(tmp54, tmp55, tmp56) = GetTypedArrayAccessor_Uint16Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp54, tmp55, tmp56);
   }
 
@@ -352,7 +358,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BoolT> tmp58;
   if (block34.is_used()) {
     ca_.Bind(&block34);
-    tmp57 = FromConstexpr_ElementsKind_constexpr_UINT32_ELEMENTS_0(state_, ElementsKind::UINT32_ELEMENTS);
+    tmp57 = FromConstexpr_ElementsKind_constexpr_INT16_ELEMENTS_0(state_, ElementsKind::INT16_ELEMENTS);
     tmp58 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp57});
     ca_.Branch(tmp58, &block36, std::vector<compiler::Node*>{}, &block37, std::vector<compiler::Node*>{});
   }
@@ -362,12 +368,30 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> tmp61;
   if (block36.is_used()) {
     ca_.Bind(&block36);
-    std::tie(tmp59, tmp60, tmp61) = GetTypedArrayAccessor_Uint32Elements_0(state_).Flatten();
+    std::tie(tmp59, tmp60, tmp61) = GetTypedArrayAccessor_Int16Elements_0(state_).Flatten();
     ca_.Goto(&block1, tmp59, tmp60, tmp61);
   }
 
+  TNode<Int32T> tmp62;
+  TNode<BoolT> tmp63;
   if (block37.is_used()) {
     ca_.Bind(&block37);
+    tmp62 = FromConstexpr_ElementsKind_constexpr_UINT32_ELEMENTS_0(state_, ElementsKind::UINT32_ELEMENTS);
+    tmp63 = CodeStubAssembler(state_).ElementsKindEqual(TNode<Int32T>{phi_bb3_1}, TNode<Int32T>{tmp62});
+    ca_.Branch(tmp63, &block39, std::vector<compiler::Node*>{}, &block40, std::vector<compiler::Node*>{});
+  }
+
+  TNode<BuiltinPtr> tmp64;
+  TNode<BuiltinPtr> tmp65;
+  TNode<BuiltinPtr> tmp66;
+  if (block39.is_used()) {
+    ca_.Bind(&block39);
+    std::tie(tmp64, tmp65, tmp66) = GetTypedArrayAccessor_Uint32Elements_0(state_).Flatten();
+    ca_.Goto(&block1, tmp64, tmp65, tmp66);
+  }
+
+  if (block40.is_used()) {
+    ca_.Bind(&block40);
     ca_.Goto(&block6);
   }
 
@@ -381,14 +405,14 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_0(compiler::CodeAssembler
   TNode<BuiltinPtr> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_1, &phi_bb1_2, &phi_bb1_3);
-    ca_.Goto(&block38);
+    ca_.Goto(&block41);
   }
 
-    ca_.Bind(&block38);
+    ca_.Bind(&block41);
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{phi_bb1_1}, TNode<BuiltinPtr>{phi_bb1_2}, TNode<BuiltinPtr>{phi_bb1_3}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=188&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=202&c=1
 TNode<JSTypedArray> EnsureAttached_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array, compiler::CodeAssemblerLabel* label_DetachedOrOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -429,7 +453,7 @@ TNode<JSTypedArray> EnsureAttached_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<JSTypedArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=203&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=217&c=1
 TorqueStructAttachedJSTypedArrayAndLength_0 EnsureAttachedAndReadLength_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array, compiler::CodeAssemblerLabel* label_DetachedOrOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -467,7 +491,7 @@ TorqueStructAttachedJSTypedArrayAndLength_0 EnsureAttachedAndReadLength_0(compil
   return TorqueStructAttachedJSTypedArrayAndLength_0{TNode<JSTypedArray>{tmp2}, TNode<UintPtrT>{tmp0}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=238&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=252&c=1
 TorqueStructAttachedJSTypedArrayWitness_0 NewAttachedJSTypedArrayWitness_0(compiler::CodeAssemblerState* state_, TNode<JSTypedArray> p_array) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -490,7 +514,7 @@ TorqueStructAttachedJSTypedArrayWitness_0 NewAttachedJSTypedArrayWitness_0(compi
   return TorqueStructAttachedJSTypedArrayWitness_0{TNode<JSTypedArray>{p_array}, TNode<JSTypedArray>{p_array}, TNode<BuiltinPtr>{tmp1}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=251&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=265&c=1
 ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -507,7 +531,7 @@ ElementsKind KindForArrayType_Uint8Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::UINT8_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=254&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=268&c=1
 ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -524,7 +548,7 @@ ElementsKind KindForArrayType_Int8Elements_0(compiler::CodeAssemblerState* state
   return ElementsKind::INT8_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=257&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=271&c=1
 ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -541,7 +565,7 @@ ElementsKind KindForArrayType_Uint16Elements_0(compiler::CodeAssemblerState* sta
   return ElementsKind::UINT16_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=260&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=274&c=1
 ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -558,7 +582,7 @@ ElementsKind KindForArrayType_Int16Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::INT16_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=263&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=277&c=1
 ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -575,7 +599,7 @@ ElementsKind KindForArrayType_Uint32Elements_0(compiler::CodeAssemblerState* sta
   return ElementsKind::UINT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=266&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=280&c=1
 ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -592,7 +616,24 @@ ElementsKind KindForArrayType_Int32Elements_0(compiler::CodeAssemblerState* stat
   return ElementsKind::INT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=269&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=283&c=1
+ElementsKind KindForArrayType_Float16Elements_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return ElementsKind::FLOAT16_ELEMENTS;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=286&c=1
 ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -609,7 +650,7 @@ ElementsKind KindForArrayType_Float32Elements_0(compiler::CodeAssemblerState* st
   return ElementsKind::FLOAT32_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=272&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=289&c=1
 ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -626,7 +667,7 @@ ElementsKind KindForArrayType_Float64Elements_0(compiler::CodeAssemblerState* st
   return ElementsKind::FLOAT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=275&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=292&c=1
 ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -643,7 +684,7 @@ ElementsKind KindForArrayType_Uint8ClampedElements_0(compiler::CodeAssemblerStat
   return ElementsKind::UINT8_CLAMPED_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=278&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=295&c=1
 ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -660,7 +701,7 @@ ElementsKind KindForArrayType_BigUint64Elements_0(compiler::CodeAssemblerState* 
   return ElementsKind::BIGUINT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=281&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=298&c=1
 ElementsKind KindForArrayType_BigInt64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -677,7 +718,7 @@ ElementsKind KindForArrayType_BigInt64Elements_0(compiler::CodeAssemblerState* s
   return ElementsKind::BIGINT64_ELEMENTS;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=148&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=160&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -694,7 +735,24 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int32Elements_0(compiler:
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Int32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Int32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Int32Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=150&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=162&c=14
+TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float16Elements_0(compiler::CodeAssemblerState* state_) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Float16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Float16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Float16Elements_0))}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=164&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -711,7 +769,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float32Elements_0(compile
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Float32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Float32Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Float32Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=152&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=166&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -728,7 +786,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Float64Elements_0(compile
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Float64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Float64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Float64Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=154&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=168&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8ClampedElements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -745,7 +803,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8ClampedElements_0(co
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Uint8ClampedElements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Uint8ClampedElements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Uint8ClampedElements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=156&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=170&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigUint64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -762,7 +820,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigUint64Elements_0(compi
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_BigUint64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_BigUint64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_BigUint64Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=158&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=172&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigInt64Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -779,7 +837,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_BigInt64Elements_0(compil
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_BigInt64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_BigInt64Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_BigInt64Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=162&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=176&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -796,7 +854,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint8Elements_0(compiler:
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Uint8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Uint8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Uint8Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=164&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=178&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int8Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -813,7 +871,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int8Elements_0(compiler::
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Int8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Int8Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Int8Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=166&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=180&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -830,7 +888,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint16Elements_0(compiler
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Uint16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Uint16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Uint16Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=168&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=182&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int16Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -847,7 +905,7 @@ TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Int16Elements_0(compiler:
   return TorqueStructTypedArrayAccessor_0{TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kLoadTypedElement_Int16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementNumeric_Int16Elements_0))}, TNode<BuiltinPtr>{ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kStoreTypedElementJSAny_Int16Elements_0))}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=170&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array.tq?l=184&c=14
 TorqueStructTypedArrayAccessor_0 GetTypedArrayAccessor_Uint32Elements_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -924,6 +982,88 @@ TF_BUILTIN(StoreTypedElementJSAny_Int32Elements_0, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Int32Elements_0(state_)), &label0);
+    ca_.Goto(&block3);
+    if (label0.is_used()) {
+      ca_.Bind(&label0);
+      ca_.Goto(&block4);
+    }
+  }
+
+  TNode<Smi> tmp1;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp1 = kStoreFailureArrayDetachedOrOutOfBounds_0(state_);
+    CodeStubAssembler(state_).Return(tmp1);
+  }
+
+  TNode<Smi> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp2 = kStoreSucceded_0(state_);
+    CodeStubAssembler(state_).Return(tmp2);
+  }
+}
+
+TF_BUILTIN(LoadTypedElement_Float16Elements_0, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<JSTypedArray> parameter0 = UncheckedParameter<JSTypedArray>(Descriptor::kArray);
+  USE(parameter0);
+  TNode<UintPtrT> parameter1 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
+  USE(parameter1);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<RawPtrT> tmp0;
+  TNode<Numeric> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = CodeStubAssembler(state_).LoadJSTypedArrayDataPtr(TNode<JSTypedArray>{parameter0});
+    tmp1 = CodeStubAssembler(state_).LoadFixedTypedArrayElementAsTagged(TNode<RawPtrT>{tmp0}, TNode<UintPtrT>{parameter1}, (KindForArrayType_Float16Elements_0(state_)));
+    CodeStubAssembler(state_).Return(tmp1);
+  }
+}
+
+TF_BUILTIN(StoreTypedElementNumeric_Float16Elements_0, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<JSTypedArray> parameter1 = UncheckedParameter<JSTypedArray>(Descriptor::kTypedArray);
+  USE(parameter1);
+  TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
+  USE(parameter2);
+  TNode<Numeric> parameter3 = UncheckedParameter<Numeric>(Descriptor::kValue);
+  USE(parameter3);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Smi> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromNumeric(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Numeric>{parameter3}, (KindForArrayType_Float16Elements_0(state_)));
+    tmp0 = kStoreSucceded_0(state_);
+    CodeStubAssembler(state_).Return(tmp0);
+  }
+}
+
+TF_BUILTIN(StoreTypedElementJSAny_Float16Elements_0, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<JSTypedArray> parameter1 = UncheckedParameter<JSTypedArray>(Descriptor::kTypedArray);
+  USE(parameter1);
+  TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
+  USE(parameter2);
+  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  USE(parameter3);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label0(&ca_);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Float16Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);

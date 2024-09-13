@@ -3,10 +3,37 @@
 #include "torque-generated/class-verifiers.h"
 #include "src/objects/instance-type-inl.h"
 
+#include "src/objects/torque-defined-classes.h"
+
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1
+class TorqueGeneratedSloppyArgumentsElementsAsserts {
+  static constexpr int kStartOfStrongFieldsOffset = FixedArrayBase::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=29&c=3
+  static constexpr int kContextOffset = FixedArrayBase::kHeaderSize;
+  static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=30&c=3
+  static constexpr int kArgumentsOffset = kContextOffsetEnd + 1;
+  static constexpr int kArgumentsOffsetEnd = kArgumentsOffset + kTaggedSize - 1;
+  static constexpr int kHeaderSize = kArgumentsOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
+  static constexpr int kMappedEntriesOffset = kArgumentsOffsetEnd + 1;
+  static constexpr int kMappedEntriesOffsetEnd = kMappedEntriesOffset + 0 - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kMappedEntriesOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
+
+  static_assert(kContextOffset == SloppyArgumentsElements::kContextOffset,
+                "Values of SloppyArgumentsElements::kContextOffset defined in Torque and C++ do not match");
+  static_assert(kArgumentsOffset == SloppyArgumentsElements::kArgumentsOffset,
+                "Values of SloppyArgumentsElements::kArgumentsOffset defined in Torque and C++ do not match");
+  static_assert(kMappedEntriesOffset == SloppyArgumentsElements::kMappedEntriesOffset,
+                "Values of SloppyArgumentsElements::kMappedEntriesOffset defined in Torque and C++ do not match");
+};
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
 bool IsStrongDescriptorArray_NonInline(Tagged<HeapObject> o) {
   return IsStrongDescriptorArray(o);
 }
@@ -15,7 +42,7 @@ bool IsStrongDescriptorArray_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedStrongDescriptorArray<StrongDescriptorArray, DescriptorArray>::StrongDescriptorArrayVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::StrongDescriptorArrayVerify(StrongDescriptorArray::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::StrongDescriptorArrayVerify(Cast<StrongDescriptorArray>(*this), isolate);
 }
 
 
@@ -29,7 +56,7 @@ bool IsInternalClass_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedInternalClass<InternalClass, HeapObject>::InternalClassVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::InternalClassVerify(InternalClass::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::InternalClassVerify(Cast<InternalClass>(*this), isolate);
 }
 
 
@@ -43,7 +70,7 @@ bool IsSmiPair_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSmiPair<SmiPair, HeapObject>::SmiPairVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SmiPairVerify(SmiPair::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SmiPairVerify(Cast<SmiPair>(*this), isolate);
 }
 
 
@@ -57,7 +84,7 @@ bool IsSmiBox_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSmiBox<SmiBox, HeapObject>::SmiBoxVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SmiBoxVerify(SmiBox::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SmiBoxVerify(Cast<SmiBox>(*this), isolate);
 }
 
 
@@ -71,7 +98,7 @@ bool IsExportedSubClassBase_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedExportedSubClassBase<ExportedSubClassBase, HeapObject>::ExportedSubClassBaseVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ExportedSubClassBaseVerify(ExportedSubClassBase::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ExportedSubClassBaseVerify(Cast<ExportedSubClassBase>(*this), isolate);
 }
 
 
@@ -85,7 +112,7 @@ bool IsExportedSubClass_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedExportedSubClass<ExportedSubClass, ExportedSubClassBase>::ExportedSubClassVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ExportedSubClassVerify(ExportedSubClass::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ExportedSubClassVerify(Cast<ExportedSubClass>(*this), isolate);
 }
 
 
@@ -99,7 +126,7 @@ bool IsAbstractInternalClass_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAbstractInternalClass<AbstractInternalClass, HeapObject>::AbstractInternalClassVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AbstractInternalClassVerify(AbstractInternalClass::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AbstractInternalClassVerify(Cast<AbstractInternalClass>(*this), isolate);
 }
 
 
@@ -113,7 +140,7 @@ bool IsAbstractInternalClassSubclass1_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAbstractInternalClassSubclass1<AbstractInternalClassSubclass1, AbstractInternalClass>::AbstractInternalClassSubclass1Verify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AbstractInternalClassSubclass1Verify(AbstractInternalClassSubclass1::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AbstractInternalClassSubclass1Verify(Cast<AbstractInternalClassSubclass1>(*this), isolate);
 }
 
 
@@ -127,7 +154,7 @@ bool IsAbstractInternalClassSubclass2_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedAbstractInternalClassSubclass2<AbstractInternalClassSubclass2, AbstractInternalClass>::AbstractInternalClassSubclass2Verify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::AbstractInternalClassSubclass2Verify(AbstractInternalClassSubclass2::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::AbstractInternalClassSubclass2Verify(Cast<AbstractInternalClassSubclass2>(*this), isolate);
 }
 
 
@@ -141,7 +168,7 @@ bool IsInternalClassWithStructElements_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedInternalClassWithStructElements<InternalClassWithStructElements, HeapObject>::InternalClassWithStructElementsVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::InternalClassWithStructElementsVerify(InternalClassWithStructElements::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::InternalClassWithStructElementsVerify(Cast<InternalClassWithStructElements>(*this), isolate);
 }
 
 
@@ -155,7 +182,7 @@ bool IsExportedSubClass2_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedExportedSubClass2<ExportedSubClass2, ExportedSubClassBase>::ExportedSubClass2Verify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::ExportedSubClass2Verify(ExportedSubClass2::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::ExportedSubClass2Verify(Cast<ExportedSubClass2>(*this), isolate);
 }
 
 
@@ -169,12 +196,26 @@ bool IsSortState_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedSortState<SortState, HeapObject>::SortStateVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::SortStateVerify(SortState::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::SortStateVerify(Cast<SortState>(*this), isolate);
 }
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+bool IsWasmFastApiCallData_NonInline(Tagged<HeapObject> o) {
+  return IsWasmFastApiCallData(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedWasmFastApiCallData<WasmFastApiCallData, HeapObject>::WasmFastApiCallDataVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::WasmFastApiCallDataVerify(Cast<WasmFastApiCallData>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
 bool IsWasmStringViewIter_NonInline(Tagged<HeapObject> o) {
   return IsWasmStringViewIter(o);
 }
@@ -183,7 +224,7 @@ bool IsWasmStringViewIter_NonInline(Tagged<HeapObject> o) {
 
 template <>
 void TorqueGeneratedWasmStringViewIter<WasmStringViewIter, HeapObject>::WasmStringViewIterVerify(Isolate* isolate) {
-  TorqueGeneratedClassVerifiers::WasmStringViewIterVerify(WasmStringViewIter::cast(*this), isolate);
+  TorqueGeneratedClassVerifiers::WasmStringViewIterVerify(Cast<WasmStringViewIter>(*this), isolate);
 }
 
 

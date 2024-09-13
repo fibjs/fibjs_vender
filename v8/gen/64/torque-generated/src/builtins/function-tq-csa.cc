@@ -1,6 +1,7 @@
 #include "src/ast/ast.h"
 #include "src/builtins/builtins-array-gen.h"
 #include "src/builtins/builtins-bigint-gen.h"
+#include "src/builtins/builtins-call-gen.h"
 #include "src/builtins/builtins-collections-gen.h"
 #include "src/builtins/builtins-constructor-gen.h"
 #include "src/builtins/builtins-data-view-gen.h"
@@ -31,6 +32,7 @@
 #include "src/objects/js-collator.h"
 #include "src/objects/js-date-time-format.h"
 #include "src/objects/js-display-names.h"
+#include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-duration-format.h"
 #include "src/objects/js-function.h"
 #include "src/objects/js-generator.h"
@@ -44,7 +46,7 @@
 #include "src/objects/js-raw-json.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segment-iterator-inl.h"
 #include "src/objects/js-segmenter.h"
 #include "src/objects/js-segments.h"
 #include "src/objects/js-shadow-realm.h"
@@ -65,16 +67,18 @@
 #include "src/objects/turbofan-types.h"
 #include "src/objects/turboshaft-types.h"
 #include "src/torque/runtime-support.h"
+#include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/function-tq-csa.h"
-#include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frames-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/function-tq-csa.h"
+#include "torque-generated/src/builtins/promise-any-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/descriptor-array-tq-csa.h"
@@ -103,7 +107,7 @@ TF_BUILTIN(FunctionPrototypeHasInstance, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=27&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=29&c=1
 void CheckAccessor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<DescriptorArray> p_array, int32_t p_index, TNode<Name> p_name, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -227,18 +231,20 @@ USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Map> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Map> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -260,15 +266,12 @@ USE(parameter3);
   }
 
   TNode<IntPtrT> tmp2;
-  TNode<Map> tmp3;
-  TNode<BoolT> tmp4;
+  TNode<BoolT> tmp3;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    CodeStubAssembler(state_).Comment("Disallow binding of slow-mode functions");
-    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp3 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp2});
-    tmp4 = ConstructorBuiltinsAssembler(state_).IsDictionaryMap(TNode<Map>{tmp3});
-    ca_.Branch(tmp4, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
+    tmp2 = FromConstexpr_intptr_constexpr_intptr_0(state_, Code::kMaxArguments);
+    tmp3 = CodeStubAssembler(state_).IntPtrGreaterThanOrEqual(TNode<IntPtrT>{torque_arguments.actual_count}, TNode<IntPtrT>{tmp2});
+    ca_.Branch(tmp3, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
   if (block7.is_used()) {
@@ -276,23 +279,16 @@ USE(parameter3);
     ca_.Goto(&block2);
   }
 
-  TNode<IntPtrT> tmp5;
-  TNode<Map> tmp6;
-  TNode<IntPtrT> tmp7;
-  TNode<Uint32T> tmp8;
-  TNode<Int32T> tmp9;
-  TNode<Int32T> tmp10;
-  TNode<BoolT> tmp11;
+  TNode<IntPtrT> tmp4;
+  TNode<Map> tmp5;
+  TNode<BoolT> tmp6;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp6 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp5});
-    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp8 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp6, tmp7});
-    tmp9 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).DecodeWord32<base::BitField<int32_t, 10, 10, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp8)));
-    tmp10 = FromConstexpr_int32_constexpr_int31_0(state_, JSFunction::kMinDescriptorsForFastBindAndWrap);
-    tmp11 = CodeStubAssembler(state_).Int32LessThan(TNode<Int32T>{tmp9}, TNode<Int32T>{tmp10});
-    ca_.Branch(tmp11, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+    CodeStubAssembler(state_).Comment("Disallow binding of slow-mode functions");
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp4});
+    tmp6 = ConstructorBuiltinsAssembler(state_).IsDictionaryMap(TNode<Map>{tmp5});
+    ca_.Branch(tmp6, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
   if (block9.is_used()) {
@@ -300,38 +296,44 @@ USE(parameter3);
     ca_.Goto(&block2);
   }
 
-  TNode<IntPtrT> tmp12;
-  TNode<Map> tmp13;
-  TNode<IntPtrT> tmp14;
-  TNode<DescriptorArray> tmp15;
-  TNode<String> tmp16;
+  TNode<IntPtrT> tmp7;
+  TNode<Map> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint32T> tmp10;
+  TNode<Int32T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<BoolT> tmp13;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp13 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp12});
-    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    tmp15 = CodeStubAssembler(state_).LoadReference<DescriptorArray>(CodeStubAssembler::Reference{tmp13, tmp14});
-    tmp16 = CodeStubAssembler(state_).LengthStringConstant();
-    compiler::CodeAssemblerLabel label17(&ca_);
-    CheckAccessor_0(state_, TNode<Context>{parameter0}, TNode<DescriptorArray>{tmp15}, JSFunctionOrBoundFunctionOrWrappedFunction::kLengthDescriptorIndex, TNode<Name>{tmp16}, &label17);
-    ca_.Goto(&block11);
-    if (label17.is_used()) {
-      ca_.Bind(&label17);
-      ca_.Goto(&block12);
-    }
+    tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp8 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp7});
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9});
+    tmp11 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).DecodeWord32<base::BitField<int32_t, 10, 10, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp10)));
+    tmp12 = FromConstexpr_int32_constexpr_int31_0(state_, JSFunction::kMinDescriptorsForFastBindAndWrap);
+    tmp13 = CodeStubAssembler(state_).Int32LessThan(TNode<Int32T>{tmp11}, TNode<Int32T>{tmp12});
+    ca_.Branch(tmp13, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
 
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
     ca_.Goto(&block2);
   }
 
+  TNode<IntPtrT> tmp14;
+  TNode<Map> tmp15;
+  TNode<IntPtrT> tmp16;
+  TNode<DescriptorArray> tmp17;
   TNode<String> tmp18;
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    tmp18 = CodeStubAssembler(state_).NameStringConstant();
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp15 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp14});
+    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    tmp17 = CodeStubAssembler(state_).LoadReference<DescriptorArray>(CodeStubAssembler::Reference{tmp15, tmp16});
+    tmp18 = CodeStubAssembler(state_).LengthStringConstant();
     compiler::CodeAssemblerLabel label19(&ca_);
-    CheckAccessor_0(state_, TNode<Context>{parameter0}, TNode<DescriptorArray>{tmp15}, JSFunctionOrBoundFunctionOrWrappedFunction::kNameDescriptorIndex, TNode<Name>{tmp18}, &label19);
+    CheckAccessor_0(state_, TNode<Context>{parameter0}, TNode<DescriptorArray>{tmp17}, JSFunctionOrBoundFunctionOrWrappedFunction::kLengthDescriptorIndex, TNode<Name>{tmp18}, &label19);
     ca_.Goto(&block13);
     if (label19.is_used()) {
       ca_.Bind(&label19);
@@ -344,144 +346,162 @@ USE(parameter3);
     ca_.Goto(&block2);
   }
 
-  TNode<BoolT> tmp20;
+  TNode<String> tmp20;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    tmp20 = CodeStubAssembler(state_).IsConstructor(TNode<HeapObject>{tmp0});
-    ca_.Branch(tmp20, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{});
+    tmp20 = CodeStubAssembler(state_).NameStringConstant();
+    compiler::CodeAssemblerLabel label21(&ca_);
+    CheckAccessor_0(state_, TNode<Context>{parameter0}, TNode<DescriptorArray>{tmp17}, JSFunctionOrBoundFunctionOrWrappedFunction::kNameDescriptorIndex, TNode<Name>{tmp20}, &label21);
+    ca_.Goto(&block15);
+    if (label21.is_used()) {
+      ca_.Bind(&label21);
+      ca_.Goto(&block16);
+    }
   }
 
-  TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
-  TNode<IntPtrT> tmp23;
-  TNode<Map> tmp24;
-  if (block15.is_used()) {
-    ca_.Bind(&block15);
-    tmp21 = BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX_0(state_);
-    std::tie(tmp22, tmp23) = NativeContextSlot_NativeContext_Map_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp21}).Flatten();
-    tmp24 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp22, tmp23});
-    ca_.Goto(&block17, tmp24);
-  }
-
-  TNode<IntPtrT> tmp25;
-  TNode<Object> tmp26;
-  TNode<IntPtrT> tmp27;
-  TNode<Map> tmp28;
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    tmp25 = BOUND_FUNCTION_WITHOUT_CONSTRUCTOR_MAP_INDEX_0(state_);
-    std::tie(tmp26, tmp27) = NativeContextSlot_NativeContext_Map_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp25}).Flatten();
-    tmp28 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp26, tmp27});
-    ca_.Goto(&block17, tmp28);
-  }
-
-  TNode<Map> phi_bb17_12;
-  TNode<IntPtrT> tmp29;
-  TNode<Map> tmp30;
-  TNode<IntPtrT> tmp31;
-  TNode<HeapObject> tmp32;
-  TNode<IntPtrT> tmp33;
-  TNode<HeapObject> tmp34;
-  TNode<BoolT> tmp35;
-  if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_12);
-    tmp29 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp30 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp29});
-    tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp32 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp30, tmp31});
-    tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp34 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{phi_bb17_12, tmp33});
-    tmp35 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp32}, TNode<HeapObject>{tmp34});
-    ca_.Branch(tmp35, &block19, std::vector<compiler::Node*>{}, &block20, std::vector<compiler::Node*>{});
-  }
-
-  if (block19.is_used()) {
-    ca_.Bind(&block19);
     ca_.Goto(&block2);
   }
 
-  TNode<IntPtrT> tmp36;
+  TNode<BoolT> tmp22;
+  if (block15.is_used()) {
+    ca_.Bind(&block15);
+    tmp22 = CodeStubAssembler(state_).IsConstructor(TNode<HeapObject>{tmp0});
+    ca_.Branch(tmp22, &block17, std::vector<compiler::Node*>{}, &block18, std::vector<compiler::Node*>{});
+  }
+
+  TNode<IntPtrT> tmp23;
+  TNode<Object> tmp24;
+  TNode<IntPtrT> tmp25;
+  TNode<Map> tmp26;
+  if (block17.is_used()) {
+    ca_.Bind(&block17);
+    tmp23 = BOUND_FUNCTION_WITH_CONSTRUCTOR_MAP_INDEX_0(state_);
+    std::tie(tmp24, tmp25) = NativeContextSlot_NativeContext_Map_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp23}).Flatten();
+    tmp26 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp24, tmp25});
+    ca_.Goto(&block19, tmp26);
+  }
+
+  TNode<IntPtrT> tmp27;
+  TNode<Object> tmp28;
+  TNode<IntPtrT> tmp29;
+  TNode<Map> tmp30;
+  if (block18.is_used()) {
+    ca_.Bind(&block18);
+    tmp27 = BOUND_FUNCTION_WITHOUT_CONSTRUCTOR_MAP_INDEX_0(state_);
+    std::tie(tmp28, tmp29) = NativeContextSlot_NativeContext_Map_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp27}).Flatten();
+    tmp30 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp28, tmp29});
+    ca_.Goto(&block19, tmp30);
+  }
+
+  TNode<Map> phi_bb19_12;
+  TNode<IntPtrT> tmp31;
+  TNode<Map> tmp32;
+  TNode<IntPtrT> tmp33;
+  TNode<HeapObject> tmp34;
+  TNode<IntPtrT> tmp35;
+  TNode<HeapObject> tmp36;
   TNode<BoolT> tmp37;
-  if (block20.is_used()) {
-    ca_.Bind(&block20);
-    tmp36 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp37 = CodeStubAssembler(state_).IntPtrLessThanOrEqual(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp36});
+  if (block19.is_used()) {
+    ca_.Bind(&block19, &phi_bb19_12);
+    tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp32 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp0, tmp31});
+    tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp34 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp32, tmp33});
+    tmp35 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp36 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{phi_bb19_12, tmp35});
+    tmp37 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp34}, TNode<HeapObject>{tmp36});
     ca_.Branch(tmp37, &block21, std::vector<compiler::Node*>{}, &block22, std::vector<compiler::Node*>{});
   }
 
-  TNode<FixedArray> tmp38;
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    tmp38 = kEmptyFixedArray_0(state_);
-    ca_.Goto(&block23, tmp38);
+    ca_.Goto(&block2);
   }
 
-  TNode<IntPtrT> tmp39;
-  TNode<IntPtrT> tmp40;
-  TNode<IntPtrT> tmp41;
-  TNode<FixedArray> tmp42;
+  TNode<IntPtrT> tmp38;
+  TNode<BoolT> tmp39;
   if (block22.is_used()) {
     ca_.Bind(&block22);
-    tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp40 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp39});
-    tmp41 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp42 = NewFixedArray_ArgumentsIterator_0(state_, TNode<IntPtrT>{tmp40}, TorqueStructArgumentsIterator_0{TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp41}});
-    ca_.Goto(&block23, tmp42);
+    tmp38 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp39 = CodeStubAssembler(state_).IntPtrLessThanOrEqual(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp38});
+    ca_.Branch(tmp39, &block23, std::vector<compiler::Node*>{}, &block24, std::vector<compiler::Node*>{});
   }
 
-  TNode<FixedArray> phi_bb23_13;
+  TNode<FixedArray> tmp40;
+  if (block23.is_used()) {
+    ca_.Bind(&block23);
+    tmp40 = kEmptyFixedArray_0(state_);
+    ca_.Goto(&block25, tmp40);
+  }
+
+  TNode<IntPtrT> tmp41;
+  TNode<IntPtrT> tmp42;
   TNode<IntPtrT> tmp43;
-  TNode<Object> tmp44;
-  TNode<FixedArray> tmp45;
-  TNode<FixedArray> tmp46;
-  TNode<BoolT> tmp47;
-  TNode<BoolT> tmp48;
-  TNode<IntPtrT> tmp49;
-  TNode<HeapObject> tmp50;
+  TNode<FixedArray> tmp44;
+  if (block24.is_used()) {
+    ca_.Bind(&block24);
+    tmp41 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp42 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp41});
+    tmp43 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp44 = NewFixedArray_ArgumentsIterator_0(state_, TNode<IntPtrT>{tmp42}, TorqueStructArgumentsIterator_0{TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp43}});
+    ca_.Goto(&block25, tmp44);
+  }
+
+  TNode<FixedArray> phi_bb25_13;
+  TNode<IntPtrT> tmp45;
+  TNode<Object> tmp46;
+  TNode<FixedArray> tmp47;
+  TNode<FixedArray> tmp48;
+  TNode<BoolT> tmp49;
+  TNode<BoolT> tmp50;
   TNode<IntPtrT> tmp51;
-  TNode<IntPtrT> tmp52;
+  TNode<HeapObject> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
   TNode<IntPtrT> tmp55;
   TNode<IntPtrT> tmp56;
-  TNode<JSBoundFunction> tmp57;
-  if (block23.is_used()) {
-    ca_.Bind(&block23, &phi_bb23_13);
-    tmp43 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp44 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp43});
-    tmp45 = kEmptyFixedArray_0(state_);
-    tmp46 = kEmptyFixedArray_0(state_);
-    tmp47 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp48 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp49 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
-    tmp50 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp49}, TNode<Map>{phi_bb17_12}, TNode<BoolT>{tmp47}, TNode<BoolT>{tmp48});
-    tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp50, tmp51}, phi_bb17_12);
-    tmp52 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp50, tmp52}, tmp45);
-    tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp50, tmp53}, tmp46);
-    tmp54 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp50, tmp54}, tmp0);
-    tmp55 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp50, tmp55}, tmp44);
-    tmp56 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp50, tmp56}, phi_bb23_13);
-    tmp57 = TORQUE_CAST(TNode<HeapObject>{tmp50});
-    arguments.PopAndReturn(tmp57);
+  TNode<IntPtrT> tmp57;
+  TNode<IntPtrT> tmp58;
+  TNode<JSBoundFunction> tmp59;
+  if (block25.is_used()) {
+    ca_.Bind(&block25, &phi_bb25_13);
+    tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp46 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp45});
+    tmp47 = kEmptyFixedArray_0(state_);
+    tmp48 = kEmptyFixedArray_0(state_);
+    tmp49 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp50 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
+    tmp52 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp51}, TNode<Map>{phi_bb19_12}, TNode<BoolT>{tmp49}, TNode<BoolT>{tmp50});
+    tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp52, tmp53}, phi_bb19_12);
+    tmp54 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp52, tmp54}, tmp47);
+    tmp55 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp52, tmp55}, tmp48);
+    tmp56 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp52, tmp56}, tmp0);
+    tmp57 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp52, tmp57}, tmp46);
+    tmp58 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
+    CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp52, tmp58}, phi_bb25_13);
+    tmp59 = TORQUE_CAST(TNode<HeapObject>{tmp52});
+    arguments.PopAndReturn(tmp59);
   }
 
-  TNode<JSFunction> tmp58;
-  TNode<Int32T> tmp59;
+  TNode<JSFunction> tmp60;
+  TNode<Int32T> tmp61;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp58 = LoadTargetFromFrame_0(state_);
-    tmp59 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
-   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kFunctionPrototypeBind, parameter0, tmp58, parameter2, tmp59);
+    tmp60 = LoadTargetFromFrame_0(state_);
+    tmp61 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
+   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kFunctionPrototypeBind, parameter0, tmp60, parameter2, tmp61);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=35&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=37&c=3
 TNode<AccessorInfo> Cast_AccessorInfo_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -542,7 +562,7 @@ TNode<AccessorInfo> Cast_AccessorInfo_1(compiler::CodeAssemblerState* state_, TN
   return TNode<AccessorInfo>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=72&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=76&c=14
 TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -554,7 +574,7 @@ TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::Code
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1) = NativeContextSlot_Map_0(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
+    std::tie(tmp0, tmp1) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{p_context}, TNode<IntPtrT>{p_index}).Flatten();
     ca_.Goto(&block2);
   }
 
@@ -562,7 +582,7 @@ TorqueStructReference_Map_0 NativeContextSlot_NativeContext_Map_0(compiler::Code
   return TorqueStructReference_Map_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=85&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/function.tq?l=89&c=13
 TNode<FixedArray> NewFixedArray_ArgumentsIterator_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_length, TorqueStructArgumentsIterator_0 p_it) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

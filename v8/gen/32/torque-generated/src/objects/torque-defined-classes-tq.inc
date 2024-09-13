@@ -10,38 +10,13 @@ class AbstractInternalClassSubclass2;
 class InternalClassWithStructElements;
 class ExportedSubClass2;
 class SortState;
+class WasmFastApiCallData;
 class WasmStringViewIter;
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1
-template <class D, class P>
-class TorqueGeneratedSloppyArgumentsElementsAsserts {
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=29&c=3
-  static constexpr int kContextOffset = P::kHeaderSize;
-  static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=30&c=3
-  static constexpr int kArgumentsOffset = kContextOffsetEnd + 1;
-  static constexpr int kArgumentsOffsetEnd = kArgumentsOffset + kTaggedSize - 1;
-  static constexpr int kHeaderSize = kArgumentsOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
-  static constexpr int kMappedEntriesOffset = kArgumentsOffsetEnd + 1;
-  static constexpr int kMappedEntriesOffsetEnd = kMappedEntriesOffset + 0 - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kMappedEntriesOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
-
-  static_assert(kContextOffset == D::kContextOffset,
-                "Values of SloppyArgumentsElements::kContextOffset defined in Torque and C++ do not match");
-  static_assert(kArgumentsOffset == D::kArgumentsOffset,
-                "Values of SloppyArgumentsElements::kArgumentsOffset defined in Torque and C++ do not match");
-  static_assert(kMappedEntriesOffset == D::kMappedEntriesOffset,
-                "Values of SloppyArgumentsElements::kMappedEntriesOffset defined in Torque and C++ do not match");
-};
-
 // Alias for IsStrongDescriptorArray() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
 V8_EXPORT_PRIVATE bool IsStrongDescriptorArray_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
 template <class D, class P>
 class TorqueGeneratedStrongDescriptorArray : public P {
   static_assert(
@@ -57,17 +32,10 @@ class TorqueGeneratedStrongDescriptorArray : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(StrongDescriptorArray)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
   V8_EXPORT_PRIVATE void StrongDescriptorArrayVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -77,14 +45,14 @@ class TorqueGeneratedStrongDescriptorArray : public P {
   static constexpr int kEndOfStrongFieldsOffset = P::kHeaderSize;
   static constexpr int kHeaderSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
   V8_INLINE static constexpr int32_t SizeFor(int number_of_all_descriptors) {
     int32_t size = kHeaderSize;
     size += number_of_all_descriptors * 12;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=30&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor(this->number_of_all_descriptors());
   }
@@ -136,20 +104,13 @@ class TorqueGeneratedInternalClass : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
-  inline Tagged<Object> b() const;
+  inline Tagged<Number> b() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
-  inline Tagged<Object> b(PtrComprCageBase cage_base) const;
+  inline Tagged<Number> b(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
-  inline void set_b(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_b(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(InternalClass)
 
 #ifdef VERIFY_HEAP
@@ -233,13 +194,6 @@ class TorqueGeneratedSmiPair : public P {
   inline void set_b(int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(SmiPair)
 
 #ifdef VERIFY_HEAP
@@ -323,13 +277,6 @@ class TorqueGeneratedSmiBox : public P {
   inline void set_unrelated(int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(SmiBox)
 
 #ifdef VERIFY_HEAP
@@ -414,13 +361,6 @@ class TorqueGeneratedExportedSubClassBase : public P {
   inline Tagged<HeapObject> b(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1180&c=3
   inline void set_b(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
 
   DECL_PRINTER(ExportedSubClassBase)
 
@@ -508,13 +448,6 @@ class TorqueGeneratedExportedSubClass : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1174&c=3
   inline void set_e_field(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(ExportedSubClass)
 
 #ifdef VERIFY_HEAP
@@ -591,13 +524,6 @@ class TorqueGeneratedAbstractInternalClass : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(AbstractInternalClass)
 
 #ifdef VERIFY_HEAP
@@ -651,13 +577,6 @@ class TorqueGeneratedAbstractInternalClassSubclass1 : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(AbstractInternalClassSubclass1)
 
 #ifdef VERIFY_HEAP
@@ -725,13 +644,6 @@ class TorqueGeneratedAbstractInternalClassSubclass2 : public P {
 
  protected: // not extern or @export
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(AbstractInternalClassSubclass2)
 
 #ifdef VERIFY_HEAP
@@ -841,13 +753,6 @@ class TorqueGeneratedInternalClassWithStructElements : public P {
   inline void set_more_entries_b(int i, int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(InternalClassWithStructElements)
 
 #ifdef VERIFY_HEAP
@@ -948,13 +853,6 @@ class TorqueGeneratedExportedSubClass2 : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
   inline void set_z_field(int value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(ExportedSubClass2)
 
 #ifdef VERIFY_HEAP
@@ -1046,19 +944,19 @@ class TorqueGeneratedSortState : public P {
 
   // Torque type: Number
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
-  inline Tagged<Object> initialReceiverLength() const;
+  inline Tagged<Number> initialReceiverLength() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
-  inline Tagged<Object> initialReceiverLength(PtrComprCageBase cage_base) const;
+  inline Tagged<Number> initialReceiverLength(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=53&c=3
-  inline void set_initialReceiverLength(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_initialReceiverLength(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class JSFunction | CallableApiObject | CallableJSProxy | class JSBoundFunction | class JSWrappedFunction)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
-  inline Tagged<HeapObject> userCmpFn() const;
+  inline Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> userCmpFn() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
-  inline Tagged<HeapObject> userCmpFn(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> userCmpFn(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=56&c=3
-  inline void set_userCmpFn(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_userCmpFn(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=61&c=3
   inline int sortComparePtr() const;
@@ -1127,13 +1025,6 @@ class TorqueGeneratedSortState : public P {
   inline void set_numberOfUndefined(int value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/third_party/v8/builtins/array-sort.tq?l=17&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(SortState)
 
 #ifdef VERIFY_HEAP
@@ -1229,11 +1120,109 @@ class SortState : public TorqueGeneratedSortState<SortState, HeapObject> {
   TQ_OBJECT_CONSTRUCTORS(SortState)
 };
 
+// Alias for IsWasmFastApiCallData() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+V8_EXPORT_PRIVATE bool IsWasmFastApiCallData_NonInline(Tagged<HeapObject> o);
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+template <class D, class P>
+class TorqueGeneratedWasmFastApiCallData : public P {
+  static_assert(
+      std::is_same<WasmFastApiCallData, D>::value,
+      "Use this class as direct base for WasmFastApiCallData.");
+  static_assert(
+      std::is_same<HeapObject, P>::value,
+      "Pass in HeapObject as second template parameter for TorqueGeneratedWasmFastApiCallData.");
+
+ public: 
+  using Super = P;
+  using TorqueGeneratedClass = TorqueGeneratedWasmFastApiCallData<D,P>;
+
+ protected: // not extern or @export
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+  inline Tagged<HeapObject> signature() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+  inline Tagged<HeapObject> signature(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+  inline void set_signature(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=49&c=3
+  inline Tagged<Object> callback_data() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=49&c=3
+  inline Tagged<Object> callback_data(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=49&c=3
+  inline void set_callback_data(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // Torque type: (class Null | Weak<class Map>)
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
+  inline Tagged<Union<MaybeObject, Null>> cached_map() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
+  inline Tagged<Union<MaybeObject, Null>> cached_map(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
+  inline void set_cached_map(Tagged<Union<MaybeObject, Null>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+ public:
+  DECL_PRINTER(WasmFastApiCallData)
+
+#ifdef VERIFY_HEAP
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+  V8_EXPORT_PRIVATE void WasmFastApiCallDataVerify(Isolate* isolate);
+#endif  // VERIFY_HEAP
+
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=48&c=3
+  static constexpr int kSignatureOffset = P::kHeaderSize;
+  static constexpr int kSignatureOffsetEnd = kSignatureOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=49&c=3
+  static constexpr int kCallbackDataOffset = kSignatureOffsetEnd + 1;
+  static constexpr int kCallbackDataOffsetEnd = kCallbackDataOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kCallbackDataOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kCallbackDataOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=50&c=3
+  static constexpr int kCachedMapOffset = kCallbackDataOffsetEnd + 1;
+  static constexpr int kCachedMapOffsetEnd = kCachedMapOffset + kTaggedSize - 1;
+  static constexpr int kEndOfWeakFieldsOffset = kCachedMapOffsetEnd + 1;
+  static constexpr int kHeaderSize = kCachedMapOffsetEnd + 1;
+  static constexpr int kSize = kCachedMapOffsetEnd + 1;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+  V8_INLINE static constexpr int32_t SizeFor() {
+    DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
+    int32_t size = kHeaderSize;
+    return size;
+  }
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+  V8_INLINE int32_t AllocatedSize() const {
+    return SizeFor();
+  }
+
+  friend class Factory;
+
+  template <class DAlias = D>
+  constexpr TorqueGeneratedWasmFastApiCallData() : P() {
+    static_assert(
+        std::is_base_of<TorqueGeneratedWasmFastApiCallData, DAlias>::value,
+        "class TorqueGeneratedWasmFastApiCallData should be used as direct base for WasmFastApiCallData.");
+  }
+
+ protected:
+  inline explicit constexpr TorqueGeneratedWasmFastApiCallData(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
+  inline explicit TorqueGeneratedWasmFastApiCallData(Address ptr);
+};
+
+class WasmFastApiCallData : public TorqueGeneratedWasmFastApiCallData<WasmFastApiCallData, HeapObject> {
+ public:
+  class BodyDescriptor;
+  TQ_OBJECT_CONSTRUCTORS(WasmFastApiCallData)
+};
+
 // Alias for IsWasmStringViewIter() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
 V8_EXPORT_PRIVATE bool IsWasmStringViewIter_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
 template <class D, class P>
 class TorqueGeneratedWasmStringViewIter : public P {
   static_assert(
@@ -1248,42 +1237,35 @@ class TorqueGeneratedWasmStringViewIter : public P {
   using TorqueGeneratedClass = TorqueGeneratedWasmStringViewIter<D,P>;
 
  protected: // not extern or @export
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=276&c=3
   inline Tagged<String> string() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=276&c=3
   inline Tagged<String> string(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=276&c=3
   inline void set_string(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=277&c=3
   inline uint32_t offset() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=277&c=3
   inline void set_offset(uint32_t value);
 
  public:
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
-  V8_INLINE static Tagged<D> cast(Tagged<Object> object);
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
-  V8_INLINE static Tagged<D> unchecked_cast(Tagged<Object> object) {
-    return Tagged<D>::unchecked_cast(object);
-  }
-
   DECL_PRINTER(WasmStringViewIter)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
   V8_EXPORT_PRIVATE void WasmStringViewIterVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=229&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=276&c=3
   static constexpr int kStringOffset = P::kHeaderSize;
   static constexpr int kStringOffsetEnd = kStringOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kStringOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=230&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=277&c=3
   static constexpr int kOffsetOffset = kStringOffsetEnd + 1;
   static constexpr int kOffsetOffsetEnd = kOffsetOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=233&c=31
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=280&c=31
   static constexpr int kOptionalPaddingOffset = kOffsetOffsetEnd + 1;
   static constexpr int kOptionalPaddingOffsetEnd = kOptionalPaddingOffset + 0 - 1;
   static constexpr int kStartOfWeakFieldsOffset = kOptionalPaddingOffsetEnd + 1;
@@ -1291,14 +1273,14 @@ class TorqueGeneratedWasmStringViewIter : public P {
   static constexpr int kHeaderSize = kOptionalPaddingOffsetEnd + 1;
   static constexpr int kSize = kOptionalPaddingOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=228&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
