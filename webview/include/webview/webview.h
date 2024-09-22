@@ -1425,9 +1425,6 @@ protected:
       }\n\
     };\n\
     Webview_.prototype.onBind = function(name) {\n\
-      if (Object.hasOwn(window, name)) {\n\
-        throw new Error('Property \"' + name + '\" already exists');\n\
-      }\n\
       window[name] = (function() {\n\
         var params = [name].concat(Array.prototype.slice.call(arguments));\n\
         return Webview_.prototype.call.apply(this, params);\n\
@@ -3991,7 +3988,7 @@ public:
     }
 
     if (m_owns_window) {
-      ShowWindow(m_window, SW_SHOW);
+      // ShowWindow(m_window, SW_SHOW);
       UpdateWindow(m_window);
       SetFocus(m_window);
     }
