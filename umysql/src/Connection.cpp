@@ -315,11 +315,8 @@ bool Connection::processHandshake()
       m_clientCaps |= MCP_PLUGIN_AUTH;
     }
 
-    if (m_clientCaps & MCP_PLUGIN_AUTH)
-    {
-      m_salt.assign(scrambleBuff, 8);
-      m_salt.append(scrambleBuff2);
-    }
+    m_salt.assign(scrambleBuff, 8);
+    m_salt.append(scrambleBuff2);
 
     m_clientCaps  &= ~MCP_COMPRESS;
     m_clientCaps  &= ~MCP_NO_SCHEMA;
