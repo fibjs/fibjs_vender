@@ -60,9 +60,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Connection.h"
 #include <assert.h>
 #include <string>
-#include "SHA1.h"
 #include <stdio.h>
 #include <time.h>
+#include <crypto/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -100,38 +103,52 @@ Connection::~Connection()
 
 }
 
-void Connection::scramble(const char *_scramble1, const char *_scramble2, UINT8 _outToken[20])
+size_t Connection::scramble(const char *_scramble1, UINT8* _outToken)
 {
-  std::string seed;
-  seed += _scramble1;
-  seed += _scramble2;
+  const EVP_MD *md = (m_clientCaps & MCP_PLUGIN_AUTH) ? EVP_sha256() : EVP_sha1();
+  size_t md_size = EVP_MD_size(md);
 
-  CSHA1 passdg;
-  UINT8 stage1_hash[20];
-  passdg.Update ( (UINT8 *) m_password.c_str(), m_password.size());
-  passdg.Final();
-  passdg.GetHash(stage1_hash);
+  UINT8 stage1_hash[32];
 
+  EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+  EVP_DigestInit_ex(ctx, md, NULL);
+  EVP_DigestUpdate(ctx, (UINT8 *) m_password.c_str(), m_password.size());
+  EVP_DigestFinal_ex(ctx, stage1_hash, NULL);
+  EVP_MD_CTX_free(ctx);
 
-  CSHA1 stage2dg;
-  UINT8 stage2_hash[20];
-  stage2dg.Update (stage1_hash, 20);
-  stage2dg.Final();
-  stage2dg.GetHash(stage2_hash);
+  UINT8 stage2_hash[32];
 
-  CSHA1 finaldg;
-  UINT8 final_hash[20];
-  finaldg.Update( (UINT8*) seed.c_str(), seed.size());
-  finaldg.Update(stage2_hash, 20);
-  finaldg.Final();
-  finaldg.GetHash(final_hash);
+  ctx = EVP_MD_CTX_new();
+  EVP_DigestInit_ex(ctx, md, NULL);
+  EVP_DigestUpdate(ctx, stage1_hash, md_size);
+  EVP_DigestFinal_ex(ctx, stage2_hash, NULL);
+  EVP_MD_CTX_free(ctx);
 
-  for (int index = 0; index < 20; index ++)
+  UINT8 final_hash[32];
+
+  ctx = EVP_MD_CTX_new();
+  EVP_DigestInit_ex(ctx, md, NULL);
+
+  if (m_clientCaps & MCP_PLUGIN_AUTH)
+  {
+    EVP_DigestUpdate(ctx, stage2_hash, md_size);
+    EVP_DigestUpdate(ctx, (UINT8*) _scramble1, strlen(_scramble1));
+  }
+  else
+  {
+    EVP_DigestUpdate(ctx, (UINT8*) _scramble1, strlen(_scramble1));
+    EVP_DigestUpdate(ctx, stage2_hash, md_size);
+  }
+  EVP_DigestFinal_ex(ctx, final_hash, NULL);
+  EVP_MD_CTX_free(ctx);
+
+  for (int index = 0; index < md_size; index ++)
   {
     _outToken[index] = final_hash[index] ^ stage1_hash[index]; 
   }
-}
 
+  return md_size;
+}
 
 bool Connection::readSocket()
 {
@@ -274,7 +291,8 @@ bool Connection::processHandshake()
 
     UINT8 serverLang = m_reader.readByte();
     UINT16 serverStatus = m_reader.readShort();
-    UINT8 *filler2 = m_reader.readBytes(13);
+    UINT32 serverCaps2 = (UINT16) m_reader.readShort() << 16;
+    UINT8 *filler2 = m_reader.readBytes(11);
 
 
     char *scrambleBuff2 = NULL;
@@ -289,6 +307,19 @@ bool Connection::processHandshake()
     }
 
     m_clientCaps = serverCaps;
+
+    if (serverCaps2 & MCP_PLUGIN_AUTH
+      && m_reader.getBytesLeft ()
+      && strcmp((char *) m_reader.readNTString(), "caching_sha2_password") == 0)
+    {
+      m_clientCaps |= MCP_PLUGIN_AUTH;
+    }
+
+    if (m_clientCaps & MCP_PLUGIN_AUTH)
+    {
+      m_salt.assign(scrambleBuff, 8);
+      m_salt.append(scrambleBuff2);
+    }
 
     m_clientCaps  &= ~MCP_COMPRESS;
     m_clientCaps  &= ~MCP_NO_SCHEMA;
@@ -330,11 +361,10 @@ bool Connection::processHandshake()
 
     if (!m_password.empty())
     {
-      m_writer.writeByte(20);
-
-      UINT8 token[20];
-      scramble(scrambleBuff, scrambleBuff2, token);
-      m_writer.writeBytes(token, 20);
+      UINT8 token[32];
+      size_t sz = scramble(m_salt.c_str(), token);
+      m_writer.writeByte(sz);
+      m_writer.writeBytes(token, sz);
     }
     else
     {
@@ -344,6 +374,11 @@ bool Connection::processHandshake()
     if (!m_database.empty())
     {
       m_writer.writeNTString(m_database.c_str());
+    }
+
+    if (m_clientCaps & MCP_PLUGIN_AUTH)
+    {
+      m_writer.writeNTString("caching_sha2_password");
     }
 
     m_writer.finalize(1);
@@ -436,6 +471,191 @@ bool Connection::getLastError (const char **_ppOutMessage, int *_outErrno, int *
   return true;
 }
 
+bool Connection::processHandshakeSwitch()
+{
+  if ((m_clientCaps & MCP_PLUGIN_AUTH) == 0)
+    return false;
+
+  if (!m_reader.getBytesLeft ())
+  {
+    return false;
+  }
+
+  if (strcmp((char *) m_reader.readNTString(), "mysql_native_password"))
+  {
+    return false;
+  }
+
+  m_clientCaps &= ~MCP_PLUGIN_AUTH;
+
+  if (!m_reader.getBytesLeft ())
+  {
+    return false;
+  }
+
+  UINT8 token[32];
+  size_t sz = scramble((char *) m_reader.readNTString(), token);
+  m_reader.skip();
+
+  m_writer.writeBytes(token, sz);
+  m_writer.finalize(3);
+
+  PRINTMARK();
+  if (!sendPacket())
+  {
+    return false;
+  }
+
+  PRINTMARK();
+  m_writer.reset();
+
+  if (!recvPacket())
+  {
+    return false;
+  }
+
+  PRINTMARK();
+  UINT8 result = m_reader.readByte();
+  if (result == 0xff)
+  {
+    handleErrorPacket();
+    return false;
+  }
+
+  return true;
+}
+
+void xor_password(unsigned char *password, size_t password_len, unsigned char *salt, size_t salt_len, unsigned char *output)
+{
+  for (size_t i = 0; i < password_len; ++i)
+  {
+    output[i] = password[i] ^ salt[i % salt_len];
+  }
+}
+
+int sha2_rsa_encrypt(unsigned char *password, size_t password_len, unsigned char *salt, size_t salt_len,
+  const char *public_key_pem, size_t public_key_pem_len,
+  unsigned char **encrypted, size_t *encrypted_len)
+{
+  unsigned char *xor_result = (unsigned char *)malloc(password_len);
+  xor_password(password, password_len, salt, salt_len, xor_result);
+
+  BIO *bio = BIO_new_mem_buf(public_key_pem, public_key_pem_len);
+  RSA *rsa_key = PEM_read_bio_RSA_PUBKEY(bio, NULL, NULL, NULL);
+  BIO_free(bio);
+
+  if (!rsa_key) {
+    free(xor_result);
+    return -1;
+  }
+
+  // Encrypt the message
+  *encrypted = (unsigned char *)malloc(RSA_size(rsa_key));
+  int result = RSA_public_encrypt(password_len, xor_result, *encrypted,
+      rsa_key, RSA_PKCS1_OAEP_PADDING);
+
+  RSA_free(rsa_key);
+  free(xor_result);
+
+  if (result == -1) {
+    free(*encrypted);
+    return -1;
+  }
+
+  *encrypted_len = result;
+  return 0;
+}
+
+bool Connection::processHandshakeResponse()
+{
+  if (!m_reader.getBytesLeft ())
+  {
+    return true;
+  }
+
+  UINT8 auth_resopnse = m_reader.readByte();
+
+  if (auth_resopnse == 0x03)
+  {
+    m_reader.skip();
+    if (!recvPacket())
+    {
+      return false;
+    }
+    return true;
+  }
+
+  if (auth_resopnse == 0x04)
+  {
+    m_writer.writeByte(0x02);
+    m_writer.finalize(3);
+
+    PRINTMARK();
+    if (!sendPacket())
+    {
+      return false;
+    }
+
+    PRINTMARK();
+    m_writer.reset();
+
+    if (!recvPacket())
+    {
+      return false;
+    }
+
+    if (!m_reader.getBytesLeft ())
+    {
+      return false;
+    }
+
+    if (m_reader.readByte() != 0x01)
+    {
+      return false;
+    }
+
+    size_t pem_len = m_reader.getBytesLeft ();
+    char *pem = (char *) m_reader.readBytes(pem_len);
+
+    unsigned char *encrypted;
+    size_t encrypted_len;
+    int res = sha2_rsa_encrypt((unsigned char*)m_password.c_str(), m_password.length() + 1
+      ,(unsigned char*)m_salt.c_str(), m_salt.length() + 1
+      ,pem, pem_len, &encrypted, &encrypted_len);
+    if (res < 0)
+    {
+      return false;
+    }
+
+    m_writer.writeBytes(encrypted, encrypted_len);
+    m_writer.finalize(5);
+
+    free(encrypted);
+
+    PRINTMARK();
+    if (!sendPacket())
+    {
+      return false;
+    }
+
+    PRINTMARK();
+    m_writer.reset();
+
+    if (!recvPacket())
+    {
+      return false;
+    }
+
+    UINT8 result = m_reader.readByte();
+    if (result == 0xff)
+    {
+      handleErrorPacket();
+      return false;
+    }
+  }
+
+  return true;
+}
 
 bool Connection::connect(const char *_host, int _port, const char *_username, const char *_password, const char *_database, int *_autoCommit, MYSQL_CHARSETS _charset)
 {
@@ -532,9 +752,21 @@ bool Connection::connect(const char *_host, int _port, const char *_username, co
   }
   if (result == 0xfe)
   {
-    setError ("Old Authentication Method switch from server. Not supported by this client.", 4, UME_OTHER);
-    m_dbgMethodProgress --;
-    return false;
+    if (!processHandshakeSwitch())
+    {
+      setError ("Old Authentication Method switch from server. Not supported by this client.", 4, UME_OTHER);
+      m_dbgMethodProgress --;
+      return false;
+    }
+  }
+
+  if (result == 0x01)
+  {
+    if (!processHandshakeResponse())
+    {
+      m_dbgMethodProgress --;
+      return false;
+    }
   }
 
   m_reader.skip();

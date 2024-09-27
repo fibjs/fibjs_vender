@@ -167,7 +167,8 @@ enum MYSQL_CAPABILITIES
   MCP_RESERVED					= (1 << 14), // Old flag for 4.1 protocol  */
   MCP_SECURE_CONNECTION	= (1 << 15), // New 4.1 authentication */
   MCP_MULTI_STATEMENTS	=	(1 << 16), // Enable/disable multi-stmt support */
-  MCP_MULTI_RESULTS			= (1 << 17), // Enable/disable multi-results */
+  MCP_MULTI_RESULTS			= (1 << 17), // Enable/disable multi-results */'
+  MCP_PLUGIN_AUTH       = (1 << 19), // supports auth plugins
 };
 
 enum MYSQL_CHARSETS
