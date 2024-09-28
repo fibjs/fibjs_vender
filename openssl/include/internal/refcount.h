@@ -118,7 +118,7 @@ static __inline int CRYPTO_GET_REF(CRYPTO_REF_COUNT *refcnt, int *ret)
 #   define HAVE_ATOMICS 1
 
 typedef struct {
-    volatile int val;
+    volatile LONG val;
 } CRYPTO_REF_COUNT;
 
 #   if (defined(_M_ARM) && _M_ARM>=7 && !defined(_WIN32_WCE)) || defined(_M_ARM64)
