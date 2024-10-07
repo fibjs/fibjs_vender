@@ -36,3 +36,11 @@ else()
         ev
     )
 endif()
+
+if("${BUILD_OS}" MATCHES "Linux|Alpine")
+    list(APPEND libs
+        appindicator
+        dbusmenu
+        indicator
+    )
+endif()
