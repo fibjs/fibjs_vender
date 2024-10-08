@@ -2196,7 +2196,7 @@ app_indicator_set_secondary_activate_target (AppIndicator *self, GtkWidget *menu
 
 	g_return_if_fail (GTK_IS_WIDGET (menuitem));
 
-	priv->sec_activate_target = g_object_ref(G_OBJECT(menuitem));
+	priv->sec_activate_target = (GtkWidget*)g_object_ref(G_OBJECT(menuitem));
 	priv->sec_activate_enabled = widget_is_menu_child(self, menuitem);
 	g_signal_connect(menuitem, "parent-set", G_CALLBACK(sec_activate_target_parent_changed), self);
 }
