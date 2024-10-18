@@ -38,7 +38,7 @@ inline void postject_options_init(struct postject_options* options)
     options->pe_resource_name = NULL;
 }
 
-static inline volatile char* postject_resource_sentinel()
+static inline const volatile char* postject_resource_sentinel()
 {
     static const volatile char* sentinel = POSTJECT_SENTINEL_FUSE ":0";
     return sentinel;
