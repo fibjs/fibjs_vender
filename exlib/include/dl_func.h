@@ -66,12 +66,15 @@ inline char* dlerror(void)
 
 namespace exlib {
 
-template <typename T>
-T dl_func(void*& handle, const char** dl_name, int dl_count, const char* func_name, T func)
+template <typename... Args>
+void* dl_func(void*& handle, const char* func_name, Args... dl_names)
 {
+    const char* dl_name_array[] = { dl_names... };
+    int dl_count = sizeof...(dl_names);
+
     if (!handle) {
         for (int i = 0; i < dl_count && !handle; i++) {
-            handle = dlopen(dl_name[i], RTLD_LAZY);
+            handle = dlopen(dl_name_array[i], RTLD_LAZY);
         }
         if (!handle) {
             fputs(dlerror(), stderr);
@@ -79,7 +82,7 @@ T dl_func(void*& handle, const char** dl_name, int dl_count, const char* func_na
         }
     }
 
-    T func1 = (T)::dlsym(handle, func_name);
+    void* func1 = ::dlsym(handle, func_name);
     if (!func1) {
         fputs(dlerror(), stderr);
         exit(1);
@@ -87,12 +90,7 @@ T dl_func(void*& handle, const char** dl_name, int dl_count, const char* func_na
 
     return func1;
 }
-template <typename T, typename... Args>
-T dl_func(void*& handle, const char* func_name, T func, Args... dl_names)
-{
-    const char* dl_name_array[] = { dl_names... };
-    return dl_func(handle, dl_name_array, sizeof...(dl_names), func_name, func);
-}
+
 }
 
-#define dl_def_func(so, func, ...) static auto s_##func = exlib::dl_func(so, #func, func, __VA_ARGS__)
+#define dl_def_func(so, func, ...) static auto s_##func = (decltype(func)*)exlib::dl_func(so, #func, __VA_ARGS__)
