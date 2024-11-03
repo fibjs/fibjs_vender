@@ -95,7 +95,9 @@ static __inline int CRYPTO_DOWN_REF(volatile int *val, int *ret,
 
 #   define HAVE_ATOMICS 1
 
-typedef volatile int CRYPTO_REF_COUNT;
+typedef struct {
+    volatile LONG val;
+} CRYPTO_REF_COUNT;
 
 #   if (defined(_M_ARM) && _M_ARM>=7 && !defined(_WIN32_WCE)) || defined(_M_ARM64)
 #    include <intrin.h>
@@ -118,6 +120,13 @@ static __inline int CRYPTO_DOWN_REF(volatile int *val, int *ret,
         __dmb(_ARM_BARRIER_ISH);
     return 1;
 }
+
+static __inline int CRYPTO_GET_REF(CRYPTO_REF_COUNT *refcnt, int *ret)
+{
+    *ret = _InterlockedOr_nf(&refcnt->val, 0);
+    return 1;
+}
+
 #   else
 #    if !defined(_WIN32_WCE)
 #     pragma intrinsic(_InterlockedExchangeAdd)

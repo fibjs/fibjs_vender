@@ -109,3 +109,7 @@ bool OS::IsHardwareEnforcedShadowStacksEnabled() {
 #define V8_COMPILER_IS_MSVC
 // #endif
 ```
+#### src/snapshot/code-serializer.cc
+```cpp
+// return SerializedCodeSanityCheckResult::kReadOnlySnapshotChecksumMismatch;
+```

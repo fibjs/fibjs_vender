@@ -91,6 +91,7 @@ private:
   std::string m_username;
   std::string m_password;
   std::string m_database;
+  std::string m_salt;
   bool m_autoCommit;
   MYSQL_CHARSETS m_charset;
   void *m_sockInst;
@@ -137,7 +138,9 @@ protected:
   bool readSocket();
   bool writeSocket();
   bool processHandshake();
-  void scramble(const char *_scramble1, const char *_scramble2, UINT8 _outToken[20]);
+  bool processHandshakeSwitch();
+  bool processHandshakeResponse();
+  size_t scramble(const char *_scramble1, UINT8* _outToken);
   bool recvPacket();
   bool sendPacket();
 
