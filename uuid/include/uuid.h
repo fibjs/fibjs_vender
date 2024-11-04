@@ -111,7 +111,7 @@ extern uuid_rc_t     uuid_make     (      uuid_st  *_uuid, unsigned int _mode, .
 
 /* UUID comparison */
 extern uuid_rc_t     uuid_isnil    (const uuid_st  *_uuid,                       int *_result);
-extern uuid_rc_t     uuid_compare  (const uuid_st  *_uuid, const uuid_st *_uuid2, int *_result);
+// extern uuid_rc_t     uuid_compare  (const uuid_st  *_uuid, const uuid_st *_uuid2, int *_result);
 
 /* UUID import/export */
 extern uuid_rc_t     uuid_import   (      uuid_st  *_uuid, uuid_fmt_t _fmt, const void  *_data_ptr, size_t  _data_len);

@@ -118,6 +118,13 @@ static __inline int CRYPTO_DOWN_REF(volatile int *val, int *ret,
         __dmb(_ARM_BARRIER_ISH);
     return 1;
 }
+
+static __inline int CRYPTO_GET_REF(CRYPTO_REF_COUNT *refcnt, int *ret)
+{
+    *ret = _InterlockedOr_nf(&refcnt->val, 0);
+    return 1;
+}
+
 #   else
 #    if !defined(_WIN32_WCE)
 #     pragma intrinsic(_InterlockedExchangeAdd)
