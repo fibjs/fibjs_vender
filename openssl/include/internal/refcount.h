@@ -106,14 +106,14 @@ typedef volatile int CRYPTO_REF_COUNT;
 static __inline int CRYPTO_UP_REF(volatile int *val, int *ret,
                                   ossl_unused void *lock)
 {
-    *ret = _InterlockedExchangeAdd_nf(val, 1) + 1;
+    *ret = _InterlockedExchangeAdd_nf((volatile long *)val, 1) + 1;
     return 1;
 }
 
 static __inline int CRYPTO_DOWN_REF(volatile int *val, int *ret,
                                     ossl_unused void *lock)
 {
-    *ret = _InterlockedExchangeAdd_nf(val, -1) - 1;
+    *ret = _InterlockedExchangeAdd_nf((volatile long *)val, -1) - 1;
     if (*ret == 0)
         __dmb(_ARM_BARRIER_ISH);
     return 1;
