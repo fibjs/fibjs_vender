@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <string_view>
 #include "utils.h"
 
 namespace exlib {
@@ -272,6 +273,13 @@ public:
         assign(v);
     }
 
+    basic_string(const std::basic_string_view<T>& v)
+        : m_length(0)
+        , m_buffer(NULL)
+    {
+        assign(v);
+    }
+
     basic_string(Buffer* v)
         : m_length(0)
         , m_buffer(NULL)
@@ -467,6 +475,21 @@ public:
         return assign(str.m_buffer);
     }
 
+    basic_string<T>& assign(const T* str)
+    {
+        return assign(str, qstrlen(str));
+    }
+
+    basic_string<T>& assign(const std::basic_string<T>& str)
+    {
+        return assign(str.c_str(), str.length());
+    }
+
+    basic_string<T>& assign(const std::basic_string_view<T>& str)
+    {
+        return assign(str.data(), str.length());
+    }
+
 public:
     basic_string<T>& append(const T* str)
     {
@@ -478,22 +501,17 @@ public:
         return append(str.c_str(), str.length());
     }
 
+    basic_string<T>& append(const std::basic_string_view<T>& str)
+    {
+        return append(str.data(), str.length());
+    }
+
     basic_string<T>& append(const basic_string<T>& str)
     {
         if (empty())
             return assign(str);
 
         return append(str.c_str(), str.length());
-    }
-
-    basic_string<T>& assign(const T* str)
-    {
-        return assign(str, qstrlen(str));
-    }
-
-    basic_string<T>& assign(const std::basic_string<T>& str)
-    {
-        return assign(str.c_str(), str.length());
     }
 
 public:
@@ -602,6 +620,26 @@ public:
         return append(rhs);
     }
 
+    basic_string<T> operator+=(const std::basic_string_view<T>& rhs)
+    {
+        return append(rhs.data(), rhs.length());
+    }
+
+    basic_string<T> operator+=(const std::basic_string<T>& rhs)
+    {
+        return append(rhs.data(), rhs.length());
+    }
+
+    basic_string<T>& operator=(const std::basic_string_view<T>& str)
+    {
+        return assign(str.data(), str.length());
+    }
+
+    basic_string<T>& operator=(const std::basic_string<T>& str)
+    {
+        return assign(str.data(), str.length());
+    }
+
     basic_string<T>& operator=(const T* str)
     {
         return assign(str);
@@ -620,6 +658,11 @@ public:
     operator std::basic_string<T>() const
     {
         return std::basic_string<T>(c_str(), length());
+    }
+
+    operator std::basic_string_view<T>() const
+    {
+        return std::basic_string_view<T>(c_str(), length());
     }
 
 private:
@@ -656,6 +699,38 @@ inline basic_string<T> operator+(const basic_string<T>& lhs, const T* rhs)
 }
 
 template <typename T>
+inline basic_string<T> operator+(const basic_string<T>& lhs, const std::basic_string_view<T>& rhs)
+{
+    basic_string<T> str(lhs);
+    str.append(rhs.data(), rhs.length());
+    return str;
+}
+
+template <typename T>
+inline basic_string<T> operator+(const std::basic_string_view<T>& lhs, const basic_string<T>& rhs)
+{
+    basic_string<T> str(lhs.data(), lhs.length());
+    str.append(rhs);
+    return str;
+}
+
+template <typename T>
+inline basic_string<T> operator+(const basic_string<T>& lhs, const std::basic_string<T>& rhs)
+{
+    basic_string<T> str(lhs);
+    str.append(rhs.data(), rhs.length());
+    return str;
+}
+
+template <typename T>
+inline basic_string<T> operator+(const std::basic_string<T>& lhs, const basic_string<T>& rhs)
+{
+    basic_string<T> str(lhs.data(), lhs.length());
+    str.append(rhs);
+    return str;
+}
+
+template <typename T>
 inline basic_string<T> operator+(T lhs, const basic_string<T>& rhs)
 {
     basic_string<T> str(1, lhs);
@@ -668,6 +743,14 @@ inline basic_string<T> operator+(const basic_string<T>& lhs, T rhs)
 {
     basic_string<T> str(lhs);
     str.append(1, rhs);
+    return str;
+}
+
+template <typename T>
+inline basic_string<T> operator+(T lhs, const std::basic_string_view<T>& rhs)
+{
+    basic_string<T> str(1, lhs);
+    str.append(rhs.data(), rhs.length());
     return str;
 }
 

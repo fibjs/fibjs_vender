@@ -1,5 +1,6 @@
 set(libs
     v8
+    ada
     abseil
     exlib
     gtest
