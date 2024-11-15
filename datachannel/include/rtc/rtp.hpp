@@ -274,6 +274,8 @@ struct RTC_CPP_EXPORT RtcpRemb {
 	void preparePacket(SSRC senderSSRC, unsigned int numSSRC, unsigned int in_bitrate);
 	void setBitrate(unsigned int numSSRC, unsigned int in_bitrate);
 	void setSsrc(int iterator, SSRC newSssrc);
+	unsigned int getNumSSRC();
+	unsigned int getBitrate();
 };
 
 struct RTC_CPP_EXPORT RtcpPli {
@@ -353,25 +355,6 @@ struct RTC_CPP_EXPORT RtpRtx {
 
 	size_t copyTo(RtpHeader *dest, size_t totalSize, uint8_t originalPayloadType);
 };
-
-// For backward compatibility, do not use
-using RTP_ExtensionHeader [[deprecated]] = RtpExtensionHeader;
-using RTP [[deprecated]] = RtpHeader;
-using RTCP_ReportBlock [[deprecated]] = RtcpReportBlock;
-using RTCP_HEADER [[deprecated]] = RtcpHeader;
-using RTCP_FB_HEADER [[deprecated]] = RtcpFbHeader;
-using RTCP_SR [[deprecated]] = RtcpSr;
-using RTCP_SDES_ITEM [[deprecated]] = RtcpSdesItem;
-using RTCP_SDES_CHUNK [[deprecated]] = RtcpSdesChunk;
-using RTCP_SDES [[deprecated]] = RtcpSdes;
-using RTCP_RR [[deprecated]] = RtcpRr;
-using RTCP_REMB [[deprecated]] = RtcpRemb;
-using RTCP_PLI [[deprecated]] = RtcpPli;
-using RTCP_FIR_PART [[deprecated]] = RtcpFirPart;
-using RTCP_FIR [[deprecated]] = RtcpFir;
-using RTCP_NACK_PART [[deprecated]] = RtcpNackPart;
-using RTCP_NACK [[deprecated]] = RtcpNack;
-using RTP_RTX [[deprecated]] = RtpRtx;
 
 #pragma pack(pop)
 

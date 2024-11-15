@@ -86,6 +86,7 @@ public:
 	IceState iceState() const;
 	GatheringState gatheringState() const;
 	SignalingState signalingState() const;
+	bool negotiationNeeded() const;
 	bool hasMedia() const;
 	optional<Description> localDescription() const;
 	optional<Description> remoteDescription() const;
@@ -98,6 +99,7 @@ public:
 	void setLocalDescription(Description::Type type = Description::Type::Unspec, LocalDescriptionInit init = {});
 	void setRemoteDescription(Description description);
 	void addRemoteCandidate(Candidate candidate);
+	void gatherLocalCandidates(std::vector<IceServer> additionalIceServers = {});
 
 	void setMediaHandler(shared_ptr<MediaHandler> handler);
 	shared_ptr<MediaHandler> getMediaHandler();

@@ -128,7 +128,7 @@ juice_agent_t *agent_create(const juice_config_t *config) {
 
 	agent->state = JUICE_STATE_DISCONNECTED;
 	agent->mode = AGENT_MODE_UNKNOWN;
-	agent->selected_entry = ATOMIC_VAR_INIT(NULL);
+	agent->selected_entry = NULL;
 
 	agent->conn_index = -1;
 	agent->conn_impl = NULL;
@@ -333,16 +333,23 @@ int agent_resolve_servers(juice_agent_t *agent) {
 			if (!turn_server->port)
 				turn_server->port = 3478; // default TURN port
 
+			char hostname[256];
 			char service[8];
+			snprintf(hostname, 256, "%s", turn_server->host);
 			snprintf(service, 8, "%hu", turn_server->port);
+
+			conn_unlock(agent);
+
 			addr_record_t records[DEFAULT_MAX_RECORDS_COUNT];
-			int records_count =
-			    addr_resolve(turn_server->host, service, records, DEFAULT_MAX_RECORDS_COUNT);
+			int records_count = addr_resolve(hostname, service, records, DEFAULT_MAX_RECORDS_COUNT);
+
+			conn_lock(agent);
+
 			if (records_count > 0) {
 				if (records_count > DEFAULT_MAX_RECORDS_COUNT)
 					records_count = DEFAULT_MAX_RECORDS_COUNT;
 
-				JLOG_INFO("Using TURN server %s:%s", turn_server->host, service);
+				JLOG_INFO("Using TURN server %s:%s", hostname, service);
 
 				addr_record_t *record = NULL;
 				for (int j = 0; j < records_count; ++j) {
@@ -392,6 +399,7 @@ int agent_resolve_servers(juice_agent_t *agent) {
 					         turn_server->username);
 					entry->turn->password = turn_server->password;
 					juice_random(entry->transaction_id, STUN_TRANSACTION_ID_SIZE);
+					entry->transaction_id_expired = false;
 					++agent->entries_count;
 
 					agent_arm_transmission(agent, entry, STUN_PACING_TIME * i);
@@ -410,11 +418,18 @@ int agent_resolve_servers(juice_agent_t *agent) {
 		if (!agent->config.stun_server_port)
 			agent->config.stun_server_port = 3478; // default STUN port
 
+		char hostname[256];
 		char service[8];
+		snprintf(hostname, 256, "%s", agent->config.stun_server_host);
 		snprintf(service, 8, "%hu", agent->config.stun_server_port);
+
+		conn_unlock(agent);
+
 		addr_record_t records[MAX_STUN_SERVER_RECORDS_COUNT];
-		int records_count = addr_resolve(agent->config.stun_server_host, service, records,
-		                                 MAX_STUN_SERVER_RECORDS_COUNT);
+		int records_count = addr_resolve(hostname, service, records, MAX_STUN_SERVER_RECORDS_COUNT);
+
+		conn_lock(agent);
+
 		if (records_count > 0) {
 			if (records_count > MAX_STUN_SERVER_RECORDS_COUNT)
 				records_count = MAX_STUN_SERVER_RECORDS_COUNT;
@@ -431,6 +446,7 @@ int agent_resolve_servers(juice_agent_t *agent) {
 				entry->pair = NULL;
 				entry->record = records[i];
 				juice_random(entry->transaction_id, STUN_TRANSACTION_ID_SIZE);
+				entry->transaction_id_expired = false;
 				++agent->entries_count;
 
 				agent_arm_transmission(agent, entry, STUN_PACING_TIME * i);
@@ -471,29 +487,33 @@ int agent_set_remote_description(juice_agent_t *agent, const char *sdp) {
 	ice_description_t remote;
 	int ret = ice_parse_sdp(sdp, &remote);
 	if (ret < 0) {
-		if (ret == ICE_PARSE_MISSING_UFRAG)
+		switch (ret) {
+		case ICE_PARSE_MISSING_UFRAG:
 			JLOG_ERROR("Missing ICE user fragment in remote description");
-		else if (ret == ICE_PARSE_MISSING_PWD)
+			break;
+		case ICE_PARSE_MISSING_PWD:
 			JLOG_ERROR("Missing ICE password in remote description");
-		else
+			break;
+		default:
 			JLOG_ERROR("Failed to parse remote SDP description");
-
+			break;
+		}
 		conn_unlock(agent);
-		return -1;
+		return JUICE_ERR_INVALID;
 	}
 
 	if (*agent->remote.ice_ufrag) {
 		// There is already a remote description
-		if (strcmp(agent->remote.ice_ufrag, remote.ice_ufrag) == 0 ||
+		if (strcmp(agent->remote.ice_ufrag, remote.ice_ufrag) == 0 &&
 		    strcmp(agent->remote.ice_pwd, remote.ice_pwd) == 0) {
 			JLOG_DEBUG("Remote description is already set, ignoring");
 			conn_unlock(agent);
-			return 0;
+			return JUICE_ERR_SUCCESS;
 		}
 
-		JLOG_WARN("ICE restart is unsupported");
+		JLOG_WARN("ICE restart is not supported");
 		conn_unlock(agent);
-		return -1;
+		return JUICE_ERR_FAILED;
 	}
 
 	agent->remote = remote;
@@ -520,12 +540,12 @@ int agent_set_remote_description(juice_agent_t *agent, const char *sdp) {
 	for (int i = 0; i < agent->remote.candidates_count; ++i) {
 		ice_candidate_t *remote = agent->remote.candidates + i;
 		if (agent_add_candidate_pairs_for_remote(agent, remote))
-			JLOG_WARN("Failed to add candidate pair from remote description");
+			JLOG_WARN("Failed to add candidate pair");
 	}
 
 	conn_unlock(agent);
 	conn_interrupt(agent);
-	return 0;
+	return JUICE_ERR_SUCCESS;
 }
 
 int agent_add_remote_candidate(juice_agent_t *agent, const char *sdp) {
@@ -534,39 +554,65 @@ int agent_add_remote_candidate(juice_agent_t *agent, const char *sdp) {
 	if (agent->remote.finished) {
 		JLOG_ERROR("Remote candidate added after remote gathering done");
 		conn_unlock(agent);
-		return -1;
+		return JUICE_ERR_FAILED;
 	}
 	ice_candidate_t candidate;
 	int ret = ice_parse_candidate_sdp(sdp, &candidate);
 	if (ret < 0) {
-		if (ret == ICE_PARSE_IGNORED)
+		if (ret == ICE_PARSE_IGNORED) {
 			JLOG_DEBUG("Ignored SDP candidate: %s", sdp);
-		else if (ret == ICE_PARSE_ERROR)
-			JLOG_ERROR("Failed to parse remote SDP candidate: %s", sdp);
+			conn_unlock(agent);
+			return JUICE_ERR_IGNORED;
+		}
 
+		JLOG_ERROR("Failed to parse remote SDP candidate: %s", sdp);
 		conn_unlock(agent);
-		return -1;
+		return JUICE_ERR_INVALID;
 	}
 	if (ice_add_candidate(&candidate, &agent->remote)) {
 		JLOG_ERROR("Failed to add candidate to remote description");
 		conn_unlock(agent);
-		return -1;
+		return JUICE_ERR_FAILED;
 	}
 	ice_candidate_t *remote = agent->remote.candidates + agent->remote.candidates_count - 1;
-	ret = agent_add_candidate_pairs_for_remote(agent, remote);
+	if (agent_add_candidate_pairs_for_remote(agent, remote)) {
+		JLOG_WARN("Failed to add candidate pair");
+		conn_unlock(agent);
+		return JUICE_ERR_FAILED;
+	}
 
 	conn_unlock(agent);
 	conn_interrupt(agent);
-	return ret;
+	return JUICE_ERR_SUCCESS;
+}
+
+int agent_set_local_ice_attributes(juice_agent_t *agent, const char *ufrag, const char *pwd) {
+	if (agent->conn_impl) {
+		JLOG_WARN("Unable to set ICE attributes, candidates gathering already started");
+		return JUICE_ERR_FAILED;
+	}
+
+	if (strlen(ufrag) < 4 || strlen(pwd) < 22 || !ice_is_valid_string(ufrag) ||
+	    !ice_is_valid_string(pwd)) {
+		JLOG_ERROR("Invalid ICE attributes");
+		return JUICE_ERR_INVALID;
+	}
+
+	snprintf(agent->local.ice_ufrag, sizeof(agent->local.ice_ufrag), "%s", ufrag);
+	snprintf(agent->local.ice_pwd, sizeof(agent->local.ice_pwd), "%s", pwd);
+	return JUICE_ERR_SUCCESS;
 }
 
 int agent_add_turn_server(juice_agent_t *agent, const juice_turn_server_t *turn_server) {
 	if (agent->conn_impl) {
-		JLOG_WARN("Candidates gathering already started");
+		// The array must no be reallocated anymore after gathering started
+		JLOG_WARN("Unable to add TURN server, candidates gathering already started");
 		return -1;
 	}
 
-	juice_turn_server_t *new_turn_servers = realloc(agent->config.turn_servers, (agent->config.turn_servers_count + 1) * sizeof(juice_turn_server_t));
+	juice_turn_server_t *new_turn_servers =
+	    realloc(agent->config.turn_servers,
+	            (agent->config.turn_servers_count + 1) * sizeof(juice_turn_server_t));
 	if (!new_turn_servers) {
 		JLOG_FATAL("Memory allocation for TURN servers failed");
 		return -1;
@@ -803,6 +849,10 @@ int agent_bookkeeping(juice_agent_t *agent, timestamp_t *next_timestamp) {
 					           record_str, entry->retransmissions,
 					           entry->retransmissions >= 2 ? "s" : "");
 				}
+				if (entry->transaction_id_expired) {
+					juice_random(entry->transaction_id, STUN_TRANSACTION_ID_SIZE);
+					entry->transaction_id_expired = false;
+				}
 				int ret;
 				switch (entry->type) {
 				case AGENT_STUN_ENTRY_TYPE_RELAY:
@@ -871,6 +921,7 @@ int agent_bookkeeping(juice_agent_t *agent, timestamp_t *next_timestamp) {
 			JLOG_DEBUG("STUN entry %d: Sending keepalive", i);
 
 			juice_random(entry->transaction_id, STUN_TRANSACTION_ID_SIZE);
+			entry->transaction_id_expired = false;
 
 			int ret;
 			switch (entry->type) {
@@ -1058,6 +1109,7 @@ int agent_bookkeeping(juice_agent_t *agent, timestamp_t *next_timestamp) {
 						if (entry->pair && entry->pair == selected_pair) {
 							entry->state =
 							    AGENT_STUN_ENTRY_STATE_PENDING;      // we don't want keepalives
+							entry->transaction_id_expired = true;	 // this is a new request
 							agent_arm_transmission(agent, entry, 0); // transmit now
 							break;
 						}
@@ -1217,7 +1269,7 @@ int agent_dispatch_stun(juice_agent_t *agent, void *buf, size_t size, stun_messa
 		JLOG_VERBOSE("STUN message is a response, looking for transaction ID");
 		entry = agent_find_entry_from_transaction_id(agent, msg->transaction_id);
 		if (!entry) {
-			JLOG_WARN("No STUN entry matching transaction ID, ignoring");
+			JLOG_DEBUG("No STUN entry matching transaction ID, ignoring");
 			return -1;
 		}
 	} else {
@@ -1319,7 +1371,7 @@ int agent_process_stun_binding(juice_agent_t *agent, const stun_message_t *msg,
 		//  * If the agent's tiebreaker value is less than the contents of the ICE-CONTROLLED
 		//  attribute, the agent generates a Binding error response and includes an ERROR-CODE
 		//  attribute with a value of 487 (Role Conflict) but retains its role.
-		if (msg->ice_controlled && agent->mode == AGENT_MODE_CONTROLLED) {
+		if (agent->mode == AGENT_MODE_CONTROLLED && msg->ice_controlled) {
 			JLOG_WARN("ICE role conflict (both controlled)");
 			if (agent->ice_tiebreaker >= msg->ice_controlling) {
 				JLOG_DEBUG("Switching to controlling role");
@@ -1477,9 +1529,9 @@ int agent_process_stun_binding(juice_agent_t *agent, const stun_message_t *msg,
 					                                                 : "controlling");
 					agent->mode = entry->mode == AGENT_MODE_CONTROLLING ? AGENT_MODE_CONTROLLED
 					                                                    : AGENT_MODE_CONTROLLING;
-					agent_update_candidate_pairs(agent);
-
 					juice_random(&agent->ice_tiebreaker, sizeof(agent->ice_tiebreaker));
+					agent_update_candidate_pairs(agent); // expires transaction IDs
+
 					if (entry->state != AGENT_STUN_ENTRY_STATE_IDLE) { // Check might not be started
 						entry->state = AGENT_STUN_ENTRY_STATE_PENDING;
 						agent_arm_transmission(agent, entry, 0);
@@ -1581,7 +1633,7 @@ int agent_send_stun_binding(juice_agent_t *agent, agent_stun_entry_t *entry, stu
 			// connectivity check that produced this valid pair [...], this time with the
 			// USE-CANDIDATE attribute.
 			msg.use_candidate = agent->mode == AGENT_MODE_CONTROLLING && entry->pair &&
-			                    entry->pair->nomination_requested;
+			                    entry->pair->nomination_requested && !entry->pair->nominated;
 
 			entry->mode = agent->mode; // save current mode in case of conflict
 			break;
@@ -2275,6 +2327,7 @@ int agent_add_candidate_pair(juice_agent_t *agent, ice_candidate_t *local, // lo
 	entry->record = pos->remote->resolved;
 	entry->relay_entry = relay_entry;
 	juice_random(entry->transaction_id, STUN_TRANSACTION_ID_SIZE);
+	entry->transaction_id_expired = false;
 	++agent->entries_count;
 
 	if (remote->type == ICE_CANDIDATE_TYPE_HOST)
@@ -2366,6 +2419,7 @@ void agent_arm_keepalive(juice_agent_t *agent, agent_stun_entry_t *entry) {
 		break;
 	}
 
+	entry->transaction_id_expired = true;
 	agent_arm_transmission(agent, entry, period);
 }
 
@@ -2443,6 +2497,14 @@ void agent_update_candidate_pairs(juice_agent_t *agent) {
 		ice_update_candidate_pair(pair, is_controlling);
 	}
 	agent_update_ordered_pairs(agent);
+
+	// Expire all transaction IDs for checks
+	for (int i = 0; i < agent->entries_count; ++i) {
+		agent_stun_entry_t *entry = agent->entries + i;
+		if (entry->type == AGENT_STUN_ENTRY_TYPE_CHECK) {
+			entry->transaction_id_expired = true;
+		}
+	}
 }
 
 void agent_update_ordered_pairs(juice_agent_t *agent) {
