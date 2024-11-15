@@ -41,7 +41,7 @@ if("${BUILD_ARCH}" STREQUAL "x64")
 	add_definitions(-DV8_ENABLE_WASM_SIMD256_REVEC)
 endif()
 
-if("${BUILD_OS}" STREQUAL "iPhone")
+if("${BUILD_OS}" MATCHES "iPhone")
 	add_definitions(-DV8_JITLESS)
 endif()
 
