@@ -39,7 +39,7 @@
 #ifdef WIN32
 
 #ifndef ssize_t
-typedef long ssize_t;
+typedef intptr_t ssize_t;
 #endif
 
 struct iovec {
