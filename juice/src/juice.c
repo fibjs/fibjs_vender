@@ -54,20 +54,14 @@ JUICE_EXPORT int juice_set_remote_description(juice_agent_t *agent, const char *
 	if (!agent || !sdp)
 		return JUICE_ERR_INVALID;
 
-	if (agent_set_remote_description(agent, sdp) < 0)
-		return JUICE_ERR_FAILED;
-
-	return JUICE_ERR_SUCCESS;
+	return agent_set_remote_description(agent, sdp);
 }
 
 JUICE_EXPORT int juice_add_remote_candidate(juice_agent_t *agent, const char *sdp) {
 	if (!agent || !sdp)
 		return JUICE_ERR_INVALID;
 
-	if (agent_add_remote_candidate(agent, sdp) < 0)
-		return JUICE_ERR_FAILED;
-
-	return JUICE_ERR_SUCCESS;
+	return agent_add_remote_candidate(agent, sdp);
 }
 
 JUICE_EXPORT int juice_add_turn_server(juice_agent_t *agent, const juice_turn_server_t *turn_server) {
@@ -150,20 +144,10 @@ JUICE_EXPORT int juice_get_selected_addresses(juice_agent_t *agent, char *local,
 
 int juice_set_local_ice_attributes(juice_agent_t *agent, const char *ufrag, const char *pwd)
 {
-	if (agent->conn_impl) {
-		JLOG_WARN("Candidates gathering already started");
-		return JUICE_ERR_FAILED;
-	}
-
-	if (!ufrag || !pwd || strlen(ufrag) < 4 || strlen(pwd) < 22) {
-		JLOG_WARN("Invalid ICE credentials");
+	if (!ufrag || !pwd)
 		return JUICE_ERR_INVALID;
-	}
 
-	snprintf(agent->local.ice_ufrag, sizeof(agent->local.ice_ufrag), "%s", ufrag);
-	snprintf(agent->local.ice_pwd, sizeof(agent->local.ice_pwd), "%s", pwd);
-
-	return JUICE_ERR_SUCCESS;
+	return agent_set_local_ice_attributes(agent, ufrag, pwd);
 }
 
 JUICE_EXPORT const char *juice_state_to_string(juice_state_t state) {

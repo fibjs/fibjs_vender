@@ -505,8 +505,8 @@ int conn_mux_interrupt_registry(conn_registry_t *registry) {
 
 	registry_impl_t *registry_impl = registry->impl;
 	mutex_lock(&registry_impl->send_mutex);
-	static char dummy[1];
-	if (udp_sendto_self(registry_impl->sock, dummy, 0) < 0) {
+	char dummy = 0; // Some C libraries might error out on NULL pointers
+	if (udp_sendto_self(registry_impl->sock, &dummy, 0) < 0) {
 		if (sockerrno != SEAGAIN && sockerrno != SEWOULDBLOCK) {
 			JLOG_WARN("Failed to interrupt poll by triggering socket, errno=%d", sockerrno);
 		}

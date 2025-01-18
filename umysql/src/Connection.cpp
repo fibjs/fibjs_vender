@@ -579,6 +579,14 @@ bool Connection::processHandshakeResponse()
     {
       return false;
     }
+
+    UINT8 result = m_reader.readByte();
+    if (result == 0xff)
+    {
+      handleErrorPacket();
+      return false;
+    }
+
     return true;
   }
 

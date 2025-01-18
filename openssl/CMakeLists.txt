@@ -7,7 +7,7 @@ if("${BUILD_OS}" STREQUAL "Windows")
 else()
     enable_language(ASM)
 
-    if("${BUILD_OS}" STREQUAL "Darwin" OR "${BUILD_OS}" STREQUAL "iPhone")
+    if("${BUILD_OS}" MATCHES "Darwin|iPhone")
         include(./cmake/darwin_${BUILD_ARCH}.cmake)
     elseif("${BUILD_ARCH}" STREQUAL "loong64ow")
         include(./cmake/linux_loong64.cmake)
