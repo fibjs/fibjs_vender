@@ -46,7 +46,7 @@ This approach leverages CMake's own [module `FindEXPAT`](https://cmake.org/cmake
 Notice the *uppercase* `EXPAT` in the following example:
 
 ```cmake
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 # or 3.10, see below
 
 project(hello VERSION 1.0.0)
@@ -80,7 +80,7 @@ or
 Notice the *lowercase* `expat` in the following example:
 
 ```cmake
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 project(hello VERSION 1.0.0)
 

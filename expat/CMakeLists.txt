@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 add_definitions(-DHAVE_EXPAT_CONFIG_H=1)
 

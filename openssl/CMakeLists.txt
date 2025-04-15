@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 if("${BUILD_OS}" STREQUAL "Windows")
     set(CMAKE_ASM_NASM_COMPILER ${PROJECT_SOURCE_DIR}/tools/nasm.exe)

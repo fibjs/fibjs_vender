@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+
 set(WORK_ROOT $ENV{WORK_ROOT})
 
 if("${CLEAN_BUILD}" STREQUAL "true")
