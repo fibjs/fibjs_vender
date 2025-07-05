@@ -159,6 +159,125 @@ TEST(exlib_qstring, find_edge_cases)
     GTEST_ASSERT_EQ(overlap.find("abab", 1), 2);
 }
 
+// ==================== find_first_of 方法测试 (std::string 兼容) ====================
+// 测试 exlib::string 的 find_first_of 是否符合 std::string 标准
+
+TEST(exlib_qstring, find_first_of_single_char)
+{
+    const char* test_str = "hello world hello";
+    exlib::string str(test_str);
+    std::string std_str(test_str);
+
+    // Test basic find_first_of with single character - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of('h'), std_str.find_first_of('h')); // First 'h'
+    GTEST_ASSERT_EQ(str.find_first_of('o'), std_str.find_first_of('o')); // First 'o'
+    GTEST_ASSERT_EQ(str.find_first_of('l'), std_str.find_first_of('l')); // First 'l'
+    GTEST_ASSERT_EQ(str.find_first_of('e'), std_str.find_first_of('e')); // First 'e'
+    GTEST_ASSERT_EQ(str.find_first_of(' '), std_str.find_first_of(' ')); // Space
+
+    // Test character not found - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of('x'), std_str.find_first_of('x'));
+    GTEST_ASSERT_EQ(str.find_first_of('z'), std_str.find_first_of('z'));
+
+    // Test with position parameter - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of('h', 1), std_str.find_first_of('h', 1)); // Second 'h' when searching from position 1
+    GTEST_ASSERT_EQ(str.find_first_of('o', 5), std_str.find_first_of('o', 5)); // 'o' in "world" when searching from position 5
+    GTEST_ASSERT_EQ(str.find_first_of('l', 4), std_str.find_first_of('l', 4)); // 'l' in "world" when searching from position 4
+}
+
+TEST(exlib_qstring, find_first_of_character_set)
+{
+    const char* test_str = "hello world 123";
+    exlib::string str(test_str);
+    std::string std_str(test_str);
+
+    // Test with character set (any character from the set) - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of("aeiou"), std_str.find_first_of("aeiou")); // First vowel
+    GTEST_ASSERT_EQ(str.find_first_of("0123456789"), std_str.find_first_of("0123456789")); // First digit
+    GTEST_ASSERT_EQ(str.find_first_of("xyz"), std_str.find_first_of("xyz")); // No characters from set found
+
+    // Test with position parameter - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of("aeiou", 2), std_str.find_first_of("aeiou", 2)); // First vowel after position 2
+    GTEST_ASSERT_EQ(str.find_first_of("0123456789", 10), std_str.find_first_of("0123456789", 10)); // First digit after position 10
+
+    // Test overlapping characters - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of("lo"), std_str.find_first_of("lo")); // First 'l' or 'o'
+    GTEST_ASSERT_EQ(str.find_first_of("rd"), std_str.find_first_of("rd")); // First 'r' or 'd'
+}
+
+TEST(exlib_qstring, find_first_of_edge_cases)
+{
+    // Test empty string - compare with std::string
+    exlib::string empty("");
+    std::string std_empty("");
+    GTEST_ASSERT_EQ(empty.find_first_of('a'), std_empty.find_first_of('a'));
+    GTEST_ASSERT_EQ(empty.find_first_of("abc"), std_empty.find_first_of("abc"));
+
+    // Test single character string - compare with std::string
+    exlib::string single("a");
+    std::string std_single("a");
+    GTEST_ASSERT_EQ(single.find_first_of('a'), std_single.find_first_of('a'));
+    GTEST_ASSERT_EQ(single.find_first_of('b'), std_single.find_first_of('b'));
+    GTEST_ASSERT_EQ(single.find_first_of("abc"), std_single.find_first_of("abc")); // Should find 'a'
+    GTEST_ASSERT_EQ(single.find_first_of("xyz"), std_single.find_first_of("xyz"));
+
+    // Test with empty character set - compare with std::string
+    exlib::string str("hello");
+    std::string std_str("hello");
+    GTEST_ASSERT_EQ(str.find_first_of(""), std_str.find_first_of("")); // Empty set should return npos
+
+    // Test position beyond string length - compare with std::string
+    GTEST_ASSERT_EQ(str.find_first_of('l', 100), std_str.find_first_of('l', 100)); // Should return npos
+    GTEST_ASSERT_EQ(str.find_first_of('h', 100), std_str.find_first_of('h', 100)); // Should return npos
+}
+
+TEST(exlib_qstring, find_first_of_comprehensive)
+{
+    const char* test_str = "document.backup.2023.txt";
+    exlib::string filename(test_str);
+    std::string std_filename(test_str);
+
+    // Test finding file extension separator - compare with std::string
+    GTEST_ASSERT_EQ(filename.find_first_of('.'), std_filename.find_first_of('.'));
+
+    // Test finding any digit - compare with std::string
+    GTEST_ASSERT_EQ(filename.find_first_of("0123456789"), std_filename.find_first_of("0123456789"));
+
+    // Test finding path separators (even though none exist) - compare with std::string
+    GTEST_ASSERT_EQ(filename.find_first_of("/\\"), std_filename.find_first_of("/\\"));
+
+    // Test multiple character sets - compare with std::string
+    GTEST_ASSERT_EQ(filename.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), std_filename.find_first_of("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+    GTEST_ASSERT_EQ(filename.find_first_of("abcdefghijklmnopqrstuvwxyz"), std_filename.find_first_of("abcdefghijklmnopqrstuvwxyz"));
+
+    // Test with position to find later occurrences - compare with std::string
+    GTEST_ASSERT_EQ(filename.find_first_of("0123456789", 5), std_filename.find_first_of("0123456789", 5));
+    GTEST_ASSERT_EQ(filename.find_first_of("0123456789", 18), std_filename.find_first_of("0123456789", 18));
+}
+
+TEST(exlib_qstring, find_first_of_vs_find_comparison)
+{
+    exlib::string str("programming");
+
+    // Compare find_first_of with manual search
+    auto manual_find_first_of = [](const exlib::string& s, const char* chars) -> size_t {
+        for (size_t i = 0; i < s.length(); ++i) {
+            for (const char* p = chars; *p; ++p) {
+                if (s.c_str()[i] == *p) {
+                    return i;
+                }
+            }
+        }
+        return SIZE_MAX;
+    };
+
+    // Test various character sets
+    GTEST_ASSERT_EQ(str.find_first_of("aeiou"), manual_find_first_of(str, "aeiou"));
+    GTEST_ASSERT_EQ(str.find_first_of("xyz"), manual_find_first_of(str, "xyz"));
+    GTEST_ASSERT_EQ(str.find_first_of("mrg"), manual_find_first_of(str, "mrg"));
+    GTEST_ASSERT_EQ(str.find_first_of("p"), manual_find_first_of(str, "p"));
+}
+
 // ==================== find_last_of 方法测试 (std::string 兼容) ====================
 // 测试 exlib::string 的 find_last_of 是否符合 std::string 标准
 

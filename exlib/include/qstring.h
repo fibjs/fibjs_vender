@@ -571,6 +571,50 @@ public:
         return find(str.c_str(), pos, str.length());
     }
 
+    size_t find_first_of(T c, size_t pos = 0) const
+    {
+        const T* s1 = c_str();
+        size_t n1 = length();
+
+        if (pos >= n1)
+            return npos;
+
+        // Search forward from position pos for character c
+        for (size_t i = pos; i < n1; ++i) {
+            if (s1[i] == c)
+                return i;
+        }
+
+        return npos;
+    }
+
+    size_t find_first_of(const T* s, size_t pos = 0) const
+    {
+        if (!s || !*s)
+            return npos;
+
+        const T* s1 = c_str();
+        size_t n1 = length();
+
+        if (pos >= n1)
+            return npos;
+
+        // Search forward from position pos for any character in s
+        for (size_t i = pos; i < n1; ++i) {
+            for (const T* p = s; *p; ++p) {
+                if (s1[i] == *p)
+                    return i;
+            }
+        }
+
+        return npos;
+    }
+
+    size_t find_first_of(const basic_string<T>& str, size_t pos = 0) const
+    {
+        return find_first_of(str.c_str(), pos);
+    }
+
     size_t find_last_of(T c, size_t pos = npos) const
     {
         const T* s1 = c_str();
