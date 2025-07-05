@@ -545,6 +545,9 @@ public:
 
     size_t find(const T* s, size_t pos, size_t n) const
     {
+        if (n == 0)
+            return pos <= length() ? pos : npos; // Empty string found at valid position
+
         if (n == 1)
             return find(*s, pos);
 
@@ -566,6 +569,56 @@ public:
     size_t find(const basic_string<char>& str, size_t pos = 0) const
     {
         return find(str.c_str(), pos, str.length());
+    }
+
+    size_t find_last_of(T c, size_t pos = npos) const
+    {
+        const T* s1 = c_str();
+        size_t n1 = length();
+
+        if (n1 == 0)
+            return npos;
+
+        if (pos >= n1)
+            pos = n1 - 1;
+
+        // Search backwards from position pos
+        for (size_t i = pos + 1; i > 0; --i) {
+            if (s1[i - 1] == c)
+                return i - 1;
+        }
+
+        return npos;
+    }
+
+    size_t find_last_of(const T* s, size_t pos = npos) const
+    {
+        if (!s || !*s)
+            return npos;
+
+        const T* s1 = c_str();
+        size_t n1 = length();
+
+        if (n1 == 0)
+            return npos;
+
+        if (pos >= n1)
+            pos = n1 - 1;
+
+        // Search backwards from position pos for any character in s
+        for (size_t i = pos + 1; i > 0; --i) {
+            for (const T* p = s; *p; ++p) {
+                if (s1[i - 1] == *p)
+                    return i - 1;
+            }
+        }
+
+        return npos;
+    }
+
+    size_t find_last_of(const basic_string<T>& str, size_t pos = npos) const
+    {
+        return find_last_of(str.c_str(), pos);
     }
 
 public:
