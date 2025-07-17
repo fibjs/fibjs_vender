@@ -13,6 +13,8 @@
 #include <string.h>
 #include <string>
 #include <string_view>
+#include <stdexcept>
+#include <iterator>
 #include "utils.h"
 
 namespace exlib {
@@ -153,6 +155,19 @@ inline const char* qmemchr(const char* s, char c, size_t sz)
 template <typename T>
 class basic_string {
 public:
+    // STL标准类型定义
+    typedef T value_type;
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+    typedef T& reference;
+    typedef const T& const_reference;
+    typedef T* pointer;
+    typedef const T* const_pointer;
+    typedef T* iterator;
+    typedef const T* const_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
 #pragma pack(1)
     class Buffer {
     public:
@@ -219,6 +234,11 @@ public:
             return this;
         }
 
+        size_t get_block_size() const
+        {
+            return blk_size;
+        }
+
     private:
         atomic refs_;
         size_t blk_size;
@@ -273,6 +293,13 @@ public:
         assign(v);
     }
 
+    basic_string(std::basic_string<T>&& v)
+        : m_length(0)
+        , m_buffer(NULL)
+    {
+        assign(std::move(v));
+    }
+
     basic_string(const std::basic_string_view<T>& v)
         : m_length(0)
         , m_buffer(NULL)
@@ -294,6 +321,14 @@ public:
         assign(v);
     }
 
+    // 移动构造函数 - 对大字符串零内存拷贝
+    basic_string(basic_string<T>&& v) noexcept
+        : m_length(0)
+        , m_buffer(NULL)
+    {
+        move_from(std::move(v));
+    }
+
     ~basic_string()
     {
         unref();
@@ -302,10 +337,30 @@ public:
 public:
     static const size_t npos = SIZE_MAX;
 
+    // 迭代器接口
+    iterator begin() { return data(); }
+    iterator end() { return data() + length(); }
+    const_iterator begin() const { return c_str(); }
+    const_iterator end() const { return c_str() + length(); }
+    const_iterator cbegin() const { return c_str(); }
+    const_iterator cend() const { return c_str() + length(); }
+
+    reverse_iterator rbegin() { return reverse_iterator(end()); }
+    reverse_iterator rend() { return reverse_iterator(begin()); }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+    const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+    const_reverse_iterator crbegin() const { return const_reverse_iterator(end()); }
+    const_reverse_iterator crend() const { return const_reverse_iterator(begin()); }
+
 public:
     size_t length() const
     {
         return is_sso() ? m_length : m_buffer->length();
+    }
+
+    size_t size() const
+    {
+        return length();
     }
 
     const T* c_str() const
@@ -364,6 +419,38 @@ public:
     void clear()
     {
         return resize(0);
+    }
+
+    // 容量管理接口
+    size_type capacity() const
+    {
+        if (is_sso()) {
+            return MAX_SMALL - 1;
+        }
+        return m_buffer->get_block_size() - 1;
+    }
+
+    void reserve(size_type n)
+    {
+        if (n <= capacity())
+            return;
+
+        size_type current_length = length();
+        if (is_sso()) {
+            m_buffer = Buffer::New(n, m_small_data, current_length);
+            m_length = FLAG_BUF;
+        } else {
+            if (m_buffer->is_shared() || n + 1 > m_buffer->get_block_size()) {
+                Buffer* new_buffer = Buffer::New(n, m_buffer->data(), current_length);
+                m_buffer->unref();
+                m_buffer = new_buffer;
+            }
+        }
+    }
+
+    size_type max_size() const
+    {
+        return (SIZE_MAX / sizeof(T)) - 1;
     }
 
     int32_t compare(const basic_string<T>& str) const
@@ -475,6 +562,16 @@ public:
         return assign(str.m_buffer);
     }
 
+    // 移动版本的 assign - 对大字符串零内存拷贝
+    basic_string<T>& assign(basic_string<T>&& str) noexcept
+    {
+        if (this != &str) {
+            unref();
+            move_from(std::move(str));
+        }
+        return *this;
+    }
+
     basic_string<T>& assign(const T* str)
     {
         return assign(str, qstrlen(str));
@@ -483,6 +580,20 @@ public:
     basic_string<T>& assign(const std::basic_string<T>& str)
     {
         return assign(str.c_str(), str.length());
+    }
+
+    basic_string<T>& assign(std::basic_string<T>&& str)
+    {
+        // 利用 std::string 的移动语义，避免额外拷贝
+        size_t len = str.length();
+        if (len == 0) {
+            clear();
+            return *this;
+        }
+
+        // 对于大字符串，我们仍然需要拷贝数据，因为 std::string 和 exlib::string
+        // 的内存管理方式不同，但这比重新分配+拷贝要快
+        return assign(str.c_str(), len);
     }
 
     basic_string<T>& assign(const std::basic_string_view<T>& str)
@@ -566,7 +677,7 @@ public:
         return find(s, pos, qstrlen(s));
     }
 
-    size_t find(const basic_string<char>& str, size_t pos = 0) const
+    size_t find(const basic_string<T>& str, size_t pos = 0) const
     {
         return find(str.c_str(), pos, str.length());
     }
@@ -697,10 +808,166 @@ public:
     }
 
 public:
-    // T operator[](size_t i) const
-    // {
-    //     return c_str()[i];
-    // }
+    // Simplified proxy class for operator[] - only handles write operations
+    // Read operations use implicit conversion to T, avoiding operator overload complexity
+    class CharProxy {
+    private:
+        basic_string<T>& str_;
+        size_t index_;
+
+    public:
+        CharProxy(basic_string<T>& str, size_t index)
+            : str_(str)
+            , index_(index)
+        {
+        }
+
+        // Read operation - doesn't trigger copy, handled by implicit conversion
+        operator T() const
+        {
+            return str_.c_str()[index_];
+        }
+
+        // Write operations - trigger copy if needed, return reference to actual character
+        T& operator=(T value)
+        {
+            return str_.data()[index_] = value;
+        }
+
+        // Assignment operators - return reference to actual character after copy
+        T& operator+=(T value)
+        {
+            return str_.data()[index_] += value;
+        }
+
+        T& operator-=(T value)
+        {
+            return str_.data()[index_] -= value;
+        }
+
+        T& operator*=(T value)
+        {
+            return str_.data()[index_] *= value;
+        }
+
+        T& operator/=(T value)
+        {
+            return str_.data()[index_] /= value;
+        }
+
+        T& operator%=(T value)
+        {
+            return str_.data()[index_] %= value;
+        }
+
+        T& operator&=(T value)
+        {
+            return str_.data()[index_] &= value;
+        }
+
+        T& operator|=(T value)
+        {
+            return str_.data()[index_] |= value;
+        }
+
+        T& operator^=(T value)
+        {
+            return str_.data()[index_] ^= value;
+        }
+
+        T& operator<<=(T value)
+        {
+            return str_.data()[index_] <<= value;
+        }
+
+        T& operator>>=(T value)
+        {
+            return str_.data()[index_] >>= value;
+        }
+
+        // Increment/Decrement operators - return reference to actual character
+        T& operator++()
+        { // Pre-increment
+            return ++str_.data()[index_];
+        }
+
+        T operator++(int)
+        { // Post-increment
+            T old_value = str_.c_str()[index_];
+            ++str_.data()[index_];
+            return old_value;
+        }
+
+        T& operator--()
+        { // Pre-decrement
+            return --str_.data()[index_];
+        }
+
+        T operator--(int)
+        { // Post-decrement
+            T old_value = str_.c_str()[index_];
+            --str_.data()[index_];
+            return old_value;
+        }
+    };
+
+    // 边界检查访问方法
+    reference at(size_type pos)
+    {
+        if (pos >= length()) {
+            throw std::out_of_range("basic_string::at");
+        }
+        return data()[pos];
+    }
+
+    const_reference at(size_type pos) const
+    {
+        if (pos >= length()) {
+            throw std::out_of_range("basic_string::at");
+        }
+        return c_str()[pos];
+    }
+
+    // front/back访问方法
+    reference front()
+    {
+        if (empty())
+            throw std::out_of_range("basic_string::front");
+        return data()[0];
+    }
+
+    const_reference front() const
+    {
+        if (empty())
+            throw std::out_of_range("basic_string::front");
+        return c_str()[0];
+    }
+
+    reference back()
+    {
+        if (empty())
+            throw std::out_of_range("basic_string::back");
+        return data()[length() - 1];
+    }
+
+    const_reference back() const
+    {
+        if (empty())
+            throw std::out_of_range("basic_string::back");
+        return c_str()[length() - 1];
+    }
+
+    // Read-only access for const objects
+    T operator[](size_t i) const
+    {
+        return c_str()[i];
+    }
+
+    // Read/write access for non-const objects using proxy
+    CharProxy operator[](size_t i)
+    {
+        return CharProxy(*this, i);
+    }
 
     basic_string<T> operator+=(T ch)
     {
@@ -727,6 +994,56 @@ public:
         return append(rhs.data(), rhs.length());
     }
 
+    // push_back/pop_back方法
+    void push_back(T c)
+    {
+        append(1, c);
+    }
+
+    void pop_back()
+    {
+        if (!empty()) {
+            resize(length() - 1);
+        }
+    }
+
+    // erase方法
+    basic_string& erase(size_type pos = 0, size_type len = npos)
+    {
+        size_type str_len = length();
+        if (pos > str_len) {
+            throw std::out_of_range("basic_string::erase");
+        }
+
+        if (len == npos || pos + len >= str_len) {
+            len = str_len - pos;
+        }
+
+        if (len == 0)
+            return *this;
+
+        T* d = data();
+        qmemcpy(d + pos, d + pos + len, str_len - pos - len + 1);
+        resize(str_len - len);
+
+        return *this;
+    }
+
+    iterator erase(iterator position)
+    {
+        size_type pos = position - begin();
+        erase(pos, 1);
+        return begin() + pos;
+    }
+
+    iterator erase(iterator first, iterator last)
+    {
+        size_type pos = first - begin();
+        size_type len = last - first;
+        erase(pos, len);
+        return begin() + pos;
+    }
+
     basic_string<T>& operator=(const std::basic_string_view<T>& str)
     {
         return assign(str.data(), str.length());
@@ -735,6 +1052,11 @@ public:
     basic_string<T>& operator=(const std::basic_string<T>& str)
     {
         return assign(str.data(), str.length());
+    }
+
+    basic_string<T>& operator=(std::basic_string<T>&& str)
+    {
+        return assign(std::move(str));
     }
 
     basic_string<T>& operator=(const T* str)
@@ -752,6 +1074,16 @@ public:
         return assign(str);
     }
 
+    // 移动赋值操作符 - 对大字符串零内存拷贝
+    basic_string<T>& operator=(basic_string<T>&& str) noexcept
+    {
+        if (this != &str) {
+            unref();
+            move_from(std::move(str));
+        }
+        return *this;
+    }
+
     operator std::basic_string<T>() const
     {
         return std::basic_string<T>(c_str(), length());
@@ -760,6 +1092,26 @@ public:
     operator std::basic_string_view<T>() const
     {
         return std::basic_string_view<T>(c_str(), length());
+    }
+
+private:
+    // 移动辅助函数 - 处理SSO和非SSO的转移逻辑
+    void move_from(basic_string<T>&& other) noexcept
+    {
+        if (other.is_sso()) {
+            // SSO模式：小字符串必须拷贝数据，因为数据存储在对象内部
+            m_length = other.m_length;
+            qmemcpy(m_small_data, other.m_small_data, m_length + 1);
+        } else {
+            // 非SSO模式：大字符串可以零拷贝转移所有权
+            m_length = other.m_length; // 包含FLAG_BUF标志
+            m_buffer = other.m_buffer;
+            // 不调用ref()，直接转移所有权
+        }
+
+        // 清空源对象
+        other.m_length = 0;
+        other.m_buffer = NULL;
     }
 
 private:
