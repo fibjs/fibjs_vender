@@ -1856,3 +1856,111 @@ TEST(exlib_qstring, stl_compatibility_with_containers)
         GTEST_ASSERT_EQ(vec_exlib[i], vec_std[i].c_str());
     }
 }
+
+// ==================== reserve() bug reproduction test ====================
+// Test to reproduce the reserve() bug where reserve() incorrectly changes string length
+
+TEST(exlib_qstring, reserve_bug_reproduction)
+{
+    // Test case 1: Basic reserve() behavior should not change length
+    exlib::string str;
+
+    // Initial state
+    GTEST_ASSERT_EQ(str.length(), 0);
+    GTEST_ASSERT_GE(str.capacity(), 0);
+
+    size_t initial_capacity = str.capacity();
+
+    // Reserve space - should only change capacity, NOT length
+    str.reserve(50);
+
+    // FIXED: reserve() now correctly maintains length at 0
+    // Expected: length should remain 0, capacity should be >= 50
+    GTEST_ASSERT_EQ(str.length(), 0); // This should now PASS (bug is fixed!)
+    GTEST_ASSERT_GE(str.capacity(), 50);
+}
+
+TEST(exlib_qstring, reserve_bug_base64_simulation)
+{
+    // Simulate the exact scenario that caused issues in atob/btoa
+    // This reproduces the bug that caused 22 null bytes in UTF-8 encoding
+
+    exlib::string latin1_data;
+    // Add some binary data (simulating base64 decode result)
+    for (int i = 0; i < 11; i++) {
+        latin1_data += static_cast<char>(i);
+    }
+
+    GTEST_ASSERT_EQ(latin1_data.length(), 11);
+
+    // Now simulate UTF-8 encoding with reserve
+    exlib::string utf8_result;
+    size_t len = latin1_data.length();
+
+    // This reserve() call should behave exactly like std::string
+    utf8_result.reserve(len * 2); // Reserve space for worst-case UTF-8 encoding
+
+    // Compare with std::string behavior
+    std::string std_utf8_result;
+    std_utf8_result.reserve(len * 2);
+
+    // FIXED: After reserve(), length should remain 0 (same as std::string)
+    GTEST_ASSERT_EQ(utf8_result.length(), 0); // Should match std::string behavior
+    GTEST_ASSERT_EQ(utf8_result.length(), std_utf8_result.length()); // Verify consistency
+
+    // Now when we append the actual UTF-8 data, it goes AFTER the null bytes
+    const unsigned char* src = reinterpret_cast<const unsigned char*>(latin1_data.c_str());
+    for (size_t i = 0; i < len; i++) {
+        unsigned char byte = src[i];
+        if (byte <= 0x7F) {
+            utf8_result.append(1, static_cast<char>(byte));
+        } else {
+            utf8_result.append(1, static_cast<char>(0xC0 | (byte >> 6)));
+            utf8_result.append(1, static_cast<char>(0x80 | (byte & 0x3F)));
+        }
+    }
+
+    // Expected: length should be 11 (all ASCII bytes)
+    GTEST_ASSERT_EQ(utf8_result.length(), 11); // Should work correctly after fix
+
+    // Verify data is correct (should be [0,1,2,3,4,5,6,7,8,9,10])
+    for (size_t i = 0; i < 11; i++) {
+        GTEST_ASSERT_EQ(static_cast<unsigned char>(utf8_result[i]), i);
+    }
+}
+
+TEST(exlib_qstring, reserve_vs_std_string_behavior)
+{
+    // Compare exlib::string reserve() behavior with std::string
+
+    std::string std_str;
+    exlib::string exlib_str;
+
+    // Initial state
+    GTEST_ASSERT_EQ(std_str.length(), 0);
+    GTEST_ASSERT_EQ(exlib_str.length(), 0);
+
+    // Reserve space in both
+    std_str.reserve(100);
+    exlib_str.reserve(100);
+
+    // std::string behavior: length remains 0, capacity increases
+    GTEST_ASSERT_EQ(std_str.length(), 0);
+    GTEST_ASSERT_GE(std_str.capacity(), 100);
+
+    // exlib::string should behave the same way (FIXED!)
+    GTEST_ASSERT_EQ(exlib_str.length(), 0); // Should now PASS after fix
+    GTEST_ASSERT_GE(exlib_str.capacity(), 100);
+    GTEST_ASSERT_EQ(exlib_str.length(), std_str.length()); // Verify consistency
+
+    // After reserve, append should work normally
+    std_str.append("test");
+    exlib_str.append("test");
+
+    GTEST_ASSERT_EQ(std_str.length(), 4);
+    GTEST_ASSERT_EQ(exlib_str.length(), 4); // Should work correctly after fix
+    GTEST_ASSERT_EQ(exlib_str.length(), std_str.length()); // Verify consistency
+
+    GTEST_ASSERT_EQ(std_str, "test");
+    GTEST_ASSERT_EQ(exlib_str.c_str(), std::string("test")); // Should work correctly after fix
+}

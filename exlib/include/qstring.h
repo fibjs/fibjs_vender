@@ -239,6 +239,12 @@ public:
             return blk_size;
         }
 
+        void set_length(size_t new_length)
+        {
+            m_length = new_length;
+            m_data[new_length] = 0;
+        }
+
     private:
         atomic refs_;
         size_t blk_size;
@@ -438,10 +444,12 @@ public:
         size_type current_length = length();
         if (is_sso()) {
             m_buffer = Buffer::New(n, m_small_data, current_length);
+            m_buffer->set_length(current_length);
             m_length = FLAG_BUF;
         } else {
             if (m_buffer->is_shared() || n + 1 > m_buffer->get_block_size()) {
                 Buffer* new_buffer = Buffer::New(n, m_buffer->data(), current_length);
+                new_buffer->set_length(current_length);
                 m_buffer->unref();
                 m_buffer = new_buffer;
             }
@@ -969,27 +977,27 @@ public:
         return CharProxy(*this, i);
     }
 
-    basic_string<T> operator+=(T ch)
+    basic_string<T>& operator+=(T ch)
     {
         return append(1, ch);
     }
 
-    basic_string<T> operator+=(const T* rhs)
+    basic_string<T>& operator+=(const T* rhs)
     {
         return append(rhs);
     }
 
-    basic_string<T> operator+=(const basic_string<T>& rhs)
+    basic_string<T>& operator+=(const basic_string<T>& rhs)
     {
         return append(rhs);
     }
 
-    basic_string<T> operator+=(const std::basic_string_view<T>& rhs)
+    basic_string<T>& operator+=(const std::basic_string_view<T>& rhs)
     {
         return append(rhs.data(), rhs.length());
     }
 
-    basic_string<T> operator+=(const std::basic_string<T>& rhs)
+    basic_string<T>& operator+=(const std::basic_string<T>& rhs)
     {
         return append(rhs.data(), rhs.length());
     }
