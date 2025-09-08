@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 if(NOT ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     enable_language(ASM)

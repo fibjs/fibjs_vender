@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 list(APPEND src_list ${PROJECT_SOURCE_DIR}/src/gtest-all.cc)
 

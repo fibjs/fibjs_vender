@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
     # @note: there's no __STDC__ definition on git-bash of Windows
