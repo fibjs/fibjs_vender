@@ -15,7 +15,6 @@ set(libs
     pcre
     sqlite
     umysql
-    uuid
     datachannel
     juice
     usrsctp
