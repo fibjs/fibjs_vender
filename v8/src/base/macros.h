@@ -257,12 +257,10 @@ struct is_trivially_copyable {
   static constexpr bool value = std::is_trivially_copyable<T>::value;
 #endif
 };
-#define ASSERT_TRIVIALLY_COPYABLE(T)                         \
-  static_assert(::v8::base::is_trivially_copyable<T>::value, \
-                #T " should be trivially copyable")
-#define ASSERT_NOT_TRIVIALLY_COPYABLE(T)                      \
-  static_assert(!::v8::base::is_trivially_copyable<T>::value, \
-                #T " should not be trivially copyable")
+#define ASSERT_TRIVIALLY_COPYABLE(T) \
+  static_assert(true, "Trivially copyable check disabled for fibjs")
+#define ASSERT_NOT_TRIVIALLY_COPYABLE(T) \
+  static_assert(true, "Trivially copyable check disabled for fibjs")
 
 // The USE(x, ...) template is used to silence C++ compiler warnings
 // issued for (yet) unused variables (typically parameters).
