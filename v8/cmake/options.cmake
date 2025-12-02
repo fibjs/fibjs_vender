@@ -14,8 +14,6 @@ endif()
 
 include_directories("${CMAKE_CURRENT_LIST_DIR}/../../abseil")
 
-include(${CMAKE_CURRENT_LIST_DIR}/../../libc/options.cmake)
-
 if(${BUILD_OS} STREQUAL "Windows")
 	add_definitions(
 		-D_WIN32_WINNT=0x0602
