@@ -1,6 +1,7 @@
 class ArrayEveryLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayEveryLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kArray, kO, kInitialK, kLength, kInitialTo)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayEveryLoopContinuationDescriptor)
@@ -9,6 +10,7 @@ class ArrayEveryLoopContinuationDescriptor : public StaticCallInterfaceDescripto
 class ArrayFilterLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayFilterLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kArray, kO, kInitialK, kLength, kInitialTo)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayFilterLoopContinuationDescriptor)
@@ -17,6 +19,7 @@ class ArrayFilterLoopContinuationDescriptor : public StaticCallInterfaceDescript
 class ArrayFindLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayFindLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kO, kInitialK, kLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayFindLoopContinuationDescriptor)
@@ -25,6 +28,7 @@ class ArrayFindLoopContinuationDescriptor : public StaticCallInterfaceDescriptor
 class ArrayFindIndexLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayFindIndexLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kO, kInitialK, kLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayFindIndexLoopContinuationDescriptor)
@@ -33,6 +37,7 @@ class ArrayFindIndexLoopContinuationDescriptor : public StaticCallInterfaceDescr
 class ArrayFindLastLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayFindLastLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPredicate, kThisArg, kO, kInitialK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayFindLastLoopContinuationDescriptor)
@@ -41,6 +46,7 @@ class ArrayFindLastLoopContinuationDescriptor : public StaticCallInterfaceDescri
 class ArrayFindLastIndexLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayFindLastIndexLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPredicate, kThisArg, kO, kInitialK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayFindLastIndexLoopContinuationDescriptor)
@@ -49,6 +55,7 @@ class ArrayFindLastIndexLoopContinuationDescriptor : public StaticCallInterfaceD
 class FlattenIntoArrayWithoutMapFnDescriptor : public StaticCallInterfaceDescriptor<FlattenIntoArrayWithoutMapFnDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTarget, kSource, kSourceLength, kStart, kDepth)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(FlattenIntoArrayWithoutMapFnDescriptor)
@@ -57,6 +64,7 @@ class FlattenIntoArrayWithoutMapFnDescriptor : public StaticCallInterfaceDescrip
 class FlattenIntoArrayWithMapFnDescriptor : public StaticCallInterfaceDescriptor<FlattenIntoArrayWithMapFnDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTarget, kSource, kSourceLength, kStart, kDepth, kMapfn, kThisArgs)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(FlattenIntoArrayWithMapFnDescriptor)
@@ -65,6 +73,7 @@ class FlattenIntoArrayWithMapFnDescriptor : public StaticCallInterfaceDescriptor
 class ArrayForEachLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayForEachLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kArray, kO, kInitialK, kLen, kTo)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayForEachLoopContinuationDescriptor)
@@ -73,6 +82,7 @@ class ArrayForEachLoopContinuationDescriptor : public StaticCallInterfaceDescrip
 class LoadJoinElement_DictionaryElements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinElement_DictionaryElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinElement_DictionaryElements_0Descriptor)
@@ -81,6 +91,7 @@ class LoadJoinElement_DictionaryElements_0Descriptor : public StaticCallInterfac
 class LoadJoinElement_FastSmiOrObjectElements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinElement_FastSmiOrObjectElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinElement_FastSmiOrObjectElements_0Descriptor)
@@ -89,6 +100,7 @@ class LoadJoinElement_FastSmiOrObjectElements_0Descriptor : public StaticCallInt
 class LoadJoinElement_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinElement_FastDoubleElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinElement_FastDoubleElements_0Descriptor)
@@ -97,6 +109,7 @@ class LoadJoinElement_FastDoubleElements_0Descriptor : public StaticCallInterfac
 class ConvertToLocaleStringDescriptor : public StaticCallInterfaceDescriptor<ConvertToLocaleStringDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kElement, kLocales, kOptions)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ConvertToLocaleStringDescriptor)
@@ -105,6 +118,7 @@ class ConvertToLocaleStringDescriptor : public StaticCallInterfaceDescriptor<Con
 class JoinStackPushDescriptor : public StaticCallInterfaceDescriptor<JoinStackPushDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kStack, kReceiver)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(JoinStackPushDescriptor)
@@ -113,14 +127,25 @@ class JoinStackPushDescriptor : public StaticCallInterfaceDescriptor<JoinStackPu
 class JoinStackPopDescriptor : public StaticCallInterfaceDescriptor<JoinStackPopDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kStack, kReceiver)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(JoinStackPopDescriptor)
 };
 
+class ArrayPrototypeJoinImplDescriptor : public StaticCallInterfaceDescriptor<ArrayPrototypeJoinImplDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1, kO, kLen, kSeparator)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer())
+  DECLARE_DEFAULT_DESCRIPTOR(ArrayPrototypeJoinImplDescriptor)
+};
+
 class ArrayMapLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayMapLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kArray, kO, kInitialK, kLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayMapLoopContinuationDescriptor)
@@ -129,6 +154,7 @@ class ArrayMapLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<
 class ArrayReduceRightLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayReduceRightLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kInitialAccumulator, kO, kInitialK, kLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayReduceRightLoopContinuationDescriptor)
@@ -137,6 +163,7 @@ class ArrayReduceRightLoopContinuationDescriptor : public StaticCallInterfaceDes
 class ArrayReduceLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArrayReduceLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kInitialAccumulator, kO, kInitialK, kLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayReduceLoopContinuationDescriptor)
@@ -145,6 +172,7 @@ class ArrayReduceLoopContinuationDescriptor : public StaticCallInterfaceDescript
 class ArraySomeLoopContinuationDescriptor : public StaticCallInterfaceDescriptor<ArraySomeLoopContinuationDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kCallbackfn, kThisArg, kArray, kO, kInitialK, kLength, kInitialTo)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ArraySomeLoopContinuationDescriptor)
@@ -153,6 +181,7 @@ class ArraySomeLoopContinuationDescriptor : public StaticCallInterfaceDescriptor
 class GenericArrayToReversedDescriptor : public StaticCallInterfaceDescriptor<GenericArrayToReversedDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GenericArrayToReversedDescriptor)
@@ -161,6 +190,7 @@ class GenericArrayToReversedDescriptor : public StaticCallInterfaceDescriptor<Ge
 class ArrayTimSortIntoCopyDescriptor : public StaticCallInterfaceDescriptor<ArrayTimSortIntoCopyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayTimSortIntoCopyDescriptor)
@@ -169,6 +199,7 @@ class ArrayTimSortIntoCopyDescriptor : public StaticCallInterfaceDescriptor<Arra
 class GenericArrayWithDescriptor : public StaticCallInterfaceDescriptor<GenericArrayWithDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kLen, kActualIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GenericArrayWithDescriptor)
@@ -177,6 +208,7 @@ class GenericArrayWithDescriptor : public StaticCallInterfaceDescriptor<GenericA
 class ToIntegerDescriptor : public StaticCallInterfaceDescriptor<ToIntegerDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToIntegerDescriptor)
@@ -185,6 +217,7 @@ class ToIntegerDescriptor : public StaticCallInterfaceDescriptor<ToIntegerDescri
 class FastCreateDataPropertyDescriptor : public StaticCallInterfaceDescriptor<FastCreateDataPropertyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kKey, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(FastCreateDataPropertyDescriptor)
@@ -193,6 +226,7 @@ class FastCreateDataPropertyDescriptor : public StaticCallInterfaceDescriptor<Fa
 class BigIntAddNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntAddNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntAddNoThrowDescriptor)
@@ -201,6 +235,7 @@ class BigIntAddNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntAd
 class BigIntAddDescriptor : public StaticCallInterfaceDescriptor<BigIntAddDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntAddDescriptor)
@@ -209,6 +244,7 @@ class BigIntAddDescriptor : public StaticCallInterfaceDescriptor<BigIntAddDescri
 class BigIntSubtractNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntSubtractNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntSubtractNoThrowDescriptor)
@@ -217,6 +253,7 @@ class BigIntSubtractNoThrowDescriptor : public StaticCallInterfaceDescriptor<Big
 class BigIntSubtractDescriptor : public StaticCallInterfaceDescriptor<BigIntSubtractDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntSubtractDescriptor)
@@ -225,6 +262,7 @@ class BigIntSubtractDescriptor : public StaticCallInterfaceDescriptor<BigIntSubt
 class BigIntMultiplyNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntMultiplyNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntMultiplyNoThrowDescriptor)
@@ -233,6 +271,7 @@ class BigIntMultiplyNoThrowDescriptor : public StaticCallInterfaceDescriptor<Big
 class BigIntMultiplyDescriptor : public StaticCallInterfaceDescriptor<BigIntMultiplyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntMultiplyDescriptor)
@@ -241,6 +280,7 @@ class BigIntMultiplyDescriptor : public StaticCallInterfaceDescriptor<BigIntMult
 class BigIntDivideNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntDivideNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntDivideNoThrowDescriptor)
@@ -249,6 +289,7 @@ class BigIntDivideNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIn
 class BigIntDivideDescriptor : public StaticCallInterfaceDescriptor<BigIntDivideDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntDivideDescriptor)
@@ -257,6 +298,7 @@ class BigIntDivideDescriptor : public StaticCallInterfaceDescriptor<BigIntDivide
 class BigIntModulusNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntModulusNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntModulusNoThrowDescriptor)
@@ -265,6 +307,7 @@ class BigIntModulusNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigI
 class BigIntModulusDescriptor : public StaticCallInterfaceDescriptor<BigIntModulusDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntModulusDescriptor)
@@ -273,6 +316,7 @@ class BigIntModulusDescriptor : public StaticCallInterfaceDescriptor<BigIntModul
 class BigIntBitwiseAndNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseAndNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseAndNoThrowDescriptor)
@@ -281,6 +325,7 @@ class BigIntBitwiseAndNoThrowDescriptor : public StaticCallInterfaceDescriptor<B
 class BigIntBitwiseAndDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseAndDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseAndDescriptor)
@@ -289,6 +334,7 @@ class BigIntBitwiseAndDescriptor : public StaticCallInterfaceDescriptor<BigIntBi
 class BigIntBitwiseOrNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseOrNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseOrNoThrowDescriptor)
@@ -297,6 +343,7 @@ class BigIntBitwiseOrNoThrowDescriptor : public StaticCallInterfaceDescriptor<Bi
 class BigIntBitwiseOrDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseOrDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseOrDescriptor)
@@ -305,6 +352,7 @@ class BigIntBitwiseOrDescriptor : public StaticCallInterfaceDescriptor<BigIntBit
 class BigIntBitwiseXorNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseXorNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseXorNoThrowDescriptor)
@@ -313,6 +361,7 @@ class BigIntBitwiseXorNoThrowDescriptor : public StaticCallInterfaceDescriptor<B
 class BigIntBitwiseXorDescriptor : public StaticCallInterfaceDescriptor<BigIntBitwiseXorDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntBitwiseXorDescriptor)
@@ -321,6 +370,7 @@ class BigIntBitwiseXorDescriptor : public StaticCallInterfaceDescriptor<BigIntBi
 class BigIntShiftLeftNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftLeftNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftLeftNoThrowDescriptor)
@@ -329,6 +379,7 @@ class BigIntShiftLeftNoThrowDescriptor : public StaticCallInterfaceDescriptor<Bi
 class BigIntShiftLeftDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftLeftDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftLeftDescriptor)
@@ -337,6 +388,7 @@ class BigIntShiftLeftDescriptor : public StaticCallInterfaceDescriptor<BigIntShi
 class BigIntShiftRightNoThrowDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftRightNoThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftRightNoThrowDescriptor)
@@ -345,6 +397,7 @@ class BigIntShiftRightNoThrowDescriptor : public StaticCallInterfaceDescriptor<B
 class BigIntShiftRightDescriptor : public StaticCallInterfaceDescriptor<BigIntShiftRightDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kXNum, kYNum)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntShiftRightDescriptor)
@@ -353,6 +406,7 @@ class BigIntShiftRightDescriptor : public StaticCallInterfaceDescriptor<BigIntSh
 class BigIntEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntEqualDescriptor)
@@ -361,6 +415,7 @@ class BigIntEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntEqualDe
 class BigIntLessThanDescriptor : public StaticCallInterfaceDescriptor<BigIntLessThanDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntLessThanDescriptor)
@@ -369,6 +424,7 @@ class BigIntLessThanDescriptor : public StaticCallInterfaceDescriptor<BigIntLess
 class BigIntGreaterThanDescriptor : public StaticCallInterfaceDescriptor<BigIntGreaterThanDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntGreaterThanDescriptor)
@@ -377,6 +433,7 @@ class BigIntGreaterThanDescriptor : public StaticCallInterfaceDescriptor<BigIntG
 class BigIntLessThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntLessThanOrEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntLessThanOrEqualDescriptor)
@@ -385,6 +442,7 @@ class BigIntLessThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<Big
 class BigIntGreaterThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<BigIntGreaterThanOrEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntGreaterThanOrEqualDescriptor)
@@ -393,6 +451,7 @@ class BigIntGreaterThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<
 class BigIntUnaryMinusDescriptor : public StaticCallInterfaceDescriptor<BigIntUnaryMinusDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kBigint)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(BigIntUnaryMinusDescriptor)
@@ -401,14 +460,25 @@ class BigIntUnaryMinusDescriptor : public StaticCallInterfaceDescriptor<BigIntUn
 class ToStringDescriptor : public StaticCallInterfaceDescriptor<ToStringDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kO)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToStringDescriptor)
 };
 
+class ToStringConvertSymbolDescriptor : public StaticCallInterfaceDescriptor<ToStringConvertSymbolDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1, kO)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(ToStringConvertSymbolDescriptor)
+};
+
 class StringToListDescriptor : public StaticCallInterfaceDescriptor<StringToListDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(StringToListDescriptor)
@@ -417,6 +487,7 @@ class StringToListDescriptor : public StaticCallInterfaceDescriptor<StringToList
 class StringAddConvertLeftDescriptor : public StaticCallInterfaceDescriptor<StringAddConvertLeftDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(StringAddConvertLeftDescriptor)
@@ -425,6 +496,7 @@ class StringAddConvertLeftDescriptor : public StaticCallInterfaceDescriptor<Stri
 class StringAddConvertRightDescriptor : public StaticCallInterfaceDescriptor<StringAddConvertRightDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StringAddConvertRightDescriptor)
@@ -433,6 +505,7 @@ class StringAddConvertRightDescriptor : public StaticCallInterfaceDescriptor<Str
 class StringCharAtDescriptor : public StaticCallInterfaceDescriptor<StringCharAtDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kPosition)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(StringCharAtDescriptor)
@@ -441,6 +514,7 @@ class StringCharAtDescriptor : public StaticCallInterfaceDescriptor<StringCharAt
 class FastNewClosureBaselineDescriptor : public StaticCallInterfaceDescriptor<FastNewClosureBaselineDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSharedFunctionInfo, kFeedbackCell)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(FastNewClosureBaselineDescriptor)
@@ -449,6 +523,7 @@ class FastNewClosureBaselineDescriptor : public StaticCallInterfaceDescriptor<Fa
 class FastNewFunctionContextEvalDescriptor : public StaticCallInterfaceDescriptor<FastNewFunctionContextEvalDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kScopeInfo, kSlots)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(FastNewFunctionContextEvalDescriptor)
@@ -457,14 +532,25 @@ class FastNewFunctionContextEvalDescriptor : public StaticCallInterfaceDescripto
 class FastNewFunctionContextFunctionDescriptor : public StaticCallInterfaceDescriptor<FastNewFunctionContextFunctionDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kScopeInfo, kSlots)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(FastNewFunctionContextFunctionDescriptor)
 };
 
+class FastNewFunctionContextFunctionWithCellsDescriptor : public StaticCallInterfaceDescriptor<FastNewFunctionContextFunctionWithCellsDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1, kScopeInfo, kSlots)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(FastNewFunctionContextFunctionWithCellsDescriptor)
+};
+
 class CreateRegExpLiteralDescriptor : public StaticCallInterfaceDescriptor<CreateRegExpLiteralDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kMaybeFeedbackVector, kSlot, kPattern, kFlags)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CreateRegExpLiteralDescriptor)
@@ -473,6 +559,7 @@ class CreateRegExpLiteralDescriptor : public StaticCallInterfaceDescriptor<Creat
 class CreateShallowArrayLiteralDescriptor : public StaticCallInterfaceDescriptor<CreateShallowArrayLiteralDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kMaybeFeedbackVector, kSlot, kConstantElements, kFlags)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CreateShallowArrayLiteralDescriptor)
@@ -481,6 +568,7 @@ class CreateShallowArrayLiteralDescriptor : public StaticCallInterfaceDescriptor
 class CreateEmptyArrayLiteralDescriptor : public StaticCallInterfaceDescriptor<CreateEmptyArrayLiteralDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kFeedbackVector, kSlot)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CreateEmptyArrayLiteralDescriptor)
@@ -489,6 +577,7 @@ class CreateEmptyArrayLiteralDescriptor : public StaticCallInterfaceDescriptor<C
 class CreateShallowObjectLiteralDescriptor : public StaticCallInterfaceDescriptor<CreateShallowObjectLiteralDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kMaybeFeedbackVector, kSlot, kDesc, kFlags)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CreateShallowObjectLiteralDescriptor)
@@ -497,6 +586,7 @@ class CreateShallowObjectLiteralDescriptor : public StaticCallInterfaceDescripto
 class CreateEmptyLiteralObjectDescriptor : public StaticCallInterfaceDescriptor<CreateEmptyLiteralObjectDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CreateEmptyLiteralObjectDescriptor)
@@ -505,6 +595,7 @@ class CreateEmptyLiteralObjectDescriptor : public StaticCallInterfaceDescriptor<
 class StringToNumberDescriptor : public StaticCallInterfaceDescriptor<StringToNumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(StringToNumberDescriptor)
@@ -513,6 +604,7 @@ class StringToNumberDescriptor : public StaticCallInterfaceDescriptor<StringToNu
 class NonNumberToNumberDescriptor : public StaticCallInterfaceDescriptor<NonNumberToNumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(NonNumberToNumberDescriptor)
@@ -521,6 +613,7 @@ class NonNumberToNumberDescriptor : public StaticCallInterfaceDescriptor<NonNumb
 class NonNumberToNumericDescriptor : public StaticCallInterfaceDescriptor<NonNumberToNumericDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(NonNumberToNumericDescriptor)
@@ -529,6 +622,7 @@ class NonNumberToNumericDescriptor : public StaticCallInterfaceDescriptor<NonNum
 class ToNumericDescriptor : public StaticCallInterfaceDescriptor<ToNumericDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToNumericDescriptor)
@@ -537,6 +631,7 @@ class ToNumericDescriptor : public StaticCallInterfaceDescriptor<ToNumericDescri
 class NumberToStringDescriptor : public StaticCallInterfaceDescriptor<NumberToStringDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(NumberToStringDescriptor)
@@ -545,6 +640,7 @@ class NumberToStringDescriptor : public StaticCallInterfaceDescriptor<NumberToSt
 class ToBooleanDescriptor : public StaticCallInterfaceDescriptor<ToBooleanDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToBooleanDescriptor)
@@ -553,6 +649,7 @@ class ToBooleanDescriptor : public StaticCallInterfaceDescriptor<ToBooleanDescri
 class ToBooleanForBaselineJumpDescriptor : public StaticCallInterfaceDescriptor<ToBooleanForBaselineJumpDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(2, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToBooleanForBaselineJumpDescriptor)
@@ -561,6 +658,7 @@ class ToBooleanForBaselineJumpDescriptor : public StaticCallInterfaceDescriptor<
 class ToLengthDescriptor : public StaticCallInterfaceDescriptor<ToLengthDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToLengthDescriptor)
@@ -569,6 +667,7 @@ class ToLengthDescriptor : public StaticCallInterfaceDescriptor<ToLengthDescript
 class ToNameDescriptor : public StaticCallInterfaceDescriptor<ToNameDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToNameDescriptor)
@@ -577,6 +676,7 @@ class ToNameDescriptor : public StaticCallInterfaceDescriptor<ToNameDescriptor> 
 class ToObjectDescriptor : public StaticCallInterfaceDescriptor<ToObjectDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ToObjectDescriptor)
@@ -585,6 +685,7 @@ class ToObjectDescriptor : public StaticCallInterfaceDescriptor<ToObjectDescript
 class NonPrimitiveToPrimitive_DefaultDescriptor : public StaticCallInterfaceDescriptor<NonPrimitiveToPrimitive_DefaultDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(NonPrimitiveToPrimitive_DefaultDescriptor)
@@ -593,6 +694,7 @@ class NonPrimitiveToPrimitive_DefaultDescriptor : public StaticCallInterfaceDesc
 class NonPrimitiveToPrimitive_NumberDescriptor : public StaticCallInterfaceDescriptor<NonPrimitiveToPrimitive_NumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(NonPrimitiveToPrimitive_NumberDescriptor)
@@ -601,6 +703,7 @@ class NonPrimitiveToPrimitive_NumberDescriptor : public StaticCallInterfaceDescr
 class NonPrimitiveToPrimitive_StringDescriptor : public StaticCallInterfaceDescriptor<NonPrimitiveToPrimitive_StringDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(NonPrimitiveToPrimitive_StringDescriptor)
@@ -609,6 +712,7 @@ class NonPrimitiveToPrimitive_StringDescriptor : public StaticCallInterfaceDescr
 class OrdinaryToPrimitive_NumberDescriptor : public StaticCallInterfaceDescriptor<OrdinaryToPrimitive_NumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(OrdinaryToPrimitive_NumberDescriptor)
@@ -617,6 +721,7 @@ class OrdinaryToPrimitive_NumberDescriptor : public StaticCallInterfaceDescripto
 class OrdinaryToPrimitive_Number_InlineDescriptor : public StaticCallInterfaceDescriptor<OrdinaryToPrimitive_Number_InlineDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(OrdinaryToPrimitive_Number_InlineDescriptor)
@@ -625,6 +730,7 @@ class OrdinaryToPrimitive_Number_InlineDescriptor : public StaticCallInterfaceDe
 class OrdinaryToPrimitive_StringDescriptor : public StaticCallInterfaceDescriptor<OrdinaryToPrimitive_StringDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(OrdinaryToPrimitive_StringDescriptor)
@@ -633,6 +739,7 @@ class OrdinaryToPrimitive_StringDescriptor : public StaticCallInterfaceDescripto
 class IncBlockCounterDescriptor : public StaticCallInterfaceDescriptor<IncBlockCounterDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kFunction, kCoverageArraySlotIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(IncBlockCounterDescriptor)
@@ -641,6 +748,7 @@ class IncBlockCounterDescriptor : public StaticCallInterfaceDescriptor<IncBlockC
 class GetTemplateObjectDescriptor : public StaticCallInterfaceDescriptor<GetTemplateObjectDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kShared, kDescription, kSlot, kMaybeFeedbackVector)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(GetTemplateObjectDescriptor)
@@ -649,6 +757,7 @@ class GetTemplateObjectDescriptor : public StaticCallInterfaceDescriptor<GetTemp
 class ForInNextDescriptor : public StaticCallInterfaceDescriptor<ForInNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSlot, kReceiver, kCacheArray, kCacheType, kCacheIndex, kFeedbackVector)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<UintPtrT>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ForInNextDescriptor)
@@ -657,6 +766,7 @@ class ForInNextDescriptor : public StaticCallInterfaceDescriptor<ForInNextDescri
 class GetImportMetaObjectBaselineDescriptor : public StaticCallInterfaceDescriptor<GetImportMetaObjectBaselineDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GetImportMetaObjectBaselineDescriptor)
@@ -665,6 +775,7 @@ class GetImportMetaObjectBaselineDescriptor : public StaticCallInterfaceDescript
 class GetIteratorWithFeedbackDescriptor : public StaticCallInterfaceDescriptor<GetIteratorWithFeedbackDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kLoadSlot, kCallSlot, kMaybeFeedbackVector)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(GetIteratorWithFeedbackDescriptor)
@@ -673,6 +784,7 @@ class GetIteratorWithFeedbackDescriptor : public StaticCallInterfaceDescriptor<G
 class GetIteratorBaselineDescriptor : public StaticCallInterfaceDescriptor<GetIteratorBaselineDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kReceiver, kLoadSlot, kCallSlot)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GetIteratorBaselineDescriptor)
@@ -681,6 +793,7 @@ class GetIteratorBaselineDescriptor : public StaticCallInterfaceDescriptor<GetIt
 class CreateAsyncFromSyncIteratorBaselineDescriptor : public StaticCallInterfaceDescriptor<CreateAsyncFromSyncIteratorBaselineDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSyncIterator)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CreateAsyncFromSyncIteratorBaselineDescriptor)
@@ -689,6 +802,7 @@ class CreateAsyncFromSyncIteratorBaselineDescriptor : public StaticCallInterface
 class CallIteratorWithFeedbackDescriptor : public StaticCallInterfaceDescriptor<CallIteratorWithFeedbackDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kIteratorMethod, kCallSlot, kFeedback)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(CallIteratorWithFeedbackDescriptor)
@@ -697,6 +811,7 @@ class CallIteratorWithFeedbackDescriptor : public StaticCallInterfaceDescriptor<
 class IteratorMapHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorMapHelperNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(IteratorMapHelperNextDescriptor)
@@ -705,6 +820,7 @@ class IteratorMapHelperNextDescriptor : public StaticCallInterfaceDescriptor<Ite
 class IteratorFilterHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorFilterHelperNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(IteratorFilterHelperNextDescriptor)
@@ -713,6 +829,7 @@ class IteratorFilterHelperNextDescriptor : public StaticCallInterfaceDescriptor<
 class IteratorTakeHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorTakeHelperNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(IteratorTakeHelperNextDescriptor)
@@ -721,6 +838,7 @@ class IteratorTakeHelperNextDescriptor : public StaticCallInterfaceDescriptor<It
 class IteratorDropHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorDropHelperNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(IteratorDropHelperNextDescriptor)
@@ -729,6 +847,7 @@ class IteratorDropHelperNextDescriptor : public StaticCallInterfaceDescriptor<It
 class IteratorFlatMapHelperNextDescriptor : public StaticCallInterfaceDescriptor<IteratorFlatMapHelperNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kHelper)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(IteratorFlatMapHelperNextDescriptor)
@@ -737,6 +856,7 @@ class IteratorFlatMapHelperNextDescriptor : public StaticCallInterfaceDescriptor
 class ParseIntDescriptor : public StaticCallInterfaceDescriptor<ParseIntDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kInput, kRadix)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ParseIntDescriptor)
@@ -745,6 +865,7 @@ class ParseIntDescriptor : public StaticCallInterfaceDescriptor<ParseIntDescript
 class AddDescriptor : public StaticCallInterfaceDescriptor<AddDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeftArg, kRightArg)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(AddDescriptor)
@@ -753,6 +874,7 @@ class AddDescriptor : public StaticCallInterfaceDescriptor<AddDescriptor> {
 class SubtractDescriptor : public StaticCallInterfaceDescriptor<SubtractDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(SubtractDescriptor)
@@ -761,6 +883,7 @@ class SubtractDescriptor : public StaticCallInterfaceDescriptor<SubtractDescript
 class MultiplyDescriptor : public StaticCallInterfaceDescriptor<MultiplyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(MultiplyDescriptor)
@@ -769,6 +892,7 @@ class MultiplyDescriptor : public StaticCallInterfaceDescriptor<MultiplyDescript
 class DivideDescriptor : public StaticCallInterfaceDescriptor<DivideDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(DivideDescriptor)
@@ -777,6 +901,7 @@ class DivideDescriptor : public StaticCallInterfaceDescriptor<DivideDescriptor> 
 class ModulusDescriptor : public StaticCallInterfaceDescriptor<ModulusDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ModulusDescriptor)
@@ -785,6 +910,7 @@ class ModulusDescriptor : public StaticCallInterfaceDescriptor<ModulusDescriptor
 class ExponentiateDescriptor : public StaticCallInterfaceDescriptor<ExponentiateDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ExponentiateDescriptor)
@@ -793,6 +919,7 @@ class ExponentiateDescriptor : public StaticCallInterfaceDescriptor<Exponentiate
 class NegateDescriptor : public StaticCallInterfaceDescriptor<NegateDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(NegateDescriptor)
@@ -801,6 +928,7 @@ class NegateDescriptor : public StaticCallInterfaceDescriptor<NegateDescriptor> 
 class BitwiseNotDescriptor : public StaticCallInterfaceDescriptor<BitwiseNotDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BitwiseNotDescriptor)
@@ -809,6 +937,7 @@ class BitwiseNotDescriptor : public StaticCallInterfaceDescriptor<BitwiseNotDesc
 class DecrementDescriptor : public StaticCallInterfaceDescriptor<DecrementDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(DecrementDescriptor)
@@ -817,6 +946,7 @@ class DecrementDescriptor : public StaticCallInterfaceDescriptor<DecrementDescri
 class IncrementDescriptor : public StaticCallInterfaceDescriptor<IncrementDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(IncrementDescriptor)
@@ -825,6 +955,7 @@ class IncrementDescriptor : public StaticCallInterfaceDescriptor<IncrementDescri
 class ShiftLeftDescriptor : public StaticCallInterfaceDescriptor<ShiftLeftDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ShiftLeftDescriptor)
@@ -833,6 +964,7 @@ class ShiftLeftDescriptor : public StaticCallInterfaceDescriptor<ShiftLeftDescri
 class ShiftRightDescriptor : public StaticCallInterfaceDescriptor<ShiftRightDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ShiftRightDescriptor)
@@ -841,6 +973,7 @@ class ShiftRightDescriptor : public StaticCallInterfaceDescriptor<ShiftRightDesc
 class ShiftRightLogicalDescriptor : public StaticCallInterfaceDescriptor<ShiftRightLogicalDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ShiftRightLogicalDescriptor)
@@ -849,6 +982,7 @@ class ShiftRightLogicalDescriptor : public StaticCallInterfaceDescriptor<ShiftRi
 class BitwiseAndDescriptor : public StaticCallInterfaceDescriptor<BitwiseAndDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BitwiseAndDescriptor)
@@ -857,6 +991,7 @@ class BitwiseAndDescriptor : public StaticCallInterfaceDescriptor<BitwiseAndDesc
 class BitwiseOrDescriptor : public StaticCallInterfaceDescriptor<BitwiseOrDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BitwiseOrDescriptor)
@@ -865,6 +1000,7 @@ class BitwiseOrDescriptor : public StaticCallInterfaceDescriptor<BitwiseOrDescri
 class BitwiseXorDescriptor : public StaticCallInterfaceDescriptor<BitwiseXorDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(BitwiseXorDescriptor)
@@ -873,6 +1009,7 @@ class BitwiseXorDescriptor : public StaticCallInterfaceDescriptor<BitwiseXorDesc
 class LessThanDescriptor : public StaticCallInterfaceDescriptor<LessThanDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(LessThanDescriptor)
@@ -881,6 +1018,7 @@ class LessThanDescriptor : public StaticCallInterfaceDescriptor<LessThanDescript
 class LessThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<LessThanOrEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(LessThanOrEqualDescriptor)
@@ -889,6 +1027,7 @@ class LessThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<LessThanO
 class GreaterThanDescriptor : public StaticCallInterfaceDescriptor<GreaterThanDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GreaterThanDescriptor)
@@ -897,6 +1036,7 @@ class GreaterThanDescriptor : public StaticCallInterfaceDescriptor<GreaterThanDe
 class GreaterThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<GreaterThanOrEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GreaterThanOrEqualDescriptor)
@@ -905,6 +1045,7 @@ class GreaterThanOrEqualDescriptor : public StaticCallInterfaceDescriptor<Greate
 class EqualDescriptor : public StaticCallInterfaceDescriptor<EqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(EqualDescriptor)
@@ -913,6 +1054,7 @@ class EqualDescriptor : public StaticCallInterfaceDescriptor<EqualDescriptor> {
 class StrictEqualDescriptor : public StaticCallInterfaceDescriptor<StrictEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLeft, kRight)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StrictEqualDescriptor)
@@ -921,6 +1063,7 @@ class StrictEqualDescriptor : public StaticCallInterfaceDescriptor<StrictEqualDe
 class GroupByGenericDescriptor : public StaticCallInterfaceDescriptor<GroupByGenericDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kItems, kInitialGroups, kCallbackfn, kCoerceToProperty, kMethodName)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(GroupByGenericDescriptor)
@@ -929,6 +1072,7 @@ class GroupByGenericDescriptor : public StaticCallInterfaceDescriptor<GroupByGen
 class CreateObjectWithoutPropertiesDescriptor : public StaticCallInterfaceDescriptor<CreateObjectWithoutPropertiesDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPrototype)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CreateObjectWithoutPropertiesDescriptor)
@@ -937,6 +1081,7 @@ class CreateObjectWithoutPropertiesDescriptor : public StaticCallInterfaceDescri
 class FulfillPromiseDescriptor : public StaticCallInterfaceDescriptor<FulfillPromiseDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPromise, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(FulfillPromiseDescriptor)
@@ -945,6 +1090,7 @@ class FulfillPromiseDescriptor : public StaticCallInterfaceDescriptor<FulfillPro
 class RejectPromiseDescriptor : public StaticCallInterfaceDescriptor<RejectPromiseDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPromise, kReason, kDebugEvent)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(RejectPromiseDescriptor)
@@ -953,6 +1099,7 @@ class RejectPromiseDescriptor : public StaticCallInterfaceDescriptor<RejectPromi
 class NewPromiseCapabilityDescriptor : public StaticCallInterfaceDescriptor<NewPromiseCapabilityDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kMaybeConstructor, kDebugEvent)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(NewPromiseCapabilityDescriptor)
@@ -961,6 +1108,7 @@ class NewPromiseCapabilityDescriptor : public StaticCallInterfaceDescriptor<NewP
 class PerformPromiseThenDescriptor : public StaticCallInterfaceDescriptor<PerformPromiseThenDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPromise, kOnFulfilled, kOnRejected, kResultPromise)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(PerformPromiseThenDescriptor)
@@ -969,6 +1117,7 @@ class PerformPromiseThenDescriptor : public StaticCallInterfaceDescriptor<Perfor
 class PromiseResolveThenableJobDescriptor : public StaticCallInterfaceDescriptor<PromiseResolveThenableJobDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPromiseToResolve, kThenable, kThen)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(PromiseResolveThenableJobDescriptor)
@@ -977,6 +1126,7 @@ class PromiseResolveThenableJobDescriptor : public StaticCallInterfaceDescriptor
 class PromiseFulfillReactionJobDescriptor : public StaticCallInterfaceDescriptor<PromiseFulfillReactionJobDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue, kHandler, kPromiseOrCapability)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(PromiseFulfillReactionJobDescriptor)
@@ -985,6 +1135,7 @@ class PromiseFulfillReactionJobDescriptor : public StaticCallInterfaceDescriptor
 class PromiseRejectReactionJobDescriptor : public StaticCallInterfaceDescriptor<PromiseRejectReactionJobDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReason, kHandler, kPromiseOrCapability)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(PromiseRejectReactionJobDescriptor)
@@ -993,6 +1144,7 @@ class PromiseRejectReactionJobDescriptor : public StaticCallInterfaceDescriptor<
 class PromiseResolveDescriptor : public StaticCallInterfaceDescriptor<PromiseResolveDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kConstructor, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(PromiseResolveDescriptor)
@@ -1001,6 +1153,7 @@ class PromiseResolveDescriptor : public StaticCallInterfaceDescriptor<PromiseRes
 class ResolvePromiseDescriptor : public StaticCallInterfaceDescriptor<ResolvePromiseDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kPromise, kResolution)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ResolvePromiseDescriptor)
@@ -1009,6 +1162,7 @@ class ResolvePromiseDescriptor : public StaticCallInterfaceDescriptor<ResolvePro
 class ProxyDeletePropertyDescriptor : public StaticCallInterfaceDescriptor<ProxyDeletePropertyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy, kName, kLanguageMode)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(ProxyDeletePropertyDescriptor)
@@ -1017,6 +1171,7 @@ class ProxyDeletePropertyDescriptor : public StaticCallInterfaceDescriptor<Proxy
 class ProxyGetPropertyDescriptor : public StaticCallInterfaceDescriptor<ProxyGetPropertyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy, kName, kReceiverValue, kOnNonExistent)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(ProxyGetPropertyDescriptor)
@@ -1025,6 +1180,7 @@ class ProxyGetPropertyDescriptor : public StaticCallInterfaceDescriptor<ProxyGet
 class ProxyGetPrototypeOfDescriptor : public StaticCallInterfaceDescriptor<ProxyGetPrototypeOfDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ProxyGetPrototypeOfDescriptor)
@@ -1033,6 +1189,7 @@ class ProxyGetPrototypeOfDescriptor : public StaticCallInterfaceDescriptor<Proxy
 class ProxyHasPropertyDescriptor : public StaticCallInterfaceDescriptor<ProxyHasPropertyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy, kName)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ProxyHasPropertyDescriptor)
@@ -1041,6 +1198,7 @@ class ProxyHasPropertyDescriptor : public StaticCallInterfaceDescriptor<ProxyHas
 class ProxyIsExtensibleDescriptor : public StaticCallInterfaceDescriptor<ProxyIsExtensibleDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ProxyIsExtensibleDescriptor)
@@ -1049,6 +1207,7 @@ class ProxyIsExtensibleDescriptor : public StaticCallInterfaceDescriptor<ProxyIs
 class ProxyPreventExtensionsDescriptor : public StaticCallInterfaceDescriptor<ProxyPreventExtensionsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy, kDoThrow)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ProxyPreventExtensionsDescriptor)
@@ -1057,6 +1216,7 @@ class ProxyPreventExtensionsDescriptor : public StaticCallInterfaceDescriptor<Pr
 class ProxySetPropertyDescriptor : public StaticCallInterfaceDescriptor<ProxySetPropertyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy, kName, kValue, kReceiverValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ProxySetPropertyDescriptor)
@@ -1065,6 +1225,7 @@ class ProxySetPropertyDescriptor : public StaticCallInterfaceDescriptor<ProxySet
 class ProxySetPrototypeOfDescriptor : public StaticCallInterfaceDescriptor<ProxySetPrototypeOfDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kProxy, kProto, kDoThrow)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ProxySetPrototypeOfDescriptor)
@@ -1073,6 +1234,7 @@ class ProxySetPrototypeOfDescriptor : public StaticCallInterfaceDescriptor<Proxy
 class RegExpPrototypeExecSlowDescriptor : public StaticCallInterfaceDescriptor<RegExpPrototypeExecSlowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kRegexp, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(RegExpPrototypeExecSlowDescriptor)
@@ -1081,6 +1243,7 @@ class RegExpPrototypeExecSlowDescriptor : public StaticCallInterfaceDescriptor<R
 class RegExpMatchFastDescriptor : public StaticCallInterfaceDescriptor<RegExpMatchFastDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(RegExpMatchFastDescriptor)
@@ -1089,6 +1252,7 @@ class RegExpMatchFastDescriptor : public StaticCallInterfaceDescriptor<RegExpMat
 class RegExpReplaceDescriptor : public StaticCallInterfaceDescriptor<RegExpReplaceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kRegexp, kString, kReplaceValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(RegExpReplaceDescriptor)
@@ -1097,6 +1261,7 @@ class RegExpReplaceDescriptor : public StaticCallInterfaceDescriptor<RegExpRepla
 class RegExpSearchFastDescriptor : public StaticCallInterfaceDescriptor<RegExpSearchFastDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(RegExpSearchFastDescriptor)
@@ -1105,6 +1270,7 @@ class RegExpSearchFastDescriptor : public StaticCallInterfaceDescriptor<RegExpSe
 class RegExpSplitDescriptor : public StaticCallInterfaceDescriptor<RegExpSplitDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kRegexp, kString, kLimit)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(RegExpSplitDescriptor)
@@ -1113,6 +1279,7 @@ class RegExpSplitDescriptor : public StaticCallInterfaceDescriptor<RegExpSplitDe
 class RegExpPrototypeTestFastDescriptor : public StaticCallInterfaceDescriptor<RegExpPrototypeTestFastDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(RegExpPrototypeTestFastDescriptor)
@@ -1121,6 +1288,7 @@ class RegExpPrototypeTestFastDescriptor : public StaticCallInterfaceDescriptor<R
 class CreateHTMLDescriptor : public StaticCallInterfaceDescriptor<CreateHTMLDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kMethodName, kTagName, kAttr, kAttrValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CreateHTMLDescriptor)
@@ -1129,6 +1297,7 @@ class CreateHTMLDescriptor : public StaticCallInterfaceDescriptor<CreateHTMLDesc
 class StringRepeatDescriptor : public StaticCallInterfaceDescriptor<StringRepeatDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kString, kCount)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(StringRepeatDescriptor)
@@ -1137,6 +1306,7 @@ class StringRepeatDescriptor : public StaticCallInterfaceDescriptor<StringRepeat
 class CreateTypedArrayDescriptor : public StaticCallInterfaceDescriptor<CreateTypedArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTarget, kNewTarget, kArg1, kArg2, kArg3)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CreateTypedArrayDescriptor)
@@ -1145,6 +1315,7 @@ class CreateTypedArrayDescriptor : public StaticCallInterfaceDescriptor<CreateTy
 class TypedArrayMergeSortDescriptor : public StaticCallInterfaceDescriptor<TypedArrayMergeSortDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSource, kFrom, kTo, kTarget, kArray, kComparefn)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineTypeOf<UintPtrT>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(TypedArrayMergeSortDescriptor)
@@ -1153,6 +1324,7 @@ class TypedArrayMergeSortDescriptor : public StaticCallInterfaceDescriptor<Typed
 class NewSloppyArgumentsElementsDescriptor : public StaticCallInterfaceDescriptor<NewSloppyArgumentsElementsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kFrame, kFormalParameterCount, kArgumentCount)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<RawPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(NewSloppyArgumentsElementsDescriptor)
@@ -1161,6 +1333,7 @@ class NewSloppyArgumentsElementsDescriptor : public StaticCallInterfaceDescripto
 class NewStrictArgumentsElementsDescriptor : public StaticCallInterfaceDescriptor<NewStrictArgumentsElementsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kFrame, kFormalParameterCount, kArgumentCount)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<RawPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(NewStrictArgumentsElementsDescriptor)
@@ -1169,6 +1342,7 @@ class NewStrictArgumentsElementsDescriptor : public StaticCallInterfaceDescripto
 class NewRestArgumentsElementsDescriptor : public StaticCallInterfaceDescriptor<NewRestArgumentsElementsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kFrame, kFormalParameterCount, kArgumentCount)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<RawPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(NewRestArgumentsElementsDescriptor)
@@ -1177,6 +1351,7 @@ class NewRestArgumentsElementsDescriptor : public StaticCallInterfaceDescriptor<
 class FastNewSloppyArgumentsDescriptor : public StaticCallInterfaceDescriptor<FastNewSloppyArgumentsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kF)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(FastNewSloppyArgumentsDescriptor)
@@ -1185,6 +1360,7 @@ class FastNewSloppyArgumentsDescriptor : public StaticCallInterfaceDescriptor<Fa
 class FastNewStrictArgumentsDescriptor : public StaticCallInterfaceDescriptor<FastNewStrictArgumentsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kF)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(FastNewStrictArgumentsDescriptor)
@@ -1193,30 +1369,52 @@ class FastNewStrictArgumentsDescriptor : public StaticCallInterfaceDescriptor<Fa
 class FastNewRestArgumentsDescriptor : public StaticCallInterfaceDescriptor<FastNewRestArgumentsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kF)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(FastNewRestArgumentsDescriptor)
 };
 
-class StoreCurrentScriptContextSlotBaselineDescriptor : public StaticCallInterfaceDescriptor<StoreCurrentScriptContextSlotBaselineDescriptor> {
+class LoadFromContextCellDescriptor : public StaticCallInterfaceDescriptor<LoadFromContextCellDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kO, kI)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned())
-  DECLARE_DEFAULT_DESCRIPTOR(StoreCurrentScriptContextSlotBaselineDescriptor)
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kN, kC, kI)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(LoadFromContextCellDescriptor)
 };
 
-class StoreScriptContextSlotBaselineDescriptor : public StaticCallInterfaceDescriptor<StoreScriptContextSlotBaselineDescriptor> {
+class StoreCurrentContextElementBaselineDescriptor : public StaticCallInterfaceDescriptor<StoreCurrentContextElementBaselineDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kO, kI)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(StoreCurrentContextElementBaselineDescriptor)
+};
+
+class StoreContextElementBaselineDescriptor : public StaticCallInterfaceDescriptor<StoreContextElementBaselineDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kC, kO, kI, kD)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(StoreScriptContextSlotBaselineDescriptor)
+  DECLARE_DEFAULT_DESCRIPTOR(StoreContextElementBaselineDescriptor)
+};
+
+class DetachContextCellDescriptor : public StaticCallInterfaceDescriptor<DetachContextCellDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTheContext, kNewValue, kI)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(DetachContextCellDescriptor)
 };
 
 class StringSlowFlattenDescriptor : public StaticCallInterfaceDescriptor<StringSlowFlattenDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kCons)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(StringSlowFlattenDescriptor)
@@ -1225,6 +1423,7 @@ class StringSlowFlattenDescriptor : public StaticCallInterfaceDescriptor<StringS
 class StringIndexOfDescriptor : public StaticCallInterfaceDescriptor<StringIndexOfDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kS, kSearchString, kStart)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(StringIndexOfDescriptor)
@@ -1233,6 +1432,7 @@ class StringIndexOfDescriptor : public StaticCallInterfaceDescriptor<StringIndex
 class TestTurbofanTypeDescriptor : public StaticCallInterfaceDescriptor<TestTurbofanTypeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue, kExpectedType)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(TestTurbofanTypeDescriptor)
@@ -1241,6 +1441,7 @@ class TestTurbofanTypeDescriptor : public StaticCallInterfaceDescriptor<TestTurb
 class CheckTurbofanTypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurbofanTypeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue, kExpectedType, kNodeId)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CheckTurbofanTypeDescriptor)
@@ -1249,6 +1450,7 @@ class CheckTurbofanTypeDescriptor : public StaticCallInterfaceDescriptor<CheckTu
 class CheckTurboshaftWord32TypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurboshaftWord32TypeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue, kExpectedType, kNodeId)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CheckTurboshaftWord32TypeDescriptor)
@@ -1257,6 +1459,7 @@ class CheckTurboshaftWord32TypeDescriptor : public StaticCallInterfaceDescriptor
 class CheckTurboshaftWord64TypeDescriptor : public StaticCallInterfaceDescriptor<CheckTurboshaftWord64TypeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValueHigh, kValueLow, kExpectedType, kNodeId)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CheckTurboshaftWord64TypeDescriptor)
@@ -1265,6 +1468,7 @@ class CheckTurboshaftWord64TypeDescriptor : public StaticCallInterfaceDescriptor
 class GenericBuiltinTest_JSAny_0Descriptor : public StaticCallInterfaceDescriptor<GenericBuiltinTest_JSAny_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kParam)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(GenericBuiltinTest_JSAny_0Descriptor)
@@ -1273,6 +1477,7 @@ class GenericBuiltinTest_JSAny_0Descriptor : public StaticCallInterfaceDescripto
 class TestHelperPlus1Descriptor : public StaticCallInterfaceDescriptor<TestHelperPlus1Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kX)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(TestHelperPlus1Descriptor)
@@ -1281,6 +1486,7 @@ class TestHelperPlus1Descriptor : public StaticCallInterfaceDescriptor<TestHelpe
 class TestHelperPlus2Descriptor : public StaticCallInterfaceDescriptor<TestHelperPlus2Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kX)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(TestHelperPlus2Descriptor)
@@ -1289,6 +1495,7 @@ class TestHelperPlus2Descriptor : public StaticCallInterfaceDescriptor<TestHelpe
 class NewSmiBoxDescriptor : public StaticCallInterfaceDescriptor<NewSmiBoxDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(NewSmiBoxDescriptor)
@@ -1297,6 +1504,7 @@ class NewSmiBoxDescriptor : public StaticCallInterfaceDescriptor<NewSmiBoxDescri
 class ReturnTwoValuesDescriptor : public StaticCallInterfaceDescriptor<ReturnTwoValuesDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(2, kValue, kObj)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ReturnTwoValuesDescriptor)
@@ -1305,6 +1513,7 @@ class ReturnTwoValuesDescriptor : public StaticCallInterfaceDescriptor<ReturnTwo
 class ThrowAsBuiltinDescriptor : public StaticCallInterfaceDescriptor<ThrowAsBuiltinDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(0, kStr)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowAsBuiltinDescriptor)
@@ -1313,14 +1522,25 @@ class ThrowAsBuiltinDescriptor : public StaticCallInterfaceDescriptor<ThrowAsBui
 class TestCallNeverDescriptor : public StaticCallInterfaceDescriptor<TestCallNeverDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kA)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(TestCallNeverDescriptor)
 };
 
+class TestIncrementArraySpeciesModifiedDescriptor : public StaticCallInterfaceDescriptor<TestIncrementArraySpeciesModifiedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(TestIncrementArraySpeciesModifiedDescriptor)
+};
+
 class Load_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<Load_FastSmiElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Load_FastSmiElements_0Descriptor)
@@ -1329,6 +1549,7 @@ class Load_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<Lo
 class Load_FastObjectElements_0Descriptor : public StaticCallInterfaceDescriptor<Load_FastObjectElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Load_FastObjectElements_0Descriptor)
@@ -1337,6 +1558,7 @@ class Load_FastObjectElements_0Descriptor : public StaticCallInterfaceDescriptor
 class Load_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor<Load_FastDoubleElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Load_FastDoubleElements_0Descriptor)
@@ -1345,6 +1567,7 @@ class Load_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor
 class Store_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<Store_FastSmiElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(Store_FastSmiElements_0Descriptor)
@@ -1353,6 +1576,7 @@ class Store_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<S
 class Store_FastObjectElements_0Descriptor : public StaticCallInterfaceDescriptor<Store_FastObjectElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(Store_FastObjectElements_0Descriptor)
@@ -1361,6 +1585,7 @@ class Store_FastObjectElements_0Descriptor : public StaticCallInterfaceDescripto
 class Store_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor<Store_FastDoubleElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(Store_FastDoubleElements_0Descriptor)
@@ -1369,6 +1594,7 @@ class Store_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescripto
 class Delete_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<Delete_FastSmiElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Delete_FastSmiElements_0Descriptor)
@@ -1377,6 +1603,7 @@ class Delete_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<
 class Delete_FastObjectElements_0Descriptor : public StaticCallInterfaceDescriptor<Delete_FastObjectElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Delete_FastObjectElements_0Descriptor)
@@ -1385,6 +1612,7 @@ class Delete_FastObjectElements_0Descriptor : public StaticCallInterfaceDescript
 class Delete_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor<Delete_FastDoubleElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Delete_FastDoubleElements_0Descriptor)
@@ -1393,6 +1621,7 @@ class Delete_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescript
 class SortCompareDefaultDescriptor : public StaticCallInterfaceDescriptor<SortCompareDefaultDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kComparefn, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(SortCompareDefaultDescriptor)
@@ -1401,6 +1630,7 @@ class SortCompareDefaultDescriptor : public StaticCallInterfaceDescriptor<SortCo
 class SortCompareUserFnDescriptor : public StaticCallInterfaceDescriptor<SortCompareUserFnDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kComparefn, kX, kY)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(SortCompareUserFnDescriptor)
@@ -1409,6 +1639,7 @@ class SortCompareUserFnDescriptor : public StaticCallInterfaceDescriptor<SortCom
 class CanUseSameAccessor_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_GenericElementsAccessor_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_GenericElementsAccessor_0Descriptor)
@@ -1417,6 +1648,7 @@ class CanUseSameAccessor_GenericElementsAccessor_0Descriptor : public StaticCall
 class CopyDescriptor : public StaticCallInterfaceDescriptor<CopyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSource, kSrcPos, kTarget, kDstPos, kLength)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(CopyDescriptor)
@@ -1425,6 +1657,7 @@ class CopyDescriptor : public StaticCallInterfaceDescriptor<CopyDescriptor> {
 class MergeAtDescriptor : public StaticCallInterfaceDescriptor<MergeAtDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kI)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(MergeAtDescriptor)
@@ -1433,6 +1666,7 @@ class MergeAtDescriptor : public StaticCallInterfaceDescriptor<MergeAtDescriptor
 class GallopLeftDescriptor : public StaticCallInterfaceDescriptor<GallopLeftDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kArray, kKey, kBase, kLength, kHint)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(GallopLeftDescriptor)
@@ -1441,6 +1675,7 @@ class GallopLeftDescriptor : public StaticCallInterfaceDescriptor<GallopLeftDesc
 class GallopRightDescriptor : public StaticCallInterfaceDescriptor<GallopRightDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kArray, kKey, kBase, kLength, kHint)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(GallopRightDescriptor)
@@ -1449,6 +1684,7 @@ class GallopRightDescriptor : public StaticCallInterfaceDescriptor<GallopRightDe
 class ArrayTimSortDescriptor : public StaticCallInterfaceDescriptor<ArrayTimSortDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(ArrayTimSortDescriptor)
@@ -1457,6 +1693,7 @@ class ArrayTimSortDescriptor : public StaticCallInterfaceDescriptor<ArrayTimSort
 class StringFastLocaleCompareDescriptor : public StaticCallInterfaceDescriptor<StringFastLocaleCompareDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kLocaleCompareFn, kLeft, kRight, kLocales)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StringFastLocaleCompareDescriptor)
@@ -1465,6 +1702,7 @@ class StringFastLocaleCompareDescriptor : public StaticCallInterfaceDescriptor<S
 class JSToWasmHandleReturnsDescriptor : public StaticCallInterfaceDescriptor<JSToWasmHandleReturnsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kJsContext, kResultArray, kWrapperBuffer)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<RawPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(JSToWasmHandleReturnsDescriptor)
@@ -1473,14 +1711,25 @@ class JSToWasmHandleReturnsDescriptor : public StaticCallInterfaceDescriptor<JST
 class WasmInt32ToHeapNumberDescriptor : public StaticCallInterfaceDescriptor<WasmInt32ToHeapNumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kVal)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmInt32ToHeapNumberDescriptor)
 };
 
+class WasmInt32ToSharedHeapNumberDescriptor : public StaticCallInterfaceDescriptor<WasmInt32ToSharedHeapNumberDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kVal)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmInt32ToSharedHeapNumberDescriptor)
+};
+
 class WasmFuncRefToJSDescriptor : public StaticCallInterfaceDescriptor<WasmFuncRefToJSDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kVal)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmFuncRefToJSDescriptor)
@@ -1489,6 +1738,7 @@ class WasmFuncRefToJSDescriptor : public StaticCallInterfaceDescriptor<WasmFuncR
 class WasmTaggedNonSmiToInt32Descriptor : public StaticCallInterfaceDescriptor<WasmTaggedNonSmiToInt32Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kVal)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTaggedNonSmiToInt32Descriptor)
@@ -1497,6 +1747,7 @@ class WasmTaggedNonSmiToInt32Descriptor : public StaticCallInterfaceDescriptor<W
 class WasmTaggedToFloat64Descriptor : public StaticCallInterfaceDescriptor<WasmTaggedToFloat64Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kVal)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Float64T>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTaggedToFloat64Descriptor)
@@ -1505,6 +1756,7 @@ class WasmTaggedToFloat64Descriptor : public StaticCallInterfaceDescriptor<WasmT
 class WasmTaggedToFloat32Descriptor : public StaticCallInterfaceDescriptor<WasmTaggedToFloat32Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kVal)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Float32T>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTaggedToFloat32Descriptor)
@@ -1513,6 +1765,7 @@ class WasmTaggedToFloat32Descriptor : public StaticCallInterfaceDescriptor<WasmT
 class WasmMemoryGrowDescriptor : public StaticCallInterfaceDescriptor<WasmMemoryGrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kMemIndex, kNumPages)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineTypeOf<Int32T>::value, MachineTypeOf<Int32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmMemoryGrowDescriptor)
@@ -1521,6 +1774,7 @@ class WasmMemoryGrowDescriptor : public StaticCallInterfaceDescriptor<WasmMemory
 class WasmTableInitDescriptor : public StaticCallInterfaceDescriptor<WasmTableInitDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kDstRaw, kSrcRaw, kSizeRaw, kTableIndex, kSegmentIndex, kExtractSharedData)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableInitDescriptor)
@@ -1529,6 +1783,7 @@ class WasmTableInitDescriptor : public StaticCallInterfaceDescriptor<WasmTableIn
 class WasmTableCopyDescriptor : public StaticCallInterfaceDescriptor<WasmTableCopyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kDstRaw, kSrcRaw, kSizeRaw, kDstTable, kSrcTable, kExtractSharedData)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableCopyDescriptor)
@@ -1537,6 +1792,7 @@ class WasmTableCopyDescriptor : public StaticCallInterfaceDescriptor<WasmTableCo
 class WasmTableFillDescriptor : public StaticCallInterfaceDescriptor<WasmTableFillDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStartRaw, kCountRaw, kExtractSharedData, kTable, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineTypeOf<BoolT>::value, MachineType::TaggedSigned(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableFillDescriptor)
@@ -1545,6 +1801,7 @@ class WasmTableFillDescriptor : public StaticCallInterfaceDescriptor<WasmTableFi
 class WasmTableGrowDescriptor : public StaticCallInterfaceDescriptor<WasmTableGrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTable, kDeltaRaw, kExtractSharedData, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<BoolT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableGrowDescriptor)
@@ -1553,6 +1810,7 @@ class WasmTableGrowDescriptor : public StaticCallInterfaceDescriptor<WasmTableGr
 class WasmTableGetDescriptor : public StaticCallInterfaceDescriptor<WasmTableGetDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTableIndex, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<IntPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableGetDescriptor)
@@ -1561,6 +1819,7 @@ class WasmTableGetDescriptor : public StaticCallInterfaceDescriptor<WasmTableGet
 class WasmTableSetDescriptor : public StaticCallInterfaceDescriptor<WasmTableSetDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTableIndex, kExtractSharedData, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<BoolT>::value, MachineTypeOf<IntPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableSetDescriptor)
@@ -1569,6 +1828,7 @@ class WasmTableSetDescriptor : public StaticCallInterfaceDescriptor<WasmTableSet
 class WasmTableGetFuncRefDescriptor : public StaticCallInterfaceDescriptor<WasmTableGetFuncRefDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTableIndex, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<IntPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableGetFuncRefDescriptor)
@@ -1577,6 +1837,7 @@ class WasmTableGetFuncRefDescriptor : public StaticCallInterfaceDescriptor<WasmT
 class WasmFunctionTableGetDescriptor : public StaticCallInterfaceDescriptor<WasmFunctionTableGetDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTableIndex, kIndex, kExtractSharedData)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<IntPtrT>::value, MachineTypeOf<BoolT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmFunctionTableGetDescriptor)
@@ -1585,6 +1846,7 @@ class WasmFunctionTableGetDescriptor : public StaticCallInterfaceDescriptor<Wasm
 class WasmTableSetFuncRefDescriptor : public StaticCallInterfaceDescriptor<WasmTableSetFuncRefDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTableIndex, kExtractSharedData, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value, MachineTypeOf<BoolT>::value, MachineTypeOf<IntPtrT>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTableSetFuncRefDescriptor)
@@ -1593,6 +1855,7 @@ class WasmTableSetFuncRefDescriptor : public StaticCallInterfaceDescriptor<WasmT
 class WasmRefFuncDescriptor : public StaticCallInterfaceDescriptor<WasmRefFuncDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kIndex, kExtractSharedData)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<BoolT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmRefFuncDescriptor)
@@ -1601,6 +1864,7 @@ class WasmRefFuncDescriptor : public StaticCallInterfaceDescriptor<WasmRefFuncDe
 class WasmInternalFunctionCreateExternalDescriptor : public StaticCallInterfaceDescriptor<WasmInternalFunctionCreateExternalDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kFunc)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmInternalFunctionCreateExternalDescriptor)
@@ -1609,6 +1873,7 @@ class WasmInternalFunctionCreateExternalDescriptor : public StaticCallInterfaceD
 class WasmAllocateZeroedFixedArrayDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateZeroedFixedArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSize)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<IntPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateZeroedFixedArrayDescriptor)
@@ -1617,6 +1882,7 @@ class WasmAllocateZeroedFixedArrayDescriptor : public StaticCallInterfaceDescrip
 class WasmAllocateFixedArrayDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateFixedArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSize)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<IntPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateFixedArrayDescriptor)
@@ -1625,6 +1891,7 @@ class WasmAllocateFixedArrayDescriptor : public StaticCallInterfaceDescriptor<Wa
 class WasmLiftoffDeoptFinishDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffDeoptFinishDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffDeoptFinishDescriptor)
@@ -1633,6 +1900,7 @@ class WasmLiftoffDeoptFinishDescriptor : public StaticCallInterfaceDescriptor<Wa
 class WasmThrowDescriptor : public StaticCallInterfaceDescriptor<WasmThrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kTag, kValues)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmThrowDescriptor)
@@ -1641,14 +1909,25 @@ class WasmThrowDescriptor : public StaticCallInterfaceDescriptor<WasmThrowDescri
 class WasmRethrowDescriptor : public StaticCallInterfaceDescriptor<WasmRethrowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kException)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmRethrowDescriptor)
 };
 
+class WasmThrowRefDescriptor : public StaticCallInterfaceDescriptor<WasmThrowRefDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kException)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmThrowRefDescriptor)
+};
+
 class WasmRethrowExplicitContextDescriptor : public StaticCallInterfaceDescriptor<WasmRethrowExplicitContextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kException, kExplicitContext)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmRethrowExplicitContextDescriptor)
@@ -1657,14 +1936,25 @@ class WasmRethrowExplicitContextDescriptor : public StaticCallInterfaceDescripto
 class WasmTriggerTierUpDescriptor : public StaticCallInterfaceDescriptor<WasmTriggerTierUpDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTriggerTierUpDescriptor)
 };
 
+class WasmGrowableStackGuardDescriptor : public StaticCallInterfaceDescriptor<WasmGrowableStackGuardDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kParamSlotsSize)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<IntPtrT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmGrowableStackGuardDescriptor)
+};
+
 class WasmStackGuardDescriptor : public StaticCallInterfaceDescriptor<WasmStackGuardDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStackGuardDescriptor)
@@ -1673,6 +1963,7 @@ class WasmStackGuardDescriptor : public StaticCallInterfaceDescriptor<WasmStackG
 class WasmStackOverflowDescriptor : public StaticCallInterfaceDescriptor<WasmStackOverflowDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStackOverflowDescriptor)
@@ -1681,6 +1972,7 @@ class WasmStackOverflowDescriptor : public StaticCallInterfaceDescriptor<WasmSta
 class WasmTraceMemoryDescriptor : public StaticCallInterfaceDescriptor<WasmTraceMemoryDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInfo)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTraceMemoryDescriptor)
@@ -1689,6 +1981,7 @@ class WasmTraceMemoryDescriptor : public StaticCallInterfaceDescriptor<WasmTrace
 class WasmTraceEnterDescriptor : public StaticCallInterfaceDescriptor<WasmTraceEnterDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTraceEnterDescriptor)
@@ -1697,6 +1990,7 @@ class WasmTraceEnterDescriptor : public StaticCallInterfaceDescriptor<WasmTraceE
 class WasmTraceExitDescriptor : public StaticCallInterfaceDescriptor<WasmTraceExitDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kInfo)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTraceExitDescriptor)
@@ -1705,6 +1999,7 @@ class WasmTraceExitDescriptor : public StaticCallInterfaceDescriptor<WasmTraceEx
 class WasmAllocateJSArrayDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateJSArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSize)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateJSArrayDescriptor)
@@ -1713,22 +2008,52 @@ class WasmAllocateJSArrayDescriptor : public StaticCallInterfaceDescriptor<WasmA
 class WasmAllocateStructWithRttDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateStructWithRttDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kRtt, kInstanceSize)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateStructWithRttDescriptor)
 };
 
+class WasmAllocateDescriptorStructDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateDescriptorStructDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kMap, kTypeIndex, kFirstField)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateDescriptorStructDescriptor)
+};
+
+class WasmAllocateSharedStructWithRttDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateSharedStructWithRttDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kRtt, kInstanceSize)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateSharedStructWithRttDescriptor)
+};
+
 class WasmAllocateArray_UninitializedDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateArray_UninitializedDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kRtt, kLength, kElementSize)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateArray_UninitializedDescriptor)
 };
 
+class WasmAllocateSharedArray_UninitializedDescriptor : public StaticCallInterfaceDescriptor<WasmAllocateSharedArray_UninitializedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kRtt, kLength, kElementSize)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmAllocateSharedArray_UninitializedDescriptor)
+};
+
 class WasmArrayNewSegmentDescriptor : public StaticCallInterfaceDescriptor<WasmArrayNewSegmentDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSegmentIndex, kOffset, kLength, kIsElement, kExtractSharedData, kRtt)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmArrayNewSegmentDescriptor)
@@ -1737,6 +2062,7 @@ class WasmArrayNewSegmentDescriptor : public StaticCallInterfaceDescriptor<WasmA
 class WasmArrayInitSegmentDescriptor : public StaticCallInterfaceDescriptor<WasmArrayInitSegmentDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArrayIndex, kSegmentOffset, kLength, kSegmentIndex, kIsElement, kExtractSharedData, kArrayRaw)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmArrayInitSegmentDescriptor)
@@ -1745,6 +2071,7 @@ class WasmArrayInitSegmentDescriptor : public StaticCallInterfaceDescriptor<Wasm
 class WasmArrayCopyDescriptor : public StaticCallInterfaceDescriptor<WasmArrayCopyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kDstIndex, kSrcIndex, kLength, kDstObject, kSrcObject)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmArrayCopyDescriptor)
@@ -1753,6 +2080,7 @@ class WasmArrayCopyDescriptor : public StaticCallInterfaceDescriptor<WasmArrayCo
 class WasmUint32ToNumberDescriptor : public StaticCallInterfaceDescriptor<WasmUint32ToNumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmUint32ToNumberDescriptor)
@@ -1761,6 +2089,7 @@ class WasmUint32ToNumberDescriptor : public StaticCallInterfaceDescriptor<WasmUi
 class UintPtr53ToNumberDescriptor : public StaticCallInterfaceDescriptor<UintPtr53ToNumberDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(UintPtr53ToNumberDescriptor)
@@ -1769,6 +2098,7 @@ class UintPtr53ToNumberDescriptor : public StaticCallInterfaceDescriptor<UintPtr
 class WasmI32AtomicWaitDescriptor : public StaticCallInterfaceDescriptor<WasmI32AtomicWaitDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kMemIndex, kOffset, kExpectedValue, kTimeout)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineTypeOf<Int32T>::value, MachineTypeOf<UintPtrT>::value, MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmI32AtomicWaitDescriptor)
@@ -1777,6 +2107,7 @@ class WasmI32AtomicWaitDescriptor : public StaticCallInterfaceDescriptor<WasmI32
 class WasmI64AtomicWaitDescriptor : public StaticCallInterfaceDescriptor<WasmI64AtomicWaitDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kMemIndex, kOffset, kExpectedValue, kTimeout)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineTypeOf<Int32T>::value, MachineTypeOf<UintPtrT>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmI64AtomicWaitDescriptor)
@@ -1785,22 +2116,25 @@ class WasmI64AtomicWaitDescriptor : public StaticCallInterfaceDescriptor<WasmI64
 class CallRefICDescriptor : public StaticCallInterfaceDescriptor<CallRefICDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
-  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(2, kVector, kVectorIndex, kSignatureHash, kFuncref)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<RawPtrT>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineTypeOf<UintPtrT>::value, MachineType::TaggedPointer())
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(2, kVector, kVectorIndex, kFuncref)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(CallRefICDescriptor)
 };
 
 class CallIndirectICDescriptor : public StaticCallInterfaceDescriptor<CallIndirectICDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(2, kVector, kVectorIndex, kTarget, kImplicitArg)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<RawPtrT>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineTypeOf<RawPtrT>::value, MachineType::TaggedPointer())
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(CallIndirectICDescriptor)
 };
 
 class WasmGetOwnPropertyDescriptor : public StaticCallInterfaceDescriptor<WasmGetOwnPropertyDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kObject, kUniqueName)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmGetOwnPropertyDescriptor)
@@ -1809,6 +2143,7 @@ class WasmGetOwnPropertyDescriptor : public StaticCallInterfaceDescriptor<WasmGe
 class WasmTrapDescriptor : public StaticCallInterfaceDescriptor<WasmTrapDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kError)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTrapDescriptor)
@@ -1817,6 +2152,7 @@ class WasmTrapDescriptor : public StaticCallInterfaceDescriptor<WasmTrapDescript
 class ThrowWasmTrapUnreachableDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapUnreachableDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapUnreachableDescriptor)
@@ -1825,6 +2161,7 @@ class ThrowWasmTrapUnreachableDescriptor : public StaticCallInterfaceDescriptor<
 class WasmTrapHandlerThrowTrapDescriptor : public StaticCallInterfaceDescriptor<WasmTrapHandlerThrowTrapDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmTrapHandlerThrowTrapDescriptor)
@@ -1833,6 +2170,7 @@ class WasmTrapHandlerThrowTrapDescriptor : public StaticCallInterfaceDescriptor<
 class WasmPropagateExceptionDescriptor : public StaticCallInterfaceDescriptor<WasmPropagateExceptionDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmPropagateExceptionDescriptor)
@@ -1841,6 +2179,7 @@ class WasmPropagateExceptionDescriptor : public StaticCallInterfaceDescriptor<Wa
 class ThrowWasmTrapMemOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapMemOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapMemOutOfBoundsDescriptor)
@@ -1849,6 +2188,7 @@ class ThrowWasmTrapMemOutOfBoundsDescriptor : public StaticCallInterfaceDescript
 class ThrowWasmTrapUnalignedAccessDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapUnalignedAccessDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapUnalignedAccessDescriptor)
@@ -1857,6 +2197,7 @@ class ThrowWasmTrapUnalignedAccessDescriptor : public StaticCallInterfaceDescrip
 class ThrowWasmTrapDivByZeroDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapDivByZeroDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapDivByZeroDescriptor)
@@ -1865,6 +2206,7 @@ class ThrowWasmTrapDivByZeroDescriptor : public StaticCallInterfaceDescriptor<Th
 class ThrowWasmTrapDivUnrepresentableDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapDivUnrepresentableDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapDivUnrepresentableDescriptor)
@@ -1873,6 +2215,7 @@ class ThrowWasmTrapDivUnrepresentableDescriptor : public StaticCallInterfaceDesc
 class ThrowWasmTrapRemByZeroDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapRemByZeroDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapRemByZeroDescriptor)
@@ -1881,6 +2224,7 @@ class ThrowWasmTrapRemByZeroDescriptor : public StaticCallInterfaceDescriptor<Th
 class ThrowWasmTrapFloatUnrepresentableDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapFloatUnrepresentableDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapFloatUnrepresentableDescriptor)
@@ -1889,6 +2233,7 @@ class ThrowWasmTrapFloatUnrepresentableDescriptor : public StaticCallInterfaceDe
 class ThrowWasmTrapFuncSigMismatchDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapFuncSigMismatchDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapFuncSigMismatchDescriptor)
@@ -1897,6 +2242,7 @@ class ThrowWasmTrapFuncSigMismatchDescriptor : public StaticCallInterfaceDescrip
 class ThrowWasmTrapDataSegmentOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapDataSegmentOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapDataSegmentOutOfBoundsDescriptor)
@@ -1905,6 +2251,7 @@ class ThrowWasmTrapDataSegmentOutOfBoundsDescriptor : public StaticCallInterface
 class ThrowWasmTrapElementSegmentOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapElementSegmentOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapElementSegmentOutOfBoundsDescriptor)
@@ -1913,6 +2260,7 @@ class ThrowWasmTrapElementSegmentOutOfBoundsDescriptor : public StaticCallInterf
 class ThrowWasmTrapTableOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapTableOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapTableOutOfBoundsDescriptor)
@@ -1921,6 +2269,7 @@ class ThrowWasmTrapTableOutOfBoundsDescriptor : public StaticCallInterfaceDescri
 class ThrowWasmTrapRethrowNullDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapRethrowNullDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapRethrowNullDescriptor)
@@ -1929,6 +2278,7 @@ class ThrowWasmTrapRethrowNullDescriptor : public StaticCallInterfaceDescriptor<
 class ThrowWasmTrapNullDereferenceDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapNullDereferenceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapNullDereferenceDescriptor)
@@ -1937,6 +2287,7 @@ class ThrowWasmTrapNullDereferenceDescriptor : public StaticCallInterfaceDescrip
 class ThrowWasmTrapIllegalCastDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapIllegalCastDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapIllegalCastDescriptor)
@@ -1945,6 +2296,7 @@ class ThrowWasmTrapIllegalCastDescriptor : public StaticCallInterfaceDescriptor<
 class ThrowWasmTrapArrayOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapArrayOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapArrayOutOfBoundsDescriptor)
@@ -1953,6 +2305,7 @@ class ThrowWasmTrapArrayOutOfBoundsDescriptor : public StaticCallInterfaceDescri
 class ThrowWasmTrapArrayTooLargeDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapArrayTooLargeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapArrayTooLargeDescriptor)
@@ -1961,6 +2314,7 @@ class ThrowWasmTrapArrayTooLargeDescriptor : public StaticCallInterfaceDescripto
 class ThrowWasmTrapStringOffsetOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowWasmTrapStringOffsetOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowWasmTrapStringOffsetOutOfBoundsDescriptor)
@@ -1969,6 +2323,7 @@ class ThrowWasmTrapStringOffsetOutOfBoundsDescriptor : public StaticCallInterfac
 class WasmStringNewWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringNewWtf8Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kOffset, kSize, kMemory, kUtf8Variant)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringNewWtf8Descriptor)
@@ -1977,6 +2332,7 @@ class WasmStringNewWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStr
 class WasmStringNewWtf8ArrayDescriptor : public StaticCallInterfaceDescriptor<WasmStringNewWtf8ArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStart, kEnd, kArray, kUtf8Variant)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringNewWtf8ArrayDescriptor)
@@ -1985,6 +2341,7 @@ class WasmStringNewWtf8ArrayDescriptor : public StaticCallInterfaceDescriptor<Wa
 class WasmStringNewWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmStringNewWtf16Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kMemory, kOffset, kSize)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<UintPtrT>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringNewWtf16Descriptor)
@@ -1993,6 +2350,7 @@ class WasmStringNewWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmSt
 class WasmStringNewWtf16ArrayDescriptor : public StaticCallInterfaceDescriptor<WasmStringNewWtf16ArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kStart, kEnd)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringNewWtf16ArrayDescriptor)
@@ -2001,6 +2359,7 @@ class WasmStringNewWtf16ArrayDescriptor : public StaticCallInterfaceDescriptor<W
 class WasmStringFromDataSegmentDescriptor : public StaticCallInterfaceDescriptor<WasmStringFromDataSegmentDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kSegmentLength, kArrayStart, kArrayEnd, kSegmentIndex, kSegmentOffset, kVariant)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringFromDataSegmentDescriptor)
@@ -2009,6 +2368,7 @@ class WasmStringFromDataSegmentDescriptor : public StaticCallInterfaceDescriptor
 class WasmStringAsWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmStringAsWtf16Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStr)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringAsWtf16Descriptor)
@@ -2017,6 +2377,7 @@ class WasmStringAsWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmStr
 class WasmStringConstDescriptor : public StaticCallInterfaceDescriptor<WasmStringConstDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringConstDescriptor)
@@ -2025,6 +2386,7 @@ class WasmStringConstDescriptor : public StaticCallInterfaceDescriptor<WasmStrin
 class WasmStringMeasureUtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringMeasureUtf8Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringMeasureUtf8Descriptor)
@@ -2033,6 +2395,7 @@ class WasmStringMeasureUtf8Descriptor : public StaticCallInterfaceDescriptor<Was
 class WasmStringMeasureWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringMeasureWtf8Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringMeasureWtf8Descriptor)
@@ -2041,6 +2404,7 @@ class WasmStringMeasureWtf8Descriptor : public StaticCallInterfaceDescriptor<Was
 class WasmStringEncodeWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringEncodeWtf8Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kOffset, kMemory, kUtf8Variant, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineTypeOf<UintPtrT>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringEncodeWtf8Descriptor)
@@ -2049,6 +2413,7 @@ class WasmStringEncodeWtf8Descriptor : public StaticCallInterfaceDescriptor<Wasm
 class WasmStringEncodeWtf8ArrayDescriptor : public StaticCallInterfaceDescriptor<WasmStringEncodeWtf8ArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kArray, kStart, kUtf8Variant)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringEncodeWtf8ArrayDescriptor)
@@ -2057,6 +2422,7 @@ class WasmStringEncodeWtf8ArrayDescriptor : public StaticCallInterfaceDescriptor
 class WasmStringToUtf8ArrayDescriptor : public StaticCallInterfaceDescriptor<WasmStringToUtf8ArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringToUtf8ArrayDescriptor)
@@ -2065,6 +2431,7 @@ class WasmStringToUtf8ArrayDescriptor : public StaticCallInterfaceDescriptor<Was
 class WasmStringEncodeWtf16Descriptor : public StaticCallInterfaceDescriptor<WasmStringEncodeWtf16Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kOffset, kMemory)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringEncodeWtf16Descriptor)
@@ -2073,6 +2440,7 @@ class WasmStringEncodeWtf16Descriptor : public StaticCallInterfaceDescriptor<Was
 class WasmStringEncodeWtf16ArrayDescriptor : public StaticCallInterfaceDescriptor<WasmStringEncodeWtf16ArrayDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kArray, kStart)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringEncodeWtf16ArrayDescriptor)
@@ -2081,6 +2449,7 @@ class WasmStringEncodeWtf16ArrayDescriptor : public StaticCallInterfaceDescripto
 class ThrowToLowerCaseCalledOnNullDescriptor : public StaticCallInterfaceDescriptor<ThrowToLowerCaseCalledOnNullDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowToLowerCaseCalledOnNullDescriptor)
@@ -2089,6 +2458,7 @@ class ThrowToLowerCaseCalledOnNullDescriptor : public StaticCallInterfaceDescrip
 class ThrowIndexOfCalledOnNullDescriptor : public StaticCallInterfaceDescriptor<ThrowIndexOfCalledOnNullDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowIndexOfCalledOnNullDescriptor)
@@ -2097,6 +2467,7 @@ class ThrowIndexOfCalledOnNullDescriptor : public StaticCallInterfaceDescriptor<
 class ThrowDataViewTypeErrorDescriptor : public StaticCallInterfaceDescriptor<ThrowDataViewTypeErrorDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowDataViewTypeErrorDescriptor)
@@ -2105,6 +2476,7 @@ class ThrowDataViewTypeErrorDescriptor : public StaticCallInterfaceDescriptor<Th
 class ThrowDataViewDetachedErrorDescriptor : public StaticCallInterfaceDescriptor<ThrowDataViewDetachedErrorDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowDataViewDetachedErrorDescriptor)
@@ -2113,6 +2485,7 @@ class ThrowDataViewDetachedErrorDescriptor : public StaticCallInterfaceDescripto
 class ThrowDataViewOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<ThrowDataViewOutOfBoundsDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(ThrowDataViewOutOfBoundsDescriptor)
@@ -2121,6 +2494,7 @@ class ThrowDataViewOutOfBoundsDescriptor : public StaticCallInterfaceDescriptor<
 class WasmStringConcatDescriptor : public StaticCallInterfaceDescriptor<WasmStringConcatDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kA, kB)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringConcatDescriptor)
@@ -2129,6 +2503,7 @@ class WasmStringConcatDescriptor : public StaticCallInterfaceDescriptor<WasmStri
 class WasmStringEqualDescriptor : public StaticCallInterfaceDescriptor<WasmStringEqualDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kA, kB)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringEqualDescriptor)
@@ -2137,6 +2512,7 @@ class WasmStringEqualDescriptor : public StaticCallInterfaceDescriptor<WasmStrin
 class WasmStringIsUSVSequenceDescriptor : public StaticCallInterfaceDescriptor<WasmStringIsUSVSequenceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStr)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringIsUSVSequenceDescriptor)
@@ -2145,6 +2521,7 @@ class WasmStringIsUSVSequenceDescriptor : public StaticCallInterfaceDescriptor<W
 class WasmStringAsWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStringAsWtf8Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kStr)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringAsWtf8Descriptor)
@@ -2153,6 +2530,7 @@ class WasmStringAsWtf8Descriptor : public StaticCallInterfaceDescriptor<WasmStri
 class WasmStringViewWtf8AdvanceDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewWtf8AdvanceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kView, kPos, kBytes)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewWtf8AdvanceDescriptor)
@@ -2161,6 +2539,7 @@ class WasmStringViewWtf8AdvanceDescriptor : public StaticCallInterfaceDescriptor
 class WasmStringViewWtf8EncodeDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewWtf8EncodeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(2, kAddr, kPos, kBytes, kView, kMemory, kUtf8Variant)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<UintPtrT>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewWtf8EncodeDescriptor)
@@ -2169,6 +2548,7 @@ class WasmStringViewWtf8EncodeDescriptor : public StaticCallInterfaceDescriptor<
 class WasmStringViewWtf8SliceDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewWtf8SliceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kView, kStart, kEnd)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewWtf8SliceDescriptor)
@@ -2177,6 +2557,7 @@ class WasmStringViewWtf8SliceDescriptor : public StaticCallInterfaceDescriptor<W
 class WasmStringViewWtf16GetCodeUnitDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewWtf16GetCodeUnitDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kOffset)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewWtf16GetCodeUnitDescriptor)
@@ -2185,6 +2566,7 @@ class WasmStringViewWtf16GetCodeUnitDescriptor : public StaticCallInterfaceDescr
 class WasmStringViewWtf16EncodeDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewWtf16EncodeDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kOffset, kStart, kLength, kString, kMemory)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineTypeOf<UintPtrT>::value, MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewWtf16EncodeDescriptor)
@@ -2193,6 +2575,7 @@ class WasmStringViewWtf16EncodeDescriptor : public StaticCallInterfaceDescriptor
 class WasmStringViewWtf16SliceDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewWtf16SliceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kStart, kEnd)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value, MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewWtf16SliceDescriptor)
@@ -2201,6 +2584,7 @@ class WasmStringViewWtf16SliceDescriptor : public StaticCallInterfaceDescriptor<
 class WasmStringAsIterDescriptor : public StaticCallInterfaceDescriptor<WasmStringAsIterDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringAsIterDescriptor)
@@ -2209,6 +2593,7 @@ class WasmStringAsIterDescriptor : public StaticCallInterfaceDescriptor<WasmStri
 class WasmStringCodePointAtDescriptor : public StaticCallInterfaceDescriptor<WasmStringCodePointAtDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString, kOffset)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringCodePointAtDescriptor)
@@ -2217,6 +2602,7 @@ class WasmStringCodePointAtDescriptor : public StaticCallInterfaceDescriptor<Was
 class WasmStringViewIterNextDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewIterNextDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kView)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewIterNextDescriptor)
@@ -2225,6 +2611,7 @@ class WasmStringViewIterNextDescriptor : public StaticCallInterfaceDescriptor<Wa
 class WasmStringViewIterAdvanceDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewIterAdvanceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kView, kCodepoints)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewIterAdvanceDescriptor)
@@ -2233,6 +2620,7 @@ class WasmStringViewIterAdvanceDescriptor : public StaticCallInterfaceDescriptor
 class WasmStringViewIterRewindDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewIterRewindDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kView, kCodepoints)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Uint32T>::value, MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewIterRewindDescriptor)
@@ -2241,6 +2629,7 @@ class WasmStringViewIterRewindDescriptor : public StaticCallInterfaceDescriptor<
 class WasmStringViewIterSliceDescriptor : public StaticCallInterfaceDescriptor<WasmStringViewIterSliceDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kView, kCodepoints)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringViewIterSliceDescriptor)
@@ -2249,6 +2638,7 @@ class WasmStringViewIterSliceDescriptor : public StaticCallInterfaceDescriptor<W
 class WasmIntToStringDescriptor : public StaticCallInterfaceDescriptor<WasmIntToStringDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kX, kRadix)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Int32T>::value, MachineTypeOf<Int32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmIntToStringDescriptor)
@@ -2257,6 +2647,7 @@ class WasmIntToStringDescriptor : public StaticCallInterfaceDescriptor<WasmIntTo
 class WasmStringToDoubleDescriptor : public StaticCallInterfaceDescriptor<WasmStringToDoubleDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kS)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Float64T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringToDoubleDescriptor)
@@ -2265,6 +2656,7 @@ class WasmStringToDoubleDescriptor : public StaticCallInterfaceDescriptor<WasmSt
 class WasmStringFromCodePointDescriptor : public StaticCallInterfaceDescriptor<WasmStringFromCodePointDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kCodePoint)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineTypeOf<Uint32T>::value)
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringFromCodePointDescriptor)
@@ -2273,6 +2665,7 @@ class WasmStringFromCodePointDescriptor : public StaticCallInterfaceDescriptor<W
 class WasmStringHashDescriptor : public StaticCallInterfaceDescriptor<WasmStringHashDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kString)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::TaggedPointer())
   DECLARE_DEFAULT_DESCRIPTOR(WasmStringHashDescriptor)
@@ -2281,22 +2674,97 @@ class WasmStringHashDescriptor : public StaticCallInterfaceDescriptor<WasmString
 class WasmAnyConvertExternDescriptor : public StaticCallInterfaceDescriptor<WasmAnyConvertExternDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kExternObject)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmAnyConvertExternDescriptor)
 };
 
+class WasmAnyConvertExternSharedDescriptor : public StaticCallInterfaceDescriptor<WasmAnyConvertExternSharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kExternObject)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmAnyConvertExternSharedDescriptor)
+};
+
 class WasmFastApiCallTypeCheckAndUpdateICDescriptor : public StaticCallInterfaceDescriptor<WasmFastApiCallTypeCheckAndUpdateICDescriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kData, kReceiver)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(WasmFastApiCallTypeCheckAndUpdateICDescriptor)
 };
 
+class WasmStringIndexOfDescriptor : public StaticCallInterfaceDescriptor<WasmStringIndexOfDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kS, kSearchString, kStart)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
+  DECLARE_DEFAULT_DESCRIPTOR(WasmStringIndexOfDescriptor)
+};
+
+class WasmLiftoffIsEqRefUnsharedDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffIsEqRefUnsharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kObj, kNullSucceeds)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::AnyTagged(), MachineTypeOf<BoolT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffIsEqRefUnsharedDescriptor)
+};
+
+class WasmLiftoffIsArrayRefUnsharedDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffIsArrayRefUnsharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kObj, kNullSucceeds)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::AnyTagged(), MachineTypeOf<BoolT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffIsArrayRefUnsharedDescriptor)
+};
+
+class WasmLiftoffIsStructRefUnsharedDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffIsStructRefUnsharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kObj, kNullSucceeds)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineTypeOf<Int32T>::value, MachineType::AnyTagged(), MachineTypeOf<BoolT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffIsStructRefUnsharedDescriptor)
+};
+
+class WasmLiftoffCastEqRefUnsharedDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffCastEqRefUnsharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kObj, kNullSucceeds)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineTypeOf<BoolT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffCastEqRefUnsharedDescriptor)
+};
+
+class WasmLiftoffCastArrayRefUnsharedDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffCastArrayRefUnsharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kObj, kNullSucceeds)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineTypeOf<BoolT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffCastArrayRefUnsharedDescriptor)
+};
+
+class WasmLiftoffCastStructRefUnsharedDescriptor : public StaticCallInterfaceDescriptor<WasmLiftoffCastStructRefUnsharedDescriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kObj, kNullSucceeds)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::AnyTagged(), MachineTypeOf<BoolT>::value)
+  DECLARE_DEFAULT_DESCRIPTOR(WasmLiftoffCastStructRefUnsharedDescriptor)
+};
+
 class LoadJoinElement_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinElement_GenericElementsAccessor_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinElement_GenericElementsAccessor_0Descriptor)
@@ -2305,6 +2773,7 @@ class LoadJoinElement_GenericElementsAccessor_0Descriptor : public StaticCallInt
 class LoadJoinTypedElement_Int32Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Int32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Int32Elements_0Descriptor)
@@ -2313,6 +2782,7 @@ class LoadJoinTypedElement_Int32Elements_0Descriptor : public StaticCallInterfac
 class LoadJoinTypedElement_Float16Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Float16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Float16Elements_0Descriptor)
@@ -2321,6 +2791,7 @@ class LoadJoinTypedElement_Float16Elements_0Descriptor : public StaticCallInterf
 class LoadJoinTypedElement_Float32Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Float32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Float32Elements_0Descriptor)
@@ -2329,6 +2800,7 @@ class LoadJoinTypedElement_Float32Elements_0Descriptor : public StaticCallInterf
 class LoadJoinTypedElement_Float64Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Float64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Float64Elements_0Descriptor)
@@ -2337,6 +2809,7 @@ class LoadJoinTypedElement_Float64Elements_0Descriptor : public StaticCallInterf
 class LoadJoinTypedElement_Uint8ClampedElements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Uint8ClampedElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Uint8ClampedElements_0Descriptor)
@@ -2345,6 +2818,7 @@ class LoadJoinTypedElement_Uint8ClampedElements_0Descriptor : public StaticCallI
 class LoadJoinTypedElement_BigUint64Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_BigUint64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_BigUint64Elements_0Descriptor)
@@ -2353,6 +2827,7 @@ class LoadJoinTypedElement_BigUint64Elements_0Descriptor : public StaticCallInte
 class LoadJoinTypedElement_BigInt64Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_BigInt64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_BigInt64Elements_0Descriptor)
@@ -2361,6 +2836,7 @@ class LoadJoinTypedElement_BigInt64Elements_0Descriptor : public StaticCallInter
 class LoadJoinTypedElement_Uint8Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Uint8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Uint8Elements_0Descriptor)
@@ -2369,6 +2845,7 @@ class LoadJoinTypedElement_Uint8Elements_0Descriptor : public StaticCallInterfac
 class LoadJoinTypedElement_Int8Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Int8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Int8Elements_0Descriptor)
@@ -2377,6 +2854,7 @@ class LoadJoinTypedElement_Int8Elements_0Descriptor : public StaticCallInterface
 class LoadJoinTypedElement_Uint16Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Uint16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Uint16Elements_0Descriptor)
@@ -2385,6 +2863,7 @@ class LoadJoinTypedElement_Uint16Elements_0Descriptor : public StaticCallInterfa
 class LoadJoinTypedElement_Int16Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Int16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Int16Elements_0Descriptor)
@@ -2393,6 +2872,7 @@ class LoadJoinTypedElement_Int16Elements_0Descriptor : public StaticCallInterfac
 class LoadJoinTypedElement_Uint32Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadJoinTypedElement_Uint32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kK)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadJoinTypedElement_Uint32Elements_0Descriptor)
@@ -2401,38 +2881,16 @@ class LoadJoinTypedElement_Uint32Elements_0Descriptor : public StaticCallInterfa
 class GenericBuiltinTest_Smi_0Descriptor : public StaticCallInterfaceDescriptor<GenericBuiltinTest_Smi_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kParam)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(GenericBuiltinTest_Smi_0Descriptor)
 };
 
-class CanUseSameAccessor_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_FastDoubleElements_0Descriptor> {
- public:
-  INTERNAL_DESCRIPTOR()
-  DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_FastDoubleElements_0Descriptor)
-};
-
-class CanUseSameAccessor_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_FastSmiElements_0Descriptor> {
- public:
-  INTERNAL_DESCRIPTOR()
-  DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_FastSmiElements_0Descriptor)
-};
-
-class CanUseSameAccessor_FastObjectElements_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_FastObjectElements_0Descriptor> {
- public:
-  INTERNAL_DESCRIPTOR()
-  DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
-  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
-  DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_FastObjectElements_0Descriptor)
-};
-
 class LoadNoHasPropertyCheck_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<LoadNoHasPropertyCheck_GenericElementsAccessor_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(LoadNoHasPropertyCheck_GenericElementsAccessor_0Descriptor)
@@ -2441,6 +2899,7 @@ class LoadNoHasPropertyCheck_GenericElementsAccessor_0Descriptor : public Static
 class Load_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<Load_GenericElementsAccessor_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Load_GenericElementsAccessor_0Descriptor)
@@ -2449,6 +2908,7 @@ class Load_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescr
 class Store_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<Store_GenericElementsAccessor_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned(), MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(Store_GenericElementsAccessor_0Descriptor)
@@ -2457,14 +2917,43 @@ class Store_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDesc
 class Delete_GenericElementsAccessor_0Descriptor : public StaticCallInterfaceDescriptor<Delete_GenericElementsAccessor_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kSortState, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineType::TaggedSigned())
   DECLARE_DEFAULT_DESCRIPTOR(Delete_GenericElementsAccessor_0Descriptor)
 };
 
+class CanUseSameAccessor_FastDoubleElements_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_FastDoubleElements_0Descriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_FastDoubleElements_0Descriptor)
+};
+
+class CanUseSameAccessor_FastSmiElements_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_FastSmiElements_0Descriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_FastSmiElements_0Descriptor)
+};
+
+class CanUseSameAccessor_FastObjectElements_0Descriptor : public StaticCallInterfaceDescriptor<CanUseSameAccessor_FastObjectElements_0Descriptor> {
+ public:
+  INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
+  DEFINE_RESULT_AND_PARAMETERS(1, kReceiver, kInitialReceiverMap, kInitialReceiverLength)
+  DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::TaggedPointer(), MachineType::AnyTagged())
+  DECLARE_DEFAULT_DESCRIPTOR(CanUseSameAccessor_FastObjectElements_0Descriptor)
+};
+
 class LoadTypedElement_Int32Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Int32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Int32Elements_0Descriptor)
@@ -2473,6 +2962,7 @@ class LoadTypedElement_Int32Elements_0Descriptor : public StaticCallInterfaceDes
 class StoreTypedElementNumeric_Int32Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Int32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Int32Elements_0Descriptor)
@@ -2481,6 +2971,7 @@ class StoreTypedElementNumeric_Int32Elements_0Descriptor : public StaticCallInte
 class StoreTypedElementJSAny_Int32Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Int32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Int32Elements_0Descriptor)
@@ -2489,6 +2980,7 @@ class StoreTypedElementJSAny_Int32Elements_0Descriptor : public StaticCallInterf
 class LoadTypedElement_Float16Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Float16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Float16Elements_0Descriptor)
@@ -2497,6 +2989,7 @@ class LoadTypedElement_Float16Elements_0Descriptor : public StaticCallInterfaceD
 class StoreTypedElementNumeric_Float16Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Float16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Float16Elements_0Descriptor)
@@ -2505,6 +2998,7 @@ class StoreTypedElementNumeric_Float16Elements_0Descriptor : public StaticCallIn
 class StoreTypedElementJSAny_Float16Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Float16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Float16Elements_0Descriptor)
@@ -2513,6 +3007,7 @@ class StoreTypedElementJSAny_Float16Elements_0Descriptor : public StaticCallInte
 class LoadTypedElement_Float32Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Float32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Float32Elements_0Descriptor)
@@ -2521,6 +3016,7 @@ class LoadTypedElement_Float32Elements_0Descriptor : public StaticCallInterfaceD
 class StoreTypedElementNumeric_Float32Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Float32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Float32Elements_0Descriptor)
@@ -2529,6 +3025,7 @@ class StoreTypedElementNumeric_Float32Elements_0Descriptor : public StaticCallIn
 class StoreTypedElementJSAny_Float32Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Float32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Float32Elements_0Descriptor)
@@ -2537,6 +3034,7 @@ class StoreTypedElementJSAny_Float32Elements_0Descriptor : public StaticCallInte
 class LoadTypedElement_Float64Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Float64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Float64Elements_0Descriptor)
@@ -2545,6 +3043,7 @@ class LoadTypedElement_Float64Elements_0Descriptor : public StaticCallInterfaceD
 class StoreTypedElementNumeric_Float64Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Float64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Float64Elements_0Descriptor)
@@ -2553,6 +3052,7 @@ class StoreTypedElementNumeric_Float64Elements_0Descriptor : public StaticCallIn
 class StoreTypedElementJSAny_Float64Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Float64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Float64Elements_0Descriptor)
@@ -2561,6 +3061,7 @@ class StoreTypedElementJSAny_Float64Elements_0Descriptor : public StaticCallInte
 class LoadTypedElement_Uint8ClampedElements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Uint8ClampedElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Uint8ClampedElements_0Descriptor)
@@ -2569,6 +3070,7 @@ class LoadTypedElement_Uint8ClampedElements_0Descriptor : public StaticCallInter
 class StoreTypedElementNumeric_Uint8ClampedElements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Uint8ClampedElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Uint8ClampedElements_0Descriptor)
@@ -2577,6 +3079,7 @@ class StoreTypedElementNumeric_Uint8ClampedElements_0Descriptor : public StaticC
 class StoreTypedElementJSAny_Uint8ClampedElements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Uint8ClampedElements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Uint8ClampedElements_0Descriptor)
@@ -2585,6 +3088,7 @@ class StoreTypedElementJSAny_Uint8ClampedElements_0Descriptor : public StaticCal
 class LoadTypedElement_BigUint64Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_BigUint64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_BigUint64Elements_0Descriptor)
@@ -2593,6 +3097,7 @@ class LoadTypedElement_BigUint64Elements_0Descriptor : public StaticCallInterfac
 class StoreTypedElementNumeric_BigUint64Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_BigUint64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_BigUint64Elements_0Descriptor)
@@ -2601,6 +3106,7 @@ class StoreTypedElementNumeric_BigUint64Elements_0Descriptor : public StaticCall
 class StoreTypedElementJSAny_BigUint64Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_BigUint64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_BigUint64Elements_0Descriptor)
@@ -2609,6 +3115,7 @@ class StoreTypedElementJSAny_BigUint64Elements_0Descriptor : public StaticCallIn
 class LoadTypedElement_BigInt64Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_BigInt64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_BigInt64Elements_0Descriptor)
@@ -2617,6 +3124,7 @@ class LoadTypedElement_BigInt64Elements_0Descriptor : public StaticCallInterface
 class StoreTypedElementNumeric_BigInt64Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_BigInt64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_BigInt64Elements_0Descriptor)
@@ -2625,6 +3133,7 @@ class StoreTypedElementNumeric_BigInt64Elements_0Descriptor : public StaticCallI
 class StoreTypedElementJSAny_BigInt64Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_BigInt64Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_BigInt64Elements_0Descriptor)
@@ -2633,6 +3142,7 @@ class StoreTypedElementJSAny_BigInt64Elements_0Descriptor : public StaticCallInt
 class LoadTypedElement_Uint8Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Uint8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Uint8Elements_0Descriptor)
@@ -2641,6 +3151,7 @@ class LoadTypedElement_Uint8Elements_0Descriptor : public StaticCallInterfaceDes
 class StoreTypedElementNumeric_Uint8Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Uint8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Uint8Elements_0Descriptor)
@@ -2649,6 +3160,7 @@ class StoreTypedElementNumeric_Uint8Elements_0Descriptor : public StaticCallInte
 class StoreTypedElementJSAny_Uint8Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Uint8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Uint8Elements_0Descriptor)
@@ -2657,6 +3169,7 @@ class StoreTypedElementJSAny_Uint8Elements_0Descriptor : public StaticCallInterf
 class LoadTypedElement_Int8Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Int8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Int8Elements_0Descriptor)
@@ -2665,6 +3178,7 @@ class LoadTypedElement_Int8Elements_0Descriptor : public StaticCallInterfaceDesc
 class StoreTypedElementNumeric_Int8Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Int8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Int8Elements_0Descriptor)
@@ -2673,6 +3187,7 @@ class StoreTypedElementNumeric_Int8Elements_0Descriptor : public StaticCallInter
 class StoreTypedElementJSAny_Int8Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Int8Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Int8Elements_0Descriptor)
@@ -2681,6 +3196,7 @@ class StoreTypedElementJSAny_Int8Elements_0Descriptor : public StaticCallInterfa
 class LoadTypedElement_Uint16Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Uint16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Uint16Elements_0Descriptor)
@@ -2689,6 +3205,7 @@ class LoadTypedElement_Uint16Elements_0Descriptor : public StaticCallInterfaceDe
 class StoreTypedElementNumeric_Uint16Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Uint16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Uint16Elements_0Descriptor)
@@ -2697,6 +3214,7 @@ class StoreTypedElementNumeric_Uint16Elements_0Descriptor : public StaticCallInt
 class StoreTypedElementJSAny_Uint16Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Uint16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Uint16Elements_0Descriptor)
@@ -2705,6 +3223,7 @@ class StoreTypedElementJSAny_Uint16Elements_0Descriptor : public StaticCallInter
 class LoadTypedElement_Int16Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Int16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Int16Elements_0Descriptor)
@@ -2713,6 +3232,7 @@ class LoadTypedElement_Int16Elements_0Descriptor : public StaticCallInterfaceDes
 class StoreTypedElementNumeric_Int16Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Int16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Int16Elements_0Descriptor)
@@ -2721,6 +3241,7 @@ class StoreTypedElementNumeric_Int16Elements_0Descriptor : public StaticCallInte
 class StoreTypedElementJSAny_Int16Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Int16Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Int16Elements_0Descriptor)
@@ -2729,6 +3250,7 @@ class StoreTypedElementJSAny_Int16Elements_0Descriptor : public StaticCallInterf
 class LoadTypedElement_Uint32Elements_0Descriptor : public StaticCallInterfaceDescriptor<LoadTypedElement_Uint32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS_NO_CONTEXT(1, kArray, kIndex)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::AnyTagged(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value)
   DECLARE_DEFAULT_DESCRIPTOR(LoadTypedElement_Uint32Elements_0Descriptor)
@@ -2737,6 +3259,7 @@ class LoadTypedElement_Uint32Elements_0Descriptor : public StaticCallInterfaceDe
 class StoreTypedElementNumeric_Uint32Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementNumeric_Uint32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementNumeric_Uint32Elements_0Descriptor)
@@ -2745,6 +3268,7 @@ class StoreTypedElementNumeric_Uint32Elements_0Descriptor : public StaticCallInt
 class StoreTypedElementJSAny_Uint32Elements_0Descriptor : public StaticCallInterfaceDescriptor<StoreTypedElementJSAny_Uint32Elements_0Descriptor> {
  public:
   INTERNAL_DESCRIPTOR()
+  SANDBOXING_MODE(kSandboxed)
   DEFINE_RESULT_AND_PARAMETERS(1, kTypedArray, kIndex, kValue)
   DEFINE_RESULT_AND_PARAMETER_TYPES(MachineType::TaggedSigned(), MachineType::TaggedPointer(), MachineTypeOf<UintPtrT>::value, MachineType::AnyTagged())
   DECLARE_DEFAULT_DESCRIPTOR(StoreTypedElementJSAny_Uint32Elements_0Descriptor)

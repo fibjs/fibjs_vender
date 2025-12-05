@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
@@ -83,18 +83,18 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=6&c=1
-TNode<Boolean> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method) {
+TNode<Boolean> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, const char* p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<Boolean> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToThisValue(TNode<Context>{p_context}, TNode<Object>{p_receiver}, PrimitiveType::kBoolean, p_method);
+    tmp0 = CodeStubAssembler(state_).ToThisValue(TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, PrimitiveType::kBoolean, p_method);
     tmp1 = UnsafeCast_Boolean_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
     ca_.Goto(&block2);
   }
@@ -112,19 +112,19 @@ TF_BUILTIN(BooleanConstructor, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
-USE(parameter2);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kJSNewTarget);
+  USE(parameter2);
   TNode<JSFunction> parameter3 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter3);
+  USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<BoolT> tmp2;
   TNode<Boolean> tmp3;
   TNode<Undefined> tmp4;
@@ -133,10 +133,10 @@ USE(parameter3);
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
-    tmp2 = ToBoolean_0(state_, TNode<Object>{tmp1});
+    tmp2 = ToBoolean_0(state_, TNode<JSAny>{tmp1});
     tmp3 = CodeStubAssembler(state_).SelectBooleanConstant(TNode<BoolT>{tmp2});
     tmp4 = Undefined_0(state_);
-    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp4});
+    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4});
     ca_.Branch(tmp5, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -157,7 +157,7 @@ USE(parameter3);
     tmp8 = AllocateFastOrSlowJSObjectFromMap_0(state_, TNode<Context>{parameter0}, TNode<Map>{tmp7});
     tmp9 = UnsafeCast_JSPrimitiveWrapper_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp8});
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
     arguments.PopAndReturn(tmp9);
   }
 }
@@ -166,7 +166,7 @@ TF_BUILTIN(BooleanPrototypeToString, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -176,7 +176,7 @@ TF_BUILTIN(BooleanPrototypeToString, CodeStubAssembler) {
   TNode<String> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ThisBooleanValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Boolean.prototype.toString");
+    tmp0 = ThisBooleanValue_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Boolean.prototype.toString");
     tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp2 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{tmp0, tmp1});
     CodeStubAssembler(state_).Return(tmp2);
@@ -187,7 +187,7 @@ TF_BUILTIN(BooleanPrototypeValueOf, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -195,7 +195,7 @@ TF_BUILTIN(BooleanPrototypeValueOf, CodeStubAssembler) {
   TNode<Boolean> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ThisBooleanValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Boolean.prototype.valueOf");
+    tmp0 = ThisBooleanValue_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Boolean.prototype.valueOf");
     CodeStubAssembler(state_).Return(tmp0);
   }
 }

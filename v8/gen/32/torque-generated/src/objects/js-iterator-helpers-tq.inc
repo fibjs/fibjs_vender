@@ -12,10 +12,10 @@ V8_EXPORT_PRIVATE bool IsJSIteratorHelper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSIteratorHelper : public P {
   static_assert(
-      std::is_same<JSIteratorHelper, D>::value,
+      std::is_same_v<JSIteratorHelper, D>,
       "Use this class as direct base for JSIteratorHelper.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSIteratorHelper.");
 
  public: 
@@ -60,7 +60,7 @@ class TorqueGeneratedJSIteratorHelper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSIteratorHelper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSIteratorHelper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSIteratorHelper, DAlias>,
         "class TorqueGeneratedJSIteratorHelper should be used as direct base for JSIteratorHelper.");
   }
 
@@ -78,10 +78,10 @@ V8_EXPORT_PRIVATE bool IsJSIteratorMapHelper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSIteratorMapHelper : public P {
   static_assert(
-      std::is_same<JSIteratorMapHelper, D>::value,
+      std::is_same_v<JSIteratorMapHelper, D>,
       "Use this class as direct base for JSIteratorMapHelper.");
   static_assert(
-      std::is_same<JSIteratorHelper, P>::value,
+      std::is_same_v<JSIteratorHelper, P>,
       "Pass in JSIteratorHelper as second template parameter for TorqueGeneratedJSIteratorMapHelper.");
 
  public: 
@@ -128,7 +128,7 @@ class TorqueGeneratedJSIteratorMapHelper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSIteratorMapHelper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSIteratorMapHelper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSIteratorMapHelper, DAlias>,
         "class TorqueGeneratedJSIteratorMapHelper should be used as direct base for JSIteratorMapHelper.");
   }
 
@@ -146,10 +146,10 @@ V8_EXPORT_PRIVATE bool IsJSIteratorFilterHelper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSIteratorFilterHelper : public P {
   static_assert(
-      std::is_same<JSIteratorFilterHelper, D>::value,
+      std::is_same_v<JSIteratorFilterHelper, D>,
       "Use this class as direct base for JSIteratorFilterHelper.");
   static_assert(
-      std::is_same<JSIteratorHelper, P>::value,
+      std::is_same_v<JSIteratorHelper, P>,
       "Pass in JSIteratorHelper as second template parameter for TorqueGeneratedJSIteratorFilterHelper.");
 
  public: 
@@ -196,7 +196,7 @@ class TorqueGeneratedJSIteratorFilterHelper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSIteratorFilterHelper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSIteratorFilterHelper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSIteratorFilterHelper, DAlias>,
         "class TorqueGeneratedJSIteratorFilterHelper should be used as direct base for JSIteratorFilterHelper.");
   }
 
@@ -214,10 +214,10 @@ V8_EXPORT_PRIVATE bool IsJSIteratorTakeHelper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSIteratorTakeHelper : public P {
   static_assert(
-      std::is_same<JSIteratorTakeHelper, D>::value,
+      std::is_same_v<JSIteratorTakeHelper, D>,
       "Use this class as direct base for JSIteratorTakeHelper.");
   static_assert(
-      std::is_same<JSIteratorHelper, P>::value,
+      std::is_same_v<JSIteratorHelper, P>,
       "Pass in JSIteratorHelper as second template parameter for TorqueGeneratedJSIteratorTakeHelper.");
 
  public: 
@@ -253,7 +253,7 @@ class TorqueGeneratedJSIteratorTakeHelper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSIteratorTakeHelper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSIteratorTakeHelper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSIteratorTakeHelper, DAlias>,
         "class TorqueGeneratedJSIteratorTakeHelper should be used as direct base for JSIteratorTakeHelper.");
   }
 
@@ -271,10 +271,10 @@ V8_EXPORT_PRIVATE bool IsJSIteratorDropHelper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSIteratorDropHelper : public P {
   static_assert(
-      std::is_same<JSIteratorDropHelper, D>::value,
+      std::is_same_v<JSIteratorDropHelper, D>,
       "Use this class as direct base for JSIteratorDropHelper.");
   static_assert(
-      std::is_same<JSIteratorHelper, P>::value,
+      std::is_same_v<JSIteratorHelper, P>,
       "Pass in JSIteratorHelper as second template parameter for TorqueGeneratedJSIteratorDropHelper.");
 
  public: 
@@ -310,7 +310,7 @@ class TorqueGeneratedJSIteratorDropHelper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSIteratorDropHelper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSIteratorDropHelper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSIteratorDropHelper, DAlias>,
         "class TorqueGeneratedJSIteratorDropHelper should be used as direct base for JSIteratorDropHelper.");
   }
 
@@ -328,10 +328,10 @@ V8_EXPORT_PRIVATE bool IsJSIteratorFlatMapHelper_NonInline(Tagged<HeapObject> o)
 template <class D, class P>
 class TorqueGeneratedJSIteratorFlatMapHelper : public P {
   static_assert(
-      std::is_same<JSIteratorFlatMapHelper, D>::value,
+      std::is_same_v<JSIteratorFlatMapHelper, D>,
       "Use this class as direct base for JSIteratorFlatMapHelper.");
   static_assert(
-      std::is_same<JSIteratorHelper, P>::value,
+      std::is_same_v<JSIteratorHelper, P>,
       "Pass in JSIteratorHelper as second template parameter for TorqueGeneratedJSIteratorFlatMapHelper.");
 
  public: 
@@ -406,7 +406,7 @@ class TorqueGeneratedJSIteratorFlatMapHelper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSIteratorFlatMapHelper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSIteratorFlatMapHelper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSIteratorFlatMapHelper, DAlias>,
         "class TorqueGeneratedJSIteratorFlatMapHelper should be used as direct base for JSIteratorFlatMapHelper.");
   }
 

@@ -16,7 +16,7 @@ Tagged<JSReceiver> TorqueGeneratedJSRegExpStringIterator<D, P>::iterating_reg_ex
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpStringIterator<D, P>::set_iterating_reg_exp(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kIteratingRegExpOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIteratingRegExpOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<String> TorqueGeneratedJSRegExpStringIterator<D, P>::iterated_string(PtrC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpStringIterator<D, P>::set_iterated_string(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kIteratedStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIteratedStringOffset, value, mode);
 }
@@ -54,7 +54,8 @@ int TorqueGeneratedJSRegExpStringIterator<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp-string-iterator.tq?l=16&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpStringIterator<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSRegExpStringIteratorFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>

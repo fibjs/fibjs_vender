@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSListFormat_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSListFormat : public P {
   static_assert(
-      std::is_same<JSListFormat, D>::value,
+      std::is_same_v<JSListFormat, D>,
       "Use this class as direct base for JSListFormat.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSListFormat.");
 
  public: 
@@ -63,7 +63,7 @@ class TorqueGeneratedJSListFormat : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSListFormat() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSListFormat, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSListFormat, DAlias>,
         "class TorqueGeneratedJSListFormat should be used as direct base for JSListFormat.");
   }
 

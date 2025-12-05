@@ -16,7 +16,7 @@ Tagged<String> TorqueGeneratedJSPluralRules<D, P>::locale(PtrComprCageBase cage_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedJSPluralRules<D, P>::set_locale(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
 }
@@ -31,7 +31,8 @@ int TorqueGeneratedJSPluralRules<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSPluralRules<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSPluralRulesFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=15&c=3
@@ -52,7 +53,7 @@ Tagged<Foreign> TorqueGeneratedJSPluralRules<D, P>::icu_plural_rules(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSPluralRules<D, P>::set_icu_plural_rules(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuPluralRulesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuPluralRulesOffset, value, mode);
 }
@@ -75,7 +76,7 @@ Tagged<Foreign> TorqueGeneratedJSPluralRules<D, P>::icu_number_formatter(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-plural-rules.tq?l=16&c=3
 template<class D, class P>
 void TorqueGeneratedJSPluralRules<D, P>::set_icu_number_formatter(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuNumberFormatterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuNumberFormatterOffset, value, mode);
 }

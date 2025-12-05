@@ -115,40 +115,40 @@ TNode<TrustedPointerT> LoadJSRegExpData_0(compiler::CodeAssemblerState* state_, 
 void StoreJSRegExpData_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o, TNode<TrustedPointerT> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-TNode<PrimitiveHeapObject> LoadJSRegExpSource_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o);
+TNode<Union<String, Undefined>> LoadJSRegExpSource_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
-void StoreJSRegExpSource_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o, TNode<PrimitiveHeapObject> p_v);
+void StoreJSRegExpSource_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o, TNode<Union<String, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
-TNode<Object> LoadJSRegExpFlags_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o);
+TNode<Union<Smi, Undefined>> LoadJSRegExpFlags_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
-void StoreJSRegExpFlags_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o, TNode<Object> p_v);
+void StoreJSRegExpFlags_0(compiler::CodeAssemblerState* state_, TNode<JSRegExp> p_o, TNode<Union<Smi, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
-TNode<Object> LoadJSRegExpResultIndex_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
+TNode<JSAny> LoadJSRegExpResultIndex_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
-void StoreJSRegExpResultIndex_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Object> p_v);
+void StoreJSRegExpResultIndex_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<JSAny> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
-TNode<Object> LoadJSRegExpResultInput_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
+TNode<JSAny> LoadJSRegExpResultInput_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
-void StoreJSRegExpResultInput_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Object> p_v);
+void StoreJSRegExpResultInput_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<JSAny> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
-TNode<Object> LoadJSRegExpResultGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
+TNode<JSAny> LoadJSRegExpResultGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
-void StoreJSRegExpResultGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Object> p_v);
+void StoreJSRegExpResultGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<JSAny> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
-TNode<HeapObject> LoadJSRegExpResultNames_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
+TNode<Union<FixedArray, Undefined>> LoadJSRegExpResultNames_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
-void StoreJSRegExpResultNames_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<HeapObject> p_v);
+void StoreJSRegExpResultNames_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Union<FixedArray, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=86&c=3
 TNode<String> LoadJSRegExpResultRegexpInput_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
@@ -163,16 +163,16 @@ TNode<Smi> LoadJSRegExpResultRegexpLastIndex_0(compiler::CodeAssemblerState* sta
 void StoreJSRegExpResultRegexpLastIndex_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
-TNode<Object> LoadJSRegExpResultWithIndicesIndices_0(compiler::CodeAssemblerState* state_, TNode<JSRegExpResult> p_o);
+TNode<JSAny> LoadJSRegExpResultWithIndicesIndices_0(compiler::CodeAssemblerState* state_, TNode<JSRegExpResult> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
-void StoreJSRegExpResultWithIndicesIndices_0(compiler::CodeAssemblerState* state_, TNode<JSRegExpResult> p_o, TNode<Object> p_v);
+void StoreJSRegExpResultWithIndicesIndices_0(compiler::CodeAssemblerState* state_, TNode<JSRegExpResult> p_o, TNode<JSAny> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
-TNode<Object> LoadJSRegExpResultIndicesGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
+TNode<JSAny> LoadJSRegExpResultIndicesGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
-void StoreJSRegExpResultIndicesGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<Object> p_v);
+void StoreJSRegExpResultIndicesGroups_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_o, TNode<JSAny> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=17&c=1
 TNode<RegExpData> DownCastForTorqueClass_RegExpData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);

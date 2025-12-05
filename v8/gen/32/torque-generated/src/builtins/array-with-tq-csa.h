@@ -7,7 +7,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-with.tq?l=6&c=1
-TNode<JSArray> TryFastPackedArrayWith_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<Number> p_len, TNode<Number> p_actualIndex, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Slow);
+TNode<JSArray> TryFastPackedArrayWith_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<Number> p_len, TNode<Number> p_actualIndex, TNode<JSAny> p_value, compiler::CodeAssemblerLabel* label_Slow);
 
 } // namespace internal
 } // namespace v8

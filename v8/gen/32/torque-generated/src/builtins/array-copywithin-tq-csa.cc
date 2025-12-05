@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-copywithin-tq-csa.h"
@@ -146,7 +146,7 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -167,44 +167,44 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
   TNode<JSReceiver> tmp0;
   TNode<Number> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Number> tmp4;
   TNode<Number> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<Number> tmp8;
   TNode<Number> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   TNode<Undefined> tmp12;
   TNode<BoolT> tmp13;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    tmp4 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3});
     tmp5 = ConvertAndClampRelativeIndex_0(state_, TNode<Number>{tmp4}, TNode<Number>{tmp1});
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp6});
-    tmp8 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7});
+    tmp8 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp7});
     tmp9 = ConvertAndClampRelativeIndex_0(state_, TNode<Number>{tmp8}, TNode<Number>{tmp1});
     tmp10 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp11 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp10});
     tmp12 = Undefined_0(state_);
-    tmp13 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp11}, TNode<HeapObject>{tmp12});
+    tmp13 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp11}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp12});
     ca_.Branch(tmp13, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{tmp1});
   }
 
   TNode<IntPtrT> tmp14;
-  TNode<Object> tmp15;
+  TNode<JSAny> tmp15;
   TNode<Number> tmp16;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp15 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp14});
-    tmp16 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp15});
+    tmp16 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp15});
     ca_.Goto(&block2, tmp16);
   }
 
@@ -297,19 +297,19 @@ TF_BUILTIN(ArrayPrototypeCopyWithin, CodeStubAssembler) {
     ca_.Bind(&block8, &phi_bb8_9, &phi_bb8_11, &phi_bb8_14);
     tmp35 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, parameter0, tmp0, phi_bb8_11);
     tmp36 = True_0(state_);
-    tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp35}, TNode<HeapObject>{tmp36});
+    tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp35}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp36});
     ca_.Branch(tmp37, &block11, std::vector<compiler::Node*>{phi_bb8_9, phi_bb8_11, phi_bb8_14}, &block12, std::vector<compiler::Node*>{phi_bb8_9, phi_bb8_11, phi_bb8_14});
   }
 
   TNode<Number> phi_bb11_9;
   TNode<Number> phi_bb11_11;
   TNode<Number> phi_bb11_14;
-  TNode<Object> tmp38;
-  TNode<Object> tmp39;
+  TNode<JSAny> tmp38;
+  TNode<JSAny> tmp39;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_9, &phi_bb11_11, &phi_bb11_14);
-    tmp38 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Object>{phi_bb11_11});
-    tmp39 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, parameter0, tmp0, phi_bb11_9, tmp38);
+    tmp38 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{tmp0}, TNode<JSAny>{phi_bb11_11});
+    tmp39 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, parameter0, tmp0, phi_bb11_9, tmp38);
     ca_.Goto(&block13, phi_bb11_9, phi_bb11_11, phi_bb11_14);
   }
 

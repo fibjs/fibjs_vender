@@ -83,6 +83,8 @@ namespace internal {
   V(NEONShiftImmediate)                 \
   V(NEONTable)                          \
   V(NEONPerm)                           \
+  V(NEONSHA3)                           \
+  V(Cpy)                                \
   V(Unallocated)                        \
   V(Unimplemented)
 

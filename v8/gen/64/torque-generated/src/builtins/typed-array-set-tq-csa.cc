@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-set-tq-csa.h"
@@ -102,7 +102,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -161,7 +161,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<UintPtrT> tmp8;
   if (block9.is_used()) {
     ca_.Bind(&block9);
@@ -170,7 +170,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
     compiler::CodeAssemblerLabel label9(&ca_);
     compiler::CodeAssemblerLabel label10(&ca_);
     compiler::CodeAssemblerLabel label11(&ca_);
-    tmp8 = ToUintPtr_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7}, &label9, &label10, &label11);
+    tmp8 = ToUintPtr_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp7}, &label9, &label10, &label11);
     ca_.Goto(&block14);
     if (label9.is_used()) {
       ca_.Bind(&label9);
@@ -250,7 +250,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   TNode<BoolT> phi_bb18_7;
   TNode<UintPtrT> phi_bb18_8;
   TNode<IntPtrT> tmp16;
-  TNode<Object> tmp17;
+  TNode<JSAny> tmp17;
   TNode<JSTypedArray> tmp18;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_7, &phi_bb18_8);
@@ -270,7 +270,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_7, &phi_bb23_8);
     compiler::CodeAssemblerLabel label20(&ca_);
-    TypedArrayPrototypeSetArray_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<JSTypedArray>{tmp0}, TNode<UintPtrT>{tmp14}, TNode<Object>{tmp17}, TNode<UintPtrT>{phi_bb23_8}, TNode<BoolT>{phi_bb23_7}, &label20);
+    TypedArrayPrototypeSetArray_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSTypedArray>{tmp0}, TNode<UintPtrT>{tmp14}, TNode<JSAny>{tmp17}, TNode<UintPtrT>{phi_bb23_8}, TNode<BoolT>{phi_bb23_7}, &label20);
     ca_.Goto(&block28, phi_bb23_7, phi_bb23_8, phi_bb23_8, phi_bb23_7);
     if (label20.is_used()) {
       ca_.Bind(&label20);
@@ -305,7 +305,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_7, &phi_bb24_8);
     compiler::CodeAssemblerLabel label24(&ca_);
-    TypedArrayPrototypeSetTypedArray_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TorqueStructAttachedJSTypedArrayAndLength_0{TNode<JSTypedArray>{tmp13}, TNode<UintPtrT>{tmp14}}, TorqueStructAttachedJSTypedArrayAndLength_0{TNode<JSTypedArray>{tmp21}, TNode<UintPtrT>{tmp22}}, TNode<UintPtrT>{phi_bb24_8}, TNode<BoolT>{phi_bb24_7}, &label24);
+    TypedArrayPrototypeSetTypedArray_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TorqueStructAttachedJSTypedArrayAndLength_0{TNode<JSTypedArray>{tmp13}, TNode<UintPtrT>{tmp14}}, TorqueStructAttachedJSTypedArrayAndLength_0{TNode<JSTypedArray>{tmp21}, TNode<UintPtrT>{tmp22}}, TNode<UintPtrT>{phi_bb24_8}, TNode<BoolT>{phi_bb24_7}, &label24);
     ca_.Goto(&block26, phi_bb24_7, phi_bb24_8, phi_bb24_8, phi_bb24_7);
     if (label24.is_used()) {
       ca_.Bind(&label24);
@@ -365,7 +365,7 @@ TF_BUILTIN(TypedArrayPrototypeSet, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=111&c=1
-void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<JSTypedArray> p_target, TNode<UintPtrT> p_targetLength, TNode<Object> p_arrayArg, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds) {
+void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TNode<JSTypedArray> p_target, TNode<UintPtrT> p_targetLength, TNode<JSAny> p_arrayArg, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -399,8 +399,8 @@ void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<Number> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{p_context}, TNode<Object>{p_arrayArg});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{p_context}, TNode<JSAny>{p_arrayArg});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp0});
     ca_.Branch(p_targetOffsetOverflowed, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -575,7 +575,7 @@ void TypedArrayPrototypeSetArray_0(compiler::CodeAssemblerState* state_, TNode<C
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-set.tq?l=171&c=1
-void TypedArrayPrototypeSetTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedTargetAndLength, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedSourceAndLength, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds) {
+void TypedArrayPrototypeSetTypedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedTargetAndLength, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedSourceAndLength, TNode<UintPtrT> p_targetOffset, TNode<BoolT> p_targetOffsetOverflowed, compiler::CodeAssemblerLabel* label_IfOffsetOutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -716,7 +716,7 @@ void TypedArrayPrototypeSetTypedArray_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp17;
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    tmp15 = FromConstexpr_uintptr_constexpr_uintptr_0(state_, JSArrayBuffer::kMaxByteLength);
+    tmp15 = CodeStubAssembler(state_).ArrayBufferMaxByteLength();
     tmp16 = CodeStubAssembler(state_).WordShr(TNode<UintPtrT>{tmp15}, TNode<UintPtrT>{tmp1});
     tmp17 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{p_attachedSourceAndLength.length}, TNode<UintPtrT>{tmp16});
     ca_.Branch(tmp17, &block21, std::vector<compiler::Node*>{}, &block22, std::vector<compiler::Node*>{});
@@ -734,7 +734,7 @@ void TypedArrayPrototypeSetTypedArray_0(compiler::CodeAssemblerState* state_, TN
   if (block22.is_used()) {
     ca_.Bind(&block22);
     tmp18 = CodeStubAssembler(state_).WordShl(TNode<UintPtrT>{p_attachedSourceAndLength.length}, TNode<UintPtrT>{tmp1});
-    tmp19 = FromConstexpr_uintptr_constexpr_uintptr_0(state_, JSArrayBuffer::kMaxByteLength);
+    tmp19 = CodeStubAssembler(state_).ArrayBufferMaxByteLength();
     tmp20 = CodeStubAssembler(state_).WordShr(TNode<UintPtrT>{tmp19}, TNode<UintPtrT>{tmp1});
     tmp21 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{p_targetOffset}, TNode<UintPtrT>{tmp20});
     ca_.Branch(tmp21, &block26, std::vector<compiler::Node*>{}, &block27, std::vector<compiler::Node*>{});

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
@@ -78,6 +78,7 @@
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
+#include "torque-generated/src/builtins/iterator-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
 #include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/promise-misc-tq-csa.h"
@@ -87,8 +88,8 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=24&c=1
-TNode<BoolT> HasAccessCheckFailed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_promiseFun, TNode<Object> p_executor) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=21&c=1
+TNode<BoolT> HasAccessCheckFailed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSAny> p_promiseFun, TNode<JSAny> p_executor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -101,7 +102,7 @@ TNode<BoolT> HasAccessCheckFailed_0(compiler::CodeAssemblerState* state_, TNode<
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    BranchIfAccessCheckFailed_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_nativeContext}, TNode<Object>{p_promiseFun}, TNode<Object>{p_executor}, &label0);
+    BranchIfAccessCheckFailed_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_nativeContext}, TNode<JSAny>{p_promiseFun}, TNode<JSAny>{p_executor}, &label0);
     ca_.Goto(&block4);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -137,11 +138,11 @@ TF_BUILTIN(PromiseConstructor, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kExecutor);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kJSNewTarget);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kExecutor);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -155,7 +156,7 @@ USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<JSPromise> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -164,7 +165,7 @@ USE(parameter2);
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Undefined_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -177,7 +178,7 @@ USE(parameter2);
   TNode<BoolT> tmp3;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp2 = Is_Callable_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
+    tmp2 = Is_Callable_JSAny_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter3});
     tmp3 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp2});
     ca_.Branch(tmp3, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
@@ -188,7 +189,7 @@ USE(parameter2);
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<JSFunction> tmp7;
   TNode<BoolT> tmp8;
@@ -197,7 +198,7 @@ USE(parameter2);
     tmp4 = PROMISE_FUNCTION_INDEX_0(state_);
     std::tie(tmp5, tmp6) = NativeContextSlot_NativeContext_JSFunction_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp4}).Flatten();
     tmp7 = CodeStubAssembler(state_).LoadReference<JSFunction>(CodeStubAssembler::Reference{tmp5, tmp6});
-    tmp8 = HasAccessCheckFailed_0(state_, TNode<Context>{parameter0}, TNode<NativeContext>{parameter0}, TNode<Object>{tmp7}, TNode<Object>{parameter3});
+    tmp8 = HasAccessCheckFailed_0(state_, TNode<Context>{parameter0}, TNode<NativeContext>{parameter0}, TNode<JSAny>{tmp7}, TNode<JSAny>{parameter3});
     ca_.Branch(tmp8, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
@@ -213,7 +214,7 @@ USE(parameter2);
   TNode<BoolT> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp7}, TNode<Object>{parameter2});
+    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp7}, TNode<Object>{parameter2});
     ca_.Branch(tmp10, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
@@ -244,11 +245,11 @@ USE(parameter2);
   TNode<JSFunction> tmp17;
   TNode<JSFunction> tmp18;
   TNode<Context> tmp19;
-  TNode<JSReceiver> tmp20;
-      TNode<Object> tmp22;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp20;
+      TNode<JSAny> tmp22;
   TNode<Undefined> tmp23;
-  TNode<Object> tmp24;
-      TNode<Object> tmp26;
+  TNode<JSAny> tmp24;
+      TNode<JSAny> tmp26;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_5);
     tmp16 = True_0(state_);
@@ -267,7 +268,7 @@ USE(parameter2);
     tmp23 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch25__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch25__label);
-    tmp24 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp20}, TNode<Object>{tmp23}, TNode<Object>{tmp17}, TNode<Object>{tmp18});
+    tmp24 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp20}, TNode<JSAny>{tmp23}, TNode<JSAny>{tmp17}, TNode<JSAny>{tmp18});
     }
     if (catch25__label.is_used()) {
       compiler::CodeAssemblerLabel catch25_skip(&ca_);
@@ -279,29 +280,29 @@ USE(parameter2);
     ca_.Goto(&block10);
   }
 
-  TNode<HeapObject> tmp27;
+  TNode<Union<Hole, JSMessageObject>> tmp27;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp27 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block11, tmp22, tmp27);
   }
 
-  TNode<HeapObject> tmp28;
+  TNode<Union<Hole, JSMessageObject>> tmp28;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp28 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block11, tmp26, tmp28);
   }
 
-  TNode<Object> phi_bb11_11;
-  TNode<HeapObject> phi_bb11_12;
+  TNode<JSAny> phi_bb11_11;
+  TNode<Union<Hole, JSMessageObject>> phi_bb11_12;
   TNode<Context> tmp29;
   TNode<IntPtrT> tmp30;
-  TNode<Object> tmp31;
+  TNode<Union<HeapObject, TaggedIndex>> tmp31;
   TNode<IntPtrT> tmp32;
   TNode<False> tmp33;
   TNode<Undefined> tmp34;
-  TNode<Object> tmp35;
+  TNode<JSAny> tmp35;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_11, &phi_bb11_12);
     tmp29 = (TNode<Context>{tmp19});
@@ -310,7 +311,7 @@ USE(parameter2);
     tmp33 = False_0(state_);
     CodeStubAssembler(state_).StoreReference<Boolean>(CodeStubAssembler::Reference{tmp31, tmp32}, tmp33);
     tmp34 = Undefined_0(state_);
-    tmp35 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp18}, TNode<Object>{tmp34}, TNode<Object>{phi_bb11_11});
+    tmp35 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp18}, TNode<JSAny>{tmp34}, TNode<JSAny>{phi_bb11_11});
     ca_.Goto(&block10);
   }
 
@@ -324,9 +325,9 @@ TF_BUILTIN(PromisePrototypeCatch, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kOnRejected);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kOnRejected);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -344,45 +345,26 @@ TF_BUILTIN(PromisePrototypeCatch, CodeStubAssembler) {
     ca_.Bind(&block2);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"src/builtins/promise-constructor.tq", 98});
+      pos_stack.push_back({"src/builtins/promise-constructor.tq", 95});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Is<NativeContext>(context)' failed", pos_stack);
     }
   }
 
   TNode<NativeContext> tmp1;
   TNode<Undefined> tmp2;
-  TNode<Object> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp3;
+  TNode<JSAny> tmp4;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp1 = UnsafeCast_NativeContext_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter0});
     tmp2 = Undefined_0(state_);
-    tmp3 = InvokeThen_1(state_, TNode<Context>{parameter0}, TNode<NativeContext>{tmp1}, TNode<Object>{parameter1}, TNode<Object>{tmp2}, TNode<Object>{parameter2});
+    tmp3 = InvokeThen_1(state_, TNode<Context>{parameter0}, TNode<NativeContext>{tmp1}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp2}, TNode<JSAny>{parameter2});
     tmp4 = UnsafeCast_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3});
     CodeStubAssembler(state_).Return(tmp4);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=65&c=14
-TNode<JSPromise> UnsafeCast_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<JSPromise> tmp0;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
-    ca_.Goto(&block6);
-  }
-
-    ca_.Bind(&block6);
-  return TNode<JSPromise>{tmp0};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=98&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=95&c=9
 TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -429,7 +411,7 @@ TNode<BoolT> Is_NativeContext_Context_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=99&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-constructor.tq?l=96&c=25
 TNode<NativeContext> UnsafeCast_NativeContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

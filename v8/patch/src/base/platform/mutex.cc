@@ -1,129 +1,93 @@
 
 #include "src/base/platform/mutex.h"
+#include "src/base/platform/platform.h"
 #include <exlib/include/fiber.h>
 
 namespace v8 {
 namespace base {
 
-#define _native_handle (*(exlib::Locker**)&native_handle_)
-#define _native_handle_rw (*(exlib::RWLocker**)&native_handle_)
+// Use reinterpret_cast to replace absl::Mutex with exlib::Locker
+#define _fiber_locker(m) (*(exlib::Locker**)&(m))
 
-    Mutex::Mutex()
-    {
-        _native_handle = new exlib::Locker(false);
+Mutex::Mutex()
+{
+    _fiber_locker(native_handle_) = new exlib::Locker(false);
 #ifdef DEBUG
-        level_ = 0;
+    level_ = 0;
 #endif
-    }
+}
 
-    Mutex::~Mutex()
-    {
-        delete _native_handle;
-        DCHECK_EQ(0, level_);
-    }
+Mutex::~Mutex()
+{
+    delete _fiber_locker(native_handle_);
+    DCHECK_EQ(0, level_);
+}
 
-    void Mutex::Lock()
-    {
-        _native_handle->lock();
-        AssertUnheldAndMark();
-    }
+void Mutex::Lock()
+{
+    _fiber_locker(native_handle_)->lock();
+    AssertUnheldAndMark();
+}
 
-    void Mutex::Unlock()
-    {
-        AssertHeldAndUnmark();
-        _native_handle->unlock();
-    }
+void Mutex::Unlock()
+{
+    AssertHeldAndUnmark();
+    _fiber_locker(native_handle_)->unlock();
+}
 
-    bool Mutex::TryLock()
-    {
-        if (!_native_handle->trylock())
-            return false;
-        AssertUnheldAndMark();
-        return true;
-    }
+bool Mutex::TryLock()
+{
+    if (!_fiber_locker(native_handle_)->trylock())
+        return false;
+    AssertUnheldAndMark();
+    return true;
+}
 
-    RecursiveMutex::RecursiveMutex()
-    {
-        _native_handle = new exlib::Locker(true);
-#ifdef DEBUG
-        level_ = 0;
-#endif
-    }
+RecursiveMutex::~RecursiveMutex()
+{
+    DCHECK_EQ(0, level_);
+}
 
-    RecursiveMutex::~RecursiveMutex()
-    {
-        delete _native_handle;
-        DCHECK_EQ(0, level_);
-    }
-
-    void RecursiveMutex::Lock()
-    {
-        _native_handle->lock();
-#ifdef DEBUG
-        DCHECK_LE(0, level_);
+void RecursiveMutex::Lock()
+{
+    int own_id = v8::base::OS::GetCurrentThreadId();
+    if (thread_id_ == own_id) {
         level_++;
-#endif
+        return;
     }
+    mutex_.Lock();
+    DCHECK_EQ(0, level_);
+    thread_id_ = own_id;
+    level_ = 1;
+}
 
-    void RecursiveMutex::Unlock()
-    {
+void RecursiveMutex::Unlock()
+{
 #ifdef DEBUG
-        DCHECK_LT(0, level_);
-        level_--;
+    int own_id = v8::base::OS::GetCurrentThreadId();
+    CHECK_EQ(thread_id_, own_id);
 #endif
-        _native_handle->unlock();
-    }
-
-    bool RecursiveMutex::TryLock()
-    {
-        if (!_native_handle->trylock())
-            return false;
-#ifdef DEBUG
-        DCHECK_LE(0, level_);
-        level_++;
-#endif
-        return true;
-    }
-
-    SharedMutex::SharedMutex()
-    {
-        _native_handle_rw = new exlib::RWLocker();
-    }
-
-    SharedMutex::~SharedMutex()
-    {
-        delete _native_handle_rw;
-    }
-
-    void SharedMutex::LockShared()
-    {
-        _native_handle_rw->rdlock();
-    }
-
-    void SharedMutex::LockExclusive()
-    {
-        _native_handle_rw->wrlock();
-    }
-
-    void SharedMutex::UnlockShared()
-    {
-        _native_handle_rw->rdunlock();
-    }
-
-    void SharedMutex::UnlockExclusive()
-    {
-        _native_handle_rw->wrunlock();
-    }
-
-    bool SharedMutex::TryLockShared()
-    {
-        return _native_handle_rw->tryrdlock();
-    }
-
-    bool SharedMutex::TryLockExclusive()
-    {
-        // return _native_handle_rw->tryrdlock();
-        return _native_handle_rw->trywrlock();
+    if ((--level_) == 0) {
+        thread_id_ = 0;
+        mutex_.Unlock();
     }
 }
-} // namespace v8::base
+
+bool RecursiveMutex::TryLock()
+{
+    int own_id = v8::base::OS::GetCurrentThreadId();
+    if (thread_id_ == own_id) {
+        level_++;
+        return true;
+    }
+    if (mutex_.TryLock()) {
+        DCHECK_EQ(0, level_);
+        thread_id_ = own_id;
+        level_ = 1;
+        return true;
+    }
+    return false;
+}
+
+}  // namespace base
+}  // namespace v8

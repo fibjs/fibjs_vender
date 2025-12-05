@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/constructor-tq-csa.h"
@@ -78,6 +78,7 @@
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frames-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
+#include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/feedback-vector-tq-csa.h"
 
 namespace v8 {
@@ -114,7 +115,7 @@ TF_BUILTIN(FastNewFunctionContextEval, CodeStubAssembler) {
   TNode<Context> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ConstructorBuiltinsAssembler(state_).FastNewFunctionContext(TNode<ScopeInfo>{parameter1}, TNode<Uint32T>{parameter2}, TNode<Context>{parameter0}, ScopeType::EVAL_SCOPE);
+    tmp0 = ConstructorBuiltinsAssembler(state_).FastNewFunctionContext(TNode<ScopeInfo>{parameter1}, TNode<Uint32T>{parameter2}, TNode<Context>{parameter0}, ScopeType::EVAL_SCOPE, ContextMode::kNoContextCells);
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -133,7 +134,26 @@ TF_BUILTIN(FastNewFunctionContextFunction, CodeStubAssembler) {
   TNode<Context> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ConstructorBuiltinsAssembler(state_).FastNewFunctionContext(TNode<ScopeInfo>{parameter1}, TNode<Uint32T>{parameter2}, TNode<Context>{parameter0}, ScopeType::FUNCTION_SCOPE);
+    tmp0 = ConstructorBuiltinsAssembler(state_).FastNewFunctionContext(TNode<ScopeInfo>{parameter1}, TNode<Uint32T>{parameter2}, TNode<Context>{parameter0}, ScopeType::FUNCTION_SCOPE, ContextMode::kNoContextCells);
+    CodeStubAssembler(state_).Return(tmp0);
+  }
+}
+
+TF_BUILTIN(FastNewFunctionContextFunctionWithCells, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  USE(parameter0);
+  TNode<ScopeInfo> parameter1 = UncheckedParameter<ScopeInfo>(Descriptor::kScopeInfo);
+  USE(parameter1);
+  TNode<Uint32T> parameter2 = UncheckedParameter<Uint32T>(Descriptor::kSlots);
+  USE(parameter2);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Context> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = ConstructorBuiltinsAssembler(state_).FastNewFunctionContext(TNode<ScopeInfo>{parameter1}, TNode<Uint32T>{parameter2}, TNode<Context>{parameter0}, ScopeType::FUNCTION_SCOPE, ContextMode::kHasContextCells);
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -165,7 +185,7 @@ TF_BUILTIN(CreateShallowArrayLiteral, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
   USE(parameter0);
-  TNode<HeapObject> parameter1 = UncheckedParameter<HeapObject>(Descriptor::kMaybeFeedbackVector);
+  TNode<Union<FeedbackVector, Undefined>> parameter1 = UncheckedParameter<Union<FeedbackVector, Undefined>>(Descriptor::kMaybeFeedbackVector);
   USE(parameter1);
   TNode<TaggedIndex> parameter2 = UncheckedParameter<TaggedIndex>(Descriptor::kSlot);
   USE(parameter2);
@@ -249,7 +269,7 @@ TF_BUILTIN(CreateShallowObjectLiteral, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
   USE(parameter0);
-  TNode<HeapObject> parameter1 = UncheckedParameter<HeapObject>(Descriptor::kMaybeFeedbackVector);
+  TNode<Union<FeedbackVector, Undefined>> parameter1 = UncheckedParameter<Union<FeedbackVector, Undefined>>(Descriptor::kMaybeFeedbackVector);
   USE(parameter1);
   TNode<TaggedIndex> parameter2 = UncheckedParameter<TaggedIndex>(Descriptor::kSlot);
   USE(parameter2);
@@ -319,12 +339,12 @@ TF_BUILTIN(ObjectConstructor, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
-USE(parameter2);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kJSNewTarget);
+  USE(parameter2);
   TNode<JSFunction> parameter3 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter3);
+  USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -346,7 +366,7 @@ USE(parameter3);
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Undefined_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -360,7 +380,7 @@ USE(parameter3);
   TNode<BoolT> tmp3;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{parameter3});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{parameter3});
     ca_.Goto(&block5, tmp3);
   }
 
@@ -371,7 +391,7 @@ USE(parameter3);
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<BoolT> tmp7;
   if (block1.is_used()) {
@@ -395,7 +415,7 @@ USE(parameter3);
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Goto(&block11, tmp10);
   }
 
@@ -417,7 +437,7 @@ USE(parameter3);
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp12 = Null_0(state_);
-    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<HeapObject>{tmp12});
+    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp12});
     ca_.Goto(&block14, tmp13);
   }
 
@@ -475,12 +495,12 @@ TF_BUILTIN(NumberConstructor, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
-USE(parameter2);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kJSNewTarget);
+  USE(parameter2);
   TNode<JSFunction> parameter3 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter3);
+  USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -500,13 +520,13 @@ USE(parameter3);
   }
 
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   TNode<Number> tmp5;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp4 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp3});
-    tmp5 = CodeStubAssembler(state_).ToNumber(TNode<Context>{parameter0}, TNode<Object>{tmp4}, CodeStubAssembler::BigIntHandling::kConvertToNumber);
+    tmp5 = CodeStubAssembler(state_).ToNumber(TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, CodeStubAssembler::BigIntHandling::kConvertToNumber);
     ca_.Goto(&block2, tmp5);
   }
 
@@ -516,7 +536,7 @@ USE(parameter3);
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_8);
     tmp6 = Undefined_0(state_);
-    tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp6});
+    tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp6});
     ca_.Branch(tmp7, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -537,7 +557,7 @@ USE(parameter3);
     tmp10 = ca_.CallBuiltin<JSObject>(Builtin::kFastNewObject, parameter0, tmp8, tmp9);
     tmp11 = UnsafeCast_JSPrimitiveWrapper_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp10});
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp11, tmp12}, phi_bb2_8);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp11, tmp12}, phi_bb2_8);
     arguments.PopAndReturn(tmp11);
   }
 }
@@ -546,7 +566,7 @@ TF_BUILTIN(GenericLazyDeoptContinuation, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kResult);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kResult);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);

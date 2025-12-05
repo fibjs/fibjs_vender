@@ -10,10 +10,10 @@ V8_EXPORT_PRIVATE bool IsJSArgumentsObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSArgumentsObject : public P {
   static_assert(
-      std::is_same<JSArgumentsObject, D>::value,
+      std::is_same_v<JSArgumentsObject, D>,
       "Use this class as direct base for JSArgumentsObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSArgumentsObject.");
 
  public: 
@@ -38,7 +38,7 @@ class TorqueGeneratedJSArgumentsObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSArgumentsObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSArgumentsObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSArgumentsObject, DAlias>,
         "class TorqueGeneratedJSArgumentsObject should be used as direct base for JSArgumentsObject.");
   }
 
@@ -52,10 +52,10 @@ class TorqueGeneratedJSArgumentsObject : public P {
 template <class D, class P>
 class TorqueGeneratedJSSloppyArgumentsObject : public P {
   static_assert(
-      std::is_same<JSSloppyArgumentsObject, D>::value,
+      std::is_same_v<JSSloppyArgumentsObject, D>,
       "Use this class as direct base for JSSloppyArgumentsObject.");
   static_assert(
-      std::is_same<JSArgumentsObject, P>::value,
+      std::is_same_v<JSArgumentsObject, P>,
       "Pass in JSArgumentsObject as second template parameter for TorqueGeneratedJSSloppyArgumentsObject.");
 
  public: 
@@ -98,7 +98,7 @@ class TorqueGeneratedJSSloppyArgumentsObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSloppyArgumentsObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSloppyArgumentsObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSloppyArgumentsObject, DAlias>,
         "class TorqueGeneratedJSSloppyArgumentsObject should be used as direct base for JSSloppyArgumentsObject.");
   }
 
@@ -112,10 +112,10 @@ class TorqueGeneratedJSSloppyArgumentsObject : public P {
 template <class D, class P>
 class TorqueGeneratedJSStrictArgumentsObject : public P {
   static_assert(
-      std::is_same<JSStrictArgumentsObject, D>::value,
+      std::is_same_v<JSStrictArgumentsObject, D>,
       "Use this class as direct base for JSStrictArgumentsObject.");
   static_assert(
-      std::is_same<JSArgumentsObject, P>::value,
+      std::is_same_v<JSArgumentsObject, P>,
       "Pass in JSArgumentsObject as second template parameter for TorqueGeneratedJSStrictArgumentsObject.");
 
  public: 
@@ -147,7 +147,7 @@ class TorqueGeneratedJSStrictArgumentsObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSStrictArgumentsObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSStrictArgumentsObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSStrictArgumentsObject, DAlias>,
         "class TorqueGeneratedJSStrictArgumentsObject should be used as direct base for JSStrictArgumentsObject.");
   }
 
@@ -165,10 +165,10 @@ V8_EXPORT_PRIVATE bool IsAliasedArgumentsEntry_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedAliasedArgumentsEntry : public P {
   static_assert(
-      std::is_same<AliasedArgumentsEntry, D>::value,
+      std::is_same_v<AliasedArgumentsEntry, D>,
       "Use this class as direct base for AliasedArgumentsEntry.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedAliasedArgumentsEntry.");
 
  public: 
@@ -214,7 +214,7 @@ class TorqueGeneratedAliasedArgumentsEntry : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedAliasedArgumentsEntry() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedAliasedArgumentsEntry, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedAliasedArgumentsEntry, DAlias>,
         "class TorqueGeneratedAliasedArgumentsEntry should be used as direct base for AliasedArgumentsEntry.");
   }
 

@@ -9,10 +9,10 @@ V8_EXPORT_PRIVATE bool IsMicrotask_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedMicrotask : public P {
   static_assert(
-      std::is_same<Microtask, D>::value,
+      std::is_same_v<Microtask, D>,
       "Use this class as direct base for Microtask.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedMicrotask.");
 
  public: 
@@ -45,7 +45,7 @@ class TorqueGeneratedMicrotask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedMicrotask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedMicrotask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedMicrotask, DAlias>,
         "class TorqueGeneratedMicrotask should be used as direct base for Microtask.");
   }
 
@@ -63,10 +63,10 @@ V8_EXPORT_PRIVATE bool IsCallbackTask_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedCallbackTask : public P {
   static_assert(
-      std::is_same<CallbackTask, D>::value,
+      std::is_same_v<CallbackTask, D>,
       "Use this class as direct base for CallbackTask.");
   static_assert(
-      std::is_same<Microtask, P>::value,
+      std::is_same_v<Microtask, P>,
       "Pass in Microtask as second template parameter for TorqueGeneratedCallbackTask.");
 
  public: 
@@ -124,7 +124,7 @@ class TorqueGeneratedCallbackTask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedCallbackTask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedCallbackTask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedCallbackTask, DAlias>,
         "class TorqueGeneratedCallbackTask should be used as direct base for CallbackTask.");
   }
 
@@ -142,10 +142,10 @@ V8_EXPORT_PRIVATE bool IsCallableTask_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedCallableTask : public P {
   static_assert(
-      std::is_same<CallableTask, D>::value,
+      std::is_same_v<CallableTask, D>,
       "Use this class as direct base for CallableTask.");
   static_assert(
-      std::is_same<Microtask, P>::value,
+      std::is_same_v<Microtask, P>,
       "Pass in Microtask as second template parameter for TorqueGeneratedCallableTask.");
 
  public: 
@@ -203,7 +203,7 @@ class TorqueGeneratedCallableTask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedCallableTask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedCallableTask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedCallableTask, DAlias>,
         "class TorqueGeneratedCallableTask should be used as direct base for CallableTask.");
   }
 

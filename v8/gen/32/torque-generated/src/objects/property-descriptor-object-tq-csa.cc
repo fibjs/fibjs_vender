@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/property-descriptor-object-tq-csa.h"
@@ -346,18 +346,18 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
   }
 
   TNode<IntPtrT> tmp37;
-  TNode<Object> tmp38;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp38;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp40;
   TNode<BoolT> tmp41;
   TNode<BoolT> tmp42;
   if (block26.is_used()) {
     ca_.Bind(&block26);
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp38 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_newDesc, tmp37});
+    tmp38 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_newDesc, tmp37});
     tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp40 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp39});
-    tmp41 = SameValue_0(state_, TNode<Object>{tmp38}, TNode<Object>{tmp40});
+    tmp40 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_current, tmp39});
+    tmp41 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp38}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp40});
     tmp42 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp41});
     ca_.Goto(&block28, tmp42);
   }
@@ -394,18 +394,18 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
   }
 
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp49;
   TNode<IntPtrT> tmp50;
-  TNode<Object> tmp51;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp51;
   TNode<BoolT> tmp52;
   TNode<BoolT> tmp53;
   if (block31.is_used()) {
     ca_.Bind(&block31);
     tmp48 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp49 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_newDesc, tmp48});
+    tmp49 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_newDesc, tmp48});
     tmp50 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp51 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp50});
-    tmp52 = SameValue_0(state_, TNode<Object>{tmp49}, TNode<Object>{tmp51});
+    tmp51 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_current, tmp50});
+    tmp52 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp49}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp51});
     tmp53 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp52});
     ca_.Goto(&block33, tmp53);
   }
@@ -478,18 +478,18 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
   }
 
   TNode<IntPtrT> tmp67;
-  TNode<Object> tmp68;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp68;
   TNode<IntPtrT> tmp69;
-  TNode<Object> tmp70;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp70;
   TNode<BoolT> tmp71;
   TNode<BoolT> tmp72;
   if (block40.is_used()) {
     ca_.Bind(&block40);
     tmp67 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp68 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_newDesc, tmp67});
+    tmp68 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_newDesc, tmp67});
     tmp69 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp70 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp69});
-    tmp71 = SameValue_0(state_, TNode<Object>{tmp68}, TNode<Object>{tmp70});
+    tmp70 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_current, tmp69});
+    tmp71 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp68}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp70});
     tmp72 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp71});
     ca_.Goto(&block42, tmp72);
   }
@@ -548,7 +548,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* stat
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=99&c=1
-TNode<BoolT> IsCompatiblePropertyDescriptor_1(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<HeapObject> p_newDesc, TNode<PropertyDescriptorObject> p_current) {
+TNode<BoolT> IsCompatiblePropertyDescriptor_1(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<Union<PropertyDescriptorObject, Undefined>> p_newDesc, TNode<PropertyDescriptorObject> p_current) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -595,7 +595,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_1(compiler::CodeAssemblerState* stat
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=114&c=1
-TNode<BoolT> IsCompatiblePropertyDescriptor_2(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<HeapObject> p_newDesc, TNode<HeapObject> p_current) {
+TNode<BoolT> IsCompatiblePropertyDescriptor_2(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<Union<PropertyDescriptorObject, Undefined>> p_newDesc, TNode<Union<PropertyDescriptorObject, Undefined>> p_current) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -620,7 +620,7 @@ TNode<BoolT> IsCompatiblePropertyDescriptor_2(compiler::CodeAssemblerState* stat
   TNode<BoolT> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp2 = IsCompatiblePropertyDescriptor_1(state_, TNode<BoolT>{p_extensible}, TNode<HeapObject>{p_newDesc}, TNode<PropertyDescriptorObject>{ca_.UncheckedCast<PropertyDescriptorObject>(p_current)});
+    tmp2 = IsCompatiblePropertyDescriptor_1(state_, TNode<BoolT>{p_extensible}, TNode<Union<PropertyDescriptorObject, Undefined>>{p_newDesc}, TNode<PropertyDescriptorObject>{ca_.UncheckedCast<PropertyDescriptorObject>(p_current)});
     ca_.Goto(&block1, tmp2);
   }
 
@@ -699,7 +699,7 @@ void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<Pr
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_desc, tmp6}, tmp9);
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp11 = Undefined_0(state_);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_desc, tmp10}, tmp11);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_desc, tmp10}, tmp11);
     ca_.Goto(&block6);
   }
 
@@ -772,7 +772,7 @@ void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<Pr
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_desc, tmp28}, tmp31);
     tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp33 = Undefined_0(state_);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_desc, tmp32}, tmp33);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_desc, tmp32}, tmp33);
     ca_.Goto(&block10);
   }
 
@@ -804,7 +804,7 @@ void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<Pr
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{p_desc, tmp38}, tmp41);
     tmp42 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp43 = Undefined_0(state_);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_desc, tmp42}, tmp43);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_desc, tmp42}, tmp43);
     ca_.Goto(&block12);
   }
 
@@ -934,7 +934,7 @@ void StorePropertyDescriptorObjectFlags_0(compiler::CodeAssemblerState* state_, 
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-TNode<Object> LoadPropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o) {
+TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadPropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -942,20 +942,20 @@ TNode<Object> LoadPropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* 
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-void StorePropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v) {
+void StorePropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -966,7 +966,7 @@ void StorePropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -974,7 +974,7 @@ void StorePropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, 
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-TNode<Object> LoadPropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o) {
+TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadPropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -982,20 +982,20 @@ TNode<Object> LoadPropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* st
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-void StorePropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v) {
+void StorePropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1006,7 +1006,7 @@ void StorePropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TN
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -1014,7 +1014,7 @@ void StorePropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TN
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-TNode<Object> LoadPropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o) {
+TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadPropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1022,20 +1022,20 @@ TNode<Object> LoadPropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* st
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-void StorePropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v) {
+void StorePropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1046,7 +1046,7 @@ void StorePropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TN
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -1386,17 +1386,17 @@ TNode<BoolT> Method_PropertyDescriptorObject_IsEmptyOrEquivalentTo_0(compiler::C
 
   TNode<BoolT> phi_bb15_2;
   TNode<IntPtrT> tmp30;
-  TNode<Object> tmp31;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp31;
   TNode<IntPtrT> tmp32;
-  TNode<Object> tmp33;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp33;
   TNode<BoolT> tmp34;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_2);
     tmp30 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp31 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_this, tmp30});
+    tmp31 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_this, tmp30});
     tmp32 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp33 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp32});
-    tmp34 = SameValue_0(state_, TNode<Object>{tmp31}, TNode<Object>{tmp33});
+    tmp33 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_current, tmp32});
+    tmp34 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp31}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp33});
     ca_.Goto(&block16, phi_bb15_2, tmp34);
   }
 
@@ -1510,17 +1510,17 @@ TNode<BoolT> Method_PropertyDescriptorObject_IsEmptyOrEquivalentTo_0(compiler::C
 
   TNode<BoolT> phi_bb27_2;
   TNode<IntPtrT> tmp54;
-  TNode<Object> tmp55;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp55;
   TNode<IntPtrT> tmp56;
-  TNode<Object> tmp57;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp57;
   TNode<BoolT> tmp58;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_2);
     tmp54 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp55 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_this, tmp54});
+    tmp55 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_this, tmp54});
     tmp56 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp57 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp56});
-    tmp58 = SameValue_0(state_, TNode<Object>{tmp55}, TNode<Object>{tmp57});
+    tmp57 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_current, tmp56});
+    tmp58 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp55}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp57});
     ca_.Goto(&block28, phi_bb27_2, tmp58);
   }
 
@@ -1570,17 +1570,17 @@ TNode<BoolT> Method_PropertyDescriptorObject_IsEmptyOrEquivalentTo_0(compiler::C
 
   TNode<BoolT> phi_bb33_2;
   TNode<IntPtrT> tmp65;
-  TNode<Object> tmp66;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp66;
   TNode<IntPtrT> tmp67;
-  TNode<Object> tmp68;
+  TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp68;
   TNode<BoolT> tmp69;
   if (block33.is_used()) {
     ca_.Bind(&block33, &phi_bb33_2);
     tmp65 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp66 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_this, tmp65});
+    tmp66 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_this, tmp65});
     tmp67 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp68 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_current, tmp67});
-    tmp69 = SameValue_0(state_, TNode<Object>{tmp66}, TNode<Object>{tmp68});
+    tmp68 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{p_current, tmp67});
+    tmp69 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp66}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp68});
     ca_.Goto(&block34, phi_bb33_2, tmp69);
   }
 
@@ -1638,7 +1638,7 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(163), static_cast<InstanceType>(163))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(161), static_cast<InstanceType>(161))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1659,7 +1659,7 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<PropertyDescriptorObject>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -1681,7 +1681,7 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(163));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(161));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -1715,12 +1715,12 @@ TNode<PropertyDescriptorObject> DownCastForTorqueClass_PropertyDescriptorObject_
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(163), static_cast<InstanceType>(163))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(161), static_cast<InstanceType>(161))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(163));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(161));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});

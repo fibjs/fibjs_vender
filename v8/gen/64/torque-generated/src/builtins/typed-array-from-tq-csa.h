@@ -8,6 +8,9 @@ namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-from.tq?l=8&c=1
 const char* kBuiltinNameFrom_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-from.tq?l=20&c=1
+TNode<BoolT> CanCopyElementsFastNumber_0(compiler::CodeAssemblerState* state_, TNode<JSArray> p_source);
+
 } // namespace internal
 } // namespace v8
 

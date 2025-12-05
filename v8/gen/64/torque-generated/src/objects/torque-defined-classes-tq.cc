@@ -1,39 +1,14 @@
 #include "src/objects/torque-defined-classes-inl.h"
 
 #include "torque-generated/class-verifiers.h"
-#include "src/objects/instance-type-inl.h"
+#include "src/objects/objects-inl.h"
 
-#include "src/objects/torque-defined-classes.h"
+#include "src/objects/instance-type-inl.h"
 
 namespace v8 {
 namespace internal {
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=27&c=1
-class TorqueGeneratedSloppyArgumentsElementsAsserts {
-  static constexpr int kStartOfStrongFieldsOffset = FixedArrayBase::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=29&c=3
-  static constexpr int kContextOffset = FixedArrayBase::kHeaderSize;
-  static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=30&c=3
-  static constexpr int kArgumentsOffset = kContextOffsetEnd + 1;
-  static constexpr int kArgumentsOffsetEnd = kArgumentsOffset + kTaggedSize - 1;
-  static constexpr int kHeaderSize = kArgumentsOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
-  static constexpr int kMappedEntriesOffset = kArgumentsOffsetEnd + 1;
-  static constexpr int kMappedEntriesOffsetEnd = kMappedEntriesOffset + 0 - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kMappedEntriesOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kMappedEntriesOffsetEnd + 1;
-
-  static_assert(kContextOffset == SloppyArgumentsElements::kContextOffset,
-                "Values of SloppyArgumentsElements::kContextOffset defined in Torque and C++ do not match");
-  static_assert(kArgumentsOffset == SloppyArgumentsElements::kArgumentsOffset,
-                "Values of SloppyArgumentsElements::kArgumentsOffset defined in Torque and C++ do not match");
-  static_assert(kMappedEntriesOffset == SloppyArgumentsElements::kMappedEntriesOffset,
-                "Values of SloppyArgumentsElements::kMappedEntriesOffset defined in Torque and C++ do not match");
-};
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=43&c=1
 bool IsStrongDescriptorArray_NonInline(Tagged<HeapObject> o) {
   return IsStrongDescriptorArray(o);
 }
@@ -47,7 +22,7 @@ void TorqueGeneratedStrongDescriptorArray<StrongDescriptorArray, DescriptorArray
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=763&c=1
 bool IsInternalClass_NonInline(Tagged<HeapObject> o) {
   return IsInternalClass(o);
 }
@@ -61,7 +36,7 @@ void TorqueGeneratedInternalClass<InternalClass, HeapObject>::InternalClassVerif
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=829&c=1
 bool IsSmiPair_NonInline(Tagged<HeapObject> o) {
   return IsSmiPair(o);
 }
@@ -75,7 +50,7 @@ void TorqueGeneratedSmiPair<SmiPair, HeapObject>::SmiPairVerify(Isolate* isolate
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=930&c=1
 bool IsSmiBox_NonInline(Tagged<HeapObject> o) {
   return IsSmiBox(o);
 }
@@ -89,7 +64,7 @@ void TorqueGeneratedSmiBox<SmiBox, HeapObject>::SmiBoxVerify(Isolate* isolate) {
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1181&c=1
 bool IsExportedSubClassBase_NonInline(Tagged<HeapObject> o) {
   return IsExportedSubClassBase(o);
 }
@@ -103,7 +78,7 @@ void TorqueGeneratedExportedSubClassBase<ExportedSubClassBase, HeapObject>::Expo
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1174&c=1
 bool IsExportedSubClass_NonInline(Tagged<HeapObject> o) {
   return IsExportedSubClass(o);
 }
@@ -117,7 +92,7 @@ void TorqueGeneratedExportedSubClass<ExportedSubClass, ExportedSubClassBase>::Ex
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
 bool IsAbstractInternalClass_NonInline(Tagged<HeapObject> o) {
   return IsAbstractInternalClass(o);
 }
@@ -131,7 +106,7 @@ void TorqueGeneratedAbstractInternalClass<AbstractInternalClass, HeapObject>::Ab
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
 bool IsAbstractInternalClassSubclass1_NonInline(Tagged<HeapObject> o) {
   return IsAbstractInternalClassSubclass1(o);
 }
@@ -145,7 +120,7 @@ void TorqueGeneratedAbstractInternalClassSubclass1<AbstractInternalClassSubclass
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=1
 bool IsAbstractInternalClassSubclass2_NonInline(Tagged<HeapObject> o) {
   return IsAbstractInternalClassSubclass2(o);
 }
@@ -159,7 +134,7 @@ void TorqueGeneratedAbstractInternalClassSubclass2<AbstractInternalClassSubclass
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=1
 bool IsInternalClassWithStructElements_NonInline(Tagged<HeapObject> o) {
   return IsInternalClassWithStructElements(o);
 }
@@ -173,7 +148,7 @@ void TorqueGeneratedInternalClassWithStructElements<InternalClassWithStructEleme
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=1
 bool IsExportedSubClass2_NonInline(Tagged<HeapObject> o) {
   return IsExportedSubClass2(o);
 }
@@ -201,7 +176,7 @@ void TorqueGeneratedSortState<SortState, HeapObject>::SortStateVerify(Isolate* i
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=47&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=66&c=1
 bool IsWasmFastApiCallData_NonInline(Tagged<HeapObject> o) {
   return IsWasmFastApiCallData(o);
 }
@@ -215,7 +190,7 @@ void TorqueGeneratedWasmFastApiCallData<WasmFastApiCallData, HeapObject>::WasmFa
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=275&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=312&c=1
 bool IsWasmStringViewIter_NonInline(Tagged<HeapObject> o) {
   return IsWasmStringViewIter(o);
 }

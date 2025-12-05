@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
@@ -80,6 +80,7 @@
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-match-all-tq-csa.h"
+#include "torque-generated/src/builtins/regexp-match-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-replace-tq-csa.h"
 #include "torque-generated/src/builtins/regexp-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
@@ -91,8 +92,8 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=23&c=1
-TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_matchesElements, TNode<IntPtrT> p_matchesCapacity, TNode<String> p_string, TNode<JSReceiver> p_replaceFn) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=27&c=1
+TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_matchesElements, TNode<IntPtrT> p_matchesCapacity, TNode<String> p_string, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_replaceFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -139,7 +140,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
 
   TNode<Smi> phi_bb2_5;
   TNode<IntPtrT> phi_bb2_6;
-  TNode<Object> tmp3;
+  TNode<Union<HeapObject, TaggedIndex>> tmp3;
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<UintPtrT> tmp6;
@@ -162,7 +163,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   TNode<IntPtrT> phi_bb10_17;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<Object> tmp13;
   TNode<Smi> tmp14;
@@ -170,7 +171,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
     ca_.Bind(&block10, &phi_bb10_5, &phi_bb10_6, &phi_bb10_11, &phi_bb10_12, &phi_bb10_16, &phi_bb10_17);
     tmp9 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb10_17});
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{tmp9});
-    std::tie(tmp11, tmp12) = NewReference_Object_0(state_, TNode<Object>{tmp3}, TNode<IntPtrT>{tmp10}).Flatten();
+    std::tie(tmp11, tmp12) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp3}, TNode<IntPtrT>{tmp10}).Flatten();
     tmp13 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp11, tmp12});
     compiler::CodeAssemblerLabel label15(&ca_);
     tmp14 = Cast_Smi_0(state_, TNode<Object>{tmp13}, &label15);
@@ -240,7 +241,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
 
   TNode<Smi> phi_bb19_5;
   TNode<IntPtrT> phi_bb19_6;
-  TNode<Object> tmp27;
+  TNode<Union<HeapObject, TaggedIndex>> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
@@ -262,7 +263,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   TNode<Smi> phi_bb25_5;
   TNode<IntPtrT> tmp35;
   TNode<IntPtrT> tmp36;
-  TNode<Object> tmp37;
+  TNode<Union<HeapObject, TaggedIndex>> tmp37;
   TNode<IntPtrT> tmp38;
   TNode<Object> tmp39;
   TNode<Smi> tmp40;
@@ -271,7 +272,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
     ca_.Bind(&block25, &phi_bb25_5);
     tmp35 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp31});
     tmp36 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp28}, TNode<IntPtrT>{tmp35});
-    std::tie(tmp37, tmp38) = NewReference_Object_0(state_, TNode<Object>{tmp27}, TNode<IntPtrT>{tmp36}).Flatten();
+    std::tie(tmp37, tmp38) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp27}, TNode<IntPtrT>{tmp36}).Flatten();
     tmp39 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp37, tmp38});
     tmp40 = UnsafeCast_Smi_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp39});
     tmp41 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp40}, TNode<Smi>{tmp14});
@@ -308,9 +309,9 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   TNode<Smi> phi_bb31_5;
   TNode<IntPtrT> phi_bb31_6;
   TNode<Undefined> tmp44;
-  TNode<Object> tmp45;
+  TNode<JSAny> tmp45;
   TNode<String> tmp46;
-  TNode<Object> tmp47;
+  TNode<Union<HeapObject, TaggedIndex>> tmp47;
   TNode<IntPtrT> tmp48;
   TNode<IntPtrT> tmp49;
   TNode<UintPtrT> tmp50;
@@ -319,8 +320,8 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   if (block31.is_used()) {
     ca_.Bind(&block31, &phi_bb31_5, &phi_bb31_6);
     tmp44 = Undefined_0(state_);
-    tmp45 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{p_replaceFn}, TNode<Object>{tmp44}, TNode<Object>{tmp16}, TNode<Object>{phi_bb31_5}, TNode<Object>{p_string});
-    tmp46 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{tmp45});
+    tmp45 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{p_replaceFn}, TNode<JSAny>{tmp44}, TNode<JSAny>{tmp16}, TNode<JSAny>{phi_bb31_5}, TNode<JSAny>{p_string});
+    tmp46 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp45});
     std::tie(tmp47, tmp48, tmp49) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{p_matchesElements}).Flatten();
     tmp50 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb31_6});
     tmp51 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp49});
@@ -336,7 +337,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   TNode<IntPtrT> phi_bb37_21;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
-  TNode<Object> tmp55;
+  TNode<Union<HeapObject, TaggedIndex>> tmp55;
   TNode<IntPtrT> tmp56;
   TNode<Smi> tmp57;
   TNode<Smi> tmp58;
@@ -344,7 +345,7 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
     ca_.Bind(&block37, &phi_bb37_5, &phi_bb37_6, &phi_bb37_15, &phi_bb37_16, &phi_bb37_20, &phi_bb37_21);
     tmp53 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb37_21});
     tmp54 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp48}, TNode<IntPtrT>{tmp53});
-    std::tie(tmp55, tmp56) = NewReference_Object_0(state_, TNode<Object>{tmp47}, TNode<IntPtrT>{tmp54}).Flatten();
+    std::tie(tmp55, tmp56) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp47}, TNode<IntPtrT>{tmp54}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp55, tmp56}, tmp46);
     tmp57 = CodeStubAssembler(state_).LoadStringLengthAsSmi(TNode<String>{tmp16});
     tmp58 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb37_5}, TNode<Smi>{tmp57});
@@ -405,8 +406,8 @@ TNode<IntPtrT> RegExpReplaceCallableNoExplicitCaptures_0(compiler::CodeAssembler
   return TNode<IntPtrT>{phi_bb45_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=71&c=1
-TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_matchesElements, TNode<IntPtrT> p_matchesCapacity, TNode<JSReceiver> p_replaceFn) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=75&c=1
+TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArray> p_matchesElements, TNode<IntPtrT> p_matchesCapacity, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_replaceFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -444,7 +445,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   }
 
   TNode<IntPtrT> phi_bb2_4;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
   TNode<UintPtrT> tmp5;
@@ -466,7 +467,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   TNode<IntPtrT> phi_bb12_15;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<Object> tmp12;
   TNode<Hole> tmp13;
@@ -475,10 +476,10 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
     ca_.Bind(&block12, &phi_bb12_4, &phi_bb12_9, &phi_bb12_10, &phi_bb12_14, &phi_bb12_15);
     tmp8 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb12_15});
     tmp9 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp8});
-    std::tie(tmp10, tmp11) = NewReference_Object_0(state_, TNode<Object>{tmp2}, TNode<IntPtrT>{tmp9}).Flatten();
+    std::tie(tmp10, tmp11) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp2}, TNode<IntPtrT>{tmp9}).Flatten();
     tmp12 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp10, tmp11});
     tmp13 = TheHole_0(state_);
-    tmp14 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp12}, TNode<HeapObject>{tmp13});
+    tmp14 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp12}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp13});
     ca_.Branch(tmp14, &block6, std::vector<compiler::Node*>{phi_bb12_4}, &block7, std::vector<compiler::Node*>{phi_bb12_4});
   }
 
@@ -499,7 +500,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   }
 
   TNode<IntPtrT> phi_bb7_4;
-  TNode<Object> tmp15;
+  TNode<Union<HeapObject, TaggedIndex>> tmp15;
   TNode<IntPtrT> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<UintPtrT> tmp18;
@@ -521,7 +522,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   TNode<IntPtrT> phi_bb22_15;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
-  TNode<Object> tmp23;
+  TNode<Union<HeapObject, TaggedIndex>> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<Object> tmp25;
   TNode<JSArray> tmp26;
@@ -529,7 +530,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
     ca_.Bind(&block22, &phi_bb22_4, &phi_bb22_9, &phi_bb22_10, &phi_bb22_14, &phi_bb22_15);
     tmp21 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb22_15});
     tmp22 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp21});
-    std::tie(tmp23, tmp24) = NewReference_Object_0(state_, TNode<Object>{tmp15}, TNode<IntPtrT>{tmp22}).Flatten();
+    std::tie(tmp23, tmp24) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp15}, TNode<IntPtrT>{tmp22}).Flatten();
     tmp25 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp23, tmp24});
     compiler::CodeAssemblerLabel label27(&ca_);
     tmp26 = Cast_JSArray_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp25}, &label27);
@@ -557,11 +558,11 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   }
 
   TNode<IntPtrT> phi_bb26_4;
-  TNode<JSReceiver> tmp28;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp28;
   TNode<Undefined> tmp29;
   TNode<Undefined> tmp30;
-  TNode<Object> tmp31;
-  TNode<Object> tmp32;
+  TNode<JSAny> tmp31;
+  TNode<Union<HeapObject, TaggedIndex>> tmp32;
   TNode<IntPtrT> tmp33;
   TNode<IntPtrT> tmp34;
   TNode<UintPtrT> tmp35;
@@ -572,7 +573,7 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
     tmp28 = GetReflectApply_0(state_, TNode<Context>{p_context});
     tmp29 = Undefined_0(state_);
     tmp30 = Undefined_0(state_);
-    tmp31 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp28}, TNode<Object>{tmp29}, TNode<Object>{p_replaceFn}, TNode<Object>{tmp30}, TNode<Object>{tmp26});
+    tmp31 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp28}, TNode<JSAny>{tmp29}, TNode<JSAny>{p_replaceFn}, TNode<JSAny>{tmp30}, TNode<JSAny>{tmp26});
     std::tie(tmp32, tmp33, tmp34) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{p_matchesElements}).Flatten();
     tmp35 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb26_4});
     tmp36 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp34});
@@ -587,15 +588,15 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   TNode<IntPtrT> phi_bb32_17;
   TNode<IntPtrT> tmp38;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<String> tmp42;
   if (block32.is_used()) {
     ca_.Bind(&block32, &phi_bb32_4, &phi_bb32_11, &phi_bb32_12, &phi_bb32_16, &phi_bb32_17);
     tmp38 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb32_17});
     tmp39 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp33}, TNode<IntPtrT>{tmp38});
-    std::tie(tmp40, tmp41) = NewReference_Object_0(state_, TNode<Object>{tmp32}, TNode<IntPtrT>{tmp39}).Flatten();
-    tmp42 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{tmp31});
+    std::tie(tmp40, tmp41) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp32}, TNode<IntPtrT>{tmp39}).Flatten();
+    tmp42 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp31});
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp40, tmp41}, tmp42);
     ca_.Goto(&block5, phi_bb32_4);
   }
@@ -637,8 +638,8 @@ TNode<IntPtrT> RegExpReplaceCallableWithExplicitCaptures_0(compiler::CodeAssembl
   return TNode<IntPtrT>{phi_bb36_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=94&c=1
-TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<JSReceiver> p_replaceFn) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=98&c=1
+TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_replaceFn) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -655,7 +656,7 @@ TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* st
 
   TNode<Smi> tmp0;
   TNode<RegExpMatchInfo> tmp1;
-  TNode<HeapObject> tmp2;
+  TNode<Union<FixedArray, Null>> tmp2;
   TNode<Smi> tmp3;
   TNode<Null> tmp4;
   TNode<BoolT> tmp5;
@@ -668,7 +669,7 @@ TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* st
     tmp3 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     RegExpBuiltinsAssembler(state_).FastStoreLastIndex(TNode<JSRegExp>{p_regexp}, TNode<Smi>{tmp3});
     tmp4 = Null_0(state_);
-    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp2}, TNode<HeapObject>{tmp4});
+    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4});
     ca_.Branch(tmp5, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
@@ -720,14 +721,14 @@ TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* st
   TNode<IntPtrT> tmp17;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp17 = RegExpReplaceCallableNoExplicitCaptures_0(state_, TNode<Context>{p_context}, TNode<FixedArray>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<String>{p_string}, TNode<JSReceiver>{p_replaceFn});
+    tmp17 = RegExpReplaceCallableNoExplicitCaptures_0(state_, TNode<Context>{p_context}, TNode<FixedArray>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<String>{p_string}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{p_replaceFn});
     ca_.Goto(&block10, tmp17);
   }
 
   TNode<IntPtrT> tmp18;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp18 = RegExpReplaceCallableWithExplicitCaptures_0(state_, TNode<Context>{p_context}, TNode<FixedArray>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<JSReceiver>{p_replaceFn});
+    tmp18 = RegExpReplaceCallableWithExplicitCaptures_0(state_, TNode<Context>{p_context}, TNode<FixedArray>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{p_replaceFn});
     ca_.Goto(&block10, tmp18);
   }
 
@@ -752,7 +753,7 @@ TNode<String> RegExpReplaceFastGlobalCallable_0(compiler::CodeAssemblerState* st
   return TNode<String>{phi_bb11_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=132&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=136&c=1
 TNode<String> RegExpReplaceFastString_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string, TNode<String> p_replaceString) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -761,226 +762,129 @@ TNode<String> RegExpReplaceFastString_0(compiler::CodeAssemblerState* state_, TN
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String, Smi, BoolT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String, Smi, BoolT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String, Smi, BoolT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String, Smi, BoolT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String, BoolT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String, Smi, BoolT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<Smi> tmp1;
-  TNode<BoolT> tmp2;
-  TNode<Smi> tmp3;
-  TNode<JSRegExp> tmp4;
-  TNode<BoolT> tmp5;
+  TNode<BoolT> tmp1;
+  TNode<Smi> tmp2;
+  TNode<JSRegExp> tmp3;
+  TNode<BoolT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kEmptyString_0(state_);
-    tmp1 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp3 = CodeStubAssembler(state_).LoadStringLengthAsSmi(TNode<String>{p_replaceString});
-    tmp4 = UnsafeCast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{p_regexp});
-    tmp5 = RegExpBuiltinsAssembler(state_).FastFlagGetterGlobal(TNode<JSRegExp>{tmp4});
-    ca_.Branch(tmp5, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{tmp2});
+    tmp1 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp2 = CodeStubAssembler(state_).LoadStringLengthAsSmi(TNode<String>{p_replaceString});
+    tmp3 = UnsafeCast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{p_regexp});
+    tmp4 = RegExpBuiltinsAssembler(state_).FastFlagGetterGlobal(TNode<JSRegExp>{tmp3});
+    ca_.Branch(tmp4, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+  }
+
+  TNode<BoolT> tmp5;
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    tmp5 = RegExpBuiltinsAssembler(state_).FastFlagGetterUnicode(TNode<JSRegExp>{tmp3});
+    ca_.Branch(tmp5, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
   TNode<BoolT> tmp6;
-  if (block2.is_used()) {
-    ca_.Bind(&block2);
-    tmp6 = RegExpBuiltinsAssembler(state_).FastFlagGetterUnicode(TNode<JSRegExp>{tmp4});
-    ca_.Branch(tmp6, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp6 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block6, tmp6);
   }
 
   TNode<BoolT> tmp7;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp7 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp7 = RegExpBuiltinsAssembler(state_).FastFlagGetterUnicodeSets(TNode<JSRegExp>{tmp3});
     ca_.Goto(&block6, tmp7);
   }
 
-  TNode<BoolT> tmp8;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp8 = RegExpBuiltinsAssembler(state_).FastFlagGetterUnicodeSets(TNode<JSRegExp>{tmp4});
-    ca_.Goto(&block6, tmp8);
-  }
-
-  TNode<BoolT> phi_bb6_11;
-  TNode<Smi> tmp9;
+  TNode<BoolT> phi_bb6_10;
+  TNode<Smi> tmp8;
+  TNode<TrustedObject> tmp9;
+  TNode<RegExpData> tmp10;
+  TNode<String> tmp11;
   if (block6.is_used()) {
-    ca_.Bind(&block6, &phi_bb6_11);
-    tmp9 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    RegExpBuiltinsAssembler(state_).FastStoreLastIndex(TNode<JSRegExp>{tmp4}, TNode<Smi>{tmp9});
-    ca_.Goto(&block3, phi_bb6_11);
+    ca_.Bind(&block6, &phi_bb6_10);
+    tmp8 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    RegExpBuiltinsAssembler(state_).FastStoreLastIndex(TNode<JSRegExp>{tmp3}, TNode<Smi>{tmp8});
+    tmp9 = CodeStubAssembler(state_).LoadTrustedPointerFromObject(TNode<HeapObject>{tmp3}, JSRegExp::kDataOffset, kRegExpDataIndirectPointerTag);
+    tmp10 = UnsafeCast_RegExpData_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp9});
+    tmp11 = RegExpBuiltinsAssembler(state_).RegExpReplaceGlobalSimpleString(TNode<Context>{p_context}, TNode<JSRegExp>{p_regexp}, TNode<String>{p_string}, TNode<RegExpData>{tmp10}, TNode<String>{p_replaceString});
+    ca_.Goto(&block1, tmp11);
   }
 
-  TNode<BoolT> phi_bb3_6;
+  TNode<RegExpMatchInfo> tmp12;
   if (block3.is_used()) {
-    ca_.Bind(&block3, &phi_bb3_6);
-    ca_.Goto(&block9, tmp0, tmp1, phi_bb3_6);
-  }
-
-  TNode<String> phi_bb9_4;
-  TNode<Smi> phi_bb9_5;
-  TNode<BoolT> phi_bb9_6;
-  TNode<BoolT> tmp10;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_4, &phi_bb9_5, &phi_bb9_6);
-    tmp10 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp10, &block7, std::vector<compiler::Node*>{phi_bb9_4, phi_bb9_5, phi_bb9_6}, &block8, std::vector<compiler::Node*>{phi_bb9_4, phi_bb9_5, phi_bb9_6});
-  }
-
-  TNode<String> phi_bb7_4;
-  TNode<Smi> phi_bb7_5;
-  TNode<BoolT> phi_bb7_6;
-  TNode<RegExpMatchInfo> tmp11;
-  if (block7.is_used()) {
-    ca_.Bind(&block7, &phi_bb7_4, &phi_bb7_5, &phi_bb7_6);
-    compiler::CodeAssemblerLabel label12(&ca_);
-    tmp11 = RegExpPrototypeExecBodyWithoutResultFast_0(state_, TNode<Context>{p_context}, TNode<JSRegExp>{p_regexp}, TNode<String>{p_string}, &label12);
-    ca_.Goto(&block12, phi_bb7_4, phi_bb7_5, phi_bb7_6);
-    if (label12.is_used()) {
-      ca_.Bind(&label12);
-      ca_.Goto(&block13, phi_bb7_4, phi_bb7_5, phi_bb7_6);
+    ca_.Bind(&block3);
+    compiler::CodeAssemblerLabel label13(&ca_);
+    tmp12 = RegExpPrototypeExecBodyWithoutResultFast_0(state_, TNode<Context>{p_context}, TNode<JSRegExp>{p_regexp}, TNode<String>{p_string}, &label13);
+    ca_.Goto(&block13);
+    if (label13.is_used()) {
+      ca_.Bind(&label13);
+      ca_.Goto(&block14);
     }
   }
 
-  TNode<String> phi_bb13_4;
-  TNode<Smi> phi_bb13_5;
-  TNode<BoolT> phi_bb13_6;
-  if (block13.is_used()) {
-    ca_.Bind(&block13, &phi_bb13_4, &phi_bb13_5, &phi_bb13_6);
-    ca_.Goto(&block8, phi_bb13_4, phi_bb13_5, phi_bb13_6);
-  }
-
-  TNode<String> phi_bb12_4;
-  TNode<Smi> phi_bb12_5;
-  TNode<BoolT> phi_bb12_6;
-  TNode<Smi> tmp13;
-  TNode<Smi> tmp14;
-  TNode<String> tmp15;
-  TNode<String> tmp16;
-  TNode<Smi> tmp17;
-  TNode<BoolT> tmp18;
-  if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_4, &phi_bb12_5, &phi_bb12_6);
-    tmp13 = Method_RegExpMatchInfo_GetStartOfCapture_0(state_, TNode<RegExpMatchInfo>{tmp11}, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull))));
-    tmp14 = Method_RegExpMatchInfo_GetEndOfCapture_0(state_, TNode<RegExpMatchInfo>{tmp11}, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull))));
-    tmp15 = ca_.CallBuiltin<String>(Builtin::kSubString, p_context, p_string, phi_bb12_5, tmp13);
-    tmp16 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{phi_bb12_4}, TNode<String>{tmp15});
-    tmp17 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp18 = CodeStubAssembler(state_).SmiNotEqual(TNode<Smi>{tmp3}, TNode<Smi>{tmp17});
-    ca_.Branch(tmp18, &block14, std::vector<compiler::Node*>{phi_bb12_6}, &block15, std::vector<compiler::Node*>{tmp16, phi_bb12_6});
-  }
-
-  TNode<BoolT> phi_bb14_6;
-  TNode<String> tmp19;
   if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_6);
-    tmp19 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{tmp16}, TNode<String>{p_replaceString});
-    ca_.Goto(&block15, tmp19, phi_bb14_6);
+    ca_.Bind(&block14);
+    ca_.Goto(&block1, p_string);
   }
 
-  TNode<String> phi_bb15_4;
-  TNode<BoolT> phi_bb15_6;
+  TNode<Smi> tmp14;
+  TNode<Smi> tmp15;
+  TNode<Smi> tmp16;
+  TNode<String> tmp17;
+  TNode<String> tmp18;
+  TNode<Smi> tmp19;
   TNode<BoolT> tmp20;
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    tmp14 = Method_RegExpMatchInfo_GetStartOfCapture_0(state_, TNode<RegExpMatchInfo>{tmp12}, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull))));
+    tmp15 = Method_RegExpMatchInfo_GetEndOfCapture_0(state_, TNode<RegExpMatchInfo>{tmp12}, (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull))));
+    tmp16 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp17 = ca_.CallBuiltin<String>(Builtin::kSubString, p_context, p_string, tmp16, tmp14);
+    tmp18 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{tmp0}, TNode<String>{tmp17});
+    tmp19 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp20 = CodeStubAssembler(state_).SmiNotEqual(TNode<Smi>{tmp2}, TNode<Smi>{tmp19});
+    ca_.Branch(tmp20, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{tmp18});
+  }
+
+  TNode<String> tmp21;
   if (block15.is_used()) {
-    ca_.Bind(&block15, &phi_bb15_4, &phi_bb15_6);
-    tmp20 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp5});
-    ca_.Branch(tmp20, &block16, std::vector<compiler::Node*>{phi_bb15_6}, &block17, std::vector<compiler::Node*>{phi_bb15_6});
+    ca_.Bind(&block15);
+    tmp21 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{tmp18}, TNode<String>{p_replaceString});
+    ca_.Goto(&block16, tmp21);
   }
 
-  TNode<BoolT> phi_bb16_6;
+  TNode<String> phi_bb16_4;
+  TNode<Smi> tmp22;
+  TNode<String> tmp23;
+  TNode<String> tmp24;
   if (block16.is_used()) {
-    ca_.Bind(&block16, &phi_bb16_6);
-    ca_.Goto(&block8, phi_bb15_4, tmp14, phi_bb16_6);
+    ca_.Bind(&block16, &phi_bb16_4);
+    tmp22 = CodeStubAssembler(state_).LoadStringLengthAsSmi(TNode<String>{p_string});
+    tmp23 = ca_.CallBuiltin<String>(Builtin::kSubString, p_context, p_string, tmp15, tmp22);
+    tmp24 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{phi_bb16_4}, TNode<String>{tmp23});
+    ca_.Goto(&block1, tmp24);
   }
 
-  TNode<BoolT> phi_bb17_6;
-  TNode<BoolT> tmp21;
-  if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_6);
-    tmp21 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp14}, TNode<Smi>{tmp13});
-    ca_.Branch(tmp21, &block18, std::vector<compiler::Node*>{phi_bb17_6}, &block19, std::vector<compiler::Node*>{phi_bb17_6});
+  TNode<String> phi_bb1_4;
+  if (block1.is_used()) {
+    ca_.Bind(&block1, &phi_bb1_4);
+    ca_.Goto(&block17);
   }
 
-  TNode<BoolT> phi_bb18_6;
-  TNode<JSRegExp> tmp22;
-  if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_6);
-    compiler::CodeAssemblerLabel label23(&ca_);
-    tmp22 = Cast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_regexp}, &label23);
-    ca_.Goto(&block22, phi_bb18_6);
-    if (label23.is_used()) {
-      ca_.Bind(&label23);
-      ca_.Goto(&block23, phi_bb18_6);
-    }
-  }
-
-  TNode<BoolT> phi_bb23_6;
-  TNode<Object> tmp24;
-  TNode<Number> tmp25;
-  TNode<Smi> tmp26;
-  if (block23.is_used()) {
-    ca_.Bind(&block23, &phi_bb23_6);
-    tmp24 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<Object>{p_regexp});
-    tmp25 = CodeStubAssembler(state_).ToLength_Inline(TNode<Context>{p_context}, TNode<Object>{tmp24});
-    tmp26 = RegExpBuiltinsAssembler(state_).AdvanceStringIndexSlow(TNode<String>{p_string}, TNode<Number>{tmp25}, TNode<BoolT>{phi_bb23_6});
-    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<Object>{p_regexp}, TNode<Object>{tmp26});
-    ca_.Goto(&block20, phi_bb23_6);
-  }
-
-  TNode<BoolT> phi_bb22_6;
-  TNode<Smi> tmp27;
-  TNode<Smi> tmp28;
-  if (block22.is_used()) {
-    ca_.Bind(&block22, &phi_bb22_6);
-    tmp27 = RegExpBuiltinsAssembler(state_).FastLoadLastIndex(TNode<JSRegExp>{tmp22});
-    tmp28 = RegExpBuiltinsAssembler(state_).AdvanceStringIndexFast(TNode<String>{p_string}, TNode<Smi>{tmp27}, TNode<BoolT>{phi_bb22_6});
-    RegExpBuiltinsAssembler(state_).FastStoreLastIndex(TNode<JSRegExp>{tmp22}, TNode<Smi>{tmp28});
-    ca_.Goto(&block20, phi_bb22_6);
-  }
-
-  TNode<BoolT> phi_bb20_6;
-  if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_6);
-    ca_.Goto(&block19, phi_bb20_6);
-  }
-
-  TNode<BoolT> phi_bb19_6;
-  if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_6);
-    ca_.Goto(&block9, phi_bb15_4, tmp14, phi_bb19_6);
-  }
-
-  TNode<String> phi_bb8_4;
-  TNode<Smi> phi_bb8_5;
-  TNode<BoolT> phi_bb8_6;
-  TNode<Smi> tmp29;
-  TNode<String> tmp30;
-  TNode<String> tmp31;
-  if (block8.is_used()) {
-    ca_.Bind(&block8, &phi_bb8_4, &phi_bb8_5, &phi_bb8_6);
-    tmp29 = CodeStubAssembler(state_).LoadStringLengthAsSmi(TNode<String>{p_string});
-    tmp30 = ca_.CallBuiltin<String>(Builtin::kSubString, p_context, p_string, phi_bb8_5, tmp29);
-    tmp31 = StringAdd_0(state_, TNode<Context>{p_context}, TNode<String>{phi_bb8_4}, TNode<String>{tmp30});
-    ca_.Goto(&block24);
-  }
-
-    ca_.Bind(&block24);
-  return TNode<String>{tmp31};
+    ca_.Bind(&block17);
+  return TNode<String>{phi_bb1_4};
 }
 
 TF_BUILTIN(RegExpReplace, CodeStubAssembler) {
@@ -991,7 +895,7 @@ TF_BUILTIN(RegExpReplace, CodeStubAssembler) {
   USE(parameter1);
   TNode<String> parameter2 = UncheckedParameter<String>(Descriptor::kString);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kReplaceValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kReplaceValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1006,7 +910,7 @@ TF_BUILTIN(RegExpReplace, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSReceiver> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1022,7 +926,7 @@ TF_BUILTIN(RegExpReplace, CodeStubAssembler) {
   TNode<JSRegExp> tmp3;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp2 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter3});
+    tmp2 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter3});
     compiler::CodeAssemblerLabel label4(&ca_);
     tmp3 = Cast_FastJSRegExp_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{parameter1}, &label4);
     ca_.Goto(&block15);
@@ -1042,7 +946,7 @@ TF_BUILTIN(RegExpReplace, CodeStubAssembler) {
   TNode<String> tmp6;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp6 = RegExpReplaceFastGlobalCallable_0(state_, TNode<Context>{parameter0}, TNode<JSRegExp>{parameter1}, TNode<String>{parameter2}, TNode<JSReceiver>{tmp0});
+    tmp6 = RegExpReplaceFastGlobalCallable_0(state_, TNode<Context>{parameter0}, TNode<JSRegExp>{parameter1}, TNode<String>{parameter2}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp0});
     ca_.Goto(&block11, tmp6);
   }
 
@@ -1108,7 +1012,7 @@ TF_BUILTIN(RegExpPrototypeReplace, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1118,9 +1022,9 @@ TF_BUILTIN(RegExpPrototypeReplace, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<JSReceiver> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1148,7 +1052,7 @@ TF_BUILTIN(RegExpPrototypeReplace, CodeStubAssembler) {
   TNode<JSRegExp> tmp8;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp1});
     compiler::CodeAssemblerLabel label9(&ca_);
     tmp8 = Cast_FastJSRegExp_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp4}, &label9);
     ca_.Goto(&block7);
@@ -1176,7 +1080,7 @@ TF_BUILTIN(RegExpPrototypeReplace, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=193&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-replace.tq?l=181&c=10
 TNode<BoolT> Is_FastJSRegExp_FastJSRegExp_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

@@ -1,6 +1,8 @@
 #include "src/objects/literal-objects-inl.h"
 
 #include "torque-generated/class-verifiers.h"
+#include "src/objects/objects-inl.h"
+
 #include "src/objects/instance-type-inl.h"
 
 #include "src/objects/literal-objects.h"
@@ -10,12 +12,12 @@ namespace internal {
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=5&c=1
 class TorqueGeneratedObjectBoilerplateDescriptionAsserts {
-  static constexpr int kStartOfStrongFieldsOffset = HeapObject::kHeaderSize;
+  static constexpr int kStartOfStrongFieldsOffset = sizeof(HeapObjectLayout);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=7&c=9
-  static constexpr int kCapacityOffset = HeapObject::kHeaderSize;
-  static constexpr int kCapacityOffsetEnd = kCapacityOffset + kTaggedSize - 1;
+  static constexpr int kLengthOffset = sizeof(HeapObjectLayout);
+  static constexpr int kLengthOffsetEnd = kLengthOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=8&c=3
-  static constexpr int kBackingStoreSizeOffset = kCapacityOffsetEnd + 1;
+  static constexpr int kBackingStoreSizeOffset = kLengthOffsetEnd + 1;
   static constexpr int kBackingStoreSizeOffsetEnd = kBackingStoreSizeOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=9&c=3
   static constexpr int kFlagsOffset = kBackingStoreSizeOffsetEnd + 1;
@@ -28,14 +30,14 @@ class TorqueGeneratedObjectBoilerplateDescriptionAsserts {
   static constexpr int kStartOfWeakFieldsOffset = kRawEntriesOffsetEnd + 1;
   static constexpr int kEndOfWeakFieldsOffset = kRawEntriesOffsetEnd + 1;
 
-  static_assert(kCapacityOffset == ObjectBoilerplateDescription::kCapacityOffset,
-                "Values of ObjectBoilerplateDescription::kCapacityOffset defined in Torque and C++ do not match");
-  static_assert(kBackingStoreSizeOffset == ObjectBoilerplateDescription::kBackingStoreSizeOffset,
-                "Values of ObjectBoilerplateDescription::kBackingStoreSizeOffset defined in Torque and C++ do not match");
-  static_assert(kFlagsOffset == ObjectBoilerplateDescription::kFlagsOffset,
-                "Values of ObjectBoilerplateDescription::kFlagsOffset defined in Torque and C++ do not match");
-  static_assert(kRawEntriesOffset == ObjectBoilerplateDescription::kRawEntriesOffset,
-                "Values of ObjectBoilerplateDescription::kRawEntriesOffset defined in Torque and C++ do not match");
+  static_assert(kLengthOffset == offsetof(ObjectBoilerplateDescription, length_),
+                "Value of ObjectBoilerplateDescription::kLengthOffset defined in Torque and offset of field ObjectBoilerplateDescription::length in C++ do not match");
+  static_assert(kBackingStoreSizeOffset == offsetof(ObjectBoilerplateDescription, backing_store_size_),
+                "Value of ObjectBoilerplateDescription::kBackingStoreSizeOffset defined in Torque and offset of field ObjectBoilerplateDescription::backing_store_size in C++ do not match");
+  static_assert(kFlagsOffset == offsetof(ObjectBoilerplateDescription, flags_),
+                "Value of ObjectBoilerplateDescription::kFlagsOffset defined in Torque and offset of field ObjectBoilerplateDescription::flags in C++ do not match");
+  static_assert(kRawEntriesOffset == OFFSET_OF_DATA_START(ObjectBoilerplateDescription),
+                "Value of ObjectBoilerplateDescription::kRawEntriesOffset defined in Torque and offset of field ObjectBoilerplateDescription::raw_entries in C++ do not match");
 };
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=13&c=1

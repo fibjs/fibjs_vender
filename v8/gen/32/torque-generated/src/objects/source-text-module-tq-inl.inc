@@ -16,7 +16,7 @@ Tagged<Union<JSFunction, JSGeneratorObject, SharedFunctionInfo>> TorqueGenerated
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_code(Tagged<Union<JSFunction, JSGeneratorObject, SharedFunctionInfo>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSFunction(value) || IsJSGeneratorObject(value) || IsSharedFunctionInfo(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSFunction(value) || IsJSGeneratorObject(value) || IsSharedFunctionInfo(value)));
   WRITE_FIELD(*this, kCodeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCodeOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<FixedArray> TorqueGeneratedSourceTextModule<D, P>::regular_exports(PtrCom
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_regular_exports(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kRegularExportsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRegularExportsOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<FixedArray> TorqueGeneratedSourceTextModule<D, P>::regular_imports(PtrCom
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_regular_imports(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kRegularImportsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRegularImportsOffset, value, mode);
 }
@@ -85,7 +85,7 @@ Tagged<FixedArray> TorqueGeneratedSourceTextModule<D, P>::requested_modules(PtrC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_requested_modules(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kRequestedModulesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRequestedModulesOffset, value, mode);
 }
@@ -108,7 +108,7 @@ Tagged<Union<Hole, JSObject>> TorqueGeneratedSourceTextModule<D, P>::import_meta
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=31&c=36
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_import_meta(Tagged<Union<Hole, JSObject>> value, ReleaseStoreTag, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSObject(value) || IsTheHole(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSObject(value) || IsTheHole(value)));
   RELEASE_WRITE_FIELD(*this, kImportMetaOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kImportMetaOffset, value, mode);
 }
@@ -131,7 +131,7 @@ Tagged<Union<Hole, SourceTextModule>> TorqueGeneratedSourceTextModule<D, P>::cyc
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=36&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_cycle_root(Tagged<Union<Hole, SourceTextModule>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsTheHole(value) || IsSourceTextModule(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsTheHole(value) || IsSourceTextModule(value)));
   WRITE_FIELD(*this, kCycleRootOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCycleRootOffset, value, mode);
 }
@@ -154,7 +154,7 @@ Tagged<ArrayList> TorqueGeneratedSourceTextModule<D, P>::async_parent_modules(Pt
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=38&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_async_parent_modules(Tagged<ArrayList> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsArrayList(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsArrayList(value)));
   WRITE_FIELD(*this, kAsyncParentModulesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kAsyncParentModulesOffset, value, mode);
 }
@@ -208,7 +208,8 @@ int TorqueGeneratedSourceTextModule<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=47&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModule<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct SourceTextModuleFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>
@@ -234,7 +235,7 @@ Tagged<String> TorqueGeneratedModuleRequest<D, P>::specifier(PtrComprCageBase ca
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=59&c=3
 template<class D, class P>
 void TorqueGeneratedModuleRequest<D, P>::set_specifier(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kSpecifierOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSpecifierOffset, value, mode);
 }
@@ -257,7 +258,7 @@ Tagged<FixedArray> TorqueGeneratedModuleRequest<D, P>::import_attributes(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=63&c=3
 template<class D, class P>
 void TorqueGeneratedModuleRequest<D, P>::set_import_attributes(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kImportAttributesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kImportAttributesOffset, value, mode);
 }
@@ -272,7 +273,8 @@ int TorqueGeneratedModuleRequest<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=65&c=3
 template<class D, class P>
 void TorqueGeneratedModuleRequest<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct ModuleRequestFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>
@@ -298,7 +300,7 @@ Tagged<Union<String, Undefined>> TorqueGeneratedSourceTextModuleInfoEntry<D, P>:
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=69&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModuleInfoEntry<D, P>::set_export_name(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kExportNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kExportNameOffset, value, mode);
 }
@@ -321,7 +323,7 @@ Tagged<Union<String, Undefined>> TorqueGeneratedSourceTextModuleInfoEntry<D, P>:
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=70&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModuleInfoEntry<D, P>::set_local_name(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kLocalNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocalNameOffset, value, mode);
 }
@@ -344,7 +346,7 @@ Tagged<Union<String, Undefined>> TorqueGeneratedSourceTextModuleInfoEntry<D, P>:
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/source-text-module.tq?l=71&c=3
 template<class D, class P>
 void TorqueGeneratedSourceTextModuleInfoEntry<D, P>::set_import_name(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kImportNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kImportNameOffset, value, mode);
 }

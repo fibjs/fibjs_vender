@@ -7,7 +7,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=6&c=1
-TNode<Boolean> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method);
+TNode<Boolean> ThisBooleanValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, const char* p_method);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/boolean.tq?l=9&c=10
 TNode<Boolean> UnsafeCast_Boolean_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);

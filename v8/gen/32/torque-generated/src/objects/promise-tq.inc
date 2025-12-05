@@ -12,10 +12,10 @@ V8_EXPORT_PRIVATE bool IsPromiseCapability_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedPromiseCapability : public P {
   static_assert(
-      std::is_same<PromiseCapability, D>::value,
+      std::is_same_v<PromiseCapability, D>,
       "Use this class as direct base for PromiseCapability.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedPromiseCapability.");
 
  public: 
@@ -86,7 +86,7 @@ class TorqueGeneratedPromiseCapability : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPromiseCapability() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPromiseCapability, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPromiseCapability, DAlias>,
         "class TorqueGeneratedPromiseCapability should be used as direct base for PromiseCapability.");
   }
 
@@ -104,10 +104,10 @@ V8_EXPORT_PRIVATE bool IsPromiseReaction_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedPromiseReaction : public P {
   static_assert(
-      std::is_same<PromiseReaction, D>::value,
+      std::is_same_v<PromiseReaction, D>,
       "Use this class as direct base for PromiseReaction.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedPromiseReaction.");
 
  public: 
@@ -199,7 +199,7 @@ class TorqueGeneratedPromiseReaction : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPromiseReaction() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPromiseReaction, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPromiseReaction, DAlias>,
         "class TorqueGeneratedPromiseReaction should be used as direct base for PromiseReaction.");
   }
 
@@ -217,10 +217,10 @@ V8_EXPORT_PRIVATE bool IsPromiseReactionJobTask_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedPromiseReactionJobTask : public P {
   static_assert(
-      std::is_same<PromiseReactionJobTask, D>::value,
+      std::is_same_v<PromiseReactionJobTask, D>,
       "Use this class as direct base for PromiseReactionJobTask.");
   static_assert(
-      std::is_same<Microtask, P>::value,
+      std::is_same_v<Microtask, P>,
       "Pass in Microtask as second template parameter for TorqueGeneratedPromiseReactionJobTask.");
 
  public: 
@@ -285,7 +285,7 @@ class TorqueGeneratedPromiseReactionJobTask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPromiseReactionJobTask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPromiseReactionJobTask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPromiseReactionJobTask, DAlias>,
         "class TorqueGeneratedPromiseReactionJobTask should be used as direct base for PromiseReactionJobTask.");
   }
 
@@ -303,10 +303,10 @@ V8_EXPORT_PRIVATE bool IsPromiseFulfillReactionJobTask_NonInline(Tagged<HeapObje
 template <class D, class P>
 class TorqueGeneratedPromiseFulfillReactionJobTask : public P {
   static_assert(
-      std::is_same<PromiseFulfillReactionJobTask, D>::value,
+      std::is_same_v<PromiseFulfillReactionJobTask, D>,
       "Use this class as direct base for PromiseFulfillReactionJobTask.");
   static_assert(
-      std::is_same<PromiseReactionJobTask, P>::value,
+      std::is_same_v<PromiseReactionJobTask, P>,
       "Pass in PromiseReactionJobTask as second template parameter for TorqueGeneratedPromiseFulfillReactionJobTask.");
 
  public: 
@@ -344,7 +344,7 @@ class TorqueGeneratedPromiseFulfillReactionJobTask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPromiseFulfillReactionJobTask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPromiseFulfillReactionJobTask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPromiseFulfillReactionJobTask, DAlias>,
         "class TorqueGeneratedPromiseFulfillReactionJobTask should be used as direct base for PromiseFulfillReactionJobTask.");
   }
 
@@ -362,10 +362,10 @@ V8_EXPORT_PRIVATE bool IsPromiseRejectReactionJobTask_NonInline(Tagged<HeapObjec
 template <class D, class P>
 class TorqueGeneratedPromiseRejectReactionJobTask : public P {
   static_assert(
-      std::is_same<PromiseRejectReactionJobTask, D>::value,
+      std::is_same_v<PromiseRejectReactionJobTask, D>,
       "Use this class as direct base for PromiseRejectReactionJobTask.");
   static_assert(
-      std::is_same<PromiseReactionJobTask, P>::value,
+      std::is_same_v<PromiseReactionJobTask, P>,
       "Pass in PromiseReactionJobTask as second template parameter for TorqueGeneratedPromiseRejectReactionJobTask.");
 
  public: 
@@ -403,7 +403,7 @@ class TorqueGeneratedPromiseRejectReactionJobTask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPromiseRejectReactionJobTask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPromiseRejectReactionJobTask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPromiseRejectReactionJobTask, DAlias>,
         "class TorqueGeneratedPromiseRejectReactionJobTask should be used as direct base for PromiseRejectReactionJobTask.");
   }
 
@@ -421,10 +421,10 @@ V8_EXPORT_PRIVATE bool IsPromiseResolveThenableJobTask_NonInline(Tagged<HeapObje
 template <class D, class P>
 class TorqueGeneratedPromiseResolveThenableJobTask : public P {
   static_assert(
-      std::is_same<PromiseResolveThenableJobTask, D>::value,
+      std::is_same_v<PromiseResolveThenableJobTask, D>,
       "Use this class as direct base for PromiseResolveThenableJobTask.");
   static_assert(
-      std::is_same<Microtask, P>::value,
+      std::is_same_v<Microtask, P>,
       "Pass in Microtask as second template parameter for TorqueGeneratedPromiseResolveThenableJobTask.");
 
  public: 
@@ -502,7 +502,7 @@ class TorqueGeneratedPromiseResolveThenableJobTask : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPromiseResolveThenableJobTask() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPromiseResolveThenableJobTask, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPromiseResolveThenableJobTask, DAlias>,
         "class TorqueGeneratedPromiseResolveThenableJobTask should be used as direct base for PromiseResolveThenableJobTask.");
   }
 

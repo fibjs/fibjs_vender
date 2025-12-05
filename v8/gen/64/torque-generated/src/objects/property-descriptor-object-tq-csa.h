@@ -13,10 +13,10 @@ TNode<PropertyDescriptorObject> Cast_PropertyDescriptorObject_0(compiler::CodeAs
 TNode<BoolT> IsCompatiblePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p__extensible, TNode<PropertyDescriptorObject> p_newDesc, TNode<PropertyDescriptorObject> p_current);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=99&c=1
-TNode<BoolT> IsCompatiblePropertyDescriptor_1(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<HeapObject> p_newDesc, TNode<PropertyDescriptorObject> p_current);
+TNode<BoolT> IsCompatiblePropertyDescriptor_1(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<Union<PropertyDescriptorObject, Undefined>> p_newDesc, TNode<PropertyDescriptorObject> p_current);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=114&c=1
-TNode<BoolT> IsCompatiblePropertyDescriptor_2(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<HeapObject> p_newDesc, TNode<HeapObject> p_current);
+TNode<BoolT> IsCompatiblePropertyDescriptor_2(compiler::CodeAssemblerState* state_, TNode<BoolT> p_extensible, TNode<Union<PropertyDescriptorObject, Undefined>> p_newDesc, TNode<Union<PropertyDescriptorObject, Undefined>> p_current);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=131&c=1
 void CompletePropertyDescriptor_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_desc);
@@ -28,22 +28,22 @@ TNode<Smi> LoadPropertyDescriptorObjectFlags_0(compiler::CodeAssemblerState* sta
 void StorePropertyDescriptorObjectFlags_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-TNode<Object> LoadPropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o);
+TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadPropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
-void StorePropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v);
+void StorePropertyDescriptorObjectValue_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-TNode<Object> LoadPropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o);
+TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadPropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
-void StorePropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v);
+void StorePropertyDescriptorObjectGet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-TNode<Object> LoadPropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o);
+TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadPropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
-void StorePropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Object> p_v);
+void StorePropertyDescriptorObjectSet_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_o, TNode<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=20&c=3
 TNode<BoolT> Method_PropertyDescriptorObject_IsDataDescriptor_0(compiler::CodeAssemblerState* state_, TNode<PropertyDescriptorObject> p_this);

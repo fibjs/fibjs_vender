@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/test/torque/test-torque-tq-csa.h"
@@ -84,13 +84,14 @@
 #include "torque-generated/src/builtins/number-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/arguments-tq-csa.h"
+#include "torque-generated/src/objects/cell-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
 #include "torque-generated/src/objects/fixed-array-tq-csa.h"
 #include "torque-generated/src/objects/js-array-buffer-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
 #include "torque-generated/src/objects/js-objects-tq-csa.h"
 #include "torque-generated/src/objects/ordered-hash-table-tq-csa.h"
-#include "torque-generated/src/objects/scope-info-tq-csa.h"
+#include "torque-generated/src/objects/regexp-match-info-tq-csa.h"
 #include "torque-generated/src/objects/string-tq-csa.h"
 #include "torque-generated/src/objects/turbofan-types-tq-csa.h"
 #include "torque-generated/test/torque/test-torque-tq-csa.h"
@@ -241,7 +242,7 @@ void TestConstexpr1_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block4);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=48&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=49&c=1
 void TestConstexprIf_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -266,7 +267,7 @@ void TestConstexprIf_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 50});
+      pos_stack.push_back({"test/torque/test-torque.tq", 51});
       CodeStubAssembler(state_).FailAssert("Torque assert 'ElementsKindTestHelper1(ElementsKind::UINT8_ELEMENTS)' failed", pos_stack);
     }
   }
@@ -282,7 +283,7 @@ void TestConstexprIf_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 51});
+      pos_stack.push_back({"test/torque/test-torque.tq", 52});
       CodeStubAssembler(state_).FailAssert("Torque assert 'ElementsKindTestHelper1(ElementsKind::UINT16_ELEMENTS)' failed", pos_stack);
     }
   }
@@ -300,7 +301,7 @@ void TestConstexprIf_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 52});
+      pos_stack.push_back({"test/torque/test-torque.tq", 53});
       CodeStubAssembler(state_).FailAssert("Torque assert '!ElementsKindTestHelper1(ElementsKind::UINT32_ELEMENTS)' failed", pos_stack);
     }
   }
@@ -313,7 +314,7 @@ void TestConstexprIf_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=55&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=56&c=1
 void TestConstexprReturn_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -340,7 +341,7 @@ void TestConstexprReturn_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 57});
+      pos_stack.push_back({"test/torque/test-torque.tq", 58});
       CodeStubAssembler(state_).FailAssert("Torque assert 'FromConstexpr<bool>( ElementsKindTestHelper2(ElementsKind::UINT8_ELEMENTS))' failed", pos_stack);
     }
   }
@@ -356,7 +357,7 @@ void TestConstexprReturn_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 59});
+      pos_stack.push_back({"test/torque/test-torque.tq", 61});
       CodeStubAssembler(state_).FailAssert("Torque assert 'FromConstexpr<bool>( ElementsKindTestHelper2(ElementsKind::UINT16_ELEMENTS))' failed", pos_stack);
     }
   }
@@ -374,7 +375,7 @@ void TestConstexprReturn_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 61});
+      pos_stack.push_back({"test/torque/test-torque.tq", 64});
       CodeStubAssembler(state_).FailAssert("Torque assert '!FromConstexpr<bool>( ElementsKindTestHelper2(ElementsKind::UINT32_ELEMENTS))' failed", pos_stack);
     }
   }
@@ -390,7 +391,7 @@ void TestConstexprReturn_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 63});
+      pos_stack.push_back({"test/torque/test-torque.tq", 66});
       CodeStubAssembler(state_).FailAssert("Torque assert 'FromConstexpr<bool>( !ElementsKindTestHelper2(ElementsKind::UINT32_ELEMENTS))' failed", pos_stack);
     }
   }
@@ -403,7 +404,7 @@ void TestConstexprReturn_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=67&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=71&c=1
 TNode<Boolean> TestGotoLabel_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -433,7 +434,7 @@ TNode<Boolean> TestGotoLabel_0(compiler::CodeAssemblerState* state_) {
   return TNode<Boolean>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=76&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=80&c=1
 TNode<Boolean> TestGotoLabelWithOneParameter_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -468,7 +469,7 @@ TNode<Boolean> TestGotoLabelWithOneParameter_0(compiler::CodeAssemblerState* sta
     ca_.Bind(&block6);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 81});
+      pos_stack.push_back({"test/torque/test-torque.tq", 85});
       CodeStubAssembler(state_).FailAssert("Torque assert 'smi == 42' failed", pos_stack);
     }
   }
@@ -484,7 +485,7 @@ TNode<Boolean> TestGotoLabelWithOneParameter_0(compiler::CodeAssemblerState* sta
   return TNode<Boolean>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=86&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=90&c=1
 TNode<Boolean> TestGotoLabelWithTwoParameters_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -514,7 +515,7 @@ TNode<Boolean> TestGotoLabelWithTwoParameters_0(compiler::CodeAssemblerState* st
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp3 = Null_0(state_);
-    tmp4 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp1.value()}, TNode<HeapObject>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1.value()}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp3});
     ca_.Branch(tmp4, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
@@ -522,7 +523,7 @@ TNode<Boolean> TestGotoLabelWithTwoParameters_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block6);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 91});
+      pos_stack.push_back({"test/torque/test-torque.tq", 95});
       CodeStubAssembler(state_).FailAssert("Torque assert 'o == Null' failed", pos_stack);
     }
   }
@@ -540,7 +541,7 @@ TNode<Boolean> TestGotoLabelWithTwoParameters_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block8);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 92});
+      pos_stack.push_back({"test/torque/test-torque.tq", 96});
       CodeStubAssembler(state_).FailAssert("Torque assert 'smi == 7' failed", pos_stack);
     }
   }
@@ -558,7 +559,7 @@ TNode<Boolean> TestGotoLabelWithTwoParameters_0(compiler::CodeAssemblerState* st
 
 TF_BUILTIN(GenericBuiltinTest_JSAny_0, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
-  TNode<Object> parameter0 = UncheckedParameter<Object>(Descriptor::kParam);
+  TNode<JSAny> parameter0 = UncheckedParameter<JSAny>(Descriptor::kParam);
   USE(parameter0);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -569,7 +570,7 @@ TF_BUILTIN(GenericBuiltinTest_JSAny_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=105&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=109&c=1
 void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -586,15 +587,15 @@ void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<Null> tmp2;
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp1 = ca_.CallBuiltin<Object>(Builtin::kGenericBuiltinTest_Smi_0, TNode<Object>(), tmp0);
+    tmp1 = ca_.CallBuiltin<JSAny>(Builtin::kGenericBuiltinTest_Smi_0, TNode<Object>(), tmp0);
     tmp2 = Null_0(state_);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
@@ -602,21 +603,21 @@ void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 107});
+      pos_stack.push_back({"test/torque/test-torque.tq", 111});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericBuiltinTest<Smi>(0) == Null' failed", pos_stack);
     }
   }
 
   TNode<Smi> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<Null> tmp6;
   TNode<BoolT> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp5 = ca_.CallBuiltin<Object>(Builtin::kGenericBuiltinTest_Smi_0, TNode<Object>(), tmp4);
+    tmp5 = ca_.CallBuiltin<JSAny>(Builtin::kGenericBuiltinTest_Smi_0, TNode<Object>(), tmp4);
     tmp6 = Null_0(state_);
-    tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<HeapObject>{tmp6});
+    tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp6});
     ca_.Branch(tmp7, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
@@ -624,21 +625,21 @@ void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 108});
+      pos_stack.push_back({"test/torque/test-torque.tq", 112});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericBuiltinTest<Smi>(1) == Null' failed", pos_stack);
     }
   }
 
   TNode<Undefined> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   TNode<Undefined> tmp10;
   TNode<BoolT> tmp11;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp8 = Undefined_0(state_);
-    tmp9 = ca_.CallBuiltin<Object>(Builtin::kGenericBuiltinTest_JSAny_0, TNode<Object>(), tmp8);
+    tmp9 = ca_.CallBuiltin<JSAny>(Builtin::kGenericBuiltinTest_JSAny_0, TNode<Object>(), tmp8);
     tmp10 = Undefined_0(state_);
-    tmp11 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp9}, TNode<HeapObject>{tmp10});
+    tmp11 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp9}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp10});
     ca_.Branch(tmp11, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
 
@@ -646,21 +647,21 @@ void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 109});
+      pos_stack.push_back({"test/torque/test-torque.tq", 113});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericBuiltinTest<JSAny>(Undefined) == Undefined' failed", pos_stack);
     }
   }
 
   TNode<Undefined> tmp12;
-  TNode<Object> tmp13;
+  TNode<JSAny> tmp13;
   TNode<Undefined> tmp14;
   TNode<BoolT> tmp15;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp12 = Undefined_0(state_);
-    tmp13 = ca_.CallBuiltin<Object>(Builtin::kGenericBuiltinTest_JSAny_0, TNode<Object>(), tmp12);
+    tmp13 = ca_.CallBuiltin<JSAny>(Builtin::kGenericBuiltinTest_JSAny_0, TNode<Object>(), tmp12);
     tmp14 = Undefined_0(state_);
-    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp13}, TNode<HeapObject>{tmp14});
+    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp13}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp14});
     ca_.Branch(tmp15, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
   }
 
@@ -668,7 +669,7 @@ void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 110});
+      pos_stack.push_back({"test/torque/test-torque.tq", 114});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericBuiltinTest<JSAny>(Undefined) == Undefined' failed", pos_stack);
     }
   }
@@ -681,7 +682,7 @@ void TestBuiltinSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=117&c=1
 void LabelTestHelper4_0(compiler::CodeAssemblerState* state_, bool p_flag, compiler::CodeAssemblerLabel* label_Label4, compiler::CodeAssemblerLabel* label_Label5) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -710,7 +711,7 @@ void LabelTestHelper4_0(compiler::CodeAssemblerState* state_, bool p_flag, compi
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=122&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=126&c=1
 TNode<BoolT> CallLabelTestHelper4_0(compiler::CodeAssemblerState* state_, bool p_flag) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -760,7 +761,7 @@ TNode<BoolT> CallLabelTestHelper4_0(compiler::CodeAssemblerState* state_, bool p
   return TNode<BoolT>{phi_bb1_0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=132&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=136&c=1
 TNode<Boolean> TestPartiallyUnusedLabel_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -827,7 +828,7 @@ TNode<Boolean> TestPartiallyUnusedLabel_0(compiler::CodeAssemblerState* state_) 
   return TNode<Boolean>{phi_bb1_0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=148&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=152&c=1
 TNode<Object> GenericMacroTest_Object_0(compiler::CodeAssemblerState* state_, TNode<Object> p_param2) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -844,7 +845,7 @@ TNode<Object> GenericMacroTest_Object_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Object>{p_param2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=157&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=161&c=1
 TNode<Object> GenericMacroTestWithLabels_Object_0(compiler::CodeAssemblerState* state_, TNode<Object> p_param2, compiler::CodeAssemblerLabel* label_Y) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -880,7 +881,7 @@ TNode<Object> GenericMacroTestWithLabels_Object_0(compiler::CodeAssemblerState* 
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=162&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=166&c=1
 void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -921,7 +922,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     tmp1 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp2 = GenericMacroTest_Smi_0(state_, TNode<Smi>{tmp1});
     tmp3 = Undefined_0(state_);
-    tmp4 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp2}, TNode<HeapObject>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp3});
     ca_.Branch(tmp4, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
@@ -929,7 +930,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 166});
+      pos_stack.push_back({"test/torque/test-torque.tq", 170});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericMacroTest<Smi>(0) == Undefined' failed", pos_stack);
     }
   }
@@ -943,7 +944,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     tmp5 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp6 = GenericMacroTest_Smi_0(state_, TNode<Smi>{tmp5});
     tmp7 = Undefined_0(state_);
-    tmp8 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp6}, TNode<HeapObject>{tmp7});
+    tmp8 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp6}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp7});
     ca_.Branch(tmp8, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
 
@@ -951,7 +952,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 167});
+      pos_stack.push_back({"test/torque/test-torque.tq", 171});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericMacroTest<Smi>(1) == Undefined' failed", pos_stack);
     }
   }
@@ -965,7 +966,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     tmp9 = Null_0(state_);
     tmp10 = GenericMacroTest_Object_0(state_, TNode<Object>{tmp9});
     tmp11 = Null_0(state_);
-    tmp12 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp10}, TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp10}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp11});
     ca_.Branch(tmp12, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
   }
 
@@ -973,7 +974,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 168});
+      pos_stack.push_back({"test/torque/test-torque.tq", 172});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericMacroTest<Object>(Null) == Null' failed", pos_stack);
     }
   }
@@ -987,7 +988,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     tmp13 = False_0(state_);
     tmp14 = GenericMacroTest_Object_0(state_, TNode<Object>{tmp13});
     tmp15 = False_0(state_);
-    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp14}, TNode<HeapObject>{tmp15});
+    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp14}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15});
     ca_.Branch(tmp16, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
 
@@ -995,7 +996,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 169});
+      pos_stack.push_back({"test/torque/test-torque.tq", 173});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericMacroTest<Object>(False) == False' failed", pos_stack);
     }
   }
@@ -1009,7 +1010,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     tmp17 = True_0(state_);
     tmp18 = GenericMacroTest_Object_0(state_, TNode<Object>{tmp17});
     tmp19 = True_0(state_);
-    tmp20 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp18}, TNode<HeapObject>{tmp19});
+    tmp20 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp18}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp19});
     ca_.Branch(tmp20, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
   }
 
@@ -1017,7 +1018,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block13);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 170});
+      pos_stack.push_back({"test/torque/test-torque.tq", 174});
       CodeStubAssembler(state_).FailAssert("Torque assert 'GenericMacroTest<Object>(True) == True' failed", pos_stack);
     }
   }
@@ -1046,7 +1047,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp24 = Undefined_0(state_);
-    tmp25 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp22}, TNode<HeapObject>{tmp24});
+    tmp25 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp22}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp24});
     ca_.Branch(tmp25, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
@@ -1054,7 +1055,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block15);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 171});
+      pos_stack.push_back({"test/torque/test-torque.tq", 175});
       CodeStubAssembler(state_).FailAssert("Torque assert '(GenericMacroTestWithLabels<Smi>(0) otherwise Fail) == Undefined' failed", pos_stack);
     }
   }
@@ -1083,7 +1084,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp29 = Undefined_0(state_);
-    tmp30 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp27}, TNode<HeapObject>{tmp29});
+    tmp30 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp27}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp29});
     ca_.Branch(tmp30, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
@@ -1091,7 +1092,7 @@ void TestMacroSpecialization_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block19);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 172});
+      pos_stack.push_back({"test/torque/test-torque.tq", 176});
       CodeStubAssembler(state_).FailAssert("Torque assert '(GenericMacroTestWithLabels<Smi>(0) otherwise Fail) == Undefined' failed", pos_stack);
     }
   }
@@ -1167,7 +1168,7 @@ TF_BUILTIN(TestHelperPlus2, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=188&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=192&c=1
 TNode<Boolean> TestFunctionPointers_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1186,7 +1187,7 @@ TNode<Boolean> TestFunctionPointers_0(compiler::CodeAssemblerState* state_, TNod
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2aull));
-tmp1 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(10)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kTestHelperPlus1)), TNode<Object>(), tmp0));
+tmp1 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(5)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kTestHelperPlus1)), TNode<Object>(), tmp0));
     tmp2 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2bull));
     tmp3 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp1}, TNode<Smi>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -1196,7 +1197,7 @@ tmp1 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallIn
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 191});
+      pos_stack.push_back({"test/torque/test-torque.tq", 195});
       CodeStubAssembler(state_).FailAssert("Torque assert 'fptr(42) == 43' failed", pos_stack);
     }
   }
@@ -1208,7 +1209,7 @@ tmp1 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallIn
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2aull));
-tmp5 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(10)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kTestHelperPlus2)), TNode<Object>(), tmp4));
+tmp5 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(5)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kTestHelperPlus2)), TNode<Object>(), tmp4));
     tmp6 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2cull));
     tmp7 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp5}, TNode<Smi>{tmp6});
     ca_.Branch(tmp7, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
@@ -1218,7 +1219,7 @@ tmp5 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallIn
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 193});
+      pos_stack.push_back({"test/torque/test-torque.tq", 197});
       CodeStubAssembler(state_).FailAssert("Torque assert 'fptr(42) == 44' failed", pos_stack);
     }
   }
@@ -1234,7 +1235,7 @@ tmp5 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallIn
   return TNode<Boolean>{tmp8};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=197&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=201&c=1
 TNode<Boolean> TestVariableRedeclaration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1303,7 +1304,7 @@ TNode<Boolean> TestVariableRedeclaration_0(compiler::CodeAssemblerState* state_,
   return TNode<Boolean>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=204&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=208&c=1
 TNode<Smi> TestTernaryOperator_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1374,7 +1375,7 @@ TNode<Smi> TestTernaryOperator_0(compiler::CodeAssemblerState* state_, TNode<Smi
   return TNode<Smi>{phi_bb8_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=210&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=214&c=1
 void TestFunctionPointerToGeneric_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1391,15 +1392,15 @@ void TestFunctionPointerToGeneric_0(compiler::CodeAssemblerState* state_) {
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<Null> tmp2;
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-tmp1 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(11)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_Smi_0)), TNode<Object>(), tmp0);
+tmp1 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(6)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_Smi_0)), TNode<Object>(), tmp0));
     tmp2 = Null_0(state_);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
@@ -1407,21 +1408,21 @@ tmp1 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescr
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 215});
+      pos_stack.push_back({"test/torque/test-torque.tq", 219});
       CodeStubAssembler(state_).FailAssert("Torque assert 'fptr1(0) == Null' failed", pos_stack);
     }
   }
 
   TNode<Smi> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<Null> tmp6;
   TNode<BoolT> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-tmp5 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(11)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_Smi_0)), TNode<Object>(), tmp4);
+tmp5 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(6)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_Smi_0)), TNode<Object>(), tmp4));
     tmp6 = Null_0(state_);
-    tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<HeapObject>{tmp6});
+    tmp7 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp5}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp6});
     ca_.Branch(tmp7, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
@@ -1429,21 +1430,21 @@ tmp5 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescr
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 216});
+      pos_stack.push_back({"test/torque/test-torque.tq", 220});
       CodeStubAssembler(state_).FailAssert("Torque assert 'fptr1(1) == Null' failed", pos_stack);
     }
   }
 
   TNode<Undefined> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   TNode<Undefined> tmp10;
   TNode<BoolT> tmp11;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp8 = Undefined_0(state_);
-tmp9 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(12)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_JSAny_0)), TNode<Object>(), tmp8);
+tmp9 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(7)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_JSAny_0)), TNode<Object>(), tmp8));
     tmp10 = Undefined_0(state_);
-    tmp11 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp9}, TNode<HeapObject>{tmp10});
+    tmp11 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp9}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp10});
     ca_.Branch(tmp11, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
 
@@ -1451,21 +1452,21 @@ tmp9 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescr
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 217});
+      pos_stack.push_back({"test/torque/test-torque.tq", 221});
       CodeStubAssembler(state_).FailAssert("Torque assert 'fptr2(Undefined) == Undefined' failed", pos_stack);
     }
   }
 
   TNode<Undefined> tmp12;
-  TNode<Object> tmp13;
+  TNode<JSAny> tmp13;
   TNode<Undefined> tmp14;
   TNode<BoolT> tmp15;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp12 = Undefined_0(state_);
-tmp13 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(12)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_JSAny_0)), TNode<Object>(), tmp12);
+tmp13 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDescriptorFor(ExampleBuiltinForTorqueFunctionPointerType(7)), ca_.UncheckedCast<BuiltinPtr>(ca_.SmiConstant(Builtin::kGenericBuiltinTest_JSAny_0)), TNode<Object>(), tmp12));
     tmp14 = Undefined_0(state_);
-    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp13}, TNode<HeapObject>{tmp14});
+    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp13}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp14});
     ca_.Branch(tmp15, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
   }
 
@@ -1473,7 +1474,7 @@ tmp13 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDesc
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 218});
+      pos_stack.push_back({"test/torque/test-torque.tq", 222});
       CodeStubAssembler(state_).FailAssert("Torque assert 'fptr2(Undefined) == Undefined' failed", pos_stack);
     }
   }
@@ -1486,7 +1487,7 @@ tmp13 = CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallInterfaceDesc
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=222&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=226&c=1
 TNode<BuiltinPtr> TestTypeAlias_0(compiler::CodeAssemblerState* state_, TNode<BuiltinPtr> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1503,7 +1504,7 @@ TNode<BuiltinPtr> TestTypeAlias_0(compiler::CodeAssemblerState* state_, TNode<Bu
   return TNode<BuiltinPtr>{p_x};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=227&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=231&c=1
 TNode<Boolean> TestUnsafeCast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1540,7 +1541,7 @@ TNode<Boolean> TestUnsafeCast_0(compiler::CodeAssemblerState* state_, TNode<Cont
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 232});
+      pos_stack.push_back({"test/torque/test-torque.tq", 236});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestHelperPlus1(m) == 11' failed", pos_stack);
     }
   }
@@ -1569,7 +1570,7 @@ TNode<Boolean> TestUnsafeCast_0(compiler::CodeAssemblerState* state_, TNode<Cont
   return TNode<Boolean>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=238&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=242&c=1
 void TestHexLiteral_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1600,7 +1601,7 @@ void TestHexLiteral_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 240});
+      pos_stack.push_back({"test/torque/test-torque.tq", 244});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Convert<intptr>(0xffff) + 1 == 0x10000' failed", pos_stack);
     }
   }
@@ -1620,7 +1621,7 @@ void TestHexLiteral_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 241});
+      pos_stack.push_back({"test/torque/test-torque.tq", 245});
       CodeStubAssembler(state_).FailAssert("Torque assert 'Convert<intptr>(-0xffff) == -65535' failed", pos_stack);
     }
   }
@@ -1633,7 +1634,7 @@ void TestHexLiteral_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=244&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=248&c=1
 void TestLargeIntegerLiterals_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1653,7 +1654,7 @@ void TestLargeIntegerLiterals_0(compiler::CodeAssemblerState* state_, TNode<Cont
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=250&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=254&c=1
 void TestMultilineAssert_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1703,7 +1704,7 @@ void TestMultilineAssert_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 253});
+      pos_stack.push_back({"test/torque/test-torque.tq", 257});
       CodeStubAssembler(state_).FailAssert("Torque assert 'someVeryLongVariableNameThatWillCauseLineBreaks > 0 && someVeryLongVariableNameThatWillCauseLineBreaks < 10' failed", pos_stack);
     }
   }
@@ -1716,7 +1717,7 @@ void TestMultilineAssert_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=258&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=262&c=1
 void TestNewlineInString_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1733,7 +1734,7 @@ void TestNewlineInString_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=263&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=267&c=1
 int31_t kConstexprConst_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1742,7 +1743,7 @@ int31_t kConstexprConst_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return (FromConstexpr_constexpr_int31_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull)));}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=264&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=268&c=1
 TNode<IntPtrT> kIntptrConst_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1753,7 +1754,7 @@ TNode<IntPtrT> kIntptrConst_0(compiler::CodeAssemblerState* state_) {
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x4ull));
   return TNode<IntPtrT>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=265&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=269&c=1
 TNode<Smi> kSmiConst_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1764,7 +1765,7 @@ TNode<Smi> kSmiConst_0(compiler::CodeAssemblerState* state_) {
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3ull));
   return TNode<Smi>{tmp0};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=267&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=271&c=1
 void TestModuleConstBindings_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1793,7 +1794,7 @@ void TestModuleConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 269});
+      pos_stack.push_back({"test/torque/test-torque.tq", 273});
       CodeStubAssembler(state_).FailAssert("Torque assert 'kConstexprConst == Int32Constant(5)' failed", pos_stack);
     }
   }
@@ -1813,7 +1814,7 @@ void TestModuleConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 270});
+      pos_stack.push_back({"test/torque/test-torque.tq", 274});
       CodeStubAssembler(state_).FailAssert("Torque assert 'kIntptrConst == 4' failed", pos_stack);
     }
   }
@@ -1833,7 +1834,7 @@ void TestModuleConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 271});
+      pos_stack.push_back({"test/torque/test-torque.tq", 275});
       CodeStubAssembler(state_).FailAssert("Torque assert 'kSmiConst == 3' failed", pos_stack);
     }
   }
@@ -1846,7 +1847,7 @@ void TestModuleConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=274&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=278&c=1
 void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1887,7 +1888,7 @@ void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 280});
+      pos_stack.push_back({"test/torque/test-torque.tq", 284});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x == xSmi + 1' failed", pos_stack);
     }
   }
@@ -1903,7 +1904,7 @@ void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 282});
+      pos_stack.push_back({"test/torque/test-torque.tq", 286});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x == xSmi' failed", pos_stack);
     }
   }
@@ -1921,7 +1922,7 @@ void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 283});
+      pos_stack.push_back({"test/torque/test-torque.tq", 287});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x == 4' failed", pos_stack);
     }
   }
@@ -1939,7 +1940,7 @@ void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 285});
+      pos_stack.push_back({"test/torque/test-torque.tq", 289});
       CodeStubAssembler(state_).FailAssert("Torque assert 'xSmi == 3' failed", pos_stack);
     }
   }
@@ -1957,7 +1958,7 @@ void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 286});
+      pos_stack.push_back({"test/torque/test-torque.tq", 290});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x == xSmi' failed", pos_stack);
     }
   }
@@ -1970,7 +1971,7 @@ void TestLocalConstBindings_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block12);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=300&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=304&c=1
 TNode<Smi> TestStruct1_0(compiler::CodeAssemblerState* state_, TorqueStructTestStructA_0 p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1987,7 +1988,7 @@ TNode<Smi> TestStruct1_0(compiler::CodeAssemblerState* state_, TorqueStructTestS
   return TNode<Smi>{p_i.i};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=305&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=309&c=1
 TorqueStructTestStructA_0 TestStruct2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2012,7 +2013,7 @@ TorqueStructTestStructA_0 TestStruct2_0(compiler::CodeAssemblerState* state_, TN
   return TorqueStructTestStructA_0{TNode<FixedArray>{tmp1}, TNode<Smi>{tmp2}, TNode<Number>{tmp3}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=314&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=318&c=1
 TorqueStructTestStructA_0 TestStruct3_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2057,7 +2058,7 @@ TorqueStructTestStructA_0 TestStruct3_0(compiler::CodeAssemblerState* state_, TN
   return TorqueStructTestStructA_0{TNode<FixedArray>{tmp1}, TNode<Smi>{tmp7}, TNode<Number>{tmp7}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=340&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=344&c=1
 TorqueStructTestStructC_0 TestStruct4_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2082,7 +2083,7 @@ TorqueStructTestStructC_0 TestStruct4_0(compiler::CodeAssemblerState* state_, TN
   return TorqueStructTestStructC_0{TorqueStructTestStructA_0{TNode<FixedArray>{tmp0}, TNode<Smi>{tmp1}, TNode<Number>{tmp2}}, TorqueStructTestStructA_0{TNode<FixedArray>{tmp3}, TNode<Smi>{tmp4}, TNode<Number>{tmp5}}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=349&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=353&c=1
 void CallTestStructInLabel_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2102,7 +2103,7 @@ void CallTestStructInLabel_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block4);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=358&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=362&c=1
 void TestForLoop_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2231,7 +2232,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7, &phi_bb7_0);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 362});
+      pos_stack.push_back({"test/torque/test-torque.tq", 366});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 10' failed", pos_stack);
     }
   }
@@ -2287,7 +2288,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block13, &phi_bb13_0, &phi_bb13_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 367});
+      pos_stack.push_back({"test/torque/test-torque.tq", 371});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 10' failed", pos_stack);
     }
   }
@@ -2344,7 +2345,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block18, &phi_bb18_0, &phi_bb18_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 372});
+      pos_stack.push_back({"test/torque/test-torque.tq", 376});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 10' failed", pos_stack);
     }
   }
@@ -2404,7 +2405,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block26, &phi_bb26_0, &phi_bb26_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 380});
+      pos_stack.push_back({"test/torque/test-torque.tq", 384});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 10' failed", pos_stack);
     }
   }
@@ -2461,7 +2462,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block33, &phi_bb33_0, &phi_bb33_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 389});
+      pos_stack.push_back({"test/torque/test-torque.tq", 393});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 10' failed", pos_stack);
     }
   }
@@ -2549,7 +2550,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block41, &phi_bb41_0, &phi_bb41_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 398});
+      pos_stack.push_back({"test/torque/test-torque.tq", 402});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 7' failed", pos_stack);
     }
   }
@@ -2631,7 +2632,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block49, &phi_bb49_0, &phi_bb49_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 406});
+      pos_stack.push_back({"test/torque/test-torque.tq", 410});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 7' failed", pos_stack);
     }
   }
@@ -2710,7 +2711,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block56, &phi_bb56_0, &phi_bb56_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 418});
+      pos_stack.push_back({"test/torque/test-torque.tq", 422});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 7' failed", pos_stack);
     }
   }
@@ -2798,7 +2799,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block66, &phi_bb66_0, &phi_bb66_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 426});
+      pos_stack.push_back({"test/torque/test-torque.tq", 430});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 7' failed", pos_stack);
     }
   }
@@ -2877,7 +2878,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block75, &phi_bb75_0, &phi_bb75_1);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 440});
+      pos_stack.push_back({"test/torque/test-torque.tq", 444});
       CodeStubAssembler(state_).FailAssert("Torque assert 'sum == 7' failed", pos_stack);
     }
   }
@@ -2927,7 +2928,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block84, &phi_bb84_0);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 448});
+      pos_stack.push_back({"test/torque/test-torque.tq", 452});
       CodeStubAssembler(state_).FailAssert("Torque assert 'j == 10' failed", pos_stack);
     }
   }
@@ -2978,7 +2979,7 @@ void TestForLoop_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block89);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=457&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=461&c=1
 void TestSubtyping_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2994,8 +2995,8 @@ void TestSubtyping_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_x) {
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=474&c=1
-TNode<Int32T> TypeswitchExample_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=478&c=1
+TNode<Int32T> TypeswitchExample_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<FixedArray, HeapNumber, Smi>> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3012,12 +3013,12 @@ TNode<Int32T> TypeswitchExample_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block0);
 
   TNode<Int32T> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<FixedArray, HeapNumber, Smi>> tmp1;
   TNode<FixedArray> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp1 = IncrementIfSmi_NumberOrFixedArray_0(state_, TNode<Object>{p_x});
+    tmp1 = IncrementIfSmi_NumberOrFixedArray_0(state_, TNode<Union<FixedArray, HeapNumber, Smi>>{p_x});
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_FixedArray_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp1}, &label3);
     ca_.Goto(&block4);
@@ -3048,13 +3049,13 @@ TNode<Int32T> TypeswitchExample_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<Int32T> phi_bb2_2;
   TNode<Int32T> tmp8;
   TNode<Int32T> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<FixedArray, HeapNumber, Smi>> tmp10;
   TNode<Smi> tmp11;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_2);
     tmp8 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xaull));
     tmp9 = CodeStubAssembler(state_).Int32Mul(TNode<Int32T>{phi_bb2_2}, TNode<Int32T>{tmp8});
-    tmp10 = IncrementIfSmi_NumberOrFixedArray_0(state_, TNode<Object>{p_x});
+    tmp10 = IncrementIfSmi_NumberOrFixedArray_0(state_, TNode<Union<FixedArray, HeapNumber, Smi>>{p_x});
     compiler::CodeAssemblerLabel label12(&ca_);
     tmp11 = Cast_Smi_0(state_, TNode<Object>{tmp10}, &label12);
     ca_.Goto(&block8);
@@ -3068,7 +3069,7 @@ TNode<Int32T> TypeswitchExample_0(compiler::CodeAssemblerState* state_, TNode<Co
   if (block9.is_used()) {
     ca_.Bind(&block9);
     compiler::CodeAssemblerLabel label14(&ca_);
-    tmp13 = Cast_FixedArray_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(tmp10)}, &label14);
+    tmp13 = Cast_FixedArray_0(state_, TNode<HeapObject>{ca_.UncheckedCast<Union<FixedArray, HeapNumber>>(tmp10)}, &label14);
     ca_.Goto(&block12);
     if (label14.is_used()) {
       ca_.Bind(&label14);
@@ -3124,7 +3125,7 @@ TNode<Int32T> TypeswitchExample_0(compiler::CodeAssemblerState* state_, TNode<Co
   return TNode<Int32T>{phi_bb14_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=503&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=507&c=1
 void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3145,7 +3146,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
-    tmp1 = TypeswitchExample_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
+    tmp1 = TypeswitchExample_0(state_, TNode<Context>{p_context}, TNode<Union<FixedArray, HeapNumber, Smi>>{tmp0});
     tmp2 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1aull));
     tmp3 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp1}, TNode<Int32T>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -3155,7 +3156,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 505});
+      pos_stack.push_back({"test/torque/test-torque.tq", 509});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TypeswitchExample(FromConstexpr<Smi>(5)) == 26' failed", pos_stack);
     }
   }
@@ -3169,7 +3170,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
     ca_.Bind(&block2);
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3ull));
     tmp5 = CodeStubAssembler(state_).AllocateZeroedFixedArray(TNode<IntPtrT>{tmp4});
-    tmp6 = TypeswitchExample_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp5});
+    tmp6 = TypeswitchExample_0(state_, TNode<Context>{p_context}, TNode<Union<FixedArray, HeapNumber, Smi>>{tmp5});
     tmp7 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xdull));
     tmp8 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp6}, TNode<Int32T>{tmp7});
     ca_.Branch(tmp8, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
@@ -3179,7 +3180,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 507});
+      pos_stack.push_back({"test/torque/test-torque.tq", 511});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TypeswitchExample(a) == 13' failed", pos_stack);
     }
   }
@@ -3191,7 +3192,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp9 = FromConstexpr_Number_constexpr_float64_0(state_, 0.5);
-    tmp10 = TypeswitchExample_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp9});
+    tmp10 = TypeswitchExample_0(state_, TNode<Context>{p_context}, TNode<Union<FixedArray, HeapNumber, Smi>>{tmp9});
     tmp11 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1bull));
     tmp12 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp10}, TNode<Int32T>{tmp11});
     ca_.Branch(tmp12, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
@@ -3201,7 +3202,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 508});
+      pos_stack.push_back({"test/torque/test-torque.tq", 512});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TypeswitchExample(FromConstexpr<Number>(0.5)) == 27' failed", pos_stack);
     }
   }
@@ -3214,7 +3215,7 @@ void TestTypeswitch_0(compiler::CodeAssemblerState* state_, TNode<Context> p_con
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=511&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=515&c=1
 void TestTypeswitchAsanLsanFailure_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_obj) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3305,7 +3306,7 @@ void TestTypeswitchAsanLsanFailure_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block14);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=533&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=537&c=1
 void TestGenericOverload_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3334,7 +3335,7 @@ void TestGenericOverload_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 537});
+      pos_stack.push_back({"test/torque/test-torque.tq", 541});
       CodeStubAssembler(state_).FailAssert("Torque assert 'ExampleGenericOverload<Smi>(xSmi) == 6' failed", pos_stack);
     }
   }
@@ -3356,7 +3357,7 @@ void TestGenericOverload_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 538});
+      pos_stack.push_back({"test/torque/test-torque.tq", 542});
       CodeStubAssembler(state_).FailAssert("Torque assert 'UnsafeCast<Smi>(ExampleGenericOverload<Object>(xObject)) == 5' failed", pos_stack);
     }
   }
@@ -3369,7 +3370,7 @@ void TestGenericOverload_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=541&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=545&c=1
 void TestEquality_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3402,7 +3403,7 @@ void TestEquality_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 545});
+      pos_stack.push_back({"test/torque/test-torque.tq", 549});
       CodeStubAssembler(state_).FailAssert("Torque assert '!notEqual' failed", pos_stack);
     }
   }
@@ -3426,7 +3427,7 @@ void TestEquality_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 548});
+      pos_stack.push_back({"test/torque/test-torque.tq", 552});
       CodeStubAssembler(state_).FailAssert("Torque assert 'equal' failed", pos_stack);
     }
   }
@@ -3439,7 +3440,7 @@ void TestEquality_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=551&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=555&c=1
 TNode<BoolT> TestOrAnd_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_x, TNode<BoolT> p_y, TNode<BoolT> p_z) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3521,7 +3522,7 @@ TNode<BoolT> TestOrAnd_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_x,
   return TNode<BoolT>{phi_bb4_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=556&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=560&c=1
 TNode<BoolT> TestAndOr_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_x, TNode<BoolT> p_y, TNode<BoolT> p_z) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3603,7 +3604,7 @@ TNode<BoolT> TestAndOr_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_x,
   return TNode<BoolT>{phi_bb4_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=561&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=565&c=1
 void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3660,7 +3661,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 563});
+      pos_stack.push_back({"test/torque/test-torque.tq", 567});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestAndOr(true, true, true)' failed", pos_stack);
     }
   }
@@ -3682,7 +3683,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 564});
+      pos_stack.push_back({"test/torque/test-torque.tq", 568});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestAndOr(true, true, false)' failed", pos_stack);
     }
   }
@@ -3704,7 +3705,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 565});
+      pos_stack.push_back({"test/torque/test-torque.tq", 569});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestAndOr(true, false, true)' failed", pos_stack);
     }
   }
@@ -3728,7 +3729,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 566});
+      pos_stack.push_back({"test/torque/test-torque.tq", 570});
       CodeStubAssembler(state_).FailAssert("Torque assert '!TestAndOr(true, false, false)' failed", pos_stack);
     }
   }
@@ -3750,7 +3751,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 567});
+      pos_stack.push_back({"test/torque/test-torque.tq", 571});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestAndOr(false, true, true)' failed", pos_stack);
     }
   }
@@ -3774,7 +3775,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block13);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 568});
+      pos_stack.push_back({"test/torque/test-torque.tq", 572});
       CodeStubAssembler(state_).FailAssert("Torque assert '!TestAndOr(false, true, false)' failed", pos_stack);
     }
   }
@@ -3796,7 +3797,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block15);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 569});
+      pos_stack.push_back({"test/torque/test-torque.tq", 573});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestAndOr(false, false, true)' failed", pos_stack);
     }
   }
@@ -3820,7 +3821,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block17);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 570});
+      pos_stack.push_back({"test/torque/test-torque.tq", 574});
       CodeStubAssembler(state_).FailAssert("Torque assert '!TestAndOr(false, false, false)' failed", pos_stack);
     }
   }
@@ -3842,7 +3843,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block19);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 571});
+      pos_stack.push_back({"test/torque/test-torque.tq", 575});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestOrAnd(true, true, true)' failed", pos_stack);
     }
   }
@@ -3864,7 +3865,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block21);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 572});
+      pos_stack.push_back({"test/torque/test-torque.tq", 576});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestOrAnd(true, true, false)' failed", pos_stack);
     }
   }
@@ -3886,7 +3887,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block23);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 573});
+      pos_stack.push_back({"test/torque/test-torque.tq", 577});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestOrAnd(true, false, true)' failed", pos_stack);
     }
   }
@@ -3908,7 +3909,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block25);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 574});
+      pos_stack.push_back({"test/torque/test-torque.tq", 578});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestOrAnd(true, false, false)' failed", pos_stack);
     }
   }
@@ -3930,7 +3931,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block27);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 575});
+      pos_stack.push_back({"test/torque/test-torque.tq", 579});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TestOrAnd(false, true, true)' failed", pos_stack);
     }
   }
@@ -3954,7 +3955,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block29);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 576});
+      pos_stack.push_back({"test/torque/test-torque.tq", 580});
       CodeStubAssembler(state_).FailAssert("Torque assert '!TestOrAnd(false, true, false)' failed", pos_stack);
     }
   }
@@ -3978,7 +3979,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block31);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 577});
+      pos_stack.push_back({"test/torque/test-torque.tq", 581});
       CodeStubAssembler(state_).FailAssert("Torque assert '!TestOrAnd(false, false, true)' failed", pos_stack);
     }
   }
@@ -4002,7 +4003,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block33);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 578});
+      pos_stack.push_back({"test/torque/test-torque.tq", 582});
       CodeStubAssembler(state_).FailAssert("Torque assert '!TestOrAnd(false, false, false)' failed", pos_stack);
     }
   }
@@ -4015,7 +4016,7 @@ void TestLogicalOperators_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block34);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=581&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=585&c=1
 TNode<Smi> TestCall_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_i, compiler::CodeAssemblerLabel* label_A) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4048,7 +4049,7 @@ TNode<Smi> TestCall_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_i, comp
   return TNode<Smi>{p_i};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=587&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=591&c=1
 void TestOtherwiseWithCode1_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4101,7 +4102,7 @@ void TestOtherwiseWithCode1_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block12);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=599&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=603&c=1
 void TestOtherwiseWithCode2_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4182,7 +4183,7 @@ void TestOtherwiseWithCode2_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block14);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=609&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=613&c=1
 void TestOtherwiseWithCode3_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4263,7 +4264,7 @@ void TestOtherwiseWithCode3_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block14);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=618&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=622&c=1
 void TestForwardLabel_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4281,7 +4282,7 @@ void TestForwardLabel_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=629&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=633&c=1
 void TestQualifiedAccess_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4306,7 +4307,7 @@ void TestQualifiedAccess_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 632});
+      pos_stack.push_back({"test/torque/test-torque.tq", 636});
       CodeStubAssembler(state_).FailAssert("Torque assert '!Is<JSArray>(s)' failed", pos_stack);
     }
   }
@@ -4319,7 +4320,7 @@ void TestQualifiedAccess_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block4);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=635&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=639&c=1
 TNode<Smi> TestCatch1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4329,7 +4330,7 @@ TNode<Smi> TestCatch1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
-      TNode<Object> tmp2;
+      TNode<JSAny> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -4344,7 +4345,7 @@ TNode<Smi> TestCatch1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     }
   }
 
-  TNode<HeapObject> tmp3;
+  TNode<Union<Hole, JSMessageObject>> tmp3;
   TNode<Smi> tmp4;
   if (block4.is_used()) {
     ca_.Bind(&block4);
@@ -4357,7 +4358,7 @@ TNode<Smi> TestCatch1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
   return TNode<Smi>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=646&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=650&c=1
 void TestCatch2Wrapper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4370,7 +4371,7 @@ void TestCatch2Wrapper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=651&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=655&c=1
 TNode<Smi> TestCatch2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4380,7 +4381,7 @@ TNode<Smi> TestCatch2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
-      TNode<Object> tmp2;
+      TNode<JSAny> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -4395,7 +4396,7 @@ TNode<Smi> TestCatch2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     }
   }
 
-  TNode<HeapObject> tmp3;
+  TNode<Union<Hole, JSMessageObject>> tmp3;
   TNode<Smi> tmp4;
   if (block4.is_used()) {
     ca_.Bind(&block4);
@@ -4408,7 +4409,7 @@ TNode<Smi> TestCatch2_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
   return TNode<Smi>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=662&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=666&c=1
 void TestCatch3WrapperWithLabel_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, compiler::CodeAssemblerLabel* label__Abort) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4421,7 +4422,7 @@ void TestCatch3WrapperWithLabel_0(compiler::CodeAssemblerState* state_, TNode<Co
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=668&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=672&c=1
 TNode<Smi> TestCatch3_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4433,7 +4434,7 @@ TNode<Smi> TestCatch3_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
-      TNode<Object> tmp3;
+      TNode<JSAny> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -4453,7 +4454,7 @@ TNode<Smi> TestCatch3_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     }
   }
 
-  TNode<HeapObject> tmp4;
+  TNode<Union<Hole, JSMessageObject>> tmp4;
   TNode<Smi> tmp5;
   if (block7.is_used()) {
     ca_.Bind(&block7);
@@ -4479,7 +4480,7 @@ TNode<Smi> TestCatch3_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
   return TNode<Smi>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=685&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=689&c=1
 void TestIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Map> p_map) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4493,16 +4494,16 @@ void TestIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<JSReceiver> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = IteratorBuiltinsAssembler(state_).GetIteratorMethod(TNode<Context>{p_context}, TNode<Object>{p_o});
-    std::tie(tmp1, tmp2) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{p_context}, TNode<Object>{p_o}).Flatten();
+    tmp0 = IteratorBuiltinsAssembler(state_).GetIteratorMethod(TNode<Context>{p_context}, TNode<JSAny>{p_o});
+    std::tie(tmp1, tmp2) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{p_context}, TNode<JSAny>{p_o}).Flatten();
     compiler::CodeAssemblerLabel label4(&ca_);
-    tmp3 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, &label4);
+    tmp3 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, &label4);
     ca_.Goto(&block4);
     if (label4.is_used()) {
       ca_.Bind(&label4);
@@ -4519,7 +4520,7 @@ void TestIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
   if (block4.is_used()) {
     ca_.Bind(&block4);
     compiler::CodeAssemblerLabel label6(&ca_);
-    tmp5 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{p_map}, &label6);
+    tmp5 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{p_map}, &label6);
     ca_.Goto(&block6);
     if (label6.is_used()) {
       ca_.Bind(&label6);
@@ -4532,15 +4533,15 @@ void TestIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
     ca_.Goto(&block3);
   }
 
-  TNode<Object> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp7;
+  TNode<JSAny> tmp8;
   TNode<JSArray> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp7 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{p_context}, TNode<JSReceiver>{p_o});
     tmp8 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{p_context}, TNode<JSReceiver>{p_o}, TNode<Map>{p_map});
-    tmp9 = IteratorBuiltinsAssembler(state_).IterableToList(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp0});
-    IteratorCloseOnException_0(state_, TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    tmp9 = IteratorBuiltinsAssembler(state_).IterableToList(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp0});
+    IteratorCloseOnException_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{tmp1});
     ca_.Goto(&block2);
   }
 
@@ -4557,7 +4558,7 @@ void TestIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_conte
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=704&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=708&c=1
 void TestFrame1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4570,7 +4571,7 @@ void TestFrame1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context
     ca_.Goto(&block0);
 
   TNode<RawPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<Context, Smi>> tmp1;
   TNode<Smi> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -4615,7 +4616,7 @@ void TestFrame1_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context
     ca_.Bind(&block18);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=720&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=724&c=1
 void TestNew_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4638,7 +4639,7 @@ void TestNew_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 723});
+      pos_stack.push_back({"test/torque/test-torque.tq", 727});
       CodeStubAssembler(state_).FailAssert("Torque assert 'f.IsEmpty()' failed", pos_stack);
     }
   }
@@ -4656,7 +4657,7 @@ void TestNew_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
     ca_.Bind(&block4);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=744&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=748&c=1
 void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4699,7 +4700,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 748});
+      pos_stack.push_back({"test/torque/test-torque.tq", 752});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.a == 5' failed", pos_stack);
     }
   }
@@ -4717,7 +4718,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 749});
+      pos_stack.push_back({"test/torque/test-torque.tq", 753});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.b.x == 6' failed", pos_stack);
     }
   }
@@ -4735,7 +4736,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 750});
+      pos_stack.push_back({"test/torque/test-torque.tq", 754});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.b.y == 7' failed", pos_stack);
     }
   }
@@ -4753,7 +4754,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 751});
+      pos_stack.push_back({"test/torque/test-torque.tq", 755});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.c == 8' failed", pos_stack);
     }
   }
@@ -4773,7 +4774,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 753});
+      pos_stack.push_back({"test/torque/test-torque.tq", 757});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.b.x == 1' failed", pos_stack);
     }
   }
@@ -4793,7 +4794,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block14);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 755});
+      pos_stack.push_back({"test/torque/test-torque.tq", 759});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.b.x == 2' failed", pos_stack);
     }
   }
@@ -4811,7 +4812,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block16);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 756});
+      pos_stack.push_back({"test/torque/test-torque.tq", 760});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.b.GetX() == 2' failed", pos_stack);
     }
   }
@@ -4824,7 +4825,7 @@ void TestStructConstructor_0(compiler::CodeAssemblerState* state_, TNode<Context
     ca_.Bind(&block18);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=763&c=1
 TNode<InternalClass> Cast_InternalClass_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4860,7 +4861,7 @@ TNode<InternalClass> Cast_InternalClass_0(compiler::CodeAssemblerState* state_, 
   return TNode<InternalClass>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=769&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=773&c=1
 TNode<InternalClass> NewInternalClass_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4902,7 +4903,7 @@ TNode<InternalClass> NewInternalClass_0(compiler::CodeAssemblerState* state_, TN
   return TNode<InternalClass>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=773&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=777&c=1
 void TestInternalClass_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4953,7 +4954,7 @@ void TestInternalClass_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 777});
+      pos_stack.push_back({"test/torque/test-torque.tq", 781});
       CodeStubAssembler(state_).FailAssert("Torque assert 'o.a == 6' failed", pos_stack);
     }
   }
@@ -4975,7 +4976,7 @@ void TestInternalClass_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 778});
+      pos_stack.push_back({"test/torque/test-torque.tq", 782});
       CodeStubAssembler(state_).FailAssert("Torque assert 'o.b == 5' failed", pos_stack);
     }
   }
@@ -4988,7 +4989,7 @@ void TestInternalClass_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=792&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=796&c=1
 void TestConstInStructs_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5023,7 +5024,7 @@ void TestConstInStructs_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 799});
+      pos_stack.push_back({"test/torque/test-torque.tq", 803});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x.TestMethod1() == 1' failed", pos_stack);
     }
   }
@@ -5033,7 +5034,7 @@ void TestConstInStructs_0(compiler::CodeAssemblerState* state_) {
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp7 = Null_0(state_);
-    tmp8 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp0}, TNode<HeapObject>{tmp7});
+    tmp8 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp0}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp7});
     ca_.Branch(tmp8, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
@@ -5041,7 +5042,7 @@ void TestConstInStructs_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block6);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 800});
+      pos_stack.push_back({"test/torque/test-torque.tq", 804});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x.TestMethod2() == Null' failed", pos_stack);
     }
   }
@@ -5054,7 +5055,7 @@ void TestConstInStructs_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block8);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=803&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=807&c=1
 void TestParentFrameArguments_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5100,7 +5101,7 @@ void TestParentFrameArguments_0(compiler::CodeAssemblerState* state_, TNode<Cont
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=819&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=823&c=1
 TNode<Object> TestNewFixedArrayFromSpread_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5137,7 +5138,7 @@ TNode<Object> TestNewFixedArrayFromSpread_0(compiler::CodeAssemblerState* state_
     tmp10 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp7, tmp9}, tmp10);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_Object_TestIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp7}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}}, TorqueStructTestIterator_0{TNode<Smi>{tmp0}});
+    InitializeFieldsFromIterator_Object_TestIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}}, TorqueStructTestIterator_0{TNode<Smi>{tmp0}});
     tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp7});
     ca_.Goto(&block2);
   }
@@ -5146,7 +5147,7 @@ TNode<Object> TestNewFixedArrayFromSpread_0(compiler::CodeAssemblerState* state_
   return TNode<Object>{tmp12};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=829&c=1
 TNode<SmiPair> Cast_SmiPair_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5182,7 +5183,7 @@ TNode<SmiPair> Cast_SmiPair_0(compiler::CodeAssemblerState* state_, TNode<HeapOb
   return TNode<SmiPair>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=839&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=843&c=1
 void TestReferences_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5213,7 +5214,7 @@ void TestReferences_0(compiler::CodeAssemblerState* state_) {
   TNode<Smi> tmp16;
   TNode<Smi> tmp17;
   TNode<IntPtrT> tmp18;
-  TNode<Object> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<Smi> tmp22;
@@ -5246,7 +5247,7 @@ void TestReferences_0(compiler::CodeAssemblerState* state_) {
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp10, tmp11}, tmp17);
     tmp18 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     std::tie(tmp19, tmp20) = Method_SmiPair_GetA_0(state_, TNode<SmiPair>{tmp10}).Flatten();
-    Swap_Smi_0(state_, TorqueStructReference_Smi_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}, TorqueStructReference_Smi_0{TNode<Object>{tmp19}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}});
+    Swap_Smi_0(state_, TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}, TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp19}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}});
     tmp21 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp22 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp10, tmp21});
     tmp23 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
@@ -5258,7 +5259,7 @@ void TestReferences_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 846});
+      pos_stack.push_back({"test/torque/test-torque.tq", 850});
       CodeStubAssembler(state_).FailAssert("Torque assert 'array.a == 2' failed", pos_stack);
     }
   }
@@ -5280,7 +5281,7 @@ void TestReferences_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 847});
+      pos_stack.push_back({"test/torque/test-torque.tq", 851});
       CodeStubAssembler(state_).FailAssert("Torque assert 'array.b == 9' failed", pos_stack);
     }
   }
@@ -5293,7 +5294,7 @@ void TestReferences_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=850&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=854&c=1
 void TestSlices_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5350,7 +5351,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     tmp10 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3ull));
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp7, tmp9}, tmp10);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_Object_TestIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp7}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}}, TorqueStructTestIterator_0{TNode<Smi>{tmp0}});
+    InitializeFieldsFromIterator_Object_TestIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}}, TorqueStructTestIterator_0{TNode<Smi>{tmp0}});
     tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp7});
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp14 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp12, tmp13});
@@ -5363,13 +5364,13 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 854});
+      pos_stack.push_back({"test/torque/test-torque.tq", 858});
       CodeStubAssembler(state_).FailAssert("Torque assert 'a.length == 3' failed", pos_stack);
     }
   }
 
   TNode<Smi> tmp17;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<UintPtrT> tmp21;
@@ -5391,9 +5392,9 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
 
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
-  TNode<Object> tmp30;
+  TNode<Union<HeapObject, TaggedIndex>> tmp30;
   TNode<IntPtrT> tmp31;
   TNode<IntPtrT> tmp32;
   TNode<UintPtrT> tmp33;
@@ -5405,7 +5406,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     tmp26 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp22});
     tmp27 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp26});
-    std::tie(tmp28, tmp29) = NewReference_Object_0(state_, TNode<Object>{tmp18}, TNode<IntPtrT>{tmp27}).Flatten();
+    std::tie(tmp28, tmp29) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp18}, TNode<IntPtrT>{tmp27}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp28, tmp29}, tmp17);
     std::tie(tmp30, tmp31, tmp32) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp12}).Flatten();
     tmp33 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -5423,7 +5424,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
 
   TNode<IntPtrT> tmp38;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<Object> tmp42;
   TNode<BoolT> tmp43;
@@ -5431,9 +5432,9 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block18);
     tmp38 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp34});
     tmp39 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp31}, TNode<IntPtrT>{tmp38});
-    std::tie(tmp40, tmp41) = NewReference_Object_0(state_, TNode<Object>{tmp30}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp30}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp40, tmp41});
-    tmp43 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp42}, TNode<MaybeObject>{tmp17});
+    tmp43 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp42}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17});
     ca_.Branch(tmp43, &block22, std::vector<compiler::Node*>{}, &block23, std::vector<compiler::Node*>{});
   }
 
@@ -5446,12 +5447,12 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block23);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 859});
+      pos_stack.push_back({"test/torque/test-torque.tq", 863});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TaggedEqual(*firstRef, oneTwoThree)' failed", pos_stack);
     }
   }
 
-  TNode<Object> tmp44;
+  TNode<Union<HeapObject, TaggedIndex>> tmp44;
   TNode<IntPtrT> tmp45;
   TNode<IntPtrT> tmp46;
   TNode<IntPtrT> tmp47;
@@ -5470,7 +5471,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
 
   TNode<IntPtrT> tmp51;
   TNode<IntPtrT> tmp52;
-  TNode<Object> tmp53;
+  TNode<Union<HeapObject, TaggedIndex>> tmp53;
   TNode<IntPtrT> tmp54;
   TNode<Object> tmp55;
   TNode<BoolT> tmp56;
@@ -5478,9 +5479,9 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block27);
     tmp51 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp47});
     tmp52 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp45}, TNode<IntPtrT>{tmp51});
-    std::tie(tmp53, tmp54) = NewReference_Object_0(state_, TNode<Object>{tmp44}, TNode<IntPtrT>{tmp52}).Flatten();
+    std::tie(tmp53, tmp54) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp44}, TNode<IntPtrT>{tmp52}).Flatten();
     tmp55 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp53, tmp54});
-    tmp56 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp55}, TNode<MaybeObject>{tmp17});
+    tmp56 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp55}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17});
     ca_.Branch(tmp56, &block31, std::vector<compiler::Node*>{}, &block32, std::vector<compiler::Node*>{});
   }
 
@@ -5493,13 +5494,13 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block32);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 863});
+      pos_stack.push_back({"test/torque/test-torque.tq", 867});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TaggedEqual(*firstRefAgain, oneTwoThree)' failed", pos_stack);
     }
   }
 
   TNode<Smi> tmp57;
-  TNode<Object> tmp58;
+  TNode<Union<HeapObject, TaggedIndex>> tmp58;
   TNode<IntPtrT> tmp59;
   TNode<IntPtrT> tmp60;
   TNode<UintPtrT> tmp61;
@@ -5522,7 +5523,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
 
   TNode<IntPtrT> tmp66;
   TNode<IntPtrT> tmp67;
-  TNode<Object> tmp68;
+  TNode<Union<HeapObject, TaggedIndex>> tmp68;
   TNode<IntPtrT> tmp69;
   TNode<Object> tmp70;
   TNode<BoolT> tmp71;
@@ -5530,9 +5531,9 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block40);
     tmp66 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp62});
     tmp67 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp59}, TNode<IntPtrT>{tmp66});
-    std::tie(tmp68, tmp69) = NewReference_Object_0(state_, TNode<Object>{tmp58}, TNode<IntPtrT>{tmp67}).Flatten();
+    std::tie(tmp68, tmp69) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp58}, TNode<IntPtrT>{tmp67}).Flatten();
     tmp70 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp68, tmp69});
-    tmp71 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp70}, TNode<MaybeObject>{tmp57});
+    tmp71 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp70}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp57});
     ca_.Branch(tmp71, &block33, std::vector<compiler::Node*>{}, &block34, std::vector<compiler::Node*>{});
   }
 
@@ -5545,7 +5546,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block34);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 867});
+      pos_stack.push_back({"test/torque/test-torque.tq", 871});
       CodeStubAssembler(state_).FailAssert("Torque assert 'TaggedEqual(a.objects[0], threeTwoOne)' failed", pos_stack);
     }
   }
@@ -5558,7 +5559,7 @@ void TestSlices_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block44);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=878&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=882&c=1
 TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -5615,7 +5616,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   }
 
   TNode<IntPtrT> phi_bb2_2;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<UintPtrT> tmp8;
@@ -5637,7 +5638,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   TNode<IntPtrT> phi_bb12_13;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
-  TNode<Object> tmp13;
+  TNode<Union<HeapObject, TaggedIndex>> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<Object> tmp15;
   TNode<Smi> tmp16;
@@ -5647,7 +5648,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block12, &phi_bb12_2, &phi_bb12_7, &phi_bb12_8, &phi_bb12_12, &phi_bb12_13);
     tmp11 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb12_13});
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp11});
-    std::tie(tmp13, tmp14) = NewReference_Object_0(state_, TNode<Object>{tmp5}, TNode<IntPtrT>{tmp12}).Flatten();
+    std::tie(tmp13, tmp14) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp5}, TNode<IntPtrT>{tmp12}).Flatten();
     tmp15 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp13, tmp14});
     tmp16 = UnsafeCast_Smi_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp15});
     tmp17 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -5670,13 +5671,13 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block7, &phi_bb7_2);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 882});
+      pos_stack.push_back({"test/torque/test-torque.tq", 886});
       CodeStubAssembler(state_).FailAssert("Torque assert 'UnsafeCast<Smi>(fixedArray.objects[i]) == 0' failed", pos_stack);
     }
   }
 
   TNode<IntPtrT> phi_bb6_2;
-  TNode<Object> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<UintPtrT> tmp22;
@@ -5698,7 +5699,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   TNode<IntPtrT> phi_bb20_13;
   TNode<IntPtrT> tmp25;
   TNode<IntPtrT> tmp26;
-  TNode<Object> tmp27;
+  TNode<Union<HeapObject, TaggedIndex>> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<Smi> tmp29;
   TNode<Smi> tmp30;
@@ -5709,7 +5710,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block20, &phi_bb20_2, &phi_bb20_7, &phi_bb20_8, &phi_bb20_12, &phi_bb20_13);
     tmp25 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb20_13});
     tmp26 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp25});
-    std::tie(tmp27, tmp28) = NewReference_Object_0(state_, TNode<Object>{tmp19}, TNode<IntPtrT>{tmp26}).Flatten();
+    std::tie(tmp27, tmp28) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp19}, TNode<IntPtrT>{tmp26}).Flatten();
     tmp29 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb20_2});
     tmp30 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3ull));
     tmp31 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{tmp29}, TNode<Smi>{tmp30});
@@ -5730,7 +5731,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   }
 
   TNode<IntPtrT> phi_bb3_2;
-  TNode<Object> tmp34;
+  TNode<Union<HeapObject, TaggedIndex>> tmp34;
   TNode<IntPtrT> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
@@ -5766,7 +5767,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   TNode<IntPtrT> phi_bb31_7;
   TNode<IntPtrT> tmp42;
   TNode<IntPtrT> tmp43;
-  TNode<Object> tmp44;
+  TNode<Union<HeapObject, TaggedIndex>> tmp44;
   TNode<IntPtrT> tmp45;
   TNode<Object> tmp46;
   TNode<Smi> tmp47;
@@ -5778,7 +5779,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block31, &phi_bb31_5, &phi_bb31_6, &phi_bb31_7);
     tmp42 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb31_7});
     tmp43 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp35}, TNode<IntPtrT>{tmp42});
-    std::tie(tmp44, tmp45) = NewReference_Object_0(state_, TNode<Object>{tmp34}, TNode<IntPtrT>{tmp43}).Flatten();
+    std::tie(tmp44, tmp45) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp34}, TNode<IntPtrT>{tmp43}).Flatten();
     tmp46 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp44, tmp45});
     tmp47 = UnsafeCast_Smi_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp46});
     tmp48 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{phi_bb31_5});
@@ -5801,7 +5802,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block36, &phi_bb36_5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 890});
+      pos_stack.push_back({"test/torque/test-torque.tq", 894});
       CodeStubAssembler(state_).FailAssert("Torque assert 'value == Convert<Smi>(i) + 3' failed", pos_stack);
     }
   }
@@ -5860,7 +5861,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
 
   TNode<IntPtrT> phi_bb46_6;
   TNode<Smi> phi_bb46_8;
-  TNode<Object> tmp61;
+  TNode<Union<HeapObject, TaggedIndex>> tmp61;
   TNode<IntPtrT> tmp62;
   TNode<IntPtrT> tmp63;
   TNode<IntPtrT> tmp64;
@@ -5871,7 +5872,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp69;
   if (block46.is_used()) {
     ca_.Bind(&block46, &phi_bb46_6, &phi_bb46_8);
-    std::tie(tmp61, tmp62) = NewReference_Object_0(state_, TNode<Object>{tmp34}, TNode<IntPtrT>{phi_bb46_6}).Flatten();
+    std::tie(tmp61, tmp62) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp34}, TNode<IntPtrT>{phi_bb46_6}).Flatten();
     tmp63 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
     tmp64 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb46_6}, TNode<IntPtrT>{tmp63});
     tmp65 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp61, tmp62});
@@ -5887,7 +5888,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block50, &phi_bb50_8);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 898});
+      pos_stack.push_back({"test/torque/test-torque.tq", 902});
       CodeStubAssembler(state_).FailAssert("Torque assert 'value == count + 7' failed", pos_stack);
     }
   }
@@ -5919,7 +5920,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block52, &phi_bb52_6, &phi_bb52_8);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 901});
+      pos_stack.push_back({"test/torque/test-torque.tq", 905});
       CodeStubAssembler(state_).FailAssert("Torque assert 'count == 3' failed", pos_stack);
     }
   }
@@ -5939,7 +5940,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block54, &phi_bb54_6, &phi_bb54_8);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 902});
+      pos_stack.push_back({"test/torque/test-torque.tq", 906});
       CodeStubAssembler(state_).FailAssert("Torque assert 'it.Empty()' failed", pos_stack);
     }
   }
@@ -5957,7 +5958,7 @@ TNode<Undefined> TestSliceEnumeration_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Undefined>{tmp75};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=907&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=911&c=1
 void TestStaticAssert_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6011,68 +6012,68 @@ void TestStaticAssert_0(compiler::CodeAssemblerState* state_) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralEqual((CodeStubAssembler(state_).ConstexprIntegerLiteralAdd(IntegerLiteral(false, 0x1ull), IntegerLiteral(false, 0x2ull))), IntegerLiteral(false, 0x3ull))));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp0}, "static_assert(1 + 2 == 3) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=909&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp0}, "static_assert(1 + 2 == 3) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=913&c=3");
     tmp1 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp2 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x6ull));
     tmp3 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp1}, TNode<UintPtrT>{tmp2});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp3}, "static_assert(Convert<uintptr>(5) < Convert<uintptr>(6)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=911&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp3}, "static_assert(Convert<uintptr>(5) < Convert<uintptr>(6)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=915&c=3");
     tmp4 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp5 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp6 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp4}, TNode<UintPtrT>{tmp5});
     tmp7 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp6});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp7}, "static_assert(!(Convert<uintptr>(5) < Convert<uintptr>(5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=912&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp7}, "static_assert(!(Convert<uintptr>(5) < Convert<uintptr>(5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=916&c=3");
     tmp8 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x6ull));
     tmp9 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp10 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp8}, TNode<UintPtrT>{tmp9});
     tmp11 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp10});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp11}, "static_assert(!(Convert<uintptr>(6) < Convert<uintptr>(5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=913&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp11}, "static_assert(!(Convert<uintptr>(6) < Convert<uintptr>(5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=917&c=3");
     tmp12 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp13 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp14 = CodeStubAssembler(state_).UintPtrLessThanOrEqual(TNode<UintPtrT>{tmp12}, TNode<UintPtrT>{tmp13});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp14}, "static_assert(Convert<uintptr>(5) <= Convert<uintptr>(5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=914&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp14}, "static_assert(Convert<uintptr>(5) <= Convert<uintptr>(5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=918&c=3");
     tmp15 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp16 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x6ull));
     tmp17 = CodeStubAssembler(state_).UintPtrLessThanOrEqual(TNode<UintPtrT>{tmp15}, TNode<UintPtrT>{tmp16});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp17}, "static_assert(Convert<uintptr>(5) <= Convert<uintptr>(6)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=915&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp17}, "static_assert(Convert<uintptr>(5) <= Convert<uintptr>(6)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=919&c=3");
     tmp18 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x6ull));
     tmp19 = Convert_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp20 = CodeStubAssembler(state_).UintPtrLessThanOrEqual(TNode<UintPtrT>{tmp18}, TNode<UintPtrT>{tmp19});
     tmp21 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp20});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp21}, "static_assert(!(Convert<uintptr>(6) <= Convert<uintptr>(5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=916&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp21}, "static_assert(!(Convert<uintptr>(6) <= Convert<uintptr>(5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=920&c=3");
     tmp22 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x6ull));
     tmp23 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp24 = CodeStubAssembler(state_).IntPtrLessThan(TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp23});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp24}, "static_assert(Convert<intptr>(-6) < Convert<intptr>(-5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=918&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp24}, "static_assert(Convert<intptr>(-6) < Convert<intptr>(-5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=922&c=3");
     tmp25 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp26 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp27 = CodeStubAssembler(state_).IntPtrLessThan(TNode<IntPtrT>{tmp25}, TNode<IntPtrT>{tmp26});
     tmp28 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp27});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp28}, "static_assert(!(Convert<intptr>(-5) < Convert<intptr>(-5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=919&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp28}, "static_assert(!(Convert<intptr>(-5) < Convert<intptr>(-5))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=923&c=3");
     tmp29 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp30 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x6ull));
     tmp31 = CodeStubAssembler(state_).IntPtrLessThan(TNode<IntPtrT>{tmp29}, TNode<IntPtrT>{tmp30});
     tmp32 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp31});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp32}, "static_assert(!(Convert<intptr>(-5) < Convert<intptr>(-6))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=920&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp32}, "static_assert(!(Convert<intptr>(-5) < Convert<intptr>(-6))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=924&c=3");
     tmp33 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp34 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp35 = CodeStubAssembler(state_).IntPtrLessThanOrEqual(TNode<IntPtrT>{tmp33}, TNode<IntPtrT>{tmp34});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp35}, "static_assert(Convert<intptr>(-5) <= Convert<intptr>(-5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=921&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp35}, "static_assert(Convert<intptr>(-5) <= Convert<intptr>(-5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=925&c=3");
     tmp36 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x6ull));
     tmp37 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp38 = CodeStubAssembler(state_).IntPtrLessThanOrEqual(TNode<IntPtrT>{tmp36}, TNode<IntPtrT>{tmp37});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp38}, "static_assert(Convert<intptr>(-6) <= Convert<intptr>(-5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=922&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp38}, "static_assert(Convert<intptr>(-6) <= Convert<intptr>(-5)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=3");
     tmp39 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x5ull));
     tmp40 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x6ull));
     tmp41 = CodeStubAssembler(state_).IntPtrLessThanOrEqual(TNode<IntPtrT>{tmp39}, TNode<IntPtrT>{tmp40});
     tmp42 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp41});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp42}, "static_assert(!(Convert<intptr>(-5) <= Convert<intptr>(-6))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=923&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp42}, "static_assert(!(Convert<intptr>(-5) <= Convert<intptr>(-6))) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=927&c=3");
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=930&c=1
 TNode<SmiBox> Cast_SmiBox_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6146,7 +6147,7 @@ TF_BUILTIN(NewSmiBox, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=935&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=939&c=1
 void TestLoadEliminationFixed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6211,23 +6212,23 @@ void TestLoadEliminationFixed_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp20;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_3);
-    tmp14 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp3}, TNode<MaybeObject>{phi_bb4_3});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp14}, "static_assert(TaggedEqual(v1, v2)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=941&c=3");
+    tmp14 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp3}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{phi_bb4_3});
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp14}, "static_assert(TaggedEqual(v1, v2)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=945&c=3");
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp16 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xbull));
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp1, tmp15}, tmp16);
     tmp17 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp18 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp1, tmp17});
     tmp19 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xbull));
-    tmp20 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp18}, TNode<MaybeObject>{tmp19});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp20}, "static_assert(TaggedEqual(v3, eleven)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=946&c=3");
+    tmp20 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp18}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp19});
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp20}, "static_assert(TaggedEqual(v3, eleven)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=950&c=3");
     ca_.Goto(&block6);
   }
 
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=949&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=953&c=1
 void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6247,7 +6248,7 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<FixedArray> tmp1;
   TNode<Smi> tmp2;
   TNode<SmiBox> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
@@ -6274,10 +6275,10 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
 
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<Object> tmp15;
+  TNode<Union<HeapObject, TaggedIndex>> tmp15;
   TNode<IntPtrT> tmp16;
   TNode<Object> tmp17;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
@@ -6292,7 +6293,7 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block6);
     tmp13 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp9});
     tmp14 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp13});
-    std::tie(tmp15, tmp16) = NewReference_Object_0(state_, TNode<Object>{tmp4}, TNode<IntPtrT>{tmp14}).Flatten();
+    std::tie(tmp15, tmp16) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp14}).Flatten();
     tmp17 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp15, tmp16});
     std::tie(tmp18, tmp19, tmp20) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp1}).Flatten();
     tmp21 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
@@ -6313,10 +6314,10 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
 
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
-  TNode<Object> tmp31;
+  TNode<Union<HeapObject, TaggedIndex>> tmp31;
   TNode<IntPtrT> tmp32;
   TNode<Object> tmp33;
-  TNode<Object> tmp34;
+  TNode<Union<HeapObject, TaggedIndex>> tmp34;
   TNode<IntPtrT> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
@@ -6329,7 +6330,7 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block14);
     tmp29 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp25});
     tmp30 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp29});
-    std::tie(tmp31, tmp32) = NewReference_Object_0(state_, TNode<Object>{tmp18}, TNode<IntPtrT>{tmp30}).Flatten();
+    std::tie(tmp31, tmp32) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp18}, TNode<IntPtrT>{tmp30}).Flatten();
     tmp33 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp31, tmp32});
     std::tie(tmp34, tmp35, tmp36) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp1}).Flatten();
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
@@ -6348,10 +6349,10 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
 
   TNode<IntPtrT> tmp43;
   TNode<IntPtrT> tmp44;
-  TNode<Object> tmp45;
+  TNode<Union<HeapObject, TaggedIndex>> tmp45;
   TNode<IntPtrT> tmp46;
   TNode<Object> tmp47;
-  TNode<Object> tmp48;
+  TNode<Union<HeapObject, TaggedIndex>> tmp48;
   TNode<IntPtrT> tmp49;
   TNode<IntPtrT> tmp50;
   TNode<IntPtrT> tmp51;
@@ -6366,7 +6367,7 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block22);
     tmp43 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp39});
     tmp44 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp35}, TNode<IntPtrT>{tmp43});
-    std::tie(tmp45, tmp46) = NewReference_Object_0(state_, TNode<Object>{tmp34}, TNode<IntPtrT>{tmp44}).Flatten();
+    std::tie(tmp45, tmp46) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp34}, TNode<IntPtrT>{tmp44}).Flatten();
     tmp47 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp45, tmp46});
     std::tie(tmp48, tmp49, tmp50) = FieldSliceFixedArrayObjects_0(state_, TNode<FixedArray>{tmp1}).Flatten();
     tmp51 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
@@ -6387,7 +6388,7 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
 
   TNode<IntPtrT> tmp59;
   TNode<IntPtrT> tmp60;
-  TNode<Object> tmp61;
+  TNode<Union<HeapObject, TaggedIndex>> tmp61;
   TNode<IntPtrT> tmp62;
   TNode<Object> tmp63;
   TNode<BoolT> tmp64;
@@ -6396,12 +6397,12 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block30);
     tmp59 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp55});
     tmp60 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp49}, TNode<IntPtrT>{tmp59});
-    std::tie(tmp61, tmp62) = NewReference_Object_0(state_, TNode<Object>{tmp48}, TNode<IntPtrT>{tmp60}).Flatten();
+    std::tie(tmp61, tmp62) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp48}, TNode<IntPtrT>{tmp60}).Flatten();
     tmp63 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp61, tmp62});
-    tmp64 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp17}, TNode<MaybeObject>{tmp47});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp64}, "static_assert(TaggedEqual(v1, v2)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=957&c=3");
-    tmp65 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp33}, TNode<MaybeObject>{tmp63});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp65}, "static_assert(TaggedEqual(u1, u2)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=958&c=3");
+    tmp64 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp47});
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp64}, "static_assert(TaggedEqual(v1, v2)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=961&c=3");
+    tmp65 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp33}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp63});
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp65}, "static_assert(TaggedEqual(u1, u2)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=962&c=3");
     ca_.Goto(&block34);
   }
 
@@ -6413,7 +6414,7 @@ void TestLoadEliminationVariable_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block34);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=961&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=965&c=1
 TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6455,7 +6456,7 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
   }
 
   TNode<Smi> phi_bb2_2;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
@@ -6477,7 +6478,7 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
   TNode<Smi> phi_bb12_8;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
-  TNode<Object> tmp14;
+  TNode<Union<HeapObject, TaggedIndex>> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<Object> tmp16;
   TNode<Hole> tmp17;
@@ -6486,10 +6487,10 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
     ca_.Bind(&block12, &phi_bb12_2, &phi_bb12_7, &phi_bb12_8);
     tmp12 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp8});
     tmp13 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp12});
-    std::tie(tmp14, tmp15) = NewReference_Object_0(state_, TNode<Object>{tmp5}, TNode<IntPtrT>{tmp13}).Flatten();
+    std::tie(tmp14, tmp15) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp5}, TNode<IntPtrT>{tmp13}).Flatten();
     tmp16 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp14, tmp15});
     tmp17 = TheHole_0(state_);
-    tmp18 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp16}, TNode<HeapObject>{tmp17});
+    tmp18 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp16}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp17});
     ca_.Branch(tmp18, &block6, std::vector<compiler::Node*>{phi_bb12_2}, &block7, std::vector<compiler::Node*>{phi_bb12_2});
   }
 
@@ -6502,7 +6503,7 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
   }
 
   TNode<Smi> phi_bb6_2;
-  TNode<Object> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
@@ -6524,7 +6525,7 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
   TNode<Smi> phi_bb22_8;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<Object> tmp30;
   TNode<Hole> tmp31;
@@ -6533,10 +6534,10 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
     ca_.Bind(&block22, &phi_bb22_2, &phi_bb22_7, &phi_bb22_8);
     tmp26 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp22});
     tmp27 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp26});
-    std::tie(tmp28, tmp29) = NewReference_Object_0(state_, TNode<Object>{tmp19}, TNode<IntPtrT>{tmp27}).Flatten();
+    std::tie(tmp28, tmp29) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp19}, TNode<IntPtrT>{tmp27}).Flatten();
     tmp30 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp28, tmp29});
     tmp31 = TheHole_0(state_);
-    tmp32 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp30}, TNode<HeapObject>{tmp31});
+    tmp32 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp30}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp31});
     ca_.Branch(tmp32, &block16, std::vector<compiler::Node*>{phi_bb22_2}, &block17, std::vector<compiler::Node*>{phi_bb22_2});
   }
 
@@ -6561,7 +6562,7 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_2);
     tmp34 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp34}, "static_assert(false) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=969&c=9");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp34}, "static_assert(false) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=973&c=9");
     ca_.Goto(&block7, phi_bb17_2);
   }
 
@@ -6594,7 +6595,7 @@ TNode<Smi> TestRedundantArrayElementCheck_0(compiler::CodeAssemblerState* state_
   return TNode<Smi>{phi_bb27_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=976&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=980&c=1
 TNode<Smi> TestRedundantSmiCheck_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6610,7 +6611,7 @@ TNode<Smi> TestRedundantSmiCheck_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Goto(&block0);
 
   TNode<FixedArray> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<UintPtrT> tmp4;
@@ -6632,7 +6633,7 @@ TNode<Smi> TestRedundantSmiCheck_0(compiler::CodeAssemblerState* state_, TNode<C
 
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<Object> tmp13;
   TNode<Smi> tmp14;
@@ -6640,7 +6641,7 @@ TNode<Smi> TestRedundantSmiCheck_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block7);
     tmp9 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp9});
-    std::tie(tmp11, tmp12) = NewReference_Object_0(state_, TNode<Object>{tmp1}, TNode<IntPtrT>{tmp10}).Flatten();
+    std::tie(tmp11, tmp12) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp1}, TNode<IntPtrT>{tmp10}).Flatten();
     tmp13 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp11, tmp12});
     compiler::CodeAssemblerLabel label15(&ca_);
     tmp14 = Cast_Smi_0(state_, TNode<Object>{tmp13}, &label15);
@@ -6698,7 +6699,7 @@ TNode<Smi> TestRedundantSmiCheck_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<Smi>{phi_bb19_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=995&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=999&c=1
 TNode<IntPtrT> TestGenericStruct1_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6725,7 +6726,7 @@ TNode<IntPtrT> TestGenericStruct1_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1000});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1004});
       CodeStubAssembler(state_).FailAssert("Torque assert 'box.value == 123' failed", pos_stack);
     }
   }
@@ -6747,7 +6748,7 @@ TNode<IntPtrT> TestGenericStruct1_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1002});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1006});
       CodeStubAssembler(state_).FailAssert("Torque assert 'boxbox.value.value == 246' failed", pos_stack);
     }
   }
@@ -6761,7 +6762,7 @@ TNode<IntPtrT> TestGenericStruct1_0(compiler::CodeAssemblerState* state_) {
   return TNode<IntPtrT>{tmp4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1016&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1020&c=1
 TorqueStructTestTuple_TestTuple_intptr_Smi_TestTuple_Smi_intptr_0 TestGenericStruct2_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6791,7 +6792,7 @@ TorqueStructTestTuple_TestTuple_intptr_Smi_TestTuple_Smi_intptr_0 TestGenericStr
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1021});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1025});
       CodeStubAssembler(state_).FailAssert("Torque assert 'intptrAndSmi.fst == smiAndIntptr.snd' failed", pos_stack);
     }
   }
@@ -6807,7 +6808,7 @@ TorqueStructTestTuple_TestTuple_intptr_Smi_TestTuple_Smi_intptr_0 TestGenericStr
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1022});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1026});
       CodeStubAssembler(state_).FailAssert("Torque assert 'intptrAndSmi.snd == smiAndIntptr.fst' failed", pos_stack);
     }
   }
@@ -6821,7 +6822,7 @@ TorqueStructTestTuple_TestTuple_intptr_Smi_TestTuple_Smi_intptr_0 TestGenericStr
   return TorqueStructTestTuple_TestTuple_intptr_Smi_TestTuple_Smi_intptr_0{TorqueStructTestTuple_intptr_Smi_0{TNode<IntPtrT>{tmp0}, TNode<Smi>{tmp1}}, TorqueStructTestTuple_Smi_intptr_0{TNode<Smi>{tmp2}, TNode<IntPtrT>{tmp3}}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1028&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1032&c=1
 TNode<BoolT> BranchAndWriteResult_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_x, TNode<SmiBox> p_box) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6900,7 +6901,7 @@ TNode<BoolT> BranchAndWriteResult_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1038&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1042&c=1
 void TestBranchOnBoolOptimization_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Smi> p_input) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6932,7 +6933,7 @@ void TestBranchOnBoolOptimization_0(compiler::CodeAssemblerState* state_, TNode<
     tmp4 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp1, tmp3});
     tmp5 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp6 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp4}, TNode<Smi>{tmp5});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp6}, "static_assert(box.value == 1) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1045&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp6}, "static_assert(box.value == 1) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1049&c=5");
     ca_.Goto(&block4);
   }
 
@@ -6946,7 +6947,7 @@ void TestBranchOnBoolOptimization_0(compiler::CodeAssemblerState* state_, TNode<
     tmp8 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp1, tmp7});
     tmp9 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp10 = CodeStubAssembler(state_).SmiEqual(TNode<Smi>{tmp8}, TNode<Smi>{tmp9});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp10}, "static_assert(box.value == 2) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1047&c=5");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp10}, "static_assert(box.value == 2) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1051&c=5");
     ca_.Goto(&block4);
   }
 
@@ -6958,7 +6959,7 @@ void TestBranchOnBoolOptimization_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1058&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1062&c=1
 void TestBitFieldLoad_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_val, TNode<BoolT> p_expectedA, TNode<Uint16T> p_expectedB, TNode<Uint32T> p_expectedC, TNode<BoolT> p_expectedD) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6987,7 +6988,7 @@ void TestBitFieldLoad_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_va
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1062});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1066});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val.a == expectedA' failed", pos_stack);
     }
   }
@@ -7005,7 +7006,7 @@ void TestBitFieldLoad_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_va
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1063});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1067});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val.b == expectedB' failed", pos_stack);
     }
   }
@@ -7023,7 +7024,7 @@ void TestBitFieldLoad_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_va
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1064});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1068});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val.c == expectedC' failed", pos_stack);
     }
   }
@@ -7041,7 +7042,7 @@ void TestBitFieldLoad_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_va
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1065});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1069});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val.d == expectedD' failed", pos_stack);
     }
   }
@@ -7054,7 +7055,7 @@ void TestBitFieldLoad_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_va
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1068&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1072&c=1
 void TestBitFieldStore_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_val) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7113,7 +7114,7 @@ void TestBitFieldStore_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_v
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1087&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1091&c=1
 void TestBitFieldInit_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_a, TNode<Uint16T> p_b, TNode<Uint32T> p_c, TNode<BoolT> p_d) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7144,7 +7145,7 @@ void TestBitFieldInit_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_a, 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1105&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1109&c=1
 void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_val2, TNode<UintPtrT> p_val3) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7191,7 +7192,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1113});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1117});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val2.a == 3' failed", pos_stack);
     }
   }
@@ -7211,7 +7212,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1114});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1118});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val2.b == 61' failed", pos_stack);
     }
   }
@@ -7227,7 +7228,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1115});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1119});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val3.c' failed", pos_stack);
     }
   }
@@ -7238,7 +7239,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp7 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<uint32_t, 1, 9, uintptr_t>>(ca_.UncheckedCast<WordT>(p_val3)));
-    tmp8 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1f4ull));
+    tmp8 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1f4ull));
     tmp9 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp8});
     ca_.Branch(tmp9, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
   }
@@ -7247,7 +7248,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1116});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1120});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val3.d == 500' failed", pos_stack);
     }
   }
@@ -7267,7 +7268,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block11);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1117});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1121});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val3.e == 0x1cc' failed", pos_stack);
     }
   }
@@ -7291,7 +7292,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block13);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1120});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1124});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val2.a == 3' failed", pos_stack);
     }
   }
@@ -7311,7 +7312,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block15);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1121});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1125});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val2.b == 16' failed", pos_stack);
     }
   }
@@ -7339,7 +7340,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block17);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1124});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1128});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val2.a == 3' failed", pos_stack);
     }
   }
@@ -7359,7 +7360,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block19);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1125});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1129});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val2.b == 17' failed", pos_stack);
     }
   }
@@ -7371,7 +7372,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
   TNode<BoolT> tmp35;
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    tmp31 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x63ull));
+    tmp31 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x63ull));
     tmp32 = ca_.UncheckedCast<UintPtrT>(CodeStubAssembler(state_).UpdateWord32InWord<base::BitField<uint32_t, 1, 9, uintptr_t>>(ca_.UncheckedCast<WordT>(p_val3), ca_.UncheckedCast<Uint32T>(tmp31)));
     tmp33 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x4d2ull));
     tmp34 = ca_.UncheckedCast<UintPtrT>(CodeStubAssembler(state_).UpdateWord<base::BitField<uintptr_t, 10, 17, uintptr_t>>(ca_.UncheckedCast<WordT>(tmp32), ca_.UncheckedCast<UintPtrT>(tmp33)));
@@ -7383,7 +7384,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block21);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1129});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1133});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val3.c' failed", pos_stack);
     }
   }
@@ -7394,7 +7395,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp36 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<uint32_t, 1, 9, uintptr_t>>(ca_.UncheckedCast<WordT>(tmp34)));
-    tmp37 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x63ull));
+    tmp37 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x63ull));
     tmp38 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp36}, TNode<Uint32T>{tmp37});
     ca_.Branch(tmp38, &block22, std::vector<compiler::Node*>{}, &block23, std::vector<compiler::Node*>{});
   }
@@ -7403,7 +7404,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block23);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1130});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1134});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val3.d == 99' failed", pos_stack);
     }
   }
@@ -7423,7 +7424,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block25);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1131});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1135});
       CodeStubAssembler(state_).FailAssert("Torque assert 'val3.e == 1234' failed", pos_stack);
     }
   }
@@ -7436,7 +7437,7 @@ void TestBitFieldUintptrOps_0(compiler::CodeAssemblerState* state_, TNode<Uint32
     ca_.Bind(&block26);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1146&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1150&c=1
 void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<BoolT> p_a, TNode<Int32T> p_b, TNode<BoolT> p_c) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7551,7 +7552,7 @@ void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<Boo
     tmp17 = Convert_int32_constexpr_IntegerLiteral_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralBitwiseOr(IntegerLiteral(false, 0x1ull), (CodeStubAssembler(state_).ConstexprIntegerLiteralLeftShift(IntegerLiteral(false, 0x3ull), IntegerLiteral(false, 0x1ull))))));
     tmp18 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp16}, TNode<Int32T>{tmp17});
     tmp19 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp13}, TNode<BoolT>{tmp18});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp19}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1151&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp19}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1155&c=3");
     tmp20 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp5)));
     tmp21 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp20});
     tmp22 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).DecodeWord32<base::BitField<int32_t, 1, 3, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp5)));
@@ -7566,7 +7567,7 @@ void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<Boo
     tmp31 = Convert_int32_constexpr_IntegerLiteral_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralBitwiseOr((CodeStubAssembler(state_).ConstexprIntegerLiteralLeftShift(IntegerLiteral(false, 0x4ull), IntegerLiteral(false, 0x1ull))), (CodeStubAssembler(state_).ConstexprIntegerLiteralLeftShift(IntegerLiteral(false, 0x1ull), IntegerLiteral(false, 0x4ull))))));
     tmp32 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp30}, TNode<Int32T>{tmp31});
     tmp33 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp27}, TNode<BoolT>{tmp32});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp33}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1154&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp33}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1158&c=3");
     tmp34 = ca_.UncheckedCast<Int32T>(CodeStubAssembler(state_).DecodeWord32<base::BitField<int32_t, 1, 3, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp5)));
     tmp35 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp36 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp34}, TNode<Int32T>{tmp35});
@@ -7578,7 +7579,7 @@ void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<Boo
     tmp42 = Convert_int32_constexpr_IntegerLiteral_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralLeftShift(IntegerLiteral(false, 0x1ull), IntegerLiteral(false, 0x4ull))));
     tmp43 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp41}, TNode<Int32T>{tmp42});
     tmp44 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp38}, TNode<BoolT>{tmp43});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp44}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1157&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp44}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1161&c=3");
     tmp45 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 0, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp5)));
     tmp46 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 4, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp5)));
     tmp47 = CodeStubAssembler(state_).Word32And(TNode<BoolT>{tmp45}, TNode<BoolT>{tmp46});
@@ -7588,7 +7589,7 @@ void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<Boo
     tmp51 = Convert_int32_constexpr_IntegerLiteral_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralBitwiseOr(IntegerLiteral(false, 0x1ull), (CodeStubAssembler(state_).ConstexprIntegerLiteralLeftShift(IntegerLiteral(false, 0x1ull), IntegerLiteral(false, 0x4ull))))));
     tmp52 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp50}, TNode<Int32T>{tmp51});
     tmp53 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp47}, TNode<BoolT>{tmp52});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp53}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1160&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp53}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1164&c=3");
     tmp54 = FromConstexpr_int32_constexpr_int32_0(state_, 0);
     tmp55 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp54});
     tmp56 = (TNode<Uint32T>{tmp55});
@@ -7609,7 +7610,7 @@ void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<Boo
     tmp71 = Convert_int32_constexpr_IntegerLiteral_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralBitwiseOr(IntegerLiteral(false, 0x4d2ull), (CodeStubAssembler(state_).ConstexprIntegerLiteralLeftShift(IntegerLiteral(false, 0x1ull), IntegerLiteral(false, 0x14ull))))));
     tmp72 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp70}, TNode<Int32T>{tmp71});
     tmp73 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp67}, TNode<BoolT>{tmp72});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp73}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1164&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp73}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1168&c=3");
     tmp74 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 19, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp59)));
     tmp75 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp74});
     tmp76 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 20, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp59)));
@@ -7621,14 +7622,14 @@ void TestBitFieldMultipleFlags_0(compiler::CodeAssemblerState* state_, TNode<Boo
     tmp82 = Convert_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp83 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp81}, TNode<Int32T>{tmp82});
     tmp84 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp78}, TNode<BoolT>{tmp83});
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp84}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1167&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp84}, "static_assert(simpleExpression == expectedReduction) at https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1171&c=3");
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1174&c=1
 TNode<ExportedSubClass> Cast_ExportedSubClass_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7664,7 +7665,7 @@ TNode<ExportedSubClass> Cast_ExportedSubClass_0(compiler::CodeAssemblerState* st
   return TNode<ExportedSubClass>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1181&c=1
 TNode<ExportedSubClassBase> Cast_ExportedSubClassBase_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7700,7 +7701,7 @@ TNode<ExportedSubClassBase> Cast_ExportedSubClassBase_0(compiler::CodeAssemblerS
   return TNode<ExportedSubClassBase>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
 TNode<AbstractInternalClass> Cast_AbstractInternalClass_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7736,7 +7737,7 @@ TNode<AbstractInternalClass> Cast_AbstractInternalClass_0(compiler::CodeAssemble
   return TNode<AbstractInternalClass>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
 TNode<AbstractInternalClassSubclass1> Cast_AbstractInternalClassSubclass1_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7772,7 +7773,7 @@ TNode<AbstractInternalClassSubclass1> Cast_AbstractInternalClassSubclass1_0(comp
   return TNode<AbstractInternalClassSubclass1>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=1
 TNode<AbstractInternalClassSubclass2> Cast_AbstractInternalClassSubclass2_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7808,7 +7809,7 @@ TNode<AbstractInternalClassSubclass2> Cast_AbstractInternalClassSubclass2_0(comp
   return TNode<AbstractInternalClassSubclass2>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=1
 TNode<InternalClassWithStructElements> Cast_InternalClassWithStructElements_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7844,7 +7845,7 @@ TNode<InternalClassWithStructElements> Cast_InternalClassWithStructElements_0(co
   return TNode<InternalClassWithStructElements>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1210&c=1
 TNode<ExportedSubClass> TestFullyGeneratedClassFromCpp_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7901,7 +7902,7 @@ TNode<ExportedSubClass> TestFullyGeneratedClassFromCpp_0(compiler::CodeAssembler
   return TNode<ExportedSubClass>{tmp16};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=1
 TNode<ExportedSubClass2> Cast_ExportedSubClass2_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7937,7 +7938,7 @@ TNode<ExportedSubClass2> Cast_ExportedSubClass2_0(compiler::CodeAssemblerState* 
   return TNode<ExportedSubClass2>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1219&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1223&c=1
 void TestGeneratedCastOperators_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7991,7 +7992,7 @@ void TestGeneratedCastOperators_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<Smi> tmp43;
   TNode<ExportedSubClass2> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<JSFunction> tmp48;
   TNode<Hole> tmp49;
@@ -8085,7 +8086,7 @@ void TestGeneratedCastOperators_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Bind(&block42);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1253&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1257&c=1
 void TestNewPretenured_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8126,7 +8127,7 @@ void TestNewPretenured_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1260&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1264&c=1
 void TestWord8Phi_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8201,7 +8202,7 @@ void TestWord8Phi_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block10, &phi_bb10_0);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1269});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1273});
       CodeStubAssembler(state_).FailAssert("Torque assert 'x == Convert<int8>(i)' failed", pos_stack);
     }
   }
@@ -8225,7 +8226,7 @@ void TestWord8Phi_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block11);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1273&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1277&c=1
 void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_ptr, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8248,10 +8249,10 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
 
   TNode<String> tmp0;
   TNode<SeqOneByteString> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Uint8T> tmp4;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<UintPtrT> tmp8;
@@ -8276,7 +8277,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
 
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<Object> tmp15;
+  TNode<Union<HeapObject, TaggedIndex>> tmp15;
   TNode<IntPtrT> tmp16;
   TNode<Uint8T> tmp17;
   TNode<BoolT> tmp18;
@@ -8284,7 +8285,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
     ca_.Bind(&block22);
     tmp13 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp9});
     tmp14 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp13});
-    std::tie(tmp15, tmp16) = NewReference_char8_0(state_, TNode<Object>{tmp5}, TNode<IntPtrT>{tmp14}).Flatten();
+    std::tie(tmp15, tmp16) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp5}, TNode<IntPtrT>{tmp14}).Flatten();
     tmp17 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp15, tmp16});
     tmp18 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp17});
     ca_.Branch(tmp18, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{});
@@ -8299,15 +8300,15 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
     ca_.Bind(&block16);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1277});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1281});
       CodeStubAssembler(state_).FailAssert("Torque assert '*torque_internal::unsafe::NewOffHeapReference(ptr) == string.chars[0]' failed", pos_stack);
     }
   }
 
-  TNode<Object> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<IntPtrT> tmp25;
@@ -8346,7 +8347,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
   TNode<IntPtrT> phi_bb36_13;
   TNode<IntPtrT> tmp30;
   TNode<IntPtrT> tmp31;
-  TNode<Object> tmp32;
+  TNode<Union<HeapObject, TaggedIndex>> tmp32;
   TNode<IntPtrT> tmp33;
   TNode<Uint8T> tmp34;
   TNode<UintPtrT> tmp35;
@@ -8356,7 +8357,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
     ca_.Bind(&block36, &phi_bb36_9, &phi_bb36_10, &phi_bb36_11, &phi_bb36_12, &phi_bb36_13);
     tmp30 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{phi_bb36_13});
     tmp31 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp30});
-    std::tie(tmp32, tmp33) = NewReference_char8_0(state_, TNode<Object>{tmp22}, TNode<IntPtrT>{tmp31}).Flatten();
+    std::tie(tmp32, tmp33) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp22}, TNode<IntPtrT>{tmp31}).Flatten();
     tmp34 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp32, tmp33});
     tmp35 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb36_9});
     tmp36 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp21});
@@ -8381,7 +8382,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
   TNode<IntPtrT> phi_bb44_14;
   TNode<IntPtrT> tmp38;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<Uint8T> tmp42;
   TNode<BoolT> tmp43;
@@ -8389,7 +8390,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
     ca_.Bind(&block44, &phi_bb44_9, &phi_bb44_11, &phi_bb44_12, &phi_bb44_13, &phi_bb44_14);
     tmp38 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{phi_bb44_14});
     tmp39 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp38});
-    std::tie(tmp40, tmp41) = NewReference_char8_0(state_, TNode<Object>{tmp19}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp19}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp40, tmp41});
     tmp43 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp34}, TNode<Uint32T>{tmp42});
     ca_.Branch(tmp43, &block30, std::vector<compiler::Node*>{phi_bb44_9}, &block31, std::vector<compiler::Node*>{phi_bb44_9});
@@ -8410,7 +8411,7 @@ void TestOffHeapSlice_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_p
     ca_.Bind(&block31, &phi_bb31_9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1282});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1286});
       CodeStubAssembler(state_).FailAssert("Torque assert '*onHeapSlice.AtIndex(i) == *offHeapSlice.AtIndex(i)' failed", pos_stack);
     }
   }
@@ -8459,7 +8460,7 @@ TF_BUILTIN(ReturnTwoValues, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1296&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1300&c=1
 void TestCallMultiReturnBuiltin_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8494,7 +8495,7 @@ void TestCallMultiReturnBuiltin_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1299});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1303});
       CodeStubAssembler(state_).FailAssert("Torque assert 'result.a == 445' failed", pos_stack);
     }
   }
@@ -8508,7 +8509,7 @@ void TestCallMultiReturnBuiltin_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp6 = FromConstexpr_String_constexpr_string_0(state_, "hi");
     tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp8 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp6, tmp7});
-    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp3}, TNode<HeapObject>{tmp8});
+    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp3}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp8});
     ca_.Branch(tmp9, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
@@ -8516,7 +8517,7 @@ void TestCallMultiReturnBuiltin_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1300});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1304});
       CodeStubAssembler(state_).FailAssert("Torque assert 'result.b == FromConstexpr<String>('hi').map' failed", pos_stack);
     }
   }
@@ -8529,7 +8530,7 @@ void TestCallMultiReturnBuiltin_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1303&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1307&c=1
 TNode<Smi> TestRunLazyTwice_0(compiler::CodeAssemblerState* state_, std::function<TNode<Smi>()> p_lazySmi) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8552,7 +8553,7 @@ TNode<Smi> TestRunLazyTwice_0(compiler::CodeAssemblerState* state_, std::functio
   return TNode<Smi>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1310&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1314&c=1
 TNode<Smi> GetLazySmi_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8571,7 +8572,7 @@ TNode<Smi> GetLazySmi_0(compiler::CodeAssemblerState* state_) {
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1314&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1318&c=1
 TNode<Smi> AddTwoSmiValues_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_a, TNode<Smi> p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8590,7 +8591,7 @@ TNode<Smi> AddTwoSmiValues_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1318&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1322&c=1
 TNode<Smi> AddSmiAndConstexprValues_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_a, int31_t p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8611,7 +8612,7 @@ TNode<Smi> AddSmiAndConstexprValues_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1322&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1326&c=1
 void TestCreateLazyNodeFromTorque_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8644,7 +8645,7 @@ void TestCreateLazyNodeFromTorque_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block3);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1326});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1330});
       CodeStubAssembler(state_).FailAssert("Torque assert 'result == 6' failed", pos_stack);
     }
   }
@@ -8666,7 +8667,7 @@ void TestCreateLazyNodeFromTorque_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block5);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1331});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1335});
       CodeStubAssembler(state_).FailAssert("Torque assert 'result2 == 6' failed", pos_stack);
     }
   }
@@ -8692,7 +8693,7 @@ void TestCreateLazyNodeFromTorque_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block7);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1338});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1342});
       CodeStubAssembler(state_).FailAssert("Torque assert 'result3 == 22' failed", pos_stack);
     }
   }
@@ -8716,7 +8717,7 @@ void TestCreateLazyNodeFromTorque_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block9);
     {
       auto pos_stack = ca_.GetMacroSourcePositionStack();
-      pos_stack.push_back({"test/torque/test-torque.tq", 1343});
+      pos_stack.push_back({"test/torque/test-torque.tq", 1347});
       CodeStubAssembler(state_).FailAssert("Torque assert 'result4 == 30' failed", pos_stack);
     }
   }
@@ -8727,6 +8728,47 @@ void TestCreateLazyNodeFromTorque_0(compiler::CodeAssemblerState* state_) {
   }
 
     ca_.Bind(&block10);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1350&c=1
+void TestCellAccessors_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Cell> p_cell) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Object> tmp0;
+  TNode<BoolT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = LoadCellValue_0(state_, TNode<Cell>{p_cell});
+    tmp1 = CodeStubAssembler(state_).TaggedIsSmi(TNode<Object>{tmp0});
+    ca_.Branch(tmp1, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
+  }
+
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    ca_.Goto(&block1);
+  }
+
+  TNode<Smi> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp2 = SmiConstant_0(state_, IntegerLiteral(false, 0x0ull));
+    StoreCellValue_0(state_, TNode<Cell>{p_cell}, TNode<Object>{tmp2});
+    ca_.Goto(&block1);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(&block4);
+  }
+
+    ca_.Bind(&block4);
 }
 
 TF_BUILTIN(ThrowAsBuiltin, CodeStubAssembler) {
@@ -8767,7 +8809,7 @@ TF_BUILTIN(TestCallNever, CodeStubAssembler) {
     ca_.Branch(tmp1, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp2 = FromConstexpr_JSAny_constexpr_string_0(state_, "a == 1");
@@ -8798,7 +8840,23 @@ ca_.CallBuiltinVoid(Builtin::kThrowAsBuiltin, parameter0, tmp5);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=765&c=3
+TF_BUILTIN(TestIncrementArraySpeciesModified, CodeStubAssembler) {
+  compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
+  TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
+  USE(parameter0);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kArraySpeciesModified));
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<Smi> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).Return(tmp0);
+  }
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=769&c=3
 TNode<Smi> LoadInternalClassA_0(compiler::CodeAssemblerState* state_, TNode<InternalClass> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8819,7 +8877,7 @@ TNode<Smi> LoadInternalClassA_0(compiler::CodeAssemblerState* state_, TNode<Inte
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=765&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=769&c=3
 void StoreInternalClassA_0(compiler::CodeAssemblerState* state_, TNode<InternalClass> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8838,7 +8896,7 @@ void StoreInternalClassA_0(compiler::CodeAssemblerState* state_, TNode<InternalC
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=770&c=3
 TNode<Number> LoadInternalClassB_0(compiler::CodeAssemblerState* state_, TNode<InternalClass> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8859,7 +8917,7 @@ TNode<Number> LoadInternalClassB_0(compiler::CodeAssemblerState* state_, TNode<I
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=766&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=770&c=3
 void StoreInternalClassB_0(compiler::CodeAssemblerState* state_, TNode<InternalClass> p_o, TNode<Number> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8878,7 +8936,7 @@ void StoreInternalClassB_0(compiler::CodeAssemblerState* state_, TNode<InternalC
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=760&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=764&c=3
 void Method_InternalClass_Flip_0(compiler::CodeAssemblerState* state_, TNode<InternalClass> p_this, compiler::CodeAssemblerLabel* label_NotASmi) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8927,7 +8985,7 @@ void Method_InternalClass_Flip_0(compiler::CodeAssemblerState* state_, TNode<Int
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=829&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=833&c=3
 TNode<Smi> LoadSmiPairA_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8948,7 +9006,7 @@ TNode<Smi> LoadSmiPairA_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=829&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=833&c=3
 void StoreSmiPairA_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8967,7 +9025,7 @@ void StoreSmiPairA_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_o, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=830&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=834&c=3
 TNode<Smi> LoadSmiPairB_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -8988,7 +9046,7 @@ TNode<Smi> LoadSmiPairB_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=830&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=834&c=3
 void StoreSmiPairB_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9007,7 +9065,7 @@ void StoreSmiPairB_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_o, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=826&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=830&c=3
 TorqueStructReference_Smi_0 Method_SmiPair_GetA_0(compiler::CodeAssemblerState* state_, TNode<SmiPair> p_this) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9023,10 +9081,10 @@ TorqueStructReference_Smi_0 Method_SmiPair_GetA_0(compiler::CodeAssemblerState* 
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_Smi_0{TNode<Object>{p_this}, TNode<IntPtrT>{tmp0}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{p_this}, TNode<IntPtrT>{tmp0}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=927&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=931&c=3
 TNode<Smi> LoadSmiBoxValue_0(compiler::CodeAssemblerState* state_, TNode<SmiBox> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9047,7 +9105,7 @@ TNode<Smi> LoadSmiBoxValue_0(compiler::CodeAssemblerState* state_, TNode<SmiBox>
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=927&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=931&c=3
 void StoreSmiBoxValue_0(compiler::CodeAssemblerState* state_, TNode<SmiBox> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9066,7 +9124,7 @@ void StoreSmiBoxValue_0(compiler::CodeAssemblerState* state_, TNode<SmiBox> p_o,
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=928&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=932&c=3
 TNode<Smi> LoadSmiBoxUnrelated_0(compiler::CodeAssemblerState* state_, TNode<SmiBox> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9087,7 +9145,7 @@ TNode<Smi> LoadSmiBoxUnrelated_0(compiler::CodeAssemblerState* state_, TNode<Smi
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=928&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=932&c=3
 void StoreSmiBoxUnrelated_0(compiler::CodeAssemblerState* state_, TNode<SmiBox> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9106,7 +9164,7 @@ void StoreSmiBoxUnrelated_0(compiler::CodeAssemblerState* state_, TNode<SmiBox> 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1179&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=3
 TNode<HeapObject> LoadExportedSubClassBaseA_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClassBase> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9127,7 +9185,7 @@ TNode<HeapObject> LoadExportedSubClassBaseA_0(compiler::CodeAssemblerState* stat
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1179&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=3
 void StoreExportedSubClassBaseA_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClassBase> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9146,7 +9204,7 @@ void StoreExportedSubClassBaseA_0(compiler::CodeAssemblerState* state_, TNode<Ex
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1184&c=3
 TNode<HeapObject> LoadExportedSubClassBaseB_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClassBase> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9167,7 +9225,7 @@ TNode<HeapObject> LoadExportedSubClassBaseB_0(compiler::CodeAssemblerState* stat
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1180&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1184&c=3
 void StoreExportedSubClassBaseB_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClassBase> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9186,7 +9244,7 @@ void StoreExportedSubClassBaseB_0(compiler::CodeAssemblerState* state_, TNode<Ex
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1172&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1176&c=3
 TNode<Int32T> LoadExportedSubClassCField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9207,7 +9265,7 @@ TNode<Int32T> LoadExportedSubClassCField_0(compiler::CodeAssemblerState* state_,
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1172&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1176&c=3
 void StoreExportedSubClassCField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass> p_o, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9226,7 +9284,7 @@ void StoreExportedSubClassCField_0(compiler::CodeAssemblerState* state_, TNode<E
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1173&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=3
 TNode<Int32T> LoadExportedSubClassDField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9247,7 +9305,7 @@ TNode<Int32T> LoadExportedSubClassDField_0(compiler::CodeAssemblerState* state_,
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1173&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=3
 void StoreExportedSubClassDField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass> p_o, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9266,7 +9324,7 @@ void StoreExportedSubClassDField_0(compiler::CodeAssemblerState* state_, TNode<E
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1178&c=3
 TNode<Smi> LoadExportedSubClassEField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9287,7 +9345,7 @@ TNode<Smi> LoadExportedSubClassEField_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1178&c=3
 void StoreExportedSubClassEField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9306,7 +9364,7 @@ void StoreExportedSubClassEField_0(compiler::CodeAssemblerState* state_, TNode<E
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
 TNode<Int32T> LoadInternalClassWithStructElementsDummy1_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9327,7 +9385,7 @@ TNode<Int32T> LoadInternalClassWithStructElementsDummy1_0(compiler::CodeAssemble
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1196&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
 void StoreInternalClassWithStructElementsDummy1_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9346,7 +9404,7 @@ void StoreInternalClassWithStructElementsDummy1_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
 TNode<Int32T> LoadInternalClassWithStructElementsDummy2_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9367,7 +9425,7 @@ TNode<Int32T> LoadInternalClassWithStructElementsDummy2_0(compiler::CodeAssemble
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1197&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
 void StoreInternalClassWithStructElementsDummy2_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9386,7 +9444,7 @@ void StoreInternalClassWithStructElementsDummy2_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1198&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=9
 TNode<Smi> LoadInternalClassWithStructElementsCount_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9407,7 +9465,7 @@ TNode<Smi> LoadInternalClassWithStructElementsCount_0(compiler::CodeAssemblerSta
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
 TNode<Smi> LoadInternalClassWithStructElementsData_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9428,7 +9486,7 @@ TNode<Smi> LoadInternalClassWithStructElementsData_0(compiler::CodeAssemblerStat
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1203&c=3
 void StoreInternalClassWithStructElementsData_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9447,7 +9505,7 @@ void StoreInternalClassWithStructElementsData_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=3
 TNode<Object> LoadInternalClassWithStructElementsObject_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9468,7 +9526,7 @@ TNode<Object> LoadInternalClassWithStructElementsObject_0(compiler::CodeAssemble
   return TNode<Object>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1200&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1204&c=3
 void StoreInternalClassWithStructElementsObject_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o, TNode<Object> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9487,7 +9545,7 @@ void StoreInternalClassWithStructElementsObject_0(compiler::CodeAssemblerState* 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
 TorqueStructSlice_Smi_MutableReference_Smi_0 FieldSliceInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9499,7 +9557,7 @@ TorqueStructSlice_Smi_MutableReference_Smi_0 FieldSliceInternalClassWithStructEl
   TNode<Smi> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
@@ -9508,15 +9566,15 @@ TorqueStructSlice_Smi_MutableReference_Smi_0 FieldSliceInternalClassWithStructEl
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x28ull));
-    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_Smi_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_Smi_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_Smi_MutableReference_Smi_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_Smi_MutableReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
 TNode<Smi> LoadInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9526,7 +9584,7 @@ TNode<Smi> LoadInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerS
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -9543,14 +9601,14 @@ TNode<Smi> LoadInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerS
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Smi> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Smi_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -9564,7 +9622,7 @@ TNode<Smi> LoadInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerS
   return TNode<Smi>{tmp10};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
 void StoreInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o, TNode<IntPtrT> p_i, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9574,7 +9632,7 @@ void StoreInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerState*
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -9591,13 +9649,13 @@ void StoreInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Smi_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -9610,7 +9668,7 @@ void StoreInternalClassWithStructElementsEntries_0(compiler::CodeAssemblerState*
     ca_.Bind(&block10);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
 TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0 FieldSliceInternalClassWithStructElementsMoreEntries_0(compiler::CodeAssemblerState* state_, TNode<InternalClassWithStructElements> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9618,7 +9676,7 @@ TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStruc
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -9627,7 +9685,7 @@ TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStruc
   TNode<IntPtrT> tmp6;
   TNode<Smi> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block0.is_used()) {
@@ -9639,15 +9697,15 @@ TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStruc
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp7 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp6});
     tmp8 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_InternalClassStructElement_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_InternalClassStructElement_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1218&c=3
 TNode<Int32T> LoadExportedSubClass2XField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass2> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9668,7 +9726,7 @@ TNode<Int32T> LoadExportedSubClass2XField_0(compiler::CodeAssemblerState* state_
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1214&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1218&c=3
 void StoreExportedSubClass2XField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass2> p_o, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9687,7 +9745,7 @@ void StoreExportedSubClass2XField_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1219&c=3
 TNode<Int32T> LoadExportedSubClass2YField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass2> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9708,7 +9766,7 @@ TNode<Int32T> LoadExportedSubClass2YField_0(compiler::CodeAssemblerState* state_
   return TNode<Int32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1215&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1219&c=3
 void StoreExportedSubClass2YField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass2> p_o, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9727,7 +9785,7 @@ void StoreExportedSubClass2YField_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1220&c=3
 TNode<Smi> LoadExportedSubClass2ZField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass2> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9748,7 +9806,7 @@ TNode<Smi> LoadExportedSubClass2ZField_0(compiler::CodeAssemblerState* state_, T
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1220&c=3
 void StoreExportedSubClass2ZField_0(compiler::CodeAssemblerState* state_, TNode<ExportedSubClass2> p_o, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9782,7 +9840,7 @@ TF_BUILTIN(GenericBuiltinTest_Smi_0, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=166&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=170&c=11
 TNode<Object> GenericMacroTest_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p__param) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9801,7 +9859,7 @@ TNode<Object> GenericMacroTest_Smi_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=171&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=175&c=12
 TNode<Object> GenericMacroTestWithLabels_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p__param, compiler::CodeAssemblerLabel* label__X) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9820,14 +9878,14 @@ TNode<Object> GenericMacroTestWithLabels_Smi_0(compiler::CodeAssemblerState* sta
   return TNode<Object>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=477&c=15
-TNode<Object> IncrementIfSmi_NumberOrFixedArray_0(compiler::CodeAssemblerState* state_, TNode<Object> p_x) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=481&c=15
+TNode<Union<FixedArray, HeapNumber, Smi>> IncrementIfSmi_NumberOrFixedArray_0(compiler::CodeAssemblerState* state_, TNode<Union<FixedArray, HeapNumber, Smi>> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<FixedArray, HeapNumber, Smi>> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -9845,7 +9903,7 @@ TNode<Object> IncrementIfSmi_NumberOrFixedArray_0(compiler::CodeAssemblerState* 
 
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    ca_.Goto(&block1, ca_.UncheckedCast<HeapObject>(p_x));
+    ca_.Goto(&block1, ca_.UncheckedCast<Union<FixedArray, HeapNumber>>(p_x));
   }
 
   TNode<Smi> tmp2;
@@ -9857,17 +9915,78 @@ TNode<Object> IncrementIfSmi_NumberOrFixedArray_0(compiler::CodeAssemblerState* 
     ca_.Goto(&block1, tmp3);
   }
 
-  TNode<Object> phi_bb1_1;
+  TNode<Union<FixedArray, HeapNumber, Smi>> phi_bb1_1;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_1);
     ca_.Goto(&block6);
   }
 
     ca_.Bind(&block6);
-  return TNode<Object>{phi_bb1_1};
+  return TNode<Union<FixedArray, HeapNumber, Smi>>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=537&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=482&c=5
+TNode<FixedArray> Cast_FixedArray_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<HeapObject> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    compiler::CodeAssemblerLabel label1(&ca_);
+    tmp0 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{p_o}, &label1);
+    ca_.Goto(&block3);
+    if (label1.is_used()) {
+      ca_.Bind(&label1);
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(&block1);
+  }
+
+  TNode<FixedArray> tmp2;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    compiler::CodeAssemblerLabel label3(&ca_);
+    tmp2 = Cast_FixedArray_0(state_, TNode<HeapObject>{tmp0}, &label3);
+    ca_.Goto(&block5);
+    if (label3.is_used()) {
+      ca_.Bind(&label3);
+      ca_.Goto(&block6);
+    }
+  }
+
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    ca_.Goto(&block1);
+  }
+
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    ca_.Goto(&block7);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block7);
+  return TNode<FixedArray>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=541&c=9
 TNode<Smi> ExampleGenericOverload_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9888,7 +10007,7 @@ TNode<Smi> ExampleGenericOverload_Smi_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Smi>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=538&c=25
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=542&c=25
 TNode<Object> ExampleGenericOverload_Object_0(compiler::CodeAssemblerState* state_, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9905,7 +10024,7 @@ TNode<Object> ExampleGenericOverload_Object_0(compiler::CodeAssemblerState* stat
   return TNode<Object>{p_o};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=632&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=636&c=10
 TNode<BoolT> Is_JSArray_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Smi> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9952,7 +10071,7 @@ TNode<BoolT> Is_JSArray_Smi_0(compiler::CodeAssemblerState* state_, TNode<Contex
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=759&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=763&c=1
 TNode<InternalClass> DownCastForTorqueClass_InternalClass_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -9979,7 +10098,7 @@ TNode<InternalClass> DownCastForTorqueClass_InternalClass_0(compiler::CodeAssemb
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(269), static_cast<InstanceType>(269))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(274), static_cast<InstanceType>(274))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -10000,7 +10119,7 @@ TNode<InternalClass> DownCastForTorqueClass_InternalClass_0(compiler::CodeAssemb
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<InternalClass>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -10022,7 +10141,7 @@ TNode<InternalClass> DownCastForTorqueClass_InternalClass_0(compiler::CodeAssemb
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(269));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(274));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -10056,12 +10175,12 @@ TNode<InternalClass> DownCastForTorqueClass_InternalClass_0(compiler::CodeAssemb
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(269), static_cast<InstanceType>(269))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(274), static_cast<InstanceType>(274))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(269));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(274));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -10097,7 +10216,7 @@ TNode<InternalClass> DownCastForTorqueClass_InternalClass_0(compiler::CodeAssemb
   return TNode<InternalClass>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=822&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=826&c=10
 void InitializeFieldsFromIterator_Object_TestIterator_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_Object_MutableReference_Object_0 p_target, TorqueStructTestIterator_0 p_originIterator) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10148,7 +10267,7 @@ void InitializeFieldsFromIterator_Object_TestIterator_0(compiler::CodeAssemblerS
 
   TNode<IntPtrT> phi_bb10_5;
   TNode<Smi> phi_bb10_7;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
@@ -10158,7 +10277,7 @@ void InitializeFieldsFromIterator_Object_TestIterator_0(compiler::CodeAssemblerS
   TNode<BoolT> tmp11;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_5, &phi_bb10_7);
-    std::tie(tmp4, tmp5) = NewReference_Object_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_5}, TNode<IntPtrT>{tmp6});
     tmp8 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
@@ -10191,7 +10310,7 @@ void InitializeFieldsFromIterator_Object_TestIterator_0(compiler::CodeAssemblerS
     ca_.Bind(&block18);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=825&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=829&c=1
 TNode<SmiPair> DownCastForTorqueClass_SmiPair_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10218,7 +10337,7 @@ TNode<SmiPair> DownCastForTorqueClass_SmiPair_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(283), static_cast<InstanceType>(283))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(288), static_cast<InstanceType>(288))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -10239,7 +10358,7 @@ TNode<SmiPair> DownCastForTorqueClass_SmiPair_0(compiler::CodeAssemblerState* st
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SmiPair>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -10261,7 +10380,7 @@ TNode<SmiPair> DownCastForTorqueClass_SmiPair_0(compiler::CodeAssemblerState* st
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(283));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(288));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -10295,12 +10414,12 @@ TNode<SmiPair> DownCastForTorqueClass_SmiPair_0(compiler::CodeAssemblerState* st
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(283), static_cast<InstanceType>(283))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(288), static_cast<InstanceType>(288))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(283));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(288));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -10336,7 +10455,7 @@ TNode<SmiPair> DownCastForTorqueClass_SmiPair_0(compiler::CodeAssemblerState* st
   return TNode<SmiPair>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=845&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=849&c=3
 void Swap_Smi_0(compiler::CodeAssemblerState* state_, TorqueStructReference_Smi_0 p_a, TorqueStructReference_Smi_0 p_b) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10358,7 +10477,7 @@ void Swap_Smi_0(compiler::CodeAssemblerState* state_, TorqueStructReference_Smi_
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=926&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=930&c=1
 TNode<SmiBox> DownCastForTorqueClass_SmiBox_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10385,7 +10504,7 @@ TNode<SmiBox> DownCastForTorqueClass_SmiBox_0(compiler::CodeAssemblerState* stat
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(282), static_cast<InstanceType>(282))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(287), static_cast<InstanceType>(287))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -10406,7 +10525,7 @@ TNode<SmiBox> DownCastForTorqueClass_SmiBox_0(compiler::CodeAssemblerState* stat
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SmiBox>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -10428,7 +10547,7 @@ TNode<SmiBox> DownCastForTorqueClass_SmiBox_0(compiler::CodeAssemblerState* stat
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(282));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(287));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -10462,12 +10581,12 @@ TNode<SmiBox> DownCastForTorqueClass_SmiBox_0(compiler::CodeAssemblerState* stat
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(282), static_cast<InstanceType>(282))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(287), static_cast<InstanceType>(287))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(282));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(287));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -10503,7 +10622,7 @@ TNode<SmiBox> DownCastForTorqueClass_SmiBox_0(compiler::CodeAssemblerState* stat
   return TNode<SmiBox>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1020&c=24
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1024&c=24
 TorqueStructTestTuple_Smi_intptr_0 TupleSwap_intptr_Smi_0(compiler::CodeAssemblerState* state_, TorqueStructTestTuple_intptr_Smi_0 p_tuple) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10520,7 +10639,7 @@ TorqueStructTestTuple_Smi_intptr_0 TupleSwap_intptr_Smi_0(compiler::CodeAssemble
   return TorqueStructTestTuple_Smi_intptr_0{TNode<Smi>{p_tuple.snd}, TNode<IntPtrT>{p_tuple.fst}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1170&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1174&c=1
 TNode<ExportedSubClass> DownCastForTorqueClass_ExportedSubClass_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10547,7 +10666,7 @@ TNode<ExportedSubClass> DownCastForTorqueClass_ExportedSubClass_0(compiler::Code
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(241), static_cast<InstanceType>(241))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(201), static_cast<InstanceType>(201))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -10568,7 +10687,7 @@ TNode<ExportedSubClass> DownCastForTorqueClass_ExportedSubClass_0(compiler::Code
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<ExportedSubClass>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -10590,7 +10709,7 @@ TNode<ExportedSubClass> DownCastForTorqueClass_ExportedSubClass_0(compiler::Code
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(241));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(201));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -10624,12 +10743,12 @@ TNode<ExportedSubClass> DownCastForTorqueClass_ExportedSubClass_0(compiler::Code
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(241), static_cast<InstanceType>(241))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(201), static_cast<InstanceType>(201))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(241));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(201));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -10665,7 +10784,7 @@ TNode<ExportedSubClass> DownCastForTorqueClass_ExportedSubClass_0(compiler::Code
   return TNode<ExportedSubClass>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1177&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1181&c=1
 TNode<ExportedSubClassBase> DownCastForTorqueClass_ExportedSubClassBase_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10692,7 +10811,7 @@ TNode<ExportedSubClassBase> DownCastForTorqueClass_ExportedSubClassBase_0(compil
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(240), static_cast<InstanceType>(242))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(200), static_cast<InstanceType>(202))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -10713,7 +10832,7 @@ TNode<ExportedSubClassBase> DownCastForTorqueClass_ExportedSubClassBase_0(compil
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<ExportedSubClassBase>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -10735,7 +10854,7 @@ TNode<ExportedSubClassBase> DownCastForTorqueClass_ExportedSubClassBase_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(240));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(200));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -10769,12 +10888,12 @@ TNode<ExportedSubClassBase> DownCastForTorqueClass_ExportedSubClassBase_0(compil
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(242), static_cast<InstanceType>(240))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(202), static_cast<InstanceType>(200))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(240));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(200));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -10810,7 +10929,7 @@ TNode<ExportedSubClassBase> DownCastForTorqueClass_ExportedSubClassBase_0(compil
   return TNode<ExportedSubClassBase>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1183&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1187&c=1
 TNode<AbstractInternalClass> DownCastForTorqueClass_AbstractInternalClass_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10837,7 +10956,7 @@ TNode<AbstractInternalClass> DownCastForTorqueClass_AbstractInternalClass_0(comp
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(246), static_cast<InstanceType>(247))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(251), static_cast<InstanceType>(252))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -10858,7 +10977,7 @@ TNode<AbstractInternalClass> DownCastForTorqueClass_AbstractInternalClass_0(comp
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<AbstractInternalClass>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -10880,7 +10999,7 @@ TNode<AbstractInternalClass> DownCastForTorqueClass_AbstractInternalClass_0(comp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(246));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(251));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -10914,12 +11033,12 @@ TNode<AbstractInternalClass> DownCastForTorqueClass_AbstractInternalClass_0(comp
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(247), static_cast<InstanceType>(246))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(252), static_cast<InstanceType>(251))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(246));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(251));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -10955,7 +11074,7 @@ TNode<AbstractInternalClass> DownCastForTorqueClass_AbstractInternalClass_0(comp
   return TNode<AbstractInternalClass>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1186&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1190&c=1
 TNode<AbstractInternalClassSubclass1> DownCastForTorqueClass_AbstractInternalClassSubclass1_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -10982,7 +11101,7 @@ TNode<AbstractInternalClassSubclass1> DownCastForTorqueClass_AbstractInternalCla
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(246), static_cast<InstanceType>(246))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(251), static_cast<InstanceType>(251))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -11003,7 +11122,7 @@ TNode<AbstractInternalClassSubclass1> DownCastForTorqueClass_AbstractInternalCla
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<AbstractInternalClassSubclass1>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -11025,7 +11144,7 @@ TNode<AbstractInternalClassSubclass1> DownCastForTorqueClass_AbstractInternalCla
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(246));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(251));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -11059,12 +11178,12 @@ TNode<AbstractInternalClassSubclass1> DownCastForTorqueClass_AbstractInternalCla
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(246), static_cast<InstanceType>(246))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(251), static_cast<InstanceType>(251))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(246));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(251));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -11100,7 +11219,7 @@ TNode<AbstractInternalClassSubclass1> DownCastForTorqueClass_AbstractInternalCla
   return TNode<AbstractInternalClassSubclass1>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1188&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1192&c=1
 TNode<AbstractInternalClassSubclass2> DownCastForTorqueClass_AbstractInternalClassSubclass2_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11127,7 +11246,7 @@ TNode<AbstractInternalClassSubclass2> DownCastForTorqueClass_AbstractInternalCla
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(247), static_cast<InstanceType>(247))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(252), static_cast<InstanceType>(252))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -11148,7 +11267,7 @@ TNode<AbstractInternalClassSubclass2> DownCastForTorqueClass_AbstractInternalCla
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<AbstractInternalClassSubclass2>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -11170,7 +11289,7 @@ TNode<AbstractInternalClassSubclass2> DownCastForTorqueClass_AbstractInternalCla
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(247));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(252));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -11204,12 +11323,12 @@ TNode<AbstractInternalClassSubclass2> DownCastForTorqueClass_AbstractInternalCla
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(247), static_cast<InstanceType>(247))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(252), static_cast<InstanceType>(252))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(247));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(252));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -11245,7 +11364,7 @@ TNode<AbstractInternalClassSubclass2> DownCastForTorqueClass_AbstractInternalCla
   return TNode<AbstractInternalClassSubclass2>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1195&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1199&c=1
 TNode<InternalClassWithStructElements> DownCastForTorqueClass_InternalClassWithStructElements_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11272,7 +11391,7 @@ TNode<InternalClassWithStructElements> DownCastForTorqueClass_InternalClassWithS
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(270), static_cast<InstanceType>(270))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(275), static_cast<InstanceType>(275))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -11293,7 +11412,7 @@ TNode<InternalClassWithStructElements> DownCastForTorqueClass_InternalClassWithS
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<InternalClassWithStructElements>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -11315,7 +11434,7 @@ TNode<InternalClassWithStructElements> DownCastForTorqueClass_InternalClassWithS
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(270));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(275));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -11349,12 +11468,12 @@ TNode<InternalClassWithStructElements> DownCastForTorqueClass_InternalClassWithS
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(270), static_cast<InstanceType>(270))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(275), static_cast<InstanceType>(275))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(270));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(275));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -11390,7 +11509,7 @@ TNode<InternalClassWithStructElements> DownCastForTorqueClass_InternalClassWithS
   return TNode<InternalClassWithStructElements>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1212&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1216&c=1
 TNode<ExportedSubClass2> DownCastForTorqueClass_ExportedSubClass2_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11417,7 +11536,7 @@ TNode<ExportedSubClass2> DownCastForTorqueClass_ExportedSubClass2_0(compiler::Co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(242), static_cast<InstanceType>(242))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(202), static_cast<InstanceType>(202))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -11438,7 +11557,7 @@ TNode<ExportedSubClass2> DownCastForTorqueClass_ExportedSubClass2_0(compiler::Co
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<ExportedSubClass2>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -11460,7 +11579,7 @@ TNode<ExportedSubClass2> DownCastForTorqueClass_ExportedSubClass2_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(242));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(202));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -11494,12 +11613,12 @@ TNode<ExportedSubClass2> DownCastForTorqueClass_ExportedSubClass2_0(compiler::Co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(242), static_cast<InstanceType>(242))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(202), static_cast<InstanceType>(202))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(242));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(202));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -11535,7 +11654,7 @@ TNode<ExportedSubClass2> DownCastForTorqueClass_ExportedSubClass2_0(compiler::Co
   return TNode<ExportedSubClass2>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1229&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1233&c=10
 TNode<BoolT> Is_ExportedSubClassBase_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11582,7 +11701,7 @@ TNode<BoolT> Is_ExportedSubClassBase_Object_0(compiler::CodeAssemblerState* stat
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1230&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1234&c=10
 TNode<BoolT> Is_ExportedSubClass_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11629,7 +11748,7 @@ TNode<BoolT> Is_ExportedSubClass_Object_0(compiler::CodeAssemblerState* state_, 
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1231&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1235&c=11
 TNode<BoolT> Is_ExportedSubClass2_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11676,7 +11795,7 @@ TNode<BoolT> Is_ExportedSubClass2_Object_0(compiler::CodeAssemblerState* state_,
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1240&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1244&c=11
 TNode<BoolT> Is_JSSloppyArgumentsObject_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSFunction> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11723,7 +11842,7 @@ TNode<BoolT> Is_JSSloppyArgumentsObject_JSFunction_0(compiler::CodeAssemblerStat
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1242&c=27
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1246&c=27
 TNode<FixedArray> NewFixedArray_ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_length, TorqueStructConstantIterator_TheHole_0 p_it) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11796,7 +11915,7 @@ TNode<FixedArray> NewFixedArray_ConstantIterator_TheHole_0(compiler::CodeAssembl
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp13, tmp15}, tmp7);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_Object_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Hole>{p_it.value}});
+    InitializeFieldsFromIterator_Object_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Hole>{p_it.value}});
     tmp17 = TORQUE_CAST(TNode<HeapObject>{tmp13});
     ca_.Goto(&block1, tmp17);
   }
@@ -11812,7 +11931,7 @@ TNode<FixedArray> NewFixedArray_ConstantIterator_TheHole_0(compiler::CodeAssembl
   return TNode<FixedArray>{phi_bb6_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1243&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1247&c=20
 TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ConstantIterator_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_length, TNode<Context> p_context, TNode<FixedArray> p_arguments, TorqueStructConstantIterator_TheHole_0 p_it) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11851,7 +11970,7 @@ TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ConstantIterator_TheHo
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp6, tmp10}, p_arguments);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    InitializeFieldsFromIterator_Smi_OR_TheHole_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Object>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Hole>{p_it.value}});
+    InitializeFieldsFromIterator_Smi_OR_TheHole_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Hole>{p_it.value}});
     tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp6});
     ca_.Goto(&block2);
   }
@@ -11860,7 +11979,7 @@ TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ConstantIterator_TheHo
   return TNode<SloppyArgumentsElements>{tmp12};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1247&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1251&c=10
 TNode<BoolT> Is_JSArgumentsObject_JSSloppyArgumentsObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArgumentsObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11907,7 +12026,7 @@ TNode<BoolT> Is_JSArgumentsObject_JSSloppyArgumentsObject_0(compiler::CodeAssemb
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1256&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1260&c=10
 TNode<BoolT> Is_ExportedSubClassBase_ExportedSubClassBase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<ExportedSubClassBase> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11954,7 +12073,7 @@ TNode<BoolT> Is_ExportedSubClassBase_ExportedSubClassBase_0(compiler::CodeAssemb
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1275&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1279&c=47
 TNode<String> Convert_String_constexpr_string_0(compiler::CodeAssemblerState* state_, const char* p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11973,7 +12092,7 @@ TNode<String> Convert_String_constexpr_string_0(compiler::CodeAssemblerState* st
   return TNode<String>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1275&c=18
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1279&c=18
 TNode<SeqOneByteString> UnsafeCast_SeqOneByteString_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -11992,7 +12111,7 @@ TNode<SeqOneByteString> UnsafeCast_SeqOneByteString_0(compiler::CodeAssemblerSta
   return TNode<SeqOneByteString>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1277&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1281&c=10
 TorqueStructReference_char8_0 NewOffHeapReference_char8_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_ptr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -12005,7 +12124,7 @@ TorqueStructReference_char8_0 NewOffHeapReference_char8_0(compiler::CodeAssemble
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -12014,33 +12133,33 @@ TorqueStructReference_char8_0 NewOffHeapReference_char8_0(compiler::CodeAssemble
     tmp2 = Convert_intptr_RawPtr_0(state_, TNode<RawPtrT>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, kHeapObjectTag);
     tmp4 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
-    std::tie(tmp5, tmp6) = (TorqueStructReference_char8_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp5, tmp6) = (TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_char8_0{TNode<Object>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
-TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0 NewMutableSlice_InternalClassStructElement_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
+TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0 NewMutableSlice_InternalClassStructElement_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_InternalClassStructElement_MutableReference_InternalClassStructElement_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

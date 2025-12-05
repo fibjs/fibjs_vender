@@ -22,6 +22,7 @@ enum CpuFeature {
   AVX,
   AVX2,
   AVX_VNNI,
+  AVX_VNNI_INT8,
   FMA3,
   BMI1,
   BMI2,
@@ -54,6 +55,13 @@ enum CpuFeature {
   PMULL1Q,
   // Half-precision NEON ops support.
   FP16,
+  SHA3,
+  // Hinted Conditional Branches
+  HBC,
+  // Common short sequence compression instructions
+  CSSC,
+  // Standardization of memory operations
+  MOPS,
 
 #elif V8_TARGET_ARCH_MIPS64
   FPU,
@@ -66,9 +74,7 @@ enum CpuFeature {
 #elif V8_TARGET_ARCH_LOONG64
   FPU,
 
-#elif V8_TARGET_ARCH_PPC || V8_TARGET_ARCH_PPC64
-  PPC_6_PLUS,
-  PPC_7_PLUS,
+#elif V8_TARGET_ARCH_PPC64
   PPC_8_PLUS,
   PPC_9_PLUS,
   PPC_10_PLUS,
@@ -81,7 +87,9 @@ enum CpuFeature {
   VECTOR_FACILITY,
   VECTOR_ENHANCE_FACILITY_1,
   VECTOR_ENHANCE_FACILITY_2,
+  VECTOR_ENHANCE_FACILITY_3,
   MISC_INSTR_EXT2,
+  MISC_INSTR_EXT4,
 
 #elif V8_TARGET_ARCH_RISCV64 || V8_TARGET_ARCH_RISCV32
   FPU,

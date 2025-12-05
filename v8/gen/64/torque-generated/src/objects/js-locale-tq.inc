@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSLocale_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSLocale : public P {
   static_assert(
-      std::is_same<JSLocale, D>::value,
+      std::is_same_v<JSLocale, D>,
       "Use this class as direct base for JSLocale.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSLocale.");
 
  public: 
@@ -45,7 +45,7 @@ class TorqueGeneratedJSLocale : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSLocale() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSLocale, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSLocale, DAlias>,
         "class TorqueGeneratedJSLocale should be used as direct base for JSLocale.");
   }
 

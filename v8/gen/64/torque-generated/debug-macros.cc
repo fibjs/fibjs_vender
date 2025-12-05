@@ -1,7 +1,11 @@
 #include "torque-generated/debug-macros.h"
 
+
+// The following includes are here to provide some constants definitions.
 #include "src/objects/swiss-name-dictionary.h"
 #include "src/objects/ordered-hash-table.h"
+#include "src/objects/prototype-info.h"
+
 #include "src/torque/runtime-support.h"
 #include "tools/debug_helper/debug-macro-shims.h"
 #include "include/v8-internal.h"
@@ -121,7 +125,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSloppyArgument
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceWeakArrayListObjects
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceWeakArrayListObjects
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=77&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=80&c=36
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceWeakArrayListObjects(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -202,7 +206,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScriptContextT
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleVariableCount
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleVariableCount
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=134&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=139&c=9
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModuleVariableCount(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
@@ -223,7 +227,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModul
   ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint32_t, tmp1, accessor, p_o, tmp0);
   tmp2 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp1));
-  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_uint32_constexpr_uint32_0(accessor, ScopeType::MODULE_SCOPE));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(accessor, ScopeType::MODULE_SCOPE));
   ASSIGN_OR_RETURN(tmp4, TorqueDebugMacroShims::CodeStubAssembler::Word32Equal(accessor, tmp2, tmp3));
   if (tmp4) {
     goto block2;
@@ -255,7 +259,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModul
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoContextLocalNames
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoContextLocalNames
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=140&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=145&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoContextLocalNames(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -318,7 +322,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoConte
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoContextLocalNamesHashtable
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoContextLocalNamesHashtable
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=145&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=150&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoContextLocalNamesHashtable(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -379,7 +383,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoConte
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoContextLocalInfos
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoContextLocalInfos
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=151&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoContextLocalInfos(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -414,7 +418,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoConte
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoSavedClassVariableInfo
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoSavedClassVariableInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=161&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoSavedClassVariableInfo(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -460,7 +464,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoSaved
 
   block4:
   ASSIGN_OR_RETURN(tmp11, TqDebugConvert_intptr_intptr_0(accessor, phi_bb4_8));
-  ASSIGN_OR_RETURN(std::tie(tmp12, tmp13, tmp14), TqDebugNewMutableSlice_Smi_0(accessor, p_o, tmp5, tmp11));
+  ASSIGN_OR_RETURN(std::tie(tmp12, tmp13, tmp14), TqDebugNewMutableSlice_Smi_OR_Name_0(accessor, p_o, tmp5, tmp11));
   goto block6;
 
   block6:
@@ -471,7 +475,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoSaved
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoFunctionVariableInfo
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoFunctionVariableInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=167&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoFunctionVariableInfo(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -532,7 +536,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoFunct
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoInferredFunctionName
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoInferredFunctionName
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=172&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoInferredFunctionName(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -589,7 +593,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoInfer
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoOuterScopeInfo
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoOuterScopeInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=170&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoOuterScopeInfo(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -646,7 +650,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoOuter
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleInfo
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleInfo
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModuleInfo(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -676,7 +680,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModul
   ASSIGN_OR_RETURN(tmp6, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint32_t, tmp7, accessor, p_o, tmp6);
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp7));
-  ASSIGN_OR_RETURN(tmp9, TqDebugFromConstexpr_uint32_constexpr_uint32_0(accessor, ScopeType::MODULE_SCOPE));
+  ASSIGN_OR_RETURN(tmp9, TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(accessor, ScopeType::MODULE_SCOPE));
   ASSIGN_OR_RETURN(tmp10, TorqueDebugMacroShims::CodeStubAssembler::Word32Equal(accessor, tmp8, tmp9));
   if (tmp10) {
     goto block2;
@@ -707,7 +711,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModul
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleVariables
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleVariables
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModuleVariables(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -748,7 +752,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModul
   ASSIGN_OR_RETURN(tmp6, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint32_t, tmp7, accessor, p_o, tmp6);
   tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<ScopeType, 0, 4, uint32_t>::decode(tmp7));
-  ASSIGN_OR_RETURN(tmp9, TqDebugFromConstexpr_uint32_constexpr_uint32_0(accessor, ScopeType::MODULE_SCOPE));
+  ASSIGN_OR_RETURN(tmp9, TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(accessor, ScopeType::MODULE_SCOPE));
   ASSIGN_OR_RETURN(tmp10, TorqueDebugMacroShims::CodeStubAssembler::Word32Equal(accessor, tmp8, tmp9));
   if (tmp10) {
     goto block2;
@@ -794,11 +798,68 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoModul
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoModuleVariables
-#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceFixedDoubleArrayFloats
-#define V8_INTERNAL_DEFINED_TqDebugFieldSliceFixedDoubleArrayFloats
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoDependentCode
+#define V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoDependentCode
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=184&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceScopeInfoDependentCode(d::MemoryAccessor accessor, uintptr_t p_o) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  intptr_t tmp3{}; USE(tmp3);
+  intptr_t tmp4{}; USE(tmp4);
+  intptr_t tmp5{}; USE(tmp5);
+  intptr_t tmp6{}; USE(tmp6);
+  uint32_t tmp7{}; USE(tmp7);
+  bool tmp8{}; USE(tmp8);
+  intptr_t tmp9{}; USE(tmp9);
+  intptr_t tmp10{}; USE(tmp10);
+  intptr_t phi_bb4_8{}; USE(phi_bb4_8);
+  intptr_t tmp11{}; USE(tmp11);
+  uintptr_t tmp12{}; USE(tmp12);
+  intptr_t tmp13{}; USE(tmp13);
+  intptr_t tmp14{}; USE(tmp14);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(std::tie(tmp0, tmp1, tmp2), TqDebugFieldSliceScopeInfoModuleVariables(accessor, p_o));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x18ull)));
+  ASSIGN_OR_RETURN(tmp4, TorqueDebugMacroShims::CodeStubAssembler::IntPtrMul(accessor, tmp3, tmp2));
+  ASSIGN_OR_RETURN(tmp5, TorqueDebugMacroShims::CodeStubAssembler::IntPtrAdd(accessor, tmp1, tmp4));
+  ASSIGN_OR_RETURN(tmp6, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
+  READ_FIELD_OR_FAIL(uint32_t, tmp7, accessor, p_o, tmp6);
+  tmp8 = CastToUnderlyingTypeIfEnum(base::BitField<bool, 4, 1, uint32_t>::decode(tmp7));
+  if (tmp8) {
+    goto block2;
+  } else {
+    goto block3;
+  }
+
+  block2:
+  ASSIGN_OR_RETURN(tmp9, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x1ull)));
+  phi_bb4_8 = tmp9;
+  goto block4;
+
+  block3:
+  ASSIGN_OR_RETURN(tmp10, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x0ull)));
+  phi_bb4_8 = tmp10;
+  goto block4;
+
+  block4:
+  ASSIGN_OR_RETURN(tmp11, TqDebugConvert_intptr_intptr_0(accessor, phi_bb4_8));
+  ASSIGN_OR_RETURN(std::tie(tmp12, tmp13, tmp14), TqDebugNewMutableSlice_DependentCode_0(accessor, p_o, tmp5, tmp11));
+  goto block6;
+
+  block6:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp12, tmp13, tmp14)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceScopeInfoDependentCode
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceFixedDoubleArrayValues
+#define V8_INTERNAL_DEFINED_TqDebugFieldSliceFixedDoubleArrayValues
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFixedDoubleArrayFloats(d::MemoryAccessor accessor, uintptr_t p_o) {
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFixedDoubleArrayValues(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -813,14 +874,14 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFixedDoubleArr
   READ_TAGGED_FIELD_OR_FAIL(tmp1, accessor, p_o, static_cast<int>(tmp0));
   ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_Smi_0(accessor, tmp1));
   ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x10ull)));
-  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_float64_or_hole_0(accessor, p_o, tmp3, tmp2));
+  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_float64_or_undefined_or_hole_0(accessor, p_o, tmp3, tmp2));
   goto block2;
 
   block2:
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp4, tmp5, tmp6)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceFixedDoubleArrayFloats
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceFixedDoubleArrayValues
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceRegExpMatchInfoObjects
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceRegExpMatchInfoObjects
 
@@ -878,7 +939,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceCoverageInfoSl
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceDescriptorArrayDescriptors
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceDescriptorArrayDescriptors
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=39&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceDescriptorArrayDescriptors(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uint16_t tmp1{}; USE(tmp1);
@@ -893,7 +954,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceDescriptorArra
   ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint16_t, tmp1, accessor, p_o, tmp0);
   ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_uint16_0(accessor, tmp1));
-  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x18ull)));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x20ull)));
   ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_DescriptorEntry_0(accessor, p_o, tmp3, tmp2));
   goto block2;
 
@@ -905,7 +966,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceDescriptorArra
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceClosureFeedbackCellArrayObjects
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceClosureFeedbackCellArrayObjects
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceClosureFeedbackCellArrayObjects(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -932,7 +993,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceClosureFeedbac
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceFeedbackVectorRawFeedbackSlots
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceFeedbackVectorRawFeedbackSlots
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=55&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=57&c=36
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFeedbackVectorRawFeedbackSlots(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   int32_t tmp1{}; USE(tmp1);
@@ -947,7 +1008,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceFeedbackVector
   ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(int32_t, tmp1, accessor, p_o, tmp0);
   ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_int32_0(accessor, tmp1));
-  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x38ull)));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x30ull)));
   ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_MaybeObject_0(accessor, p_o, tmp3, tmp2));
   goto block2;
 
@@ -1037,11 +1098,38 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTrustedWeakFix
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedWeakFixedArrayObjects
-#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayBytes
-#define V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayBytes
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceProtectedWeakFixedArrayObjects
+#define V8_INTERNAL_DEFINED_TqDebugFieldSliceProtectedWeakFixedArrayObjects
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=50&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceByteArrayBytes(d::MemoryAccessor accessor, uintptr_t p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=53&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceProtectedWeakFixedArrayObjects(d::MemoryAccessor accessor, uintptr_t p_o) {
+  intptr_t tmp0{}; USE(tmp0);
+  uintptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  intptr_t tmp3{}; USE(tmp3);
+  uintptr_t tmp4{}; USE(tmp4);
+  intptr_t tmp5{}; USE(tmp5);
+  intptr_t tmp6{}; USE(tmp6);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
+  READ_TAGGED_FIELD_OR_FAIL(tmp1, accessor, p_o, static_cast<int>(tmp0));
+  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_Smi_0(accessor, tmp1));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x10ull)));
+  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_Smi_OR_TrustedObject_0(accessor, p_o, tmp3, tmp2));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp4, tmp5, tmp6)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceProtectedWeakFixedArrayObjects
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayValues
+#define V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayValues
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=58&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceByteArrayValues(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -1063,12 +1151,12 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceByteArrayBytes
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp4, tmp5, tmp6)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayBytes
-#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedByteArrayBytes
-#define V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedByteArrayBytes
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceByteArrayValues
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedByteArrayValues
+#define V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedByteArrayValues
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=56&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTrustedByteArrayBytes(d::MemoryAccessor accessor, uintptr_t p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=64&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTrustedByteArrayValues(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -1090,38 +1178,11 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTrustedByteArr
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp4, tmp5, tmp6)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedByteArrayBytes
-#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceExternalPointerArrayPointers
-#define V8_INTERNAL_DEFINED_TqDebugFieldSliceExternalPointerArrayPointers
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=61&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceExternalPointerArrayPointers(d::MemoryAccessor accessor, uintptr_t p_o) {
-  intptr_t tmp0{}; USE(tmp0);
-  uintptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  intptr_t tmp3{}; USE(tmp3);
-  uintptr_t tmp4{}; USE(tmp4);
-  intptr_t tmp5{}; USE(tmp5);
-  intptr_t tmp6{}; USE(tmp6);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
-  READ_TAGGED_FIELD_OR_FAIL(tmp1, accessor, p_o, static_cast<int>(tmp0));
-  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_Smi_0(accessor, tmp1));
-  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x10ull)));
-  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_ExternalPointer_0(accessor, p_o, tmp3, tmp2));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp4, tmp5, tmp6)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceExternalPointerArrayPointers
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceTrustedByteArrayValues
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceArrayListObjects
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceArrayListObjects
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=73&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceArrayListObjects(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -1562,6 +1623,29 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceSmallOrderedNa
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFieldSliceSmallOrderedNameDictionaryChainTable
+#ifndef V8_INTERNAL_DEFINED_TqDebugFieldSlicePrototypeInfoCachedHandler
+#define V8_INTERNAL_DEFINED_TqDebugFieldSlicePrototypeInfoCachedHandler
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=38&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSlicePrototypeInfoCachedHandler(d::MemoryAccessor accessor, uintptr_t p_o) {
+  intptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  uintptr_t tmp2{}; USE(tmp2);
+  intptr_t tmp3{}; USE(tmp3);
+  intptr_t tmp4{}; USE(tmp4);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugConvert_intptr_constexpr_int31_0(accessor, PrototypeInfo::kCachedHandlerCount));
+  ASSIGN_OR_RETURN(tmp1, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x38ull)));
+  ASSIGN_OR_RETURN(std::tie(tmp2, tmp3, tmp4), TqDebugNewMutableSlice_Zero_OR_LoadHandler_0(accessor, p_o, tmp1, tmp0));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp2, tmp3, tmp4)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFieldSlicePrototypeInfoCachedHandler
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceSeqOneByteStringChars
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceSeqOneByteStringChars
 
@@ -1744,9 +1828,9 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord
   block0:
   ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint32_t, tmp1, accessor, p_o, tmp0);
-  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_uint32_0(accessor, tmp1));
+  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_WasmCodePointer_0(accessor, tmp1));
   ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0xcull)));
-  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_uint32_0(accessor, p_o, tmp3, tmp2));
+  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_WasmCodePointer_0(accessor, p_o, tmp3, tmp2));
   goto block2;
 
   block2:
@@ -1771,9 +1855,9 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord
   block0:
   ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint32_t, tmp1, accessor, p_o, tmp0);
-  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_uint32_0(accessor, tmp1));
+  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_WasmCodePointer_0(accessor, tmp1));
   ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0xcull)));
-  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_uint32_0(accessor, p_o, tmp3, tmp2));
+  ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_WasmCodePointer_0(accessor, p_o, tmp3, tmp2));
   goto block2;
 
   block2:
@@ -1807,8 +1891,8 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftWord
   ASSIGN_OR_RETURN(tmp5, TorqueDebugMacroShims::CodeStubAssembler::IntPtrAdd(accessor, tmp1, tmp4));
   ASSIGN_OR_RETURN(tmp6, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 8));
   READ_FIELD_OR_FAIL(uint32_t, tmp7, accessor, p_o, tmp6);
-  ASSIGN_OR_RETURN(tmp8, TqDebugConvert_intptr_uint32_0(accessor, tmp7));
-  ASSIGN_OR_RETURN(std::tie(tmp9, tmp10, tmp11), TqDebugNewMutableSlice_uint32_0(accessor, p_o, tmp5, tmp8));
+  ASSIGN_OR_RETURN(tmp8, TqDebugConvert_intptr_WasmCodePointer_0(accessor, tmp7));
+  ASSIGN_OR_RETURN(std::tie(tmp9, tmp10, tmp11), TqDebugNewMutableSlice_WasmCodePointer_0(accessor, p_o, tmp5, tmp8));
   goto block2;
 
   block2:
@@ -1833,7 +1917,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftFloa
   block0:
   ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 12));
   READ_FIELD_OR_FAIL(uint32_t, tmp1, accessor, p_o, tmp0);
-  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_uint32_0(accessor, tmp1));
+  ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_WasmCodePointer_0(accessor, tmp1));
   ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x10ull)));
   ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_float64_0(accessor, p_o, tmp3, tmp2));
   goto block2;
@@ -1846,7 +1930,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceTurboshaftFloa
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsEntries
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1201&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1205&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassWithStructElementsEntries(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -1873,7 +1957,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassW
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsMoreEntries
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceInternalClassWithStructElementsMoreEntries
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassWithStructElementsMoreEntries(d::MemoryAccessor accessor, uintptr_t p_o) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -1908,7 +1992,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceInternalClassW
 #ifndef V8_INTERNAL_DEFINED_TqDebugFieldSliceWasmTypeInfoSupertypes
 #define V8_INTERNAL_DEFINED_TqDebugFieldSliceWasmTypeInfoSupertypes
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=254&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/wasm-objects.tq?l=290&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceWasmTypeInfoSupertypes(d::MemoryAccessor accessor, uintptr_t p_o) {
   intptr_t tmp0{}; USE(tmp0);
   uintptr_t tmp1{}; USE(tmp1);
@@ -1920,10 +2004,10 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugFieldSliceWasmTypeInfoSu
   goto block0;
 
   block0:
-  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 32));
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, 16));
   READ_TAGGED_FIELD_OR_FAIL(tmp1, accessor, p_o, static_cast<int>(tmp0));
   ASSIGN_OR_RETURN(tmp2, TqDebugConvert_intptr_Smi_0(accessor, tmp1));
-  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x28ull)));
+  ASSIGN_OR_RETURN(tmp3, TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(accessor, IntegerLiteral(false, 0x18ull)));
   ASSIGN_OR_RETURN(std::tie(tmp4, tmp5, tmp6), TqDebugNewMutableSlice_Object_0(accessor, p_o, tmp3, tmp2));
   goto block2;
 
@@ -2053,95 +2137,6 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Object_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=39&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_MaybeObject_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
-Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TheHole_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TheHole_0
 
@@ -2212,6 +2207,76 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=39&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_MaybeObject_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
+Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
 
@@ -2231,25 +2296,6 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint8_0(
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Context_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Context_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=22&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Context_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Context_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 
@@ -2267,11 +2313,11 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor 
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_uint32_constexpr_uint32_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_uint32_constexpr_uint32_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=127&c=1
-Value<uint32_t> TqDebugFromConstexpr_uint32_constexpr_uint32_0(d::MemoryAccessor accessor, uint32_t p_i) {
+Value<uint32_t> TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(d::MemoryAccessor accessor, uint32_t p_i) {
   int32_t tmp0{}; USE(tmp0);
   uint32_t tmp1{}; USE(tmp1);
   goto block0;
@@ -2285,7 +2331,7 @@ Value<uint32_t> TqDebugFromConstexpr_uint32_constexpr_uint32_0(d::MemoryAccessor
   return {d::MemoryAccessResult::kOk, tmp1};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_uint32_constexpr_uint32_0
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 
@@ -2306,7 +2352,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=201&c=26
 Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   goto block0;
 
@@ -2321,7 +2367,7 @@ Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intpt
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewConstSlice_Smi_0
 #define V8_INTERNAL_DEFINED_TqDebugNewConstSlice_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=134&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=139&c=9
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_Smi_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2391,7 +2437,7 @@ Value<uintptr_t> TqDebugFromConstexpr_Smi_constexpr_IntegerLiteral_0(d::MemoryAc
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_String_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_String_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=140&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=145&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_String_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2410,7 +2456,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_String_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_NameToIndexHashTable_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_NameToIndexHashTable_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=145&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=150&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_NameToIndexHashTable_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2429,7 +2475,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_NameToIn
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_SmiTagged_VariableProperties_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_SmiTagged_VariableProperties_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=151&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=156&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_SmiTagged_VariableProperties_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2445,11 +2491,11 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_SmiTagge
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_SmiTagged_VariableProperties_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_Name_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_Name_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=161&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_OR_Name_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -2463,7 +2509,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d:
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_Name_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_VariableAllocationInfo_constexpr_NONE_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_VariableAllocationInfo_constexpr_NONE_0
 
@@ -2486,7 +2532,7 @@ Value<uint32_t> TqDebugFromConstexpr_VariableAllocationInfo_constexpr_NONE_0(d::
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FunctionVariableInfo_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FunctionVariableInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=163&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=167&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_FunctionVariableInfo_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2505,7 +2551,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Function
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_String_OR_Undefined_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_String_OR_Undefined_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=168&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=172&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_String_OR_Undefined_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2524,7 +2570,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_String_O
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_TheHole_OR_ScopeInfo_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_TheHole_OR_ScopeInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=170&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_TheHole_OR_ScopeInfo_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2543,7 +2589,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_TheHole_
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_SourceTextModuleInfo_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_SourceTextModuleInfo_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=174&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=178&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_SourceTextModuleInfo_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2579,7 +2625,7 @@ Value<intptr_t> TqDebugConvert_intptr_constexpr_int31_0(d::MemoryAccessor access
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_uintptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_uintptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=389&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=400&c=1
 Value<uintptr_t> TqDebugConvert_uintptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   uintptr_t tmp0{}; USE(tmp0);
   goto block0;
@@ -2633,7 +2679,7 @@ Value<std::tuple<uintptr_t, intptr_t>> TqDebugNewReference_Smi_0(d::MemoryAccess
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ModuleVariable_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ModuleVariable_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=176&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=180&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_ModuleVariable_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2649,11 +2695,11 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_ModuleVa
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ModuleVariable_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_or_hole_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_or_hole_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_DependentCode_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_DependentCode_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_float64_or_hole_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=184&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_DependentCode_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -2667,77 +2713,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_float64_
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_or_hole_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
-Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_DependentCode_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 
@@ -2864,7 +2840,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_DescriptorEntry_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_DescriptorEntry_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=39&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_DescriptorEntry_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -2897,59 +2873,6 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor 
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
-Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FeedbackCell_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FeedbackCell_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=38&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_FeedbackCell_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FeedbackCell_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_int32_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_int32_0
 
@@ -2967,6 +2890,23 @@ Value<intptr_t> TqDebugConvert_intptr_int32_0(d::MemoryAccessor accessor, int32_
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_int32_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
 
@@ -2986,137 +2926,10 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_MaybeObj
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_MaybeObject_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TrustedObject_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TrustedObject_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_OR_TrustedObject_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TrustedObject_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=20&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint8_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ExternalPointer_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ExternalPointer_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=61&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_ExternalPointer_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_ExternalPointer_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
-Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
-  intptr_t tmp0{}; USE(tmp0);
-  goto block0;
-
-  block0:
-  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, tmp0};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Object_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
-  uintptr_t tmp0{}; USE(tmp0);
-  intptr_t tmp1{}; USE(tmp1);
-  intptr_t tmp2{}; USE(tmp2);
-  goto block0;
-
-  block0:
-  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
-  goto block2;
-
-  block2:
-  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
-}
-
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_IntegerLiteral_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=617&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=661&c=47
 Value<intptr_t> TqDebugConvert_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
   intptr_t tmp0{}; USE(tmp0);
   goto block0;
@@ -3205,7 +3018,7 @@ Value<intptr_t> TqDebugConvert_intptr_uint8_0(d::MemoryAccessor accessor, uint8_
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=201&c=26
 Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   goto block0;
 
@@ -3274,6 +3087,59 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_NameDict
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_NameDictionaryEntry_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_int31_0
+#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_int31_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/torque-internal.tq?l=125&c=23
+Value<intptr_t> TqDebugConvert_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_int31_0(accessor, p_i));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_constexpr_int31_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Zero_OR_LoadHandler_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Zero_OR_LoadHandler_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/prototype-info.tq?l=38&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Zero_OR_LoadHandler_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Zero_OR_LoadHandler_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 
@@ -3328,7 +3194,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=201&c=26
 Value<intptr_t> TqDebugConvert_intptr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
   goto block0;
 
@@ -3412,11 +3278,11 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor 
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_uint32_0
-#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_uint32_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_WasmCodePointer_0
+#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_WasmCodePointer_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
-Value<intptr_t> TqDebugConvert_intptr_uint32_0(d::MemoryAccessor accessor, uint32_t p_i) {
+Value<intptr_t> TqDebugConvert_intptr_WasmCodePointer_0(d::MemoryAccessor accessor, uint32_t p_i) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   goto block0;
@@ -3430,7 +3296,7 @@ Value<intptr_t> TqDebugConvert_intptr_uint32_0(d::MemoryAccessor accessor, uint3
   return {d::MemoryAccessResult::kOk, tmp1};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_uint32_0
+#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_WasmCodePointer_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
 
@@ -3448,11 +3314,11 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint32_0
-#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint32_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_WasmCodePointer_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_WasmCodePointer_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint32_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_WasmCodePointer_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
   intptr_t tmp2{}; USE(tmp2);
@@ -3466,7 +3332,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint32_0
   return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint32_0
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_WasmCodePointer_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_0
 
@@ -3540,7 +3406,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::Memory
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=157&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/regexp-match-info.tq?l=19&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3559,7 +3425,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d:
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_InternalClassStructElement_0
 #define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_InternalClassStructElement_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1202&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/test/torque/test-torque.tq?l=1206&c=3
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_InternalClassStructElement_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -3815,11 +3681,11 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_intptr_0(d::MemoryAccessor
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
-#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
-#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
-Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
   intptr_t tmp0{}; USE(tmp0);
   goto block0;
 
@@ -3831,7 +3697,7 @@ Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_intptr_0(d::MemoryAccessor
   return {d::MemoryAccessResult::kOk, tmp0};
 }
 
-#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
 
@@ -3934,6 +3800,277 @@ Value<uintptr_t> TqDebugFromConstexpr_Smi_constexpr_int31_0(d::MemoryAccessor ac
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_Smi_constexpr_int31_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Object_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Context_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Context_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=22&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Context_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Context_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_or_undefined_or_hole_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_or_undefined_or_hole_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=33&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_float64_or_undefined_or_hole_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_float64_or_undefined_or_hole_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
+Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/regexp-match-info.tq?l=19&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
+Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FeedbackCell_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FeedbackCell_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-vector.tq?l=42&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_FeedbackCell_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_FeedbackCell_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TrustedObject_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TrustedObject_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/fixed-array.tq?l=28&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Smi_OR_TrustedObject_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Smi_OR_TrustedObject_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/bytecode-array.tq?l=20&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_uint8_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_uint8_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=73&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_int31_0(d::MemoryAccessor accessor, int31_t p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#define V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=290&c=1
+Value<intptr_t> TqDebugConvert_intptr_Smi_0(d::MemoryAccessor accessor, uintptr_t p_s) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TorqueDebugMacroShims::CodeStubAssembler::SmiUntag(accessor, p_s));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugConvert_intptr_Smi_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0(d::MemoryAccessor accessor, IntegerLiteral p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  ASSIGN_OR_RETURN(tmp0, TqDebugFromConstexpr_intptr_constexpr_intptr_0(accessor, (TorqueDebugMacroShims::CodeStubAssembler::ConstexprIntegerLiteralToIntptr(accessor, p_i))));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_IntegerLiteral_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
+#define V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/contexts.tq?l=14&c=3
+Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewMutableSlice_Object_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
+  uintptr_t tmp0{}; USE(tmp0);
+  intptr_t tmp1{}; USE(tmp1);
+  intptr_t tmp2{}; USE(tmp2);
+  goto block0;
+
+  block0:
+  std::tie(tmp0, tmp1, tmp2) = (std::make_tuple(p_object, p_offset, p_length));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, std::make_tuple(tmp0, tmp1, tmp2)};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugNewMutableSlice_Object_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_int31_0
 
@@ -4007,7 +4144,7 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_char8_0(d:
 #ifndef V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char16_0
 #define V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char16_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=1007&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/wasm.tq?l=1075&c=26
 Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_char16_0(d::MemoryAccessor accessor, uintptr_t p_object, intptr_t p_offset, intptr_t p_length) {
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -4023,6 +4160,40 @@ Value<std::tuple<uintptr_t, intptr_t, intptr_t>> TqDebugNewConstSlice_char16_0(d
 }
 
 #endif // V8_INTERNAL_DEFINED_TqDebugNewConstSlice_char16_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+#ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+#define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=79&c=1
+Value<intptr_t> TqDebugFromConstexpr_intptr_constexpr_intptr_0(d::MemoryAccessor accessor, intptr_t p_i) {
+  intptr_t tmp0{}; USE(tmp0);
+  goto block0;
+
+  block0:
+  tmp0 = (CastToUnderlyingTypeIfEnum(p_i));
+  goto block2;
+
+  block2:
+  return {d::MemoryAccessResult::kOk, tmp0};
+}
+
+#endif // V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
 #ifndef V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
 #define V8_INTERNAL_DEFINED_TqDebugFromConstexpr_intptr_constexpr_intptr_0
 

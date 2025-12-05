@@ -9,10 +9,10 @@ V8_EXPORT_PRIVATE bool IsJSSynchronizationPrimitive_NonInline(Tagged<HeapObject>
 template <class D, class P>
 class TorqueGeneratedJSSynchronizationPrimitive : public P {
   static_assert(
-      std::is_same<JSSynchronizationPrimitive, D>::value,
+      std::is_same_v<JSSynchronizationPrimitive, D>,
       "Use this class as direct base for JSSynchronizationPrimitive.");
   static_assert(
-      std::is_same<AlwaysSharedSpaceJSObject, P>::value,
+      std::is_same_v<AlwaysSharedSpaceJSObject, P>,
       "Pass in AlwaysSharedSpaceJSObject as second template parameter for TorqueGeneratedJSSynchronizationPrimitive.");
 
  public: 
@@ -46,7 +46,7 @@ class TorqueGeneratedJSSynchronizationPrimitive : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSynchronizationPrimitive() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSynchronizationPrimitive, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSynchronizationPrimitive, DAlias>,
         "class TorqueGeneratedJSSynchronizationPrimitive should be used as direct base for JSSynchronizationPrimitive.");
   }
 
@@ -64,10 +64,10 @@ V8_EXPORT_PRIVATE bool IsJSAtomicsMutex_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSAtomicsMutex : public P {
   static_assert(
-      std::is_same<JSAtomicsMutex, D>::value,
+      std::is_same_v<JSAtomicsMutex, D>,
       "Use this class as direct base for JSAtomicsMutex.");
   static_assert(
-      std::is_same<JSSynchronizationPrimitive, P>::value,
+      std::is_same_v<JSSynchronizationPrimitive, P>,
       "Pass in JSSynchronizationPrimitive as second template parameter for TorqueGeneratedJSAtomicsMutex.");
 
  public: 
@@ -100,7 +100,7 @@ class TorqueGeneratedJSAtomicsMutex : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSAtomicsMutex() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSAtomicsMutex, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSAtomicsMutex, DAlias>,
         "class TorqueGeneratedJSAtomicsMutex should be used as direct base for JSAtomicsMutex.");
   }
 
@@ -118,10 +118,10 @@ V8_EXPORT_PRIVATE bool IsJSAtomicsCondition_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSAtomicsCondition : public P {
   static_assert(
-      std::is_same<JSAtomicsCondition, D>::value,
+      std::is_same_v<JSAtomicsCondition, D>,
       "Use this class as direct base for JSAtomicsCondition.");
   static_assert(
-      std::is_same<JSSynchronizationPrimitive, P>::value,
+      std::is_same_v<JSSynchronizationPrimitive, P>,
       "Pass in JSSynchronizationPrimitive as second template parameter for TorqueGeneratedJSAtomicsCondition.");
 
  public: 
@@ -154,7 +154,7 @@ class TorqueGeneratedJSAtomicsCondition : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSAtomicsCondition() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSAtomicsCondition, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSAtomicsCondition, DAlias>,
         "class TorqueGeneratedJSAtomicsCondition should be used as direct base for JSAtomicsCondition.");
   }
 

@@ -2,7 +2,6 @@ set(libs
     v8
     ada
     abseil
-    exlib
     gtest
     unicode
     expat
@@ -24,6 +23,7 @@ set(libs
     jssdk
     unzip
     uv
+    exlib
 )
 
 if(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")

@@ -9,10 +9,10 @@ V8_EXPORT_PRIVATE bool IsJSArrayIterator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSArrayIterator : public P {
   static_assert(
-      std::is_same<JSArrayIterator, D>::value,
+      std::is_same_v<JSArrayIterator, D>,
       "Use this class as direct base for JSArrayIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSArrayIterator.");
 
  public: 
@@ -66,7 +66,7 @@ class TorqueGeneratedJSArrayIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSArrayIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSArrayIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSArrayIterator, DAlias>,
         "class TorqueGeneratedJSArrayIterator should be used as direct base for JSArrayIterator.");
   }
 
@@ -84,10 +84,10 @@ V8_EXPORT_PRIVATE bool IsJSArray_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSArray : public P {
   static_assert(
-      std::is_same<JSArray, D>::value,
+      std::is_same_v<JSArray, D>,
       "Use this class as direct base for JSArray.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSArray.");
 
  public: 
@@ -123,7 +123,7 @@ class TorqueGeneratedJSArray : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSArray() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSArray, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSArray, DAlias>,
         "class TorqueGeneratedJSArray should be used as direct base for JSArray.");
   }
 
@@ -141,10 +141,10 @@ V8_EXPORT_PRIVATE bool IsTemplateLiteralObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTemplateLiteralObject : public P {
   static_assert(
-      std::is_same<TemplateLiteralObject, D>::value,
+      std::is_same_v<TemplateLiteralObject, D>,
       "Use this class as direct base for TemplateLiteralObject.");
   static_assert(
-      std::is_same<JSArray, P>::value,
+      std::is_same_v<JSArray, P>,
       "Pass in JSArray as second template parameter for TorqueGeneratedTemplateLiteralObject.");
 
  public: 
@@ -195,7 +195,7 @@ class TorqueGeneratedTemplateLiteralObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTemplateLiteralObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTemplateLiteralObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTemplateLiteralObject, DAlias>,
         "class TorqueGeneratedTemplateLiteralObject should be used as direct base for TemplateLiteralObject.");
   }
 

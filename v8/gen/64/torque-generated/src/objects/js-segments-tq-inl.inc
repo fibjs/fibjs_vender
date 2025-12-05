@@ -16,7 +16,7 @@ Tagged<Foreign> TorqueGeneratedJSSegments<D, P>::icu_break_iterator(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegments<D, P>::set_icu_break_iterator(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuBreakIteratorOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuBreakIteratorOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<String> TorqueGeneratedJSSegments<D, P>::raw_string(PtrComprCageBase cage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegments<D, P>::set_raw_string(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kRawStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRawStringOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Foreign> TorqueGeneratedJSSegments<D, P>::unicode_string(PtrComprCageBase
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegments<D, P>::set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kUnicodeStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnicodeStringOffset, value, mode);
 }
@@ -77,7 +77,8 @@ int TorqueGeneratedJSSegments<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segments.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegments<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSSegmentsFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>

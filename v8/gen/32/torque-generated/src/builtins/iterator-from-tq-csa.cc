@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/iterator-from-tq-csa.h"
@@ -96,7 +96,7 @@ TNode<JSValidIteratorWrapper> NewJSValidIteratorWrapper_0(compiler::CodeAssemble
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Map> tmp3;
   TNode<FixedArray> tmp4;
@@ -126,14 +126,14 @@ TNode<JSValidIteratorWrapper> NewJSValidIteratorWrapper_0(compiler::CodeAssemble
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp5);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
     tmp14 = FromConstexpr_intptr_constexpr_intptr_0(state_, 4);
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp15}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp9, tmp15}, p_underlying.next);
     tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block2);
   }
@@ -143,25 +143,25 @@ TNode<JSValidIteratorWrapper> NewJSValidIteratorWrapper_0(compiler::CodeAssemble
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-from.tq?l=19&c=1
-TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_obj) {
+TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<JSReceiver, String>> p_obj) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Symbol> tmp0;
-  TNode<JSReceiver> tmp1;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).IteratorSymbolConstant();
     compiler::CodeAssemblerLabel label2(&ca_);
-    tmp1 = GetMethod_3(state_, TNode<Context>{p_context}, TNode<Object>{p_obj}, TNode<Symbol>{tmp0}, &label2);
+    tmp1 = GetMethod_3(state_, TNode<Context>{p_context}, TNode<JSAny>{p_obj}, TNode<Symbol>{tmp0}, &label2);
     ca_.Goto(&block4);
     if (label2.is_used()) {
       ca_.Bind(&label2);
@@ -174,14 +174,14 @@ TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState
     ca_.Goto(&block2, p_obj);
   }
 
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp3 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp1}, TNode<Object>{p_obj});
+    tmp3 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp1}, TNode<JSAny>{p_obj});
     ca_.Goto(&block2, tmp3);
   }
 
-  TNode<Object> phi_bb2_2;
+  TNode<JSAny> phi_bb2_2;
   TNode<JSReceiver> tmp4;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_2);
@@ -200,7 +200,7 @@ TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState
   }
 
   TNode<JSReceiver> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     std::tie(tmp6, tmp7) = GetIteratorDirect_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{tmp4}).Flatten();
@@ -208,23 +208,23 @@ TorqueStructIteratorRecord GetIteratorFlattenable_0(compiler::CodeAssemblerState
   }
 
     ca_.Bind(&block10);
-  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp6}, TNode<Object>{tmp7}};
+  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp6}, TNode<JSAny>{tmp7}};
 }
 
 TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kObjArg);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kObjArg);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<HeapObject> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<JSReceiver, String>> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -245,7 +245,7 @@ TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
   if (block4.is_used()) {
     ca_.Bind(&block4);
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<Object>(parameter2)}, &label3);
+    tmp2 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<Union<BigInt, Boolean, HeapNumber, JSReceiver, Null, Smi, Symbol, Undefined>>(parameter2)}, &label3);
     ca_.Goto(&block7);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -268,20 +268,20 @@ TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
     ca_.Goto(&block1, tmp2);
   }
 
-  TNode<HeapObject> phi_bb1_3;
+  TNode<Union<JSReceiver, String>> phi_bb1_3;
   TNode<JSReceiver> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<JSFunction> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<True> tmp8;
   TNode<BoolT> tmp9;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
-    std::tie(tmp4, tmp5) = GetIteratorFlattenable_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{phi_bb1_3}).Flatten();
+    std::tie(tmp4, tmp5) = GetIteratorFlattenable_0(state_, TNode<Context>{parameter0}, TNode<Union<JSReceiver, String>>{phi_bb1_3}).Flatten();
     tmp6 = GetIteratorFunction_0(state_, TNode<Context>{parameter0});
     tmp7 = CodeStubAssembler(state_).OrdinaryHasInstance(TNode<Context>{parameter0}, TNode<Object>{tmp6}, TNode<Object>{tmp4});
     tmp8 = True_0(state_);
-    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp7}, TNode<HeapObject>{tmp8});
+    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp7}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp8});
     ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -293,7 +293,7 @@ TF_BUILTIN(IteratorFrom, CodeStubAssembler) {
   TNode<JSValidIteratorWrapper> tmp10;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp10 = NewJSValidIteratorWrapper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<Object>{tmp5}});
+    tmp10 = NewJSValidIteratorWrapper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}});
     CodeStubAssembler(state_).Return(tmp10);
   }
 }
@@ -302,7 +302,7 @@ TF_BUILTIN(WrapForValidIteratorPrototypeNext, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -332,16 +332,16 @@ TF_BUILTIN(WrapForValidIteratorPrototypeNext, CodeStubAssembler) {
   TNode<JSReceiver> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp7;
+  TNode<JSAny> tmp8;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp4 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp0, tmp3});
     tmp5 = FromConstexpr_intptr_constexpr_intptr_0(state_, 4);
     tmp6 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp5});
-    tmp7 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp0, tmp6});
-    tmp8 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp7}, TNode<Object>{tmp4});
+    tmp7 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp0, tmp6});
+    tmp8 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp7}, TNode<JSAny>{tmp4});
     CodeStubAssembler(state_).Return(tmp8);
   }
 }
@@ -350,7 +350,7 @@ TF_BUILTIN(WrapForValidIteratorPrototypeReturn, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -381,14 +381,14 @@ TF_BUILTIN(WrapForValidIteratorPrototypeReturn, CodeStubAssembler) {
   TNode<IntPtrT> tmp3;
   TNode<JSReceiver> tmp4;
   TNode<String> tmp5;
-  TNode<JSReceiver> tmp6;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp6;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp4 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp0, tmp3});
     tmp5 = kReturnString_0(state_);
     compiler::CodeAssemblerLabel label7(&ca_);
-    tmp6 = GetMethod_1(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<String>{tmp5}, &label7);
+    tmp6 = GetMethod_1(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, TNode<String>{tmp5}, &label7);
     ca_.Goto(&block7);
     if (label7.is_used()) {
       ca_.Bind(&label7);
@@ -403,14 +403,14 @@ TF_BUILTIN(WrapForValidIteratorPrototypeReturn, CodeStubAssembler) {
     ca_.Bind(&block8);
     tmp8 = Undefined_0(state_);
     tmp9 = True_0(state_);
-    tmp10 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp8}, TNode<Boolean>{tmp9});
+    tmp10 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp8}, TNode<Boolean>{tmp9});
     CodeStubAssembler(state_).Return(tmp10);
   }
 
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp11 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp6}, TNode<Object>{tmp4});
+    tmp11 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp6}, TNode<JSAny>{tmp4});
     CodeStubAssembler(state_).Return(tmp11);
   }
 }

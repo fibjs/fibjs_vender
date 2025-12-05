@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSCollectionIterator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSCollectionIterator : public P {
   static_assert(
-      std::is_same<JSCollectionIterator, D>::value,
+      std::is_same_v<JSCollectionIterator, D>,
       "Use this class as direct base for JSCollectionIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSCollectionIterator.");
 
  public: 
@@ -53,7 +53,7 @@ class TorqueGeneratedJSCollectionIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSCollectionIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSCollectionIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSCollectionIterator, DAlias>,
         "class TorqueGeneratedJSCollectionIterator should be used as direct base for JSCollectionIterator.");
   }
 

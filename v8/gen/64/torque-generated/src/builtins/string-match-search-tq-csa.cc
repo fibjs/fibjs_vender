@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-match-search-tq-csa.h"
@@ -89,17 +89,17 @@ TF_BUILTIN(StringPrototypeMatch, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kRegexp);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kRegexp);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = StringMatchSearch_StringMatchFunctor_0(state_, TNode<NativeContext>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TorqueStructStringMatchFunctor_0{}, "String.prototype.match");
+    tmp0 = StringMatchSearch_StringMatchFunctor_0(state_, TNode<NativeContext>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{parameter2}, TorqueStructStringMatchFunctor_0{}, "String.prototype.match");
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -108,23 +108,23 @@ TF_BUILTIN(StringPrototypeSearch, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kRegexp);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kRegexp);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = StringMatchSearch_StringSearchFunctor_0(state_, TNode<NativeContext>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TorqueStructStringSearchFunctor_0{}, "String.prototype.search");
+    tmp0 = StringMatchSearch_StringSearchFunctor_0(state_, TNode<NativeContext>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{parameter2}, TorqueStructStringSearchFunctor_0{}, "String.prototype.search");
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=77&c=10
-TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_receiver, TNode<Object> p_regexp, TorqueStructStringMatchFunctor_0 p_functor, const char* p_methodName) {
+TNode<JSAny> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<JSAny> p_receiver, TNode<JSAny> p_regexp, TorqueStructStringMatchFunctor_0 p_functor, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -142,15 +142,15 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<String> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver}, p_methodName);
+    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, p_methodName);
     compiler::CodeAssemblerLabel label2(&ca_);
     tmp1 = Cast_String_1(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver}, &label2);
     ca_.Goto(&block4);
@@ -197,11 +197,11 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
   }
 
   TNode<JSRegExp> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp7 = UnsafeCast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
-    tmp8 = ca_.CallBuiltin<Object>(Builtin::kRegExpMatchFast, p_context, tmp7, tmp1);
+    tmp8 = ca_.CallBuiltin<JSAny>(Builtin::kRegExpMatchFast, p_context, tmp7, tmp1);
     ca_.Goto(&block1, tmp8);
   }
 
@@ -210,7 +210,7 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Branch(tmp10, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
@@ -219,7 +219,7 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp11 = Null_0(state_);
-    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp11});
     ca_.Goto(&block16, tmp12);
   }
 
@@ -237,12 +237,12 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
   }
 
   TNode<Symbol> tmp14;
-  TNode<JSReceiver> tmp15;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp15;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp14 = CodeStubAssembler(state_).MatchSymbolConstant();
     compiler::CodeAssemblerLabel label16(&ca_);
-    tmp15 = GetMethod_3(state_, TNode<Context>{p_context}, TNode<Object>{p_regexp}, TNode<Symbol>{tmp14}, &label16);
+    tmp15 = GetMethod_3(state_, TNode<Context>{p_context}, TNode<JSAny>{p_regexp}, TNode<Symbol>{tmp14}, &label16);
     ca_.Goto(&block20);
     if (label16.is_used()) {
       ca_.Bind(&label16);
@@ -255,43 +255,43 @@ TNode<Object> StringMatchSearch_StringMatchFunctor_0(compiler::CodeAssemblerStat
     ca_.Goto(&block13);
   }
 
-  TNode<Object> tmp17;
+  TNode<JSAny> tmp17;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp17 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp15}, TNode<Object>{p_regexp}, TNode<Object>{p_receiver});
+    tmp17 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp15}, TNode<JSAny>{p_regexp}, TNode<JSAny>{p_receiver});
     ca_.Goto(&block1, tmp17);
   }
 
   TNode<String> tmp18;
   TNode<String> tmp19;
-  TNode<Object> tmp20;
+  TNode<JSAny> tmp20;
   TNode<Symbol> tmp21;
-  TNode<Object> tmp22;
-  TNode<Object> tmp23;
+  TNode<JSAny> tmp22;
+  TNode<JSAny> tmp23;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    tmp18 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{p_receiver});
+    tmp18 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{p_receiver});
     tmp19 = kEmptyString_0(state_);
-    tmp20 = RegExpCreate_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_context}, TNode<Object>{p_regexp}, TNode<String>{tmp19});
+    tmp20 = RegExpCreate_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_context}, TNode<JSAny>{p_regexp}, TNode<String>{tmp19});
     tmp21 = CodeStubAssembler(state_).MatchSymbolConstant();
-    tmp22 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp20}, TNode<Object>{tmp21});
-    tmp23 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp22}, TNode<Object>{tmp20}, TNode<Object>{tmp18});
+    tmp22 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp20}, TNode<JSAny>{tmp21});
+    tmp23 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp22}, TNode<JSAny>{tmp20}, TNode<JSAny>{tmp18});
     ca_.Goto(&block1, tmp23);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block23, phi_bb1_3);
   }
 
-  TNode<Object> phi_bb23_3;
+  TNode<JSAny> phi_bb23_3;
     ca_.Bind(&block23, &phi_bb23_3);
-  return TNode<Object>{phi_bb23_3};
+  return TNode<JSAny>{phi_bb23_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-match-search.tq?l=85&c=10
-TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<Object> p_receiver, TNode<Object> p_regexp, TorqueStructStringSearchFunctor_0 p_functor, const char* p_methodName) {
+TNode<JSAny> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<JSAny> p_receiver, TNode<JSAny> p_regexp, TorqueStructStringSearchFunctor_0 p_functor, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -309,15 +309,15 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<String> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver}, p_methodName);
+    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, p_methodName);
     compiler::CodeAssemblerLabel label2(&ca_);
     tmp1 = Cast_String_1(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver}, &label2);
     ca_.Goto(&block4);
@@ -364,11 +364,11 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
   }
 
   TNode<JSRegExp> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp7 = UnsafeCast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
-    tmp8 = ca_.CallBuiltin<Object>(Builtin::kRegExpSearchFast, p_context, tmp7, tmp1);
+    tmp8 = ca_.CallBuiltin<JSAny>(Builtin::kRegExpSearchFast, p_context, tmp7, tmp1);
     ca_.Goto(&block1, tmp8);
   }
 
@@ -377,7 +377,7 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Branch(tmp10, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
 
@@ -386,7 +386,7 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp11 = Null_0(state_);
-    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_regexp}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp11});
     ca_.Goto(&block16, tmp12);
   }
 
@@ -404,12 +404,12 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
   }
 
   TNode<Symbol> tmp14;
-  TNode<JSReceiver> tmp15;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp15;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp14 = CodeStubAssembler(state_).SearchSymbolConstant();
     compiler::CodeAssemblerLabel label16(&ca_);
-    tmp15 = GetMethod_3(state_, TNode<Context>{p_context}, TNode<Object>{p_regexp}, TNode<Symbol>{tmp14}, &label16);
+    tmp15 = GetMethod_3(state_, TNode<Context>{p_context}, TNode<JSAny>{p_regexp}, TNode<Symbol>{tmp14}, &label16);
     ca_.Goto(&block20);
     if (label16.is_used()) {
       ca_.Bind(&label16);
@@ -422,39 +422,39 @@ TNode<Object> StringMatchSearch_StringSearchFunctor_0(compiler::CodeAssemblerSta
     ca_.Goto(&block13);
   }
 
-  TNode<Object> tmp17;
+  TNode<JSAny> tmp17;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp17 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp15}, TNode<Object>{p_regexp}, TNode<Object>{p_receiver});
+    tmp17 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp15}, TNode<JSAny>{p_regexp}, TNode<JSAny>{p_receiver});
     ca_.Goto(&block1, tmp17);
   }
 
   TNode<String> tmp18;
   TNode<String> tmp19;
-  TNode<Object> tmp20;
+  TNode<JSAny> tmp20;
   TNode<Symbol> tmp21;
-  TNode<Object> tmp22;
-  TNode<Object> tmp23;
+  TNode<JSAny> tmp22;
+  TNode<JSAny> tmp23;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    tmp18 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{p_receiver});
+    tmp18 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{p_receiver});
     tmp19 = kEmptyString_0(state_);
-    tmp20 = RegExpCreate_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_context}, TNode<Object>{p_regexp}, TNode<String>{tmp19});
+    tmp20 = RegExpCreate_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_context}, TNode<JSAny>{p_regexp}, TNode<String>{tmp19});
     tmp21 = CodeStubAssembler(state_).SearchSymbolConstant();
-    tmp22 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp20}, TNode<Object>{tmp21});
-    tmp23 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp22}, TNode<Object>{tmp20}, TNode<Object>{tmp18});
+    tmp22 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp20}, TNode<JSAny>{tmp21});
+    tmp23 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp22}, TNode<JSAny>{tmp20}, TNode<JSAny>{tmp18});
     ca_.Goto(&block1, tmp23);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block23, phi_bb1_3);
   }
 
-  TNode<Object> phi_bb23_3;
+  TNode<JSAny> phi_bb23_3;
     ca_.Bind(&block23, &phi_bb23_3);
-  return TNode<Object>{phi_bb23_3};
+  return TNode<JSAny>{phi_bb23_3};
 }
 
 } // namespace internal

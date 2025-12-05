@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsCallSiteInfo_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedCallSiteInfo : public P {
   static_assert(
-      std::is_same<CallSiteInfo, D>::value,
+      std::is_same_v<CallSiteInfo, D>,
       "Use this class as direct base for CallSiteInfo.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedCallSiteInfo.");
 
  public: 
@@ -99,7 +99,7 @@ class TorqueGeneratedCallSiteInfo : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedCallSiteInfo() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedCallSiteInfo, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedCallSiteInfo, DAlias>,
         "class TorqueGeneratedCallSiteInfo should be used as direct base for CallSiteInfo.");
   }
 

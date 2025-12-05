@@ -9,14 +9,23 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
 TNode<Cell> Cast_Cell_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-TNode<Object> LoadCellValue_0(compiler::CodeAssemblerState* state_, TNode<Cell> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=11&c=1
+TNode<Object> LoadCellValue_0(compiler::CodeAssemblerState* state_, TNode<Cell> p_cell);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=17&c=1
+void StoreCellValue_0(compiler::CodeAssemblerState* state_, TNode<Cell> p_cell, TNode<Object> p_value);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-void StoreCellValue_0(compiler::CodeAssemblerState* state_, TNode<Cell> p_o, TNode<Object> p_v);
+TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> LoadCellMaybeValue_0(compiler::CodeAssemblerState* state_, TNode<Cell> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
+void StoreCellMaybeValue_0(compiler::CodeAssemblerState* state_, TNode<Cell> p_o, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
 TNode<Cell> DownCastForTorqueClass_Cell_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=14&c=10
+TNode<Object> UnsafeCast_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_o);
 
 } // namespace internal
 } // namespace v8

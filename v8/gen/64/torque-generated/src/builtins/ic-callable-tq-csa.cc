@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/ic-callable-tq-csa.h"
@@ -85,7 +85,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=14&c=1
-TNode<BoolT> IsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_feedback, TNode<Object> p_target) {
+TNode<BoolT> IsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_feedback, TNode<JSAny> p_target) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -95,7 +95,7 @@ TNode<BoolT> IsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<MaybeOb
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).IsWeakReferenceToObject(TNode<MaybeObject>{p_feedback}, TNode<Object>{p_target});
+    tmp0 = CodeStubAssembler(state_).IsWeakReferenceToObject(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_feedback}, TNode<Object>{p_target});
     ca_.Goto(&block2);
   }
 
@@ -118,7 +118,7 @@ TNode<BoolT> InSameNativeContext_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_lhs});
     tmp1 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_rhs});
-    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp0}, TNode<HeapObject>{tmp1});
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1});
     ca_.Goto(&block2);
   }
 
@@ -127,7 +127,7 @@ TNode<BoolT> InSameNativeContext_0(compiler::CodeAssemblerState* state_, TNode<C
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=22&c=1
-void TryInitializeAsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_maybeTarget, TNode<FeedbackVector> p_feedbackVector, TNode<UintPtrT> p_slotId, compiler::CodeAssemblerLabel* label_TransitionToMegamorphic) {
+void TryInitializeAsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_maybeTarget, TNode<FeedbackVector> p_feedbackVector, TNode<UintPtrT> p_slotId, compiler::CodeAssemblerLabel* label_TransitionToMegamorphic) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -177,12 +177,12 @@ void TryInitializeAsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<HeapObject> phi_bb5_5;
   TNode<JSBoundFunction> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<JSReceiver> tmp5;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_5);
     tmp3 = UnsafeCast_JSBoundFunction_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb5_5});
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp5 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp3, tmp4});
+    tmp5 = CodeStubAssembler(state_).LoadReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{tmp3, tmp4});
     ca_.Goto(&block7, tmp5);
   }
 
@@ -228,7 +228,7 @@ void TryInitializeAsMonomorphic_0(compiler::CodeAssemblerState* state_, TNode<Co
   }
 
   TNode<HeapObject> phi_bb11_5;
-  TNode<MaybeObject> tmp12;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp12;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_5);
     tmp12 = CodeStubAssembler(state_).StoreWeakReferenceInFeedbackVector(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, TNode<HeapObject>{tmp0});
@@ -256,7 +256,7 @@ void TransitionToMegamorphic_0(compiler::CodeAssemblerState* state_, TNode<Conte
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kMegamorphicSymbol_0(state_);
-    CodeStubAssembler(state_).StoreFeedbackVectorSlot(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, TNode<MaybeObject>{tmp0});
+    CodeStubAssembler(state_).StoreFeedbackVectorSlot(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp0});
     CodeStubAssembler(state_).ReportFeedbackUpdate(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, "Call:TransitionMegamorphic");
     ca_.Goto(&block2);
   }
@@ -265,7 +265,7 @@ void TransitionToMegamorphic_0(compiler::CodeAssemblerState* state_, TNode<Conte
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=52&c=1
-TNode<BoolT> TaggedEqualPrototypeApplyFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_target) {
+TNode<BoolT> TaggedEqualPrototypeApplyFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_target) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -277,7 +277,7 @@ TNode<BoolT> TaggedEqualPrototypeApplyFunction_0(compiler::CodeAssemblerState* s
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetPrototypeApplyFunction_0(state_, TNode<Context>{p_context});
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{p_target}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{p_target}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Goto(&block2);
   }
 
@@ -296,13 +296,13 @@ TNode<BoolT> FeedbackValueIsReceiver_0(compiler::CodeAssemblerState* state_, TNo
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<MaybeObject> tmp0;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp0;
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadFeedbackVectorSlot(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, kTaggedSize);
     compiler::CodeAssemblerLabel label2(&ca_);
-    tmp1 = Cast_Smi_1(state_, TNode<Context>{p_context}, TNode<MaybeObject>{tmp0}, &label2);
+    tmp1 = Cast_Smi_1(state_, TNode<Context>{p_context}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp0}, &label2);
     ca_.Goto(&block4);
     if (label2.is_used()) {
       ca_.Bind(&label2);
@@ -342,7 +342,7 @@ TNode<BoolT> FeedbackValueIsReceiver_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<BoolT>{phi_bb1_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=66&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=68&c=1
 void SetCallFeedbackContent_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FeedbackVector> p_feedbackVector, TNode<UintPtrT> p_slotId, CallFeedbackContent p_callFeedbackContent) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -353,13 +353,13 @@ void SetCallFeedbackContent_0(compiler::CodeAssemblerState* state_, TNode<Contex
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<MaybeObject> tmp0;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp0;
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadFeedbackVectorSlot(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, kTaggedSize);
     compiler::CodeAssemblerLabel label2(&ca_);
-    tmp1 = Cast_Smi_1(state_, TNode<Context>{p_context}, TNode<MaybeObject>{tmp0}, &label2);
+    tmp1 = Cast_Smi_1(state_, TNode<Context>{p_context}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp0}, &label2);
     ca_.Goto(&block4);
     if (label2.is_used()) {
       ca_.Bind(&label2);
@@ -389,14 +389,14 @@ void SetCallFeedbackContent_0(compiler::CodeAssemblerState* state_, TNode<Contex
     tmp4 = CodeStubAssembler(state_).IntPtrConstant(FeedbackNexus::CallFeedbackContentField::kMask);
     tmp5 = CodeStubAssembler(state_).WordNot(TNode<IntPtrT>{tmp4});
     tmp6 = CodeStubAssembler(state_).WordAnd(TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp5});
-    tmp7 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<uint32_t>(p_callFeedbackContent));
-    tmp8 = FromConstexpr_uint32_constexpr_uint32_0(state_, FeedbackNexus::CallFeedbackContentField::kShift);
+    tmp7 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<uint32_t>(p_callFeedbackContent));
+    tmp8 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, FeedbackNexus::CallFeedbackContentField::kShift);
     tmp9 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp8});
     tmp10 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{tmp9});
     tmp11 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp10});
     tmp12 = CodeStubAssembler(state_).WordOr(TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).SmiTag(TNode<IntPtrT>{tmp12});
-    CodeStubAssembler(state_).StoreFeedbackVectorSlot(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, TNode<MaybeObject>{tmp13}, SKIP_WRITE_BARRIER, kTaggedSize);
+    CodeStubAssembler(state_).StoreFeedbackVectorSlot(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp13}, SKIP_WRITE_BARRIER, kTaggedSize);
     CodeStubAssembler(state_).ReportFeedbackUpdate(TNode<FeedbackVector>{p_feedbackVector}, TNode<UintPtrT>{p_slotId}, "Call:SetCallFeedbackContent");
     ca_.Goto(&block1);
   }
@@ -409,8 +409,8 @@ void SetCallFeedbackContent_0(compiler::CodeAssemblerState* state_, TNode<Contex
     ca_.Bind(&block6);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=87&c=1
-void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p_maybeTarget, std::function<TNode<Object>()> p_maybeReceiver, TNode<Context> p_context, TNode<HeapObject> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=91&c=1
+void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<JSAny> p_maybeTarget, std::function<TNode<JSAny>()> p_maybeReceiver, TNode<Context> p_context, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -444,7 +444,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block45(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block52(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -471,13 +471,13 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Goto(&block1);
   }
 
-  TNode<MaybeObject> tmp2;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp2;
   TNode<BoolT> tmp3;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     CodeStubAssembler(state_).IncrementCallCount(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId});
     tmp2 = CodeStubAssembler(state_).LoadFeedbackVectorSlot(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId});
-    tmp3 = IsMonomorphic_0(state_, TNode<MaybeObject>{tmp2}, TNode<Object>{p_maybeTarget});
+    tmp3 = IsMonomorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2}, TNode<JSAny>{p_maybeTarget});
     ca_.Branch(tmp3, &block19, std::vector<compiler::Node*>{}, &block20, std::vector<compiler::Node*>{});
   }
 
@@ -489,7 +489,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   TNode<BoolT> tmp4;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp4 = IsMegamorphic_0(state_, TNode<MaybeObject>{tmp2});
+    tmp4 = IsMegamorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2});
     ca_.Branch(tmp4, &block21, std::vector<compiler::Node*>{}, &block22, std::vector<compiler::Node*>{});
   }
 
@@ -501,7 +501,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   TNode<BoolT> tmp5;
   if (block22.is_used()) {
     ca_.Bind(&block22);
-    tmp5 = IsUninitialized_0(state_, TNode<MaybeObject>{tmp2});
+    tmp5 = IsUninitialized_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2});
     ca_.Branch(tmp5, &block23, std::vector<compiler::Node*>{}, &block24, std::vector<compiler::Node*>{});
   }
 
@@ -514,7 +514,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   if (block24.is_used()) {
     ca_.Bind(&block24);
     compiler::CodeAssemblerLabel label7(&ca_);
-    tmp6 = MaybeObjectToStrong_0(state_, TNode<MaybeObject>{tmp2}, &label7);
+    tmp6 = MaybeObjectToStrong_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2}, &label7);
     ca_.Goto(&block25);
     if (label7.is_used()) {
       ca_.Bind(&label7);
@@ -538,7 +538,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   TNode<BoolT> tmp9;
   if (block29.is_used()) {
     ca_.Bind(&block29);
-    tmp9 = TaggedEqualPrototypeApplyFunction_0(state_, TNode<Context>{p_context}, TNode<Object>{p_maybeTarget});
+    tmp9 = TaggedEqualPrototypeApplyFunction_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_maybeTarget});
     ca_.Goto(&block31, tmp9);
   }
 
@@ -555,12 +555,12 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Branch(phi_bb31_9, &block27, std::vector<compiler::Node*>{}, &block28, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   TNode<BoolT> tmp12;
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    tmp11 = CodeStubAssembler(state_).RunLazy(std::function<TNode<Object>()>{p_maybeReceiver});
-    tmp12 = IsMonomorphic_0(state_, TNode<MaybeObject>{tmp2}, TNode<Object>{tmp11});
+    tmp11 = CodeStubAssembler(state_).RunLazy(std::function<TNode<JSAny>()>{p_maybeReceiver});
+    tmp12 = IsMonomorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2}, TNode<JSAny>{tmp11});
     ca_.Branch(tmp12, &block32, std::vector<compiler::Node*>{}, &block33, std::vector<compiler::Node*>{});
   }
 
@@ -573,7 +573,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Bind(&block33);
     SetCallFeedbackContent_0(state_, TNode<Context>{p_context}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, CallFeedbackContent::kTarget);
     compiler::CodeAssemblerLabel label13(&ca_);
-    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<Object>{p_maybeTarget}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, &label13);
+    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_maybeTarget}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, &label13);
     ca_.Goto(&block35);
     if (label13.is_used()) {
       ca_.Bind(&label13);
@@ -615,7 +615,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Bind(&block37);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp17 = CodeStubAssembler(state_).LoadReference<FeedbackCell>(CodeStubAssembler::Reference{tmp14, tmp16});
-    tmp18 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp6}, TNode<MaybeObject>{tmp17});
+    tmp18 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp6}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17});
     ca_.Branch(tmp18, &block39, std::vector<compiler::Node*>{}, &block40, std::vector<compiler::Node*>{});
   }
 
@@ -649,7 +649,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Bind(&block41);
     tmp21 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp22 = CodeStubAssembler(state_).LoadReference<FeedbackCell>(CodeStubAssembler::Reference{tmp19, tmp21});
-    tmp23 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp22}, TNode<MaybeObject>{tmp17});
+    tmp23 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp22}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17});
     tmp24 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp23});
     ca_.Branch(tmp24, &block43, std::vector<compiler::Node*>{}, &block44, std::vector<compiler::Node*>{});
   }
@@ -659,7 +659,7 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Goto(&block14);
   }
 
-  TNode<MaybeObject> tmp25;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp25;
   if (block44.is_used()) {
     ca_.Bind(&block44);
     tmp25 = CodeStubAssembler(state_).StoreWeakReferenceInFeedbackVector(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, TNode<HeapObject>{tmp22});
@@ -670,14 +670,14 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
   TNode<BoolT> tmp26;
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    tmp26 = TaggedEqualPrototypeApplyFunction_0(state_, TNode<Context>{p_context}, TNode<Object>{p_maybeTarget});
+    tmp26 = TaggedEqualPrototypeApplyFunction_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_maybeTarget});
     ca_.Branch(tmp26, &block45, std::vector<compiler::Node*>{}, &block46, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp27;
+  TNode<JSAny> tmp27;
   if (block45.is_used()) {
     ca_.Bind(&block45);
-    tmp27 = CodeStubAssembler(state_).RunLazy(std::function<TNode<Object>()>{p_maybeReceiver});
+    tmp27 = CodeStubAssembler(state_).RunLazy(std::function<TNode<JSAny>()>{p_maybeReceiver});
     SetCallFeedbackContent_0(state_, TNode<Context>{p_context}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, CallFeedbackContent::kReceiver);
     ca_.Goto(&block47, tmp27);
   }
@@ -687,11 +687,11 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Goto(&block47, p_maybeTarget);
   }
 
-  TNode<Object> phi_bb47_6;
+  TNode<JSAny> phi_bb47_6;
   if (block47.is_used()) {
     ca_.Bind(&block47, &phi_bb47_6);
     compiler::CodeAssemblerLabel label28(&ca_);
-    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb47_6}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, &label28);
+    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<JSAny>{phi_bb47_6}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, &label28);
     ca_.Goto(&block52);
     if (label28.is_used()) {
       ca_.Bind(&label28);
@@ -733,8 +733,8 @@ void CollectCallFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p
     ca_.Bind(&block54);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=166&c=1
-void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Object> p_maybeTarget, TNode<Context> p_context, TNode<HeapObject> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=170&c=1
+void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<JSAny> p_maybeTarget, TNode<Context> p_context, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -774,12 +774,12 @@ void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Obj
     ca_.Goto(&block1);
   }
 
-  TNode<MaybeObject> tmp2;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp2;
   TNode<BoolT> tmp3;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp2 = CodeStubAssembler(state_).LoadFeedbackVectorSlot(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId});
-    tmp3 = IsMonomorphic_0(state_, TNode<MaybeObject>{tmp2}, TNode<Object>{p_maybeTarget});
+    tmp3 = IsMonomorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2}, TNode<JSAny>{p_maybeTarget});
     ca_.Branch(tmp3, &block17, std::vector<compiler::Node*>{}, &block18, std::vector<compiler::Node*>{});
   }
 
@@ -791,7 +791,7 @@ void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Obj
   TNode<BoolT> tmp4;
   if (block18.is_used()) {
     ca_.Bind(&block18);
-    tmp4 = IsMegamorphic_0(state_, TNode<MaybeObject>{tmp2});
+    tmp4 = IsMegamorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2});
     ca_.Branch(tmp4, &block19, std::vector<compiler::Node*>{}, &block20, std::vector<compiler::Node*>{});
   }
 
@@ -803,7 +803,7 @@ void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Obj
   TNode<BoolT> tmp5;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp5 = IsUninitialized_0(state_, TNode<MaybeObject>{tmp2});
+    tmp5 = IsUninitialized_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2});
     ca_.Branch(tmp5, &block21, std::vector<compiler::Node*>{}, &block22, std::vector<compiler::Node*>{});
   }
 
@@ -816,7 +816,7 @@ void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Obj
   if (block22.is_used()) {
     ca_.Bind(&block22);
     compiler::CodeAssemblerLabel label7(&ca_);
-    tmp6 = MaybeObjectToStrong_0(state_, TNode<MaybeObject>{tmp2}, &label7);
+    tmp6 = MaybeObjectToStrong_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2}, &label7);
     ca_.Goto(&block23);
     if (label7.is_used()) {
       ca_.Bind(&label7);
@@ -837,7 +837,7 @@ void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Obj
   if (block16.is_used()) {
     ca_.Bind(&block16);
     compiler::CodeAssemblerLabel label8(&ca_);
-    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<Object>{p_maybeTarget}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, &label8);
+    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_maybeTarget}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{p_slotId}, &label8);
     ca_.Goto(&block25);
     if (label8.is_used()) {
       ca_.Bind(&label8);
@@ -874,8 +874,8 @@ void CollectInstanceOfFeedback_0(compiler::CodeAssemblerState* state_, TNode<Obj
     ca_.Bind(&block27);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=199&c=1
-TNode<BoolT> BothTaggedEqualArrayFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_first, TNode<Object> p_second) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=203&c=1
+TNode<BoolT> BothTaggedEqualArrayFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_first, TNode<JSAny> p_second) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -888,7 +888,7 @@ TNode<BoolT> BothTaggedEqualArrayFunction_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{p_first}, TNode<MaybeObject>{p_second});
+    tmp0 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_first}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_second});
     ca_.Branch(tmp0, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
@@ -897,7 +897,7 @@ TNode<BoolT> BothTaggedEqualArrayFunction_0(compiler::CodeAssemblerState* state_
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp1 = GetArrayFunction_0(state_, TNode<Context>{p_context});
-    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{p_second}, TNode<HeapObject>{tmp1});
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{p_second}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1});
     ca_.Goto(&block4, tmp2);
   }
 
@@ -918,8 +918,8 @@ TNode<BoolT> BothTaggedEqualArrayFunction_0(compiler::CodeAssemblerState* state_
   return TNode<BoolT>{phi_bb4_4};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=207&c=1
-TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_maybeFeedbackVector, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_Fallback) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=211&c=1
+TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_Fallback) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1018,8 +1018,8 @@ TNode<FeedbackVector> CastFeedbackVector_0(compiler::CodeAssemblerState* state_,
   return TNode<FeedbackVector>{phi_bb29_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=223&c=1
-void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_target, TNode<Object> p_newTarget, TNode<HeapObject> p_maybeFeedbackVector, TNode<TaggedIndex> p_slotId, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_ConstructGeneric, compiler::CodeAssemblerLabel* label_ConstructArray, compiler::TypedCodeAssemblerVariable<AllocationSite>* label_ConstructArray_parameter_0) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=227&c=1
+void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_target, TNode<JSAny> p_newTarget, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, TNode<TaggedIndex> p_slotId, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_ConstructGeneric, compiler::CodeAssemblerLabel* label_ConstructArray, compiler::TypedCodeAssemblerVariable<AllocationSite>* label_ConstructArray_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1054,7 +1054,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = CastFeedbackVector_0(state_, TNode<HeapObject>{p_maybeFeedbackVector}, p_updateFeedbackMode, &label1);
+    tmp0 = CastFeedbackVector_0(state_, TNode<Union<FeedbackVector, Undefined>>{p_maybeFeedbackVector}, p_updateFeedbackMode, &label1);
     ca_.Goto(&block12);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -1069,7 +1069,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
 
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
-  TNode<MaybeObject> tmp4;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp4;
   TNode<BoolT> tmp5;
   if (block12.is_used()) {
     ca_.Bind(&block12);
@@ -1077,7 +1077,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
     tmp3 = CodeStubAssembler(state_).Unsigned(TNode<IntPtrT>{tmp2});
     CodeStubAssembler(state_).IncrementCallCount(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{tmp3});
     tmp4 = CodeStubAssembler(state_).LoadFeedbackVectorSlot(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{tmp3});
-    tmp5 = IsMonomorphic_0(state_, TNode<MaybeObject>{tmp4}, TNode<Object>{p_newTarget});
+    tmp5 = IsMonomorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp4}, TNode<JSAny>{p_newTarget});
     ca_.Branch(tmp5, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
@@ -1089,7 +1089,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp6;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    tmp6 = IsMegamorphic_0(state_, TNode<MaybeObject>{tmp4});
+    tmp6 = IsMegamorphic_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp4});
     ca_.Branch(tmp6, &block20, std::vector<compiler::Node*>{}, &block21, std::vector<compiler::Node*>{});
   }
 
@@ -1101,7 +1101,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp7;
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    tmp7 = IsUninitialized_0(state_, TNode<MaybeObject>{tmp4});
+    tmp7 = IsUninitialized_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp4});
     ca_.Branch(tmp7, &block22, std::vector<compiler::Node*>{}, &block23, std::vector<compiler::Node*>{});
   }
 
@@ -1114,7 +1114,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp9;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp8 = CodeStubAssembler(state_).IsWeakOrCleared(TNode<MaybeObject>{tmp4});
+    tmp8 = CodeStubAssembler(state_).IsWeakOrCleared(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp4});
     tmp9 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp8});
     ca_.Branch(tmp9, &block24, std::vector<compiler::Node*>{}, &block25, std::vector<compiler::Node*>{});
   }
@@ -1123,7 +1123,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp11;
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    tmp10 = TORQUE_CAST(TNode<MaybeObject>{tmp4});
+    tmp10 = TORQUE_CAST(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp4});
     tmp11 = Is_AllocationSite_Object_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp10});
     ca_.Branch(tmp11, &block26, std::vector<compiler::Node*>{}, &block27, std::vector<compiler::Node*>{});
   }
@@ -1131,7 +1131,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp12;
   if (block26.is_used()) {
     ca_.Bind(&block26);
-    tmp12 = BothTaggedEqualArrayFunction_0(state_, TNode<Context>{p_context}, TNode<Object>{p_target}, TNode<Object>{p_newTarget});
+    tmp12 = BothTaggedEqualArrayFunction_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_target}, TNode<JSAny>{p_newTarget});
     ca_.Branch(tmp12, &block28, std::vector<compiler::Node*>{}, &block29, std::vector<compiler::Node*>{});
   }
 
@@ -1156,7 +1156,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   if (block25.is_used()) {
     ca_.Bind(&block25);
     compiler::CodeAssemblerLabel label15(&ca_);
-    tmp14 = MaybeObjectToStrong_0(state_, TNode<MaybeObject>{tmp4}, &label15);
+    tmp14 = MaybeObjectToStrong_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp4}, &label15);
     ca_.Goto(&block30);
     if (label15.is_used()) {
       ca_.Bind(&label15);
@@ -1177,7 +1177,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<BoolT> tmp16;
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    tmp16 = BothTaggedEqualArrayFunction_0(state_, TNode<Context>{p_context}, TNode<Object>{p_target}, TNode<Object>{p_newTarget});
+    tmp16 = BothTaggedEqualArrayFunction_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_target}, TNode<JSAny>{p_newTarget});
     ca_.Branch(tmp16, &block32, std::vector<compiler::Node*>{}, &block33, std::vector<compiler::Node*>{});
   }
 
@@ -1192,7 +1192,7 @@ void CollectConstructFeedback_0(compiler::CodeAssemblerState* state_, TNode<Cont
   if (block33.is_used()) {
     ca_.Bind(&block33);
     compiler::CodeAssemblerLabel label18(&ca_);
-    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<Object>{p_newTarget}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{tmp3}, &label18);
+    TryInitializeAsMonomorphic_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_newTarget}, TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{tmp3}, &label18);
     ca_.Goto(&block34);
     if (label18.is_used()) {
       ca_.Bind(&label18);
@@ -1300,8 +1300,8 @@ TNode<JSBoundFunction> UnsafeCast_JSBoundFunction_0(compiler::CodeAssemblerState
   return TNode<JSBoundFunction>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=60&c=38
-TNode<Smi> Cast_Smi_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=61&c=7
+TNode<Smi> Cast_Smi_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1313,11 +1313,11 @@ TNode<Smi> Cast_Smi_1(compiler::CodeAssemblerState* state_, TNode<Context> p_con
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<MaybeObject> tmp0;
+  TNode<MaybeWeak<HeapObject>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_WeakHeapObject_0(state_, TNode<MaybeObject>{p_o}, &label1);
+    tmp0 = Cast_WeakHeapObject_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_o}, &label1);
     ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -1361,8 +1361,8 @@ TNode<Smi> Cast_Smi_1(compiler::CodeAssemblerState* state_, TNode<Context> p_con
   return TNode<Smi>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=95&c=7
-TNode<BoolT> Is_FeedbackVector_Undefined_OR_FeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=99&c=7
+TNode<BoolT> Is_FeedbackVector_Undefined_OR_FeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<FeedbackVector, Undefined>> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1408,7 +1408,7 @@ TNode<BoolT> Is_FeedbackVector_Undefined_OR_FeedbackVector_0(compiler::CodeAssem
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=212&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=216&c=12
 TNode<FeedbackVector> UnsafeCast_FeedbackVector_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1427,7 +1427,7 @@ TNode<FeedbackVector> UnsafeCast_FeedbackVector_0(compiler::CodeAssemblerState* 
   return TNode<FeedbackVector>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=251&c=11
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=255&c=11
 TNode<BoolT> Is_AllocationSite_Object_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1474,7 +1474,7 @@ TNode<BoolT> Is_AllocationSite_Object_0(compiler::CodeAssemblerState* state_, TN
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=253&c=31
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic-callable.tq?l=257&c=31
 TNode<AllocationSite> UnsafeCast_AllocationSite_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

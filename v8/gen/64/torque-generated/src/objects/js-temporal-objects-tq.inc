@@ -1,4 +1,3 @@
-class JSTemporalCalendar;
 class JSTemporalDuration;
 class JSTemporalInstant;
 class JSTemporalPlainDateTime;
@@ -6,209 +5,54 @@ class JSTemporalPlainDate;
 class JSTemporalPlainMonthDay;
 class JSTemporalPlainTime;
 class JSTemporalPlainYearMonth;
-class JSTemporalTimeZone;
 class JSTemporalZonedDateTime;
-// Alias for IsJSTemporalCalendar() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalCalendar_NonInline(Tagged<HeapObject> o);
-
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-template <class D, class P>
-class TorqueGeneratedJSTemporalCalendar : public P {
-  static_assert(
-      std::is_same<JSTemporalCalendar, D>::value,
-      "Use this class as direct base for JSTemporalCalendar.");
-  static_assert(
-      std::is_same<JSObject, P>::value,
-      "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalCalendar.");
-
- public: 
-  using Super = P;
-  using TorqueGeneratedClass = TorqueGeneratedJSTemporalCalendar<D,P>;
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=38&c=3
-  inline int flags() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=38&c=3
-  inline void set_flags(int value);
-
-  DECL_PRINTER(JSTemporalCalendar)
-
-#ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=37&c=1
-  V8_EXPORT_PRIVATE void JSTemporalCalendarVerify(Isolate* isolate);
-#endif  // VERIFY_HEAP
-
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=38&c=3
-  static constexpr int kFlagsOffset = P::kHeaderSize;
-  static constexpr int kFlagsOffsetEnd = kFlagsOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kFlagsOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kFlagsOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kFlagsOffsetEnd + 1;
-  static constexpr int kHeaderSize = kFlagsOffsetEnd + 1;
-
-  friend class Factory;
-
-  template <class DAlias = D>
-  constexpr TorqueGeneratedJSTemporalCalendar() : P() {
-    static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalCalendar, DAlias>::value,
-        "class TorqueGeneratedJSTemporalCalendar should be used as direct base for JSTemporalCalendar.");
-  }
-
- protected:
-  inline explicit constexpr TorqueGeneratedJSTemporalCalendar(Address ptr, typename P::SkipTypeCheckTag
-)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
-  inline explicit TorqueGeneratedJSTemporalCalendar(Address ptr);
-};
-
 // Alias for IsJSTemporalDuration() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=7&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalDuration_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=7&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalDuration : public P {
   static_assert(
-      std::is_same<JSTemporalDuration, D>::value,
+      std::is_same_v<JSTemporalDuration, D>,
       "Use this class as direct base for JSTemporalDuration.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalDuration.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalDuration<D,P>;
 
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  inline Tagged<Number> years() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  inline Tagged<Number> years(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  inline void set_years(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  inline Tagged<Number> months() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  inline Tagged<Number> months(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  inline void set_months(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  inline Tagged<Number> weeks() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  inline Tagged<Number> weeks(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  inline void set_weeks(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  inline Tagged<Number> days() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  inline Tagged<Number> days(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  inline void set_days(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  inline Tagged<Number> hours() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  inline Tagged<Number> hours(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  inline void set_hours(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  inline Tagged<Number> minutes() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  inline Tagged<Number> minutes(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  inline void set_minutes(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  inline Tagged<Number> seconds() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  inline Tagged<Number> seconds(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  inline void set_seconds(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  inline Tagged<Number> milliseconds() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  inline Tagged<Number> milliseconds(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  inline void set_milliseconds(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  inline Tagged<Number> microseconds() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  inline Tagged<Number> microseconds(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  inline void set_microseconds(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // Torque type: Number
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  inline Tagged<Number> nanoseconds() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  inline Tagged<Number> nanoseconds(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  inline void set_nanoseconds(Tagged<Number> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=8&c=3
+  inline Tagged<Foreign> duration() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=8&c=3
+  inline Tagged<Foreign> duration(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=8&c=3
+  inline void set_duration(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalDuration)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=41&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=7&c=1
   V8_EXPORT_PRIVATE void JSTemporalDurationVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=42&c=3
-  static constexpr int kYearsOffset = P::kHeaderSize;
-  static constexpr int kYearsOffsetEnd = kYearsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=43&c=3
-  static constexpr int kMonthsOffset = kYearsOffsetEnd + 1;
-  static constexpr int kMonthsOffsetEnd = kMonthsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=44&c=3
-  static constexpr int kWeeksOffset = kMonthsOffsetEnd + 1;
-  static constexpr int kWeeksOffsetEnd = kWeeksOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=45&c=3
-  static constexpr int kDaysOffset = kWeeksOffsetEnd + 1;
-  static constexpr int kDaysOffsetEnd = kDaysOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=46&c=3
-  static constexpr int kHoursOffset = kDaysOffsetEnd + 1;
-  static constexpr int kHoursOffsetEnd = kHoursOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=47&c=3
-  static constexpr int kMinutesOffset = kHoursOffsetEnd + 1;
-  static constexpr int kMinutesOffsetEnd = kMinutesOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=48&c=3
-  static constexpr int kSecondsOffset = kMinutesOffsetEnd + 1;
-  static constexpr int kSecondsOffsetEnd = kSecondsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=49&c=3
-  static constexpr int kMillisecondsOffset = kSecondsOffsetEnd + 1;
-  static constexpr int kMillisecondsOffsetEnd = kMillisecondsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=50&c=3
-  static constexpr int kMicrosecondsOffset = kMillisecondsOffsetEnd + 1;
-  static constexpr int kMicrosecondsOffsetEnd = kMicrosecondsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=51&c=3
-  static constexpr int kNanosecondsOffset = kMicrosecondsOffsetEnd + 1;
-  static constexpr int kNanosecondsOffsetEnd = kNanosecondsOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kHeaderSize = kNanosecondsOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=8&c=3
+  static constexpr int kDurationOffset = P::kHeaderSize;
+  static constexpr int kDurationOffsetEnd = kDurationOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kDurationOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kDurationOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kDurationOffsetEnd + 1;
+  static constexpr int kHeaderSize = kDurationOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalDuration() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalDuration, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalDuration, DAlias>,
         "class TorqueGeneratedJSTemporalDuration should be used as direct base for JSTemporalDuration.");
   }
 
@@ -219,53 +63,52 @@ class TorqueGeneratedJSTemporalDuration : public P {
 };
 
 // Alias for IsJSTemporalInstant() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=11&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalInstant_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=11&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalInstant : public P {
   static_assert(
-      std::is_same<JSTemporalInstant, D>::value,
+      std::is_same_v<JSTemporalInstant, D>,
       "Use this class as direct base for JSTemporalInstant.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalInstant.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalInstant<D,P>;
 
-  // Torque type: BigInt
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  inline Tagged<BigInt> nanoseconds() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  inline Tagged<BigInt> nanoseconds(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  inline void set_nanoseconds(Tagged<BigInt> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=12&c=3
+  inline Tagged<Foreign> instant() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=12&c=3
+  inline Tagged<Foreign> instant(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=12&c=3
+  inline void set_instant(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalInstant)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=54&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=11&c=1
   V8_EXPORT_PRIVATE void JSTemporalInstantVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=55&c=3
-  static constexpr int kNanosecondsOffset = P::kHeaderSize;
-  static constexpr int kNanosecondsOffsetEnd = kNanosecondsOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kHeaderSize = kNanosecondsOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=12&c=3
+  static constexpr int kInstantOffset = P::kHeaderSize;
+  static constexpr int kInstantOffsetEnd = kInstantOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kInstantOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kInstantOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kInstantOffsetEnd + 1;
+  static constexpr int kHeaderSize = kInstantOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalInstant() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalInstant, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalInstant, DAlias>,
         "class TorqueGeneratedJSTemporalInstant should be used as direct base for JSTemporalInstant.");
   }
 
@@ -276,76 +119,52 @@ class TorqueGeneratedJSTemporalInstant : public P {
 };
 
 // Alias for IsJSTemporalPlainDateTime() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=15&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalPlainDateTime_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=15&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalPlainDateTime : public P {
   static_assert(
-      std::is_same<JSTemporalPlainDateTime, D>::value,
+      std::is_same_v<JSTemporalPlainDateTime, D>,
       "Use this class as direct base for JSTemporalPlainDateTime.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalPlainDateTime.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalPlainDateTime<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=59&c=3
-  inline int year_month_day() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=59&c=3
-  inline void set_year_month_day(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=60&c=3
-  inline int hour_minute_second() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=60&c=3
-  inline void set_hour_minute_second(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=61&c=3
-  inline int second_parts() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=61&c=3
-  inline void set_second_parts(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  inline Tagged<JSReceiver> calendar() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=16&c=3
+  inline Tagged<Foreign> date_time() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=16&c=3
+  inline Tagged<Foreign> date_time(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=16&c=3
+  inline void set_date_time(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalPlainDateTime)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=58&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=15&c=1
   V8_EXPORT_PRIVATE void JSTemporalPlainDateTimeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=59&c=3
-  static constexpr int kYearMonthDayOffset = P::kHeaderSize;
-  static constexpr int kYearMonthDayOffsetEnd = kYearMonthDayOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=60&c=3
-  static constexpr int kHourMinuteSecondOffset = kYearMonthDayOffsetEnd + 1;
-  static constexpr int kHourMinuteSecondOffsetEnd = kHourMinuteSecondOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=61&c=3
-  static constexpr int kSecondPartsOffset = kHourMinuteSecondOffsetEnd + 1;
-  static constexpr int kSecondPartsOffsetEnd = kSecondPartsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=62&c=3
-  static constexpr int kCalendarOffset = kSecondPartsOffsetEnd + 1;
-  static constexpr int kCalendarOffsetEnd = kCalendarOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kHeaderSize = kCalendarOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=16&c=3
+  static constexpr int kDateTimeOffset = P::kHeaderSize;
+  static constexpr int kDateTimeOffsetEnd = kDateTimeOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kDateTimeOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kDateTimeOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kDateTimeOffsetEnd + 1;
+  static constexpr int kHeaderSize = kDateTimeOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalPlainDateTime() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalPlainDateTime, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalPlainDateTime, DAlias>,
         "class TorqueGeneratedJSTemporalPlainDateTime should be used as direct base for JSTemporalPlainDateTime.");
   }
 
@@ -356,60 +175,52 @@ class TorqueGeneratedJSTemporalPlainDateTime : public P {
 };
 
 // Alias for IsJSTemporalPlainDate() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=19&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalPlainDate_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=19&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalPlainDate : public P {
   static_assert(
-      std::is_same<JSTemporalPlainDate, D>::value,
+      std::is_same_v<JSTemporalPlainDate, D>,
       "Use this class as direct base for JSTemporalPlainDate.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalPlainDate.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalPlainDate<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=66&c=3
-  inline int year_month_day() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=66&c=3
-  inline void set_year_month_day(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  inline Tagged<JSReceiver> calendar() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=20&c=3
+  inline Tagged<Foreign> date() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=20&c=3
+  inline Tagged<Foreign> date(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=20&c=3
+  inline void set_date(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalPlainDate)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=65&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=19&c=1
   V8_EXPORT_PRIVATE void JSTemporalPlainDateVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=66&c=3
-  static constexpr int kYearMonthDayOffset = P::kHeaderSize;
-  static constexpr int kYearMonthDayOffsetEnd = kYearMonthDayOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=67&c=3
-  static constexpr int kCalendarOffset = kYearMonthDayOffsetEnd + 1;
-  static constexpr int kCalendarOffsetEnd = kCalendarOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kHeaderSize = kCalendarOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=20&c=3
+  static constexpr int kDateOffset = P::kHeaderSize;
+  static constexpr int kDateOffsetEnd = kDateOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kDateOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kDateOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kDateOffsetEnd + 1;
+  static constexpr int kHeaderSize = kDateOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalPlainDate() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalPlainDate, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalPlainDate, DAlias>,
         "class TorqueGeneratedJSTemporalPlainDate should be used as direct base for JSTemporalPlainDate.");
   }
 
@@ -420,60 +231,52 @@ class TorqueGeneratedJSTemporalPlainDate : public P {
 };
 
 // Alias for IsJSTemporalPlainMonthDay() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=23&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalPlainMonthDay_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=23&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalPlainMonthDay : public P {
   static_assert(
-      std::is_same<JSTemporalPlainMonthDay, D>::value,
+      std::is_same_v<JSTemporalPlainMonthDay, D>,
       "Use this class as direct base for JSTemporalPlainMonthDay.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalPlainMonthDay.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalPlainMonthDay<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=71&c=3
-  inline int year_month_day() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=71&c=3
-  inline void set_year_month_day(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  inline Tagged<JSReceiver> calendar() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=24&c=3
+  inline Tagged<Foreign> month_day() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=24&c=3
+  inline Tagged<Foreign> month_day(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=24&c=3
+  inline void set_month_day(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalPlainMonthDay)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=70&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=23&c=1
   V8_EXPORT_PRIVATE void JSTemporalPlainMonthDayVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=71&c=3
-  static constexpr int kYearMonthDayOffset = P::kHeaderSize;
-  static constexpr int kYearMonthDayOffsetEnd = kYearMonthDayOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=72&c=3
-  static constexpr int kCalendarOffset = kYearMonthDayOffsetEnd + 1;
-  static constexpr int kCalendarOffsetEnd = kCalendarOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kHeaderSize = kCalendarOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=24&c=3
+  static constexpr int kMonthDayOffset = P::kHeaderSize;
+  static constexpr int kMonthDayOffsetEnd = kMonthDayOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kMonthDayOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kMonthDayOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kMonthDayOffsetEnd + 1;
+  static constexpr int kHeaderSize = kMonthDayOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalPlainMonthDay() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalPlainMonthDay, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalPlainMonthDay, DAlias>,
         "class TorqueGeneratedJSTemporalPlainMonthDay should be used as direct base for JSTemporalPlainMonthDay.");
   }
 
@@ -484,68 +287,52 @@ class TorqueGeneratedJSTemporalPlainMonthDay : public P {
 };
 
 // Alias for IsJSTemporalPlainTime() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=27&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalPlainTime_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=27&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalPlainTime : public P {
   static_assert(
-      std::is_same<JSTemporalPlainTime, D>::value,
+      std::is_same_v<JSTemporalPlainTime, D>,
       "Use this class as direct base for JSTemporalPlainTime.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalPlainTime.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalPlainTime<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=76&c=3
-  inline int hour_minute_second() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=76&c=3
-  inline void set_hour_minute_second(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=77&c=3
-  inline int second_parts() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=77&c=3
-  inline void set_second_parts(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  inline Tagged<JSReceiver> calendar() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=28&c=3
+  inline Tagged<Foreign> time() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=28&c=3
+  inline Tagged<Foreign> time(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=28&c=3
+  inline void set_time(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalPlainTime)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=75&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=27&c=1
   V8_EXPORT_PRIVATE void JSTemporalPlainTimeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=76&c=3
-  static constexpr int kHourMinuteSecondOffset = P::kHeaderSize;
-  static constexpr int kHourMinuteSecondOffsetEnd = kHourMinuteSecondOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=77&c=3
-  static constexpr int kSecondPartsOffset = kHourMinuteSecondOffsetEnd + 1;
-  static constexpr int kSecondPartsOffsetEnd = kSecondPartsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=78&c=3
-  static constexpr int kCalendarOffset = kSecondPartsOffsetEnd + 1;
-  static constexpr int kCalendarOffsetEnd = kCalendarOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kHeaderSize = kCalendarOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=28&c=3
+  static constexpr int kTimeOffset = P::kHeaderSize;
+  static constexpr int kTimeOffsetEnd = kTimeOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kTimeOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kTimeOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kTimeOffsetEnd + 1;
+  static constexpr int kHeaderSize = kTimeOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalPlainTime() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalPlainTime, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalPlainTime, DAlias>,
         "class TorqueGeneratedJSTemporalPlainTime should be used as direct base for JSTemporalPlainTime.");
   }
 
@@ -556,60 +343,52 @@ class TorqueGeneratedJSTemporalPlainTime : public P {
 };
 
 // Alias for IsJSTemporalPlainYearMonth() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=31&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalPlainYearMonth_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=31&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalPlainYearMonth : public P {
   static_assert(
-      std::is_same<JSTemporalPlainYearMonth, D>::value,
+      std::is_same_v<JSTemporalPlainYearMonth, D>,
       "Use this class as direct base for JSTemporalPlainYearMonth.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalPlainYearMonth.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalPlainYearMonth<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=82&c=3
-  inline int year_month_day() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=82&c=3
-  inline void set_year_month_day(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  inline Tagged<JSReceiver> calendar() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=32&c=3
+  inline Tagged<Foreign> year_month() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=32&c=3
+  inline Tagged<Foreign> year_month(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=32&c=3
+  inline void set_year_month(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalPlainYearMonth)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=81&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=31&c=1
   V8_EXPORT_PRIVATE void JSTemporalPlainYearMonthVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=82&c=3
-  static constexpr int kYearMonthDayOffset = P::kHeaderSize;
-  static constexpr int kYearMonthDayOffsetEnd = kYearMonthDayOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=83&c=3
-  static constexpr int kCalendarOffset = kYearMonthDayOffsetEnd + 1;
-  static constexpr int kCalendarOffsetEnd = kCalendarOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kHeaderSize = kCalendarOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=32&c=3
+  static constexpr int kYearMonthOffset = P::kHeaderSize;
+  static constexpr int kYearMonthOffsetEnd = kYearMonthOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kYearMonthOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kYearMonthOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kYearMonthOffsetEnd + 1;
+  static constexpr int kHeaderSize = kYearMonthOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalPlainYearMonth() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalPlainYearMonth, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalPlainYearMonth, DAlias>,
         "class TorqueGeneratedJSTemporalPlainYearMonth should be used as direct base for JSTemporalPlainYearMonth.");
   }
 
@@ -619,136 +398,53 @@ class TorqueGeneratedJSTemporalPlainYearMonth : public P {
   inline explicit TorqueGeneratedJSTemporalPlainYearMonth(Address ptr);
 };
 
-// Alias for IsJSTemporalTimeZone() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-V8_EXPORT_PRIVATE bool IsJSTemporalTimeZone_NonInline(Tagged<HeapObject> o);
-
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-template <class D, class P>
-class TorqueGeneratedJSTemporalTimeZone : public P {
-  static_assert(
-      std::is_same<JSTemporalTimeZone, D>::value,
-      "Use this class as direct base for JSTemporalTimeZone.");
-  static_assert(
-      std::is_same<JSObject, P>::value,
-      "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalTimeZone.");
-
- public: 
-  using Super = P;
-  using TorqueGeneratedClass = TorqueGeneratedJSTemporalTimeZone<D,P>;
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=87&c=3
-  inline int flags() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=87&c=3
-  inline void set_flags(int value);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=88&c=3
-  inline int details() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=88&c=3
-  inline void set_details(int value);
-
-  DECL_PRINTER(JSTemporalTimeZone)
-
-#ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=86&c=1
-  V8_EXPORT_PRIVATE void JSTemporalTimeZoneVerify(Isolate* isolate);
-#endif  // VERIFY_HEAP
-
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=87&c=3
-  static constexpr int kFlagsOffset = P::kHeaderSize;
-  static constexpr int kFlagsOffsetEnd = kFlagsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=88&c=3
-  static constexpr int kDetailsOffset = kFlagsOffsetEnd + 1;
-  static constexpr int kDetailsOffsetEnd = kDetailsOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kDetailsOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kDetailsOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kDetailsOffsetEnd + 1;
-  static constexpr int kHeaderSize = kDetailsOffsetEnd + 1;
-
-  friend class Factory;
-
-  template <class DAlias = D>
-  constexpr TorqueGeneratedJSTemporalTimeZone() : P() {
-    static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalTimeZone, DAlias>::value,
-        "class TorqueGeneratedJSTemporalTimeZone should be used as direct base for JSTemporalTimeZone.");
-  }
-
- protected:
-  inline explicit constexpr TorqueGeneratedJSTemporalTimeZone(Address ptr, typename P::SkipTypeCheckTag
-)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
-  inline explicit TorqueGeneratedJSTemporalTimeZone(Address ptr);
-};
-
 // Alias for IsJSTemporalZonedDateTime() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=35&c=1
 V8_EXPORT_PRIVATE bool IsJSTemporalZonedDateTime_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=35&c=1
 template <class D, class P>
 class TorqueGeneratedJSTemporalZonedDateTime : public P {
   static_assert(
-      std::is_same<JSTemporalZonedDateTime, D>::value,
+      std::is_same_v<JSTemporalZonedDateTime, D>,
       "Use this class as direct base for JSTemporalZonedDateTime.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSTemporalZonedDateTime.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSTemporalZonedDateTime<D,P>;
 
-  // Torque type: BigInt
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  inline Tagged<BigInt> nanoseconds() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  inline Tagged<BigInt> nanoseconds(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  inline void set_nanoseconds(Tagged<BigInt> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  inline Tagged<JSReceiver> time_zone() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  inline Tagged<JSReceiver> time_zone(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  inline void set_time_zone(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  inline Tagged<JSReceiver> calendar() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  inline Tagged<JSReceiver> calendar(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  inline void set_calendar(Tagged<JSReceiver> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=36&c=3
+  inline Tagged<Foreign> zoned_date_time() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=36&c=3
+  inline Tagged<Foreign> zoned_date_time(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=36&c=3
+  inline void set_zoned_date_time(Tagged<Foreign> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSTemporalZonedDateTime)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=91&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=35&c=1
   V8_EXPORT_PRIVATE void JSTemporalZonedDateTimeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=92&c=3
-  static constexpr int kNanosecondsOffset = P::kHeaderSize;
-  static constexpr int kNanosecondsOffsetEnd = kNanosecondsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=93&c=3
-  static constexpr int kTimeZoneOffset = kNanosecondsOffsetEnd + 1;
-  static constexpr int kTimeZoneOffsetEnd = kTimeZoneOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=94&c=3
-  static constexpr int kCalendarOffset = kTimeZoneOffsetEnd + 1;
-  static constexpr int kCalendarOffsetEnd = kCalendarOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kCalendarOffsetEnd + 1;
-  static constexpr int kHeaderSize = kCalendarOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-temporal-objects.tq?l=36&c=3
+  static constexpr int kZonedDateTimeOffset = P::kHeaderSize;
+  static constexpr int kZonedDateTimeOffsetEnd = kZonedDateTimeOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kZonedDateTimeOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kZonedDateTimeOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kZonedDateTimeOffsetEnd + 1;
+  static constexpr int kHeaderSize = kZonedDateTimeOffsetEnd + 1;
 
   friend class Factory;
 
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTemporalZonedDateTime() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTemporalZonedDateTime, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTemporalZonedDateTime, DAlias>,
         "class TorqueGeneratedJSTemporalZonedDateTime should be used as direct base for JSTemporalZonedDateTime.");
   }
 

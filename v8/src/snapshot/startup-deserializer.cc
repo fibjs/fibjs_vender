@@ -100,7 +100,7 @@ void StartupDeserializer::DeserializeAndCheckExternalReferenceTable() {
     uint32_t index = source()->GetUint30();
     if (index == ExternalReferenceTable::kSizeIsolateIndependent) break;
     uint32_t encoded_index = source()->GetUint30();
-    // CHECK_EQ(table->address(index), table->address(encoded_index));
+    CHECK_EQ(table->address(index), table->address(encoded_index));
   }
 }
 

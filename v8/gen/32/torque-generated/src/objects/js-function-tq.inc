@@ -10,10 +10,10 @@ V8_EXPORT_PRIVATE bool IsJSFunctionOrBoundFunctionOrWrappedFunction_NonInline(Ta
 template <class D, class P>
 class TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction : public P {
   static_assert(
-      std::is_same<JSFunctionOrBoundFunctionOrWrappedFunction, D>::value,
+      std::is_same_v<JSFunctionOrBoundFunctionOrWrappedFunction, D>,
       "Use this class as direct base for JSFunctionOrBoundFunctionOrWrappedFunction.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction.");
 
  public: 
@@ -36,7 +36,7 @@ class TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction, DAlias>,
         "class TorqueGeneratedJSFunctionOrBoundFunctionOrWrappedFunction should be used as direct base for JSFunctionOrBoundFunctionOrWrappedFunction.");
   }
 
@@ -54,43 +54,48 @@ V8_EXPORT_PRIVATE bool IsJSFunction_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSFunction : public P {
   static_assert(
-      std::is_same<JSFunction, D>::value,
+      std::is_same_v<JSFunction, D>,
       "Use this class as direct base for JSFunction.");
   static_assert(
-      std::is_same<JSFunctionOrBoundFunctionOrWrappedFunction, P>::value,
+      std::is_same_v<JSFunctionOrBoundFunctionOrWrappedFunction, P>,
       "Pass in JSFunctionOrBoundFunctionOrWrappedFunction as second template parameter for TorqueGeneratedJSFunction.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSFunction<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=34&c=30
+  inline int32_t dispatch_handle() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=34&c=30
+  inline void set_dispatch_handle(int32_t value);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
   inline Tagged<SharedFunctionInfo> shared_function_info() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
   inline Tagged<SharedFunctionInfo> shared_function_info(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
   inline void set_shared_function_info(Tagged<SharedFunctionInfo> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
   inline Tagged<Context> context() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
   inline Tagged<Context> context(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
   inline void set_context(Tagged<Context> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
   inline Tagged<FeedbackCell> feedback_cell() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
   inline Tagged<FeedbackCell> feedback_cell(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
   inline void set_feedback_cell(Tagged<FeedbackCell> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class JSReceiver | class Map)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
   inline Tagged<Union<JSReceiver, Map>> prototype_or_initial_map() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
   inline Tagged<Union<JSReceiver, Map>> prototype_or_initial_map(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
   inline void set_prototype_or_initial_map(Tagged<Union<JSReceiver, Map>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSFunction)
@@ -100,20 +105,20 @@ class TorqueGeneratedJSFunction : public P {
   V8_EXPORT_PRIVATE void JSFunctionVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=33&c=3
-  static constexpr int kCodeOffset = P::kHeaderSize;
-  static constexpr int kCodeOffsetEnd = kCodeOffset + kTrustedPointerSize - 1;
-  static constexpr int kStartOfStrongFieldsOffset = kCodeOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=35&c=3
-  static constexpr int kSharedFunctionInfoOffset = kCodeOffsetEnd + 1;
-  static constexpr int kSharedFunctionInfoOffsetEnd = kSharedFunctionInfoOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=34&c=30
+  static constexpr int kDispatchHandleOffset = P::kHeaderSize;
+  static constexpr int kDispatchHandleOffsetEnd = kDispatchHandleOffset + kInt32Size - 1;
+  static constexpr int kStartOfStrongFieldsOffset = kDispatchHandleOffsetEnd + 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=36&c=3
+  static constexpr int kSharedFunctionInfoOffset = kDispatchHandleOffsetEnd + 1;
+  static constexpr int kSharedFunctionInfoOffsetEnd = kSharedFunctionInfoOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
   static constexpr int kContextOffset = kSharedFunctionInfoOffsetEnd + 1;
   static constexpr int kContextOffsetEnd = kContextOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=37&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=38&c=3
   static constexpr int kFeedbackCellOffset = kContextOffsetEnd + 1;
   static constexpr int kFeedbackCellOffsetEnd = kFeedbackCellOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=39&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-function.tq?l=40&c=3
   static constexpr int kPrototypeOrInitialMapOffset = kFeedbackCellOffsetEnd + 1;
   static constexpr int kPrototypeOrInitialMapOffsetEnd = kPrototypeOrInitialMapOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kPrototypeOrInitialMapOffsetEnd + 1;
@@ -126,7 +131,7 @@ class TorqueGeneratedJSFunction : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSFunction() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSFunction, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSFunction, DAlias>,
         "class TorqueGeneratedJSFunction should be used as direct base for JSFunction.");
   }
 
@@ -144,10 +149,10 @@ V8_EXPORT_PRIVATE bool IsJSBoundFunction_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSBoundFunction : public P {
   static_assert(
-      std::is_same<JSBoundFunction, D>::value,
+      std::is_same_v<JSBoundFunction, D>,
       "Use this class as direct base for JSBoundFunction.");
   static_assert(
-      std::is_same<JSFunctionOrBoundFunctionOrWrappedFunction, P>::value,
+      std::is_same_v<JSFunctionOrBoundFunctionOrWrappedFunction, P>,
       "Pass in JSFunctionOrBoundFunctionOrWrappedFunction as second template parameter for TorqueGeneratedJSBoundFunction.");
 
  public: 
@@ -204,7 +209,7 @@ class TorqueGeneratedJSBoundFunction : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSBoundFunction() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSBoundFunction, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSBoundFunction, DAlias>,
         "class TorqueGeneratedJSBoundFunction should be used as direct base for JSBoundFunction.");
   }
 
@@ -222,10 +227,10 @@ V8_EXPORT_PRIVATE bool IsJSWrappedFunction_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSWrappedFunction : public P {
   static_assert(
-      std::is_same<JSWrappedFunction, D>::value,
+      std::is_same_v<JSWrappedFunction, D>,
       "Use this class as direct base for JSWrappedFunction.");
   static_assert(
-      std::is_same<JSFunctionOrBoundFunctionOrWrappedFunction, P>::value,
+      std::is_same_v<JSFunctionOrBoundFunctionOrWrappedFunction, P>,
       "Pass in JSFunctionOrBoundFunctionOrWrappedFunction as second template parameter for TorqueGeneratedJSWrappedFunction.");
 
  public: 
@@ -271,7 +276,7 @@ class TorqueGeneratedJSWrappedFunction : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSWrappedFunction() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSWrappedFunction, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSWrappedFunction, DAlias>,
         "class TorqueGeneratedJSWrappedFunction should be used as direct base for JSWrappedFunction.");
   }
 

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-trim-tq-csa.h"
@@ -187,7 +187,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x20ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x20ull));
     tmp1 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp0});
     ca_.Branch(tmp1, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -211,7 +211,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
     tmp4 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xeull));
     tmp5 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp3}, TNode<Int32T>{tmp4});
     tmp6 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp5});
-    tmp7 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x92ull));
+    tmp7 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x92ull));
     tmp8 = CodeStubAssembler(state_).Uint32LessThan(TNode<Uint32T>{tmp6}, TNode<Uint32T>{tmp7});
     ca_.Branch(tmp8, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
@@ -227,7 +227,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp11;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp10 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x9ull));
+    tmp10 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x9ull));
     tmp11 = CodeStubAssembler(state_).Uint32LessThan(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp10});
     ca_.Branch(tmp11, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
@@ -243,7 +243,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp14;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp13 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xdull));
+    tmp13 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xdull));
     tmp14 = CodeStubAssembler(state_).Uint32LessThanOrEqual(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp13});
     ca_.Branch(tmp14, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
   }
@@ -259,7 +259,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp17;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp16 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xa0ull));
+    tmp16 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xa0ull));
     tmp17 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp16});
     ca_.Branch(tmp17, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
@@ -275,7 +275,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp20;
   if (block11.is_used()) {
     ca_.Bind(&block11);
-    tmp19 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1680ull));
+    tmp19 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1680ull));
     tmp20 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp19});
     ca_.Branch(tmp20, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
   }
@@ -291,7 +291,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp23;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    tmp22 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2000ull));
+    tmp22 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2000ull));
     tmp23 = CodeStubAssembler(state_).Uint32LessThan(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp22});
     ca_.Branch(tmp23, &block14, std::vector<compiler::Node*>{}, &block15, std::vector<compiler::Node*>{});
   }
@@ -307,7 +307,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp26;
   if (block15.is_used()) {
     ca_.Bind(&block15);
-    tmp25 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x200aull));
+    tmp25 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x200aull));
     tmp26 = CodeStubAssembler(state_).Uint32LessThanOrEqual(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp25});
     ca_.Branch(tmp26, &block16, std::vector<compiler::Node*>{}, &block17, std::vector<compiler::Node*>{});
   }
@@ -323,7 +323,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp29;
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    tmp28 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2028ull));
+    tmp28 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2028ull));
     tmp29 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp28});
     ca_.Branch(tmp29, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
@@ -339,7 +339,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp32;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    tmp31 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2029ull));
+    tmp31 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2029ull));
     tmp32 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp31});
     ca_.Branch(tmp32, &block20, std::vector<compiler::Node*>{}, &block21, std::vector<compiler::Node*>{});
   }
@@ -355,7 +355,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp35;
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    tmp34 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x202full));
+    tmp34 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x202full));
     tmp35 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp34});
     ca_.Branch(tmp35, &block22, std::vector<compiler::Node*>{}, &block23, std::vector<compiler::Node*>{});
   }
@@ -371,7 +371,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp38;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp37 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x205full));
+    tmp37 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x205full));
     tmp38 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp37});
     ca_.Branch(tmp38, &block24, std::vector<compiler::Node*>{}, &block25, std::vector<compiler::Node*>{});
   }
@@ -387,7 +387,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp41;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp40 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xfeffull));
+    tmp40 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xfeffull));
     tmp41 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp40});
     ca_.Branch(tmp41, &block26, std::vector<compiler::Node*>{}, &block27, std::vector<compiler::Node*>{});
   }
@@ -403,7 +403,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
   TNode<BoolT> tmp44;
   if (block27.is_used()) {
     ca_.Bind(&block27);
-    tmp43 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3000ull));
+    tmp43 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x3000ull));
     tmp44 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_charCode}, TNode<Uint32T>{tmp43});
     ca_.Branch(tmp44, &block28, std::vector<compiler::Node*>{}, &block29, std::vector<compiler::Node*>{});
   }
@@ -434,7 +434,7 @@ TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=137&c=1
-TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructArguments p__arguments, const char* p_methodName, String::TrimMode p_variant) {
+TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TorqueStructArguments p__arguments, const char* p_methodName, String::TrimMode p_variant) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -465,8 +465,8 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -480,7 +480,7 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, p_methodName);
-    tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{p_context}, TNode<Object>{p_receiver}, TNode<String>{tmp0});
+    tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, TNode<String>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp4 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{tmp1, tmp3});
@@ -531,17 +531,17 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<IntPtrT> phi_bb11_10;
   TNode<String> phi_bb11_12;
   TNode<String> phi_bb11_13;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
-  TNode<Object> tmp14;
+  TNode<Union<HeapObject, TaggedIndex>> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<IntPtrT> tmp16;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_9, &phi_bb11_10, &phi_bb11_12, &phi_bb11_13);
     std::tie(tmp11, tmp12, tmp13) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp7}).Flatten();
     compiler::CodeAssemblerLabel label17(&ca_);
-    std::tie(tmp14, tmp15, tmp16) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp11}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp13}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb11_10}, TNode<IntPtrT>{tmp5}, &label17).Flatten();
+    std::tie(tmp14, tmp15, tmp16) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp11}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp13}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb11_10}, TNode<IntPtrT>{tmp5}, &label17).Flatten();
     ca_.Goto(&block15, phi_bb11_9, phi_bb11_10, phi_bb11_12, phi_bb11_10);
     if (label17.is_used()) {
       ca_.Bind(&label17);
@@ -585,17 +585,17 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<String> phi_bb19_9;
   TNode<IntPtrT> phi_bb19_10;
   TNode<String> phi_bb19_12;
-  TNode<Object> tmp20;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
-  TNode<Object> tmp23;
+  TNode<Union<HeapObject, TaggedIndex>> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<IntPtrT> tmp25;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_9, &phi_bb19_10, &phi_bb19_12);
     std::tie(tmp20, tmp21, tmp22) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp9}).Flatten();
     compiler::CodeAssemblerLabel label26(&ca_);
-    std::tie(tmp23, tmp24, tmp25) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp20}, TNode<IntPtrT>{tmp21}, TNode<IntPtrT>{tmp22}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb19_10}, TNode<IntPtrT>{tmp5}, &label26).Flatten();
+    std::tie(tmp23, tmp24, tmp25) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp20}, TNode<IntPtrT>{tmp21}, TNode<IntPtrT>{tmp22}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb19_10}, TNode<IntPtrT>{tmp5}, &label26).Flatten();
     ca_.Goto(&block23, phi_bb19_9, phi_bb19_10, phi_bb19_12, phi_bb19_10);
     if (label26.is_used()) {
       ca_.Bind(&label26);
@@ -730,10 +730,10 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<IntPtrT> tmp45;
   TNode<Int32T> tmp46;
   TNode<IntPtrT> tmp47;
-  TNode<Object> tmp48;
+  TNode<Union<HeapObject, TaggedIndex>> tmp48;
   TNode<IntPtrT> tmp49;
   TNode<IntPtrT> tmp50;
-  TNode<Object> tmp51;
+  TNode<Union<HeapObject, TaggedIndex>> tmp51;
   TNode<IntPtrT> tmp52;
   TNode<IntPtrT> tmp53;
   if (block39.is_used()) {
@@ -744,7 +744,7 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     tmp47 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp46});
     std::tie(tmp48, tmp49, tmp50) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp44}, TNode<IntPtrT>{tmp47}).Flatten();
     compiler::CodeAssemblerLabel label54(&ca_);
-    std::tie(tmp51, tmp52, tmp53) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp48}, TNode<IntPtrT>{tmp49}, TNode<IntPtrT>{tmp50}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb39_10}, TNode<IntPtrT>{tmp5}, &label54).Flatten();
+    std::tie(tmp51, tmp52, tmp53) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp48}, TNode<IntPtrT>{tmp49}, TNode<IntPtrT>{tmp50}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb39_10}, TNode<IntPtrT>{tmp5}, &label54).Flatten();
     ca_.Goto(&block43, phi_bb39_9, phi_bb39_10, phi_bb39_12, phi_bb39_10);
     if (label54.is_used()) {
       ca_.Bind(&label54);
@@ -785,10 +785,10 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<IntPtrT> tmp56;
   TNode<Int32T> tmp57;
   TNode<IntPtrT> tmp58;
-  TNode<Object> tmp59;
+  TNode<Union<HeapObject, TaggedIndex>> tmp59;
   TNode<IntPtrT> tmp60;
   TNode<IntPtrT> tmp61;
-  TNode<Object> tmp62;
+  TNode<Union<HeapObject, TaggedIndex>> tmp62;
   TNode<IntPtrT> tmp63;
   TNode<IntPtrT> tmp64;
   if (block47.is_used()) {
@@ -799,7 +799,7 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     tmp58 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp57});
     std::tie(tmp59, tmp60, tmp61) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp55}, TNode<IntPtrT>{tmp58}).Flatten();
     compiler::CodeAssemblerLabel label65(&ca_);
-    std::tie(tmp62, tmp63, tmp64) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp59}, TNode<IntPtrT>{tmp60}, TNode<IntPtrT>{tmp61}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb47_10}, TNode<IntPtrT>{tmp5}, &label65).Flatten();
+    std::tie(tmp62, tmp63, tmp64) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp59}, TNode<IntPtrT>{tmp60}, TNode<IntPtrT>{tmp61}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb47_10}, TNode<IntPtrT>{tmp5}, &label65).Flatten();
     ca_.Goto(&block51, phi_bb47_9, phi_bb47_10, phi_bb47_12, phi_bb47_10);
     if (label65.is_used()) {
       ca_.Bind(&label65);
@@ -848,23 +848,23 @@ TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb5_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb5_7;
   TNode<IntPtrT> phi_bb5_8;
   TNode<IntPtrT> phi_bb5_9;
   TNode<String> tmp66;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_7, &phi_bb5_8, &phi_bb5_9);
-    tmp66 = StringTrimBody_char8_0(state_, TNode<Context>{p_context}, TNode<String>{tmp1}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb5_7}, TNode<IntPtrT>{phi_bb5_8}, TNode<IntPtrT>{phi_bb5_9}, TorqueStructUnsafe_0{}}, p_variant);
+    tmp66 = StringTrimBody_char8_0(state_, TNode<Context>{p_context}, TNode<String>{tmp1}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb5_7}, TNode<IntPtrT>{phi_bb5_8}, TNode<IntPtrT>{phi_bb5_9}, TorqueStructUnsafe_0{}}, p_variant);
     ca_.Goto(&block1, tmp66);
   }
 
-  TNode<Object> phi_bb3_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb3_7;
   TNode<IntPtrT> phi_bb3_8;
   TNode<IntPtrT> phi_bb3_9;
   TNode<String> tmp67;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_7, &phi_bb3_8, &phi_bb3_9);
-    tmp67 = StringTrimBody_char16_0(state_, TNode<Context>{p_context}, TNode<String>{tmp1}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb3_7}, TNode<IntPtrT>{phi_bb3_8}, TNode<IntPtrT>{phi_bb3_9}, TorqueStructUnsafe_0{}}, p_variant);
+    tmp67 = StringTrimBody_char16_0(state_, TNode<Context>{p_context}, TNode<String>{tmp1}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb3_7}, TNode<IntPtrT>{phi_bb3_8}, TNode<IntPtrT>{phi_bb3_9}, TorqueStructUnsafe_0{}}, p_variant);
     ca_.Goto(&block1, tmp67);
   }
 
@@ -887,7 +887,7 @@ TF_BUILTIN(StringPrototypeTrim, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -895,7 +895,7 @@ TF_BUILTIN(StringPrototypeTrim, CodeStubAssembler) {
   TNode<String> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = StringTrim_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, "String.prototype.trim", String::TrimMode::kTrim);
+    tmp0 = StringTrim_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, "String.prototype.trim", String::TrimMode::kTrim);
     arguments.PopAndReturn(tmp0);
   }
 }
@@ -909,7 +909,7 @@ TF_BUILTIN(StringPrototypeTrimStart, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -917,7 +917,7 @@ TF_BUILTIN(StringPrototypeTrimStart, CodeStubAssembler) {
   TNode<String> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = StringTrim_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, "String.prototype.trimLeft", String::TrimMode::kTrimStart);
+    tmp0 = StringTrim_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, "String.prototype.trimLeft", String::TrimMode::kTrimStart);
     arguments.PopAndReturn(tmp0);
   }
 }
@@ -931,7 +931,7 @@ TF_BUILTIN(StringPrototypeTrimEnd, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -939,7 +939,7 @@ TF_BUILTIN(StringPrototypeTrimEnd, CodeStubAssembler) {
   TNode<String> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = StringTrim_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, "String.prototype.trimRight", String::TrimMode::kTrimEnd);
+    tmp0 = StringTrim_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, "String.prototype.trimRight", String::TrimMode::kTrimEnd);
     arguments.PopAndReturn(tmp0);
   }
 }
@@ -982,7 +982,7 @@ TNode<String> StringTrimBody_char8_0(compiler::CodeAssemblerState* state_, TNode
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp6 = StringTrimLoop_char8_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp5});
+    tmp6 = StringTrimLoop_char8_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp5});
     tmp7 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp0});
     ca_.Branch(tmp7, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
@@ -1017,7 +1017,7 @@ TNode<String> StringTrimBody_char8_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block6, &phi_bb6_6);
     tmp10 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp11 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    tmp12 = StringTrimLoop_char8_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11});
+    tmp12 = StringTrimLoop_char8_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11});
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp14 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp13});
     ca_.Branch(tmp14, &block8, std::vector<compiler::Node*>{phi_bb6_6}, &block9, std::vector<compiler::Node*>{phi_bb6_6});
@@ -1102,7 +1102,7 @@ TNode<String> StringTrimBody_char16_0(compiler::CodeAssemblerState* state_, TNod
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp6 = StringTrimLoop_char16_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp5});
+    tmp6 = StringTrimLoop_char16_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp5});
     tmp7 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp0});
     ca_.Branch(tmp7, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
@@ -1137,7 +1137,7 @@ TNode<String> StringTrimBody_char16_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block6, &phi_bb6_6);
     tmp10 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp11 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    tmp12 = StringTrimLoop_char16_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11});
+    tmp12 = StringTrimLoop_char16_0(state_, TNode<Context>{p_context}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_slice.object}, TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{p_slice.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11});
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
     tmp14 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp13});
     ca_.Branch(tmp14, &block8, std::vector<compiler::Node*>{phi_bb6_6}, &block9, std::vector<compiler::Node*>{phi_bb6_6});
@@ -1248,7 +1248,7 @@ TNode<IntPtrT> StringTrimLoop_char8_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> phi_bb11_17;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<Uint8T> tmp9;
   TNode<BoolT> tmp10;
@@ -1257,7 +1257,7 @@ TNode<IntPtrT> StringTrimLoop_char8_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Bind(&block11, &phi_bb11_7, &phi_bb11_11, &phi_bb11_12, &phi_bb11_16, &phi_bb11_17);
     tmp5 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{phi_bb11_17});
     tmp6 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_stringSlice.offset}, TNode<IntPtrT>{tmp5});
-    std::tie(tmp7, tmp8) = NewReference_char8_0(state_, TNode<Object>{p_stringSlice.object}, TNode<IntPtrT>{tmp6}).Flatten();
+    std::tie(tmp7, tmp8) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_stringSlice.object}, TNode<IntPtrT>{tmp6}).Flatten();
     tmp9 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp7, tmp8});
     tmp10 = IsWhiteSpaceOrLineTerminator_0(state_, TNode<Uint16T>{tmp9});
     tmp11 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp10});
@@ -1369,7 +1369,7 @@ TNode<IntPtrT> StringTrimLoop_char16_0(compiler::CodeAssemblerState* state_, TNo
   TNode<IntPtrT> phi_bb11_17;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<Uint16T> tmp9;
   TNode<BoolT> tmp10;
@@ -1378,7 +1378,7 @@ TNode<IntPtrT> StringTrimLoop_char16_0(compiler::CodeAssemblerState* state_, TNo
     ca_.Bind(&block11, &phi_bb11_7, &phi_bb11_11, &phi_bb11_12, &phi_bb11_16, &phi_bb11_17);
     tmp5 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{phi_bb11_17});
     tmp6 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_stringSlice.offset}, TNode<IntPtrT>{tmp5});
-    std::tie(tmp7, tmp8) = NewReference_char16_0(state_, TNode<Object>{p_stringSlice.object}, TNode<IntPtrT>{tmp6}).Flatten();
+    std::tie(tmp7, tmp8) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_stringSlice.object}, TNode<IntPtrT>{tmp6}).Flatten();
     tmp9 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp7, tmp8});
     tmp10 = IsWhiteSpaceOrLineTerminator_0(state_, TNode<Uint16T>{tmp9});
     tmp11 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp10});

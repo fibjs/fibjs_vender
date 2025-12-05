@@ -19,7 +19,7 @@ TNode<Uint32T> FromConstexpr_TrimMode_constexpr_kTrimEnd_0(compiler::CodeAssembl
 TNode<BoolT> IsWhiteSpaceOrLineTerminator_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_charCode);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=137&c=1
-TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructArguments p__arguments, const char* p_methodName, String::TrimMode p_variant);
+TNode<String> StringTrim_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TorqueStructArguments p__arguments, const char* p_methodName, String::TrimMode p_variant);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-trim.tq?l=145&c=12
 TNode<String> StringTrimBody_char8_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_string, TorqueStructSlice_char8_ConstReference_char8_0 p_slice, String::TrimMode p_variant);

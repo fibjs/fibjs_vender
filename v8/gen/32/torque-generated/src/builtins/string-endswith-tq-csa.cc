@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-endswith-tq-csa.h"
@@ -112,7 +112,7 @@ TF_BUILTIN(StringPrototypeEndsWith, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -125,9 +125,9 @@ TF_BUILTIN(StringPrototypeEndsWith, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<String> tmp4;
   TNode<String> tmp5;
   TNode<BoolT> tmp6;
@@ -138,8 +138,8 @@ TF_BUILTIN(StringPrototypeEndsWith, CodeStubAssembler) {
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_String_constexpr_string_0(state_, "String.prototype.endsWith");
-    tmp5 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp4});
-    tmp6 = IsRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    tmp5 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp4});
+    tmp6 = IsRegExp_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp1});
     ca_.Branch(tmp6, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -154,17 +154,17 @@ TF_BUILTIN(StringPrototypeEndsWith, CodeStubAssembler) {
   TNode<BoolT> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp1});
     tmp8 = LoadStringLengthAsUintPtr_0(state_, TNode<String>{tmp5});
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp3}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp3}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Branch(tmp10, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
   TNode<UintPtrT> tmp11;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp11 = ClampToIndexRange_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3}, TNode<UintPtrT>{tmp8});
+    tmp11 = ClampToIndexRange_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3}, TNode<UintPtrT>{tmp8});
     ca_.Goto(&block5, tmp11);
   }
 
@@ -238,66 +238,66 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block71(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block79(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block90(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block95(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block99(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block98(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block103(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block80(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block76(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block110(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block108(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block114(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block113(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block118(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block117(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block122(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block121(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block126(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block125(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block130(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block129(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block134(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block133(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block138(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block137(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block142(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block141(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block146(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block145(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block150(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block149(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block154(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block153(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block131(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block127(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block109(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block107(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block105(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block71(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block79(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block90(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block95(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block99(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block98(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block103(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block80(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block76(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block110(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block108(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block114(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block113(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block118(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block117(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block122(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block121(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block126(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block125(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block130(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block129(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block134(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block133(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block138(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block137(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block142(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block141(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block146(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block145(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block150(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block149(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block154(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block153(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block131(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block127(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block109(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block107(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block105(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block155(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -358,17 +358,17 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> phi_bb11_6;
   TNode<String> phi_bb11_8;
   TNode<String> phi_bb11_9;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_5, &phi_bb11_6, &phi_bb11_8, &phi_bb11_9);
     std::tie(tmp9, tmp10, tmp11) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp5}).Flatten();
     compiler::CodeAssemblerLabel label15(&ca_);
-    std::tie(tmp12, tmp13, tmp14) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb11_6}, TNode<IntPtrT>{tmp3}, &label15).Flatten();
+    std::tie(tmp12, tmp13, tmp14) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb11_6}, TNode<IntPtrT>{tmp3}, &label15).Flatten();
     ca_.Goto(&block15, phi_bb11_5, phi_bb11_6, phi_bb11_8, phi_bb11_6);
     if (label15.is_used()) {
       ca_.Bind(&label15);
@@ -412,17 +412,17 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<String> phi_bb19_5;
   TNode<IntPtrT> phi_bb19_6;
   TNode<String> phi_bb19_8;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
-  TNode<Object> tmp21;
+  TNode<Union<HeapObject, TaggedIndex>> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<IntPtrT> tmp23;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_5, &phi_bb19_6, &phi_bb19_8);
     std::tie(tmp18, tmp19, tmp20) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp7}).Flatten();
     compiler::CodeAssemblerLabel label24(&ca_);
-    std::tie(tmp21, tmp22, tmp23) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp18}, TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb19_6}, TNode<IntPtrT>{tmp3}, &label24).Flatten();
+    std::tie(tmp21, tmp22, tmp23) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp18}, TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb19_6}, TNode<IntPtrT>{tmp3}, &label24).Flatten();
     ca_.Goto(&block23, phi_bb19_5, phi_bb19_6, phi_bb19_8, phi_bb19_6);
     if (label24.is_used()) {
       ca_.Bind(&label24);
@@ -557,10 +557,10 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp43;
   TNode<Int32T> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   TNode<IntPtrT> tmp51;
   if (block39.is_used()) {
@@ -571,7 +571,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     tmp45 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp44});
     std::tie(tmp46, tmp47, tmp48) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp42}, TNode<IntPtrT>{tmp45}).Flatten();
     compiler::CodeAssemblerLabel label52(&ca_);
-    std::tie(tmp49, tmp50, tmp51) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp46}, TNode<IntPtrT>{tmp47}, TNode<IntPtrT>{tmp48}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb39_6}, TNode<IntPtrT>{tmp3}, &label52).Flatten();
+    std::tie(tmp49, tmp50, tmp51) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp46}, TNode<IntPtrT>{tmp47}, TNode<IntPtrT>{tmp48}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb39_6}, TNode<IntPtrT>{tmp3}, &label52).Flatten();
     ca_.Goto(&block43, phi_bb39_5, phi_bb39_6, phi_bb39_8, phi_bb39_6);
     if (label52.is_used()) {
       ca_.Bind(&label52);
@@ -612,10 +612,10 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp54;
   TNode<Int32T> tmp55;
   TNode<IntPtrT> tmp56;
-  TNode<Object> tmp57;
+  TNode<Union<HeapObject, TaggedIndex>> tmp57;
   TNode<IntPtrT> tmp58;
   TNode<IntPtrT> tmp59;
-  TNode<Object> tmp60;
+  TNode<Union<HeapObject, TaggedIndex>> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<IntPtrT> tmp62;
   if (block47.is_used()) {
@@ -626,7 +626,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     tmp56 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp55});
     std::tie(tmp57, tmp58, tmp59) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp53}, TNode<IntPtrT>{tmp56}).Flatten();
     compiler::CodeAssemblerLabel label63(&ca_);
-    std::tie(tmp60, tmp61, tmp62) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp57}, TNode<IntPtrT>{tmp58}, TNode<IntPtrT>{tmp59}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb47_6}, TNode<IntPtrT>{tmp3}, &label63).Flatten();
+    std::tie(tmp60, tmp61, tmp62) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp57}, TNode<IntPtrT>{tmp58}, TNode<IntPtrT>{tmp59}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb47_6}, TNode<IntPtrT>{tmp3}, &label63).Flatten();
     ca_.Goto(&block51, phi_bb47_5, phi_bb47_6, phi_bb47_8, phi_bb47_6);
     if (label63.is_used()) {
       ca_.Bind(&label63);
@@ -675,7 +675,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb5_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb5_3;
   TNode<IntPtrT> phi_bb5_4;
   TNode<IntPtrT> phi_bb5_5;
   TNode<IntPtrT> tmp64;
@@ -691,7 +691,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block59, phi_bb5_3, phi_bb5_4, phi_bb5_5, p_s2, tmp64);
   }
 
-  TNode<Object> phi_bb59_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb59_3;
   TNode<IntPtrT> phi_bb59_4;
   TNode<IntPtrT> phi_bb59_5;
   TNode<String> phi_bb59_8;
@@ -703,7 +703,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Branch(tmp68, &block57, std::vector<compiler::Node*>{phi_bb59_3, phi_bb59_4, phi_bb59_5, phi_bb59_8, phi_bb59_9}, &block58, std::vector<compiler::Node*>{phi_bb59_3, phi_bb59_4, phi_bb59_5, phi_bb59_8, phi_bb59_9});
   }
 
-  TNode<Object> phi_bb57_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb57_3;
   TNode<IntPtrT> phi_bb57_4;
   TNode<IntPtrT> phi_bb57_5;
   TNode<String> phi_bb57_8;
@@ -720,7 +720,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb63_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb63_3;
   TNode<IntPtrT> phi_bb63_4;
   TNode<IntPtrT> phi_bb63_5;
   TNode<String> phi_bb63_8;
@@ -739,24 +739,24 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb62_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb62_3;
   TNode<IntPtrT> phi_bb62_4;
   TNode<IntPtrT> phi_bb62_5;
   TNode<String> phi_bb62_8;
   TNode<IntPtrT> phi_bb62_9;
   TNode<String> phi_bb62_11;
   TNode<String> phi_bb62_12;
-  TNode<Object> tmp73;
+  TNode<Union<HeapObject, TaggedIndex>> tmp73;
   TNode<IntPtrT> tmp74;
   TNode<IntPtrT> tmp75;
-  TNode<Object> tmp76;
+  TNode<Union<HeapObject, TaggedIndex>> tmp76;
   TNode<IntPtrT> tmp77;
   TNode<IntPtrT> tmp78;
   if (block62.is_used()) {
     ca_.Bind(&block62, &phi_bb62_3, &phi_bb62_4, &phi_bb62_5, &phi_bb62_8, &phi_bb62_9, &phi_bb62_11, &phi_bb62_12);
     std::tie(tmp73, tmp74, tmp75) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp69}).Flatten();
     compiler::CodeAssemblerLabel label79(&ca_);
-    std::tie(tmp76, tmp77, tmp78) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp73}, TNode<IntPtrT>{tmp74}, TNode<IntPtrT>{tmp75}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb62_9}, TNode<IntPtrT>{tmp67}, &label79).Flatten();
+    std::tie(tmp76, tmp77, tmp78) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp73}, TNode<IntPtrT>{tmp74}, TNode<IntPtrT>{tmp75}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb62_9}, TNode<IntPtrT>{tmp67}, &label79).Flatten();
     ca_.Goto(&block66, phi_bb62_3, phi_bb62_4, phi_bb62_5, phi_bb62_8, phi_bb62_9, phi_bb62_11, phi_bb62_9);
     if (label79.is_used()) {
       ca_.Bind(&label79);
@@ -764,7 +764,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb67_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb67_3;
   TNode<IntPtrT> phi_bb67_4;
   TNode<IntPtrT> phi_bb67_5;
   TNode<String> phi_bb67_8;
@@ -776,7 +776,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb66_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb66_3;
   TNode<IntPtrT> phi_bb66_4;
   TNode<IntPtrT> phi_bb66_5;
   TNode<String> phi_bb66_8;
@@ -788,7 +788,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block56, phi_bb66_3, phi_bb66_4, phi_bb66_5, tmp76, tmp77, tmp78);
   }
 
-  TNode<Object> phi_bb71_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb71_3;
   TNode<IntPtrT> phi_bb71_4;
   TNode<IntPtrT> phi_bb71_5;
   TNode<String> phi_bb71_8;
@@ -806,23 +806,23 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb70_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb70_3;
   TNode<IntPtrT> phi_bb70_4;
   TNode<IntPtrT> phi_bb70_5;
   TNode<String> phi_bb70_8;
   TNode<IntPtrT> phi_bb70_9;
   TNode<String> phi_bb70_11;
-  TNode<Object> tmp82;
+  TNode<Union<HeapObject, TaggedIndex>> tmp82;
   TNode<IntPtrT> tmp83;
   TNode<IntPtrT> tmp84;
-  TNode<Object> tmp85;
+  TNode<Union<HeapObject, TaggedIndex>> tmp85;
   TNode<IntPtrT> tmp86;
   TNode<IntPtrT> tmp87;
   if (block70.is_used()) {
     ca_.Bind(&block70, &phi_bb70_3, &phi_bb70_4, &phi_bb70_5, &phi_bb70_8, &phi_bb70_9, &phi_bb70_11);
     std::tie(tmp82, tmp83, tmp84) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp71}).Flatten();
     compiler::CodeAssemblerLabel label88(&ca_);
-    std::tie(tmp85, tmp86, tmp87) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp82}, TNode<IntPtrT>{tmp83}, TNode<IntPtrT>{tmp84}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb70_9}, TNode<IntPtrT>{tmp67}, &label88).Flatten();
+    std::tie(tmp85, tmp86, tmp87) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp82}, TNode<IntPtrT>{tmp83}, TNode<IntPtrT>{tmp84}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb70_9}, TNode<IntPtrT>{tmp67}, &label88).Flatten();
     ca_.Goto(&block74, phi_bb70_3, phi_bb70_4, phi_bb70_5, phi_bb70_8, phi_bb70_9, phi_bb70_11, phi_bb70_9);
     if (label88.is_used()) {
       ca_.Bind(&label88);
@@ -830,7 +830,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb75_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb75_3;
   TNode<IntPtrT> phi_bb75_4;
   TNode<IntPtrT> phi_bb75_5;
   TNode<String> phi_bb75_8;
@@ -842,7 +842,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb74_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb74_3;
   TNode<IntPtrT> phi_bb74_4;
   TNode<IntPtrT> phi_bb74_5;
   TNode<String> phi_bb74_8;
@@ -854,7 +854,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block54, phi_bb74_3, phi_bb74_4, phi_bb74_5, tmp85, tmp86, tmp87);
   }
 
-  TNode<Object> phi_bb79_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb79_3;
   TNode<IntPtrT> phi_bb79_4;
   TNode<IntPtrT> phi_bb79_5;
   TNode<String> phi_bb79_8;
@@ -872,7 +872,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb78_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb78_3;
   TNode<IntPtrT> phi_bb78_4;
   TNode<IntPtrT> phi_bb78_5;
   TNode<String> phi_bb78_8;
@@ -887,7 +887,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block76, phi_bb78_3, phi_bb78_4, phi_bb78_5, tmp92, phi_bb78_9, phi_bb78_11);
   }
 
-  TNode<Object> phi_bb83_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb83_3;
   TNode<IntPtrT> phi_bb83_4;
   TNode<IntPtrT> phi_bb83_5;
   TNode<String> phi_bb83_8;
@@ -905,7 +905,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb82_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb82_3;
   TNode<IntPtrT> phi_bb82_4;
   TNode<IntPtrT> phi_bb82_5;
   TNode<String> phi_bb82_8;
@@ -918,7 +918,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block80, phi_bb82_3, phi_bb82_4, phi_bb82_5, tmp95, phi_bb82_9, phi_bb82_11);
   }
 
-  TNode<Object> phi_bb87_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb87_3;
   TNode<IntPtrT> phi_bb87_4;
   TNode<IntPtrT> phi_bb87_5;
   TNode<String> phi_bb87_8;
@@ -936,7 +936,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb86_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb86_3;
   TNode<IntPtrT> phi_bb86_4;
   TNode<IntPtrT> phi_bb86_5;
   TNode<String> phi_bb86_8;
@@ -959,7 +959,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block80, phi_bb86_3, phi_bb86_4, phi_bb86_5, tmp103, tmp101, phi_bb86_11);
   }
 
-  TNode<Object> phi_bb91_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb91_3;
   TNode<IntPtrT> phi_bb91_4;
   TNode<IntPtrT> phi_bb91_5;
   TNode<String> phi_bb91_8;
@@ -977,7 +977,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb90_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb90_3;
   TNode<IntPtrT> phi_bb90_4;
   TNode<IntPtrT> phi_bb90_5;
   TNode<String> phi_bb90_8;
@@ -987,10 +987,10 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp107;
   TNode<Int32T> tmp108;
   TNode<IntPtrT> tmp109;
-  TNode<Object> tmp110;
+  TNode<Union<HeapObject, TaggedIndex>> tmp110;
   TNode<IntPtrT> tmp111;
   TNode<IntPtrT> tmp112;
-  TNode<Object> tmp113;
+  TNode<Union<HeapObject, TaggedIndex>> tmp113;
   TNode<IntPtrT> tmp114;
   TNode<IntPtrT> tmp115;
   if (block90.is_used()) {
@@ -1001,7 +1001,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     tmp109 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp108});
     std::tie(tmp110, tmp111, tmp112) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp106}, TNode<IntPtrT>{tmp109}).Flatten();
     compiler::CodeAssemblerLabel label116(&ca_);
-    std::tie(tmp113, tmp114, tmp115) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp110}, TNode<IntPtrT>{tmp111}, TNode<IntPtrT>{tmp112}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb90_9}, TNode<IntPtrT>{tmp67}, &label116).Flatten();
+    std::tie(tmp113, tmp114, tmp115) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp110}, TNode<IntPtrT>{tmp111}, TNode<IntPtrT>{tmp112}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb90_9}, TNode<IntPtrT>{tmp67}, &label116).Flatten();
     ca_.Goto(&block94, phi_bb90_3, phi_bb90_4, phi_bb90_5, phi_bb90_8, phi_bb90_9, phi_bb90_11, phi_bb90_9);
     if (label116.is_used()) {
       ca_.Bind(&label116);
@@ -1009,7 +1009,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb95_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb95_3;
   TNode<IntPtrT> phi_bb95_4;
   TNode<IntPtrT> phi_bb95_5;
   TNode<String> phi_bb95_8;
@@ -1021,7 +1021,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb94_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb94_3;
   TNode<IntPtrT> phi_bb94_4;
   TNode<IntPtrT> phi_bb94_5;
   TNode<String> phi_bb94_8;
@@ -1033,7 +1033,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block56, phi_bb94_3, phi_bb94_4, phi_bb94_5, tmp113, tmp114, tmp115);
   }
 
-  TNode<Object> phi_bb99_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb99_3;
   TNode<IntPtrT> phi_bb99_4;
   TNode<IntPtrT> phi_bb99_5;
   TNode<String> phi_bb99_8;
@@ -1044,7 +1044,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb98_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb98_3;
   TNode<IntPtrT> phi_bb98_4;
   TNode<IntPtrT> phi_bb98_5;
   TNode<String> phi_bb98_8;
@@ -1054,10 +1054,10 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp118;
   TNode<Int32T> tmp119;
   TNode<IntPtrT> tmp120;
-  TNode<Object> tmp121;
+  TNode<Union<HeapObject, TaggedIndex>> tmp121;
   TNode<IntPtrT> tmp122;
   TNode<IntPtrT> tmp123;
-  TNode<Object> tmp124;
+  TNode<Union<HeapObject, TaggedIndex>> tmp124;
   TNode<IntPtrT> tmp125;
   TNode<IntPtrT> tmp126;
   if (block98.is_used()) {
@@ -1068,7 +1068,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     tmp120 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp119});
     std::tie(tmp121, tmp122, tmp123) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp117}, TNode<IntPtrT>{tmp120}).Flatten();
     compiler::CodeAssemblerLabel label127(&ca_);
-    std::tie(tmp124, tmp125, tmp126) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp121}, TNode<IntPtrT>{tmp122}, TNode<IntPtrT>{tmp123}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb98_9}, TNode<IntPtrT>{tmp67}, &label127).Flatten();
+    std::tie(tmp124, tmp125, tmp126) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp121}, TNode<IntPtrT>{tmp122}, TNode<IntPtrT>{tmp123}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb98_9}, TNode<IntPtrT>{tmp67}, &label127).Flatten();
     ca_.Goto(&block102, phi_bb98_3, phi_bb98_4, phi_bb98_5, phi_bb98_8, phi_bb98_9, phi_bb98_11, phi_bb98_9);
     if (label127.is_used()) {
       ca_.Bind(&label127);
@@ -1076,7 +1076,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb103_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb103_3;
   TNode<IntPtrT> phi_bb103_4;
   TNode<IntPtrT> phi_bb103_5;
   TNode<String> phi_bb103_8;
@@ -1088,7 +1088,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb102_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb102_3;
   TNode<IntPtrT> phi_bb102_4;
   TNode<IntPtrT> phi_bb102_5;
   TNode<String> phi_bb102_8;
@@ -1100,7 +1100,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block54, phi_bb102_3, phi_bb102_4, phi_bb102_5, tmp124, tmp125, tmp126);
   }
 
-  TNode<Object> phi_bb80_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb80_3;
   TNode<IntPtrT> phi_bb80_4;
   TNode<IntPtrT> phi_bb80_5;
   TNode<String> phi_bb80_8;
@@ -1111,7 +1111,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block76, phi_bb80_3, phi_bb80_4, phi_bb80_5, phi_bb80_8, phi_bb80_9, phi_bb80_11);
   }
 
-  TNode<Object> phi_bb76_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb76_3;
   TNode<IntPtrT> phi_bb76_4;
   TNode<IntPtrT> phi_bb76_5;
   TNode<String> phi_bb76_8;
@@ -1122,7 +1122,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block59, phi_bb76_3, phi_bb76_4, phi_bb76_5, phi_bb76_8, phi_bb76_9);
   }
 
-  TNode<Object> phi_bb58_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb58_3;
   TNode<IntPtrT> phi_bb58_4;
   TNode<IntPtrT> phi_bb58_5;
   TNode<String> phi_bb58_8;
@@ -1132,33 +1132,33 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb56_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb56_3;
   TNode<IntPtrT> phi_bb56_4;
   TNode<IntPtrT> phi_bb56_5;
-  TNode<Object> phi_bb56_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb56_6;
   TNode<IntPtrT> phi_bb56_7;
   TNode<IntPtrT> phi_bb56_8;
   TNode<BoolT> tmp128;
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_3, &phi_bb56_4, &phi_bb56_5, &phi_bb56_6, &phi_bb56_7, &phi_bb56_8);
-    tmp128 = Call_char8_char8_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb56_3}, TNode<IntPtrT>{phi_bb56_4}, TNode<IntPtrT>{phi_bb56_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb56_6}, TNode<IntPtrT>{phi_bb56_7}, TNode<IntPtrT>{phi_bb56_8}, TorqueStructUnsafe_0{}});
+    tmp128 = Call_char8_char8_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb56_3}, TNode<IntPtrT>{phi_bb56_4}, TNode<IntPtrT>{phi_bb56_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb56_6}, TNode<IntPtrT>{phi_bb56_7}, TNode<IntPtrT>{phi_bb56_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp128);
   }
 
-  TNode<Object> phi_bb54_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb54_3;
   TNode<IntPtrT> phi_bb54_4;
   TNode<IntPtrT> phi_bb54_5;
-  TNode<Object> phi_bb54_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb54_6;
   TNode<IntPtrT> phi_bb54_7;
   TNode<IntPtrT> phi_bb54_8;
   TNode<BoolT> tmp129;
   if (block54.is_used()) {
     ca_.Bind(&block54, &phi_bb54_3, &phi_bb54_4, &phi_bb54_5, &phi_bb54_6, &phi_bb54_7, &phi_bb54_8);
-    tmp129 = Call_char8_char16_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb54_3}, TNode<IntPtrT>{phi_bb54_4}, TNode<IntPtrT>{phi_bb54_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb54_6}, TNode<IntPtrT>{phi_bb54_7}, TNode<IntPtrT>{phi_bb54_8}, TorqueStructUnsafe_0{}});
+    tmp129 = Call_char8_char16_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb54_3}, TNode<IntPtrT>{phi_bb54_4}, TNode<IntPtrT>{phi_bb54_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb54_6}, TNode<IntPtrT>{phi_bb54_7}, TNode<IntPtrT>{phi_bb54_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp129);
   }
 
-  TNode<Object> phi_bb3_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb3_3;
   TNode<IntPtrT> phi_bb3_4;
   TNode<IntPtrT> phi_bb3_5;
   TNode<IntPtrT> tmp130;
@@ -1174,7 +1174,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block110, phi_bb3_3, phi_bb3_4, phi_bb3_5, p_s2, tmp130);
   }
 
-  TNode<Object> phi_bb110_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb110_3;
   TNode<IntPtrT> phi_bb110_4;
   TNode<IntPtrT> phi_bb110_5;
   TNode<String> phi_bb110_8;
@@ -1186,7 +1186,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Branch(tmp134, &block108, std::vector<compiler::Node*>{phi_bb110_3, phi_bb110_4, phi_bb110_5, phi_bb110_8, phi_bb110_9}, &block109, std::vector<compiler::Node*>{phi_bb110_3, phi_bb110_4, phi_bb110_5, phi_bb110_8, phi_bb110_9});
   }
 
-  TNode<Object> phi_bb108_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb108_3;
   TNode<IntPtrT> phi_bb108_4;
   TNode<IntPtrT> phi_bb108_5;
   TNode<String> phi_bb108_8;
@@ -1203,7 +1203,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb114_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb114_3;
   TNode<IntPtrT> phi_bb114_4;
   TNode<IntPtrT> phi_bb114_5;
   TNode<String> phi_bb114_8;
@@ -1222,24 +1222,24 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb113_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb113_3;
   TNode<IntPtrT> phi_bb113_4;
   TNode<IntPtrT> phi_bb113_5;
   TNode<String> phi_bb113_8;
   TNode<IntPtrT> phi_bb113_9;
   TNode<String> phi_bb113_11;
   TNode<String> phi_bb113_12;
-  TNode<Object> tmp139;
+  TNode<Union<HeapObject, TaggedIndex>> tmp139;
   TNode<IntPtrT> tmp140;
   TNode<IntPtrT> tmp141;
-  TNode<Object> tmp142;
+  TNode<Union<HeapObject, TaggedIndex>> tmp142;
   TNode<IntPtrT> tmp143;
   TNode<IntPtrT> tmp144;
   if (block113.is_used()) {
     ca_.Bind(&block113, &phi_bb113_3, &phi_bb113_4, &phi_bb113_5, &phi_bb113_8, &phi_bb113_9, &phi_bb113_11, &phi_bb113_12);
     std::tie(tmp139, tmp140, tmp141) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp135}).Flatten();
     compiler::CodeAssemblerLabel label145(&ca_);
-    std::tie(tmp142, tmp143, tmp144) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp139}, TNode<IntPtrT>{tmp140}, TNode<IntPtrT>{tmp141}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb113_9}, TNode<IntPtrT>{tmp133}, &label145).Flatten();
+    std::tie(tmp142, tmp143, tmp144) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp139}, TNode<IntPtrT>{tmp140}, TNode<IntPtrT>{tmp141}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb113_9}, TNode<IntPtrT>{tmp133}, &label145).Flatten();
     ca_.Goto(&block117, phi_bb113_3, phi_bb113_4, phi_bb113_5, phi_bb113_8, phi_bb113_9, phi_bb113_11, phi_bb113_9);
     if (label145.is_used()) {
       ca_.Bind(&label145);
@@ -1247,7 +1247,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb118_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb118_3;
   TNode<IntPtrT> phi_bb118_4;
   TNode<IntPtrT> phi_bb118_5;
   TNode<String> phi_bb118_8;
@@ -1259,7 +1259,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb117_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb117_3;
   TNode<IntPtrT> phi_bb117_4;
   TNode<IntPtrT> phi_bb117_5;
   TNode<String> phi_bb117_8;
@@ -1271,7 +1271,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block107, phi_bb117_3, phi_bb117_4, phi_bb117_5, tmp142, tmp143, tmp144);
   }
 
-  TNode<Object> phi_bb122_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb122_3;
   TNode<IntPtrT> phi_bb122_4;
   TNode<IntPtrT> phi_bb122_5;
   TNode<String> phi_bb122_8;
@@ -1289,23 +1289,23 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb121_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb121_3;
   TNode<IntPtrT> phi_bb121_4;
   TNode<IntPtrT> phi_bb121_5;
   TNode<String> phi_bb121_8;
   TNode<IntPtrT> phi_bb121_9;
   TNode<String> phi_bb121_11;
-  TNode<Object> tmp148;
+  TNode<Union<HeapObject, TaggedIndex>> tmp148;
   TNode<IntPtrT> tmp149;
   TNode<IntPtrT> tmp150;
-  TNode<Object> tmp151;
+  TNode<Union<HeapObject, TaggedIndex>> tmp151;
   TNode<IntPtrT> tmp152;
   TNode<IntPtrT> tmp153;
   if (block121.is_used()) {
     ca_.Bind(&block121, &phi_bb121_3, &phi_bb121_4, &phi_bb121_5, &phi_bb121_8, &phi_bb121_9, &phi_bb121_11);
     std::tie(tmp148, tmp149, tmp150) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp137}).Flatten();
     compiler::CodeAssemblerLabel label154(&ca_);
-    std::tie(tmp151, tmp152, tmp153) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp148}, TNode<IntPtrT>{tmp149}, TNode<IntPtrT>{tmp150}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb121_9}, TNode<IntPtrT>{tmp133}, &label154).Flatten();
+    std::tie(tmp151, tmp152, tmp153) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp148}, TNode<IntPtrT>{tmp149}, TNode<IntPtrT>{tmp150}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb121_9}, TNode<IntPtrT>{tmp133}, &label154).Flatten();
     ca_.Goto(&block125, phi_bb121_3, phi_bb121_4, phi_bb121_5, phi_bb121_8, phi_bb121_9, phi_bb121_11, phi_bb121_9);
     if (label154.is_used()) {
       ca_.Bind(&label154);
@@ -1313,7 +1313,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb126_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb126_3;
   TNode<IntPtrT> phi_bb126_4;
   TNode<IntPtrT> phi_bb126_5;
   TNode<String> phi_bb126_8;
@@ -1325,7 +1325,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb125_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb125_3;
   TNode<IntPtrT> phi_bb125_4;
   TNode<IntPtrT> phi_bb125_5;
   TNode<String> phi_bb125_8;
@@ -1337,7 +1337,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block105, phi_bb125_3, phi_bb125_4, phi_bb125_5, tmp151, tmp152, tmp153);
   }
 
-  TNode<Object> phi_bb130_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb130_3;
   TNode<IntPtrT> phi_bb130_4;
   TNode<IntPtrT> phi_bb130_5;
   TNode<String> phi_bb130_8;
@@ -1355,7 +1355,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb129_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb129_3;
   TNode<IntPtrT> phi_bb129_4;
   TNode<IntPtrT> phi_bb129_5;
   TNode<String> phi_bb129_8;
@@ -1370,7 +1370,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block127, phi_bb129_3, phi_bb129_4, phi_bb129_5, tmp158, phi_bb129_9, phi_bb129_11);
   }
 
-  TNode<Object> phi_bb134_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb134_3;
   TNode<IntPtrT> phi_bb134_4;
   TNode<IntPtrT> phi_bb134_5;
   TNode<String> phi_bb134_8;
@@ -1388,7 +1388,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb133_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb133_3;
   TNode<IntPtrT> phi_bb133_4;
   TNode<IntPtrT> phi_bb133_5;
   TNode<String> phi_bb133_8;
@@ -1401,7 +1401,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block131, phi_bb133_3, phi_bb133_4, phi_bb133_5, tmp161, phi_bb133_9, phi_bb133_11);
   }
 
-  TNode<Object> phi_bb138_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb138_3;
   TNode<IntPtrT> phi_bb138_4;
   TNode<IntPtrT> phi_bb138_5;
   TNode<String> phi_bb138_8;
@@ -1419,7 +1419,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb137_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb137_3;
   TNode<IntPtrT> phi_bb137_4;
   TNode<IntPtrT> phi_bb137_5;
   TNode<String> phi_bb137_8;
@@ -1442,7 +1442,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block131, phi_bb137_3, phi_bb137_4, phi_bb137_5, tmp169, tmp167, phi_bb137_11);
   }
 
-  TNode<Object> phi_bb142_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb142_3;
   TNode<IntPtrT> phi_bb142_4;
   TNode<IntPtrT> phi_bb142_5;
   TNode<String> phi_bb142_8;
@@ -1460,7 +1460,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb141_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb141_3;
   TNode<IntPtrT> phi_bb141_4;
   TNode<IntPtrT> phi_bb141_5;
   TNode<String> phi_bb141_8;
@@ -1470,10 +1470,10 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp173;
   TNode<Int32T> tmp174;
   TNode<IntPtrT> tmp175;
-  TNode<Object> tmp176;
+  TNode<Union<HeapObject, TaggedIndex>> tmp176;
   TNode<IntPtrT> tmp177;
   TNode<IntPtrT> tmp178;
-  TNode<Object> tmp179;
+  TNode<Union<HeapObject, TaggedIndex>> tmp179;
   TNode<IntPtrT> tmp180;
   TNode<IntPtrT> tmp181;
   if (block141.is_used()) {
@@ -1484,7 +1484,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     tmp175 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp174});
     std::tie(tmp176, tmp177, tmp178) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp172}, TNode<IntPtrT>{tmp175}).Flatten();
     compiler::CodeAssemblerLabel label182(&ca_);
-    std::tie(tmp179, tmp180, tmp181) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp176}, TNode<IntPtrT>{tmp177}, TNode<IntPtrT>{tmp178}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb141_9}, TNode<IntPtrT>{tmp133}, &label182).Flatten();
+    std::tie(tmp179, tmp180, tmp181) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp176}, TNode<IntPtrT>{tmp177}, TNode<IntPtrT>{tmp178}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb141_9}, TNode<IntPtrT>{tmp133}, &label182).Flatten();
     ca_.Goto(&block145, phi_bb141_3, phi_bb141_4, phi_bb141_5, phi_bb141_8, phi_bb141_9, phi_bb141_11, phi_bb141_9);
     if (label182.is_used()) {
       ca_.Bind(&label182);
@@ -1492,7 +1492,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb146_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb146_3;
   TNode<IntPtrT> phi_bb146_4;
   TNode<IntPtrT> phi_bb146_5;
   TNode<String> phi_bb146_8;
@@ -1504,7 +1504,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb145_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb145_3;
   TNode<IntPtrT> phi_bb145_4;
   TNode<IntPtrT> phi_bb145_5;
   TNode<String> phi_bb145_8;
@@ -1516,7 +1516,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block107, phi_bb145_3, phi_bb145_4, phi_bb145_5, tmp179, tmp180, tmp181);
   }
 
-  TNode<Object> phi_bb150_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb150_3;
   TNode<IntPtrT> phi_bb150_4;
   TNode<IntPtrT> phi_bb150_5;
   TNode<String> phi_bb150_8;
@@ -1527,7 +1527,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb149_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb149_3;
   TNode<IntPtrT> phi_bb149_4;
   TNode<IntPtrT> phi_bb149_5;
   TNode<String> phi_bb149_8;
@@ -1537,10 +1537,10 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
   TNode<IntPtrT> tmp184;
   TNode<Int32T> tmp185;
   TNode<IntPtrT> tmp186;
-  TNode<Object> tmp187;
+  TNode<Union<HeapObject, TaggedIndex>> tmp187;
   TNode<IntPtrT> tmp188;
   TNode<IntPtrT> tmp189;
-  TNode<Object> tmp190;
+  TNode<Union<HeapObject, TaggedIndex>> tmp190;
   TNode<IntPtrT> tmp191;
   TNode<IntPtrT> tmp192;
   if (block149.is_used()) {
@@ -1551,7 +1551,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     tmp186 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp185});
     std::tie(tmp187, tmp188, tmp189) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp183}, TNode<IntPtrT>{tmp186}).Flatten();
     compiler::CodeAssemblerLabel label193(&ca_);
-    std::tie(tmp190, tmp191, tmp192) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp187}, TNode<IntPtrT>{tmp188}, TNode<IntPtrT>{tmp189}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb149_9}, TNode<IntPtrT>{tmp133}, &label193).Flatten();
+    std::tie(tmp190, tmp191, tmp192) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp187}, TNode<IntPtrT>{tmp188}, TNode<IntPtrT>{tmp189}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb149_9}, TNode<IntPtrT>{tmp133}, &label193).Flatten();
     ca_.Goto(&block153, phi_bb149_3, phi_bb149_4, phi_bb149_5, phi_bb149_8, phi_bb149_9, phi_bb149_11, phi_bb149_9);
     if (label193.is_used()) {
       ca_.Bind(&label193);
@@ -1559,7 +1559,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     }
   }
 
-  TNode<Object> phi_bb154_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb154_3;
   TNode<IntPtrT> phi_bb154_4;
   TNode<IntPtrT> phi_bb154_5;
   TNode<String> phi_bb154_8;
@@ -1571,7 +1571,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb153_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb153_3;
   TNode<IntPtrT> phi_bb153_4;
   TNode<IntPtrT> phi_bb153_5;
   TNode<String> phi_bb153_8;
@@ -1583,7 +1583,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block105, phi_bb153_3, phi_bb153_4, phi_bb153_5, tmp190, tmp191, tmp192);
   }
 
-  TNode<Object> phi_bb131_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb131_3;
   TNode<IntPtrT> phi_bb131_4;
   TNode<IntPtrT> phi_bb131_5;
   TNode<String> phi_bb131_8;
@@ -1594,7 +1594,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block127, phi_bb131_3, phi_bb131_4, phi_bb131_5, phi_bb131_8, phi_bb131_9, phi_bb131_11);
   }
 
-  TNode<Object> phi_bb127_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb127_3;
   TNode<IntPtrT> phi_bb127_4;
   TNode<IntPtrT> phi_bb127_5;
   TNode<String> phi_bb127_8;
@@ -1605,7 +1605,7 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     ca_.Goto(&block110, phi_bb127_3, phi_bb127_4, phi_bb127_5, phi_bb127_8, phi_bb127_9);
   }
 
-  TNode<Object> phi_bb109_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb109_3;
   TNode<IntPtrT> phi_bb109_4;
   TNode<IntPtrT> phi_bb109_5;
   TNode<String> phi_bb109_8;
@@ -1615,29 +1615,29 @@ TNode<BoolT> TwoStringsToSlices_bool_IsSubstringAtFunctor_0(compiler::CodeAssemb
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb107_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb107_3;
   TNode<IntPtrT> phi_bb107_4;
   TNode<IntPtrT> phi_bb107_5;
-  TNode<Object> phi_bb107_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb107_6;
   TNode<IntPtrT> phi_bb107_7;
   TNode<IntPtrT> phi_bb107_8;
   TNode<BoolT> tmp194;
   if (block107.is_used()) {
     ca_.Bind(&block107, &phi_bb107_3, &phi_bb107_4, &phi_bb107_5, &phi_bb107_6, &phi_bb107_7, &phi_bb107_8);
-    tmp194 = Call_char16_char8_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb107_3}, TNode<IntPtrT>{phi_bb107_4}, TNode<IntPtrT>{phi_bb107_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb107_6}, TNode<IntPtrT>{phi_bb107_7}, TNode<IntPtrT>{phi_bb107_8}, TorqueStructUnsafe_0{}});
+    tmp194 = Call_char16_char8_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb107_3}, TNode<IntPtrT>{phi_bb107_4}, TNode<IntPtrT>{phi_bb107_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb107_6}, TNode<IntPtrT>{phi_bb107_7}, TNode<IntPtrT>{phi_bb107_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp194);
   }
 
-  TNode<Object> phi_bb105_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb105_3;
   TNode<IntPtrT> phi_bb105_4;
   TNode<IntPtrT> phi_bb105_5;
-  TNode<Object> phi_bb105_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb105_6;
   TNode<IntPtrT> phi_bb105_7;
   TNode<IntPtrT> phi_bb105_8;
   TNode<BoolT> tmp195;
   if (block105.is_used()) {
     ca_.Bind(&block105, &phi_bb105_3, &phi_bb105_4, &phi_bb105_5, &phi_bb105_6, &phi_bb105_7, &phi_bb105_8);
-    tmp195 = Call_char16_char16_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb105_3}, TNode<IntPtrT>{phi_bb105_4}, TNode<IntPtrT>{phi_bb105_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb105_6}, TNode<IntPtrT>{phi_bb105_7}, TNode<IntPtrT>{phi_bb105_8}, TorqueStructUnsafe_0{}});
+    tmp195 = Call_char16_char16_0(state_, TorqueStructIsSubstringAtFunctor_0{TNode<IntPtrT>{p_f.start}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb105_3}, TNode<IntPtrT>{phi_bb105_4}, TNode<IntPtrT>{phi_bb105_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb105_6}, TNode<IntPtrT>{phi_bb105_7}, TNode<IntPtrT>{phi_bb105_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp195);
   }
 
@@ -1671,13 +1671,13 @@ TNode<BoolT> IsSubstringAt_char8_char8_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<BoolT> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label3(&ca_);
-    std::tie(tmp0, tmp1, tmp2) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
     ca_.Goto(&block4);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -1734,7 +1734,7 @@ TNode<BoolT> IsSubstringAt_char8_char8_0(compiler::CodeAssemblerState* state_, T
 
   TNode<IntPtrT> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_14;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
@@ -1742,7 +1742,7 @@ TNode<BoolT> IsSubstringAt_char8_char8_0(compiler::CodeAssemblerState* state_, T
   TNode<BoolT> tmp17;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_11, &phi_bb16_14);
-    std::tie(tmp12, tmp13) = NewReference_char8_0(state_, TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
+    std::tie(tmp12, tmp13) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb16_14}, TNode<IntPtrT>{tmp14});
     tmp16 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp12, tmp13});
@@ -1757,7 +1757,7 @@ TNode<BoolT> IsSubstringAt_char8_char8_0(compiler::CodeAssemblerState* state_, T
   }
 
   TNode<IntPtrT> phi_bb24_11;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
@@ -1765,7 +1765,7 @@ TNode<BoolT> IsSubstringAt_char8_char8_0(compiler::CodeAssemblerState* state_, T
   TNode<BoolT> tmp23;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_11);
-    std::tie(tmp18, tmp19) = NewReference_char8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
+    std::tie(tmp18, tmp19) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
     tmp20 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb24_11}, TNode<IntPtrT>{tmp20});
     tmp22 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp18, tmp19});
@@ -1823,13 +1823,13 @@ TNode<BoolT> IsSubstringAt_char8_char16_0(compiler::CodeAssemblerState* state_, 
   compiler::CodeAssemblerParameterizedLabel<BoolT> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label3(&ca_);
-    std::tie(tmp0, tmp1, tmp2) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
     ca_.Goto(&block4);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -1886,7 +1886,7 @@ TNode<BoolT> IsSubstringAt_char8_char16_0(compiler::CodeAssemblerState* state_, 
 
   TNode<IntPtrT> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_14;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
@@ -1894,7 +1894,7 @@ TNode<BoolT> IsSubstringAt_char8_char16_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp17;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_11, &phi_bb16_14);
-    std::tie(tmp12, tmp13) = NewReference_char16_0(state_, TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
+    std::tie(tmp12, tmp13) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb16_14}, TNode<IntPtrT>{tmp14});
     tmp16 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp12, tmp13});
@@ -1909,7 +1909,7 @@ TNode<BoolT> IsSubstringAt_char8_char16_0(compiler::CodeAssemblerState* state_, 
   }
 
   TNode<IntPtrT> phi_bb24_11;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
@@ -1917,7 +1917,7 @@ TNode<BoolT> IsSubstringAt_char8_char16_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp23;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_11);
-    std::tie(tmp18, tmp19) = NewReference_char8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
+    std::tie(tmp18, tmp19) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
     tmp20 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb24_11}, TNode<IntPtrT>{tmp20});
     tmp22 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp18, tmp19});
@@ -1975,13 +1975,13 @@ TNode<BoolT> IsSubstringAt_char16_char8_0(compiler::CodeAssemblerState* state_, 
   compiler::CodeAssemblerParameterizedLabel<BoolT> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label3(&ca_);
-    std::tie(tmp0, tmp1, tmp2) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
     ca_.Goto(&block4);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -2038,7 +2038,7 @@ TNode<BoolT> IsSubstringAt_char16_char8_0(compiler::CodeAssemblerState* state_, 
 
   TNode<IntPtrT> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_14;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
@@ -2046,7 +2046,7 @@ TNode<BoolT> IsSubstringAt_char16_char8_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp17;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_11, &phi_bb16_14);
-    std::tie(tmp12, tmp13) = NewReference_char8_0(state_, TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
+    std::tie(tmp12, tmp13) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb16_14}, TNode<IntPtrT>{tmp14});
     tmp16 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp12, tmp13});
@@ -2061,7 +2061,7 @@ TNode<BoolT> IsSubstringAt_char16_char8_0(compiler::CodeAssemblerState* state_, 
   }
 
   TNode<IntPtrT> phi_bb24_11;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
@@ -2069,7 +2069,7 @@ TNode<BoolT> IsSubstringAt_char16_char8_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp23;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_11);
-    std::tie(tmp18, tmp19) = NewReference_char16_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
+    std::tie(tmp18, tmp19) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
     tmp20 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb24_11}, TNode<IntPtrT>{tmp20});
     tmp22 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp18, tmp19});
@@ -2127,13 +2127,13 @@ TNode<BoolT> IsSubstringAt_char16_char16_0(compiler::CodeAssemblerState* state_,
   compiler::CodeAssemblerParameterizedLabel<BoolT> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label3(&ca_);
-    std::tie(tmp0, tmp1, tmp2) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_start}, TNode<IntPtrT>{p_searchStr.length}, &label3).Flatten();
     ca_.Goto(&block4);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -2190,7 +2190,7 @@ TNode<BoolT> IsSubstringAt_char16_char16_0(compiler::CodeAssemblerState* state_,
 
   TNode<IntPtrT> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_14;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
@@ -2198,7 +2198,7 @@ TNode<BoolT> IsSubstringAt_char16_char16_0(compiler::CodeAssemblerState* state_,
   TNode<BoolT> tmp17;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_11, &phi_bb16_14);
-    std::tie(tmp12, tmp13) = NewReference_char16_0(state_, TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
+    std::tie(tmp12, tmp13) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{phi_bb16_14}).Flatten();
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb16_14}, TNode<IntPtrT>{tmp14});
     tmp16 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp12, tmp13});
@@ -2213,7 +2213,7 @@ TNode<BoolT> IsSubstringAt_char16_char16_0(compiler::CodeAssemblerState* state_,
   }
 
   TNode<IntPtrT> phi_bb24_11;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
@@ -2221,7 +2221,7 @@ TNode<BoolT> IsSubstringAt_char16_char16_0(compiler::CodeAssemblerState* state_,
   TNode<BoolT> tmp23;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_11);
-    std::tie(tmp18, tmp19) = NewReference_char16_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
+    std::tie(tmp18, tmp19) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{phi_bb24_11}).Flatten();
     tmp20 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb24_11}, TNode<IntPtrT>{tmp20});
     tmp22 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp18, tmp19});

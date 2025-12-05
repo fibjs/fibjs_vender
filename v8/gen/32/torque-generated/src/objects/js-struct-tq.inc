@@ -8,10 +8,10 @@ V8_EXPORT_PRIVATE bool IsAlwaysSharedSpaceJSObject_NonInline(Tagged<HeapObject> 
 template <class D, class P>
 class TorqueGeneratedAlwaysSharedSpaceJSObject : public P {
   static_assert(
-      std::is_same<AlwaysSharedSpaceJSObject, D>::value,
+      std::is_same_v<AlwaysSharedSpaceJSObject, D>,
       "Use this class as direct base for AlwaysSharedSpaceJSObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedAlwaysSharedSpaceJSObject.");
 
  public: 
@@ -34,7 +34,7 @@ class TorqueGeneratedAlwaysSharedSpaceJSObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedAlwaysSharedSpaceJSObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedAlwaysSharedSpaceJSObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedAlwaysSharedSpaceJSObject, DAlias>,
         "class TorqueGeneratedAlwaysSharedSpaceJSObject should be used as direct base for AlwaysSharedSpaceJSObject.");
   }
 
@@ -52,10 +52,10 @@ V8_EXPORT_PRIVATE bool IsJSSharedStruct_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSharedStruct : public P {
   static_assert(
-      std::is_same<JSSharedStruct, D>::value,
+      std::is_same_v<JSSharedStruct, D>,
       "Use this class as direct base for JSSharedStruct.");
   static_assert(
-      std::is_same<AlwaysSharedSpaceJSObject, P>::value,
+      std::is_same_v<AlwaysSharedSpaceJSObject, P>,
       "Pass in AlwaysSharedSpaceJSObject as second template parameter for TorqueGeneratedJSSharedStruct.");
 
  public: 
@@ -80,7 +80,7 @@ class TorqueGeneratedJSSharedStruct : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSharedStruct() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSharedStruct, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSharedStruct, DAlias>,
         "class TorqueGeneratedJSSharedStruct should be used as direct base for JSSharedStruct.");
   }
 

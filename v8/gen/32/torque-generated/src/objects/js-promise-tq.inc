@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSPromise_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSPromise : public P {
   static_assert(
-      std::is_same<JSPromise, D>::value,
+      std::is_same_v<JSPromise, D>,
       "Use this class as direct base for JSPromise.");
   static_assert(
-      std::is_same<JSObjectWithEmbedderSlots, P>::value,
+      std::is_same_v<JSObjectWithEmbedderSlots, P>,
       "Pass in JSObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSPromise.");
 
  public: 
@@ -54,7 +54,7 @@ class TorqueGeneratedJSPromise : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSPromise() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSPromise, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSPromise, DAlias>,
         "class TorqueGeneratedJSPromise should be used as direct base for JSPromise.");
   }
 

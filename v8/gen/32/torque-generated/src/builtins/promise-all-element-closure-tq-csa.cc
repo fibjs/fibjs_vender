@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-all-element-closure-tq-csa.h"
@@ -215,21 +215,21 @@ TF_BUILTIN(PromiseAllResolveElementClosure, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
-    tmp1 = PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFunctor_0(state_, TNode<Context>{tmp0}, TNode<Object>{parameter3}, TNode<JSFunction>{parameter2}, TorqueStructPromiseAllWrapResultAsFulfilledFunctor_0{});
+    tmp1 = PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFunctor_0(state_, TNode<Context>{tmp0}, TNode<JSAny>{parameter3}, TNode<JSFunction>{parameter2}, TorqueStructPromiseAllWrapResultAsFulfilledFunctor_0{});
     CodeStubAssembler(state_).Return(tmp1);
   }
 }
@@ -238,21 +238,21 @@ TF_BUILTIN(PromiseAllSettledResolveElementClosure, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
-    tmp1 = PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfilledFunctor_0(state_, TNode<Context>{tmp0}, TNode<Object>{parameter3}, TNode<JSFunction>{parameter2}, TorqueStructPromiseAllSettledWrapResultAsFulfilledFunctor_0{});
+    tmp1 = PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfilledFunctor_0(state_, TNode<Context>{tmp0}, TNode<JSAny>{parameter3}, TNode<JSFunction>{parameter2}, TorqueStructPromiseAllSettledWrapResultAsFulfilledFunctor_0{});
     CodeStubAssembler(state_).Return(tmp1);
   }
 }
@@ -261,27 +261,27 @@ TF_BUILTIN(PromiseAllSettledRejectElementClosure, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
-    tmp1 = PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejectedFunctor_0(state_, TNode<Context>{tmp0}, TNode<Object>{parameter3}, TNode<JSFunction>{parameter2}, TorqueStructPromiseAllSettledWrapResultAsRejectedFunctor_0{});
+    tmp1 = PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejectedFunctor_0(state_, TNode<Context>{tmp0}, TNode<JSAny>{parameter3}, TNode<JSFunction>{parameter2}, TorqueStructPromiseAllSettledWrapResultAsRejectedFunctor_0{});
     CodeStubAssembler(state_).Return(tmp1);
   }
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=172&c=10
-TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, TNode<JSFunction> p_function, TorqueStructPromiseAllWrapResultAsFulfilledFunctor_0 p_wrapResultFunctor) {
+TNode<JSAny> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_value, TNode<JSFunction> p_function, TorqueStructPromiseAllWrapResultAsFulfilledFunctor_0 p_wrapResultFunctor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -303,8 +303,8 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Uint32T> tmp0;
@@ -329,7 +329,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<Smi> tmp9;
   TNode<Smi> tmp10;
@@ -356,7 +356,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   }
 
   TNode<IntPtrT> tmp13;
-  TNode<Object> tmp14;
+  TNode<Union<HeapObject, TaggedIndex>> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<FixedArray> tmp16;
   TNode<IntPtrT> tmp17;
@@ -380,7 +380,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   TNode<IntPtrT> tmp23;
   TNode<FixedArray> tmp24;
   TNode<IntPtrT> tmp25;
-  TNode<Object> tmp26;
+  TNode<Union<HeapObject, TaggedIndex>> tmp26;
   TNode<IntPtrT> tmp27;
   if (block16.is_used()) {
     ca_.Bind(&block16);
@@ -395,7 +395,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   }
 
   TNode<FixedArray> phi_bb17_6;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
   TNode<UintPtrT> tmp31;
@@ -412,7 +412,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
 
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
-  TNode<Object> tmp36;
+  TNode<Union<HeapObject, TaggedIndex>> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<Object> tmp38;
   TNode<Hole> tmp39;
@@ -421,10 +421,10 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     ca_.Bind(&block24);
     tmp34 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp35 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp29}, TNode<IntPtrT>{tmp34});
-    std::tie(tmp36, tmp37) = NewReference_Object_0(state_, TNode<Object>{tmp28}, TNode<IntPtrT>{tmp35}).Flatten();
+    std::tie(tmp36, tmp37) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp28}, TNode<IntPtrT>{tmp35}).Flatten();
     tmp38 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp36, tmp37});
     tmp39 = PromiseHole_0(state_);
-    tmp40 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp38}, TNode<HeapObject>{tmp39});
+    tmp40 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp38}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp39});
     ca_.Branch(tmp40, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
@@ -447,7 +447,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     ca_.Bind(&block19);
     tmp42 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_context});
     tmp43 = PromiseHole_0(state_);
-    tmp44 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_value}, TNode<HeapObject>{tmp43});
+    tmp44 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{p_value}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp43});
     ca_.Branch(tmp44, &block29, std::vector<compiler::Node*>{}, &block30, std::vector<compiler::Node*>{});
   }
 
@@ -460,7 +460,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     }
   }
 
-  TNode<Object> tmp45;
+  TNode<Union<HeapObject, TaggedIndex>> tmp45;
   TNode<IntPtrT> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<UintPtrT> tmp48;
@@ -477,7 +477,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
 
   TNode<IntPtrT> tmp51;
   TNode<IntPtrT> tmp52;
-  TNode<Object> tmp53;
+  TNode<Union<HeapObject, TaggedIndex>> tmp53;
   TNode<IntPtrT> tmp54;
   TNode<Smi> tmp55;
   TNode<Smi> tmp56;
@@ -487,7 +487,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     ca_.Bind(&block35);
     tmp51 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp52 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp46}, TNode<IntPtrT>{tmp51});
-    std::tie(tmp53, tmp54) = NewReference_Object_0(state_, TNode<Object>{tmp45}, TNode<IntPtrT>{tmp52}).Flatten();
+    std::tie(tmp53, tmp54) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp45}, TNode<IntPtrT>{tmp52}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp53, tmp54}, p_value);
     tmp55 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp56 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp9}, TNode<Smi>{tmp55});
@@ -511,7 +511,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   }
 
   TNode<IntPtrT> tmp59;
-  TNode<Object> tmp60;
+  TNode<Union<HeapObject, TaggedIndex>> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<Smi> tmp62;
   TNode<BoolT> tmp63;
@@ -526,30 +526,30 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
   }
 
   TNode<IntPtrT> tmp64;
-  TNode<Object> tmp65;
+  TNode<Union<HeapObject, TaggedIndex>> tmp65;
   TNode<IntPtrT> tmp66;
   TNode<PromiseCapability> tmp67;
   TNode<IntPtrT> tmp68;
-  TNode<Object> tmp69;
-  TNode<Object> tmp70;
+  TNode<JSAny> tmp69;
+  TNode<JSAny> tmp70;
   TNode<IntPtrT> tmp71;
-  TNode<Object> tmp72;
+  TNode<Union<HeapObject, TaggedIndex>> tmp72;
   TNode<IntPtrT> tmp73;
   TNode<Map> tmp74;
   TNode<IntPtrT> tmp75;
-  TNode<Object> tmp76;
+  TNode<Union<HeapObject, TaggedIndex>> tmp76;
   TNode<IntPtrT> tmp77;
   TNode<FixedArray> tmp78;
   TNode<JSArray> tmp79;
   TNode<Undefined> tmp80;
-  TNode<Object> tmp81;
+  TNode<JSAny> tmp81;
   if (block41.is_used()) {
     ca_.Bind(&block41);
     tmp64 = kPromiseAllResolveElementCapabilitySlot_0(state_);
     std::tie(tmp65, tmp66) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_PromiseCapability_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp64}).Flatten();
     tmp67 = CodeStubAssembler(state_).LoadReference<PromiseCapability>(CodeStubAssembler::Reference{tmp65, tmp66});
     tmp68 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp69 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp67, tmp68});
+    tmp69 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp67, tmp68});
     tmp70 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp69});
     tmp71 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
     std::tie(tmp72, tmp73) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp42}, TNode<IntPtrT>{tmp71}).Flatten();
@@ -560,7 +560,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp76, tmp77}, tmp78);
     tmp79 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp74}, TNode<FixedArrayBase>{phi_bb17_6});
     tmp80 = Undefined_0(state_);
-    tmp81 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp70}, TNode<Object>{tmp80}, TNode<Object>{tmp79});
+    tmp81 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp70}, TNode<JSAny>{tmp80}, TNode<JSAny>{tmp79});
     ca_.Goto(&block42);
   }
 
@@ -571,19 +571,19 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllWrapResultAsFulfilledFun
     ca_.Goto(&block1, tmp82);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block43, phi_bb1_3);
   }
 
-  TNode<Object> phi_bb43_3;
+  TNode<JSAny> phi_bb43_3;
     ca_.Bind(&block43, &phi_bb43_3);
-  return TNode<Object>{phi_bb43_3};
+  return TNode<JSAny>{phi_bb43_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=180&c=10
-TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfilledFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, TNode<JSFunction> p_function, TorqueStructPromiseAllSettledWrapResultAsFulfilledFunctor_0 p_wrapResultFunctor) {
+TNode<JSAny> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfilledFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_value, TNode<JSFunction> p_function, TorqueStructPromiseAllSettledWrapResultAsFulfilledFunctor_0 p_wrapResultFunctor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -603,8 +603,8 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Uint32T> tmp0;
@@ -629,7 +629,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<Smi> tmp9;
   TNode<Smi> tmp10;
@@ -656,7 +656,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   }
 
   TNode<IntPtrT> tmp13;
-  TNode<Object> tmp14;
+  TNode<Union<HeapObject, TaggedIndex>> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<FixedArray> tmp16;
   TNode<IntPtrT> tmp17;
@@ -680,7 +680,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   TNode<IntPtrT> tmp23;
   TNode<FixedArray> tmp24;
   TNode<IntPtrT> tmp25;
-  TNode<Object> tmp26;
+  TNode<Union<HeapObject, TaggedIndex>> tmp26;
   TNode<IntPtrT> tmp27;
   if (block16.is_used()) {
     ca_.Bind(&block16);
@@ -695,7 +695,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   }
 
   TNode<FixedArray> phi_bb17_6;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
   TNode<UintPtrT> tmp31;
@@ -712,7 +712,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
 
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
-  TNode<Object> tmp36;
+  TNode<Union<HeapObject, TaggedIndex>> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<Object> tmp38;
   TNode<Hole> tmp39;
@@ -721,10 +721,10 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
     ca_.Bind(&block24);
     tmp34 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp35 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp29}, TNode<IntPtrT>{tmp34});
-    std::tie(tmp36, tmp37) = NewReference_Object_0(state_, TNode<Object>{tmp28}, TNode<IntPtrT>{tmp35}).Flatten();
+    std::tie(tmp36, tmp37) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp28}, TNode<IntPtrT>{tmp35}).Flatten();
     tmp38 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp36, tmp37});
     tmp39 = PromiseHole_0(state_);
-    tmp40 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp38}, TNode<HeapObject>{tmp39});
+    tmp40 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp38}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp39});
     ca_.Branch(tmp40, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
@@ -742,11 +742,11 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
 
   TNode<NativeContext> tmp42;
   TNode<IntPtrT> tmp43;
-  TNode<Object> tmp44;
+  TNode<Union<HeapObject, TaggedIndex>> tmp44;
   TNode<IntPtrT> tmp45;
   TNode<JSFunction> tmp46;
   TNode<IntPtrT> tmp47;
-  TNode<HeapObject> tmp48;
+  TNode<Union<JSReceiver, Map>> tmp48;
   TNode<Map> tmp49;
   TNode<JSObject> tmp50;
   TNode<String> tmp51;
@@ -754,7 +754,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   TNode<Object> tmp53;
   TNode<String> tmp54;
   TNode<Object> tmp55;
-  TNode<Object> tmp56;
+  TNode<Union<HeapObject, TaggedIndex>> tmp56;
   TNode<IntPtrT> tmp57;
   TNode<IntPtrT> tmp58;
   TNode<UintPtrT> tmp59;
@@ -767,7 +767,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
     std::tie(tmp44, tmp45) = NativeContextSlot_JSFunction_0(state_, TNode<NativeContext>{tmp42}, TNode<IntPtrT>{tmp43}).Flatten();
     tmp46 = CodeStubAssembler(state_).LoadReference<JSFunction>(CodeStubAssembler::Reference{tmp44, tmp45});
     tmp47 = FromConstexpr_intptr_constexpr_int31_0(state_, 28);
-    tmp48 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp46, tmp47});
+    tmp48 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Map>>(CodeStubAssembler::Reference{tmp46, tmp47});
     tmp49 = UnsafeCast_Map_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp48});
     tmp50 = CodeStubAssembler(state_).AllocateJSObjectFromMap(TNode<Map>{tmp49});
     tmp51 = CodeStubAssembler(state_).StringConstant("status");
@@ -784,7 +784,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
 
   TNode<IntPtrT> tmp62;
   TNode<IntPtrT> tmp63;
-  TNode<Object> tmp64;
+  TNode<Union<HeapObject, TaggedIndex>> tmp64;
   TNode<IntPtrT> tmp65;
   TNode<Smi> tmp66;
   TNode<Smi> tmp67;
@@ -794,7 +794,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
     ca_.Bind(&block33);
     tmp62 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp63 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp57}, TNode<IntPtrT>{tmp62});
-    std::tie(tmp64, tmp65) = NewReference_Object_0(state_, TNode<Object>{tmp56}, TNode<IntPtrT>{tmp63}).Flatten();
+    std::tie(tmp64, tmp65) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp56}, TNode<IntPtrT>{tmp63}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp64, tmp65}, tmp50);
     tmp66 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp67 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp9}, TNode<Smi>{tmp66});
@@ -818,7 +818,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   }
 
   TNode<IntPtrT> tmp70;
-  TNode<Object> tmp71;
+  TNode<Union<HeapObject, TaggedIndex>> tmp71;
   TNode<IntPtrT> tmp72;
   TNode<Smi> tmp73;
   TNode<BoolT> tmp74;
@@ -833,30 +833,30 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
   }
 
   TNode<IntPtrT> tmp75;
-  TNode<Object> tmp76;
+  TNode<Union<HeapObject, TaggedIndex>> tmp76;
   TNode<IntPtrT> tmp77;
   TNode<PromiseCapability> tmp78;
   TNode<IntPtrT> tmp79;
-  TNode<Object> tmp80;
-  TNode<Object> tmp81;
+  TNode<JSAny> tmp80;
+  TNode<JSAny> tmp81;
   TNode<IntPtrT> tmp82;
-  TNode<Object> tmp83;
+  TNode<Union<HeapObject, TaggedIndex>> tmp83;
   TNode<IntPtrT> tmp84;
   TNode<Map> tmp85;
   TNode<IntPtrT> tmp86;
-  TNode<Object> tmp87;
+  TNode<Union<HeapObject, TaggedIndex>> tmp87;
   TNode<IntPtrT> tmp88;
   TNode<FixedArray> tmp89;
   TNode<JSArray> tmp90;
   TNode<Undefined> tmp91;
-  TNode<Object> tmp92;
+  TNode<JSAny> tmp92;
   if (block39.is_used()) {
     ca_.Bind(&block39);
     tmp75 = kPromiseAllResolveElementCapabilitySlot_0(state_);
     std::tie(tmp76, tmp77) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_PromiseCapability_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp75}).Flatten();
     tmp78 = CodeStubAssembler(state_).LoadReference<PromiseCapability>(CodeStubAssembler::Reference{tmp76, tmp77});
     tmp79 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp80 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp78, tmp79});
+    tmp80 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp78, tmp79});
     tmp81 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp80});
     tmp82 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
     std::tie(tmp83, tmp84) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp42}, TNode<IntPtrT>{tmp82}).Flatten();
@@ -867,7 +867,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp87, tmp88}, tmp89);
     tmp90 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp85}, TNode<FixedArrayBase>{phi_bb17_6});
     tmp91 = Undefined_0(state_);
-    tmp92 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp81}, TNode<Object>{tmp91}, TNode<Object>{tmp90});
+    tmp92 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp81}, TNode<JSAny>{tmp91}, TNode<JSAny>{tmp90});
     ca_.Goto(&block40);
   }
 
@@ -878,19 +878,19 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsFulfi
     ca_.Goto(&block1, tmp93);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block41, phi_bb1_3);
   }
 
-  TNode<Object> phi_bb41_3;
+  TNode<JSAny> phi_bb41_3;
     ca_.Bind(&block41, &phi_bb41_3);
-  return TNode<Object>{phi_bb41_3};
+  return TNode<JSAny>{phi_bb41_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=188&c=10
-TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejectedFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_value, TNode<JSFunction> p_function, TorqueStructPromiseAllSettledWrapResultAsRejectedFunctor_0 p_wrapResultFunctor) {
+TNode<JSAny> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejectedFunctor_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_value, TNode<JSFunction> p_function, TorqueStructPromiseAllSettledWrapResultAsRejectedFunctor_0 p_wrapResultFunctor) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -910,8 +910,8 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Uint32T> tmp0;
@@ -936,7 +936,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<Smi> tmp9;
   TNode<Smi> tmp10;
@@ -963,7 +963,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   }
 
   TNode<IntPtrT> tmp13;
-  TNode<Object> tmp14;
+  TNode<Union<HeapObject, TaggedIndex>> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<FixedArray> tmp16;
   TNode<IntPtrT> tmp17;
@@ -987,7 +987,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   TNode<IntPtrT> tmp23;
   TNode<FixedArray> tmp24;
   TNode<IntPtrT> tmp25;
-  TNode<Object> tmp26;
+  TNode<Union<HeapObject, TaggedIndex>> tmp26;
   TNode<IntPtrT> tmp27;
   if (block16.is_used()) {
     ca_.Bind(&block16);
@@ -1002,7 +1002,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   }
 
   TNode<FixedArray> phi_bb17_6;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
   TNode<UintPtrT> tmp31;
@@ -1019,7 +1019,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
 
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
-  TNode<Object> tmp36;
+  TNode<Union<HeapObject, TaggedIndex>> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<Object> tmp38;
   TNode<Hole> tmp39;
@@ -1028,10 +1028,10 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
     ca_.Bind(&block24);
     tmp34 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp35 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp29}, TNode<IntPtrT>{tmp34});
-    std::tie(tmp36, tmp37) = NewReference_Object_0(state_, TNode<Object>{tmp28}, TNode<IntPtrT>{tmp35}).Flatten();
+    std::tie(tmp36, tmp37) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp28}, TNode<IntPtrT>{tmp35}).Flatten();
     tmp38 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp36, tmp37});
     tmp39 = PromiseHole_0(state_);
-    tmp40 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp38}, TNode<HeapObject>{tmp39});
+    tmp40 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp38}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp39});
     ca_.Branch(tmp40, &block18, std::vector<compiler::Node*>{}, &block19, std::vector<compiler::Node*>{});
   }
 
@@ -1049,11 +1049,11 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
 
   TNode<NativeContext> tmp42;
   TNode<IntPtrT> tmp43;
-  TNode<Object> tmp44;
+  TNode<Union<HeapObject, TaggedIndex>> tmp44;
   TNode<IntPtrT> tmp45;
   TNode<JSFunction> tmp46;
   TNode<IntPtrT> tmp47;
-  TNode<HeapObject> tmp48;
+  TNode<Union<JSReceiver, Map>> tmp48;
   TNode<Map> tmp49;
   TNode<JSObject> tmp50;
   TNode<String> tmp51;
@@ -1061,7 +1061,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   TNode<Object> tmp53;
   TNode<String> tmp54;
   TNode<Object> tmp55;
-  TNode<Object> tmp56;
+  TNode<Union<HeapObject, TaggedIndex>> tmp56;
   TNode<IntPtrT> tmp57;
   TNode<IntPtrT> tmp58;
   TNode<UintPtrT> tmp59;
@@ -1074,7 +1074,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
     std::tie(tmp44, tmp45) = NativeContextSlot_JSFunction_0(state_, TNode<NativeContext>{tmp42}, TNode<IntPtrT>{tmp43}).Flatten();
     tmp46 = CodeStubAssembler(state_).LoadReference<JSFunction>(CodeStubAssembler::Reference{tmp44, tmp45});
     tmp47 = FromConstexpr_intptr_constexpr_int31_0(state_, 28);
-    tmp48 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp46, tmp47});
+    tmp48 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Map>>(CodeStubAssembler::Reference{tmp46, tmp47});
     tmp49 = UnsafeCast_Map_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp48});
     tmp50 = CodeStubAssembler(state_).AllocateJSObjectFromMap(TNode<Map>{tmp49});
     tmp51 = CodeStubAssembler(state_).StringConstant("status");
@@ -1091,7 +1091,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
 
   TNode<IntPtrT> tmp62;
   TNode<IntPtrT> tmp63;
-  TNode<Object> tmp64;
+  TNode<Union<HeapObject, TaggedIndex>> tmp64;
   TNode<IntPtrT> tmp65;
   TNode<Smi> tmp66;
   TNode<Smi> tmp67;
@@ -1101,7 +1101,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
     ca_.Bind(&block33);
     tmp62 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp5});
     tmp63 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp57}, TNode<IntPtrT>{tmp62});
-    std::tie(tmp64, tmp65) = NewReference_Object_0(state_, TNode<Object>{tmp56}, TNode<IntPtrT>{tmp63}).Flatten();
+    std::tie(tmp64, tmp65) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp56}, TNode<IntPtrT>{tmp63}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp64, tmp65}, tmp50);
     tmp66 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp67 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp9}, TNode<Smi>{tmp66});
@@ -1125,7 +1125,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   }
 
   TNode<IntPtrT> tmp70;
-  TNode<Object> tmp71;
+  TNode<Union<HeapObject, TaggedIndex>> tmp71;
   TNode<IntPtrT> tmp72;
   TNode<Smi> tmp73;
   TNode<BoolT> tmp74;
@@ -1140,30 +1140,30 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
   }
 
   TNode<IntPtrT> tmp75;
-  TNode<Object> tmp76;
+  TNode<Union<HeapObject, TaggedIndex>> tmp76;
   TNode<IntPtrT> tmp77;
   TNode<PromiseCapability> tmp78;
   TNode<IntPtrT> tmp79;
-  TNode<Object> tmp80;
-  TNode<Object> tmp81;
+  TNode<JSAny> tmp80;
+  TNode<JSAny> tmp81;
   TNode<IntPtrT> tmp82;
-  TNode<Object> tmp83;
+  TNode<Union<HeapObject, TaggedIndex>> tmp83;
   TNode<IntPtrT> tmp84;
   TNode<Map> tmp85;
   TNode<IntPtrT> tmp86;
-  TNode<Object> tmp87;
+  TNode<Union<HeapObject, TaggedIndex>> tmp87;
   TNode<IntPtrT> tmp88;
   TNode<FixedArray> tmp89;
   TNode<JSArray> tmp90;
   TNode<Undefined> tmp91;
-  TNode<Object> tmp92;
+  TNode<JSAny> tmp92;
   if (block39.is_used()) {
     ca_.Bind(&block39);
     tmp75 = kPromiseAllResolveElementCapabilitySlot_0(state_);
     std::tie(tmp76, tmp77) = ContextSlot_PromiseAllResolveElementContext_PromiseAllResolveElementContext_PromiseCapability_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp75}).Flatten();
     tmp78 = CodeStubAssembler(state_).LoadReference<PromiseCapability>(CodeStubAssembler::Reference{tmp76, tmp77});
     tmp79 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp80 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp78, tmp79});
+    tmp80 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp78, tmp79});
     tmp81 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp80});
     tmp82 = JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX_0(state_);
     std::tie(tmp83, tmp84) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp42}, TNode<IntPtrT>{tmp82}).Flatten();
@@ -1174,7 +1174,7 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp87, tmp88}, tmp89);
     tmp90 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp85}, TNode<FixedArrayBase>{phi_bb17_6});
     tmp91 = Undefined_0(state_);
-    tmp92 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp81}, TNode<Object>{tmp91}, TNode<Object>{tmp90});
+    tmp92 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp81}, TNode<JSAny>{tmp91}, TNode<JSAny>{tmp90});
     ca_.Goto(&block40);
   }
 
@@ -1185,15 +1185,15 @@ TNode<Object> PromiseAllResolveElementClosure_PromiseAllSettledWrapResultAsRejec
     ca_.Goto(&block1, tmp93);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block41, phi_bb1_3);
   }
 
-  TNode<Object> phi_bb41_3;
+  TNode<JSAny> phi_bb41_3;
     ca_.Bind(&block41, &phi_bb41_3);
-  return TNode<Object>{phi_bb41_3};
+  return TNode<JSAny>{phi_bb41_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=100&c=33
@@ -1206,7 +1206,7 @@ TorqueStructReference_Smi_0 ContextSlot_PromiseAllResolveElementContext_PromiseA
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1223,16 +1223,16 @@ TorqueStructReference_Smi_0 ContextSlot_PromiseAllResolveElementContext_PromiseA
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_Smi_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_Smi_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -1242,7 +1242,7 @@ TorqueStructReference_Smi_0 ContextSlot_PromiseAllResolveElementContext_PromiseA
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_Smi_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=111&c=17
@@ -1255,7 +1255,7 @@ TorqueStructReference_FixedArray_0 ContextSlot_PromiseAllResolveElementContext_P
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1272,16 +1272,16 @@ TorqueStructReference_FixedArray_0 ContextSlot_PromiseAllResolveElementContext_P
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_FixedArray_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_FixedArray_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -1291,7 +1291,7 @@ TorqueStructReference_FixedArray_0 ContextSlot_PromiseAllResolveElementContext_P
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_FixedArray_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_FixedArray_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-all-element-closure.tq?l=147&c=25
@@ -1304,7 +1304,7 @@ TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseAllResolveElementCo
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1321,16 +1321,16 @@ TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseAllResolveElementCo
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_PromiseCapability_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_PromiseCapability_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -1340,7 +1340,7 @@ TorqueStructReference_PromiseCapability_0 ContextSlot_PromiseAllResolveElementCo
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_PromiseCapability_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_PromiseCapability_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

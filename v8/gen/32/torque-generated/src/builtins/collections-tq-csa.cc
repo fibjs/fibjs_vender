@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/collections-tq-csa.h"
@@ -89,7 +89,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=103&c=1
-TNode<Int32T> LoadOrderedHashTableMetadata_0(compiler::CodeAssemblerState* state_, TNode<FixedArray> p_table, int32_t p_fieldIndex) {
+TNode<Int32T> LoadOrderedHashTableMetadata_0(compiler::CodeAssemblerState* state_, TNode<Union<OrderedHashMap, OrderedHashSet>> p_table, int32_t p_fieldIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -98,7 +98,7 @@ TNode<Int32T> LoadOrderedHashTableMetadata_0(compiler::CodeAssemblerState* state
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -117,7 +117,7 @@ TNode<Int32T> LoadOrderedHashTableMetadata_0(compiler::CodeAssemblerState* state
 
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<Object> tmp11;
   TNode<Smi> tmp12;
@@ -126,7 +126,7 @@ TNode<Int32T> LoadOrderedHashTableMetadata_0(compiler::CodeAssemblerState* state
     ca_.Bind(&block6);
     tmp7 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp3});
     tmp8 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp7});
-    std::tie(tmp9, tmp10) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
     tmp11 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp9, tmp10});
     tmp12 = TORQUE_CAST(TNode<Object>{tmp11});
     tmp13 = Convert_int32_Smi_0(state_, TNode<Smi>{tmp12});
@@ -158,9 +158,9 @@ TorqueStructUnmodifiedOrderedHashSetIterator_0 NewUnmodifiedOrderedHashSetIterat
   TNode<IntPtrT> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_table}, OrderedHashSet::NumberOfBucketsIndex());
-    tmp1 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_table}, OrderedHashSet::NumberOfElementsIndex());
-    tmp2 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_table}, OrderedHashSet::NumberOfDeletedElementsIndex());
+    tmp0 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_table}, OrderedHashSet::NumberOfBucketsIndex());
+    tmp1 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_table}, OrderedHashSet::NumberOfElementsIndex());
+    tmp2 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_table}, OrderedHashSet::NumberOfDeletedElementsIndex());
     tmp3 = CodeStubAssembler(state_).Int32Add(TNode<Int32T>{tmp1}, TNode<Int32T>{tmp2});
     tmp4 = Undefined_0(state_);
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -168,10 +168,10 @@ TorqueStructUnmodifiedOrderedHashSetIterator_0 NewUnmodifiedOrderedHashSetIterat
   }
 
     ca_.Bind(&block2);
-  return TorqueStructUnmodifiedOrderedHashSetIterator_0{TNode<OrderedHashSet>{p_table}, TNode<Int32T>{tmp0}, TNode<Int32T>{tmp3}, TorqueStructKeyIndexPair{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}}};
+  return TorqueStructUnmodifiedOrderedHashSetIterator_0{TNode<OrderedHashSet>{p_table}, TNode<Int32T>{tmp0}, TNode<Int32T>{tmp3}, TorqueStructKeyIndexPair{TNode<JSAny>{tmp4}, TNode<IntPtrT>{tmp5}}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=135&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=134&c=1
 TorqueStructOrderedHashSetIterator_0 NewOrderedHashSetIterator_0(compiler::CodeAssemblerState* state_, TNode<OrderedHashSet> p_table) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -189,10 +189,10 @@ TorqueStructOrderedHashSetIterator_0 NewOrderedHashSetIterator_0(compiler::CodeA
   }
 
     ca_.Bind(&block2);
-  return TorqueStructOrderedHashSetIterator_0{TNode<OrderedHashSet>{p_table}, TorqueStructKeyIndexPair{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}}};
+  return TorqueStructOrderedHashSetIterator_0{TNode<OrderedHashSet>{p_table}, TorqueStructKeyIndexPair{TNode<JSAny>{tmp0}, TNode<IntPtrT>{tmp1}}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=200&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=198&c=1
 TorqueStructUnmodifiedOrderedHashMapIterator_0 NewUnmodifiedOrderedHashMapIterator_0(compiler::CodeAssemblerState* state_, TNode<OrderedHashMap> p_table) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -209,9 +209,9 @@ TorqueStructUnmodifiedOrderedHashMapIterator_0 NewUnmodifiedOrderedHashMapIterat
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_table}, OrderedHashMap::NumberOfBucketsIndex());
-    tmp1 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_table}, OrderedHashMap::NumberOfElementsIndex());
-    tmp2 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_table}, OrderedHashMap::NumberOfDeletedElementsIndex());
+    tmp0 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_table}, OrderedHashMap::NumberOfBucketsIndex());
+    tmp1 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_table}, OrderedHashMap::NumberOfElementsIndex());
+    tmp2 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_table}, OrderedHashMap::NumberOfDeletedElementsIndex());
     tmp3 = CodeStubAssembler(state_).Int32Add(TNode<Int32T>{tmp1}, TNode<Int32T>{tmp2});
     tmp4 = Undefined_0(state_);
     tmp5 = Undefined_0(state_);
@@ -220,11 +220,11 @@ TorqueStructUnmodifiedOrderedHashMapIterator_0 NewUnmodifiedOrderedHashMapIterat
   }
 
     ca_.Bind(&block2);
-  return TorqueStructUnmodifiedOrderedHashMapIterator_0{TNode<OrderedHashMap>{p_table}, TNode<Int32T>{tmp0}, TNode<Int32T>{tmp3}, TorqueStructKeyValueIndexTuple{TNode<Object>{tmp4}, TNode<Object>{tmp5}, TNode<IntPtrT>{tmp6}}};
+  return TorqueStructUnmodifiedOrderedHashMapIterator_0{TNode<OrderedHashMap>{p_table}, TNode<Int32T>{tmp0}, TNode<Int32T>{tmp3}, TorqueStructKeyValueIndexTuple{TNode<JSAny>{tmp4}, TNode<JSAny>{tmp5}, TNode<IntPtrT>{tmp6}}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=220&c=1
-TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_MayHaveSideEffects) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=217&c=1
+TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o, compiler::CodeAssemblerLabel* label_MayHaveSideEffects) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -234,19 +234,19 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapNumber, Smi, Undefined>> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapNumber, Smi, Undefined>> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -307,7 +307,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
   }
 
   TNode<Smi> tmp11;
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp11 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -322,7 +322,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
     ca_.Goto(&block13, tmp13);
   }
 
-  TNode<Object> phi_bb13_7;
+  TNode<JSAny> phi_bb13_7;
   TNode<Smi> tmp14;
   TNode<BoolT> tmp15;
   if (block13.is_used()) {
@@ -333,7 +333,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
   }
 
   TNode<Smi> tmp16;
-  TNode<Object> tmp17;
+  TNode<JSAny> tmp17;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp16 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
@@ -348,7 +348,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
     ca_.Goto(&block17, tmp18);
   }
 
-  TNode<Object> phi_bb17_8;
+  TNode<JSAny> phi_bb17_8;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_8);
     ca_.Goto(&block2, phi_bb13_7, phi_bb17_8);
@@ -369,7 +369,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
   }
 
   TNode<Smi> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapNumber, Smi, Undefined>> tmp22;
   if (block23.is_used()) {
     ca_.Bind(&block23);
     tmp21 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -384,7 +384,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
     ca_.Goto(&block25, tmp23);
   }
 
-  TNode<Object> phi_bb25_7;
+  TNode<Union<HeapNumber, Smi, Undefined>> phi_bb25_7;
   TNode<Smi> tmp24;
   TNode<BoolT> tmp25;
   if (block25.is_used()) {
@@ -395,7 +395,7 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
   }
 
   TNode<Smi> tmp26;
-  TNode<Object> tmp27;
+  TNode<Union<HeapNumber, Smi, Undefined>> tmp27;
   if (block27.is_used()) {
     ca_.Bind(&block27);
     tmp26 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
@@ -410,25 +410,25 @@ TorqueStructKeyValuePair LoadKeyValuePairNoSideEffects_0(compiler::CodeAssembler
     ca_.Goto(&block29, tmp28);
   }
 
-  TNode<Object> phi_bb29_8;
+  TNode<Union<HeapNumber, Smi, Undefined>> phi_bb29_8;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_8);
     ca_.Goto(&block2, phi_bb25_7, phi_bb29_8);
   }
 
-  TNode<Object> phi_bb2_2;
-  TNode<Object> phi_bb2_3;
+  TNode<JSAny> phi_bb2_2;
+  TNode<JSAny> phi_bb2_3;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_2, &phi_bb2_3);
     ca_.Goto(&block31);
   }
 
     ca_.Bind(&block31);
-  return TorqueStructKeyValuePair{TNode<Object>{phi_bb2_2}, TNode<Object>{phi_bb2_3}};
+  return TorqueStructKeyValuePair{TNode<JSAny>{phi_bb2_2}, TNode<JSAny>{phi_bb2_3}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=254&c=1
-TorqueStructKeyValuePair LoadKeyValuePair_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=251&c=1
+TorqueStructKeyValuePair LoadKeyValuePair_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -436,16 +436,16 @@ TorqueStructKeyValuePair LoadKeyValuePair_0(compiler::CodeAssemblerState* state_
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp0;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label2(&ca_);
-    std::tie(tmp0, tmp1) = LoadKeyValuePairNoSideEffects_0(state_, TNode<Context>{p_context}, TNode<Object>{p_o}, &label2).Flatten();
+    std::tie(tmp0, tmp1) = LoadKeyValuePairNoSideEffects_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_o}, &label2).Flatten();
     ca_.Goto(&block4);
     if (label2.is_used()) {
       ca_.Bind(&label2);
@@ -476,31 +476,31 @@ TorqueStructKeyValuePair LoadKeyValuePair_0(compiler::CodeAssemblerState* state_
   }
 
   TNode<Smi> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   TNode<Smi> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp5 = Convert_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp3}, TNode<Object>{tmp5});
+    tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5});
     tmp7 = Convert_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp3}, TNode<Object>{tmp7});
+    tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp7});
     ca_.Goto(&block1, tmp6, tmp8);
   }
 
-  TNode<Object> phi_bb1_2;
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_2;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_2, &phi_bb1_3);
     ca_.Goto(&block10);
   }
 
     ca_.Bind(&block10);
-  return TorqueStructKeyValuePair{TNode<Object>{phi_bb1_2}, TNode<Object>{phi_bb1_3}};
+  return TorqueStructKeyValuePair{TNode<JSAny>{phi_bb1_2}, TNode<JSAny>{phi_bb1_3}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=270&c=1
-TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_obj, const char* p_methodName) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=267&c=1
+TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_obj, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -535,14 +535,14 @@ TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode
   }
 
   TNode<String> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Number> tmp4;
   TNode<BoolT> tmp5;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp2 = kSizeString_0(state_);
-    tmp3 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp2});
-    tmp4 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<Object>{tmp3});
+    tmp3 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp2});
+    tmp4 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp3});
     tmp5 = NumberIsNaN_0(state_, TNode<Number>{tmp4});
     ca_.Branch(tmp5, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
@@ -557,7 +557,7 @@ TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode
   TNode<BoolT> tmp8;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp6 = ToInteger_Inline_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp4});
+    tmp6 = ToInteger_Inline_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp4});
     tmp7 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp8 = NumberIsLessThan_0(state_, TNode<Number>{tmp6}, TNode<Number>{tmp7});
     ca_.Branch(tmp8, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
@@ -569,12 +569,12 @@ TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode
   }
 
   TNode<String> tmp9;
-  TNode<Object> tmp10;
-  TNode<JSReceiver> tmp11;
+  TNode<JSAny> tmp10;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp11;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp9 = kHasString_0(state_);
-    tmp10 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp9});
+    tmp10 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp9});
     compiler::CodeAssemblerLabel label12(&ca_);
     tmp11 = Cast_Callable_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp10}, &label12);
     ca_.Goto(&block12);
@@ -593,12 +593,12 @@ TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode
   }
 
   TNode<String> tmp14;
-  TNode<Object> tmp15;
-  TNode<JSReceiver> tmp16;
+  TNode<JSAny> tmp15;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp16;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp14 = kKeysString_0(state_);
-    tmp15 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp14});
+    tmp15 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp14});
     compiler::CodeAssemblerLabel label17(&ca_);
     tmp16 = Cast_Callable_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp15}, &label17);
     ca_.Goto(&block16);
@@ -622,11 +622,11 @@ TorqueStructSetRecord GetSetRecord_0(compiler::CodeAssemblerState* state_, TNode
   }
 
     ca_.Bind(&block18);
-  return TorqueStructSetRecord{TNode<JSReceiver>{tmp0}, TNode<Number>{tmp6}, TNode<Object>{tmp11}, TNode<Object>{tmp16}};
+  return TorqueStructSetRecord{TNode<JSReceiver>{tmp0}, TNode<Number>{tmp6}, TNode<JSAny>{tmp11}, TNode<JSAny>{tmp16}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=316&c=1
-TorqueStructIteratorRecord GetKeysIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_set, TNode<JSReceiver> p_keys) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=313&c=1
+TorqueStructIteratorRecord GetKeysIterator_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_set, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_keys) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -637,11 +637,11 @@ TorqueStructIteratorRecord GetKeysIterator_0(compiler::CodeAssemblerState* state
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<JSReceiver> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{p_keys}, TNode<Object>{p_set});
+    tmp0 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{p_keys}, TNode<JSAny>{p_set});
     compiler::CodeAssemblerLabel label2(&ca_);
     tmp1 = Cast_JSReceiver_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp0}, &label2);
     ca_.Goto(&block4);
@@ -657,12 +657,12 @@ TorqueStructIteratorRecord GetKeysIterator_0(compiler::CodeAssemblerState* state
   }
 
   TNode<String> tmp3;
-  TNode<Object> tmp4;
-  TNode<JSReceiver> tmp5;
+  TNode<JSAny> tmp4;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp5;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp3 = kNextString_0(state_);
-    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp3});
+    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp3});
     compiler::CodeAssemblerLabel label6(&ca_);
     tmp5 = Cast_Callable_1(state_, TNode<Context>{p_context}, TNode<Object>{tmp4}, &label6);
     ca_.Goto(&block8);
@@ -686,10 +686,10 @@ TorqueStructIteratorRecord GetKeysIterator_0(compiler::CodeAssemblerState* state
   }
 
     ca_.Bind(&block10);
-  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp4}};
+  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp4}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=338&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=335&c=1
 void CheckSetRecordHasJSSetMethods_0(compiler::CodeAssemblerState* state_, TorqueStructSetRecord p_setRecord, compiler::CodeAssemblerLabel* label_HasUserProvidedMethods) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -792,7 +792,7 @@ void CheckSetRecordHasJSSetMethods_0(compiler::CodeAssemblerState* state_, Torqu
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp11 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp9, tmp10});
     tmp12 = CodeStubAssembler(state_).SmiConstant(Builtin::kSetPrototypeValues);
-    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp11}, TNode<MaybeObject>{tmp12});
+    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp11}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp12});
     ca_.Branch(tmp13, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{});
   }
 
@@ -809,7 +809,7 @@ void CheckSetRecordHasJSSetMethods_0(compiler::CodeAssemblerState* state_, Torqu
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp17 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp15, tmp16});
     tmp18 = CodeStubAssembler(state_).SmiConstant(Builtin::kSetPrototypeHas);
-    tmp19 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp17}, TNode<MaybeObject>{tmp18});
+    tmp19 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp18});
     ca_.Goto(&block17, tmp19);
   }
 
@@ -846,7 +846,7 @@ void CheckSetRecordHasJSSetMethods_0(compiler::CodeAssemblerState* state_, Torqu
     ca_.Bind(&block18);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=352&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=349&c=1
 void CheckSetRecordHasJSMapMethods_0(compiler::CodeAssemblerState* state_, TorqueStructSetRecord p_setRecord, compiler::CodeAssemblerLabel* label_HasUserProvidedMethods) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -949,7 +949,7 @@ void CheckSetRecordHasJSMapMethods_0(compiler::CodeAssemblerState* state_, Torqu
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp11 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp9, tmp10});
     tmp12 = CodeStubAssembler(state_).SmiConstant(Builtin::kMapPrototypeKeys);
-    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp11}, TNode<MaybeObject>{tmp12});
+    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp11}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp12});
     ca_.Branch(tmp13, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{});
   }
 
@@ -966,7 +966,7 @@ void CheckSetRecordHasJSMapMethods_0(compiler::CodeAssemblerState* state_, Torqu
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp17 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp15, tmp16});
     tmp18 = CodeStubAssembler(state_).SmiConstant(Builtin::kMapPrototypeHas);
-    tmp19 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp17}, TNode<MaybeObject>{tmp18});
+    tmp19 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp17}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp18});
     ca_.Goto(&block17, tmp19);
   }
 
@@ -1003,7 +1003,7 @@ void CheckSetRecordHasJSMapMethods_0(compiler::CodeAssemblerState* state_, Torqu
     ca_.Bind(&block18);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=366&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=363&c=1
 TNode<OrderedHashSet> ShrinkOrderedHashSetIfNeeded_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Smi> p_numberOfElements, TNode<OrderedHashSet> p_resultSetData) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1020,7 +1020,7 @@ TNode<OrderedHashSet> ShrinkOrderedHashSetIfNeeded_0(compiler::CodeAssemblerStat
   TNode<BoolT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = LoadOrderedHashTableMetadata_0(state_, TNode<FixedArray>{p_resultSetData}, OrderedHashSet::NumberOfBucketsIndex());
+    tmp0 = LoadOrderedHashTableMetadata_0(state_, TNode<Union<OrderedHashMap, OrderedHashSet>>{p_resultSetData}, OrderedHashSet::NumberOfBucketsIndex());
     tmp1 = Convert_int32_Smi_0(state_, TNode<Smi>{p_numberOfElements});
     tmp2 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp3 = CodeStubAssembler(state_).Int32Div(TNode<Int32T>{tmp0}, TNode<Int32T>{tmp2});
@@ -1045,7 +1045,7 @@ TNode<OrderedHashSet> ShrinkOrderedHashSetIfNeeded_0(compiler::CodeAssemblerStat
   return TNode<OrderedHashSet>{phi_bb7_3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=425&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=422&c=1
 TorqueStructStableJSSetBackingTableWitness_0 NewStableBackingTableWitness_0(compiler::CodeAssemblerState* state_, TNode<JSSet> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1112,7 +1112,7 @@ TorqueStructStableJSSetBackingTableWitness_0 NewStableBackingTableWitness_0(comp
   return TorqueStructStableJSSetBackingTableWitness_0{TNode<JSSet>{p_o}, TNode<OrderedHashSet>{tmp6}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=433&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=430&c=1
 TorqueStructStableJSMapBackingTableWitness_0 NewStableBackingTableWitness_1(compiler::CodeAssemblerState* state_, TNode<JSMap> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1179,7 +1179,7 @@ TorqueStructStableJSMapBackingTableWitness_0 NewStableBackingTableWitness_1(comp
   return TorqueStructStableJSMapBackingTableWitness_0{TNode<JSMap>{p_o}, TNode<OrderedHashMap>{tmp6}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=429&c=15
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=426&c=15
 TNode<OrderedHashSet> Cast_StableOrderedHashSet_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1240,7 +1240,7 @@ TNode<OrderedHashSet> Cast_StableOrderedHashSet_1(compiler::CodeAssemblerState* 
   return TNode<OrderedHashSet>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=437&c=15
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/collections.tq?l=434&c=15
 TNode<OrderedHashMap> Cast_StableOrderedHashMap_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

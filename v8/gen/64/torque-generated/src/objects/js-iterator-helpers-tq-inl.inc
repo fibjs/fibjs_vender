@@ -16,7 +16,7 @@ Tagged<Union<JSReceiver, Null, Undefined>> TorqueGeneratedJSIteratorHelper<D, P>
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=9&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorHelper<D, P>::set_underlying_object(Tagged<Union<JSReceiver, Null, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kUnderlyingObjectOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingObjectOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<JSAny> TorqueGeneratedJSIteratorHelper<D, P>::underlying_next(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorHelper<D, P>::set_underlying_next(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kUnderlyingNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingNextOffset, value, mode);
 }
@@ -67,7 +67,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorMapHelper<D, P>::set_mapper(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kMapperOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMapperOffset, value, mode);
 }
@@ -90,7 +90,7 @@ Tagged<Number> TorqueGeneratedJSIteratorMapHelper<D, P>::counter(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorMapHelper<D, P>::set_counter(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kCounterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCounterOffset, value, mode);
 }
@@ -118,7 +118,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=19&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_predicate(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kPredicateOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPredicateOffset, value, mode);
 }
@@ -141,7 +141,7 @@ Tagged<Number> TorqueGeneratedJSIteratorFilterHelper<D, P>::counter(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFilterHelper<D, P>::set_counter(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kCounterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCounterOffset, value, mode);
 }
@@ -169,7 +169,7 @@ Tagged<Number> TorqueGeneratedJSIteratorTakeHelper<D, P>::remaining(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=24&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorTakeHelper<D, P>::set_remaining(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kRemainingOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRemainingOffset, value, mode);
 }
@@ -197,7 +197,7 @@ Tagged<Number> TorqueGeneratedJSIteratorDropHelper<D, P>::remaining(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=28&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorDropHelper<D, P>::set_remaining(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kRemainingOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRemainingOffset, value, mode);
 }
@@ -225,7 +225,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=32&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_mapper(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kMapperOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMapperOffset, value, mode);
 }
@@ -248,7 +248,7 @@ Tagged<Number> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::counter(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=33&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_counter(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kCounterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCounterOffset, value, mode);
 }
@@ -271,7 +271,7 @@ Tagged<JSReceiver> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_o
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=34&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerIterator_object(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kInnerIteratorOffset + 0, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInnerIteratorOffset + 0, value, mode);
 }
@@ -294,7 +294,7 @@ Tagged<JSAny> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerIterator_next(P
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=34&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerIterator_next(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kInnerIteratorOffset + 8, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInnerIteratorOffset + 8, value, mode);
 }
@@ -317,7 +317,7 @@ Tagged<Boolean> TorqueGeneratedJSIteratorFlatMapHelper<D, P>::innerAlive(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-iterator-helpers.tq?l=35&c=3
 template<class D, class P>
 void TorqueGeneratedJSIteratorFlatMapHelper<D, P>::set_innerAlive(Tagged<Boolean> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsBoolean(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsBoolean(value)));
   WRITE_FIELD(*this, kInnerAliveOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInnerAliveOffset, value, mode);
 }

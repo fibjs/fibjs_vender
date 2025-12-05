@@ -16,7 +16,7 @@ Tagged<String> TorqueGeneratedJSV8BreakIterator<D, P>::locale(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_locale(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Foreign> TorqueGeneratedJSV8BreakIterator<D, P>::break_iterator(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=9&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_break_iterator(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kBreakIteratorOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBreakIteratorOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Foreign> TorqueGeneratedJSV8BreakIterator<D, P>::unicode_string(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kUnicodeStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnicodeStringOffset, value, mode);
 }
@@ -85,7 +85,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bou
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=11&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_adopt_text(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundAdoptTextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundAdoptTextOffset, value, mode);
 }
@@ -108,7 +108,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bou
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_first(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundFirstOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundFirstOffset, value, mode);
 }
@@ -131,7 +131,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bou
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_next(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundNextOffset, value, mode);
 }
@@ -154,7 +154,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bou
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_current(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundCurrentOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundCurrentOffset, value, mode);
 }
@@ -177,7 +177,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSV8BreakIterator<D, P>::bou
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-break-iterator.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSV8BreakIterator<D, P>::set_bound_break_type(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundBreakTypeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundBreakTypeOffset, value, mode);
 }

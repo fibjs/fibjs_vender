@@ -9,6 +9,7 @@
 #include "src/common/globals.h"
 #include "src/compiler/access-builder.h"
 #include "src/compiler/turboshaft/index.h"
+#include "src/compiler/type-cache.h"
 
 namespace v8::internal::compiler::turboshaft {
 
@@ -65,6 +66,12 @@ class AccessBuilderTS : public AllStatic {
     return FieldAccessTS<Object, Map>(
         compiler::AccessBuilder::ForMap(write_barrier));
   }
+  static FieldAccessTS<FeedbackVector, Word32> ForFeedbackVectorLength() {
+    return FieldAccessTS<FeedbackVector, Word32>(compiler::FieldAccess{
+        BaseTaggedness::kTaggedBase, FeedbackVector::kLengthOffset,
+        Handle<Name>(), OptionalMapRef(), TypeCache::Get()->kInt32,
+        MachineType::Int32(), WriteBarrierKind::kNoWriteBarrier});
+  }
 
 #define TF_ELEMENT_ACCESS(Class, T, name)                                     \
   static ElementAccessTS<Class, T> name() {                                   \
@@ -72,9 +79,10 @@ class AccessBuilderTS : public AllStatic {
   }
   TF_ELEMENT_ACCESS(SeqOneByteString, Word32, ForSeqOneByteStringCharacter)
   TF_ELEMENT_ACCESS(SeqTwoByteString, Word32, ForSeqTwoByteStringCharacter)
+  TF_ELEMENT_ACCESS(Object, Object, ForOrderedHashMapEntryValue)
 #undef TF_ELEMENT_ACCESS
 
-  template <CONCEPT(IsTagged) T>
+  template <IsTagged T>
   static ElementAccessTS<FixedArray, T> ForFixedArrayElement() {
     static_assert(!is_array_buffer_v<FixedArray>);
     return ElementAccessTS<FixedArray, T>{

@@ -63,8 +63,7 @@ int Compare(const T& a, const T& b) {
 }
 
 // Returns the negative absolute value of its argument.
-template <typename T,
-          typename = typename std::enable_if<std::is_signed<T>::value>::type>
+template <typename T, typename = typename std::enable_if_t<std::is_signed_v<T>>>
 T Nabs(T a) {
   return a < 0 ? a : -a;
 }
@@ -80,6 +79,10 @@ typedef unsigned __uint128_t __attribute__((__mode__(__TI__)));
 #include "src/execution/simulator-base.h"
 #include "src/utils/allocation.h"
 #include "src/utils/boxed-float.h"
+
+namespace heap::base {
+class StackVisitor;
+}
 
 namespace v8 {
 namespace internal {
@@ -530,9 +533,16 @@ class Simulator : public SimulatorBase {
   // Accessor to the internal simulator stack area. Adds a safety
   // margin to prevent overflows (kAdditionalStackMargin).
   uintptr_t StackLimit(uintptr_t c_limit) const;
-  // Return current stack view, without additional safety margins.
+  uintptr_t StackBase() const;
+  // Return central stack view, without additional safety margins.
   // Users, for example wasm::StackMemory, can add their own.
-  base::Vector<uint8_t> GetCurrentStackView() const;
+  base::Vector<uint8_t> GetCentralStackView() const;
+  static constexpr int JSStackLimitMargin() { return kAdditionalStackMargin; }
+
+  void IterateRegistersAndStack(::heap::base::StackVisitor* visitor);
+
+  // Pseudo instruction for switching stack limit
+  void DoSwitchStackLimit(Instruction* instr);
 
   // Executes RISC-V instructions until the PC reaches end_sim_pc.
   void Execute();
@@ -553,8 +563,9 @@ class Simulator : public SimulatorBase {
       type_ = FP_ARG;
     }
     explicit CallArgument(float argument) {
-      // TODO(all): CallArgument(float) is untested.
-      UNIMPLEMENTED();
+      auto arg = box_float(argument);
+      memcpy(&bits_, &arg, sizeof(arg));
+      type_ = FP_ARG;
     }
     // This indicates the end of the arguments list, so that CallArgument
     // objects can be passed into varargs functions.
@@ -588,10 +599,10 @@ class Simulator : public SimulatorBase {
   double CallFP(Address entry, double d0, double d1);
 
   // Push an address onto the JS stack.
-  uintptr_t PushAddress(uintptr_t address);
+  V8_EXPORT_PRIVATE uintptr_t PushAddress(uintptr_t address);
 
   // Pop an address from the JS stack.
-  uintptr_t PopAddress();
+  V8_EXPORT_PRIVATE uintptr_t PopAddress();
 
   // Debugger input.
   void set_last_debugger_input(char* input);
@@ -629,14 +640,12 @@ class Simulator : public SimulatorBase {
                             const EncodedCSignature& signature);
   // Read floating point return values.
   template <typename T>
-  typename std::enable_if<std::is_floating_point<T>::value, T>::type
-  ReadReturn() {
+  typename std::enable_if_t<std::is_floating_point_v<T>, T> ReadReturn() {
     return static_cast<T>(get_fpu_register_double(fa0));
   }
   // Read non-float return values.
   template <typename T>
-  typename std::enable_if<!std::is_floating_point<T>::value, T>::type
-  ReadReturn() {
+  typename std::enable_if_t<!std::is_floating_point_v<T>, T> ReadReturn() {
     return ConvertReturn<T>(get_register(a0));
   }
 #else
@@ -968,7 +977,7 @@ class Simulator : public SimulatorBase {
 
   template <typename T, typename Func>
   inline T CanonicalizeFPUOpFMA(Func fn, T dst, T src1, T src2) {
-    static_assert(std::is_floating_point<T>::value);
+    static_assert(std::is_floating_point_v<T>);
     auto alu_out = fn(dst, src1, src2);
     // if any input or result is NaN, the result is quiet_NaN
     if (std::isnan(alu_out) || std::isnan(src1) || std::isnan(src2) ||
@@ -983,10 +992,10 @@ class Simulator : public SimulatorBase {
 
   template <typename T, typename Func>
   inline T CanonicalizeFPUOp3(Func fn) {
-    static_assert(std::is_floating_point<T>::value);
-    T src1 = std::is_same<float, T>::value ? frs1() : drs1();
-    T src2 = std::is_same<float, T>::value ? frs2() : drs2();
-    T src3 = std::is_same<float, T>::value ? frs3() : drs3();
+    static_assert(std::is_floating_point_v<T>);
+    T src1 = std::is_same_v<float, T> ? frs1() : drs1();
+    T src2 = std::is_same_v<float, T> ? frs2() : drs2();
+    T src3 = std::is_same_v<float, T> ? frs3() : drs3();
     auto alu_out = fn(src1, src2, src3);
     // if any input or result is NaN, the result is quiet_NaN
     if (std::isnan(alu_out) || std::isnan(src1) || std::isnan(src2) ||
@@ -1001,9 +1010,9 @@ class Simulator : public SimulatorBase {
 
   template <typename T, typename Func>
   inline T CanonicalizeFPUOp2(Func fn) {
-    static_assert(std::is_floating_point<T>::value);
-    T src1 = std::is_same<float, T>::value ? frs1() : drs1();
-    T src2 = std::is_same<float, T>::value ? frs2() : drs2();
+    static_assert(std::is_floating_point_v<T>);
+    T src1 = std::is_same_v<float, T> ? frs1() : drs1();
+    T src2 = std::is_same_v<float, T> ? frs2() : drs2();
     auto alu_out = fn(src1, src2);
     // if any input or result is NaN, the result is quiet_NaN
     if (std::isnan(alu_out) || std::isnan(src1) || std::isnan(src2)) {
@@ -1017,8 +1026,8 @@ class Simulator : public SimulatorBase {
 
   template <typename T, typename Func>
   inline T CanonicalizeFPUOp1(Func fn) {
-    static_assert(std::is_floating_point<T>::value);
-    T src1 = std::is_same<float, T>::value ? frs1() : drs1();
+    static_assert(std::is_floating_point_v<T>);
+    T src1 = std::is_same_v<float, T> ? frs1() : drs1();
     auto alu_out = fn(src1);
     // if any input or result is NaN, the result is quiet_NaN
     if (std::isnan(alu_out) || std::isnan(src1)) {
@@ -1113,6 +1122,7 @@ class Simulator : public SimulatorBase {
   // Stop helper functions.
   bool IsWatchpoint(reg_t code);
   bool IsTracepoint(reg_t code);
+  bool IsSwitchStackLimit(reg_t code);
   void PrintWatchpoint(reg_t code);
   void HandleStop(reg_t code);
   bool IsStopInstruction(Instruction* instr);
@@ -1168,7 +1178,7 @@ class Simulator : public SimulatorBase {
 #endif
   // Simulator support.
   // Allocate 1MB for stack.
-  uint8_t* stack_;
+  uintptr_t stack_;
   static const size_t kStackProtectionSize = 256 * kSystemPointerSize;
   // This includes a protection margin at each end of the stack area.
   static size_t AllocatedStackSize() {
@@ -1182,6 +1192,10 @@ class Simulator : public SimulatorBase {
   static size_t UsableStackSize() {
     return AllocatedStackSize() - kStackProtectionSize;
   }
+
+  uintptr_t stack_limit_;
+  // Added in Simulator::StackLimit()
+  static const int kAdditionalStackMargin = 20 * KB;
 
   bool pc_modified_;
   int64_t icount_;

@@ -21,7 +21,10 @@ TNode<CoverageInfo> Cast_CoverageInfo_0(compiler::CodeAssemblerState* state_, TN
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=72&c=1
 TNode<StackFrameInfo> Cast_StackFrameInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+TNode<StackTraceInfo> Cast_StackTraceInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
 TNode<ErrorStackData> Cast_ErrorStackData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=6&c=3
@@ -43,10 +46,10 @@ TNode<Smi> LoadBreakPointInfoSourcePosition_0(compiler::CodeAssemblerState* stat
 void StoreBreakPointInfoSourcePosition_0(compiler::CodeAssemblerState* state_, TNode<BreakPointInfo> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=14&c=3
-TNode<HeapObject> LoadBreakPointInfoBreakPoints_0(compiler::CodeAssemblerState* state_, TNode<BreakPointInfo> p_o);
+TNode<Union<BreakPoint, FixedArray, Undefined>> LoadBreakPointInfoBreakPoints_0(compiler::CodeAssemblerState* state_, TNode<BreakPointInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=14&c=3
-void StoreBreakPointInfoBreakPoints_0(compiler::CodeAssemblerState* state_, TNode<BreakPointInfo> p_o, TNode<HeapObject> p_v);
+void StoreBreakPointInfoBreakPoints_0(compiler::CodeAssemblerState* state_, TNode<BreakPointInfo> p_o, TNode<Union<BreakPoint, FixedArray, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=34&c=3
 TNode<SharedFunctionInfo> LoadDebugInfoShared_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o);
@@ -73,10 +76,10 @@ TNode<Smi> LoadDebugInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<Debu
 void StoreDebugInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
-TNode<HeapObject> LoadDebugInfoCoverageInfo_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o);
+TNode<Union<CoverageInfo, Undefined>> LoadDebugInfoCoverageInfo_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=41&c=3
-void StoreDebugInfoCoverageInfo_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o, TNode<HeapObject> p_v);
+void StoreDebugInfoCoverageInfo_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o, TNode<Union<CoverageInfo, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=45&c=3
 TNode<TrustedPointerT> LoadDebugInfoOriginalBytecodeArray_0(compiler::CodeAssemblerState* state_, TNode<DebugInfo> p_o);
@@ -97,10 +100,10 @@ TNode<Int32T> LoadCoverageInfoSlotCount_0(compiler::CodeAssemblerState* state_, 
 TorqueStructSlice_CoverageInfoSlot_MutableReference_CoverageInfoSlot_0 FieldSliceCoverageInfoSlots_0(compiler::CodeAssemblerState* state_, TNode<CoverageInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=79&c=3
-TNode<HeapObject> LoadStackFrameInfoSharedOrScript_0(compiler::CodeAssemblerState* state_, TNode<StackFrameInfo> p_o);
+TNode<Union<Script, SharedFunctionInfo>> LoadStackFrameInfoSharedOrScript_0(compiler::CodeAssemblerState* state_, TNode<StackFrameInfo> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=79&c=3
-void StoreStackFrameInfoSharedOrScript_0(compiler::CodeAssemblerState* state_, TNode<StackFrameInfo> p_o, TNode<HeapObject> p_v);
+void StoreStackFrameInfoSharedOrScript_0(compiler::CodeAssemblerState* state_, TNode<StackFrameInfo> p_o, TNode<Union<Script, SharedFunctionInfo>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=80&c=3
 TNode<String> LoadStackFrameInfoFunctionName_0(compiler::CodeAssemblerState* state_, TNode<StackFrameInfo> p_o);
@@ -114,17 +117,29 @@ TNode<Smi> LoadStackFrameInfoFlags_0(compiler::CodeAssemblerState* state_, TNode
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=81&c=3
 void StoreStackFrameInfoFlags_0(compiler::CodeAssemblerState* state_, TNode<StackFrameInfo> p_o, TNode<Smi> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
-TNode<Object> LoadErrorStackDataCallSiteInfosOrFormattedStack_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=86&c=3
+TNode<Smi> LoadStackTraceInfoId_0(compiler::CodeAssemblerState* state_, TNode<StackTraceInfo> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
-void StoreErrorStackDataCallSiteInfosOrFormattedStack_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o, TNode<Object> p_v);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=86&c=3
+void StoreStackTraceInfoId_0(compiler::CodeAssemblerState* state_, TNode<StackTraceInfo> p_o, TNode<Smi> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
-TNode<Object> LoadErrorStackDataLimitOrStackFrameInfos_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=88&c=3
+TNode<FixedArray> LoadStackTraceInfoFrames_0(compiler::CodeAssemblerState* state_, TNode<StackTraceInfo> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
-void StoreErrorStackDataLimitOrStackFrameInfos_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o, TNode<Object> p_v);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=88&c=3
+void StoreStackTraceInfoFrames_0(compiler::CodeAssemblerState* state_, TNode<StackTraceInfo> p_o, TNode<FixedArray> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=108&c=3
+TNode<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadErrorStackDataCallSiteInfosOrFormattedStack_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=108&c=3
+void StoreErrorStackDataCallSiteInfosOrFormattedStack_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o, TNode<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=110&c=3
+TNode<StackTraceInfo> LoadErrorStackDataStackTrace_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=110&c=3
+void StoreErrorStackDataStackTrace_0(compiler::CodeAssemblerState* state_, TNode<ErrorStackData> p_o, TNode<StackTraceInfo> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=5&c=1
 TNode<BreakPoint> DownCastForTorqueClass_BreakPoint_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
@@ -141,11 +156,14 @@ TNode<CoverageInfo> DownCastForTorqueClass_CoverageInfo_0(compiler::CodeAssemble
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=72&c=1
 TNode<StackFrameInfo> DownCastForTorqueClass_StackFrameInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+TNode<StackTraceInfo> DownCastForTorqueClass_StackTraceInfo_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
 TNode<ErrorStackData> DownCastForTorqueClass_ErrorStackData_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=64&c=3
-TorqueStructSlice_CoverageInfoSlot_MutableReference_CoverageInfoSlot_0 NewMutableSlice_CoverageInfoSlot_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
+TorqueStructSlice_CoverageInfoSlot_MutableReference_CoverageInfoSlot_0 NewMutableSlice_CoverageInfoSlot_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
 
 } // namespace internal
 } // namespace v8

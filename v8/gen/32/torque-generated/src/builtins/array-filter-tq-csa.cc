@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-filter-tq-csa.h"
@@ -88,19 +88,19 @@ TF_BUILTIN(ArrayFilterLoopEagerDeoptContinuation, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kCallback);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kCallback);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kThisArg);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kThisArg);
   USE(parameter3);
-  TNode<Object> parameter4 = UncheckedParameter<Object>(Descriptor::kArray);
+  TNode<JSAny> parameter4 = UncheckedParameter<JSAny>(Descriptor::kArray);
   USE(parameter4);
-  TNode<Object> parameter5 = UncheckedParameter<Object>(Descriptor::kInitialK);
+  TNode<JSAny> parameter5 = UncheckedParameter<JSAny>(Descriptor::kInitialK);
   USE(parameter5);
-  TNode<Object> parameter6 = UncheckedParameter<Object>(Descriptor::kLength);
+  TNode<JSAny> parameter6 = UncheckedParameter<JSAny>(Descriptor::kLength);
   USE(parameter6);
-  TNode<Object> parameter7 = UncheckedParameter<Object>(Descriptor::kInitialTo);
+  TNode<JSAny> parameter7 = UncheckedParameter<JSAny>(Descriptor::kInitialTo);
   USE(parameter7);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -134,7 +134,7 @@ TF_BUILTIN(ArrayFilterLoopEagerDeoptContinuation, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp2;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -219,10 +219,10 @@ TF_BUILTIN(ArrayFilterLoopEagerDeoptContinuation, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp12 = ca_.CallBuiltin<Object>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp6, tmp10, tmp8);
+    tmp12 = ca_.CallBuiltin<JSAny>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp6, tmp10, tmp8);
     CodeStubAssembler(state_).Return(tmp12);
   }
 }
@@ -231,23 +231,23 @@ TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kCallback);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kCallback);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kThisArg);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kThisArg);
   USE(parameter3);
-  TNode<Object> parameter4 = UncheckedParameter<Object>(Descriptor::kArray);
+  TNode<JSAny> parameter4 = UncheckedParameter<JSAny>(Descriptor::kArray);
   USE(parameter4);
-  TNode<Object> parameter5 = UncheckedParameter<Object>(Descriptor::kInitialK);
+  TNode<JSAny> parameter5 = UncheckedParameter<JSAny>(Descriptor::kInitialK);
   USE(parameter5);
-  TNode<Object> parameter6 = UncheckedParameter<Object>(Descriptor::kLength);
+  TNode<JSAny> parameter6 = UncheckedParameter<JSAny>(Descriptor::kLength);
   USE(parameter6);
-  TNode<Object> parameter7 = UncheckedParameter<Object>(Descriptor::kValueK);
+  TNode<JSAny> parameter7 = UncheckedParameter<JSAny>(Descriptor::kValueK);
   USE(parameter7);
-  TNode<Object> parameter8 = UncheckedParameter<Object>(Descriptor::kInitialTo);
+  TNode<JSAny> parameter8 = UncheckedParameter<JSAny>(Descriptor::kInitialTo);
   USE(parameter8);
-  TNode<Object> parameter9 = UncheckedParameter<Object>(Descriptor::kResult);
+  TNode<JSAny> parameter9 = UncheckedParameter<JSAny>(Descriptor::kResult);
   USE(parameter9);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -283,7 +283,7 @@ TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp2;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -371,7 +371,7 @@ TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation, CodeStubAssembler) {
   TNode<BoolT> tmp12;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp12 = ToBoolean_0(state_, TNode<Object>{parameter9});
+    tmp12 = ToBoolean_0(state_, TNode<JSAny>{parameter9});
     ca_.Branch(tmp12, &block25, std::vector<compiler::Node*>{}, &block26, std::vector<compiler::Node*>{tmp8});
   }
 
@@ -389,12 +389,12 @@ TF_BUILTIN(ArrayFilterLoopLazyDeoptContinuation, CodeStubAssembler) {
   TNode<Number> phi_bb26_14;
   TNode<Number> tmp16;
   TNode<Number> tmp17;
-  TNode<Object> tmp18;
+  TNode<JSAny> tmp18;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_14);
     tmp16 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp17 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{tmp6}, TNode<Number>{tmp16});
-    tmp18 = ca_.CallBuiltin<Object>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp17, tmp10, phi_bb26_14);
+    tmp18 = ca_.CallBuiltin<JSAny>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp0, tmp2, parameter3, tmp4, tmp0, tmp17, tmp10, phi_bb26_14);
     CodeStubAssembler(state_).Return(tmp18);
   }
 }
@@ -405,9 +405,9 @@ TF_BUILTIN(ArrayFilterLoopContinuation, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSReceiver> parameter1 = UncheckedParameter<JSReceiver>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<JSReceiver> parameter2 = UncheckedParameter<JSReceiver>(Descriptor::kCallbackfn);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> parameter2 = UncheckedParameter<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(Descriptor::kCallbackfn);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kThisArg);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kThisArg);
   USE(parameter3);
   TNode<JSReceiver> parameter4 = UncheckedParameter<JSReceiver>(Descriptor::kArray);
   USE(parameter4);
@@ -450,22 +450,22 @@ TF_BUILTIN(ArrayFilterLoopContinuation, CodeStubAssembler) {
   TNode<BoolT> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_9, &phi_bb1_10);
-    tmp1 = CodeStubAssembler(state_).HasProperty_Inline(TNode<Context>{parameter0}, TNode<JSReceiver>{parameter5}, TNode<Object>{phi_bb1_10});
+    tmp1 = CodeStubAssembler(state_).HasProperty_Inline(TNode<Context>{parameter0}, TNode<JSReceiver>{parameter5}, TNode<JSAny>{phi_bb1_10});
     tmp2 = True_0(state_);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block5, std::vector<compiler::Node*>{phi_bb1_9, phi_bb1_10}, &block6, std::vector<compiler::Node*>{phi_bb1_9, phi_bb1_10});
   }
 
   TNode<Number> phi_bb5_9;
   TNode<Number> phi_bb5_10;
-  TNode<Object> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp4;
+  TNode<JSAny> tmp5;
   TNode<BoolT> tmp6;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_9, &phi_bb5_10);
-    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter5}, TNode<Object>{phi_bb5_10});
-    tmp5 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{parameter3}, TNode<Object>{tmp4}, TNode<Object>{phi_bb5_10}, TNode<Object>{parameter5});
-    tmp6 = ToBoolean_0(state_, TNode<Object>{tmp5});
+    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{parameter5}, TNode<JSAny>{phi_bb5_10});
+    tmp5 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, TNode<JSAny>{parameter3}, TNode<JSAny>{tmp4}, TNode<JSAny>{phi_bb5_10}, TNode<JSAny>{parameter5});
+    tmp6 = ToBoolean_0(state_, TNode<JSAny>{tmp5});
     ca_.Branch(tmp6, &block7, std::vector<compiler::Node*>{phi_bb5_9, phi_bb5_10}, &block8, std::vector<compiler::Node*>{phi_bb5_9, phi_bb5_10});
   }
 
@@ -509,7 +509,7 @@ TF_BUILTIN(ArrayFilterLoopContinuation, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-filter.tq?l=96&c=1
-void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_fastO, TNode<Smi> p_len, TNode<JSReceiver> p_callbackfn, TNode<Object> p_thisArg, TNode<JSArray> p_output, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_1) {
+void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArray> p_fastO, TNode<Smi> p_len, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_callbackfn, TNode<JSAny> p_thisArg, TNode<JSArray> p_output, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -530,7 +530,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray, Smi, Smi> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray, Smi, Smi, Smi> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray, Smi, Smi, Smi> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray, Smi, Smi, Object> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray, Smi, Smi, JSAny> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, Smi, JSArray> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -625,7 +625,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
     ca_.Bind(&block8, &phi_bb8_6, &phi_bb8_7, &phi_bb8_9, &phi_bb8_15);
     tmp18 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp19 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp2, tmp18});
-    tmp20 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp19}, TNode<HeapObject>{tmp4});
+    tmp20 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp19}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4});
     ca_.Branch(tmp20, &block15, std::vector<compiler::Node*>{phi_bb8_6, phi_bb8_7, phi_bb8_9, phi_bb8_15}, &block16, std::vector<compiler::Node*>{phi_bb8_6, phi_bb8_7, phi_bb8_9, phi_bb8_15});
   }
 
@@ -703,7 +703,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   TNode<JSArray> phi_bb25_15;
   TNode<Smi> phi_bb25_20;
   TNode<Smi> phi_bb25_23;
-  TNode<Object> tmp25;
+  TNode<JSAny> tmp25;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_6, &phi_bb25_7, &phi_bb25_15, &phi_bb25_20, &phi_bb25_23);
     compiler::CodeAssemblerLabel label26(&ca_);
@@ -742,7 +742,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   TNode<JSArray> phi_bb26_15;
   TNode<Smi> phi_bb26_20;
   TNode<Smi> phi_bb26_23;
-  TNode<Object> tmp27;
+  TNode<JSAny> tmp27;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_6, &phi_bb26_7, &phi_bb26_15, &phi_bb26_20, &phi_bb26_23);
     compiler::CodeAssemblerLabel label28(&ca_);
@@ -781,13 +781,13 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   TNode<JSArray> phi_bb24_15;
   TNode<Smi> phi_bb24_20;
   TNode<Smi> phi_bb24_23;
-  TNode<Object> phi_bb24_24;
-  TNode<Object> tmp29;
+  TNode<JSAny> phi_bb24_24;
+  TNode<JSAny> tmp29;
   TNode<BoolT> tmp30;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_6, &phi_bb24_7, &phi_bb24_15, &phi_bb24_20, &phi_bb24_23, &phi_bb24_24);
-    tmp29 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{p_callbackfn}, TNode<Object>{p_thisArg}, TNode<Object>{phi_bb24_24}, TNode<Object>{phi_bb24_6}, TNode<Object>{tmp22});
-    tmp30 = ToBoolean_0(state_, TNode<Object>{tmp29});
+    tmp29 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{p_callbackfn}, TNode<JSAny>{p_thisArg}, TNode<JSAny>{phi_bb24_24}, TNode<JSAny>{phi_bb24_6}, TNode<JSAny>{tmp22});
+    tmp30 = ToBoolean_0(state_, TNode<JSAny>{tmp29});
     ca_.Branch(tmp30, &block33, std::vector<compiler::Node*>{phi_bb24_6, phi_bb24_7, phi_bb24_15}, &block34, std::vector<compiler::Node*>{phi_bb24_6, phi_bb24_7, phi_bb24_15});
   }
 
@@ -809,7 +809,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
     ca_.Bind(&block33, &phi_bb33_6, &phi_bb33_7, &phi_bb33_15);
     tmp31 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp32 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp8, tmp31});
-    tmp33 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp32}, TNode<HeapObject>{tmp10});
+    tmp33 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp32}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp10});
     ca_.Branch(tmp33, &block38, std::vector<compiler::Node*>{phi_bb33_6, phi_bb33_7, phi_bb33_15}, &block39, std::vector<compiler::Node*>{phi_bb33_6, phi_bb33_7, phi_bb33_15});
   }
 
@@ -872,7 +872,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   if (block50.is_used()) {
     ca_.Bind(&block50, &phi_bb50_6, &phi_bb50_7);
     compiler::CodeAssemblerLabel label38(&ca_);
-    CodeStubAssembler(state_).BuildAppendJSArray(ElementsKind::HOLEY_DOUBLE_ELEMENTS, TNode<JSArray>{tmp35}, TNode<Object>{phi_bb24_24}, &label38);
+    CodeStubAssembler(state_).BuildAppendJSArray(ElementsKind::PACKED_DOUBLE_ELEMENTS, TNode<JSArray>{tmp35}, TNode<JSAny>{phi_bb24_24}, &label38);
     ca_.Goto(&block53, phi_bb50_6, phi_bb50_7);
     if (label38.is_used()) {
       ca_.Bind(&label38);
@@ -906,7 +906,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   if (block55.is_used()) {
     ca_.Bind(&block55, &phi_bb55_6, &phi_bb55_7);
     compiler::CodeAssemblerLabel label39(&ca_);
-    CodeStubAssembler(state_).BuildAppendJSArray(ElementsKind::HOLEY_SMI_ELEMENTS, TNode<JSArray>{tmp35}, TNode<Object>{phi_bb24_24}, &label39);
+    CodeStubAssembler(state_).BuildAppendJSArray(ElementsKind::HOLEY_SMI_ELEMENTS, TNode<JSArray>{tmp35}, TNode<JSAny>{phi_bb24_24}, &label39);
     ca_.Goto(&block58, phi_bb55_6, phi_bb55_7);
     if (label39.is_used()) {
       ca_.Bind(&label39);
@@ -933,7 +933,7 @@ void FastArrayFilter_0(compiler::CodeAssemblerState* state_, TNode<Context> p_co
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_6, &phi_bb56_7);
     compiler::CodeAssemblerLabel label40(&ca_);
-    CodeStubAssembler(state_).BuildAppendJSArray(ElementsKind::HOLEY_ELEMENTS, TNode<JSArray>{tmp35}, TNode<Object>{phi_bb24_24}, &label40);
+    CodeStubAssembler(state_).BuildAppendJSArray(ElementsKind::HOLEY_ELEMENTS, TNode<JSArray>{tmp35}, TNode<JSAny>{phi_bb24_24}, &label40);
     ca_.Goto(&block67, phi_bb56_6, phi_bb56_7);
     if (label40.is_used()) {
       ca_.Bind(&label40);
@@ -1111,7 +1111,7 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1133,16 +1133,16 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<JSReceiver> tmp1;
   TNode<Number> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<BoolT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Array.prototype.filter");
-    tmp1 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp2 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Array.prototype.filter");
+    tmp1 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp2 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp4 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp3});
     ca_.Branch(tmp4, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
@@ -1154,8 +1154,8 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp5;
-  TNode<Object> tmp6;
-  TNode<JSReceiver> tmp7;
+  TNode<JSAny> tmp6;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp7;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -1175,7 +1175,7 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   TNode<Number> tmp11;
   TNode<Number> tmp12;
   TNode<JSReceiver> tmp13;
@@ -1199,7 +1199,7 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp15 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp16 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Number>{tmp15});
+    tmp16 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<Number>{tmp15});
     ca_.Goto(&block7, tmp16, tmp11, tmp12);
   }
 
@@ -1259,7 +1259,7 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   if (block23.is_used()) {
     ca_.Bind(&block23);
     compiler::CodeAssemblerLabel label23(&ca_);
-    FastArrayFilter_0(state_, TNode<Context>{parameter0}, TNode<JSArray>{tmp21}, TNode<Smi>{tmp17}, TNode<JSReceiver>{tmp7}, TNode<Object>{tmp10}, TNode<JSArray>{tmp19}, &label23, &tmp24, &tmp25);
+    FastArrayFilter_0(state_, TNode<Context>{parameter0}, TNode<JSArray>{tmp21}, TNode<Smi>{tmp17}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp7}, TNode<JSAny>{tmp10}, TNode<JSArray>{tmp19}, &label23, &tmp24, &tmp25);
     ca_.Goto(&block25);
     if (label23.is_used()) {
       ca_.Bind(&label23);
@@ -1287,15 +1287,15 @@ TF_BUILTIN(ArrayFilter, CodeStubAssembler) {
   TNode<JSReceiver> phi_bb7_10;
   TNode<Number> phi_bb7_11;
   TNode<Number> phi_bb7_12;
-  TNode<Object> tmp26;
+  TNode<JSAny> tmp26;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_11, &phi_bb7_12);
-    tmp26 = ca_.CallBuiltin<Object>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp1, tmp7, tmp10, phi_bb7_10, tmp1, phi_bb7_11, tmp2, phi_bb7_12);
+    tmp26 = ca_.CallBuiltin<JSAny>(Builtin::kArrayFilterLoopContinuation, parameter0, tmp1, tmp7, tmp10, phi_bb7_10, tmp1, phi_bb7_11, tmp2, phi_bb7_12);
     arguments.PopAndReturn(tmp26);
   }
 
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<JSAny> tmp28;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp27 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/name-tq-csa.h"
@@ -171,11 +171,11 @@ TNode<Uint32T> kNameEmptyHashField_0(compiler::CodeAssemblerState* state_) {
   TNode<Uint32T> tmp4;
     tmp4 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<Name::HashFieldType, 0, 2, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp2), ca_.UncheckedCast<Uint32T>(tmp3), true));
   TNode<Uint32T> tmp5;
-    tmp5 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp5 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
   TNode<Uint32T> tmp6;
     tmp6 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<uint32_t, 2, 24, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp4), ca_.UncheckedCast<Uint32T>(tmp5), true));
   TNode<Uint32T> tmp7;
-    tmp7 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
   TNode<Uint32T> tmp8;
     tmp8 = ca_.UncheckedCast<Uint32T>(CodeStubAssembler(state_).UpdateWord32<base::BitField<uint32_t, 26, 6, uint32_t>>(ca_.UncheckedCast<Word32T>(tmp6), ca_.UncheckedCast<Uint32T>(tmp7), true));
   return TNode<Uint32T>{tmp8};}
@@ -194,9 +194,9 @@ TNode<BoolT> ContainsCachedArrayIndex_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_uint32_0(state_, Name::kDoesNotContainCachedArrayIndexMask);
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, Name::kDoesNotContainCachedArrayIndexMask);
     tmp1 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_hash}, TNode<Uint32T>{tmp0});
-    tmp2 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp2 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp2});
     ca_.Goto(&block2);
   }
@@ -213,7 +213,7 @@ TNode<Uint32T> kArrayIndexValueBitsShift_0(compiler::CodeAssemblerState* state_)
 
     ca_.Bind(&block0);
   TNode<Uint32T> tmp0;
-    tmp0 = FromConstexpr_uint32_constexpr_int31_0(state_, Name::HashFieldTypeBits::kSize);
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, Name::HashFieldTypeBits::kSize);
   return TNode<Uint32T>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=60&c=1
@@ -224,7 +224,7 @@ TNode<Uint32T> kArrayIndexLengthBitsShift_0(compiler::CodeAssemblerState* state_
 
     ca_.Bind(&block0);
   TNode<Uint32T> tmp0;
-    tmp0 = FromConstexpr_uint32_constexpr_int31_0(state_, (CodeStubAssembler(state_).ConstexprInt31Add(Name::HashFieldTypeBits::kSize, Name::kArrayIndexValueBits)));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, (CodeStubAssembler(state_).ConstexprInt31Add(Name::HashFieldTypeBits::kSize, Name::kArrayIndexValueBits)));
   return TNode<Uint32T>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=63&c=1
@@ -326,7 +326,7 @@ TNode<Uint32T> MakeArrayIndexHash_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Uint32T> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp1 = kArrayIndexValueBitsShift_0(state_);
     tmp2 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp1});
     tmp3 = kArrayIndexLengthBitsShift_0(state_);
@@ -421,7 +421,7 @@ void StoreSymbolFlags_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_o,
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=33&c=3
-TNode<PrimitiveHeapObject> LoadSymbolDescription_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_o) {
+TNode<Union<String, Undefined>> LoadSymbolDescription_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -429,20 +429,20 @@ TNode<PrimitiveHeapObject> LoadSymbolDescription_0(compiler::CodeAssemblerState*
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<PrimitiveHeapObject> tmp1;
+  TNode<Union<String, Undefined>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<String, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<PrimitiveHeapObject>{tmp1};
+  return TNode<Union<String, Undefined>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/name.tq?l=33&c=3
-void StoreSymbolDescription_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_o, TNode<PrimitiveHeapObject> p_v) {
+void StoreSymbolDescription_0(compiler::CodeAssemblerState* state_, TNode<Symbol> p_o, TNode<Union<String, Undefined>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -453,7 +453,7 @@ void StoreSymbolDescription_0(compiler::CodeAssemblerState* state_, TNode<Symbol
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<String, Undefined>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -508,7 +508,7 @@ TNode<Name> DownCastForTorqueClass_Name_0(compiler::CodeAssemblerState* state_, 
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<Name>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -530,7 +530,7 @@ TNode<Name> DownCastForTorqueClass_Name_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(0));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(0));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -653,7 +653,7 @@ TNode<Symbol> DownCastForTorqueClass_Symbol_0(compiler::CodeAssemblerState* stat
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<Symbol>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -675,7 +675,7 @@ TNode<Symbol> DownCastForTorqueClass_Symbol_0(compiler::CodeAssemblerState* stat
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(128));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(128));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }

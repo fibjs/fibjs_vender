@@ -10,10 +10,10 @@ V8_EXPORT_PRIVATE bool IsJSGeneratorObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSGeneratorObject : public P {
   static_assert(
-      std::is_same<JSGeneratorObject, D>::value,
+      std::is_same_v<JSGeneratorObject, D>,
       "Use this class as direct base for JSGeneratorObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSGeneratorObject.");
 
  public: 
@@ -105,7 +105,7 @@ class TorqueGeneratedJSGeneratorObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSGeneratorObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSGeneratorObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSGeneratorObject, DAlias>,
         "class TorqueGeneratedJSGeneratorObject should be used as direct base for JSGeneratorObject.");
   }
 
@@ -123,10 +123,10 @@ V8_EXPORT_PRIVATE bool IsJSAsyncFunctionObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSAsyncFunctionObject : public P {
   static_assert(
-      std::is_same<JSAsyncFunctionObject, D>::value,
+      std::is_same_v<JSAsyncFunctionObject, D>,
       "Use this class as direct base for JSAsyncFunctionObject.");
   static_assert(
-      std::is_same<JSGeneratorObject, P>::value,
+      std::is_same_v<JSGeneratorObject, P>,
       "Pass in JSGeneratorObject as second template parameter for TorqueGeneratedJSAsyncFunctionObject.");
 
  public: 
@@ -161,7 +161,7 @@ class TorqueGeneratedJSAsyncFunctionObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSAsyncFunctionObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSAsyncFunctionObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSAsyncFunctionObject, DAlias>,
         "class TorqueGeneratedJSAsyncFunctionObject should be used as direct base for JSAsyncFunctionObject.");
   }
 
@@ -179,10 +179,10 @@ V8_EXPORT_PRIVATE bool IsJSAsyncGeneratorObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSAsyncGeneratorObject : public P {
   static_assert(
-      std::is_same<JSAsyncGeneratorObject, D>::value,
+      std::is_same_v<JSAsyncGeneratorObject, D>,
       "Use this class as direct base for JSAsyncGeneratorObject.");
   static_assert(
-      std::is_same<JSGeneratorObject, P>::value,
+      std::is_same_v<JSGeneratorObject, P>,
       "Pass in JSGeneratorObject as second template parameter for TorqueGeneratedJSAsyncGeneratorObject.");
 
  public: 
@@ -225,7 +225,7 @@ class TorqueGeneratedJSAsyncGeneratorObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSAsyncGeneratorObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSAsyncGeneratorObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSAsyncGeneratorObject, DAlias>,
         "class TorqueGeneratedJSAsyncGeneratorObject should be used as direct base for JSAsyncGeneratorObject.");
   }
 
@@ -243,10 +243,10 @@ V8_EXPORT_PRIVATE bool IsAsyncGeneratorRequest_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedAsyncGeneratorRequest : public P {
   static_assert(
-      std::is_same<AsyncGeneratorRequest, D>::value,
+      std::is_same_v<AsyncGeneratorRequest, D>,
       "Use this class as direct base for AsyncGeneratorRequest.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedAsyncGeneratorRequest.");
 
  public: 
@@ -323,7 +323,7 @@ class TorqueGeneratedAsyncGeneratorRequest : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedAsyncGeneratorRequest() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedAsyncGeneratorRequest, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedAsyncGeneratorRequest, DAlias>,
         "class TorqueGeneratedAsyncGeneratorRequest should be used as direct base for AsyncGeneratorRequest.");
   }
 

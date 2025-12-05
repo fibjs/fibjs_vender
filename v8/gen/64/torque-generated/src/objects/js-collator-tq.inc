@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSCollator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSCollator : public P {
   static_assert(
-      std::is_same<JSCollator, D>::value,
+      std::is_same_v<JSCollator, D>,
       "Use this class as direct base for JSCollator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSCollator.");
 
  public: 
@@ -66,7 +66,7 @@ class TorqueGeneratedJSCollator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSCollator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSCollator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSCollator, DAlias>,
         "class TorqueGeneratedJSCollator should be used as direct base for JSCollator.");
   }
 

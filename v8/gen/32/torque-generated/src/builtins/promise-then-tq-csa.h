@@ -10,7 +10,7 @@ namespace internal {
 TNode<BoolT> IsPromiseSpeciesLookupChainIntact_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_nativeContext, TNode<Map> p_promiseMap);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-then.tq?l=67&c=23
-TNode<HeapObject> CastOrDefault_Callable_JSAny_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, TNode<Undefined> p_default);
+TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> CastOrDefault_Callable_JSAny_Undefined_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_x, TNode<Undefined> p_default);
 
 } // namespace internal
 } // namespace v8

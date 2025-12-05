@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/reflect-tq-csa.h"
@@ -87,7 +87,7 @@ TF_BUILTIN(ReflectIsExtensible, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kObject);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kObject);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -111,10 +111,10 @@ TF_BUILTIN(ReflectIsExtensible, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Reflect.isExtensible");
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = ObjectIsExtensibleImpl_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp2 = ObjectIsExtensibleImpl_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     CodeStubAssembler(state_).Return(tmp2);
   }
 }
@@ -123,7 +123,7 @@ TF_BUILTIN(ReflectPreventExtensions, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kObject);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kObject);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -147,10 +147,10 @@ TF_BUILTIN(ReflectPreventExtensions, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Reflect.preventExtensions");
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = ObjectPreventExtensionsDontThrow_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp2 = ObjectPreventExtensionsDontThrow_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     CodeStubAssembler(state_).Return(tmp2);
   }
 }
@@ -159,7 +159,7 @@ TF_BUILTIN(ReflectGetPrototypeOf, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kObject);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kObject);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -183,7 +183,7 @@ TF_BUILTIN(ReflectGetPrototypeOf, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Reflect.getPrototypeOf");
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = JSReceiverGetPrototypeOf_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
@@ -195,9 +195,9 @@ TF_BUILTIN(ReflectSetPrototypeOf, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kObject);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kObject);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kProto);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kProto);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -237,7 +237,7 @@ TF_BUILTIN(ReflectSetPrototypeOf, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kWasmObjectsAreOpaque);
   }
 
-  TNode<HeapObject> tmp3;
+  TNode<Union<JSReceiver, Null>> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     compiler::CodeAssemblerLabel label4(&ca_);
@@ -254,10 +254,10 @@ TF_BUILTIN(ReflectSetPrototypeOf, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kProtoObjectOrNull, TNode<Object>{parameter2});
   }
 
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp5 = ObjectSetPrototypeOfDontThrow_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<HeapObject>{tmp3});
+    tmp5 = ObjectSetPrototypeOfDontThrow_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0}, TNode<Union<JSReceiver, Null>>{tmp3});
     CodeStubAssembler(state_).Return(tmp5);
   }
 }
@@ -276,11 +276,11 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<JSReceiver> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -301,22 +301,22 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Name> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<Union<String, Symbol>> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = ca_.CallBuiltin<Name>(Builtin::kToName, parameter0, tmp5);
+    tmp6 = ca_.CallBuiltin<Union<String, Symbol>>(Builtin::kToName, parameter0, tmp5);
     tmp7 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp8 = CodeStubAssembler(state_).IntPtrGreaterThan(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp7});
     ca_.Branch(tmp8, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
@@ -329,13 +329,13 @@ TF_BUILTIN(ReflectGet, CodeStubAssembler) {
     ca_.Goto(&block7, tmp2);
   }
 
-  TNode<Object> phi_bb7_9;
+  TNode<JSAny> phi_bb7_9;
   TNode<Smi> tmp11;
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_9);
     tmp11 = CodeStubAssembler(state_).SmiConstant(OnNonExistent::kReturnUndefined);
-    tmp12 = ca_.CallBuiltin<Object>(Builtin::kGetPropertyWithReceiver, parameter0, tmp2, tmp6, phi_bb7_9, tmp11);
+    tmp12 = ca_.CallBuiltin<JSAny>(Builtin::kGetPropertyWithReceiver, parameter0, tmp2, tmp6, phi_bb7_9, tmp11);
     arguments.PopAndReturn(tmp12);
   }
 }
@@ -344,9 +344,9 @@ TF_BUILTIN(ReflectDeleteProperty, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kObject);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kObject);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kKey);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kKey);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -384,9 +384,9 @@ TF_BUILTIN(ReflectHas, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kObject);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kObject);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kKey);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kKey);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -422,9 +422,9 @@ TF_BUILTIN(ReflectGetOwnPropertyDescriptor, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kTarget);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kTarget);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kPropertyKey);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kPropertyKey);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -448,14 +448,14 @@ TF_BUILTIN(ReflectGetOwnPropertyDescriptor, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Reflect.getOwnPropertyDescriptor");
   }
 
-  TNode<Name> tmp2;
-  TNode<Object> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<String, Symbol>> tmp2;
+  TNode<JSAny> tmp3;
+  TNode<JSAny> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = ca_.CallBuiltin<Name>(Builtin::kToName, parameter0, parameter2);
-    tmp3 = ca_.CallBuiltin<Object>(Builtin::kGetOwnPropertyDescriptor, parameter0, tmp0, tmp2);
-    tmp4 = FromPropertyDescriptor_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    tmp2 = ca_.CallBuiltin<Union<String, Symbol>>(Builtin::kToName, parameter0, parameter2);
+    tmp3 = ca_.CallBuiltin<JSAny>(Builtin::kGetOwnPropertyDescriptor, parameter0, tmp0, tmp2);
+    tmp4 = FromPropertyDescriptor_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3});
     CodeStubAssembler(state_).Return(tmp4);
   }
 }

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-reaction-job-tq-csa.h"
@@ -86,7 +86,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=9&c=1
-TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_promiseOrCapability, TNode<Object> p_reason, PromiseReaction::Type p_reactionType) {
+TNode<JSAny> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<JSPromise, PromiseCapability, Undefined>> p_promiseOrCapability, TNode<JSAny> p_reason, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -96,7 +96,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -125,7 +125,7 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
   if (block8.is_used()) {
     ca_.Bind(&block8);
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_Undefined_2(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_promiseOrCapability)}, &label3);
+    tmp2 = Cast_Undefined_2(state_, TNode<HeapObject>{ca_.UncheckedCast<Union<PromiseCapability, Undefined>>(p_promiseOrCapability)}, &label3);
     ca_.Goto(&block11);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -134,26 +134,26 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
   }
 
   TNode<False> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp4 = False_0(state_);
-    tmp5 = ca_.CallBuiltin<Object>(Builtin::kRejectPromise, p_context, tmp0, p_reason, tmp4);
+    tmp5 = ca_.CallBuiltin<JSAny>(Builtin::kRejectPromise, p_context, tmp0, p_reason, tmp4);
     ca_.Goto(&block1, tmp5);
   }
 
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
-  TNode<JSReceiver> tmp8;
+  TNode<JSAny> tmp7;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp8;
   TNode<Undefined> tmp9;
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp7 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{ca_.UncheckedCast<PromiseCapability>(p_promiseOrCapability), tmp6});
+    tmp7 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{ca_.UncheckedCast<PromiseCapability>(p_promiseOrCapability), tmp6});
     tmp8 = UnsafeCast_Callable_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp7});
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp8}, TNode<Object>{tmp9}, TNode<Object>{p_reason});
+    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp8}, TNode<JSAny>{tmp9}, TNode<JSAny>{p_reason});
     ca_.Goto(&block1, tmp10);
   }
 
@@ -166,28 +166,28 @@ TNode<Object> RejectPromiseReactionJob_0(compiler::CodeAssemblerState* state_, T
 
   TNode<BoolT> tmp12;
   TNode<Undefined> tmp13;
-  TNode<Object> tmp14;
+  TNode<JSAny> tmp14;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp12 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kFulfill)));
     CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp12}, "static_assert(reactionType == kPromiseReactionFulfill) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=32&c=5");
     tmp13 = Undefined_0(state_);
-    tmp14 = ca_.CallBuiltin<Object>(Builtin::kPromiseRejectReactionJob, p_context, p_reason, tmp13, p_promiseOrCapability);
+    tmp14 = ca_.CallBuiltin<JSAny>(Builtin::kPromiseRejectReactionJob, p_context, p_reason, tmp13, p_promiseOrCapability);
     ca_.Goto(&block1, tmp14);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block13);
   }
 
     ca_.Bind(&block13);
-  return TNode<Object>{phi_bb1_3};
+  return TNode<JSAny>{phi_bb1_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=41&c=1
-TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_promiseOrCapability, TNode<Object> p_result, PromiseReaction::Type p_reactionType) {
+TNode<JSAny> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<JSPromise, PromiseCapability, Undefined>> p_promiseOrCapability, TNode<JSAny> p_result, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -196,7 +196,7 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -216,7 +216,7 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_Undefined_2(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_promiseOrCapability)}, &label3);
+    tmp2 = Cast_Undefined_2(state_, TNode<HeapObject>{ca_.UncheckedCast<Union<PromiseCapability, Undefined>>(p_promiseOrCapability)}, &label3);
     ca_.Goto(&block8);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -224,28 +224,28 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
     }
   }
 
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp4 = ca_.CallBuiltin<Object>(Builtin::kResolvePromise, p_context, tmp0, p_result);
+    tmp4 = ca_.CallBuiltin<JSAny>(Builtin::kResolvePromise, p_context, tmp0, p_result);
     ca_.Goto(&block1, tmp4);
   }
 
   TNode<IntPtrT> tmp5;
-  TNode<Object> tmp6;
-  TNode<JSReceiver> tmp7;
+  TNode<JSAny> tmp6;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp7;
   TNode<Undefined> tmp8;
-  TNode<Object> tmp9;
-      TNode<Object> tmp11;
+  TNode<JSAny> tmp9;
+      TNode<JSAny> tmp11;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp6 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{ca_.UncheckedCast<PromiseCapability>(p_promiseOrCapability), tmp5});
+    tmp6 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{ca_.UncheckedCast<PromiseCapability>(p_promiseOrCapability), tmp5});
     tmp7 = UnsafeCast_Callable_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp6});
     tmp8 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch10__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch10__label);
-    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp7}, TNode<Object>{tmp8}, TNode<Object>{p_result});
+    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp7}, TNode<JSAny>{tmp8}, TNode<JSAny>{p_result});
     }
     if (catch10__label.is_used()) {
       compiler::CodeAssemblerLabel catch10_skip(&ca_);
@@ -264,27 +264,27 @@ TNode<Object> FuflfillPromiseReactionJob_0(compiler::CodeAssemblerState* state_,
     ca_.Goto(&block1, tmp12);
   }
 
-  TNode<HeapObject> tmp13;
-  TNode<Object> tmp14;
+  TNode<Union<Hole, JSMessageObject>> tmp13;
+  TNode<JSAny> tmp14;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp13 = GetAndResetPendingMessage_0(state_);
-    tmp14 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_promiseOrCapability}, TNode<Object>{tmp11}, p_reactionType);
+    tmp14 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{p_promiseOrCapability}, TNode<JSAny>{tmp11}, p_reactionType);
     ca_.Goto(&block1, tmp14);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block13);
   }
 
     ca_.Bind(&block13);
-  return TNode<Object>{phi_bb1_3};
+  return TNode<JSAny>{phi_bb1_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=70&c=1
-TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_argument, TNode<HeapObject> p_handler, TNode<HeapObject> p_promiseOrCapability, PromiseReaction::Type p_reactionType) {
+TNode<JSAny> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_argument, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> p_handler, TNode<Union<JSPromise, PromiseCapability, Undefined>> p_promiseOrCapability, PromiseReaction::Type p_reactionType) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -298,8 +298,8 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -308,7 +308,7 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Undefined_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{p_handler}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{p_handler}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
@@ -321,31 +321,31 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     }
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp2 = FuflfillPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_promiseOrCapability}, TNode<Object>{p_argument}, p_reactionType);
+    tmp2 = FuflfillPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{p_promiseOrCapability}, TNode<JSAny>{p_argument}, p_reactionType);
     ca_.Goto(&block1, tmp2);
   }
 
   TNode<BoolT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp3 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprInt31Equal(p_reactionType, PromiseReaction::kReject)));
     CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp3}, "static_assert(reactionType == kPromiseReactionReject) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-reaction-job.tq?l=79&c=7");
-    tmp4 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_promiseOrCapability}, TNode<Object>{p_argument}, p_reactionType);
+    tmp4 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{p_promiseOrCapability}, TNode<JSAny>{p_argument}, p_reactionType);
     ca_.Goto(&block1, tmp4);
   }
 
-  TNode<JSReceiver> tmp5;
-      TNode<Object> tmp7;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp5;
+      TNode<JSAny> tmp7;
   TNode<Undefined> tmp8;
-  TNode<Object> tmp9;
-      TNode<Object> tmp11;
+  TNode<JSAny> tmp9;
+      TNode<JSAny> tmp11;
   TNode<Undefined> tmp12;
   TNode<BoolT> tmp13;
-      TNode<Object> tmp15;
+      TNode<JSAny> tmp15;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerExceptionHandlerLabel catch6__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -362,7 +362,7 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     tmp8 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch10__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch10__label);
-    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp5}, TNode<Object>{tmp8}, TNode<Object>{p_argument});
+    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp5}, TNode<JSAny>{tmp8}, TNode<JSAny>{p_argument});
     }
     if (catch10__label.is_used()) {
       compiler::CodeAssemblerLabel catch10_skip(&ca_);
@@ -374,7 +374,7 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     tmp12 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch14__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch14__label);
-    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{p_promiseOrCapability}, TNode<HeapObject>{tmp12});
+    tmp13 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{p_promiseOrCapability}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp12});
     }
     if (catch14__label.is_used()) {
       compiler::CodeAssemblerLabel catch14_skip(&ca_);
@@ -386,21 +386,21 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Branch(tmp13, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp16;
+  TNode<Union<Hole, JSMessageObject>> tmp16;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp16 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block9, tmp7, tmp16);
   }
 
-  TNode<HeapObject> tmp17;
+  TNode<Union<Hole, JSMessageObject>> tmp17;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp17 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block9, tmp11, tmp17);
   }
 
-  TNode<HeapObject> tmp18;
+  TNode<Union<Hole, JSMessageObject>> tmp18;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp18 = GetAndResetPendingMessage_0(state_);
@@ -414,13 +414,13 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Goto(&block1, tmp19);
   }
 
-  TNode<Object> tmp20;
-      TNode<Object> tmp22;
+  TNode<JSAny> tmp20;
+      TNode<JSAny> tmp22;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     compiler::CodeAssemblerExceptionHandlerLabel catch21__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch21__label);
-    tmp20 = FuflfillPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_promiseOrCapability}, TNode<Object>{tmp9}, p_reactionType);
+    tmp20 = FuflfillPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{p_promiseOrCapability}, TNode<JSAny>{tmp9}, p_reactionType);
     }
     if (catch21__label.is_used()) {
       compiler::CodeAssemblerLabel catch21_skip(&ca_);
@@ -432,49 +432,49 @@ TNode<Object> PromiseReactionJob_0(compiler::CodeAssemblerState* state_, TNode<C
     ca_.Goto(&block1, tmp20);
   }
 
-  TNode<HeapObject> tmp23;
+  TNode<Union<Hole, JSMessageObject>> tmp23;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp23 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block9, tmp22, tmp23);
   }
 
-  TNode<Object> phi_bb9_4;
-  TNode<HeapObject> phi_bb9_5;
-  TNode<Object> tmp24;
+  TNode<JSAny> phi_bb9_4;
+  TNode<Union<Hole, JSMessageObject>> phi_bb9_5;
+  TNode<JSAny> tmp24;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_4, &phi_bb9_5);
-    tmp24 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{p_promiseOrCapability}, TNode<Object>{phi_bb9_4}, p_reactionType);
+    tmp24 = RejectPromiseReactionJob_0(state_, TNode<Context>{p_context}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{p_promiseOrCapability}, TNode<JSAny>{phi_bb9_4}, p_reactionType);
     ca_.Goto(&block1, tmp24);
   }
 
-  TNode<Object> phi_bb1_4;
+  TNode<JSAny> phi_bb1_4;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_4);
     ca_.Goto(&block17);
   }
 
     ca_.Bind(&block17);
-  return TNode<Object>{phi_bb1_4};
+  return TNode<JSAny>{phi_bb1_4};
 }
 
 TF_BUILTIN(PromiseFulfillReactionJob, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter1);
-  TNode<HeapObject> parameter2 = UncheckedParameter<HeapObject>(Descriptor::kHandler);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> parameter2 = UncheckedParameter<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>(Descriptor::kHandler);
   USE(parameter2);
-  TNode<HeapObject> parameter3 = UncheckedParameter<HeapObject>(Descriptor::kPromiseOrCapability);
+  TNode<Union<JSPromise, PromiseCapability, Undefined>> parameter3 = UncheckedParameter<Union<JSPromise, PromiseCapability, Undefined>>(Descriptor::kPromiseOrCapability);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = PromiseReactionJob_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<HeapObject>{parameter2}, TNode<HeapObject>{parameter3}, PromiseReaction::kFulfill);
+    tmp0 = PromiseReactionJob_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{parameter2}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{parameter3}, PromiseReaction::kFulfill);
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -483,19 +483,19 @@ TF_BUILTIN(PromiseRejectReactionJob, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReason);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReason);
   USE(parameter1);
-  TNode<HeapObject> parameter2 = UncheckedParameter<HeapObject>(Descriptor::kHandler);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> parameter2 = UncheckedParameter<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>(Descriptor::kHandler);
   USE(parameter2);
-  TNode<HeapObject> parameter3 = UncheckedParameter<HeapObject>(Descriptor::kPromiseOrCapability);
+  TNode<Union<JSPromise, PromiseCapability, Undefined>> parameter3 = UncheckedParameter<Union<JSPromise, PromiseCapability, Undefined>>(Descriptor::kPromiseOrCapability);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = PromiseReactionJob_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<HeapObject>{parameter2}, TNode<HeapObject>{parameter3}, PromiseReaction::kReject);
+    tmp0 = PromiseReactionJob_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{parameter2}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{parameter3}, PromiseReaction::kReject);
     CodeStubAssembler(state_).Return(tmp0);
   }
 }

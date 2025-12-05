@@ -6,8 +6,8 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-unshift.tq?l=8&c=1
-TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructArguments p_arguments);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-unshift.tq?l=11&c=1
+TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TorqueStructArguments p_arguments);
 
 } // namespace internal
 } // namespace v8

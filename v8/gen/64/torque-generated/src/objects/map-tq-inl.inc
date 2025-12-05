@@ -133,7 +133,7 @@ Tagged<Union<JSReceiver, Null>> TorqueGeneratedMap<D, P>::prototype(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
 template<class D, class P>
 void TorqueGeneratedMap<D, P>::set_prototype(Tagged<Union<JSReceiver, Null>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsNull(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsNull(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kPrototypeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeOffset, value, mode);
 }
@@ -156,42 +156,42 @@ Tagged<Object> TorqueGeneratedMap<D, P>::constructor_or_back_pointer_or_native_c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
 template<class D, class P>
 void TorqueGeneratedMap<D, P>::set_constructor_or_back_pointer_or_native_context(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kConstructorOrBackPointerOrNativeContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kConstructorOrBackPointerOrNativeContextOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
 template<class D, class P>
-Tagged<DescriptorArray> TorqueGeneratedMap<D, P>::instance_descriptors() const {
+Tagged<Union<DescriptorArray, WasmStruct>> TorqueGeneratedMap<D, P>::instance_descriptors() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::instance_descriptors(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
 template<class D, class P>
-Tagged<DescriptorArray> TorqueGeneratedMap<D, P>::instance_descriptors(PtrComprCageBase cage_base) const {
-  Tagged<DescriptorArray> value = TaggedField<Tagged<DescriptorArray>>::load(cage_base, *this, kInstanceDescriptorsOffset);
-  DCHECK(IsDescriptorArray(value));
+Tagged<Union<DescriptorArray, WasmStruct>> TorqueGeneratedMap<D, P>::instance_descriptors(PtrComprCageBase cage_base) const {
+  Tagged<Union<DescriptorArray, WasmStruct>> value = TaggedField<Tagged<Union<DescriptorArray, WasmStruct>>>::load(cage_base, *this, kInstanceDescriptorsOffset);
+  DCHECK(IsDescriptorArray(value) || IsWasmStruct(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_instance_descriptors(Tagged<DescriptorArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsDescriptorArray(value));
+void TorqueGeneratedMap<D, P>::set_instance_descriptors(Tagged<Union<DescriptorArray, WasmStruct>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsDescriptorArray(value) || IsWasmStruct(value)));
   WRITE_FIELD(*this, kInstanceDescriptorsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInstanceDescriptorsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 template<class D, class P>
 Tagged<WeakArrayList> TorqueGeneratedMap<D, P>::dependent_code() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::dependent_code(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 template<class D, class P>
 Tagged<WeakArrayList> TorqueGeneratedMap<D, P>::dependent_code(PtrComprCageBase cage_base) const {
   Tagged<WeakArrayList> value = TaggedField<Tagged<WeakArrayList>>::load(cage_base, *this, kDependentCodeOffset);
@@ -199,58 +199,58 @@ Tagged<WeakArrayList> TorqueGeneratedMap<D, P>::dependent_code(PtrComprCageBase 
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 template<class D, class P>
 void TorqueGeneratedMap<D, P>::set_dependent_code(Tagged<WeakArrayList> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsDependentCode(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsDependentCode(value)));
   WRITE_FIELD(*this, kDependentCodeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDependentCodeOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
 template<class D, class P>
 Tagged<Union<Cell, Smi>> TorqueGeneratedMap<D, P>::prototype_validity_cell() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::prototype_validity_cell(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
 template<class D, class P>
 Tagged<Union<Cell, Smi>> TorqueGeneratedMap<D, P>::prototype_validity_cell(PtrComprCageBase cage_base) const {
   Tagged<Union<Cell, Smi>> value = TaggedField<Tagged<Union<Cell, Smi>>>::load(cage_base, *this, kPrototypeValidityCellOffset);
-  DCHECK(IsSmi(value) || IsCell(value));
+  DCHECK(IsZero(value) || IsCell(value));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
 template<class D, class P>
 void TorqueGeneratedMap<D, P>::set_prototype_validity_cell(Tagged<Union<Cell, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsZero(value) || IsCell(value)));
   WRITE_FIELD(*this, kPrototypeValidityCellOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrototypeValidityCellOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
 template<class D, class P>
-Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> TorqueGeneratedMap<D, P>::transitions_or_prototype_info() const {
+Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> TorqueGeneratedMap<D, P>::transitions_or_prototype_info() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedMap::transitions_or_prototype_info(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
 template<class D, class P>
-Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> TorqueGeneratedMap<D, P>::transitions_or_prototype_info(PtrComprCageBase cage_base) const {
-  Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> value = TaggedField<Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>>>::load(cage_base, *this, kTransitionsOrPrototypeInfoOffset);
-  DCHECK(value.IsCleared() || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsTransitionArray(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsPrototypeInfo(value.GetHeapObjectOrSmi())));
+Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> TorqueGeneratedMap<D, P>::transitions_or_prototype_info(PtrComprCageBase cage_base) const {
+  Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> value = TaggedField<Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>>>::load(cage_base, *this, kTransitionsOrPrototypeInfoOffset);
+  DCHECK(value.IsCleared() || (!value.IsWeak() && IsZero(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsTransitionArray(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsPrototypeInfo(value.GetHeapObjectOrSmi())));
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
 template<class D, class P>
-void TorqueGeneratedMap<D, P>::set_transitions_or_prototype_info(Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(value.IsCleared() || (!value.IsWeak() && IsSmi(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsTransitionArray(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsPrototypeInfo(value.GetHeapObjectOrSmi())));
+void TorqueGeneratedMap<D, P>::set_transitions_or_prototype_info(Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (value.IsCleared() || (!value.IsWeak() && IsZero(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsTransitionArray(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (value.IsWeak() && IsMap(value.GetHeapObjectOrSmi())) || (!value.IsWeak() && IsPrototypeInfo(value.GetHeapObjectOrSmi()))));
   RELAXED_WRITE_WEAK_FIELD(*this, kTransitionsOrPrototypeInfoOffset, value);
-  CONDITIONAL_WEAK_WRITE_BARRIER(*this, kTransitionsOrPrototypeInfoOffset, value, mode);
+  CONDITIONAL_WRITE_BARRIER(*this, kTransitionsOrPrototypeInfoOffset, value, mode);
 }
 
 template<class D, class P>

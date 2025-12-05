@@ -31,10 +31,10 @@ TNode<Context> LoadJSGeneratorObjectContext_0(compiler::CodeAssemblerState* stat
 void StoreJSGeneratorObjectContext_0(compiler::CodeAssemblerState* state_, TNode<JSGeneratorObject> p_o, TNode<Context> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
-TNode<Object> LoadJSGeneratorObjectReceiver_0(compiler::CodeAssemblerState* state_, TNode<JSGeneratorObject> p_o);
+TNode<JSAny> LoadJSGeneratorObjectReceiver_0(compiler::CodeAssemblerState* state_, TNode<JSGeneratorObject> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
-void StoreJSGeneratorObjectReceiver_0(compiler::CodeAssemblerState* state_, TNode<JSGeneratorObject> p_o, TNode<Object> p_v);
+void StoreJSGeneratorObjectReceiver_0(compiler::CodeAssemblerState* state_, TNode<JSGeneratorObject> p_o, TNode<JSAny> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=14&c=3
 TNode<Object> LoadJSGeneratorObjectInputOrDebugPos_0(compiler::CodeAssemblerState* state_, TNode<JSGeneratorObject> p_o);
@@ -79,10 +79,10 @@ TNode<Smi> LoadJSAsyncGeneratorObjectIsAwaiting_0(compiler::CodeAssemblerState* 
 void StoreJSAsyncGeneratorObjectIsAwaiting_0(compiler::CodeAssemblerState* state_, TNode<JSAsyncGeneratorObject> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
-TNode<HeapObject> LoadAsyncGeneratorRequestNext_0(compiler::CodeAssemblerState* state_, TNode<AsyncGeneratorRequest> p_o);
+TNode<Union<AsyncGeneratorRequest, Undefined>> LoadAsyncGeneratorRequestNext_0(compiler::CodeAssemblerState* state_, TNode<AsyncGeneratorRequest> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
-void StoreAsyncGeneratorRequestNext_0(compiler::CodeAssemblerState* state_, TNode<AsyncGeneratorRequest> p_o, TNode<HeapObject> p_v);
+void StoreAsyncGeneratorRequestNext_0(compiler::CodeAssemblerState* state_, TNode<AsyncGeneratorRequest> p_o, TNode<Union<AsyncGeneratorRequest, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=42&c=3
 TNode<Smi> LoadAsyncGeneratorRequestResumeMode_0(compiler::CodeAssemblerState* state_, TNode<AsyncGeneratorRequest> p_o);

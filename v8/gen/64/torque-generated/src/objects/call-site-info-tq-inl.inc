@@ -16,7 +16,7 @@ Tagged<JSAny> TorqueGeneratedCallSiteInfo<D, P>::receiver_or_instance(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_receiver_or_instance(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kReceiverOrInstanceOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kReceiverOrInstanceOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Union<JSFunction, Smi>> TorqueGeneratedCallSiteInfo<D, P>::function(PtrCo
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=24&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_function(Tagged<Union<JSFunction, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kFunctionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFunctionOffset, value, mode);
 }
@@ -67,7 +67,8 @@ int TorqueGeneratedCallSiteInfo<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct CallSiteInfoFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=27&c=3
@@ -88,7 +89,7 @@ Tagged<FixedArray> TorqueGeneratedCallSiteInfo<D, P>::parameters(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/call-site-info.tq?l=27&c=3
 template<class D, class P>
 void TorqueGeneratedCallSiteInfo<D, P>::set_parameters(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kParametersOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kParametersOffset, value, mode);
 }

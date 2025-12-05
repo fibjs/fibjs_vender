@@ -57,6 +57,7 @@
 #include "src/codegen/constants-arch.h"
 #include "src/codegen/macro-assembler.h"
 #include "src/diagnostics/disasm.h"
+#include "src/heap/base/stack.h"
 #include "src/heap/combined-heap.h"
 #include "src/runtime/runtime-utils.h"
 #include "src/utils/ostreams.h"
@@ -2384,7 +2385,12 @@ void Simulator::CheckICache(base::CustomMatcherHashMap* i_cache,
 Simulator::Simulator(Isolate* isolate) : isolate_(isolate), builtins_(isolate) {
   // Set up simulator support first. Some of this information is needed to
   // setup the architecture state.
-  stack_ = reinterpret_cast<uint8_t*>(base::Malloc(AllocatedStackSize()));
+  // Allocate and setup the simulator stack.
+  size_t stack_size = AllocatedStackSize();
+
+  stack_ = reinterpret_cast<uintptr_t>(new uint8_t[stack_size]());
+  stack_limit_ = stack_ + kStackProtectionSize;
+
   pc_modified_ = false;
   icount_ = 0;
   break_count_ = 0;
@@ -2408,7 +2414,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate), builtins_(isolate) {
   // The sp is initialized to point to the bottom (high address) of the
   // allocated stack area. To be safe in potential stack underflows we leave
   // some buffer below.
-  registers_[sp] = reinterpret_cast<intptr_t>(stack_) + UsableStackSize();
+  registers_[sp] = StackBase();
   // The ra and pc are initialized to a known bad value that will cause an
   // access violation if the simulator ever tries to execute it.
   registers_[pc] = bad_ra;
@@ -2432,7 +2438,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate), builtins_(isolate) {
 
 Simulator::~Simulator() {
   GlobalMonitor::Get()->RemoveLinkedAddress(&global_monitor_thread_);
-  free(stack_);
+  delete[] reinterpret_cast<uint8_t*>(stack_);
 }
 
 // Get the active Simulator for the current thread.
@@ -2823,7 +2829,7 @@ void Simulator::TraceRegWr(T value, TraceType t) {
 template <typename T>
 void Simulator::TraceMemRd(sreg_t addr, T value, sreg_t reg_value) {
   if (v8_flags.trace_sim) {
-    if (std::is_integral<T>::value) {
+    if (std::is_integral_v<T>) {
       switch (sizeof(T)) {
         case 1:
           SNPrintF(trace_buf_,
@@ -2856,12 +2862,12 @@ void Simulator::TraceMemRd(sreg_t addr, T value, sreg_t reg_value) {
         default:
           UNREACHABLE();
       }
-    } else if (std::is_same<float, T>::value) {
+    } else if (std::is_same_v<float, T>) {
       SNPrintF(trace_buf_,
                "%016" REGIx_FORMAT "    (%" PRId64
                ")    flt:%e <-- [addr: %" REGIx_FORMAT "]",
                reg_value, icount_, static_cast<float>(value), addr);
-    } else if (std::is_same<double, T>::value) {
+    } else if (std::is_same_v<double, T>) {
       SNPrintF(trace_buf_,
                "%016" REGIx_FORMAT "    (%" PRId64
                ")    dbl:%e <-- [addr: %" REGIx_FORMAT "]",
@@ -2919,7 +2925,7 @@ void Simulator::TraceMemWr(sreg_t addr, T value) {
                  static_cast<uint16_t>(value), addr);
         break;
       case 4:
-        if (std::is_integral<T>::value) {
+        if (std::is_integral_v<T>) {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64 ")    int32:%" PRId32
                    " uint32:%" PRIu32 " --> [addr: %" REGIx_FORMAT "]",
@@ -2934,7 +2940,7 @@ void Simulator::TraceMemWr(sreg_t addr, T value) {
         }
         break;
       case 8:
-        if (std::is_integral<T>::value) {
+        if (std::is_integral_v<T>) {
           SNPrintF(trace_buf_,
                    "                    (%" PRIu64 ")    int64:%" PRId64
                    " uint64:%" PRIu64 " --> [addr: %" REGIx_FORMAT "]",
@@ -3022,7 +3028,7 @@ void Simulator::WriteMem(sreg_t addr, T value, Instruction* instr) {
   }
 #endif
   T* ptr = reinterpret_cast<T*>(addr);
-  if (!std::is_same<double, T>::value) {
+  if (!std::is_same_v<double, T>) {
     TraceMemWr(addr, value);
   } else {
     TraceMemWrDouble(addr, value);
@@ -3084,14 +3090,36 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
 
   // Otherwise the limit is the JS stack. Leave a safety margin to prevent
   // overrunning the stack when pushing values.
-  return reinterpret_cast<uintptr_t>(stack_) + kStackProtectionSize;
+  return stack_limit_ + kAdditionalStackMargin;
 }
 
-base::Vector<uint8_t> Simulator::GetCurrentStackView() const {
+uintptr_t Simulator::StackBase() const { return stack_ + UsableStackSize(); }
+
+base::Vector<uint8_t> Simulator::GetCentralStackView() const {
   // We do not add an additional safety margin as above in
-  // Simulator::StackLimit, as this is currently only used in wasm::StackMemory,
-  // which adds its own margin.
-  return base::VectorOf(stack_, UsableStackSize());
+  // Simulator::StackLimit, as users of this method are expected to add their
+  // own margin.
+  return base::VectorOf(
+      reinterpret_cast<uint8_t*>(stack_ + kStackProtectionSize),
+      UsableStackSize());
+}
+
+// We touch the stack, which may or may not have been initialized properly. Msan
+// reports here are not interesting.
+DISABLE_MSAN void Simulator::IterateRegistersAndStack(
+    ::heap::base::StackVisitor* visitor) {
+  for (int i = 0; i < kNumSimuRegisters; ++i) {
+    visitor->VisitPointer(reinterpret_cast<const void*>(get_register(i)));
+  }
+  for (const void* const* current =
+           reinterpret_cast<const void* const*>(get_sp());
+       current < reinterpret_cast<const void* const*>(StackBase()); ++current) {
+    const void* address = *current;
+    if (address == nullptr) {
+      continue;
+    }
+    visitor->VisitPointer(address);
+  }
 }
 
 // Unsupported instructions use Format to print an error and stop execution.
@@ -3122,6 +3150,7 @@ using SimulatorRuntimeCompareCall = int64_t (*)(double darg0, double darg1);
 using SimulatorRuntimeFPFPCall = double (*)(double darg0, double darg1);
 using SimulatorRuntimeFPCall = double (*)(double darg0);
 using SimulatorRuntimeFPIntCall = double (*)(double darg0, int32_t arg0);
+using SimulatorRuntimeIntFPCall = int32_t (*)(double darg0);
 
 // This signature supports direct call in to API function native callback
 // (refer to InvocationCallback in v8.h).
@@ -3312,7 +3341,8 @@ void Simulator::SoftwareInterrupt() {
         (redirection->type() == ExternalReference::BUILTIN_FP_FP_CALL) ||
         (redirection->type() == ExternalReference::BUILTIN_COMPARE_CALL) ||
         (redirection->type() == ExternalReference::BUILTIN_FP_CALL) ||
-        (redirection->type() == ExternalReference::BUILTIN_FP_INT_CALL);
+        (redirection->type() == ExternalReference::BUILTIN_FP_INT_CALL) ||
+        (redirection->type() == ExternalReference::BUILTIN_INT_FP_CALL);
 
     sreg_t pc = get_pc();
 
@@ -3348,6 +3378,13 @@ void Simulator::SoftwareInterrupt() {
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0, ival);
             break;
+          case ExternalReference::BUILTIN_INT_FP_CALL:
+            PrintF("Call to host function  %s at %p with args %f",
+                    ExternalReferenceTable::NameOfIsolateIndependentAddress(
+                       pc, IsolateGroup::current()->external_ref_table()),
+                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
+                    dval0);
+            break;
           default:
             UNREACHABLE();
         }
@@ -3382,12 +3419,20 @@ void Simulator::SoftwareInterrupt() {
           SetFpResult(dresult);
           break;
         }
+        case ExternalReference::BUILTIN_INT_FP_CALL: {
+          SimulatorRuntimeIntFPCall target =
+              reinterpret_cast<SimulatorRuntimeIntFPCall>(external);
+          iresult = target(dval0);
+          set_register(a0, static_cast<int64_t>(iresult));
+          break;
+        }
         default:
           UNREACHABLE();
       }
       if (v8_flags.trace_sim) {
         switch (redirection->type()) {
           case ExternalReference::BUILTIN_COMPARE_CALL:
+          case ExternalReference::BUILTIN_INT_FP_CALL:
             PrintF("Returned %08x\n", static_cast<int32_t>(iresult));
             break;
           case ExternalReference::BUILTIN_FP_FP_CALL:
@@ -3507,8 +3552,12 @@ void Simulator::SoftwareInterrupt() {
           PrintF("Add --debug-sim when tracepoint instruction is used.\n");
           abort();
         }
+        Builtin builtin = LookUp((Address)get_pc());
         printf("%d %d %d %d\n", code, code & LOG_TRACE, code & LOG_REGS,
                code & kDebuggerTracingDirectivesMask);
+        if (builtin != Builtin::kNoBuiltinId) {
+          printf("Builitin: %s\n", builtins_.name(builtin));
+        }
         switch (code & kDebuggerTracingDirectivesMask) {
           case TRACE_ENABLE:
             if (code & LOG_TRACE) {
@@ -3531,6 +3580,11 @@ void Simulator::SoftwareInterrupt() {
         IncreaseStopCounter(code);
         HandleStop(code);
       }
+    } else if (IsSwitchStackLimit(code)) {
+      if (v8_flags.trace_sim) {
+        PrintF("Switching stack limit\n");
+      }
+      DoSwitchStackLimit(instr_.instr());
     } else {
       // All remaining break_ codes, and all traps are handled here.
       RiscvDebugger dbg(this);
@@ -3548,6 +3602,10 @@ bool Simulator::IsWatchpoint(reg_t code) {
 
 bool Simulator::IsTracepoint(reg_t code) {
   return (code <= kMaxTracepointCode && code > kMaxWatchpointCode);
+}
+
+bool Simulator::IsSwitchStackLimit(reg_t code) {
+  return code == kExceptionIsSwitchStackLimit;
 }
 
 void Simulator::PrintWatchpoint(reg_t code) {
@@ -4014,10 +4072,9 @@ double Simulator::RoundF2FHelper(double input_val, int rmode) {
 // are out-of-range, underflow, or NaN, and set appropriate fflags
 template <typename I_TYPE, typename F_TYPE>
 I_TYPE Simulator::RoundF2IHelper(F_TYPE original, int rmode) {
-  DCHECK(std::is_integral<I_TYPE>::value);
+  DCHECK(std::is_integral_v<I_TYPE>);
 
-  DCHECK((std::is_same<F_TYPE, float>::value ||
-          std::is_same<F_TYPE, double>::value));
+  DCHECK((std::is_same_v<F_TYPE, float> || std::is_same_v<F_TYPE, double>));
 
   I_TYPE max_i = std::numeric_limits<I_TYPE>::max();
   I_TYPE min_i = std::numeric_limits<I_TYPE>::min();
@@ -4053,7 +4110,7 @@ I_TYPE Simulator::RoundF2IHelper(F_TYPE original, int rmode) {
   // point is within the max range, we compare against (max_i+1) which would
   // have a single 1 w/ many trailing zeros
   float max_i_plus_1 =
-      std::is_same<uint64_t, I_TYPE>::value
+      std::is_same_v<uint64_t, I_TYPE>
           ? 0x1p64f  // uint64_t::max + 1 cannot be represented in integers,
                      // so use its float representation directly
           : static_cast<float>(static_cast<uint64_t>(max_i) + 1);
@@ -4069,8 +4126,7 @@ I_TYPE Simulator::RoundF2IHelper(F_TYPE original, int rmode) {
     return min_i;
   }
 
-  F_TYPE underflow_fval =
-      std::is_same<F_TYPE, float>::value ? FLT_MIN : DBL_MIN;
+  F_TYPE underflow_fval = std::is_same_v<F_TYPE, float> ? FLT_MIN : DBL_MIN;
   if (rounded < underflow_fval && rounded > -underflow_fval && rounded != 0) {
     set_fflags(kUnderflow);
   }
@@ -4100,7 +4156,7 @@ static int64_t FclassHelper(T value) {
 
 template <typename T>
 bool Simulator::CompareFHelper(T input1, T input2, FPUCondition cc) {
-  DCHECK(std::is_floating_point<T>::value);
+  DCHECK(std::is_floating_point_v<T>);
   bool result = false;
   switch (cc) {
     case LT:
@@ -4530,7 +4586,7 @@ void Simulator::DecodeRVRFPType() {
       }
       break;
     }
-    case RO_FMV: {  // RO_FCLASS_S
+    case RO_FMV_X_W: {  // RO_FCLASS_S
       switch (instr_.Funct3Value()) {
         case 0b000: {
           if (instr_.Rs2Value() == 0b00000) {
@@ -8319,7 +8375,12 @@ void Simulator::CallImpl(Address entry, CallArgument* args) {
               << " a2 (func/target) = 0x" << get_register(a2)
               << " a3 (receiver) = 0x" << get_register(a3) << " a4 (argc) = 0x"
               << get_register(a4) << " a5 (argv) = 0x" << get_register(a5)
-              << std::endl;
+              << " fa0 = 0x" << get_fpu_register(fa0) << " fa1 = 0x"
+              << get_fpu_register(fa1) << " fa2 = 0x" << get_fpu_register(fa2)
+              << " fa3 = 0x" << get_fpu_register(fa3) << " fa4 = 0x"
+              << get_fpu_register(fa4) << " fa5 = 0x" << get_fpu_register(fa5)
+              << " fa6 = 0x" << get_fpu_register(fa6) << " fa7 = 0x"
+              << get_fpu_register(fa7) << std::endl;
   }
   // Remaining arguments passed on stack.
   int64_t original_stack = get_register(sp);
@@ -8586,6 +8647,17 @@ void Simulator::GlobalMonitor::RemoveLinkedAddress(
 
 #undef SScanF
 #undef BRACKETS
+
+void Simulator::DoSwitchStackLimit(Instruction* instr) {
+  const int64_t stack_limit = get_register(kSimulatorBreakArgument.code());
+  // stack_limit represents js limit and adjusted by extra runaway gap.
+  // Also, stack switching code reads js_limit generated by
+  // {Simulator::StackLimit} and then resets it back here.
+  // So without adjusting back incoming value by safety gap
+  // {stack_limit_} will be shortened by kAdditionalStackMargin yielding
+  // positive feedback loop.
+  stack_limit_ = static_cast<uintptr_t>(stack_limit - kAdditionalStackMargin);
+}
 
 }  // namespace internal
 }  // namespace v8

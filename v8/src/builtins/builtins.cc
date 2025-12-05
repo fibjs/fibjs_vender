@@ -6,6 +6,7 @@
 
 #include "src/api/api-inl.h"
 #include "src/builtins/builtins-descriptors.h"
+#include "src/builtins/builtins-inl.h"
 #include "src/builtins/data-view-ops.h"
 #include "src/codegen/assembler-inl.h"
 #include "src/codegen/callable.h"
@@ -26,7 +27,7 @@ namespace v8 {
 namespace internal {
 
 // Forward declarations for C++ builtins.
-#define FORWARD_DECLARE(Name) \
+#define FORWARD_DECLARE(Name, Argc) \
   Address Builtin_##Name(int argc, Address* args, Isolate* isolate);
 BUILTIN_LIST_C(FORWARD_DECLARE)
 #undef FORWARD_DECLARE
@@ -68,7 +69,7 @@ struct BuiltinMetadata {
   } data;
 };
 
-#define DECL_CPP(Name, ...) \
+#define DECL_CPP(Name, Argc) \
   {#Name, Builtins::CPP, {FUNCTION_ADDR(Builtin_##Name)}},
 #define DECL_TSJ(Name, Count, ...) {#Name, Builtins::TSJ, {Count, 0}},
 #define DECL_TFJ(Name, Count, ...) {#Name, Builtins::TFJ, {Count, 0}},
@@ -159,6 +160,29 @@ Handle<Code> Builtins::code_handle(Builtin builtin) {
 int Builtins::GetStackParameterCount(Builtin builtin) {
   DCHECK(Builtins::KindOf(builtin) == TSJ || Builtins::KindOf(builtin) == TFJ);
   return builtin_metadata[ToInt(builtin)].data.parameter_count;
+}
+
+// static
+bool Builtins::CheckFormalParameterCount(
+    Builtin builtin, int function_length,
+    int formal_parameter_count_with_receiver) {
+  DCHECK_LE(0, function_length);
+  if (!Builtins::IsBuiltinId(builtin)) {
+    return true;
+  }
+
+  if (!HasJSLinkage(builtin)) {
+    return true;
+  }
+
+  // Some special builtins are allowed to be installed on functions with
+  // different parameter counts.
+  if (builtin == Builtin::kCompileLazy) {
+    return true;
+  }
+
+  int parameter_count = Builtins::GetFormalParameterCount(builtin);
+  return parameter_count == formal_parameter_count_with_receiver;
 }
 
 // static
@@ -328,12 +352,17 @@ Address Builtins::CppEntryOf(Builtin builtin) {
   return builtin_metadata[ToInt(builtin)].data.cpp_entry;
 }
 
+Address Builtins::EmbeddedEntryOf(Builtin builtin) {
+  static_assert(Builtins::kAllBuiltinsAreIsolateIndependent);
+  return EmbeddedData::FromBlob().InstructionStartOf(builtin);
+}
+
 // static
 bool Builtins::IsBuiltin(const Tagged<Code> code) {
   return Builtins::IsBuiltinId(code->builtin_id());
 }
 
-bool Builtins::IsBuiltinHandle(Handle<HeapObject> maybe_code,
+bool Builtins::IsBuiltinHandle(IndirectHandle<HeapObject> maybe_code,
                                Builtin* builtin) const {
   Address* handle_location = maybe_code.location();
   Address* builtins_table = isolate_->builtin_table();
@@ -360,8 +389,12 @@ void Builtins::InitializeIsolateDataTables(Isolate* isolate) {
   for (Builtin i = Builtins::kFirst; i <= Builtins::kLast; ++i) {
     DCHECK(Builtins::IsBuiltinId(isolate->builtins()->code(i)->builtin_id()));
     DCHECK(!isolate->builtins()->code(i)->has_instruction_stream());
+    Builtin builtin_id = i;
+#if V8_ENABLE_GEARBOX
+    builtin_id = isolate->builtins()->code(i)->builtin_id();
+#endif  // V8_ENABLE_GEARBOX
     isolate_data->builtin_entry_table()[ToInt(i)] =
-        embedded_data.InstructionStartOf(i);
+        embedded_data.InstructionStartOf(builtin_id);
   }
 
   // T0 tables.
@@ -381,16 +414,16 @@ void Builtins::EmitCodeCreateEvents(Isolate* isolate) {
   int i = 0;
   HandleScope scope(isolate);
   for (; i < ToInt(Builtin::kFirstBytecodeHandler); i++) {
-    Handle<Code> builtin_code(&builtins[i]);
-    Handle<AbstractCode> code = Cast<AbstractCode>(builtin_code);
+    auto builtin_code = DirectHandle<Code>::FromSlot(&builtins[i]);
+    DirectHandle<AbstractCode> code = Cast<AbstractCode>(builtin_code);
     PROFILE(isolate, CodeCreateEvent(LogEventListener::CodeTag::kBuiltin, code,
                                      Builtins::name(FromInt(i))));
   }
 
   static_assert(kLastBytecodeHandlerPlusOne == kBuiltinCount);
   for (; i < kBuiltinCount; i++) {
-    Handle<Code> builtin_code(&builtins[i]);
-    Handle<AbstractCode> code = Cast<AbstractCode>(builtin_code);
+    auto builtin_code = DirectHandle<Code>::FromSlot(&builtins[i]);
+    DirectHandle<AbstractCode> code = Cast<AbstractCode>(builtin_code);
     interpreter::Bytecode bytecode =
         builtin_metadata[i].data.bytecode_and_scale.bytecode;
     interpreter::OperandScale scale =
@@ -403,7 +436,7 @@ void Builtins::EmitCodeCreateEvents(Isolate* isolate) {
 }
 
 // static
-Handle<Code> Builtins::CreateInterpreterEntryTrampolineForProfiling(
+DirectHandle<Code> Builtins::CreateInterpreterEntryTrampolineForProfiling(
     Isolate* isolate) {
   DCHECK_NOT_NULL(isolate->embedded_blob_code());
   DCHECK_NE(0, isolate->embedded_blob_code_size());
@@ -434,6 +467,7 @@ Handle<Code> Builtins::CreateInterpreterEntryTrampolineForProfiling(
   desc.handler_table_offset = instruction_size;
   desc.constant_pool_offset = instruction_size;
   desc.code_comments_offset = instruction_size;
+  desc.jump_table_info_offset = instruction_size;
 
   CodeDesc::Verify(&desc);
 
@@ -506,12 +540,38 @@ CodeEntrypointTag Builtins::EntrypointTagFor(Builtin builtin) {
 }
 
 // static
-bool Builtins::AllowDynamicFunction(Isolate* isolate,
-                                    DirectHandle<JSFunction> target,
-                                    Handle<JSObject> target_global_proxy) {
+CodeSandboxingMode Builtins::SandboxingModeOf(Builtin builtin) {
+  Kind kind = Builtins::KindOf(builtin);
+  switch (kind) {
+    case CPP:
+      // CPP builtins are invoked in sandboxed execution mode, but the CEntry
+      // trampoline will exit sandboxed mode before calling the actual C++ code.
+      // TODO(422994386): investigate running the C++ code in sandboxed mode.
+      return CodeSandboxingMode::kSandboxed;
+    case TSJ:
+    case TFJ:
+      // All builtins with JS linkage run sandboxed.
+      return CodeSandboxingMode::kSandboxed;
+    case TFH:
+    case BCH:
+      // Bytecode handlers and inline caches run sandboxed.
+      return CodeSandboxingMode::kSandboxed;
+    case TFS:
+      return CodeSandboxingMode::kSandboxed;
+    case TSC:
+    case TFC:
+    case ASM:
+      return CallInterfaceDescriptorFor(builtin).sandboxing_mode();
+  }
+}
+
+// static
+bool Builtins::AllowDynamicFunction(
+    Isolate* isolate, DirectHandle<JSFunction> target,
+    DirectHandle<JSObject> target_global_proxy) {
   if (v8_flags.allow_unsafe_function_constructor) return true;
   HandleScopeImplementer* impl = isolate->handle_scope_implementer();
-  Handle<NativeContext> responsible_context = impl->LastEnteredContext();
+  DirectHandle<NativeContext> responsible_context = impl->LastEnteredContext();
   // TODO(verwaest): Remove this.
   if (responsible_context.is_null()) {
     return true;

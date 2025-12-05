@@ -3,6 +3,7 @@ class BreakPointInfo;
 class DebugInfo;
 class CoverageInfo;
 class StackFrameInfo;
+class StackTraceInfo;
 class ErrorStackData;
 // Alias for IsBreakPoint() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=5&c=1
@@ -12,10 +13,10 @@ V8_EXPORT_PRIVATE bool IsBreakPoint_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedBreakPoint : public P {
   static_assert(
-      std::is_same<BreakPoint, D>::value,
+      std::is_same_v<BreakPoint, D>,
       "Use this class as direct base for BreakPoint.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedBreakPoint.");
 
  public: 
@@ -71,7 +72,7 @@ class TorqueGeneratedBreakPoint : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedBreakPoint() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedBreakPoint, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedBreakPoint, DAlias>,
         "class TorqueGeneratedBreakPoint should be used as direct base for BreakPoint.");
   }
 
@@ -89,10 +90,10 @@ V8_EXPORT_PRIVATE bool IsBreakPointInfo_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedBreakPointInfo : public P {
   static_assert(
-      std::is_same<BreakPointInfo, D>::value,
+      std::is_same_v<BreakPointInfo, D>,
       "Use this class as direct base for BreakPointInfo.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedBreakPointInfo.");
 
  public: 
@@ -149,7 +150,7 @@ class TorqueGeneratedBreakPointInfo : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedBreakPointInfo() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedBreakPointInfo, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedBreakPointInfo, DAlias>,
         "class TorqueGeneratedBreakPointInfo should be used as direct base for BreakPointInfo.");
   }
 
@@ -167,10 +168,10 @@ V8_EXPORT_PRIVATE bool IsDebugInfo_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedDebugInfo : public P {
   static_assert(
-      std::is_same<DebugInfo, D>::value,
+      std::is_same_v<DebugInfo, D>,
       "Use this class as direct base for DebugInfo.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedDebugInfo.");
 
  public: 
@@ -261,7 +262,7 @@ class TorqueGeneratedDebugInfo : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedDebugInfo() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedDebugInfo, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedDebugInfo, DAlias>,
         "class TorqueGeneratedDebugInfo should be used as direct base for DebugInfo.");
   }
 
@@ -279,10 +280,10 @@ V8_EXPORT_PRIVATE bool IsCoverageInfo_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedCoverageInfo : public P {
   static_assert(
-      std::is_same<CoverageInfo, D>::value,
+      std::is_same_v<CoverageInfo, D>,
       "Use this class as direct base for CoverageInfo.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedCoverageInfo.");
 
  public: 
@@ -350,7 +351,7 @@ class TorqueGeneratedCoverageInfo : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedCoverageInfo() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedCoverageInfo, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedCoverageInfo, DAlias>,
         "class TorqueGeneratedCoverageInfo should be used as direct base for CoverageInfo.");
   }
 
@@ -368,10 +369,10 @@ V8_EXPORT_PRIVATE bool IsStackFrameInfo_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedStackFrameInfo : public P {
   static_assert(
-      std::is_same<StackFrameInfo, D>::value,
+      std::is_same_v<StackFrameInfo, D>,
       "Use this class as direct base for StackFrameInfo.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedStackFrameInfo.");
 
  public: 
@@ -438,7 +439,7 @@ class TorqueGeneratedStackFrameInfo : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedStackFrameInfo() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedStackFrameInfo, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedStackFrameInfo, DAlias>,
         "class TorqueGeneratedStackFrameInfo should be used as direct base for StackFrameInfo.");
   }
 
@@ -448,18 +449,95 @@ class TorqueGeneratedStackFrameInfo : public P {
   inline explicit TorqueGeneratedStackFrameInfo(Address ptr);
 };
 
+// Alias for IsStackTraceInfo() that avoids inlining.
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+V8_EXPORT_PRIVATE bool IsStackTraceInfo_NonInline(Tagged<HeapObject> o);
+
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+template <class D, class P>
+class TorqueGeneratedStackTraceInfo : public P {
+  static_assert(
+      std::is_same_v<StackTraceInfo, D>,
+      "Use this class as direct base for StackTraceInfo.");
+  static_assert(
+      std::is_same_v<Struct, P>,
+      "Pass in Struct as second template parameter for TorqueGeneratedStackTraceInfo.");
+
+ public: 
+  using Super = P;
+  using TorqueGeneratedClass = TorqueGeneratedStackTraceInfo<D,P>;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=86&c=3
+  inline int id() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=86&c=3
+  inline void set_id(int value);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=88&c=3
+  inline Tagged<FixedArray> frames() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=88&c=3
+  inline Tagged<FixedArray> frames(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=88&c=3
+  inline void set_frames(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  DECL_PRINTER(StackTraceInfo)
+
+#ifdef VERIFY_HEAP
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+  V8_EXPORT_PRIVATE void StackTraceInfoVerify(Isolate* isolate);
+#endif  // VERIFY_HEAP
+
+  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=86&c=3
+  static constexpr int kIdOffset = P::kHeaderSize;
+  static constexpr int kIdOffsetEnd = kIdOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=88&c=3
+  static constexpr int kFramesOffset = kIdOffsetEnd + 1;
+  static constexpr int kFramesOffsetEnd = kFramesOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kFramesOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kFramesOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kFramesOffsetEnd + 1;
+  static constexpr int kHeaderSize = kFramesOffsetEnd + 1;
+  static constexpr int kSize = kFramesOffsetEnd + 1;
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+  V8_INLINE static constexpr int32_t SizeFor() {
+    DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
+    int32_t size = kHeaderSize;
+    return size;
+  }
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+  V8_INLINE int32_t AllocatedSize() const {
+    return SizeFor();
+  }
+
+  friend class Factory;
+
+  template <class DAlias = D>
+  constexpr TorqueGeneratedStackTraceInfo() : P() {
+    static_assert(
+        std::is_base_of_v<TorqueGeneratedStackTraceInfo, DAlias>,
+        "class TorqueGeneratedStackTraceInfo should be used as direct base for StackTraceInfo.");
+  }
+
+ protected:
+  inline explicit constexpr TorqueGeneratedStackTraceInfo(Address ptr, typename P::SkipTypeCheckTag
+)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
+  inline explicit TorqueGeneratedStackTraceInfo(Address ptr);
+};
+
 // Alias for IsErrorStackData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
 V8_EXPORT_PRIVATE bool IsErrorStackData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
 template <class D, class P>
 class TorqueGeneratedErrorStackData : public P {
   static_assert(
-      std::is_same<ErrorStackData, D>::value,
+      std::is_same_v<ErrorStackData, D>,
       "Use this class as direct base for ErrorStackData.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedErrorStackData.");
 
  public: 
@@ -467,49 +545,48 @@ class TorqueGeneratedErrorStackData : public P {
   using TorqueGeneratedClass = TorqueGeneratedErrorStackData<D,P>;
 
   // Torque type: (Smi | class HeapNumber | BigInt | class String | class Symbol | class Boolean | class Null | class Undefined | class JSReceiver | class FixedArray)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=108&c=3
   inline Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> call_site_infos_or_formatted_stack() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=108&c=3
   inline Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> call_site_infos_or_formatted_stack(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=108&c=3
   inline void set_call_site_infos_or_formatted_stack(Tagged<Union<BigInt, Boolean, FixedArray, HeapNumber, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class FixedArray)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
-  inline Tagged<Union<FixedArray, Smi>> limit_or_stack_frame_infos() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
-  inline Tagged<Union<FixedArray, Smi>> limit_or_stack_frame_infos(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
-  inline void set_limit_or_stack_frame_infos(Tagged<Union<FixedArray, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=110&c=3
+  inline Tagged<StackTraceInfo> stack_trace() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=110&c=3
+  inline Tagged<StackTraceInfo> stack_trace(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=110&c=3
+  inline void set_stack_trace(Tagged<StackTraceInfo> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(ErrorStackData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
   V8_EXPORT_PRIVATE void ErrorStackDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=117&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=108&c=3
   static constexpr int kCallSiteInfosOrFormattedStackOffset = P::kHeaderSize;
   static constexpr int kCallSiteInfosOrFormattedStackOffsetEnd = kCallSiteInfosOrFormattedStackOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=124&c=3
-  static constexpr int kLimitOrStackFrameInfosOffset = kCallSiteInfosOrFormattedStackOffsetEnd + 1;
-  static constexpr int kLimitOrStackFrameInfosOffsetEnd = kLimitOrStackFrameInfosOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kLimitOrStackFrameInfosOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kLimitOrStackFrameInfosOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kLimitOrStackFrameInfosOffsetEnd + 1;
-  static constexpr int kHeaderSize = kLimitOrStackFrameInfosOffsetEnd + 1;
-  static constexpr int kSize = kLimitOrStackFrameInfosOffsetEnd + 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=110&c=3
+  static constexpr int kStackTraceOffset = kCallSiteInfosOrFormattedStackOffsetEnd + 1;
+  static constexpr int kStackTraceOffsetEnd = kStackTraceOffset + kTaggedSize - 1;
+  static constexpr int kEndOfStrongFieldsOffset = kStackTraceOffsetEnd + 1;
+  static constexpr int kStartOfWeakFieldsOffset = kStackTraceOffsetEnd + 1;
+  static constexpr int kEndOfWeakFieldsOffset = kStackTraceOffsetEnd + 1;
+  static constexpr int kHeaderSize = kStackTraceOffsetEnd + 1;
+  static constexpr int kSize = kStackTraceOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 12);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -519,7 +596,7 @@ class TorqueGeneratedErrorStackData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedErrorStackData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedErrorStackData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedErrorStackData, DAlias>,
         "class TorqueGeneratedErrorStackData should be used as direct base for ErrorStackData.");
   }
 

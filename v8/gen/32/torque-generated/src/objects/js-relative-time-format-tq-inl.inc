@@ -16,7 +16,7 @@ Tagged<String> TorqueGeneratedJSRelativeTimeFormat<D, P>::locale(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSRelativeTimeFormat<D, P>::set_locale(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<String> TorqueGeneratedJSRelativeTimeFormat<D, P>::numberingSystem(PtrCom
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSRelativeTimeFormat<D, P>::set_numberingSystem(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kNumberingSystemOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNumberingSystemOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Foreign> TorqueGeneratedJSRelativeTimeFormat<D, P>::icu_formatter(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=16&c=3
 template<class D, class P>
 void TorqueGeneratedJSRelativeTimeFormat<D, P>::set_icu_formatter(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuFormatterOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuFormatterOffset, value, mode);
 }
@@ -77,7 +77,8 @@ int TorqueGeneratedJSRelativeTimeFormat<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-relative-time-format.tq?l=17&c=3
 template<class D, class P>
 void TorqueGeneratedJSRelativeTimeFormat<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSRelativeTimeFormatFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>

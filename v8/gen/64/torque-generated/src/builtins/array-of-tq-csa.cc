@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-of-tq-csa.h"
@@ -91,12 +91,12 @@ TF_BUILTIN(ArrayOf, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -132,13 +132,13 @@ TF_BUILTIN(ArrayOf, CodeStubAssembler) {
     ca_.Goto(&block3, tmp2);
   }
 
-  TNode<Object> phi_bb3_11;
+  TNode<JSAny> phi_bb3_11;
   TNode<JSFunction> tmp3;
   TNode<BoolT> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_11);
     tmp3 = GetArrayFunction_0(state_, TNode<Context>{parameter0});
-    tmp4 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{phi_bb3_11}, TNode<HeapObject>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{phi_bb3_11}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp3});
     ca_.Branch(tmp4, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
@@ -193,7 +193,7 @@ TF_BUILTIN(ArrayOf, CodeStubAssembler) {
   TNode<JSReceiver> tmp11;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    tmp11 = CodeStubAssembler(state_).Construct(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp8}, TNode<Object>{tmp0});
+    tmp11 = CodeStubAssembler(state_).Construct(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp8}, TNode<JSAny>{tmp0});
     ca_.Goto(&block11, tmp11);
   }
 
@@ -223,7 +223,7 @@ TF_BUILTIN(ArrayOf, CodeStubAssembler) {
   TNode<JSReceiver> phi_bb15_12;
   TNode<Smi> phi_bb15_13;
   TNode<IntPtrT> tmp14;
-  TNode<Object> tmp15;
+  TNode<JSAny> tmp15;
   TNode<Object> tmp16;
   TNode<Smi> tmp17;
   TNode<Smi> tmp18;
@@ -241,7 +241,7 @@ TF_BUILTIN(ArrayOf, CodeStubAssembler) {
   TNode<Smi> phi_bb16_13;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_12, &phi_bb16_13);
-    CodeStubAssembler(state_).SetPropertyLength(TNode<Context>{parameter0}, TNode<Object>{phi_bb16_12}, TNode<Number>{tmp0});
+    CodeStubAssembler(state_).SetPropertyLength(TNode<Context>{parameter0}, TNode<JSAny>{phi_bb16_12}, TNode<Number>{tmp0});
     arguments.PopAndReturn(phi_bb16_12);
   }
 }

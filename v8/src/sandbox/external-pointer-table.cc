@@ -42,7 +42,7 @@ class SegmentsIterator {
   using const_iterator = typename std::set<Segment>::const_reverse_iterator;
 
  public:
-  SegmentsIterator() {}
+  SegmentsIterator() = default;
 
   void AddSegments(const std::set<Segment>& segments, Data data) {
     streams_.emplace_back(segments.rbegin(), segments.rend(), data);
@@ -126,7 +126,7 @@ uint32_t ExternalPointerTable::EvacuateAndSweepAndCompact(Space* space,
     segments_iter.AddSegments(from_space_segments, from_space_compaction);
 
     FreelistHead empty_freelist;
-    from_space->freelist_head_.store(empty_freelist, std::memory_order_release);
+    from_space->freelist_head_.store(empty_freelist, std::memory_order_relaxed);
 
     for (Address field : from_space->invalidated_fields_)
       space->invalidated_fields_.push_back(field);
@@ -175,6 +175,7 @@ uint32_t ExternalPointerTable::EvacuateAndSweepAndCompact(Space* space,
         // field that owns the entry that is to be evacuated.
         Address handle_location =
             payload.ExtractEvacuationEntryHandleLocation();
+        DCHECK_NE(handle_location, kNullAddress);
 
         // The external pointer field may have been invalidated in the meantime
         // (for example if the host object has been in-place converted to a
@@ -207,7 +208,7 @@ uint32_t ExternalPointerTable::EvacuateAndSweepAndCompact(Space* space,
         // the entry that was evacuated must have been processed already (it
         // is in an evacuated segment, which are processed first as they are
         // at the end of the space). This will have cleared the marking bit.
-        DCHECK(at(i).GetRawPayload().ContainsPointer());
+        DCHECK(at(i).HasExternalPointer(kAnyExternalPointerTagRange));
         DCHECK(!at(i).GetRawPayload().HasMarkBitSet());
       } else if (!payload.HasMarkBitSet()) {
         FreeManagedResourceIfPresent(i);
@@ -241,6 +242,15 @@ uint32_t ExternalPointerTable::EvacuateAndSweepAndCompact(Space* space,
 
   // We cannot deallocate the segments during the above loop, so do it now.
   for (auto segment : segments_to_deallocate) {
+#ifdef DEBUG
+    // There should not be any live entries in the segments we are freeing.
+    // TODO(saelo): we should be able to assert here that we're not freeing any
+    // entries here. Otherwise, we'd have to FreeManagedResourceIfPresent.
+    // for (uint32_t i = segment.last_entry(); i >= segment.first_entry(); i--)
+    // {
+    //  CHECK(!at(i).HasExternalPointer(kAnyExternalPointerTag));
+    //}
+#endif
     FreeTableSegment(segment);
     space->segments_.erase(segment);
   }

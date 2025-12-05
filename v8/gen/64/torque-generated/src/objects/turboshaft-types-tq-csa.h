@@ -64,7 +64,7 @@ void StoreTurboshaftWord32RangeTypeTo_0(compiler::CodeAssemblerState* state_, TN
 TNode<Uint32T> LoadTurboshaftWord32SetTypeSetSize_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord32SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord32SetType> p_o);
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 FieldSliceTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord32SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
 TNode<Uint32T> LoadTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord32SetType> p_o, TNode<IntPtrT> p_i);
@@ -100,7 +100,7 @@ void StoreTurboshaftWord64RangeTypeToLow_0(compiler::CodeAssemblerState* state_,
 TNode<Uint32T> LoadTurboshaftWord64SetTypeSetSize_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o);
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 FieldSliceTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
 TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i);
@@ -109,7 +109,7 @@ TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssembler
 void StoreTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i, TNode<Uint32T> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=62&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o);
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 FieldSliceTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=62&c=3
 TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o, TNode<IntPtrT> p_i);
@@ -184,10 +184,10 @@ TNode<TurboshaftFloat64RangeType> DownCastForTorqueClass_TurboshaftFloat64RangeT
 TNode<TurboshaftFloat64SetType> DownCastForTorqueClass_TurboshaftFloat64SetType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 NewMutableSlice_uint32_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 NewMutableSlice_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=86&c=3
-TorqueStructSlice_float64_MutableReference_float64_0 NewMutableSlice_float64_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
+TorqueStructSlice_float64_MutableReference_float64_0 NewMutableSlice_float64_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
 
 } // namespace internal
 } // namespace v8

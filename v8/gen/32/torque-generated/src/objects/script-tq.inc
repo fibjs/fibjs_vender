@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsScript_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedScript : public P {
   static_assert(
-      std::is_same<Script, D>::value,
+      std::is_same_v<Script, D>,
       "Use this class as direct base for Script.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedScript.");
 
  public: 
@@ -120,19 +120,27 @@ class TorqueGeneratedScript : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=63&c=3
   inline void set_source_mapping_url(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
+  // Torque type: (class String | class Undefined)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+  inline Tagged<Union<String, Undefined>> debug_id() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+  inline Tagged<Union<String, Undefined>> debug_id(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+  inline void set_debug_id(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
   inline Tagged<FixedArray> host_defined_options() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
   inline Tagged<FixedArray> host_defined_options(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
   inline void set_host_defined_options(Tagged<FixedArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class String | class Undefined)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
   inline Tagged<Union<String, Undefined>> source_hash() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
   inline Tagged<Union<String, Undefined>> source_hash(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
   inline void set_source_hash(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(Script)
@@ -189,9 +197,12 @@ class TorqueGeneratedScript : public P {
   static constexpr int kSourceMappingUrlOffset = kSourceUrlOffsetEnd + 1;
   static constexpr int kSourceMappingUrlOffsetEnd = kSourceMappingUrlOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
-  static constexpr int kHostDefinedOptionsOffset = kSourceMappingUrlOffsetEnd + 1;
+  static constexpr int kDebugIdOffset = kSourceMappingUrlOffsetEnd + 1;
+  static constexpr int kDebugIdOffsetEnd = kDebugIdOffset + kTaggedSize - 1;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
+  static constexpr int kHostDefinedOptionsOffset = kDebugIdOffsetEnd + 1;
   static constexpr int kHostDefinedOptionsOffsetEnd = kHostDefinedOptionsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
   static constexpr int kSourceHashOffset = kHostDefinedOptionsOffsetEnd + 1;
   static constexpr int kSourceHashOffsetEnd = kSourceHashOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kSourceHashOffsetEnd + 1;
@@ -202,7 +213,7 @@ class TorqueGeneratedScript : public P {
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=19&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
-    DCHECK(kHeaderSize == kSize && kHeaderSize == 72);
+    DCHECK(kHeaderSize == kSize && kHeaderSize == 76);
     int32_t size = kHeaderSize;
     return size;
   }
@@ -217,7 +228,7 @@ class TorqueGeneratedScript : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedScript() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedScript, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedScript, DAlias>,
         "class TorqueGeneratedScript should be used as direct base for Script.");
   }
 

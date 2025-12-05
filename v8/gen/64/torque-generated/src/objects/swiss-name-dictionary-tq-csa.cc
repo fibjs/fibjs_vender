@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/swiss-name-dictionary-tq-csa.h"
@@ -493,7 +493,7 @@ TorqueStructProbeSequence_0 Probe_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block0);
     tmp0 = H1_0(state_, TNode<Uint32T>{p_hash});
     tmp1 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp0}, TNode<Uint32T>{p_mask});
-    tmp2 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp2 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block6);
   }
 
@@ -822,7 +822,7 @@ TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   if (block0.is_used()) {
@@ -834,16 +834,16 @@ TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_
     tmp4 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
     tmp5 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
-    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
+    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=12&c=3
-TNode<Object> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i) {
+TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -852,7 +852,7 @@ TNode<Object> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -869,15 +869,15 @@ TNode<Object> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    tmp10 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9});
+    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    tmp10 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
 
@@ -887,11 +887,11 @@ TNode<Object> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* s
   }
 
     ca_.Bind(&block10);
-  return TNode<Object>{tmp10};
+  return TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp10};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=12&c=3
-void StoreSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i, TNode<Object> p_v) {
+void StoreSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -900,7 +900,7 @@ void StoreSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -917,14 +917,14 @@ void StoreSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, T
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
+    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
 
@@ -944,7 +944,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryCt
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -956,7 +956,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryCt
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   if (block0.is_used()) {
@@ -971,12 +971,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryCt
     tmp9 = FromConstexpr_intptr_constexpr_int32_0(state_, swiss_table::Group::kWidth);
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9});
     tmp11 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp10});
-    std::tie(tmp12, tmp13, tmp14) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11}).Flatten();
+    std::tie(tmp12, tmp13, tmp14) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=13&c=3
@@ -989,7 +989,7 @@ TNode<Uint8T> LoadSwissNameDictionaryCtrlTable_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1006,14 +1006,14 @@ TNode<Uint8T> LoadSwissNameDictionaryCtrlTable_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1037,7 +1037,7 @@ void StoreSwissNameDictionaryCtrlTable_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1054,13 +1054,13 @@ void StoreSwissNameDictionaryCtrlTable_0(compiler::CodeAssemblerState* state_, T
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1081,7 +1081,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryPr
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -1091,7 +1091,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryPr
   TNode<Int32T> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
   if (block0.is_used()) {
@@ -1104,12 +1104,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryPr
     tmp7 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{p_o, tmp6});
     tmp8 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp7});
     tmp9 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp8});
-    std::tie(tmp10, tmp11, tmp12) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp9}).Flatten();
+    std::tie(tmp10, tmp11, tmp12) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp9}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=14&c=3
@@ -1122,7 +1122,7 @@ TNode<Uint8T> LoadSwissNameDictionaryPropertyDetailsTable_0(compiler::CodeAssemb
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1139,14 +1139,14 @@ TNode<Uint8T> LoadSwissNameDictionaryPropertyDetailsTable_0(compiler::CodeAssemb
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1170,7 +1170,7 @@ void StoreSwissNameDictionaryPropertyDetailsTable_0(compiler::CodeAssemblerState
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1187,13 +1187,13 @@ void StoreSwissNameDictionaryPropertyDetailsTable_0(compiler::CodeAssemblerState
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1233,7 +1233,7 @@ TNode<SwissNameDictionary> DownCastForTorqueClass_SwissNameDictionary_0(compiler
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(285), static_cast<InstanceType>(285))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(290), static_cast<InstanceType>(290))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1254,7 +1254,7 @@ TNode<SwissNameDictionary> DownCastForTorqueClass_SwissNameDictionary_0(compiler
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SwissNameDictionary>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -1276,7 +1276,7 @@ TNode<SwissNameDictionary> DownCastForTorqueClass_SwissNameDictionary_0(compiler
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(285));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(290));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -1310,12 +1310,12 @@ TNode<SwissNameDictionary> DownCastForTorqueClass_SwissNameDictionary_0(compiler
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(285), static_cast<InstanceType>(285))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(290), static_cast<InstanceType>(290))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(285));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(290));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -1428,7 +1428,7 @@ void FindEntry_GroupSse2Loader_0(compiler::CodeAssemblerState* state_, TNode<Swi
   TNode<Uint32T> tmp27;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_8, &phi_bb3_9);
-    tmp18 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb3_8});
+    tmp18 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb3_8});
     tmp19 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp18});
     tmp20 = CodeStubAssembler(state_).LoadSimd128(TNode<IntPtrT>{tmp19});
     tmp21 = Convert_I8X16_Simd128_0(state_, TNode<Simd128T>{tmp20});
@@ -1448,7 +1448,7 @@ void FindEntry_GroupSse2Loader_0(compiler::CodeAssemblerState* state_, TNode<Swi
   TNode<BoolT> tmp29;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_8, &phi_bb10_9, &phi_bb10_11);
-    tmp28 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp28 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp29 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{phi_bb10_11}, TNode<Uint32T>{tmp28});
     ca_.Branch(tmp29, &block8, std::vector<compiler::Node*>{phi_bb10_8, phi_bb10_9, phi_bb10_11}, &block9, std::vector<compiler::Node*>{phi_bb10_8, phi_bb10_9, phi_bb10_11});
   }
@@ -1471,9 +1471,9 @@ void FindEntry_GroupSse2Loader_0(compiler::CodeAssemblerState* state_, TNode<Swi
     tmp32 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp31});
     tmp33 = CodeStubAssembler(state_).Uint32Add(TNode<Uint32T>{phi_bb8_8}, TNode<Uint32T>{tmp32});
     tmp34 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp33}, TNode<Uint32T>{tmp14});
-    tmp35 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp34});
+    tmp35 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp34});
     tmp36 = CodeStubAssembler(state_).LoadSwissNameDictionaryKey(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp35});
-    tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{p_key}, TNode<MaybeObject>{tmp36});
+    tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_key}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp36});
     ca_.Branch(tmp37, &block14, std::vector<compiler::Node*>{phi_bb8_8, phi_bb8_9, phi_bb8_11}, &block15, std::vector<compiler::Node*>{phi_bb8_8, phi_bb8_9, phi_bb8_11});
   }
 
@@ -1492,7 +1492,7 @@ void FindEntry_GroupSse2Loader_0(compiler::CodeAssemblerState* state_, TNode<Swi
   TNode<Uint32T> tmp38;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_8, &phi_bb15_9, &phi_bb15_11);
-    tmp38 = ClearLowestSetBit_uint32_0(state_, TNode<Uint32T>{phi_bb15_11});
+    tmp38 = ClearLowestSetBit_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb15_11});
     ca_.Goto(&block10, phi_bb15_8, phi_bb15_9, tmp38);
   }
 
@@ -1515,7 +1515,7 @@ void FindEntry_GroupSse2Loader_0(compiler::CodeAssemblerState* state_, TNode<Swi
     tmp42 = CodeStubAssembler(state_).I8x16Eq(TNode<I8x16T>{tmp41}, TNode<I8x16T>{tmp21});
     tmp43 = CodeStubAssembler(state_).I8x16BitMask(TNode<I8x16T>{tmp42});
     tmp44 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp43});
-    tmp45 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp45 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp46 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp44}, TNode<Uint32T>{tmp45});
     ca_.Branch(tmp46, &block17, std::vector<compiler::Node*>{phi_bb9_8, phi_bb9_9, phi_bb9_11}, &block18, std::vector<compiler::Node*>{phi_bb9_8, phi_bb9_9, phi_bb9_11});
   }
@@ -1635,11 +1635,11 @@ void FindEntry_GroupPortableLoader_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Uint64T> tmp31;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_8, &phi_bb3_9);
-    tmp18 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb3_8});
+    tmp18 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb3_8});
     tmp19 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp18});
     tmp20 = CodeStubAssembler(state_).LoadSwissNameDictionaryCtrlTableGroup(TNode<IntPtrT>{tmp19});
     tmp21 = H2_0(state_, TNode<Uint32T>{tmp0});
-    tmp22 = Convert_uint64_uint32_0(state_, TNode<Uint32T>{tmp21});
+    tmp22 = Convert_uint64_WasmCodePointer_0(state_, TNode<Uint32T>{tmp21});
     tmp23 = FromConstexpr_uint64_constexpr_uint64_0(state_, swiss_table::GroupPortableImpl::kLsbs);
     tmp24 = CodeStubAssembler(state_).Uint64Mul(TNode<Uint64T>{tmp23}, TNode<Uint64T>{tmp22});
     tmp25 = CodeStubAssembler(state_).Word64Xor(TNode<Uint64T>{tmp20}, TNode<Uint64T>{tmp24});
@@ -1688,9 +1688,9 @@ void FindEntry_GroupPortableLoader_0(compiler::CodeAssemblerState* state_, TNode
     tmp39 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp38});
     tmp40 = CodeStubAssembler(state_).Uint32Add(TNode<Uint32T>{phi_bb8_8}, TNode<Uint32T>{tmp39});
     tmp41 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp40}, TNode<Uint32T>{tmp14});
-    tmp42 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp41});
+    tmp42 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp41});
     tmp43 = CodeStubAssembler(state_).LoadSwissNameDictionaryKey(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp42});
-    tmp44 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{p_key}, TNode<MaybeObject>{tmp43});
+    tmp44 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_key}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp43});
     ca_.Branch(tmp44, &block14, std::vector<compiler::Node*>{phi_bb8_8, phi_bb8_9, phi_bb8_11}, &block15, std::vector<compiler::Node*>{phi_bb8_8, phi_bb8_9, phi_bb8_11});
   }
 
@@ -1827,10 +1827,10 @@ void Add_GroupSse2Loader_0(compiler::CodeAssemblerState* state_, TNode<SwissName
     tmp11 = FindFirstEmpty_GroupSse2Loader_0(state_, TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<Uint32T>{tmp10});
     tmp12 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp11});
     CodeStubAssembler(state_).StoreSwissNameDictionaryKeyAndValue(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp12}, TNode<Object>{p_key}, TNode<Object>{p_value});
-    tmp13 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp8});
+    tmp13 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp8});
     CodeStubAssembler(state_).StoreSwissNameDictionaryEnumToEntryMapping(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp13}, TNode<Int32T>{tmp11});
     tmp14 = H2_0(state_, TNode<Uint32T>{tmp10});
-    tmp15 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp14});
+    tmp15 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp14});
     tmp16 = Convert_uint8_intptr_0(state_, TNode<IntPtrT>{tmp15});
     CodeStubAssembler(state_).SwissNameDictionarySetCtrl(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp12}, TNode<Uint8T>{tmp16});
     CodeStubAssembler(state_).StoreSwissNameDictionaryPropertyDetails(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp12}, TNode<Uint8T>{p_propertyDetails});
@@ -1896,10 +1896,10 @@ void Add_GroupPortableLoader_0(compiler::CodeAssemblerState* state_, TNode<Swiss
     tmp11 = FindFirstEmpty_GroupPortableLoader_0(state_, TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<Uint32T>{tmp10});
     tmp12 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp11});
     CodeStubAssembler(state_).StoreSwissNameDictionaryKeyAndValue(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp12}, TNode<Object>{p_key}, TNode<Object>{p_value});
-    tmp13 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp8});
+    tmp13 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp8});
     CodeStubAssembler(state_).StoreSwissNameDictionaryEnumToEntryMapping(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp13}, TNode<Int32T>{tmp11});
     tmp14 = H2_0(state_, TNode<Uint32T>{tmp10});
-    tmp15 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp14});
+    tmp15 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp14});
     tmp16 = Convert_uint8_intptr_0(state_, TNode<IntPtrT>{tmp15});
     CodeStubAssembler(state_).SwissNameDictionarySetCtrl(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp12}, TNode<Uint8T>{tmp16});
     CodeStubAssembler(state_).StoreSwissNameDictionaryPropertyDetails(TNode<SwissNameDictionary>{p_table}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp12}, TNode<Uint8T>{p_propertyDetails});
@@ -1978,7 +1978,7 @@ TNode<Int32T> FindFirstEmpty_GroupSse2Loader_0(compiler::CodeAssemblerState* sta
   TNode<BoolT> tmp26;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_7, &phi_bb2_8);
-    tmp15 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb2_7});
+    tmp15 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb2_7});
     tmp16 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp15});
     tmp17 = CodeStubAssembler(state_).LoadSimd128(TNode<IntPtrT>{tmp16});
     tmp18 = Convert_I8X16_Simd128_0(state_, TNode<Simd128T>{tmp17});
@@ -1988,7 +1988,7 @@ TNode<Int32T> FindFirstEmpty_GroupSse2Loader_0(compiler::CodeAssemblerState* sta
     tmp22 = CodeStubAssembler(state_).I8x16Eq(TNode<I8x16T>{tmp21}, TNode<I8x16T>{tmp18});
     tmp23 = CodeStubAssembler(state_).I8x16BitMask(TNode<I8x16T>{tmp22});
     tmp24 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp23});
-    tmp25 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp25 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp26 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp24}, TNode<Uint32T>{tmp25});
     ca_.Branch(tmp26, &block7, std::vector<compiler::Node*>{phi_bb2_7, phi_bb2_8}, &block8, std::vector<compiler::Node*>{phi_bb2_7, phi_bb2_8});
   }
@@ -2108,7 +2108,7 @@ TNode<Int32T> FindFirstEmpty_GroupPortableLoader_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp25;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_7, &phi_bb2_8);
-    tmp15 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb2_7});
+    tmp15 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb2_7});
     tmp16 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp15});
     tmp17 = CodeStubAssembler(state_).LoadSwissNameDictionaryCtrlTableGroup(TNode<IntPtrT>{tmp16});
     tmp18 = CodeStubAssembler(state_).Word64Not(TNode<Uint64T>{tmp17});

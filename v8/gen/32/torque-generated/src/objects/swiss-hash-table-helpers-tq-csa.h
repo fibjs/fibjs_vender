@@ -21,7 +21,7 @@ TNode<Uint64T> ClearLowestSetBit_uint64_0(compiler::CodeAssemblerState* state_, 
 TNode<Int32T> Convert_int32_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-hash-table-helpers.tq?l=87&c=17
-TNode<Uint32T> ClearLowestSetBit_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value);
+TNode<Uint32T> ClearLowestSetBit_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value);
 
 } // namespace internal
 } // namespace v8

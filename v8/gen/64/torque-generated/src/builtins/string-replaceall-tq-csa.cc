@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-replaceall-tq-csa.h"
@@ -85,7 +85,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-replaceall.tq?l=12&c=1
-void ThrowIfNotGlobal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_searchValue) {
+void ThrowIfNotGlobal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_searchValue) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -109,9 +109,9 @@ void ThrowIfNotGlobal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
     }
   }
 
-  TNode<Object> tmp2;
-  TNode<Object> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp2;
+  TNode<JSAny> tmp3;
+  TNode<JSAny> tmp4;
   TNode<String> tmp5;
   TNode<String> tmp6;
   TNode<Smi> tmp7;
@@ -121,9 +121,9 @@ void ThrowIfNotGlobal_0(compiler::CodeAssemblerState* state_, TNode<Context> p_c
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp2 = FromConstexpr_JSAny_constexpr_string_0(state_, "flags");
-    tmp3 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_searchValue}, TNode<Object>{tmp2});
-    tmp4 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3}, "String.prototype.replaceAll");
-    tmp5 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{tmp3});
+    tmp3 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{p_searchValue}, TNode<JSAny>{tmp2});
+    tmp4 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp3}, "String.prototype.replaceAll");
+    tmp5 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp3});
     tmp6 = CodeStubAssembler(state_).StringConstant("g");
     tmp7 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp8 = ca_.CallBuiltin<Smi>(Builtin::kStringIndexOf, TNode<Object>(), tmp5, tmp6, tmp7);
@@ -164,12 +164,13 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kSearchValue);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kSearchValue);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kReplaceValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kReplaceValue);
   USE(parameter3);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kStringReplaceAll));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -181,7 +182,7 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, String, Smi> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, String, Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi, String, Smi> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -192,14 +193,14 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Smi, String, Smi> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<Undefined> tmp1;
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "String.prototype.replaceAll");
+    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "String.prototype.replaceAll");
     tmp1 = Undefined_0(state_);
-    tmp2 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp1});
+    tmp2 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1});
     ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -208,7 +209,7 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp3 = Null_0(state_);
-    tmp4 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp3});
     ca_.Goto(&block5, tmp4);
   }
 
@@ -228,23 +229,23 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   TNode<BoolT> tmp6;
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    tmp6 = IsRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp6 = IsRegExp_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     ca_.Branch(tmp6, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
 
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    ThrowIfNotGlobal_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    ThrowIfNotGlobal_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     ca_.Goto(&block7);
   }
 
   TNode<Symbol> tmp7;
-  TNode<JSReceiver> tmp8;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp8;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp7 = CodeStubAssembler(state_).ReplaceSymbolConstant();
     compiler::CodeAssemblerLabel label9(&ca_);
-    tmp8 = GetMethod_3(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Symbol>{tmp7}, &label9);
+    tmp8 = GetMethod_3(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, TNode<Symbol>{tmp7}, &label9);
     ca_.Goto(&block10);
     if (label9.is_used()) {
       ca_.Bind(&label9);
@@ -257,10 +258,10 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp8}, TNode<Object>{parameter2}, TNode<Object>{parameter1}, TNode<Object>{parameter3});
+    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp8}, TNode<JSAny>{parameter2}, TNode<JSAny>{parameter1}, TNode<JSAny>{parameter3});
     CodeStubAssembler(state_).Return(tmp10);
   }
 
@@ -270,9 +271,9 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   TNode<BoolT> tmp14;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp11 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp12 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    tmp13 = Is_Callable_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter3});
+    tmp11 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp12 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
+    tmp13 = Is_Callable_JSAny_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter3});
     tmp14 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp13});
     ca_.Branch(tmp14, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{parameter3});
   }
@@ -280,11 +281,11 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   TNode<String> tmp15;
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    tmp15 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter3});
+    tmp15 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter3});
     ca_.Goto(&block13, tmp15);
   }
 
-  TNode<Object> phi_bb13_6;
+  TNode<JSAny> phi_bb13_6;
   TNode<Smi> tmp16;
   TNode<Smi> tmp17;
   TNode<Smi> tmp18;
@@ -327,16 +328,16 @@ TF_BUILTIN(StringPrototypeReplaceAll, CodeStubAssembler) {
   TNode<Smi> phi_bb17_10;
   TNode<String> phi_bb17_11;
   TNode<Smi> phi_bb17_12;
-  TNode<JSReceiver> tmp25;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp25;
   TNode<Undefined> tmp26;
-  TNode<Object> tmp27;
+  TNode<JSAny> tmp27;
   TNode<String> tmp28;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_10, &phi_bb17_11, &phi_bb17_12);
     tmp25 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb13_6});
     tmp26 = Undefined_0(state_);
-    tmp27 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp25}, TNode<Object>{tmp26}, TNode<Object>{tmp12}, TNode<Object>{phi_bb17_12}, TNode<Object>{tmp11});
-    tmp28 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp27});
+    tmp27 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp25}, TNode<JSAny>{tmp26}, TNode<JSAny>{tmp12}, TNode<JSAny>{phi_bb17_12}, TNode<JSAny>{tmp11});
+    tmp28 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp27});
     ca_.Goto(&block19, phi_bb17_10, phi_bb17_11, phi_bb17_12, tmp28);
   }
 

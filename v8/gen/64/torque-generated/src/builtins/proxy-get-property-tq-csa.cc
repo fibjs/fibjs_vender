@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-get-property-tq-csa.h"
@@ -89,9 +89,9 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSProxy> parameter1 = UncheckedParameter<JSProxy>(Descriptor::kProxy);
   USE(parameter1);
-  TNode<Name> parameter2 = UncheckedParameter<Name>(Descriptor::kName);
+  TNode<Union<String, Symbol>> parameter2 = UncheckedParameter<Union<String, Symbol>>(Descriptor::kName);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kReceiverValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kReceiverValue);
   USE(parameter3);
   TNode<Smi> parameter4 = UncheckedParameter<Smi>(Descriptor::kOnNonExistent);
   USE(parameter4);
@@ -105,13 +105,13 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<Union<JSReceiver, Null>> tmp1;
   TNode<Null> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     CodeStubAssembler(state_).PerformStackCheck(TNode<Context>{parameter0});
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{parameter1, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{parameter1, tmp0});
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Null_0(state_, TNode<HeapObject>{tmp1}, &label3);
     ca_.Goto(&block15);
@@ -122,12 +122,12 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<HeapObject> tmp5;
+  TNode<Union<JSReceiver, Null>> tmp5;
   TNode<JSReceiver> tmp6;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{parameter1, tmp4});
+    tmp5 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{parameter1, tmp4});
     compiler::CodeAssemblerLabel label7(&ca_);
     tmp6 = Cast_JSReceiver_0(state_, TNode<HeapObject>{tmp5}, &label7);
     ca_.Goto(&block19);
@@ -148,7 +148,7 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
   }
 
   TNode<String> tmp8;
-  TNode<JSReceiver> tmp9;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp9;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp8 = CodeStubAssembler(state_).GetStringConstant();
@@ -161,17 +161,17 @@ TF_BUILTIN(ProxyGetProperty, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   if (block24.is_used()) {
     ca_.Bind(&block24);
-    tmp11 = ca_.CallBuiltin<Object>(Builtin::kGetPropertyWithReceiver, parameter0, tmp6, parameter2, parameter3, parameter4);
+    tmp11 = ca_.CallBuiltin<JSAny>(Builtin::kGetPropertyWithReceiver, parameter0, tmp6, parameter2, parameter3, parameter4);
     CodeStubAssembler(state_).Return(tmp11);
   }
 
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   if (block23.is_used()) {
     ca_.Bind(&block23);
-    tmp12 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp9}, TNode<Object>{ca_.UncheckedCast<JSReceiver>(tmp1)}, TNode<Object>{tmp6}, TNode<Object>{parameter2}, TNode<Object>{parameter3});
+    tmp12 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp9}, TNode<JSAny>{ca_.UncheckedCast<JSReceiver>(tmp1)}, TNode<JSAny>{tmp6}, TNode<JSAny>{parameter2}, TNode<JSAny>{parameter3});
     ProxiesCodeStubAssembler(state_).CheckGetSetTrapResult(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp6}, TNode<JSProxy>{parameter1}, TNode<Name>{parameter2}, TNode<Object>{tmp12}, JSProxy::AccessKind::kGet);
     CodeStubAssembler(state_).Return(tmp12);
   }

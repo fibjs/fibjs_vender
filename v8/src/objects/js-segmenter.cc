@@ -24,18 +24,17 @@
 namespace v8 {
 namespace internal {
 
-MaybeHandle<JSSegmenter> JSSegmenter::New(Isolate* isolate,
-                                          DirectHandle<Map> map,
-                                          Handle<Object> locales,
-                                          Handle<Object> input_options) {
+MaybeDirectHandle<JSSegmenter> JSSegmenter::New(
+    Isolate* isolate, DirectHandle<Map> map, DirectHandle<Object> locales,
+    DirectHandle<Object> input_options) {
   // 4. Let requestedLocales be ? CanonicalizeLocaleList(locales).
   Maybe<std::vector<std::string>> maybe_requested_locales =
       Intl::CanonicalizeLocaleList(isolate, locales);
-  MAYBE_RETURN(maybe_requested_locales, Handle<JSSegmenter>());
+  MAYBE_RETURN(maybe_requested_locales, DirectHandle<JSSegmenter>());
   std::vector<std::string> requested_locales =
       maybe_requested_locales.FromJust();
 
-  Handle<JSReceiver> options;
+  DirectHandle<JSReceiver> options;
   const char* service = "Intl.Segmenter";
   // 5. Let options be GetOptionsObject(_options_).
   ASSIGN_RETURN_ON_EXCEPTION(isolate, options,
@@ -47,20 +46,19 @@ MaybeHandle<JSSegmenter> JSSegmenter::New(Isolate* isolate,
   // 9. Set opt.[[localeMatcher]] to matcher.
   Maybe<Intl::MatcherOption> maybe_locale_matcher =
       Intl::GetLocaleMatcher(isolate, options, service);
-  MAYBE_RETURN(maybe_locale_matcher, MaybeHandle<JSSegmenter>());
+  MAYBE_RETURN(maybe_locale_matcher, MaybeDirectHandle<JSSegmenter>());
   Intl::MatcherOption matcher = maybe_locale_matcher.FromJust();
 
   // 10. Let localeData be %Segmenter%.[[LocaleData]].
 
   // 11. Let r be ResolveLocale(%Segmenter%.[[AvailableLocales]],
   // requestedLocales, opt, %Segmenter%.[[RelevantExtensionKeys]]).
-  Maybe<Intl::ResolvedLocale> maybe_resolve_locale =
-      Intl::ResolveLocale(isolate, JSSegmenter::GetAvailableLocales(),
-                          requested_locales, matcher, {});
-  if (maybe_resolve_locale.IsNothing()) {
+  Intl::ResolvedLocale r;
+  if (!Intl::ResolveLocale(isolate, JSSegmenter::GetAvailableLocales(),
+                           requested_locales, matcher, {})
+           .To(&r)) {
     THROW_NEW_ERROR(isolate, NewRangeError(MessageTemplate::kIcuError));
   }
-  Intl::ResolvedLocale r = maybe_resolve_locale.FromJust();
 
   // 12. Set segmenter.[[Locale]] to the value of r.[[locale]].
   DirectHandle<String> locale_str =
@@ -70,10 +68,11 @@ MaybeHandle<JSSegmenter> JSSegmenter::New(Isolate* isolate,
   // "grapheme", "word", "sentence" », "grapheme").
   Maybe<Granularity> maybe_granularity = GetStringOption<Granularity>(
       isolate, options, "granularity", service,
-      {"grapheme", "word", "sentence"},
-      {Granularity::GRAPHEME, Granularity::WORD, Granularity::SENTENCE},
+      std::to_array<const std::string_view>({"grapheme", "word", "sentence"}),
+      std::array{Granularity::GRAPHEME, Granularity::WORD,
+                 Granularity::SENTENCE},
       Granularity::GRAPHEME);
-  MAYBE_RETURN(maybe_granularity, MaybeHandle<JSSegmenter>());
+  MAYBE_RETURN(maybe_granularity, MaybeDirectHandle<JSSegmenter>());
   Granularity granularity_enum = maybe_granularity.FromJust();
 
   icu::Locale icu_locale = r.icu_locale;
@@ -105,7 +104,7 @@ MaybeHandle<JSSegmenter> JSSegmenter::New(Isolate* isolate,
                                         std::move(icu_break_iterator));
 
   // Now all properties are ready, so we can allocate the result object.
-  Handle<JSSegmenter> segmenter =
+  DirectHandle<JSSegmenter> segmenter =
       Cast<JSSegmenter>(isolate->factory()->NewFastOrSlowJSObjectFromMap(map));
   DisallowGarbageCollection no_gc;
   segmenter->set_flags(0);
@@ -123,11 +122,12 @@ MaybeHandle<JSSegmenter> JSSegmenter::New(Isolate* isolate,
 }
 
 // ecma402 #sec-Intl.Segmenter.prototype.resolvedOptions
-Handle<JSObject> JSSegmenter::ResolvedOptions(
+DirectHandle<JSObject> JSSegmenter::ResolvedOptions(
     Isolate* isolate, DirectHandle<JSSegmenter> segmenter) {
   Factory* factory = isolate->factory();
   // 3. Let options be ! ObjectCreate(%ObjectPrototype%).
-  Handle<JSObject> result = factory->NewJSObject(isolate->object_function());
+  DirectHandle<JSObject> result =
+      factory->NewJSObject(isolate->object_function());
   // 4. For each row of Table 1, except the header row, do
   // a. Let p be the Property value of the current row.
   // b. Let v be the value of pr's internal slot whose name is the Internal Slot

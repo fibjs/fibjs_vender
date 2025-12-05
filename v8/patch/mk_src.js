@@ -28,6 +28,8 @@ const arch_opts = {
 }
 
 const skip_list = [
+    ".*_unittest.cc",
+    "^gen/.*/torque-generated/src/objects/js-temporal-objects-tq.*.cc",
     "^src/base/ubsan.cc",
 
     "^src/base/debug/stack_trace_zos.cc",
@@ -40,11 +42,9 @@ const skip_list = [
 
     "^src/baseline/baseline-batch-compiler.cc",
 
-    "^src/compiler/turboshaft/maglev-graph-building-phase.cc",
+    "^src/builtins/builtins-temporal.cc",
 
     "^src/debug/wasm/gdb-server/",
-
-    "^src/deoptimizer/deoptimizer-cfi-empty.cc",
 
     "^src/diagnostics/unwinding-info-win64.cc",
 
@@ -57,7 +57,8 @@ const skip_list = [
 
     "^src/fuzzilli/*",
 
-    "^src/heap/conservative-stack-visitor.cc",
+    "^src/wasm/fuzzing/random-module-generation.cc",
+
     "^src/heap/cppgc/caged-heap.cc",
 
     "^src/init/setup-isolate-full.cc",
@@ -66,7 +67,15 @@ const skip_list = [
     "^src/libplatform/tracing/recorder-mac.cc",
     "^src/libplatform/tracing/recorder-win.cc",
 
-    "^src/maglev/",
+    "^src/maglev/maglev-assembler.cc",
+    "^src/maglev/maglev-code-generator.cc",
+    "^src/maglev/maglev-compiler.cc",
+    "^src/maglev/maglev-concurrent-dispatcher.cc",
+    "^src/maglev/maglev-pipeline-statistics.cc",
+    "^src/maglev/maglev-regalloc.cc",
+    "^src/maglev/maglev.cc",
+
+    "^src/objects/js-temporal-objects.cc",
 
     "^src/snapshot/snapshot-empty.cc",
     "^src/snapshot/snapshot-compression.cc",
@@ -79,8 +88,6 @@ const skip_list = [
     "^src/trap-handler/handler-inside-",
     "^src/trap-handler/handler-outside-",
 
-    "^src/third_party/vtune/",
-
     "^src/wasm/interpreter/*.",
 ];
 
@@ -88,6 +95,11 @@ const revect_list = [
     "^src/compiler/revectorizer.cc",
     "^src/compiler/turboshaft/wasm-revec-reducer.cc",
     "^src/compiler/turboshaft/wasm-revec-phase.cc"
+];
+
+const third_party_list = [
+    "third_party/highway/hwy/abort.cc",
+    "third_party/simdutf/simdutf.cpp"
 ];
 
 function get_src() {
@@ -208,22 +220,21 @@ function gen_list(arch, os) {
             // skip_name("^src/diagnostics/etw-jit-win.cc")
 
             if (arch == "ia32") {
-                skip_name("^src/heap/base/asm/ia32/push_registers_asm.cc")
-                src_list.push("src/heap/base/asm/ia32/push_registers_masm.asm")
+                // skip_name("^src/heap/base/asm/ia32/push_registers_asm.cc")
+                // src_list.push("src/heap/base/asm/ia32/push_registers_masm.asm")
             } else {
                 src_list.push(
                     "src/trap-handler/handler-outside-win.cc",
+                    "src/trap-handler/handler-inside-win.cc",
                     "src/diagnostics/unwinding-info-win64.cc"
                 );
 
                 if (arch == "x64") {
-                    src_list.push("src/trap-handler/handler-inside-win.cc");
-
-                    skip_name("^src/heap/base/asm/x64/push_registers_asm.cc")
-                    src_list.push("src/heap/base/asm/x64/push_registers_masm.asm")
+                    skip_name("^src/heap/base/asm/x64/push_registers_asm.cc");
+                    src_list.push("src/heap/base/asm/x64/push_registers_masm.asm");
                 } else if (arch == "arm64") {
-                    skip_name("^src/heap/base/asm/arm64/push_registers_asm.cc")
-                    src_list.push("src/heap/base/asm/arm64/push_registers_masm.S")
+                    // skip_name("^src/heap/base/asm/arm64/push_registers_asm.cc")
+                    // src_list.push("src/heap/base/asm/arm64/push_registers_masm.S")
                 }
             }
             src_list.push("src/snapshot/embedded/platform-embedded-file-writer-mac.cc")
@@ -283,6 +294,8 @@ function gen_list(arch, os) {
             `patch/snapshot/embedded-${arch}-${os}.${os == "Windows" ? "asm" : "S"}`,
             `patch/snapshot/snapshot-${arch}-${os}.cc`
         );
+
+    src_list = src_list.concat(third_party_list);
 
     src_list.sort();
 

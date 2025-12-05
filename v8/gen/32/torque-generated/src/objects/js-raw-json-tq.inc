@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSRawJson_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSRawJson : public P {
   static_assert(
-      std::is_same<JSRawJson, D>::value,
+      std::is_same_v<JSRawJson, D>,
       "Use this class as direct base for JSRawJson.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSRawJson.");
 
  public: 
@@ -35,7 +35,7 @@ class TorqueGeneratedJSRawJson : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRawJson() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRawJson, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRawJson, DAlias>,
         "class TorqueGeneratedJSRawJson should be used as direct base for JSRawJson.");
   }
 

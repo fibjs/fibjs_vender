@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-source-tq-csa.h"
@@ -84,7 +84,7 @@ TF_BUILTIN(RegExpPrototypeSourceGetter, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -115,11 +115,11 @@ TF_BUILTIN(RegExpPrototypeSourceGetter, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<PrimitiveHeapObject> tmp5;
+  TNode<Union<String, Undefined>> tmp5;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp5 = CodeStubAssembler(state_).LoadReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{tmp0, tmp4});
+    tmp5 = CodeStubAssembler(state_).LoadReference<Union<String, Undefined>>(CodeStubAssembler::Reference{tmp0, tmp4});
     CodeStubAssembler(state_).Return(tmp5);
   }
 
@@ -128,7 +128,7 @@ TF_BUILTIN(RegExpPrototypeSourceGetter, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kRegExpNonRegExp, "RegExp.prototype.source");
   }
 
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = FromConstexpr_JSAny_constexpr_string_0(state_, "(?:)");

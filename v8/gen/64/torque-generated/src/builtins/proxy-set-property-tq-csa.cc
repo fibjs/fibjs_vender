@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-set-property-tq-csa.h"
@@ -114,11 +114,11 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSProxy> parameter1 = UncheckedParameter<JSProxy>(Descriptor::kProxy);
   USE(parameter1);
-  TNode<Name> parameter2 = UncheckedParameter<Name>(Descriptor::kName);
+  TNode<Union<String, Symbol>> parameter2 = UncheckedParameter<Union<String, Symbol>>(Descriptor::kName);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
-  TNode<Object> parameter4 = UncheckedParameter<Object>(Descriptor::kReceiverValue);
+  TNode<JSAny> parameter4 = UncheckedParameter<JSAny>(Descriptor::kReceiverValue);
   USE(parameter4);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -145,12 +145,12 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp2;
-  TNode<HeapObject> tmp3;
+  TNode<Union<JSReceiver, Null>> tmp3;
   TNode<JSReceiver> tmp4;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp3 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{parameter1, tmp2});
+    tmp3 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{parameter1, tmp2});
     compiler::CodeAssemblerLabel label5(&ca_);
     tmp4 = Cast_JSReceiver_0(state_, TNode<HeapObject>{tmp3}, &label5);
     ca_.Goto(&block24);
@@ -174,16 +174,16 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp7;
-  TNode<HeapObject> tmp8;
+  TNode<Union<JSReceiver, Null>> tmp8;
   TNode<JSReceiver> tmp9;
-  TNode<JSReceiver> tmp10;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp10;
   if (block24.is_used()) {
     ca_.Bind(&block24);
     tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp8 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{parameter1, tmp7});
+    tmp8 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{parameter1, tmp7});
     tmp9 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp8});
     compiler::CodeAssemblerLabel label11(&ca_);
-    tmp10 = GetMethod_2(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4}, "set", &label11);
+    tmp10 = GetMethod_2(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, "set", &label11);
     ca_.Goto(&block28);
     if (label11.is_used()) {
       ca_.Bind(&label11);
@@ -197,12 +197,12 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(parameter3);
   }
 
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   TNode<BoolT> tmp13;
   if (block28.is_used()) {
     ca_.Bind(&block28);
-    tmp12 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp10}, TNode<Object>{tmp4}, TNode<Object>{tmp9}, TNode<Object>{ca_.UncheckedCast<Name>(parameter2)}, TNode<Object>{parameter3}, TNode<Object>{parameter4});
-    tmp13 = ToBoolean_0(state_, TNode<Object>{tmp12});
+    tmp12 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp10}, TNode<JSAny>{tmp4}, TNode<JSAny>{tmp9}, TNode<JSAny>{ca_.UncheckedCast<Union<String, Symbol>>(parameter2)}, TNode<JSAny>{parameter3}, TNode<JSAny>{parameter4});
+    tmp13 = ToBoolean_0(state_, TNode<JSAny>{tmp12});
     ca_.Branch(tmp13, &block30, std::vector<compiler::Node*>{}, &block31, std::vector<compiler::Node*>{});
   }
 
@@ -224,7 +224,7 @@ TF_BUILTIN(ProxySetProperty, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-set-property.tq?l=26&c=10
-TNode<BoolT> Is_Name_AnyName_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Name> p_o) {
+TNode<BoolT> Is_Name_AnyName_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<String, Symbol>> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

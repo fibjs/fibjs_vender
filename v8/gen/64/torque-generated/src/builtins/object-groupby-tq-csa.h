@@ -7,10 +7,10 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object-groupby.tq?l=15&c=1
-TNode<Object> CoerceGroupKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_key, TNode<Boolean> p_coerceToProperty);
+TNode<JSAny> CoerceGroupKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_key, TNode<Boolean> p_coerceToProperty);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object-groupby.tq?l=94&c=1
-TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_items, TNode<Object> p_callback, TNode<Boolean> p_coerceToProperty, const char* p_methodName);
+TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_items, TNode<JSAny> p_callback, TNode<Boolean> p_coerceToProperty, const char* p_methodName);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object-groupby.tq?l=109&c=7
 TNode<JSArray> Cast_FastJSArrayForReadWithNoCustomIteration_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);

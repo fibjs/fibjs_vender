@@ -1,5 +1,4 @@
 class PropertyCell;
-class ConstTrackingLetCell;
 // Alias for IsPropertyCell() that avoids inlining.
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=6&c=1
 V8_EXPORT_PRIVATE bool IsPropertyCell_NonInline(Tagged<HeapObject> o);
@@ -8,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsPropertyCell_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedPropertyCell : public P {
   static_assert(
-      std::is_same<PropertyCell, D>::value,
+      std::is_same_v<PropertyCell, D>,
       "Use this class as direct base for PropertyCell.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedPropertyCell.");
 
  public: 
@@ -89,7 +88,7 @@ class TorqueGeneratedPropertyCell : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPropertyCell() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPropertyCell, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPropertyCell, DAlias>,
         "class TorqueGeneratedPropertyCell should be used as direct base for PropertyCell.");
   }
 
@@ -97,75 +96,5 @@ class TorqueGeneratedPropertyCell : public P {
   inline explicit constexpr TorqueGeneratedPropertyCell(Address ptr, typename P::SkipTypeCheckTag
 )    : P(ptr, typename P::SkipTypeCheckTag{}) {}
   inline explicit TorqueGeneratedPropertyCell(Address ptr);
-};
-
-// Alias for IsConstTrackingLetCell() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=15&c=1
-V8_EXPORT_PRIVATE bool IsConstTrackingLetCell_NonInline(Tagged<HeapObject> o);
-
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=15&c=1
-template <class D, class P>
-class TorqueGeneratedConstTrackingLetCell : public P {
-  static_assert(
-      std::is_same<ConstTrackingLetCell, D>::value,
-      "Use this class as direct base for ConstTrackingLetCell.");
-  static_assert(
-      std::is_same<HeapObject, P>::value,
-      "Pass in HeapObject as second template parameter for TorqueGeneratedConstTrackingLetCell.");
-
- public: 
-  using Super = P;
-  using TorqueGeneratedClass = TorqueGeneratedConstTrackingLetCell<D,P>;
-
-  // Torque type: DependentCode
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=16&c=3
-  inline Tagged<WeakArrayList> dependent_code() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=16&c=3
-  inline Tagged<WeakArrayList> dependent_code(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=16&c=3
-  inline void set_dependent_code(Tagged<WeakArrayList> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
-
-  DECL_PRINTER(ConstTrackingLetCell)
-
-#ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=15&c=1
-  V8_EXPORT_PRIVATE void ConstTrackingLetCellVerify(Isolate* isolate);
-#endif  // VERIFY_HEAP
-
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=16&c=3
-  static constexpr int kDependentCodeOffset = P::kHeaderSize;
-  static constexpr int kDependentCodeOffsetEnd = kDependentCodeOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kDependentCodeOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kDependentCodeOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kDependentCodeOffsetEnd + 1;
-  static constexpr int kHeaderSize = kDependentCodeOffsetEnd + 1;
-  static constexpr int kSize = kDependentCodeOffsetEnd + 1;
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=15&c=1
-  V8_INLINE static constexpr int32_t SizeFor() {
-    DCHECK(kHeaderSize == kSize && kHeaderSize == 8);
-    int32_t size = kHeaderSize;
-    return size;
-  }
-
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-cell.tq?l=15&c=1
-  V8_INLINE int32_t AllocatedSize() const {
-    return SizeFor();
-  }
-
-  friend class Factory;
-
-  template <class DAlias = D>
-  constexpr TorqueGeneratedConstTrackingLetCell() : P() {
-    static_assert(
-        std::is_base_of<TorqueGeneratedConstTrackingLetCell, DAlias>::value,
-        "class TorqueGeneratedConstTrackingLetCell should be used as direct base for ConstTrackingLetCell.");
-  }
-
- protected:
-  inline explicit constexpr TorqueGeneratedConstTrackingLetCell(Address ptr, typename P::SkipTypeCheckTag
-)    : P(ptr, typename P::SkipTypeCheckTag{}) {}
-  inline explicit TorqueGeneratedConstTrackingLetCell(Address ptr);
 };
 

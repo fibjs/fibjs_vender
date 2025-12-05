@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-concat-tq-csa.h"
@@ -92,7 +92,7 @@ TF_BUILTIN(ArrayPrototypeConcat, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -191,7 +191,7 @@ TF_BUILTIN(ArrayPrototypeConcat, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   TNode<JSArray> tmp13;
   if (block11.is_used()) {
     ca_.Bind(&block11);
@@ -226,16 +226,18 @@ TF_BUILTIN(ArrayPrototypeConcat, CodeStubAssembler) {
   TNode<JSFunction> tmp16;
   TNode<Undefined> tmp17;
   TNode<Int32T> tmp18;
+  TNode<JSDispatchHandleT> tmp19;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp16 = LoadTargetFromFrame_0(state_);
     tmp17 = Undefined_0(state_);
     tmp18 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
-   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kArrayConcat, parameter0, tmp16, tmp17, tmp18);
+    tmp19 = kInvalidDispatchHandle_0(state_);
+   CodeStubAssembler(state_).TailCallJSBuiltin(Builtin::kArrayConcat, parameter0, tmp16, tmp17, tmp18, tmp19);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-concat.tq?l=14&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-concat.tq?l=16&c=7
 TNode<JSArray> Cast_FastJSArrayForConcat_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -296,7 +298,7 @@ TNode<JSArray> Cast_FastJSArrayForConcat_1(compiler::CodeAssemblerState* state_,
   return TNode<JSArray>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-concat.tq?l=30&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-concat.tq?l=32&c=9
 TNode<JSArray> Cast_FastJSArrayForCopy_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

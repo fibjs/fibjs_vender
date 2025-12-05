@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-isarray-tq-csa.h"
@@ -85,7 +85,7 @@ TF_BUILTIN(ArrayIsArray, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kArg);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kArg);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -110,7 +110,7 @@ TF_BUILTIN(ArrayIsArray, CodeStubAssembler) {
   if (block4.is_used()) {
     ca_.Bind(&block4);
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_JSProxy_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<Object>(parameter1)}, &label3);
+    tmp2 = Cast_JSProxy_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<JSAny>(parameter1)}, &label3);
     ca_.Goto(&block7);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -132,10 +132,10 @@ TF_BUILTIN(ArrayIsArray, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp5);
   }
 
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp6 = CodeStubAssembler(state_).CallRuntime(Runtime::kArrayIsArray, parameter0, parameter1); 
+    tmp6 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kArrayIsArray, parameter0, parameter1)); 
     CodeStubAssembler(state_).Return(tmp6);
   }
 }

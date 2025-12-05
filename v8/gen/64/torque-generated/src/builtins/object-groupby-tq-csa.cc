@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/object-groupby-tq-csa.h"
@@ -78,6 +78,7 @@
 #include "torque-generated/src/builtins/collections-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
+#include "torque-generated/src/builtins/map-groupby-tq-csa.h"
 #include "torque-generated/src/builtins/object-groupby-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
@@ -87,13 +88,13 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object-groupby.tq?l=15&c=1
-TNode<Object> CoerceGroupKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_key, TNode<Boolean> p_coerceToProperty) {
+TNode<JSAny> CoerceGroupKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_key, TNode<Boolean> p_coerceToProperty) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -102,43 +103,43 @@ TNode<Object> CoerceGroupKey_0(compiler::CodeAssemblerState* state_, TNode<Conte
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = True_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{p_coerceToProperty}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{p_coerceToProperty}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
-  TNode<Name> tmp2;
+  TNode<Union<String, Symbol>> tmp2;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp2 = ca_.CallBuiltin<Name>(Builtin::kToName, p_context, p_key);
+    tmp2 = ca_.CallBuiltin<Union<String, Symbol>>(Builtin::kToName, p_context, p_key);
     ca_.Goto(&block1, tmp2);
   }
 
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp3 = CollectionsBuiltinsAssembler(state_).NormalizeNumberKey(TNode<Object>{p_key});
+    tmp3 = CollectionsBuiltinsAssembler(state_).NormalizeNumberKey(TNode<JSAny>{p_key});
     ca_.Goto(&block1, tmp3);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block4);
   }
 
     ca_.Bind(&block4);
-  return TNode<Object>{phi_bb1_3};
+  return TNode<JSAny>{phi_bb1_3};
 }
 
 TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kItems);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kItems);
   USE(parameter1);
   TNode<OrderedHashMap> parameter2 = UncheckedParameter<OrderedHashMap>(Descriptor::kInitialGroups);
   USE(parameter2);
-  TNode<JSReceiver> parameter3 = UncheckedParameter<JSReceiver>(Descriptor::kCallbackfn);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> parameter3 = UncheckedParameter<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(Descriptor::kCallbackfn);
   USE(parameter3);
   TNode<Boolean> parameter4 = UncheckedParameter<Boolean>(Descriptor::kCoerceToProperty);
   USE(parameter4);
@@ -151,18 +152,18 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Number, Number> block14(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Number> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Number, Object, Object, HeapObject> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Number, JSAny, JSAny, Union<Hole, JSMessageObject>> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Number> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
-    std::tie(tmp1, tmp2) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{parameter0}, TNode<Object>{parameter1}).Flatten();
+    std::tie(tmp1, tmp2) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}).Flatten();
     tmp3 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block3, parameter2, tmp3);
   }
@@ -182,7 +183,7 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_6, &phi_bb1_10);
     compiler::CodeAssemblerLabel label6(&ca_);
-    tmp5 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label6);
+    tmp5 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label6);
     ca_.Goto(&block10, phi_bb1_6, phi_bb1_10);
     if (label6.is_used()) {
       ca_.Bind(&label6);
@@ -199,12 +200,12 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
 
   TNode<OrderedHashMap> phi_bb10_6;
   TNode<Number> phi_bb10_10;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<Undefined> tmp8;
-  TNode<Object> tmp9;
-      TNode<Object> tmp11;
-  TNode<Object> tmp12;
-      TNode<Object> tmp14;
+  TNode<JSAny> tmp9;
+      TNode<JSAny> tmp11;
+  TNode<JSAny> tmp12;
+      TNode<JSAny> tmp14;
   TNode<OrderedHashMap> tmp15;
   TNode<Number> tmp16;
   TNode<Number> tmp17;
@@ -214,7 +215,7 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
     tmp8 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch10__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch10__label);
-    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{parameter3}, TNode<Object>{tmp8}, TNode<Object>{tmp7}, TNode<Object>{phi_bb10_10});
+    tmp9 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{parameter3}, TNode<JSAny>{tmp8}, TNode<JSAny>{tmp7}, TNode<JSAny>{phi_bb10_10});
     }
     if (catch10__label.is_used()) {
       compiler::CodeAssemblerLabel catch10_skip(&ca_);
@@ -225,7 +226,7 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch13__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch13__label);
-    tmp12 = CoerceGroupKey_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp9}, TNode<Boolean>{parameter4});
+    tmp12 = CoerceGroupKey_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp9}, TNode<Boolean>{parameter4});
     }
     if (catch13__label.is_used()) {
       compiler::CodeAssemblerLabel catch13_skip(&ca_);
@@ -243,16 +244,16 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
   TNode<OrderedHashMap> phi_bb14_6;
   TNode<Number> phi_bb14_10;
   TNode<Number> phi_bb14_18;
-  TNode<HeapObject> tmp18;
+  TNode<Union<Hole, JSMessageObject>> tmp18;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_6, &phi_bb14_10, &phi_bb14_18);
     tmp18 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block13, phi_bb14_6, phi_bb14_10, ca_.Uninitialized<Object>(), tmp11, tmp18);
+    ca_.Goto(&block13, phi_bb14_6, phi_bb14_10, ca_.Uninitialized<JSAny>(), tmp11, tmp18);
   }
 
   TNode<OrderedHashMap> phi_bb15_6;
   TNode<Number> phi_bb15_10;
-  TNode<HeapObject> tmp19;
+  TNode<Union<Hole, JSMessageObject>> tmp19;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_6, &phi_bb15_10);
     tmp19 = GetAndResetPendingMessage_0(state_);
@@ -261,12 +262,12 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
 
   TNode<OrderedHashMap> phi_bb13_6;
   TNode<Number> phi_bb13_10;
-  TNode<Object> phi_bb13_13;
-  TNode<Object> phi_bb13_14;
-  TNode<HeapObject> phi_bb13_15;
+  TNode<JSAny> phi_bb13_13;
+  TNode<JSAny> phi_bb13_14;
+  TNode<Union<Hole, JSMessageObject>> phi_bb13_15;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_6, &phi_bb13_10, &phi_bb13_13, &phi_bb13_14, &phi_bb13_15);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp1});
     CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, phi_bb13_14, phi_bb13_15);
     CodeStubAssembler(state_).Unreachable();
   }
@@ -280,7 +281,7 @@ TF_BUILTIN(GroupByGeneric, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/object-groupby.tq?l=94&c=1
-TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_items, TNode<Object> p_callback, TNode<Boolean> p_coerceToProperty, const char* p_methodName) {
+TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_items, TNode<JSAny> p_callback, TNode<Boolean> p_coerceToProperty, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -301,9 +302,9 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, Smi, Smi> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, Smi, Smi, Smi> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, Smi, Smi, Smi> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, Smi, Smi, Object> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, Smi, Smi, JSAny> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, Object> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, Smi, JSAny> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, JSArray, Smi> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, JSArray, Smi> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap, JSArray, Smi> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -313,11 +314,11 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   compiler::CodeAssemblerParameterizedLabel<OrderedHashMap> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
-  TNode<JSReceiver> tmp1;
+  TNode<JSAny> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<Object>{p_items}, p_methodName);
+    tmp0 = RequireObjectCoercible_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_items}, p_methodName);
     compiler::CodeAssemblerLabel label2(&ca_);
     tmp1 = Cast_Callable_1(state_, TNode<Context>{p_context}, TNode<Object>{p_callback}, &label2);
     ca_.Goto(&block4);
@@ -391,7 +392,7 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
     ca_.Bind(&block14, &phi_bb14_5, &phi_bb14_9, &phi_bb14_13);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp17 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp8, tmp16});
-    tmp18 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp17}, TNode<HeapObject>{tmp10});
+    tmp18 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp17}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp10});
     ca_.Branch(tmp18, &block20, std::vector<compiler::Node*>{phi_bb14_5, phi_bb14_9, phi_bb14_13}, &block21, std::vector<compiler::Node*>{phi_bb14_5, phi_bb14_9, phi_bb14_13});
   }
 
@@ -443,7 +444,7 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Smi> phi_bb27_13;
   TNode<Smi> phi_bb27_15;
   TNode<Smi> phi_bb27_18;
-  TNode<Object> tmp21;
+  TNode<JSAny> tmp21;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5, &phi_bb27_13, &phi_bb27_15, &phi_bb27_18);
     compiler::CodeAssemblerLabel label22(&ca_);
@@ -479,7 +480,7 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Smi> phi_bb28_13;
   TNode<Smi> phi_bb28_15;
   TNode<Smi> phi_bb28_18;
-  TNode<Object> tmp23;
+  TNode<JSAny> tmp23;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_5, &phi_bb28_13, &phi_bb28_15, &phi_bb28_18);
     compiler::CodeAssemblerLabel label24(&ca_);
@@ -515,7 +516,7 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Smi> phi_bb26_13;
   TNode<Smi> phi_bb26_15;
   TNode<Smi> phi_bb26_18;
-  TNode<Object> phi_bb26_19;
+  TNode<JSAny> phi_bb26_19;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_5, &phi_bb26_13, &phi_bb26_15, &phi_bb26_18, &phi_bb26_19);
     ca_.Goto(&block24, phi_bb26_5, phi_bb26_13, phi_bb26_19);
@@ -532,10 +533,10 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<OrderedHashMap> phi_bb24_5;
   TNode<Smi> phi_bb24_13;
-  TNode<Object> phi_bb24_14;
+  TNode<JSAny> phi_bb24_14;
   TNode<Undefined> tmp26;
-  TNode<Object> tmp27;
-  TNode<Object> tmp28;
+  TNode<JSAny> tmp27;
+  TNode<JSAny> tmp28;
   TNode<String> tmp29;
   TNode<OrderedHashMap> tmp30;
   TNode<Smi> tmp31;
@@ -543,8 +544,8 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_5, &phi_bb24_13, &phi_bb24_14);
     tmp26 = Undefined_0(state_);
-    tmp27 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp1}, TNode<Object>{tmp26}, TNode<Object>{phi_bb24_14}, TNode<Object>{phi_bb24_13});
-    tmp28 = CoerceGroupKey_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp27}, TNode<Boolean>{p_coerceToProperty});
+    tmp27 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp26}, TNode<JSAny>{phi_bb24_14}, TNode<JSAny>{phi_bb24_13});
+    tmp28 = CoerceGroupKey_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp27}, TNode<Boolean>{p_coerceToProperty});
     tmp29 = FromConstexpr_String_constexpr_string_0(state_, p_methodName);
     tmp30 = CollectionsBuiltinsAssembler(state_).AddValueToKeyedGroup(TNode<OrderedHashMap>{phi_bb24_5}, TNode<Object>{tmp28}, TNode<Object>{phi_bb24_14}, TNode<String>{tmp29});
     tmp31 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
@@ -577,20 +578,20 @@ TNode<OrderedHashMap> GroupByImpl_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<OrderedHashMap> phi_bb34_5;
   TNode<JSArray> phi_bb34_9;
   TNode<Smi> phi_bb34_13;
-  TNode<Object> tmp36;
+  TNode<JSAny> tmp36;
   TNode<Undefined> tmp37;
-  TNode<Object> tmp38;
-  TNode<Object> tmp39;
+  TNode<JSAny> tmp38;
+  TNode<JSAny> tmp39;
   TNode<String> tmp40;
   TNode<OrderedHashMap> tmp41;
   TNode<Smi> tmp42;
   TNode<Smi> tmp43;
   if (block34.is_used()) {
     ca_.Bind(&block34, &phi_bb34_5, &phi_bb34_9, &phi_bb34_13);
-    tmp36 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp8}, TNode<Object>{phi_bb34_13});
+    tmp36 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp8}, TNode<JSAny>{phi_bb34_13});
     tmp37 = Undefined_0(state_);
-    tmp38 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp1}, TNode<Object>{tmp37}, TNode<Object>{tmp36}, TNode<Object>{phi_bb34_13});
-    tmp39 = CoerceGroupKey_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp38}, TNode<Boolean>{p_coerceToProperty});
+    tmp38 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp37}, TNode<JSAny>{tmp36}, TNode<JSAny>{phi_bb34_13});
+    tmp39 = CoerceGroupKey_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp38}, TNode<Boolean>{p_coerceToProperty});
     tmp40 = FromConstexpr_String_constexpr_string_0(state_, p_methodName);
     tmp41 = CollectionsBuiltinsAssembler(state_).AddValueToKeyedGroup(TNode<OrderedHashMap>{phi_bb34_5}, TNode<Object>{tmp39}, TNode<Object>{tmp36}, TNode<String>{tmp40});
     tmp42 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
@@ -629,19 +630,20 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kItems);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kItems);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kCallback);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kCallback);
   USE(parameter3);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kArrayGroup));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT, IntPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT, IntPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<True> tmp0;
@@ -649,8 +651,8 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
   TNode<OrderedHashMap> tmp2;
   TNode<Int32T> tmp3;
   TNode<Int32T> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<NameDictionary> tmp9;
@@ -660,18 +662,18 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = True_0(state_);
-    tmp1 = GroupByImpl_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{parameter3}, TNode<Boolean>{tmp0}, "Object.groupBy");
+    tmp1 = GroupByImpl_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, TNode<JSAny>{parameter3}, TNode<Boolean>{tmp0}, "Object.groupBy");
     std::tie(tmp2, tmp3, tmp4, tmp5, tmp6, tmp7) = NewUnmodifiedOrderedHashMapIterator_0(state_, TNode<OrderedHashMap>{tmp1}).Flatten();
     tmp8 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp4});
     tmp9 = CodeStubAssembler(state_).AllocateNameDictionary(TNode<IntPtrT>{tmp8});
     tmp10 = CodeStubAssembler(state_).LoadSlowObjectWithNullPrototypeMap(TNode<NativeContext>{parameter0});
-    tmp11 = CodeStubAssembler(state_).AllocateJSObjectFromMap(TNode<Map>{tmp10}, TNode<HeapObject>{tmp9});
+    tmp11 = CodeStubAssembler(state_).AllocateJSObjectFromMap(TNode<Map>{tmp10}, TNode<Union<FixedArray, NameDictionary, PropertyArray, SwissNameDictionary>>{tmp9});
     tmp12 = GetFastPackedElementsJSArrayMap_0(state_, TNode<Context>{parameter0});
     ca_.Goto(&block5, tmp5, tmp6, tmp7);
   }
 
-  TNode<Object> phi_bb5_8;
-  TNode<Object> phi_bb5_9;
+  TNode<JSAny> phi_bb5_8;
+  TNode<JSAny> phi_bb5_9;
   TNode<IntPtrT> phi_bb5_10;
   TNode<BoolT> tmp13;
   if (block5.is_used()) {
@@ -680,11 +682,11 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
     ca_.Branch(tmp13, &block3, std::vector<compiler::Node*>{phi_bb5_8, phi_bb5_9, phi_bb5_10}, &block4, std::vector<compiler::Node*>{phi_bb5_8, phi_bb5_9, phi_bb5_10});
   }
 
-  TNode<Object> phi_bb3_8;
-  TNode<Object> phi_bb3_9;
+  TNode<JSAny> phi_bb3_8;
+  TNode<JSAny> phi_bb3_9;
   TNode<IntPtrT> phi_bb3_10;
-  TNode<Object> tmp14;
-  TNode<Object> tmp15;
+  TNode<JSAny> tmp14;
+  TNode<JSAny> tmp15;
   TNode<IntPtrT> tmp16;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_8, &phi_bb3_9, &phi_bb3_10);
@@ -697,8 +699,8 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb8_8;
-  TNode<Object> phi_bb8_9;
+  TNode<JSAny> phi_bb8_8;
+  TNode<JSAny> phi_bb8_9;
   TNode<IntPtrT> phi_bb8_10;
   TNode<IntPtrT> phi_bb8_18;
   if (block8.is_used()) {
@@ -706,8 +708,8 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
     ca_.Goto(&block1, phi_bb8_8, phi_bb8_9, phi_bb8_10);
   }
 
-  TNode<Object> phi_bb7_8;
-  TNode<Object> phi_bb7_9;
+  TNode<JSAny> phi_bb7_8;
+  TNode<JSAny> phi_bb7_9;
   TNode<IntPtrT> phi_bb7_10;
   TNode<IntPtrT> phi_bb7_18;
   TNode<ArrayList> tmp18;
@@ -722,16 +724,16 @@ TF_BUILTIN(ObjectGroupBy, CodeStubAssembler) {
     ca_.Goto(&block5, tmp14, tmp15, tmp16);
   }
 
-  TNode<Object> phi_bb4_8;
-  TNode<Object> phi_bb4_9;
+  TNode<JSAny> phi_bb4_8;
+  TNode<JSAny> phi_bb4_9;
   TNode<IntPtrT> phi_bb4_10;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_8, &phi_bb4_9, &phi_bb4_10);
     ca_.Goto(&block1, phi_bb4_8, phi_bb4_9, phi_bb4_10);
   }
 
-  TNode<Object> phi_bb1_8;
-  TNode<Object> phi_bb1_9;
+  TNode<JSAny> phi_bb1_8;
+  TNode<JSAny> phi_bb1_9;
   TNode<IntPtrT> phi_bb1_10;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_8, &phi_bb1_9, &phi_bb1_10);

@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsTemplateObjectDescription_NonInline(Tagged<HeapObject> 
 template <class D, class P>
 class TorqueGeneratedTemplateObjectDescription : public P {
   static_assert(
-      std::is_same<TemplateObjectDescription, D>::value,
+      std::is_same_v<TemplateObjectDescription, D>,
       "Use this class as direct base for TemplateObjectDescription.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedTemplateObjectDescription.");
 
  public: 
@@ -68,7 +68,7 @@ class TorqueGeneratedTemplateObjectDescription : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTemplateObjectDescription() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTemplateObjectDescription, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTemplateObjectDescription, DAlias>,
         "class TorqueGeneratedTemplateObjectDescription should be used as direct base for TemplateObjectDescription.");
   }
 

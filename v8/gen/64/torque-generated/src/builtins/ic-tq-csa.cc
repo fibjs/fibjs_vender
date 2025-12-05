@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/ic-tq-csa.h"
@@ -80,7 +80,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic.tq?l=9&c=1
-void CollectCallFeedback_1(compiler::CodeAssemblerState* state_, TNode<Object> p_maybeTarget, std::function<TNode<Object>()> p_maybeReceiver, TNode<Context> p_context, TNode<HeapObject> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
+void CollectCallFeedback_1(compiler::CodeAssemblerState* state_, TNode<JSAny> p_maybeTarget, std::function<TNode<JSAny>()> p_maybeReceiver, TNode<Context> p_context, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -89,7 +89,7 @@ void CollectCallFeedback_1(compiler::CodeAssemblerState* state_, TNode<Object> p
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    CollectCallFeedback_0(state_, TNode<Object>{p_maybeTarget}, std::function<TNode<Object>()>{p_maybeReceiver}, TNode<Context>{p_context}, TNode<HeapObject>{p_maybeFeedbackVector}, TNode<UintPtrT>{p_slotId});
+    CollectCallFeedback_0(state_, TNode<JSAny>{p_maybeTarget}, std::function<TNode<JSAny>()>{p_maybeReceiver}, TNode<Context>{p_context}, TNode<Union<FeedbackVector, Undefined>>{p_maybeFeedbackVector}, TNode<UintPtrT>{p_slotId});
     ca_.Goto(&block2);
   }
 
@@ -97,7 +97,7 @@ void CollectCallFeedback_1(compiler::CodeAssemblerState* state_, TNode<Object> p
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic.tq?l=17&c=1
-void CollectInstanceOfFeedback_1(compiler::CodeAssemblerState* state_, TNode<Object> p_maybeTarget, TNode<Context> p_context, TNode<HeapObject> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
+void CollectInstanceOfFeedback_1(compiler::CodeAssemblerState* state_, TNode<JSAny> p_maybeTarget, TNode<Context> p_context, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, TNode<UintPtrT> p_slotId) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -106,7 +106,7 @@ void CollectInstanceOfFeedback_1(compiler::CodeAssemblerState* state_, TNode<Obj
 
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    CollectInstanceOfFeedback_0(state_, TNode<Object>{p_maybeTarget}, TNode<Context>{p_context}, TNode<HeapObject>{p_maybeFeedbackVector}, TNode<UintPtrT>{p_slotId});
+    CollectInstanceOfFeedback_0(state_, TNode<JSAny>{p_maybeTarget}, TNode<Context>{p_context}, TNode<Union<FeedbackVector, Undefined>>{p_maybeFeedbackVector}, TNode<UintPtrT>{p_slotId});
     ca_.Goto(&block2);
   }
 
@@ -114,7 +114,7 @@ void CollectInstanceOfFeedback_1(compiler::CodeAssemblerState* state_, TNode<Obj
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic.tq?l=25&c=1
-void CollectConstructFeedback_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_target, TNode<Object> p_newTarget, TNode<HeapObject> p_maybeFeedbackVector, TNode<TaggedIndex> p_slotId, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_ConstructGeneric, compiler::CodeAssemblerLabel* label_ConstructArray, compiler::TypedCodeAssemblerVariable<AllocationSite>* label_ConstructArray_parameter_0) {
+void CollectConstructFeedback_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_target, TNode<JSAny> p_newTarget, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, TNode<TaggedIndex> p_slotId, UpdateFeedbackMode p_updateFeedbackMode, compiler::CodeAssemblerLabel* label_ConstructGeneric, compiler::CodeAssemblerLabel* label_ConstructArray, compiler::TypedCodeAssemblerVariable<AllocationSite>* label_ConstructArray_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -127,7 +127,7 @@ void CollectConstructFeedback_1(compiler::CodeAssemblerState* state_, TNode<Cont
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label1(&ca_);
-    CollectConstructFeedback_0(state_, TNode<Context>{p_context}, TNode<Object>{p_target}, TNode<Object>{p_newTarget}, TNode<HeapObject>{p_maybeFeedbackVector}, TNode<TaggedIndex>{p_slotId}, p_updateFeedbackMode, &label0, &label1, &tmp2);
+    CollectConstructFeedback_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_target}, TNode<JSAny>{p_newTarget}, TNode<Union<FeedbackVector, Undefined>>{p_maybeFeedbackVector}, TNode<TaggedIndex>{p_slotId}, p_updateFeedbackMode, &label0, &label1, &tmp2);
     if (label0.is_used()) {
       ca_.Bind(&label0);
       ca_.Goto(&block3);
@@ -173,7 +173,7 @@ TNode<Symbol> kUninitializedSymbol_0(compiler::CodeAssemblerState* state_) {
   return TNode<Symbol>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic.tq?l=45&c=1
-TNode<BoolT> IsMegamorphic_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_feedback) {
+TNode<BoolT> IsMegamorphic_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_feedback) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -185,7 +185,7 @@ TNode<BoolT> IsMegamorphic_0(compiler::CodeAssemblerState* state_, TNode<MaybeOb
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kMegamorphicSymbol_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{p_feedback}, TNode<MaybeObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_feedback}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp0});
     ca_.Goto(&block2);
   }
 
@@ -194,7 +194,7 @@ TNode<BoolT> IsMegamorphic_0(compiler::CodeAssemblerState* state_, TNode<MaybeOb
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/ic.tq?l=49&c=1
-TNode<BoolT> IsUninitialized_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_feedback) {
+TNode<BoolT> IsUninitialized_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_feedback) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -206,7 +206,7 @@ TNode<BoolT> IsUninitialized_0(compiler::CodeAssemblerState* state_, TNode<Maybe
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kUninitializedSymbol_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{p_feedback}, TNode<MaybeObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_feedback}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp0});
     ca_.Goto(&block2);
   }
 

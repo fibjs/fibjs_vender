@@ -56,7 +56,7 @@ class V8_EXPORT_PRIVATE ContextualVariable {
     VarType value_;
     Scope* previous_;
 
-    static_assert(std::is_base_of<ContextualVariable, Derived>::value,
+    static_assert(std::is_base_of_v<ContextualVariable, Derived>,
                   "Curiously Recurring Template Pattern");
 
     DISALLOW_NEW_AND_DELETE()
@@ -114,7 +114,7 @@ class V8_EXPORT_PRIVATE ContextualVariableWithDefault
     : public ContextualVariable<Derived, VarType> {
  public:
   static VarType& Get() {
-    return Base::HasScope() ? Base::Get() : default_value_.get();
+    return Base::HasScope() ? Base::Get() : default_value_;
   }
 
  private:

@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSNumberFormat_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSNumberFormat : public P {
   static_assert(
-      std::is_same<JSNumberFormat, D>::value,
+      std::is_same_v<JSNumberFormat, D>,
       "Use this class as direct base for JSNumberFormat.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSNumberFormat.");
 
  public: 
@@ -66,7 +66,7 @@ class TorqueGeneratedJSNumberFormat : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSNumberFormat() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSNumberFormat, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSNumberFormat, DAlias>,
         "class TorqueGeneratedJSNumberFormat should be used as direct base for JSNumberFormat.");
   }
 

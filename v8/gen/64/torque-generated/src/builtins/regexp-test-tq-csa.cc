@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-test-tq-csa.h"
@@ -85,9 +85,9 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kString);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kString);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -121,7 +121,7 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
   TNode<BoolT> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     tmp4 = IsFastRegExpPermissive_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp0});
     ca_.Branch(tmp4, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
@@ -154,7 +154,7 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp9);
   }
 
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   TNode<Null> tmp11;
   TNode<BoolT> tmp12;
   TNode<Boolean> tmp13;
@@ -162,7 +162,7 @@ TF_BUILTIN(RegExpPrototypeTest, CodeStubAssembler) {
     ca_.Bind(&block6);
     tmp10 = RegExpExec_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<String>{tmp3});
     tmp11 = Null_0(state_);
-    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp10}, TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp10}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp11});
     tmp13 = CodeStubAssembler(state_).SelectBooleanConstant(TNode<BoolT>{tmp12});
     CodeStubAssembler(state_).Return(tmp13);
   }

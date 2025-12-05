@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSRegExpStringIterator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSRegExpStringIterator : public P {
   static_assert(
-      std::is_same<JSRegExpStringIterator, D>::value,
+      std::is_same_v<JSRegExpStringIterator, D>,
       "Use this class as direct base for JSRegExpStringIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSRegExpStringIterator.");
 
  public: 
@@ -63,7 +63,7 @@ class TorqueGeneratedJSRegExpStringIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRegExpStringIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRegExpStringIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRegExpStringIterator, DAlias>,
         "class TorqueGeneratedJSRegExpStringIterator should be used as direct base for JSRegExpStringIterator.");
   }
 

@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSRelativeTimeFormat_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSRelativeTimeFormat : public P {
   static_assert(
-      std::is_same<JSRelativeTimeFormat, D>::value,
+      std::is_same_v<JSRelativeTimeFormat, D>,
       "Use this class as direct base for JSRelativeTimeFormat.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSRelativeTimeFormat.");
 
  public: 
@@ -73,7 +73,7 @@ class TorqueGeneratedJSRelativeTimeFormat : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRelativeTimeFormat() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRelativeTimeFormat, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRelativeTimeFormat, DAlias>,
         "class TorqueGeneratedJSRelativeTimeFormat should be used as direct base for JSRelativeTimeFormat.");
   }
 

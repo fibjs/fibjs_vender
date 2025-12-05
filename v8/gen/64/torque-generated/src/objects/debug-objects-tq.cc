@@ -1,6 +1,8 @@
 #include "src/objects/debug-objects-inl.h"
 
 #include "torque-generated/class-verifiers.h"
+#include "src/objects/objects-inl.h"
+
 #include "src/objects/instance-type-inl.h"
 
 namespace v8 {
@@ -76,7 +78,21 @@ void TorqueGeneratedStackFrameInfo<StackFrameInfo, Struct>::StackFrameInfoVerify
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=113&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=84&c=1
+bool IsStackTraceInfo_NonInline(Tagged<HeapObject> o) {
+  return IsStackTraceInfo(o);
+}
+
+#ifdef VERIFY_HEAP
+
+template <>
+void TorqueGeneratedStackTraceInfo<StackTraceInfo, Struct>::StackTraceInfoVerify(Isolate* isolate) {
+  TorqueGeneratedClassVerifiers::StackTraceInfoVerify(Cast<StackTraceInfo>(*this), isolate);
+}
+
+
+#endif  // VERIFY_HEAP
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/debug-objects.tq?l=104&c=1
 bool IsErrorStackData_NonInline(Tagged<HeapObject> o) {
   return IsErrorStackData(o);
 }

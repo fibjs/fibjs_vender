@@ -16,7 +16,7 @@ Tagged<Union<JSFinalizationRegistry, Undefined>> TorqueGeneratedWeakCell<D, P>::
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=22&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_finalization_registry(Tagged<Union<JSFinalizationRegistry, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFinalizationRegistry(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFinalizationRegistry(value)));
   WRITE_FIELD(*this, kFinalizationRegistryOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFinalizationRegistryOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Union<JSReceiver, Symbol, Undefined>> TorqueGeneratedWeakCell<D, P>::targ
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_target(Tagged<Union<JSReceiver, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSymbol(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSymbol(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kTargetOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kTargetOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Union<JSReceiver, Symbol, Undefined>> TorqueGeneratedWeakCell<D, P>::unre
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=24&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_unregister_token(Tagged<Union<JSReceiver, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSymbol(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSymbol(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kUnregisterTokenOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnregisterTokenOffset, value, mode);
 }
@@ -85,7 +85,7 @@ Tagged<JSAny> TorqueGeneratedWeakCell<D, P>::holdings(PtrComprCageBase cage_base
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=25&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_holdings(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kHoldingsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHoldingsOffset, value, mode);
 }
@@ -108,7 +108,7 @@ Tagged<Union<Undefined, WeakCell>> TorqueGeneratedWeakCell<D, P>::prev(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=29&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_prev(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsWeakCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsWeakCell(value)));
   WRITE_FIELD(*this, kPrevOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPrevOffset, value, mode);
 }
@@ -131,7 +131,7 @@ Tagged<Union<Undefined, WeakCell>> TorqueGeneratedWeakCell<D, P>::next(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=30&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_next(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsWeakCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsWeakCell(value)));
   WRITE_FIELD(*this, kNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextOffset, value, mode);
 }
@@ -154,7 +154,7 @@ Tagged<Union<Undefined, WeakCell>> TorqueGeneratedWeakCell<D, P>::key_list_prev(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=38&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_key_list_prev(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsWeakCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsWeakCell(value)));
   WRITE_FIELD(*this, kKeyListPrevOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kKeyListPrevOffset, value, mode);
 }
@@ -177,7 +177,7 @@ Tagged<Union<Undefined, WeakCell>> TorqueGeneratedWeakCell<D, P>::key_list_next(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=39&c=3
 template<class D, class P>
 void TorqueGeneratedWeakCell<D, P>::set_key_list_next(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsWeakCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsWeakCell(value)));
   WRITE_FIELD(*this, kKeyListNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kKeyListNextOffset, value, mode);
 }
@@ -205,7 +205,7 @@ Tagged<NativeContext> TorqueGeneratedJSFinalizationRegistry<D, P>::native_contex
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_native_context(Tagged<NativeContext> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsNativeContext(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsNativeContext(value)));
   WRITE_FIELD(*this, kNativeContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNativeContextOffset, value, mode);
 }
@@ -228,7 +228,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=11&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_cleanup(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kCleanupOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCleanupOffset, value, mode);
 }
@@ -251,7 +251,7 @@ Tagged<Union<Undefined, WeakCell>> TorqueGeneratedJSFinalizationRegistry<D, P>::
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_active_cells(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsWeakCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsWeakCell(value)));
   WRITE_FIELD(*this, kActiveCellsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kActiveCellsOffset, value, mode);
 }
@@ -274,7 +274,7 @@ Tagged<Union<Undefined, WeakCell>> TorqueGeneratedJSFinalizationRegistry<D, P>::
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_cleared_cells(Tagged<Union<Undefined, WeakCell>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsWeakCell(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsWeakCell(value)));
   WRITE_FIELD(*this, kClearedCellsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kClearedCellsOffset, value, mode);
 }
@@ -297,7 +297,7 @@ Tagged<Object> TorqueGeneratedJSFinalizationRegistry<D, P>::key_map(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_key_map(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kKeyMapOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kKeyMapOffset, value, mode);
 }
@@ -320,7 +320,7 @@ Tagged<Union<JSFinalizationRegistry, Undefined>> TorqueGeneratedJSFinalizationRe
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=17&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_next_dirty(Tagged<Union<JSFinalizationRegistry, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFinalizationRegistry(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFinalizationRegistry(value)));
   WRITE_FIELD(*this, kNextDirtyOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextDirtyOffset, value, mode);
 }
@@ -335,7 +335,8 @@ int TorqueGeneratedJSFinalizationRegistry<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=18&c=3
 template<class D, class P>
 void TorqueGeneratedJSFinalizationRegistry<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct FinalizationRegistryFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>
@@ -361,7 +362,7 @@ Tagged<Union<JSReceiver, Symbol, Undefined>> TorqueGeneratedJSWeakRef<D, P>::tar
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-weak-refs.tq?l=43&c=3
 template<class D, class P>
 void TorqueGeneratedJSWeakRef<D, P>::set_target(Tagged<Union<JSReceiver, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSymbol(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSymbol(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kTargetOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kTargetOffset, value, mode);
 }

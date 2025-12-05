@@ -16,7 +16,7 @@ Tagged<JSReceiver> TorqueGeneratedJSArrayIterator<D, P>::iterated_object(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedJSArrayIterator<D, P>::set_iterated_object(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kIteratedObjectOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIteratedObjectOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Number> TorqueGeneratedJSArrayIterator<D, P>::next_index(PtrComprCageBase
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=33&c=3
 template<class D, class P>
 void TorqueGeneratedJSArrayIterator<D, P>::set_next_index(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kNextIndexOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextIndexOffset, value, mode);
 }
@@ -54,7 +54,8 @@ int TorqueGeneratedJSArrayIterator<D, P>::kind() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=35&c=3
 template<class D, class P>
 void TorqueGeneratedJSArrayIterator<D, P>::set_kind(int value) {
-  WRITE_FIELD(*this, kKindOffset, Smi::FromInt(value));
+  // IterationKind
+  WRITE_FIELD(*this, kKindOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>
@@ -80,7 +81,7 @@ Tagged<Number> TorqueGeneratedJSArray<D, P>::length(PtrComprCageBase cage_base) 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=65&c=3
 template<class D, class P>
 void TorqueGeneratedJSArray<D, P>::set_length(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kLengthOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLengthOffset, value, mode);
 }
@@ -108,7 +109,7 @@ Tagged<JSArray> TorqueGeneratedTemplateLiteralObject<D, P>::raw(PtrComprCageBase
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array.tq?l=71&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateLiteralObject<D, P>::set_raw(Tagged<JSArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSArray(value)));
   WRITE_FIELD(*this, kRawOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRawOffset, value, mode);
 }

@@ -41,7 +41,7 @@ class Smi : public AllStatic {
   }
 
   static inline constexpr Tagged<Smi> FromIntptr(intptr_t value) {
-    // DCHECK(Smi::IsValid(value));
+    DCHECK(Smi::IsValid(value));
     int smi_shift_bits = kSmiTagSize + kSmiShiftSize;
     return Tagged<Smi>((static_cast<Address>(value) << smi_shift_bits) |
                        kSmiTag);
@@ -54,24 +54,27 @@ class Smi : public AllStatic {
                         (32 - kSmiValueSize));
   }
 
-  template <typename E,
-            typename = typename std::enable_if<std::is_enum<E>::value>::type>
-  static inline constexpr Tagged<Smi> FromEnum(E value) {
+  template <typename E>
+  static inline constexpr Tagged<Smi> FromEnum(E value)
+    requires std::is_enum_v<E>
+  {
     static_assert(sizeof(E) <= sizeof(int));
     return FromInt(static_cast<int>(value));
   }
 
   // Returns whether value can be represented in a Smi.
   template <typename T>
-  static inline std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>,
-                                 bool> constexpr IsValid(T value) {
+  static inline bool constexpr IsValid(T value)
+    requires(std::is_integral_v<T> && std::is_signed_v<T>)
+  {
     DCHECK_EQ(Internals::IsValidSmi(value),
               value >= kMinValue && value <= kMaxValue);
     return Internals::IsValidSmi(value);
   }
   template <typename T>
-  static inline std::enable_if_t<std::is_integral_v<T> && std::is_unsigned_v<T>,
-                                 bool> constexpr IsValid(T value) {
+  static inline bool constexpr IsValid(T value)
+    requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
+  {
     DCHECK_EQ(Internals::IsValidSmi(value), value <= kMaxValue);
     return Internals::IsValidSmi(value);
   }

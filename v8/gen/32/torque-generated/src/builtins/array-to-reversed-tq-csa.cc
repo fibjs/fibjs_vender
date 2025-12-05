@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-reversed-tq-csa.h"
@@ -92,12 +92,12 @@ TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -125,7 +125,7 @@ TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* s
   TNode<Smi> tmp5;
   TNode<Smi> tmp6;
   TNode<Smi> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
@@ -137,50 +137,50 @@ TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* s
     tmp5 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{p_length}, TNode<Smi>{phi_bb2_4});
     tmp6 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp5}, TNode<Smi>{tmp6});
-    std::tie(tmp8, tmp9, tmp10) = FieldSliceFixedDoubleArrayFloats_0(state_, TNode<FixedDoubleArray>{p_elements}).Flatten();
+    std::tie(tmp8, tmp9, tmp10) = FieldSliceFixedDoubleArrayValues_0(state_, TNode<FixedDoubleArray>{p_elements}).Flatten();
     tmp11 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp7});
     tmp12 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp11});
     tmp13 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp10});
     tmp14 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp12}, TNode<UintPtrT>{tmp13});
-    ca_.Branch(tmp14, &block11, std::vector<compiler::Node*>{phi_bb2_4}, &block12, std::vector<compiler::Node*>{phi_bb2_4});
+    ca_.Branch(tmp14, &block13, std::vector<compiler::Node*>{phi_bb2_4}, &block14, std::vector<compiler::Node*>{phi_bb2_4});
   }
 
-  TNode<Smi> phi_bb11_4;
+  TNode<Smi> phi_bb13_4;
   TNode<IntPtrT> tmp15;
   TNode<IntPtrT> tmp16;
-  TNode<Object> tmp17;
+  TNode<Union<HeapObject, TaggedIndex>> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<BoolT> tmp19;
   TNode<Float64T> tmp20;
-  if (block11.is_used()) {
-    ca_.Bind(&block11, &phi_bb11_4);
-    tmp15 = TimesSizeOf_float64_or_hole_0(state_, TNode<IntPtrT>{tmp11});
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_4);
+    tmp15 = TimesSizeOf_float64_or_undefined_or_hole_0(state_, TNode<IntPtrT>{tmp11});
     tmp16 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp9}, TNode<IntPtrT>{tmp15});
-    std::tie(tmp17, tmp18) = NewReference_float64_or_hole_0(state_, TNode<Object>{tmp8}, TNode<IntPtrT>{tmp16}).Flatten();
-    std::tie(tmp19, tmp20) = LoadFloat64OrHole_0(state_, TorqueStructReference_float64_or_hole_0{TNode<Object>{tmp17}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}).Flatten();
-    ca_.Branch(tmp19, &block16, std::vector<compiler::Node*>{phi_bb11_4}, &block17, std::vector<compiler::Node*>{phi_bb11_4});
+    std::tie(tmp17, tmp18) = NewReference_float64_or_undefined_or_hole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp16}).Flatten();
+    std::tie(tmp19, tmp20) = LoadFloat64OrHole_0(state_, TorqueStructReference_float64_or_undefined_or_hole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp17}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}).Flatten();
+    ca_.Branch(tmp19, &block18, std::vector<compiler::Node*>{phi_bb13_4}, &block19, std::vector<compiler::Node*>{phi_bb13_4});
   }
 
-  TNode<Smi> phi_bb12_4;
-  if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_4);
+  TNode<Smi> phi_bb14_4;
+  if (block14.is_used()) {
+    ca_.Bind(&block14, &phi_bb14_4);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Smi> phi_bb16_4;
-  if (block16.is_used()) {
-    ca_.Bind(&block16, &phi_bb16_4);
+  TNode<Smi> phi_bb18_4;
+  if (block18.is_used()) {
+    ca_.Bind(&block18, &phi_bb18_4);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Smi> phi_bb17_4;
+  TNode<Smi> phi_bb19_4;
   TNode<Smi> tmp21;
   TNode<Smi> tmp22;
-  if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_4);
-    CodeStubAssembler(state_).StoreFixedDoubleArrayElement(TNode<FixedDoubleArray>{tmp2}, TNode<Smi>{phi_bb17_4}, TNode<Float64T>{tmp20});
+  if (block19.is_used()) {
+    ca_.Bind(&block19, &phi_bb19_4);
+    CodeStubAssembler(state_).StoreFixedDoubleArrayElement(TNode<FixedDoubleArray>{tmp2}, TNode<Smi>{phi_bb19_4}, TNode<Float64T>{tmp20});
     tmp21 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
-    tmp22 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb17_4}, TNode<Smi>{tmp21});
+    tmp22 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb19_4}, TNode<Smi>{tmp21});
     ca_.Goto(&block4, tmp22);
   }
 
@@ -193,15 +193,15 @@ TNode<JSArray> FastPackedDoubleArrayToReversed_0(compiler::CodeAssemblerState* s
     tmp23 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{p_context});
     tmp24 = CodeStubAssembler(state_).LoadJSArrayElementsMap(ElementsKind::PACKED_DOUBLE_ELEMENTS, TNode<NativeContext>{tmp23});
     tmp25 = NewJSArray_0(state_, TNode<Context>{p_context}, TNode<Map>{tmp24}, TNode<FixedArrayBase>{tmp2});
-    ca_.Goto(&block18);
+    ca_.Goto(&block20);
   }
 
-    ca_.Bind(&block18);
+    ca_.Bind(&block20);
   return TNode<JSArray>{tmp25};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=80&c=1
-TNode<JSArray> TryFastArrayToReversed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=81&c=1
+TNode<JSArray> TryFastArrayToReversed_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -471,7 +471,7 @@ TF_BUILTIN(GenericArrayToReversed, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<Context> parameter0 = UncheckedParameter<Context>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -485,8 +485,8 @@ TF_BUILTIN(GenericArrayToReversed, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     tmp2 = CodeStubAssembler(state_).ArrayCreate(TNode<Context>{parameter0}, TNode<Number>{tmp1});
     tmp3 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block3, tmp3);
@@ -504,7 +504,7 @@ TF_BUILTIN(GenericArrayToReversed, CodeStubAssembler) {
   TNode<Number> tmp5;
   TNode<Number> tmp6;
   TNode<Number> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   TNode<Object> tmp9;
   TNode<Number> tmp10;
   TNode<Number> tmp11;
@@ -513,7 +513,7 @@ TF_BUILTIN(GenericArrayToReversed, CodeStubAssembler) {
     tmp5 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp1}, TNode<Number>{phi_bb1_5});
     tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp7 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp5}, TNode<Number>{tmp6});
-    tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Object>{tmp7});
+    tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp7});
     tmp9 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, parameter0, tmp2, phi_bb1_5, tmp8);
     tmp10 = FromConstexpr_Number_constexpr_int31_0(state_, 1);
     tmp11 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb1_5}, TNode<Number>{tmp10});
@@ -536,8 +536,9 @@ TF_BUILTIN(ArrayPrototypeToReversed, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kArrayByCopy));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -547,7 +548,7 @@ TF_BUILTIN(ArrayPrototypeToReversed, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = TryFastArrayToReversed_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
+    tmp0 = TryFastArrayToReversed_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label1);
     ca_.Goto(&block3);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -555,10 +556,10 @@ TF_BUILTIN(ArrayPrototypeToReversed, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = ca_.CallBuiltin<Object>(Builtin::kGenericArrayToReversed, parameter0, parameter1);
+    tmp2 = ca_.CallBuiltin<JSAny>(Builtin::kGenericArrayToReversed, parameter0, parameter1);
     arguments.PopAndReturn(tmp2);
   }
 
@@ -568,7 +569,7 @@ TF_BUILTIN(ArrayPrototypeToReversed, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=88&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=89&c=12
 TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedArray> p_elements, TNode<Smi> p_length, bool p_initializeArray) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -623,7 +624,7 @@ TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* st
   TNode<Smi> tmp8;
   TNode<Smi> tmp9;
   TNode<Smi> tmp10;
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   TNode<Smi> tmp12;
   TNode<Smi> tmp13;
   if (block8.is_used()) {
@@ -654,7 +655,7 @@ TNode<JSArray> FastArrayToReversed_FixedArray_0(compiler::CodeAssemblerState* st
   return TNode<JSArray>{tmp16};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=108&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=109&c=14
 TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, ElementsKind p_kind, TNode<FixedDoubleArray> p_elements, TNode<Smi> p_length, bool p_initializeArray) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -709,7 +710,7 @@ TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerSta
   TNode<Smi> tmp8;
   TNode<Smi> tmp9;
   TNode<Smi> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapNumber, Smi, Undefined>> tmp11;
   TNode<Smi> tmp12;
   TNode<Smi> tmp13;
   if (block8.is_used()) {
@@ -740,7 +741,7 @@ TNode<JSArray> FastArrayToReversed_FixedDoubleArray_0(compiler::CodeAssemblerSta
   return TNode<JSArray>{tmp16};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=51&c=12
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-reversed.tq?l=52&c=12
 TNode<BoolT> Is_FixedArray_FixedArrayBase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

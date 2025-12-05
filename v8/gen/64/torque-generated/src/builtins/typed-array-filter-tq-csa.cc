@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-filter-tq-csa.h"
@@ -106,7 +106,7 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -122,7 +122,7 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, JSTypedArray, UintPtrT, UintPtrT, UintPtrT> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, JSTypedArray, UintPtrT, UintPtrT, UintPtrT> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, JSTypedArray, UintPtrT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, JSTypedArray, UintPtrT, Object> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, JSTypedArray, UintPtrT, JSAny> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, UintPtrT> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, UintPtrT> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<FixedArray, IntPtrT, IntPtrT, UintPtrT> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -168,8 +168,8 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp5;
-  TNode<Object> tmp6;
-  TNode<JSReceiver> tmp7;
+  TNode<JSAny> tmp6;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp7;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -184,7 +184,7 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -194,7 +194,7 @@ TF_BUILTIN(TypedArrayPrototypeFilter, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   TNode<FixedArray> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
@@ -312,15 +312,15 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallI
   TNode<IntPtrT> phi_bb17_13;
   TNode<JSTypedArray> phi_bb17_15;
   TNode<UintPtrT> phi_bb17_17;
-  TNode<Object> phi_bb17_18;
+  TNode<JSAny> phi_bb17_18;
   TNode<Number> tmp27;
-  TNode<Object> tmp28;
+  TNode<JSAny> tmp28;
   TNode<BoolT> tmp29;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_11, &phi_bb17_12, &phi_bb17_13, &phi_bb17_15, &phi_bb17_17, &phi_bb17_18);
     tmp27 = Convert_Number_uintptr_0(state_, TNode<UintPtrT>{phi_bb17_17});
-    tmp28 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp7}, TNode<Object>{tmp12}, TNode<Object>{phi_bb17_18}, TNode<Object>{tmp27}, TNode<Object>{tmp16});
-    tmp29 = ToBoolean_0(state_, TNode<Object>{tmp28});
+    tmp28 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp7}, TNode<JSAny>{tmp12}, TNode<JSAny>{phi_bb17_18}, TNode<JSAny>{tmp27}, TNode<JSAny>{tmp16});
+    tmp29 = ToBoolean_0(state_, TNode<JSAny>{tmp28});
     ca_.Branch(tmp29, &block28, std::vector<compiler::Node*>{phi_bb17_11, phi_bb17_12, phi_bb17_13, phi_bb17_17}, &block29, std::vector<compiler::Node*>{phi_bb17_11, phi_bb17_12, phi_bb17_13, phi_bb17_17});
   }
 
@@ -364,7 +364,7 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallI
   TNode<IntPtrT> phi_bb37_12;
   TNode<IntPtrT> phi_bb37_13;
   TNode<UintPtrT> phi_bb37_17;
-  TNode<Object> tmp39;
+  TNode<Union<HeapObject, TaggedIndex>> tmp39;
   TNode<IntPtrT> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<IntPtrT> tmp42;
@@ -390,13 +390,13 @@ tmp25 = TORQUE_CAST(CodeStubAssembler(state_).CallBuiltinPointer(Builtins::CallI
   TNode<IntPtrT> phi_bb55_32;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   if (block55.is_used()) {
     ca_.Bind(&block55, &phi_bb55_17, &phi_bb55_26, &phi_bb55_27, &phi_bb55_31, &phi_bb55_32);
     tmp47 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb55_32});
     tmp48 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp47});
-    std::tie(tmp49, tmp50) = NewReference_Object_0(state_, TNode<Object>{tmp39}, TNode<IntPtrT>{tmp48}).Flatten();
+    std::tie(tmp49, tmp50) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp39}, TNode<IntPtrT>{tmp48}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp49, tmp50}, phi_bb17_18);
     ca_.Goto(&block29, phi_bb37_11, phi_bb37_12, tmp43, phi_bb55_17);
   }

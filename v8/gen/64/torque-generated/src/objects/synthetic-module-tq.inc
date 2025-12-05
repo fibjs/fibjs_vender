@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsSyntheticModule_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedSyntheticModule : public P {
   static_assert(
-      std::is_same<SyntheticModule, D>::value,
+      std::is_same_v<SyntheticModule, D>,
       "Use this class as direct base for SyntheticModule.");
   static_assert(
-      std::is_same<Module, P>::value,
+      std::is_same_v<Module, P>,
       "Pass in Module as second template parameter for TorqueGeneratedSyntheticModule.");
 
  public: 
@@ -78,7 +78,7 @@ class TorqueGeneratedSyntheticModule : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedSyntheticModule() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedSyntheticModule, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedSyntheticModule, DAlias>,
         "class TorqueGeneratedSyntheticModule should be used as direct base for SyntheticModule.");
   }
 

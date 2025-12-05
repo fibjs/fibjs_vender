@@ -8,10 +8,10 @@ V8_EXPORT_PRIVATE bool IsForeign_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedForeign : public P {
   static_assert(
-      std::is_same<Foreign, D>::value,
+      std::is_same_v<Foreign, D>,
       "Use this class as direct base for Foreign.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedForeign.");
 
  public: 
@@ -52,7 +52,7 @@ class TorqueGeneratedForeign : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedForeign() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedForeign, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedForeign, DAlias>,
         "class TorqueGeneratedForeign should be used as direct base for Foreign.");
   }
 
@@ -70,10 +70,10 @@ V8_EXPORT_PRIVATE bool IsTrustedForeign_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTrustedForeign : public P {
   static_assert(
-      std::is_same<TrustedForeign, D>::value,
+      std::is_same_v<TrustedForeign, D>,
       "Use this class as direct base for TrustedForeign.");
   static_assert(
-      std::is_same<TrustedObject, P>::value,
+      std::is_same_v<TrustedObject, P>,
       "Pass in TrustedObject as second template parameter for TorqueGeneratedTrustedForeign.");
 
  public: 
@@ -119,7 +119,7 @@ class TorqueGeneratedTrustedForeign : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTrustedForeign() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTrustedForeign, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTrustedForeign, DAlias>,
         "class TorqueGeneratedTrustedForeign should be used as direct base for TrustedForeign.");
   }
 

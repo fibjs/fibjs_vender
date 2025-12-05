@@ -9,10 +9,10 @@ V8_EXPORT_PRIVATE bool IsSourceTextModule_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedSourceTextModule : public P {
   static_assert(
-      std::is_same<SourceTextModule, D>::value,
+      std::is_same_v<SourceTextModule, D>,
       "Use this class as direct base for SourceTextModule.");
   static_assert(
-      std::is_same<Module, P>::value,
+      std::is_same_v<Module, P>,
       "Pass in Module as second template parameter for TorqueGeneratedSourceTextModule.");
 
  public: 
@@ -155,7 +155,7 @@ class TorqueGeneratedSourceTextModule : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedSourceTextModule() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedSourceTextModule, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedSourceTextModule, DAlias>,
         "class TorqueGeneratedSourceTextModule should be used as direct base for SourceTextModule.");
   }
 
@@ -173,10 +173,10 @@ V8_EXPORT_PRIVATE bool IsModuleRequest_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedModuleRequest : public P {
   static_assert(
-      std::is_same<ModuleRequest, D>::value,
+      std::is_same_v<ModuleRequest, D>,
       "Use this class as direct base for ModuleRequest.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedModuleRequest.");
 
  public: 
@@ -242,7 +242,7 @@ class TorqueGeneratedModuleRequest : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedModuleRequest() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedModuleRequest, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedModuleRequest, DAlias>,
         "class TorqueGeneratedModuleRequest should be used as direct base for ModuleRequest.");
   }
 
@@ -260,10 +260,10 @@ V8_EXPORT_PRIVATE bool IsSourceTextModuleInfoEntry_NonInline(Tagged<HeapObject> 
 template <class D, class P>
 class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   static_assert(
-      std::is_same<SourceTextModuleInfoEntry, D>::value,
+      std::is_same_v<SourceTextModuleInfoEntry, D>,
       "Use this class as direct base for SourceTextModuleInfoEntry.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedSourceTextModuleInfoEntry.");
 
  public: 
@@ -366,7 +366,7 @@ class TorqueGeneratedSourceTextModuleInfoEntry : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedSourceTextModuleInfoEntry() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedSourceTextModuleInfoEntry, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedSourceTextModuleInfoEntry, DAlias>,
         "class TorqueGeneratedSourceTextModuleInfoEntry should be used as direct base for SourceTextModuleInfoEntry.");
   }
 

@@ -5,6 +5,8 @@
 #include "src/compiler/js-graph.h"
 
 #include "src/codegen/code-factory.h"
+#include "src/compiler/heap-refs.h"
+#include "src/compiler/js-heap-broker.h"
 #include "src/objects/objects-inl.h"
 
 namespace v8 {
@@ -52,6 +54,9 @@ Node* JSGraph::ConstantNoHole(ObjectRef ref, JSHeapBroker* broker) {
   CHECK(ref.IsSmi() || ref.IsHeapNumber() ||
         ref.AsHeapObject().GetHeapObjectType(broker).hole_type() ==
             HoleType::kNone);
+  if (ref.IsString()) {
+    ref = ref.AsString().UnpackIfThin(broker);
+  }
   return Constant(ref, broker);
 }
 
@@ -87,6 +92,7 @@ Node* JSGraph::Constant(ObjectRef ref, JSHeapBroker* broker) {
     case HoleType::kArgumentsMarker:
     case HoleType::kSelfReferenceMarker:
     case HoleType::kBasicBlockCountersMarker:
+    case HoleType::kUndefinedContextCell:
       UNREACHABLE();
   }
 
@@ -109,6 +115,11 @@ Node* JSGraph::Constant(ObjectRef ref, JSHeapBroker* broker) {
   } else {
     return HeapConstantNoHole(ref.AsHeapObject().object());
   }
+}
+
+Node* JSGraph::ConstantMutableHeapNumber(HeapNumberRef ref,
+                                         JSHeapBroker* broker) {
+  return HeapConstantNoHole(ref.AsHeapObject().object());
 }
 
 Node* JSGraph::ConstantNoHole(double value) {
@@ -285,6 +296,9 @@ DEFINE_GETTER(
 
 DEFINE_GETTER(ExternalObjectMapConstant, Map,
               HeapConstantNoHole(factory()->external_map()))
+
+DEFINE_GETTER(ContextCellMapConstant, Map,
+              HeapConstantNoHole(factory()->context_cell_map()))
 
 #undef DEFINE_GETTER
 #undef GET_CACHED_FIELD

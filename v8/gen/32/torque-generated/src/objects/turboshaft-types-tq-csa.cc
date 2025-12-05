@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/turboshaft-types-tq-csa.h"
@@ -588,7 +588,7 @@ TNode<BoolT> TestTurboshaftWord32Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> tmp23;
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    tmp23 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp23 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block20, tmp23);
   }
 
@@ -605,7 +605,7 @@ TNode<BoolT> TestTurboshaftWord32Type_0(compiler::CodeAssemblerState* state_, TN
   }
 
   TNode<Uint32T> phi_bb18_4;
-  TNode<Object> tmp27;
+  TNode<Union<HeapObject, TaggedIndex>> tmp27;
   TNode<IntPtrT> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
@@ -615,7 +615,7 @@ TNode<BoolT> TestTurboshaftWord32Type_0(compiler::CodeAssemblerState* state_, TN
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_4);
     std::tie(tmp27, tmp28, tmp29) = FieldSliceTurboshaftWord32SetTypeElements_0(state_, TNode<TurboshaftWord32SetType>{tmp2}).Flatten();
-    tmp30 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb18_4});
+    tmp30 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb18_4});
     tmp31 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp30});
     tmp32 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp29});
     tmp33 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp31}, TNode<UintPtrT>{tmp32});
@@ -627,15 +627,15 @@ TNode<BoolT> TestTurboshaftWord32Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> phi_bb28_10;
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
-  TNode<Object> tmp36;
+  TNode<Union<HeapObject, TaggedIndex>> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<Uint32T> tmp38;
   TNode<BoolT> tmp39;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_4, &phi_bb28_9, &phi_bb28_10);
-    tmp34 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{tmp30});
+    tmp34 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{tmp30});
     tmp35 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp28}, TNode<IntPtrT>{tmp34});
-    std::tie(tmp36, tmp37) = NewReference_uint32_0(state_, TNode<Object>{tmp27}, TNode<IntPtrT>{tmp35}).Flatten();
+    std::tie(tmp36, tmp37) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp27}, TNode<IntPtrT>{tmp35}).Flatten();
     tmp38 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp36, tmp37});
     tmp39 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp38}, TNode<Uint32T>{p_value});
     ca_.Branch(tmp39, &block22, std::vector<compiler::Node*>{phi_bb28_4}, &block23, std::vector<compiler::Node*>{phi_bb28_4});
@@ -662,7 +662,7 @@ TNode<BoolT> TestTurboshaftWord32Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> tmp42;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_4);
-    tmp41 = FromConstexpr_uint32_constexpr_int31_0(state_, 1);
+    tmp41 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, 1);
     tmp42 = CodeStubAssembler(state_).Uint32Add(TNode<Uint32T>{phi_bb23_4}, TNode<Uint32T>{tmp41});
     ca_.Goto(&block20, tmp42);
   }
@@ -989,7 +989,7 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> tmp33;
   if (block20.is_used()) {
     ca_.Bind(&block20);
-    tmp33 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp33 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block24, tmp33);
   }
 
@@ -1006,7 +1006,7 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   }
 
   TNode<Uint32T> phi_bb22_5;
-  TNode<Object> tmp37;
+  TNode<Union<HeapObject, TaggedIndex>> tmp37;
   TNode<IntPtrT> tmp38;
   TNode<IntPtrT> tmp39;
   TNode<IntPtrT> tmp40;
@@ -1016,7 +1016,7 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   if (block22.is_used()) {
     ca_.Bind(&block22, &phi_bb22_5);
     std::tie(tmp37, tmp38, tmp39) = FieldSliceTurboshaftWord64SetTypeElementsHigh_0(state_, TNode<TurboshaftWord64SetType>{tmp2}).Flatten();
-    tmp40 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb22_5});
+    tmp40 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb22_5});
     tmp41 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp40});
     tmp42 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp39});
     tmp43 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp41}, TNode<UintPtrT>{tmp42});
@@ -1028,10 +1028,10 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> phi_bb32_11;
   TNode<IntPtrT> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<Uint32T> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   TNode<IntPtrT> tmp51;
   TNode<IntPtrT> tmp52;
@@ -1040,12 +1040,12 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp55;
   if (block32.is_used()) {
     ca_.Bind(&block32, &phi_bb32_5, &phi_bb32_10, &phi_bb32_11);
-    tmp44 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{tmp40});
+    tmp44 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{tmp40});
     tmp45 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp38}, TNode<IntPtrT>{tmp44});
-    std::tie(tmp46, tmp47) = NewReference_uint32_0(state_, TNode<Object>{tmp37}, TNode<IntPtrT>{tmp45}).Flatten();
+    std::tie(tmp46, tmp47) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp37}, TNode<IntPtrT>{tmp45}).Flatten();
     tmp48 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp46, tmp47});
     std::tie(tmp49, tmp50, tmp51) = FieldSliceTurboshaftWord64SetTypeElementsLow_0(state_, TNode<TurboshaftWord64SetType>{tmp2}).Flatten();
-    tmp52 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb32_5});
+    tmp52 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb32_5});
     tmp53 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp52});
     tmp54 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp51});
     tmp55 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp53}, TNode<UintPtrT>{tmp54});
@@ -1065,7 +1065,7 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> phi_bb40_12;
   TNode<IntPtrT> tmp56;
   TNode<IntPtrT> tmp57;
-  TNode<Object> tmp58;
+  TNode<Union<HeapObject, TaggedIndex>> tmp58;
   TNode<IntPtrT> tmp59;
   TNode<Uint32T> tmp60;
   TNode<Int32T> tmp61;
@@ -1073,9 +1073,9 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp63;
   if (block40.is_used()) {
     ca_.Bind(&block40, &phi_bb40_5, &phi_bb40_11, &phi_bb40_12);
-    tmp56 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{tmp52});
+    tmp56 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{tmp52});
     tmp57 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp50}, TNode<IntPtrT>{tmp56});
-    std::tie(tmp58, tmp59) = NewReference_uint32_0(state_, TNode<Object>{tmp49}, TNode<IntPtrT>{tmp57}).Flatten();
+    std::tie(tmp58, tmp59) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp49}, TNode<IntPtrT>{tmp57}).Flatten();
     tmp60 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp58, tmp59});
     tmp61 = CompareUint64HighLow_0(state_, TNode<Uint32T>{tmp48}, TNode<Uint32T>{tmp60}, TNode<Uint32T>{p_valueHigh}, TNode<Uint32T>{p_valueLow});
     tmp62 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -1104,7 +1104,7 @@ TNode<BoolT> TestTurboshaftWord64Type_0(compiler::CodeAssemblerState* state_, TN
   TNode<Uint32T> tmp66;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5);
-    tmp65 = FromConstexpr_uint32_constexpr_int31_0(state_, 1);
+    tmp65 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, 1);
     tmp66 = CodeStubAssembler(state_).Uint32Add(TNode<Uint32T>{phi_bb27_5}, TNode<Uint32T>{tmp65});
     ca_.Goto(&block24, tmp66);
   }
@@ -1312,7 +1312,7 @@ TNode<BoolT> TestTurboshaftFloat64Type_0(compiler::CodeAssemblerState* state_, T
   TNode<Uint32T> tmp27;
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    tmp27 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp27 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block25, tmp27);
   }
 
@@ -1329,7 +1329,7 @@ TNode<BoolT> TestTurboshaftFloat64Type_0(compiler::CodeAssemblerState* state_, T
   }
 
   TNode<Uint32T> phi_bb23_4;
-  TNode<Object> tmp31;
+  TNode<Union<HeapObject, TaggedIndex>> tmp31;
   TNode<IntPtrT> tmp32;
   TNode<IntPtrT> tmp33;
   TNode<IntPtrT> tmp34;
@@ -1339,7 +1339,7 @@ TNode<BoolT> TestTurboshaftFloat64Type_0(compiler::CodeAssemblerState* state_, T
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_4);
     std::tie(tmp31, tmp32, tmp33) = FieldSliceTurboshaftFloat64SetTypeElements_0(state_, TNode<TurboshaftFloat64SetType>{tmp10}).Flatten();
-    tmp34 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{phi_bb23_4});
+    tmp34 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb23_4});
     tmp35 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp34});
     tmp36 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp33});
     tmp37 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp35}, TNode<UintPtrT>{tmp36});
@@ -1351,7 +1351,7 @@ TNode<BoolT> TestTurboshaftFloat64Type_0(compiler::CodeAssemblerState* state_, T
   TNode<Uint32T> phi_bb33_10;
   TNode<IntPtrT> tmp38;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<Float64T> tmp42;
   TNode<BoolT> tmp43;
@@ -1359,7 +1359,7 @@ TNode<BoolT> TestTurboshaftFloat64Type_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block33, &phi_bb33_4, &phi_bb33_9, &phi_bb33_10);
     tmp38 = TimesSizeOf_float64_0(state_, TNode<IntPtrT>{tmp34});
     tmp39 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp32}, TNode<IntPtrT>{tmp38});
-    std::tie(tmp40, tmp41) = NewReference_float64_0(state_, TNode<Object>{tmp31}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = NewReference_float64_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp31}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = CodeStubAssembler(state_).LoadReference<Float64T>(CodeStubAssembler::Reference{tmp40, tmp41});
     tmp43 = CodeStubAssembler(state_).Float64AlmostEqual(TNode<Float64T>{tmp42}, TNode<Float64T>{p_value}, 1e-07);
     ca_.Branch(tmp43, &block27, std::vector<compiler::Node*>{phi_bb33_4}, &block28, std::vector<compiler::Node*>{phi_bb33_4});
@@ -1386,7 +1386,7 @@ TNode<BoolT> TestTurboshaftFloat64Type_0(compiler::CodeAssemblerState* state_, T
   TNode<Uint32T> tmp46;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_4);
-    tmp45 = FromConstexpr_uint32_constexpr_int31_0(state_, 1);
+    tmp45 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, 1);
     tmp46 = CodeStubAssembler(state_).Uint32Add(TNode<Uint32T>{phi_bb28_4}, TNode<Uint32T>{tmp45});
     ca_.Goto(&block25, tmp46);
   }
@@ -1444,7 +1444,7 @@ TF_BUILTIN(CheckTurboshaftWord32Type, CodeStubAssembler) {
     ca_.Bind(&block2);
     CodeStubAssembler(state_).Print("Type assertion failed!");
     CodeStubAssembler(state_).Print("Node id", TNode<Object>{parameter3});
-    tmp2 = Convert_Number_uint32_0(state_, TNode<Uint32T>{parameter1});
+    tmp2 = Convert_Number_WasmCodePointer_0(state_, TNode<Uint32T>{parameter1});
     CodeStubAssembler(state_).Print("Actual value", TNode<Object>{tmp2});
     CodeStubAssembler(state_).Print("Expected type", TNode<Object>{parameter2});
     CodeStubAssembler(state_).Abort(AbortReason::kTurboshaftTypeAssertionFailed);
@@ -1488,9 +1488,9 @@ TF_BUILTIN(CheckTurboshaftWord64Type, CodeStubAssembler) {
     ca_.Bind(&block2);
     CodeStubAssembler(state_).Print("Type assertion failed!");
     CodeStubAssembler(state_).Print("Node id", TNode<Object>{parameter4});
-    tmp2 = Convert_Number_uint32_0(state_, TNode<Uint32T>{parameter1});
+    tmp2 = Convert_Number_WasmCodePointer_0(state_, TNode<Uint32T>{parameter1});
     CodeStubAssembler(state_).Print("Actual value (high)", TNode<Object>{tmp2});
-    tmp3 = Convert_Number_uint32_0(state_, TNode<Uint32T>{parameter2});
+    tmp3 = Convert_Number_WasmCodePointer_0(state_, TNode<Uint32T>{parameter2});
     CodeStubAssembler(state_).Print("Actual vlaue (low)", TNode<Object>{tmp3});
     CodeStubAssembler(state_).Print("Expected type", TNode<Object>{parameter3});
     CodeStubAssembler(state_).Abort(AbortReason::kTurboshaftTypeAssertionFailed);
@@ -1715,7 +1715,7 @@ TNode<Uint32T> LoadTurboshaftWord32SetTypeSetSize_0(compiler::CodeAssemblerState
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord32SetType> p_o) {
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 FieldSliceTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord32SetType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1726,21 +1726,21 @@ TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord32Set
   TNode<Uint32T> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
     tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
-    tmp2 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp1});
+    tmp2 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
-    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_uint32_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint32_MutableReference_uint32_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
@@ -1753,7 +1753,7 @@ TNode<Uint32T> LoadTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerStat
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1770,14 +1770,14 @@ TNode<Uint32T> LoadTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerStat
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint32T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{p_i});
+    tmp6 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint32_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1801,7 +1801,7 @@ void StoreTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1818,13 +1818,13 @@ void StoreTurboshaftWord32SetTypeElements_0(compiler::CodeAssemblerState* state_
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{p_i});
+    tmp6 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint32_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -2019,7 +2019,7 @@ TNode<Uint32T> LoadTurboshaftWord64SetTypeSetSize_0(compiler::CodeAssemblerState
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o) {
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 FieldSliceTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2030,21 +2030,21 @@ TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64Set
   TNode<Uint32T> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
     tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
-    tmp2 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp1});
+    tmp2 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
-    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_uint32_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint32_MutableReference_uint32_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=61&c=3
@@ -2057,7 +2057,7 @@ TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssembler
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2074,14 +2074,14 @@ TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssembler
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint32T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{p_i});
+    tmp6 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint32_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -2105,7 +2105,7 @@ void StoreTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* st
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2122,13 +2122,13 @@ void StoreTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* st
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{p_i});
+    tmp6 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint32_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -2142,14 +2142,14 @@ void StoreTurboshaftWord64SetTypeElementsHigh_0(compiler::CodeAssemblerState* st
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=62&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o) {
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 FieldSliceTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* state_, TNode<TurboshaftWord64SetType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -2158,7 +2158,7 @@ TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64Set
   TNode<IntPtrT> tmp6;
   TNode<Uint32T> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block0.is_used()) {
@@ -2169,13 +2169,13 @@ TorqueStructSlice_uint32_MutableReference_uint32_0 FieldSliceTurboshaftWord64Set
     tmp5 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
     tmp7 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp6});
-    tmp8 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint32_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
+    tmp8 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp7});
+    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint32_MutableReference_uint32_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=62&c=3
@@ -2188,7 +2188,7 @@ TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerS
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2205,14 +2205,14 @@ TNode<Uint32T> LoadTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerS
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint32T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{p_i});
+    tmp6 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint32_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -2236,7 +2236,7 @@ void StoreTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* sta
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2253,13 +2253,13 @@ void StoreTurboshaftWord64SetTypeElementsLow_0(compiler::CodeAssemblerState* sta
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = TimesSizeOf_uint32_0(state_, TNode<IntPtrT>{p_i});
+    tmp6 = TimesSizeOf_WasmCodePointer_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint32_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_WasmCodePointer_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint32T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -2469,21 +2469,21 @@ TorqueStructSlice_float64_MutableReference_float64_0 FieldSliceTurboshaftFloat64
   TNode<Uint32T> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp1 = CodeStubAssembler(state_).LoadReference<Uint32T>(CodeStubAssembler::Reference{p_o, tmp0});
-    tmp2 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp1});
+    tmp2 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xcull));
-    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_float64_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_float64_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_float64_MutableReference_float64_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_float64_MutableReference_float64_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=86&c=3
@@ -2496,7 +2496,7 @@ TNode<Float64T> LoadTurboshaftFloat64SetTypeElements_0(compiler::CodeAssemblerSt
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2513,14 +2513,14 @@ TNode<Float64T> LoadTurboshaftFloat64SetTypeElements_0(compiler::CodeAssemblerSt
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Float64T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_float64_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_float64_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_float64_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Float64T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -2544,7 +2544,7 @@ void StoreTurboshaftFloat64SetTypeElements_0(compiler::CodeAssemblerState* state
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2561,14 +2561,14 @@ void StoreTurboshaftFloat64SetTypeElements_0(compiler::CodeAssemblerState* state
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Float64T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_float64_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_float64_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_float64_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).Float64SilenceNaN(TNode<Float64T>{p_v});
     CodeStubAssembler(state_).StoreReference<Float64T>(CodeStubAssembler::Reference{tmp8, tmp9}, tmp10);
     ca_.Goto(&block10);
@@ -2630,7 +2630,7 @@ TNode<TurboshaftType> DownCastForTorqueClass_TurboshaftType_0(compiler::CodeAsse
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2652,7 +2652,7 @@ TNode<TurboshaftType> DownCastForTorqueClass_TurboshaftType_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(231));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(231));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2775,7 +2775,7 @@ TNode<TurboshaftWord32Type> DownCastForTorqueClass_TurboshaftWord32Type_0(compil
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftWord32Type>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2797,7 +2797,7 @@ TNode<TurboshaftWord32Type> DownCastForTorqueClass_TurboshaftWord32Type_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(234));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(234));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2920,7 +2920,7 @@ TNode<TurboshaftWord32RangeType> DownCastForTorqueClass_TurboshaftWord32RangeTyp
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftWord32RangeType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2942,7 +2942,7 @@ TNode<TurboshaftWord32RangeType> DownCastForTorqueClass_TurboshaftWord32RangeTyp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(235));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(235));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3065,7 +3065,7 @@ TNode<TurboshaftWord32SetType> DownCastForTorqueClass_TurboshaftWord32SetType_0(
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftWord32SetType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3087,7 +3087,7 @@ TNode<TurboshaftWord32SetType> DownCastForTorqueClass_TurboshaftWord32SetType_0(
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(236));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(236));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3210,7 +3210,7 @@ TNode<TurboshaftWord64Type> DownCastForTorqueClass_TurboshaftWord64Type_0(compil
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftWord64Type>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3232,7 +3232,7 @@ TNode<TurboshaftWord64Type> DownCastForTorqueClass_TurboshaftWord64Type_0(compil
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(237));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(237));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3355,7 +3355,7 @@ TNode<TurboshaftWord64RangeType> DownCastForTorqueClass_TurboshaftWord64RangeTyp
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftWord64RangeType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3377,7 +3377,7 @@ TNode<TurboshaftWord64RangeType> DownCastForTorqueClass_TurboshaftWord64RangeTyp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(238));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(238));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3500,7 +3500,7 @@ TNode<TurboshaftWord64SetType> DownCastForTorqueClass_TurboshaftWord64SetType_0(
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftWord64SetType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3522,7 +3522,7 @@ TNode<TurboshaftWord64SetType> DownCastForTorqueClass_TurboshaftWord64SetType_0(
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(239));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(239));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3645,7 +3645,7 @@ TNode<TurboshaftFloat64Type> DownCastForTorqueClass_TurboshaftFloat64Type_0(comp
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftFloat64Type>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3667,7 +3667,7 @@ TNode<TurboshaftFloat64Type> DownCastForTorqueClass_TurboshaftFloat64Type_0(comp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(231));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(231));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3790,7 +3790,7 @@ TNode<TurboshaftFloat64RangeType> DownCastForTorqueClass_TurboshaftFloat64RangeT
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftFloat64RangeType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3812,7 +3812,7 @@ TNode<TurboshaftFloat64RangeType> DownCastForTorqueClass_TurboshaftFloat64RangeT
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(232));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(232));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3935,7 +3935,7 @@ TNode<TurboshaftFloat64SetType> DownCastForTorqueClass_TurboshaftFloat64SetType_
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurboshaftFloat64SetType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -3957,7 +3957,7 @@ TNode<TurboshaftFloat64SetType> DownCastForTorqueClass_TurboshaftFloat64SetType_
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(233));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(233));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -4033,45 +4033,45 @@ TNode<TurboshaftFloat64SetType> DownCastForTorqueClass_TurboshaftFloat64SetType_
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-TorqueStructSlice_uint32_MutableReference_uint32_0 NewMutableSlice_uint32_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0 NewMutableSlice_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_uint32_MutableReference_uint32_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint32_MutableReference_uint32_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_WasmCodePointer_MutableReference_WasmCodePointer_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=86&c=3
-TorqueStructSlice_float64_MutableReference_float64_0 NewMutableSlice_float64_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_float64_MutableReference_float64_0 NewMutableSlice_float64_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_float64_MutableReference_float64_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_float64_MutableReference_float64_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_float64_MutableReference_float64_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_float64_MutableReference_float64_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

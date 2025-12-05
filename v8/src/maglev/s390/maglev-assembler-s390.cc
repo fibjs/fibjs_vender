@@ -91,7 +91,7 @@ void MaglevAssembler::OSRPrologue(Graph* graph) {
   uint32_t source_frame_size =
       graph->min_maglev_stackslots_for_unoptimized_frame_size();
 
-  if (v8_flags.maglev_assert_stack_size && v8_flags.debug_code) {
+  if (v8_flags.debug_code) {
     lgr(scratch, sp);
     lay(scratch,
         MemOperand(scratch, source_frame_size * kSystemPointerSize +
@@ -137,6 +137,7 @@ void MaglevAssembler::Prologue(Graph* graph) {
     bind(code_gen_state()->entry_label());
   }
 
+#ifndef V8_ENABLE_LEAPTIERING
   // Tiering support.
   if (v8_flags.turbofan) {
     using D = MaglevOptimizeCodeOrTailCallOptimizedCodeSlotDescriptor;
@@ -153,6 +154,7 @@ void MaglevAssembler::Prologue(Graph* graph) {
                     LoadFeedbackVectorFlagsAndCheckIfNeedsProcessing(
                         flags, feedback_vector, CodeKind::MAGLEV));
   }
+#endif  // !V8_ENABLE_LEAPTIERING
 
   EnterFrame(StackFrame::MAGLEV);
   // Save arguments in frame.
@@ -219,9 +221,11 @@ void MaglevAssembler::LoadSingleCharacterString(Register result,
     Assert(le, AbortReason::kUnexpectedValue);
   }
   Register table = scratch;
-  LoadRoot(table, RootIndex::kSingleCharacterStringTable);
-  LoadTaggedFieldByIndex(result, table, char_code, kTaggedSize,
-                         FixedArray::kHeaderSize);
+  AddS64(table, kRootRegister,
+         Operand(RootRegisterOffsetForRootIndex(
+             RootIndex::kFirstSingleCharacterString)));
+  ShiftLeftU64(result, char_code, Operand(kSystemPointerSizeLog2));
+  LoadU64(result, MemOperand(table, result));
 }
 
 void MaglevAssembler::StringFromCharCode(RegisterSnapshot register_snapshot,
@@ -272,6 +276,7 @@ void MaglevAssembler::StringCharCodeOrCodePointAt(
     RegisterSnapshot& register_snapshot, Register result, Register string,
     Register index, Register instance_type, Register scratch2,
     Label* result_fits_one_byte) {
+  ASM_CODE_COMMENT(this);
   ZoneLabelRef done(this);
   Label seq_string;
   Label cons_string;
@@ -386,9 +391,7 @@ void MaglevAssembler::StringCharCodeOrCodePointAt(
     // The result of one-byte string will be the same for both modes
     // (CharCodeAt/CodePointAt), since it cannot be the first half of a
     // surrogate pair.
-    // AndP(index, Operand(SeqOneByteString::kHeaderSize - kHeapObjectTag));
-    LoadU8(result, FieldMemOperand(string, index,
-                                   OFFSET_OF_DATA_START(SeqOneByteString)));
+    SeqOneByteStringCharCodeAt(result, string, index);
     b(result_fits_one_byte);
 
     bind(&two_byte_string);
@@ -454,6 +457,39 @@ void MaglevAssembler::StringCharCodeOrCodePointAt(
       Move(index, 0xdeadbeef);
     }
   }
+}
+
+void MaglevAssembler::SeqOneByteStringCharCodeAt(Register result,
+                                                 Register string,
+                                                 Register index) {
+  ASM_CODE_COMMENT(this);
+  if (v8_flags.debug_code) {
+    TemporaryRegisterScope scope(this);
+    Register scratch = scope.AcquireScratch();
+
+    // Check if {string} is a string.
+    AssertNotSmi(string);
+    LoadMap(scratch, string);
+    CompareInstanceTypeRange(scratch, scratch, FIRST_STRING_TYPE,
+                             LAST_STRING_TYPE);
+    Check(kUnsignedLessThanEqual, AbortReason::kUnexpectedValue);
+
+    // Check if {string} is a sequential one-byte string.
+    AndInt32(scratch, kStringRepresentationAndEncodingMask);
+    CompareInt32AndAssert(scratch, kSeqOneByteStringTag, kEqual,
+                          AbortReason::kUnexpectedValue);
+
+    LoadInt32(scratch, FieldMemOperand(string, offsetof(String, length_)));
+    CompareInt32AndAssert(index, scratch, kUnsignedLessThan,
+                          AbortReason::kUnexpectedValue);
+  }
+
+  LoadU8(result, FieldMemOperand(string, index,
+                                 OFFSET_OF_DATA_START(SeqOneByteString)));
+}
+
+void MaglevAssembler::CountLeadingZerosInt32(Register dst, Register src) {
+  CountLeadingZerosU32(dst, src);
 }
 
 void MaglevAssembler::TruncateDoubleToInt32(Register dst, DoubleRegister src) {

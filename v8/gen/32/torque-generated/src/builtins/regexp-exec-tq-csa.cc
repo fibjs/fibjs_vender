@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-exec-tq-csa.h"
@@ -83,14 +83,14 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-exec.tq?l=9&c=1
-TNode<Object> RegExpPrototypeExecBodyFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string) {
+TNode<JSAny> RegExpPrototypeExecBodyFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = RegExpPrototypeExecBody_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_receiver}, TNode<String>{p_string}, true);
@@ -98,18 +98,18 @@ TNode<Object> RegExpPrototypeExecBodyFast_0(compiler::CodeAssemblerState* state_
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp0};
+  return TNode<JSAny>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-exec.tq?l=15&c=1
-TNode<Object> RegExpPrototypeExecBodySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string) {
+TNode<JSAny> RegExpPrototypeExecBodySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = RegExpPrototypeExecBody_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_receiver}, TNode<String>{p_string}, false);
@@ -117,7 +117,7 @@ TNode<Object> RegExpPrototypeExecBodySlow_0(compiler::CodeAssemblerState* state_
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp0};
+  return TNode<JSAny>{tmp0};
 }
 
 TF_BUILTIN(RegExpPrototypeExecSlow, CodeStubAssembler) {
@@ -131,7 +131,7 @@ TF_BUILTIN(RegExpPrototypeExecSlow, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = RegExpPrototypeExecBodySlow_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, TNode<String>{parameter2});
@@ -143,16 +143,16 @@ TF_BUILTIN(RegExpPrototypeExec, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kString);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kString);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSRegExp> tmp0;
@@ -178,26 +178,26 @@ TF_BUILTIN(RegExpPrototypeExec, CodeStubAssembler) {
   TNode<BoolT> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     tmp4 = RegExpBuiltinsAssembler(state_).IsFastRegExpNoPrototype(TNode<Context>{parameter0}, TNode<Object>{tmp0});
     ca_.Branch(tmp4, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp5 = RegExpPrototypeExecBodyFast_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<String>{tmp3});
     ca_.Goto(&block7, tmp5);
   }
 
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp6 = ca_.CallBuiltin<Object>(Builtin::kRegExpPrototypeExecSlow, parameter0, tmp0, tmp3);
+    tmp6 = ca_.CallBuiltin<JSAny>(Builtin::kRegExpPrototypeExecSlow, parameter0, tmp0, tmp3);
     ca_.Goto(&block7, tmp6);
   }
 
-  TNode<Object> phi_bb7_5;
+  TNode<JSAny> phi_bb7_5;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_5);
     CodeStubAssembler(state_).Return(phi_bb7_5);

@@ -30,34 +30,46 @@ TNode<Uint32T> FromConstexpr_DisposableStackResourcesType_constexpr_kAllSync_0(c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=11&c=1
 TNode<Uint32T> FromConstexpr_DisposableStackResourcesType_constexpr_kAtLeastOneAsync_0(compiler::CodeAssemblerState* state_, DisposableStackResourcesType p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=21&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=24&c=1
 TNode<JSDisposableStackBase> Cast_JSDisposableStackBase_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=36&c=1
 TNode<JSSyncDisposableStack> Cast_JSSyncDisposableStack_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=38&c=1
 TNode<JSAsyncDisposableStack> Cast_JSAsyncDisposableStack_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=30&c=3
 TNode<FixedArray> LoadJSDisposableStackBaseStack_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=30&c=3
 void StoreJSDisposableStackBaseStack_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o, TNode<FixedArray> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=28&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=3
 TNode<Smi> LoadJSDisposableStackBaseStatus_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=28&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=3
 void StoreJSDisposableStackBaseStatus_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o, TNode<Smi> p_v);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=21&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=32&c=3
+TNode<Object> LoadJSDisposableStackBaseError_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=32&c=3
+void StoreJSDisposableStackBaseError_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o, TNode<Object> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=3
+TNode<Object> LoadJSDisposableStackBaseErrorMessage_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=3
+void StoreJSDisposableStackBaseErrorMessage_0(compiler::CodeAssemblerState* state_, TNode<JSDisposableStackBase> p_o, TNode<Object> p_v);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=24&c=1
 TNode<JSDisposableStackBase> DownCastForTorqueClass_JSDisposableStackBase_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=36&c=1
 TNode<JSSyncDisposableStack> DownCastForTorqueClass_JSSyncDisposableStack_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=38&c=1
 TNode<JSAsyncDisposableStack> DownCastForTorqueClass_JSAsyncDisposableStack_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 } // namespace internal

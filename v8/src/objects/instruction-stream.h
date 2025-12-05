@@ -33,8 +33,6 @@ class WritableJitAllocation;
 // it doesn't live in the trusted space but instead in the code space.
 class InstructionStream : public TrustedObject {
  public:
-  NEVER_READ_ONLY_SPACE
-
   // All InstructionStream objects have the following layout:
   //
   //  +--------------------------+
@@ -75,7 +73,6 @@ class InstructionStream : public TrustedObject {
   // Set to Smi::zero() during initialization. Heap iterators may see
   // InstructionStream objects in this state.
   inline Tagged<Code> code(AcquireLoadTag tag) const;
-  inline void set_code(Tagged<Code> value, ReleaseStoreTag tag);
   inline Tagged<Object> raw_code(AcquireLoadTag tag) const;
   // Use when the InstructionStream may be uninitialized:
   inline bool TryGetCode(Tagged<Code>* code_out, AcquireLoadTag tag) const;

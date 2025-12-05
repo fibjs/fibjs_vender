@@ -2,6 +2,7 @@
 #define V8_GEN_TORQUE_GENERATED_VISITOR_LISTS_H_
 
 #define TORQUE_INSTANCE_TYPE_TO_BODY_DESCRIPTOR_LIST(V)\
+V(JS_PROXY_TYPE,JSProxy)\
 V(WEAK_ARRAY_LIST_TYPE,WeakArrayList)\
 V(SCOPE_INFO_TYPE,ScopeInfo)\
 V(DESCRIPTOR_ARRAY_TYPE,DescriptorArray)\
@@ -55,6 +56,7 @@ V(AbstractInternalClassSubclass2)\
 
 #define TORQUE_POINTER_VISITOR_ID_LIST(V)\
 V(Context)\
+V(JSProxy)\
 V(WeakArrayList)\
 V(ScopeInfo)\
 V(DescriptorArray)\

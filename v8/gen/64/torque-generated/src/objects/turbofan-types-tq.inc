@@ -12,10 +12,10 @@ V8_EXPORT_PRIVATE bool IsTurbofanType_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTurbofanType : public P {
   static_assert(
-      std::is_same<TurbofanType, D>::value,
+      std::is_same_v<TurbofanType, D>,
       "Use this class as direct base for TurbofanType.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedTurbofanType.");
 
  public: 
@@ -40,7 +40,7 @@ class TorqueGeneratedTurbofanType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurbofanType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurbofanType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurbofanType, DAlias>,
         "class TorqueGeneratedTurbofanType should be used as direct base for TurbofanType.");
   }
 
@@ -56,44 +56,44 @@ class TurbofanType : public TorqueGeneratedTurbofanType<TurbofanType, HeapObject
 };
 
 // Alias for IsTurbofanBitsetType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
 V8_EXPORT_PRIVATE bool IsTurbofanBitsetType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
 template <class D, class P>
 class TorqueGeneratedTurbofanBitsetType : public P {
   static_assert(
-      std::is_same<TurbofanBitsetType, D>::value,
+      std::is_same_v<TurbofanBitsetType, D>,
       "Use this class as direct base for TurbofanBitsetType.");
   static_assert(
-      std::is_same<TurbofanType, P>::value,
+      std::is_same_v<TurbofanType, P>,
       "Pass in TurbofanType as second template parameter for TorqueGeneratedTurbofanBitsetType.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurbofanBitsetType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
   inline uint32_t bitset_low() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
   inline void set_bitset_low(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=64&c=3
   inline uint32_t bitset_high() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=64&c=3
   inline void set_bitset_high(uint32_t value);
 
   DECL_PRINTER(TurbofanBitsetType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
   V8_EXPORT_PRIVATE void TurbofanBitsetTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=62&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
   static constexpr int kBitsetLowOffset = P::kHeaderSize;
   static constexpr int kBitsetLowOffsetEnd = kBitsetLowOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=64&c=3
   static constexpr int kBitsetHighOffset = kBitsetLowOffsetEnd + 1;
   static constexpr int kBitsetHighOffsetEnd = kBitsetHighOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kBitsetHighOffsetEnd + 1;
@@ -103,14 +103,14 @@ class TorqueGeneratedTurbofanBitsetType : public P {
   static constexpr int kHeaderSize = kBitsetHighOffsetEnd + 1;
   static constexpr int kSize = kBitsetHighOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -120,7 +120,7 @@ class TorqueGeneratedTurbofanBitsetType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurbofanBitsetType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurbofanBitsetType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurbofanBitsetType, DAlias>,
         "class TorqueGeneratedTurbofanBitsetType should be used as direct base for TurbofanBitsetType.");
   }
 
@@ -137,49 +137,49 @@ class TurbofanBitsetType : public TorqueGeneratedTurbofanBitsetType<TurbofanBits
 };
 
 // Alias for IsTurbofanUnionType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
 V8_EXPORT_PRIVATE bool IsTurbofanUnionType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
 template <class D, class P>
 class TorqueGeneratedTurbofanUnionType : public P {
   static_assert(
-      std::is_same<TurbofanUnionType, D>::value,
+      std::is_same_v<TurbofanUnionType, D>,
       "Use this class as direct base for TurbofanUnionType.");
   static_assert(
-      std::is_same<TurbofanType, P>::value,
+      std::is_same_v<TurbofanType, P>,
       "Pass in TurbofanType as second template parameter for TorqueGeneratedTurbofanUnionType.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurbofanUnionType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
   inline Tagged<TurbofanType> type1() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
   inline Tagged<TurbofanType> type1(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
   inline void set_type1(Tagged<TurbofanType> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=70&c=3
   inline Tagged<TurbofanType> type2() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=70&c=3
   inline Tagged<TurbofanType> type2(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=70&c=3
   inline void set_type2(Tagged<TurbofanType> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(TurbofanUnionType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
   V8_EXPORT_PRIVATE void TurbofanUnionTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
   static constexpr int kType1Offset = P::kHeaderSize;
   static constexpr int kType1OffsetEnd = kType1Offset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=70&c=3
   static constexpr int kType2Offset = kType1OffsetEnd + 1;
   static constexpr int kType2OffsetEnd = kType2Offset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kType2OffsetEnd + 1;
@@ -188,14 +188,14 @@ class TorqueGeneratedTurbofanUnionType : public P {
   static constexpr int kHeaderSize = kType2OffsetEnd + 1;
   static constexpr int kSize = kType2OffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -205,7 +205,7 @@ class TorqueGeneratedTurbofanUnionType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurbofanUnionType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurbofanUnionType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurbofanUnionType, DAlias>,
         "class TorqueGeneratedTurbofanUnionType should be used as direct base for TurbofanUnionType.");
   }
 
@@ -222,44 +222,44 @@ class TurbofanUnionType : public TorqueGeneratedTurbofanUnionType<TurbofanUnionT
 };
 
 // Alias for IsTurbofanRangeType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
 V8_EXPORT_PRIVATE bool IsTurbofanRangeType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
 template <class D, class P>
 class TorqueGeneratedTurbofanRangeType : public P {
   static_assert(
-      std::is_same<TurbofanRangeType, D>::value,
+      std::is_same_v<TurbofanRangeType, D>,
       "Use this class as direct base for TurbofanRangeType.");
   static_assert(
-      std::is_same<TurbofanType, P>::value,
+      std::is_same_v<TurbofanType, P>,
       "Pass in TurbofanType as second template parameter for TorqueGeneratedTurbofanRangeType.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurbofanRangeType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
   inline double min() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
   inline void set_min(double value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=76&c=3
   inline double max() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=76&c=3
   inline void set_max(double value);
 
   DECL_PRINTER(TurbofanRangeType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
   V8_EXPORT_PRIVATE void TurbofanRangeTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
   static constexpr int kMinOffset = P::kHeaderSize;
   static constexpr int kMinOffsetEnd = kMinOffset + kDoubleSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=76&c=3
   static constexpr int kMaxOffset = kMinOffsetEnd + 1;
   static constexpr int kMaxOffsetEnd = kMaxOffset + kDoubleSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kMaxOffsetEnd + 1;
@@ -269,14 +269,14 @@ class TorqueGeneratedTurbofanRangeType : public P {
   static constexpr int kHeaderSize = kMaxOffsetEnd + 1;
   static constexpr int kSize = kMaxOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -286,7 +286,7 @@ class TorqueGeneratedTurbofanRangeType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurbofanRangeType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurbofanRangeType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurbofanRangeType, DAlias>,
         "class TorqueGeneratedTurbofanRangeType should be used as direct base for TurbofanRangeType.");
   }
 
@@ -303,39 +303,39 @@ class TurbofanRangeType : public TorqueGeneratedTurbofanRangeType<TurbofanRangeT
 };
 
 // Alias for IsTurbofanHeapConstantType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
 V8_EXPORT_PRIVATE bool IsTurbofanHeapConstantType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
 template <class D, class P>
 class TorqueGeneratedTurbofanHeapConstantType : public P {
   static_assert(
-      std::is_same<TurbofanHeapConstantType, D>::value,
+      std::is_same_v<TurbofanHeapConstantType, D>,
       "Use this class as direct base for TurbofanHeapConstantType.");
   static_assert(
-      std::is_same<TurbofanType, P>::value,
+      std::is_same_v<TurbofanType, P>,
       "Pass in TurbofanType as second template parameter for TorqueGeneratedTurbofanHeapConstantType.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurbofanHeapConstantType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=81&c=3
   inline Tagged<HeapObject> constant() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=81&c=3
   inline Tagged<HeapObject> constant(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=81&c=3
   inline void set_constant(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(TurbofanHeapConstantType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
   V8_EXPORT_PRIVATE void TurbofanHeapConstantTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=81&c=3
   static constexpr int kConstantOffset = P::kHeaderSize;
   static constexpr int kConstantOffsetEnd = kConstantOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kConstantOffsetEnd + 1;
@@ -344,14 +344,14 @@ class TorqueGeneratedTurbofanHeapConstantType : public P {
   static constexpr int kHeaderSize = kConstantOffsetEnd + 1;
   static constexpr int kSize = kConstantOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -361,7 +361,7 @@ class TorqueGeneratedTurbofanHeapConstantType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurbofanHeapConstantType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurbofanHeapConstantType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurbofanHeapConstantType, DAlias>,
         "class TorqueGeneratedTurbofanHeapConstantType should be used as direct base for TurbofanHeapConstantType.");
   }
 
@@ -378,36 +378,36 @@ class TurbofanHeapConstantType : public TorqueGeneratedTurbofanHeapConstantType<
 };
 
 // Alias for IsTurbofanOtherNumberConstantType() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
 V8_EXPORT_PRIVATE bool IsTurbofanOtherNumberConstantType_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
 template <class D, class P>
 class TorqueGeneratedTurbofanOtherNumberConstantType : public P {
   static_assert(
-      std::is_same<TurbofanOtherNumberConstantType, D>::value,
+      std::is_same_v<TurbofanOtherNumberConstantType, D>,
       "Use this class as direct base for TurbofanOtherNumberConstantType.");
   static_assert(
-      std::is_same<TurbofanType, P>::value,
+      std::is_same_v<TurbofanType, P>,
       "Pass in TurbofanType as second template parameter for TorqueGeneratedTurbofanOtherNumberConstantType.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedTurbofanOtherNumberConstantType<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=86&c=3
   inline double constant() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=86&c=3
   inline void set_constant(double value);
 
   DECL_PRINTER(TurbofanOtherNumberConstantType)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
   V8_EXPORT_PRIVATE void TurbofanOtherNumberConstantTypeVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=86&c=3
   static constexpr int kConstantOffset = P::kHeaderSize;
   static constexpr int kConstantOffsetEnd = kConstantOffset + kDoubleSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kConstantOffsetEnd + 1;
@@ -417,14 +417,14 @@ class TorqueGeneratedTurbofanOtherNumberConstantType : public P {
   static constexpr int kHeaderSize = kConstantOffsetEnd + 1;
   static constexpr int kSize = kConstantOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -434,7 +434,7 @@ class TorqueGeneratedTurbofanOtherNumberConstantType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurbofanOtherNumberConstantType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurbofanOtherNumberConstantType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurbofanOtherNumberConstantType, DAlias>,
         "class TorqueGeneratedTurbofanOtherNumberConstantType should be used as direct base for TurbofanOtherNumberConstantType.");
   }
 

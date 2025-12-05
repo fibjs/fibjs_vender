@@ -16,7 +16,7 @@ Tagged<Foreign> TorqueGeneratedJSDisplayNames<D, P>::internal(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=19&c=3
 template<class D, class P>
 void TorqueGeneratedJSDisplayNames<D, P>::set_internal(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kInternalOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInternalOffset, value, mode);
 }
@@ -31,7 +31,8 @@ int TorqueGeneratedJSDisplayNames<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-display-names.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedJSDisplayNames<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSDisplayNamesFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-match-all-tq-csa.h"
@@ -91,7 +91,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-match-all.tq?l=12&c=1
-TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<Object> p_receiver, TNode<Object> p_string) {
+TNode<JSAny> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<NativeContext> p_nativeContext, TNode<JSAny> p_receiver, TNode<JSAny> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -103,7 +103,7 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
   compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, BoolT, BoolT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, BoolT, BoolT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -112,9 +112,9 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
   TNode<JSRegExp> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    CodeStubAssembler(state_).ThrowIfNotJSReceiver(TNode<Context>{p_context}, TNode<Object>{p_receiver}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@matchAll");
+    CodeStubAssembler(state_).ThrowIfNotJSReceiver(TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@matchAll");
     tmp0 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver});
-    tmp1 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{p_string});
+    tmp1 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{p_string});
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<HeapObject>{tmp0}, &label3);
     ca_.Goto(&block4);
@@ -127,11 +127,11 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
   TNode<JSFunction> tmp4;
   TNode<JSReceiver> tmp5;
   TNode<JSReceiver> tmp6;
-  TNode<Object> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp7;
+  TNode<JSAny> tmp8;
   TNode<String> tmp9;
   TNode<JSReceiver> tmp10;
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   TNode<Number> tmp12;
   TNode<JSReceiver> tmp13;
   TNode<String> tmp14;
@@ -150,16 +150,16 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp4 = LoadRegExpFunction_0(state_, TNode<NativeContext>{p_nativeContext});
-    tmp5 = CodeStubAssembler(state_).SpeciesConstructor(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<JSReceiver>{tmp4});
+    tmp5 = CodeStubAssembler(state_).SpeciesConstructor(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSReceiver>{tmp4});
     tmp6 = UnsafeCast_Constructor_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp5});
     tmp7 = FromConstexpr_JSAny_constexpr_string_0(state_, "flags");
-    tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp7});
-    tmp9 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<Object>{tmp8});
-    tmp10 = CodeStubAssembler(state_).Construct(TNode<Context>{p_context}, TNode<JSReceiver>{tmp6}, TNode<Object>{tmp0}, TNode<Object>{tmp9});
-    tmp11 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<Object>{tmp0});
-    tmp12 = CodeStubAssembler(state_).ToLength_Inline(TNode<Context>{p_context}, TNode<Object>{tmp11});
+    tmp8 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp7});
+    tmp9 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp8});
+    tmp10 = CodeStubAssembler(state_).Construct(TNode<Context>{p_context}, TNode<JSReceiver>{tmp6}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp9});
+    tmp11 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<JSAny>{tmp0});
+    tmp12 = CodeStubAssembler(state_).ToLength_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp11});
     tmp13 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp10});
-    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<Object>{tmp13}, TNode<Object>{tmp12});
+    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<JSAny>{tmp13}, TNode<JSAny>{tmp12});
     tmp14 = CodeStubAssembler(state_).StringConstant("g");
     tmp15 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp16 = ca_.CallBuiltin<Smi>(Builtin::kStringIndexOf, TNode<Object>(), tmp9, tmp14, tmp15);
@@ -177,9 +177,9 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
   }
 
   TNode<IntPtrT> tmp27;
-  TNode<PrimitiveHeapObject> tmp28;
+  TNode<Union<String, Undefined>> tmp28;
   TNode<String> tmp29;
-  TNode<Object> tmp30;
+  TNode<JSAny> tmp30;
   TNode<JSRegExp> tmp31;
   TNode<JSRegExp> tmp32;
   TNode<Smi> tmp33;
@@ -188,9 +188,9 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp27 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp28 = CodeStubAssembler(state_).LoadReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{tmp2, tmp27});
+    tmp28 = CodeStubAssembler(state_).LoadReference<Union<String, Undefined>>(CodeStubAssembler::Reference{tmp2, tmp27});
     tmp29 = FastFlagsGetter_0(state_, TNode<Context>{p_context}, TNode<JSRegExp>{tmp2});
-    tmp30 = RegExpCreate_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_nativeContext}, TNode<Object>{tmp28}, TNode<String>{tmp29});
+    tmp30 = RegExpCreate_0(state_, TNode<Context>{p_context}, TNode<NativeContext>{p_nativeContext}, TNode<JSAny>{tmp28}, TNode<String>{tmp29});
     tmp31 = UnsafeCast_JSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp30});
     tmp32 = UnsafeCast_FastJSRegExp_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
     tmp33 = RegExpBuiltinsAssembler(state_).FastLoadLastIndex(TNode<JSRegExp>{tmp32});
@@ -242,35 +242,35 @@ TNode<Object> RegExpPrototypeMatchAllImpl_0(compiler::CodeAssemblerState* state_
     ca_.Goto(&block2, tmp10, tmp18, phi_bb15_23);
   }
 
-  TNode<Object> phi_bb2_6;
+  TNode<JSAny> phi_bb2_6;
   TNode<BoolT> phi_bb2_7;
   TNode<BoolT> phi_bb2_8;
-  TNode<Object> tmp41;
+  TNode<JSAny> tmp41;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_6, &phi_bb2_7, &phi_bb2_8);
-    tmp41 = RegExpMatchAllAssembler(state_).CreateRegExpStringIterator(TNode<NativeContext>{p_nativeContext}, TNode<Object>{phi_bb2_6}, TNode<String>{tmp1}, TNode<BoolT>{phi_bb2_7}, TNode<BoolT>{phi_bb2_8});
+    tmp41 = RegExpMatchAllAssembler(state_).CreateRegExpStringIterator(TNode<NativeContext>{p_nativeContext}, TNode<JSAny>{phi_bb2_6}, TNode<String>{tmp1}, TNode<BoolT>{phi_bb2_7}, TNode<BoolT>{phi_bb2_8});
     ca_.Goto(&block16);
   }
 
     ca_.Bind(&block16);
-  return TNode<Object>{tmp41};
+  return TNode<JSAny>{tmp41};
 }
 
 TF_BUILTIN(RegExpPrototypeMatchAll, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kString);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kString);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RegExpPrototypeMatchAllImpl_0(state_, TNode<Context>{parameter0}, TNode<NativeContext>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{parameter2});
+    tmp0 = RegExpPrototypeMatchAllImpl_0(state_, TNode<Context>{parameter0}, TNode<NativeContext>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{parameter2});
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -279,7 +279,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -389,14 +389,14 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Goto(&block13, tmp16, tmp17);
   }
 
-  TNode<Object> tmp18;
+  TNode<JSAny> tmp18;
   TNode<Null> tmp19;
   TNode<BoolT> tmp20;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp18 = RegExpExec_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp7}, TNode<String>{tmp9});
     tmp19 = Null_0(state_);
-    tmp20 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp18}, TNode<HeapObject>{tmp19});
+    tmp20 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp18}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp19});
     ca_.Branch(tmp20, &block16, std::vector<compiler::Node*>{}, &block17, std::vector<compiler::Node*>{});
   }
 
@@ -425,7 +425,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   TNode<Smi> tmp24;
   TNode<BoolT> tmp25;
   TNode<Smi> tmp26;
-  TNode<Object> tmp27;
+  TNode<JSAny> tmp27;
   TNode<False> tmp28;
   TNode<JSObject> tmp29;
   if (block18.is_used()) {
@@ -437,7 +437,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp0, tmp23}, tmp26);
     tmp27 = UnsafeCast_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb13_6});
     tmp28 = False_0(state_);
-    tmp29 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp27}, TNode<Boolean>{tmp28});
+    tmp29 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp27}, TNode<Boolean>{tmp28});
     CodeStubAssembler(state_).Return(tmp29);
   }
 
@@ -450,7 +450,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   TNode<IntPtrT> tmp31;
   TNode<FixedArrayBase> tmp32;
   TNode<FixedArray> tmp33;
-  TNode<Object> tmp34;
+  TNode<Union<HeapObject, TaggedIndex>> tmp34;
   TNode<IntPtrT> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<UintPtrT> tmp37;
@@ -475,7 +475,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp42;
   TNode<IntPtrT> tmp43;
-  TNode<Object> tmp44;
+  TNode<Union<HeapObject, TaggedIndex>> tmp44;
   TNode<IntPtrT> tmp45;
   TNode<Object> tmp46;
   TNode<String> tmp47;
@@ -486,12 +486,12 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Bind(&block31);
     tmp42 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp38});
     tmp43 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp35}, TNode<IntPtrT>{tmp42});
-    std::tie(tmp44, tmp45) = NewReference_Object_0(state_, TNode<Object>{tmp34}, TNode<IntPtrT>{tmp43}).Flatten();
+    std::tie(tmp44, tmp45) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp34}, TNode<IntPtrT>{tmp43}).Flatten();
     tmp46 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp44, tmp45});
     tmp47 = UnsafeCast_String_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp46});
     tmp48 = UnsafeCast_JSRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7});
     tmp49 = kEmptyString_0(state_);
-    tmp50 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp47}, TNode<HeapObject>{tmp49});
+    tmp50 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp47}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp49});
     ca_.Branch(tmp50, &block39, std::vector<compiler::Node*>{}, &block40, std::vector<compiler::Node*>{});
   }
 
@@ -517,13 +517,13 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   if (block40.is_used()) {
     ca_.Bind(&block40);
     tmp54 = False_0(state_);
-    tmp55 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp30}, TNode<Boolean>{tmp54});
+    tmp55 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp30}, TNode<Boolean>{tmp54});
     CodeStubAssembler(state_).Return(tmp55);
   }
 
-  TNode<Object> tmp56;
+  TNode<JSAny> tmp56;
   TNode<Smi> tmp57;
-  TNode<Object> tmp58;
+  TNode<JSAny> tmp58;
   TNode<String> tmp59;
   TNode<String> tmp60;
   TNode<BoolT> tmp61;
@@ -531,24 +531,24 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Bind(&block25);
     tmp56 = UnsafeCast_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb13_6});
     tmp57 = SmiConstant_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp58 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp56}, TNode<Object>{tmp57});
-    tmp59 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp58});
+    tmp58 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{tmp56}, TNode<JSAny>{tmp57});
+    tmp59 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp58});
     tmp60 = kEmptyString_0(state_);
-    tmp61 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp59}, TNode<HeapObject>{tmp60});
+    tmp61 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp59}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp60});
     ca_.Branch(tmp61, &block45, std::vector<compiler::Node*>{}, &block46, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp62;
+  TNode<JSAny> tmp62;
   TNode<Number> tmp63;
   TNode<BoolT> tmp64;
   TNode<Smi> tmp65;
   if (block45.is_used()) {
     ca_.Bind(&block45);
-    tmp62 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{parameter0}, TNode<Object>{tmp7});
-    tmp63 = CodeStubAssembler(state_).ToLength_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp62});
+    tmp62 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{parameter0}, TNode<JSAny>{tmp7});
+    tmp63 = CodeStubAssembler(state_).ToLength_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp62});
     tmp64 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32FromWord<base::BitField<bool, 34, 1, uintptr_t>>(ca_.UncheckedCast<WordT>(ca_.BitcastTaggedToWordForTagAndSmiBits(tmp4))));
     tmp65 = RegExpBuiltinsAssembler(state_).AdvanceStringIndexSlow(TNode<String>{tmp9}, TNode<Number>{tmp63}, TNode<BoolT>{tmp64});
-    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{parameter0}, TNode<Object>{tmp7}, TNode<Object>{tmp65});
+    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{parameter0}, TNode<JSAny>{tmp7}, TNode<JSAny>{tmp65});
     ca_.Goto(&block46);
   }
 
@@ -557,7 +557,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
   if (block46.is_used()) {
     ca_.Bind(&block46);
     tmp66 = False_0(state_);
-    tmp67 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp56}, TNode<Boolean>{tmp66});
+    tmp67 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp56}, TNode<Boolean>{tmp66});
     CodeStubAssembler(state_).Return(tmp67);
   }
 
@@ -583,7 +583,7 @@ TF_BUILTIN(RegExpStringIteratorPrototypeNext, CodeStubAssembler) {
     ca_.Bind(&block6);
     tmp72 = Undefined_0(state_);
     tmp73 = True_0(state_);
-    tmp74 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp72}, TNode<Boolean>{tmp73});
+    tmp74 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp72}, TNode<Boolean>{tmp73});
     CodeStubAssembler(state_).Return(tmp74);
   }
 }

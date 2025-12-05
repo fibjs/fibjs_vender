@@ -6,11 +6,11 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=8&c=1
-TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow, compiler::CodeAssemblerLabel* label_Runtime);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=11&c=1
+TNode<JSAny> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, compiler::CodeAssemblerLabel* label_Slow, compiler::CodeAssemblerLabel* label_Runtime);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=39&c=1
-TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=42&c=1
+TNode<JSAny> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver);
 
 } // namespace internal
 } // namespace v8

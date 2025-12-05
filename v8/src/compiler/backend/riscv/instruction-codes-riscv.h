@@ -47,9 +47,9 @@ namespace compiler {
 #define TARGET_ARCH_OPCODE_LIST_SPECAIL(V)           \
   TARGET_ARCH_OPCODE_WITH_MEMORY_ACCESS_MODE_LIST(V) \
   V(RiscvAdd64)                                      \
-  V(RiscvAddOvf64)                                   \
+  V(RiscvAddOvf32)                                   \
   V(RiscvSub64)                                      \
-  V(RiscvSubOvf64)                                   \
+  V(RiscvSubOvf32)                                   \
   V(RiscvMulHigh64)                                  \
   V(RiscvMulHighU64)                                 \
   V(RiscvMul64)                                      \
@@ -61,8 +61,6 @@ namespace compiler {
   V(RiscvZeroExtendWord)                             \
   V(RiscvSignExtendWord)                             \
   V(RiscvClz64)                                      \
-  V(RiscvCtz64)                                      \
-  V(RiscvPopcnt64)                                   \
   V(RiscvShl64)                                      \
   V(RiscvShr64)                                      \
   V(RiscvSar64)                                      \
@@ -103,8 +101,6 @@ namespace compiler {
   V(RiscvTst64)
 #elif V8_TARGET_ARCH_RISCV32
 #define TARGET_ARCH_OPCODE_LIST_SPECAIL(V) \
-  V(RiscvAddOvf)                           \
-  V(RiscvSubOvf)                           \
   V(RiscvAddPair)                          \
   V(RiscvSubPair)                          \
   V(RiscvMulPair)                          \
@@ -149,6 +145,8 @@ namespace compiler {
 #define TARGET_ARCH_OPCODE_LIST_COMMON(V) \
   V(RiscvAdd32)                           \
   V(RiscvSub32)                           \
+  V(RiscvAddOvfWord)                      \
+  V(RiscvSubOvfWord)                      \
   V(RiscvMul32)                           \
   V(RiscvMulOvf32)                        \
   V(RiscvMulHigh32)                       \
@@ -167,8 +165,6 @@ namespace compiler {
   V(RiscvShl32)                           \
   V(RiscvShr32)                           \
   V(RiscvSar32)                           \
-  V(RiscvCtz32)                           \
-  V(RiscvPopcnt32)                        \
   V(RiscvRor32)                           \
   V(RiscvMov)                             \
   V(RiscvTst32)                           \
@@ -226,6 +222,8 @@ namespace compiler {
   V(RiscvULoadFloat)                      \
   V(RiscvULoadDouble)                     \
   V(RiscvUStoreDouble)                    \
+  V(RiscvEnableDebugTrace)                \
+  V(RiscvDisableDebugTrace)               \
   V(RiscvBitcastInt32ToFloat32)           \
   V(RiscvBitcastFloat32ToInt32)           \
   V(RiscvFloat64ExtractLowWord32)         \

@@ -16,7 +16,7 @@ Tagged<FixedArray> TorqueGeneratedTemplateObjectDescription<D, P>::raw_strings(P
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=6&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateObjectDescription<D, P>::set_raw_strings(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kRawStringsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRawStringsOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<FixedArray> TorqueGeneratedTemplateObjectDescription<D, P>::cooked_string
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/template-objects.tq?l=7&c=3
 template<class D, class P>
 void TorqueGeneratedTemplateObjectDescription<D, P>::set_cooked_strings(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kCookedStringsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCookedStringsOffset, value, mode);
 }

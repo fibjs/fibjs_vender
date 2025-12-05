@@ -16,6 +16,7 @@
 #include "src/codegen/code-stub-assembler-inl.h"
 #include "src/codegen/interface-descriptors-inl.h"
 #include "src/codegen/tnode.h"
+#include "src/common/globals.h"
 #include "src/execution/frame-constants.h"
 #include "src/heap/factory-inl.h"
 #include "src/objects/allocation-site-inl.h"
@@ -25,6 +26,8 @@
 
 namespace v8 {
 namespace internal {
+
+#include "src/codegen/define-code-stub-assembler-macros.inc"
 
 ArrayBuiltinsAssembler::ArrayBuiltinsAssembler(
     compiler::CodeAssemblerState* state)
@@ -61,11 +64,11 @@ void ArrayBuiltinsAssembler::TypedArrayMapResultGenerator() {
 }
 
 // See tc39.github.io/ecma262/#sec-%typedarray%.prototype.map.
-TNode<Object> ArrayBuiltinsAssembler::TypedArrayMapProcessor(
+TNode<JSAny> ArrayBuiltinsAssembler::TypedArrayMapProcessor(
     TNode<Object> k_value, TNode<UintPtrT> k) {
   // 7c. Let mapped_value be ? Call(callbackfn, T, « kValue, k, O »).
   TNode<Number> k_number = ChangeUintPtrToTagged(k);
-  TNode<Object> mapped_value =
+  TNode<JSAny> mapped_value =
       Call(context(), callbackfn(), this_arg(), k_value, k_number, o());
   Label fast(this), slow(this), done(this), detached(this, Label::kDeferred);
 
@@ -125,8 +128,8 @@ void ArrayBuiltinsAssembler::ReturnFromBuiltin(TNode<Object> value) {
 }
 
 void ArrayBuiltinsAssembler::InitIteratingArrayBuiltinBody(
-    TNode<Context> context, TNode<Object> receiver, TNode<Object> callbackfn,
-    TNode<Object> this_arg, TNode<IntPtrT> argc) {
+    TNode<Context> context, TNode<JSAny> receiver, TNode<Object> callbackfn,
+    TNode<JSAny> this_arg, TNode<IntPtrT> argc) {
   context_ = context;
   receiver_ = receiver;
   callbackfn_ = callbackfn;
@@ -290,7 +293,8 @@ TF_BUILTIN(ArrayPrototypePop, CodeStubAssembler) {
     CSA_DCHECK(this, TaggedIsPositiveSmi(LoadJSArrayLength(array_receiver)));
     TNode<Int32T> length =
         LoadAndUntagToWord32ObjectField(array_receiver, JSArray::kLengthOffset);
-    Label return_undefined(this), fast_elements(this);
+    Label pop_and_return_undefined(this), return_undefined(this),
+        fast_elements(this);
 
     // 2) Ensure that the length is writable.
     EnsureArrayLengthWritable(context, LoadMap(array_receiver), &runtime);
@@ -326,10 +330,22 @@ TF_BUILTIN(ArrayPrototypePop, CodeStubAssembler) {
       TNode<FixedDoubleArray> elements_known_double_array =
           ReinterpretCast<FixedDoubleArray>(elements);
       TNode<Float64T> value = LoadFixedDoubleArrayElement(
-          elements_known_double_array, new_length_intptr, &return_undefined);
+          elements_known_double_array, new_length_intptr,
+          &pop_and_return_undefined, &return_undefined);
 
       StoreFixedDoubleArrayHole(elements_known_double_array, new_length_intptr);
       args.PopAndReturn(AllocateHeapNumberWithValue(value));
+
+#ifdef V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
+      BIND(&pop_and_return_undefined);
+      {
+        StoreFixedDoubleArrayHole(elements_known_double_array,
+                                  new_length_intptr);
+        Goto(&return_undefined);
+      }
+#else
+      DCHECK(!pop_and_return_undefined.is_used());
+#endif  // V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
     }
 
     BIND(&fast_elements);
@@ -340,7 +356,7 @@ TF_BUILTIN(ArrayPrototypePop, CodeStubAssembler) {
       StoreFixedArrayElement(elements_known_fixed_array, new_length_intptr,
                              TheHoleConstant());
       GotoIf(TaggedEqual(value, TheHoleConstant()), &return_undefined);
-      args.PopAndReturn(value);
+      args.PopAndReturn(CAST(value));
     }
 
     BIND(&return_undefined);
@@ -353,8 +369,8 @@ TF_BUILTIN(ArrayPrototypePop, CodeStubAssembler) {
     // from the current frame here in order to reduce register pressure on the
     // fast path.
     TNode<JSFunction> target = LoadTargetFromFrame();
-    TailCallBuiltin(Builtin::kArrayPop, context, target, UndefinedConstant(),
-                    argc);
+    TailCallJSBuiltin(Builtin::kArrayPop, context, target, UndefinedConstant(),
+                      argc, InvalidDispatchHandleConstant());
   }
 }
 
@@ -366,6 +382,10 @@ TF_BUILTIN(ArrayPrototypePush, CodeStubAssembler) {
   Label object_push(this, &arg_index);
   Label double_push(this, &arg_index);
   Label double_transition(this);
+#ifdef V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
+  Label holey_double_push(this, &arg_index);
+  Label holey_double_transition(this);
+#endif  // V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
   Label runtime(this, Label::kDeferred);
 
   auto argc = UncheckedParameter<Int32T>(Descriptor::kJSActualArgumentsCount);
@@ -413,12 +433,22 @@ TF_BUILTIN(ArrayPrototypePush, CodeStubAssembler) {
     GotoIf(Word32Equal(elements_kind, Int32Constant(DICTIONARY_ELEMENTS)),
            &default_label);
 
+#ifdef V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
+    GotoIfNotNumberOrUndefined(arg, &object_push);
+    Branch(IsElementsKindGreaterThan(elements_kind, PACKED_DOUBLE_ELEMENTS),
+           &holey_double_push, &double_push);
+#else
     GotoIfNotNumber(arg, &object_push);
     Goto(&double_push);
+#endif  // V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
   }
 
   BIND(&object_push_pre);
   {
+#ifdef V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
+    GotoIf(Word32Equal(kind, Int32Constant(HOLEY_DOUBLE_ELEMENTS)),
+           &holey_double_push);
+#endif  // V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
     Branch(IsElementsKindGreaterThan(kind, HOLEY_ELEMENTS), &double_push,
            &object_push);
   }
@@ -456,8 +486,43 @@ TF_BUILTIN(ArrayPrototypePush, CodeStubAssembler) {
     TNode<Int32T> elements_kind = LoadElementsKind(array_receiver);
     GotoIf(Word32Equal(elements_kind, Int32Constant(DICTIONARY_ELEMENTS)),
            &default_label);
+#ifdef V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
+    GotoIf(Word32Equal(elements_kind, Int32Constant(HOLEY_DOUBLE_ELEMENTS)),
+           &holey_double_push);
+#endif  // V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
     Goto(&object_push);
   }
+
+#ifdef V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
+  BIND(&holey_double_push);
+  {
+    TNode<Smi> new_length =
+        BuildAppendJSArray(HOLEY_DOUBLE_ELEMENTS, array_receiver, &args,
+                           &arg_index, &holey_double_transition);
+    args.PopAndReturn(new_length);
+  }
+
+  // If the argument is not a double, then use a heavyweight SetProperty to
+  // transition the array for only the single next element. If the argument is
+  // a double, the failure is due to some other reason and we should fall back
+  // on the most generic implementation for the rest of the array.
+  BIND(&holey_double_transition);
+  {
+    TNode<Object> arg = args.AtIndex(arg_index.value());
+    GotoIfNumber(arg, &default_label);
+    TNode<Number> length = LoadJSArrayLength(array_receiver);
+    // TODO(danno): Use the KeyedStoreGeneric stub here when possible,
+    // calling into the runtime to do the elements transition is overkill.
+    SetPropertyStrict(context, array_receiver, length, arg);
+    Increment(&arg_index);
+    // The runtime SetProperty call could have converted the array to dictionary
+    // mode, which must be detected to abort the fast-path.
+    TNode<Int32T> elements_kind = LoadElementsKind(array_receiver);
+    GotoIf(Word32Equal(elements_kind, Int32Constant(DICTIONARY_ELEMENTS)),
+           &default_label);
+    Goto(&object_push);
+  }
+#endif  // V8_ENABLE_EXPERIMENTAL_UNDEFINED_DOUBLE
 
   // Fallback that stores un-processed arguments using the full, heavyweight
   // SetProperty machinery.
@@ -478,8 +543,8 @@ TF_BUILTIN(ArrayPrototypePush, CodeStubAssembler) {
     // from the current frame here in order to reduce register pressure on the
     // fast path.
     TNode<JSFunction> target = LoadTargetFromFrame();
-    TailCallBuiltin(Builtin::kArrayPush, context, target, UndefinedConstant(),
-                    argc);
+    TailCallJSBuiltin(Builtin::kArrayPush, context, target, UndefinedConstant(),
+                      argc, InvalidDispatchHandleConstant());
   }
 }
 
@@ -548,7 +613,7 @@ class ArrayPopulatorAssembler : public CodeStubAssembler {
     {
       Label allocate_js_array(this);
 
-      TNode<Map> array_map = CAST(LoadContextElement(
+      TNode<Map> array_map = CAST(LoadContextElementNoCell(
           context, Context::JS_ARRAY_PACKED_SMI_ELEMENTS_MAP_INDEX));
 
       TNode<IntPtrT> capacity = IntPtrConstant(0);
@@ -592,9 +657,9 @@ TF_BUILTIN(TypedArrayPrototypeMap, ArrayBuiltinsAssembler) {
       UncheckedParameter<Int32T>(Descriptor::kJSActualArgumentsCount));
   CodeStubArguments args(this, argc);
   auto context = Parameter<Context>(Descriptor::kContext);
-  TNode<Object> receiver = args.GetReceiver();
-  TNode<Object> callbackfn = args.GetOptionalArgumentValue(0);
-  TNode<Object> this_arg = args.GetOptionalArgumentValue(1);
+  TNode<JSAny> receiver = args.GetReceiver();
+  TNode<JSAny> callbackfn = args.GetOptionalArgumentValue(0);
+  TNode<JSAny> this_arg = args.GetOptionalArgumentValue(1);
 
   InitIteratingArrayBuiltinBody(context, receiver, callbackfn, this_arg, argc);
 
@@ -750,9 +815,9 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant,
   {
     Builtin builtin = (variant == kIncludes) ? Builtin::kArrayIncludesSmi
                                              : Builtin::kArrayIndexOfSmi;
-    TNode<Object> result =
-        CallBuiltin(builtin, context, elements, search_element, array_length,
-                    SmiTag(index_var.value()));
+    TNode<JSAny> result =
+        CallBuiltin<JSAny>(builtin, context, elements, search_element,
+                           array_length, SmiTag(index_var.value()));
     args.PopAndReturn(result);
   }
 
@@ -761,9 +826,9 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant,
     Builtin builtin = (variant == kIncludes)
                           ? Builtin::kArrayIncludesSmiOrObject
                           : Builtin::kArrayIndexOfSmiOrObject;
-    TNode<Object> result =
-        CallBuiltin(builtin, context, elements, search_element, array_length,
-                    SmiTag(index_var.value()));
+    TNode<JSAny> result =
+        CallBuiltin<JSAny>(builtin, context, elements, search_element,
+                           array_length, SmiTag(index_var.value()));
     args.PopAndReturn(result);
   }
 
@@ -772,9 +837,9 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant,
     Builtin builtin = (variant == kIncludes)
                           ? Builtin::kArrayIncludesPackedDoubles
                           : Builtin::kArrayIndexOfPackedDoubles;
-    TNode<Object> result =
-        CallBuiltin(builtin, context, elements, search_element, array_length,
-                    SmiTag(index_var.value()));
+    TNode<JSAny> result =
+        CallBuiltin<JSAny>(builtin, context, elements, search_element,
+                           array_length, SmiTag(index_var.value()));
     args.PopAndReturn(result);
   }
 
@@ -783,9 +848,9 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant,
     Builtin builtin = (variant == kIncludes)
                           ? Builtin::kArrayIncludesHoleyDoubles
                           : Builtin::kArrayIndexOfHoleyDoubles;
-    TNode<Object> result =
-        CallBuiltin(builtin, context, elements, search_element, array_length,
-                    SmiTag(index_var.value()));
+    TNode<JSAny> result =
+        CallBuiltin<JSAny>(builtin, context, elements, search_element,
+                           array_length, SmiTag(index_var.value()));
     args.PopAndReturn(result);
   }
 
@@ -802,8 +867,8 @@ void ArrayIncludesIndexofAssembler::Generate(SearchVariant variant,
     Runtime::FunctionId function = variant == kIncludes
                                        ? Runtime::kArrayIncludes_Slow
                                        : Runtime::kArrayIndexOf;
-    args.PopAndReturn(
-        CallRuntime(function, context, array, search_element, start_from));
+    args.PopAndReturn(CallRuntime<JSAny>(function, context, array,
+                                         search_element, start_from));
   }
 }
 
@@ -1084,8 +1149,8 @@ void ArrayIncludesIndexofAssembler::GeneratePackedDoubles(
     Label continue_loop(this);
     GotoIfNot(UintPtrLessThan(index_var.value(), array_length_untagged),
               &return_not_found);
-    TNode<Float64T> element_k =
-        LoadFixedDoubleArrayElement(elements, index_var.value());
+    TNode<Float64T> element_k = LoadFixedDoubleArrayElement(
+        elements, index_var.value(), nullptr, nullptr);
     Branch(Float64Equal(element_k, search_num.value()), &return_found,
            &continue_loop);
     BIND(&continue_loop);
@@ -1099,8 +1164,8 @@ void ArrayIncludesIndexofAssembler::GeneratePackedDoubles(
     Label continue_loop(this);
     GotoIfNot(UintPtrLessThan(index_var.value(), array_length_untagged),
               &return_not_found);
-    TNode<Float64T> element_k =
-        LoadFixedDoubleArrayElement(elements, index_var.value());
+    TNode<Float64T> element_k = LoadFixedDoubleArrayElement(
+        elements, index_var.value(), nullptr, nullptr);
     BranchIfFloat64IsNaN(element_k, &return_found, &continue_loop);
     BIND(&continue_loop);
     Increment(&index_var);
@@ -1140,7 +1205,7 @@ void ArrayIncludesIndexofAssembler::GenerateHoleyDoubles(
   Goto(&not_nan_case);
 
   BIND(&search_notnan);
-  if (variant == kIncludes) {
+  if (variant == kIncludes || V8_EXPERIMENTAL_UNDEFINED_DOUBLE_BOOL) {
     GotoIf(IsUndefined(search_element), &hole_loop);
   }
   GotoIfNot(IsHeapNumber(CAST(search_element)), &return_not_found);
@@ -1182,8 +1247,8 @@ void ArrayIncludesIndexofAssembler::GenerateHoleyDoubles(
 
     // No need for hole checking here; the following Float64Equal will
     // return 'not equal' for holes anyway.
-    TNode<Float64T> element_k =
-        LoadFixedDoubleArrayElement(elements, index_var.value());
+    TNode<Float64T> element_k = LoadFixedDoubleArrayElement(
+        elements, index_var.value(), nullptr, nullptr);
 
     Branch(Float64Equal(element_k, search_num.value()), &return_found,
            &continue_loop);
@@ -1201,8 +1266,7 @@ void ArrayIncludesIndexofAssembler::GenerateHoleyDoubles(
 
     // Load double value or continue if it's the hole NaN.
     TNode<Float64T> element_k = LoadFixedDoubleArrayElement(
-        elements, index_var.value(), &continue_loop);
-
+        elements, index_var.value(), &continue_loop, &continue_loop);
     BranchIfFloat64IsNaN(element_k, &return_found, &continue_loop);
     BIND(&continue_loop);
     Increment(&index_var);
@@ -1210,14 +1274,18 @@ void ArrayIncludesIndexofAssembler::GenerateHoleyDoubles(
   }
 
   // Array.p.includes treats the hole as undefined.
-  if (variant == kIncludes) {
+  if (variant == kIncludes || V8_EXPERIMENTAL_UNDEFINED_DOUBLE_BOOL) {
     BIND(&hole_loop);
     GotoIfNot(UintPtrLessThan(index_var.value(), array_length_untagged),
               &return_not_found);
 
-    // Check if the element is a double hole, but don't load it.
-    LoadFixedDoubleArrayElement(elements, index_var.value(), &return_found,
-                                MachineType::None());
+    // Try to find undefined. If we find an explicit double encoded undefined,
+    // go to `return_found`. For double holes, go to `return_found` only if we
+    // check for existance of undefined. When computing the index, holes are
+    // ignored (we don't pass a label).
+    LoadFixedDoubleArrayElement(
+        elements, index_var.value(), &return_found,
+        (variant == kIncludes ? &return_found : nullptr), MachineType::None());
 
     Increment(&index_var);
     Goto(&hole_loop);
@@ -1675,7 +1743,8 @@ void ArrayBuiltinsAssembler::CreateArrayDispatchSingleArgument(
       // Make elements kind holey and update elements kind in the type info.
       var_elements_kind = Word32Or(var_elements_kind.value(), Int32Constant(1));
       StoreObjectFieldNoWriteBarrier(
-          *allocation_site, AllocationSite::kTransitionInfoOrBoilerplateOffset,
+          *allocation_site,
+          offsetof(AllocationSite, transition_info_or_boilerplate_),
           SmiOr(transition_info, SmiConstant(fast_elements_kind_holey_mask)));
       Goto(&normal_sequence);
     }
@@ -1767,7 +1836,7 @@ TF_BUILTIN(ArrayConstructorImpl, ArrayBuiltinsAssembler) {
 }
 
 void ArrayBuiltinsAssembler::GenerateConstructor(
-    TNode<Context> context, TNode<HeapObject> array_function,
+    TNode<Context> context, TNode<JSAnyNotSmi> array_function,
     TNode<Map> array_map, TNode<Object> array_size,
     TNode<HeapObject> allocation_site, ElementsKind elements_kind,
     AllocationSiteMode mode) {
@@ -1836,7 +1905,7 @@ void ArrayBuiltinsAssembler::GenerateArraySingleArgumentConstructor(
     ElementsKind kind, AllocationSiteOverrideMode mode) {
   using Descriptor = ArraySingleArgumentConstructorDescriptor;
   auto context = Parameter<Context>(Descriptor::kContext);
-  auto function = Parameter<HeapObject>(Descriptor::kFunction);
+  auto function = Parameter<JSAnyNotSmi>(Descriptor::kFunction);
   TNode<NativeContext> native_context =
       CAST(LoadObjectField(function, JSFunction::kContextOffset));
   TNode<Map> array_map = LoadJSArrayElementsMap(kind, native_context);
@@ -2225,11 +2294,10 @@ TF_BUILTIN(CreateObjectFromSlowBoilerplateHelper,
     TNode<FixedArrayBase> elements = LoadElements(object);
     GotoIf(IsEmptyFixedArray(elements), &done_with_elements);
 
-    TNode<Int32T> elements_kind = LoadElementsKind(object);
     // Object elements are never COW and never SMI_ELEMENTS etc.
     CloneElementsOfFixedArray(elements, LoadFixedArrayBaseLength(elements),
-                              elements_kind, current_allocation_site, context,
-                              &done_with_elements, &bailout);
+                              LoadElementsKind(object), current_allocation_site,
+                              context, &done_with_elements, &bailout);
     BIND(&done_with_elements);
   }
 
@@ -2243,6 +2311,8 @@ TF_BUILTIN(CreateObjectFromSlowBoilerplateHelper,
     Return(UndefinedConstant(), UndefinedConstant());
   }
 }
+
+#include "src/codegen/undef-code-stub-assembler-macros.inc"
 
 }  // namespace internal
 }  // namespace v8
