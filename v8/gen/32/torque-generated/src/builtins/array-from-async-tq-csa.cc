@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
@@ -81,7 +81,6 @@
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/iterator-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
-#include "torque-generated/src/builtins/promise-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/promise-misc-tq-csa.h"
 #include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
@@ -806,7 +805,7 @@ TNode<IntPtrT> kArrayFromAsyncIterableResolveThisArgSlot_0(compiler::CodeAssembl
   return TNode<IntPtrT>{tmp1};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=102&c=1
-TNode<Context> CreateArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncIterableResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<JSReceiver> p_iterator, TNode<Object> p_next, TNode<JSReceiver> p_arr, TNode<Object> p_error, TNode<Object> p_mapfn, TNode<Object> p_thisArg, TNode<NativeContext> p_nativeContext) {
+TNode<Context> CreateArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncIterableResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<JSReceiver> p_iterator, TNode<JSAny> p_next, TNode<JSReceiver> p_arr, TNode<JSAny> p_error, TNode<JSAny> p_mapfn, TNode<JSAny> p_thisArg, TNode<NativeContext> p_nativeContext) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -841,7 +840,7 @@ TNode<Context> CreateArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemb
     tmp4 = SmiTag_ArrayFromAsyncLabels_0(state_, TNode<Uint32T>{p_resumeState.step});
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Smi_SmiTagged_ArrayFromAsyncLabels_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Smi>{tmp4});
     tmp5 = kArrayFromAsyncIterableResolveResumeStateAwaitedValueSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp5}, TNode<Object>{p_resumeState.awaitedValue});
+    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp5}, TNode<JSAny>{p_resumeState.awaitedValue});
     tmp6 = kArrayFromAsyncIterableResolveResumeStateIndexSlot_0(state_);
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Smi_Smi_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp6}, TNode<Smi>{p_resumeState.index});
     tmp7 = kArrayFromAsyncIterableResolvePromiseSlot_0(state_);
@@ -849,23 +848,23 @@ TNode<Context> CreateArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemb
     tmp8 = kArrayFromAsyncIterableResolvePromiseFunctionSlot_0(state_);
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_JSReceiver_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp8}, TNode<JSReceiver>{p_promiseFun});
     tmp9 = kArrayFromAsyncIterableResolveOnFulfilledFunctionSlot_0(state_);
-    tmp10 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncIterableOnFulfilledSharedFun, TNode<Context>{tmp2});
+    tmp10 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncIterableOnFulfilledSharedFun, TNode<Context>{tmp2}, TNode<NativeContext>{p_nativeContext});
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Undefined_OR_JSFunction_JSFunction_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp9}, TNode<JSFunction>{tmp10});
     tmp11 = kArrayFromAsyncIterableResolveOnRejectedFunctionSlot_0(state_);
-    tmp12 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncIterableOnRejectedSharedFun, TNode<Context>{tmp2});
+    tmp12 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncIterableOnRejectedSharedFun, TNode<Context>{tmp2}, TNode<NativeContext>{p_nativeContext});
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Undefined_OR_JSFunction_JSFunction_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp11}, TNode<JSFunction>{tmp12});
     tmp13 = kArrayFromAsyncIterableResolveResultArraySlot_0(state_);
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_JSReceiver_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp13}, TNode<JSReceiver>{p_arr});
     tmp14 = kArrayFromAsyncIterableResolveIteratorSlot_0(state_);
     InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_JSReceiver_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp14}, TNode<JSReceiver>{p_iterator});
     tmp15 = kArrayFromAsyncIterableResolveNextMethodSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp15}, TNode<Object>{p_next});
+    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp15}, TNode<JSAny>{p_next});
     tmp16 = kArrayFromAsyncIterableResolveErrorSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp16}, TNode<Object>{p_error});
+    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp16}, TNode<JSAny>{p_error});
     tmp17 = kArrayFromAsyncIterableResolveMapfnSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp17}, TNode<Object>{p_mapfn});
+    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp17}, TNode<JSAny>{p_mapfn});
     tmp18 = kArrayFromAsyncIterableResolveThisArgSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp18}, TNode<Object>{p_thisArg});
+    InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp18}, TNode<JSAny>{p_thisArg});
     ca_.Goto(&block2);
   }
 
@@ -873,7 +872,7 @@ TNode<Context> CreateArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemb
   return TNode<Context>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=182&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=184&c=1
 TorqueStructIteratorRecord GetIteratorRecordFromArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -882,13 +881,13 @@ TorqueStructIteratorRecord GetIteratorRecordFromArrayFromAsyncIterableResolveCon
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<JSReceiver> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kArrayFromAsyncIterableResolveIteratorSlot_0(state_);
@@ -896,16 +895,16 @@ TorqueStructIteratorRecord GetIteratorRecordFromArrayFromAsyncIterableResolveCon
     tmp3 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp1, tmp2});
     tmp4 = kArrayFromAsyncIterableResolveNextMethodSlot_0(state_);
     std::tie(tmp5, tmp6) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp4}).Flatten();
-    tmp7 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp5, tmp6});
+    tmp7 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp5, tmp6});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp3}, TNode<Object>{tmp7}};
+  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp3}, TNode<JSAny>{tmp7}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=197&c=1
-TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=199&c=1
+TNode<JSAny> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -917,127 +916,127 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block19(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block21(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block22(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block23(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block24(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block28(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block34(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block40(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block41(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block42(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block46(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block19(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block21(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block22(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block23(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block24(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block28(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block34(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block40(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block41(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block42(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block46(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi> block47(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block45(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block48(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block51(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block52(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block54(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Object, Smi> block55(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block56(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block57(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block60(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block61(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block63(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block66(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block67(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Smi, Object> block69(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Smi, Smi> block70(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Smi> block71(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Object, Object> block72(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Object, Object> block73(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block76(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block77(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Smi> block79(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block80(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block81(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block84(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block85(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block87(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi, Object, Object> block88(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi, Object, Object> block93(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi, Object, Object> block92(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Smi, Object, Object> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T, Uint32T> block96(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object, Uint32T> block97(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block98(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block95(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block68(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block45(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block48(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block51(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block52(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block54(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, JSAny, Smi> block55(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block56(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block57(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block60(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block61(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block63(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block66(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block67(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Smi, JSAny> block69(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Smi, Smi> block70(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Smi> block71(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, JSAny, JSAny> block72(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, JSAny, JSAny> block73(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block76(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block77(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Smi> block79(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block80(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block81(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block84(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block85(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block87(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi, JSAny, JSAny> block88(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi, JSAny, JSAny> block93(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi, JSAny, JSAny> block92(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Smi, JSAny, JSAny> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T, Uint32T> block96(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny, Uint32T> block97(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block98(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block95(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block68(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, JSAny> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block101(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block103(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
-      TNode<Object> tmp2;
+      TNode<JSAny> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
-      TNode<Object> tmp7;
-  TNode<Object> tmp8;
+      TNode<JSAny> tmp7;
+  TNode<JSAny> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
-      TNode<Object> tmp13;
-  TNode<Object> tmp14;
+      TNode<JSAny> tmp13;
+  TNode<JSAny> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
-      TNode<Object> tmp19;
+      TNode<JSAny> tmp19;
   TNode<JSReceiver> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
-      TNode<Object> tmp25;
+      TNode<JSAny> tmp25;
   TNode<Smi> tmp26;
   TNode<Smi> tmp27;
   TNode<Uint32T> tmp28;
-      TNode<Object> tmp30;
+      TNode<JSAny> tmp30;
   TNode<IntPtrT> tmp31;
-  TNode<Object> tmp32;
+  TNode<Union<HeapObject, TaggedIndex>> tmp32;
   TNode<IntPtrT> tmp33;
-      TNode<Object> tmp35;
-  TNode<Object> tmp36;
+      TNode<JSAny> tmp35;
+  TNode<JSAny> tmp36;
   TNode<IntPtrT> tmp37;
-  TNode<Object> tmp38;
+  TNode<Union<HeapObject, TaggedIndex>> tmp38;
   TNode<IntPtrT> tmp39;
-      TNode<Object> tmp41;
+      TNode<JSAny> tmp41;
   TNode<Smi> tmp42;
   TNode<Undefined> tmp43;
   TNode<Undefined> tmp44;
@@ -1066,7 +1065,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
       ca_.Goto(&block5);
       ca_.Bind(&catch6_skip);
     }
-    tmp8 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp4, tmp5});
+    tmp8 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp4, tmp5});
     tmp9 = kArrayFromAsyncIterableResolveThisArgSlot_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch12__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch12__label);
@@ -1079,7 +1078,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
       ca_.Goto(&block6);
       ca_.Bind(&catch12_skip);
     }
-    tmp14 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp10, tmp11});
+    tmp14 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp10, tmp11});
     tmp15 = kArrayFromAsyncIterableResolveResultArraySlot_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch18__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch18__label);
@@ -1130,7 +1129,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
       ca_.Goto(&block10);
       ca_.Bind(&catch34_skip);
     }
-    tmp36 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp32, tmp33});
+    tmp36 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp32, tmp33});
     tmp37 = kArrayFromAsyncIterableResolveResumeStateIndexSlot_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch40__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch40__label);
@@ -1149,56 +1148,56 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     ca_.Goto(&block14, tmp28, tmp42, tmp43, tmp44);
   }
 
-  TNode<HeapObject> tmp45;
+  TNode<Union<Hole, JSMessageObject>> tmp45;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp45 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp2, tmp45);
   }
 
-  TNode<HeapObject> tmp46;
+  TNode<Union<Hole, JSMessageObject>> tmp46;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp46 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp7, tmp46);
   }
 
-  TNode<HeapObject> tmp47;
+  TNode<Union<Hole, JSMessageObject>> tmp47;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp47 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp13, tmp47);
   }
 
-  TNode<HeapObject> tmp48;
+  TNode<Union<Hole, JSMessageObject>> tmp48;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp48 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp19, tmp48);
   }
 
-  TNode<HeapObject> tmp49;
+  TNode<Union<Hole, JSMessageObject>> tmp49;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp49 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp25, tmp49);
   }
 
-  TNode<HeapObject> tmp50;
+  TNode<Union<Hole, JSMessageObject>> tmp50;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp50 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp30, tmp50);
   }
 
-  TNode<HeapObject> tmp51;
+  TNode<Union<Hole, JSMessageObject>> tmp51;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp51 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp35, tmp51);
   }
 
-  TNode<HeapObject> tmp52;
+  TNode<Union<Hole, JSMessageObject>> tmp52;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp52 = GetAndResetPendingMessage_0(state_);
@@ -1207,10 +1206,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb14_5;
   TNode<Smi> phi_bb14_7;
-  TNode<Object> phi_bb14_8;
-  TNode<Object> phi_bb14_9;
+  TNode<JSAny> phi_bb14_8;
+  TNode<JSAny> phi_bb14_9;
   TNode<BoolT> tmp53;
-      TNode<Object> tmp55;
+      TNode<JSAny> tmp55;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_5, &phi_bb14_7, &phi_bb14_8, &phi_bb14_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch54__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1229,9 +1228,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb15_5;
   TNode<Smi> phi_bb15_7;
-  TNode<Object> phi_bb15_8;
-  TNode<Object> phi_bb15_9;
-  TNode<HeapObject> tmp56;
+  TNode<JSAny> phi_bb15_8;
+  TNode<JSAny> phi_bb15_9;
+  TNode<Union<Hole, JSMessageObject>> tmp56;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_5, &phi_bb15_7, &phi_bb15_8, &phi_bb15_9);
     tmp56 = GetAndResetPendingMessage_0(state_);
@@ -1240,17 +1239,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb12_5;
   TNode<Smi> phi_bb12_7;
-  TNode<Object> phi_bb12_8;
-  TNode<Object> phi_bb12_9;
+  TNode<JSAny> phi_bb12_8;
+  TNode<JSAny> phi_bb12_9;
   TNode<Uint32T> tmp57;
-      TNode<Object> tmp59;
+      TNode<JSAny> tmp59;
   TNode<BoolT> tmp60;
-      TNode<Object> tmp62;
+      TNode<JSAny> tmp62;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_5, &phi_bb12_7, &phi_bb12_8, &phi_bb12_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch58__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch58__label);
-    tmp57 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetIteratorStep);
+    tmp57 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetIteratorStep);
     }
     if (catch58__label.is_used()) {
       compiler::CodeAssemblerLabel catch58_skip(&ca_);
@@ -1275,11 +1274,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb18_5;
   TNode<Smi> phi_bb18_7;
-  TNode<Object> phi_bb18_8;
-  TNode<Object> phi_bb18_9;
+  TNode<JSAny> phi_bb18_8;
+  TNode<JSAny> phi_bb18_9;
   TNode<Uint32T> phi_bb18_10;
   TNode<Uint32T> phi_bb18_11;
-  TNode<HeapObject> tmp63;
+  TNode<Union<Hole, JSMessageObject>> tmp63;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_5, &phi_bb18_7, &phi_bb18_8, &phi_bb18_9, &phi_bb18_10, &phi_bb18_11);
     tmp63 = GetAndResetPendingMessage_0(state_);
@@ -1288,10 +1287,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb19_5;
   TNode<Smi> phi_bb19_7;
-  TNode<Object> phi_bb19_8;
-  TNode<Object> phi_bb19_9;
+  TNode<JSAny> phi_bb19_8;
+  TNode<JSAny> phi_bb19_9;
   TNode<Uint32T> phi_bb19_10;
-  TNode<HeapObject> tmp64;
+  TNode<Union<Hole, JSMessageObject>> tmp64;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_5, &phi_bb19_7, &phi_bb19_8, &phi_bb19_9, &phi_bb19_10);
     tmp64 = GetAndResetPendingMessage_0(state_);
@@ -1300,17 +1299,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb16_5;
   TNode<Smi> phi_bb16_7;
-  TNode<Object> phi_bb16_8;
-  TNode<Object> phi_bb16_9;
+  TNode<JSAny> phi_bb16_8;
+  TNode<JSAny> phi_bb16_9;
   TNode<JSReceiver> tmp65;
-  TNode<Object> tmp66;
-      TNode<Object> tmp68;
-  TNode<Object> tmp69;
-      TNode<Object> tmp71;
+  TNode<JSAny> tmp66;
+      TNode<JSAny> tmp68;
+  TNode<JSAny> tmp69;
+      TNode<JSAny> tmp71;
   TNode<Uint32T> tmp72;
-      TNode<Object> tmp74;
-  TNode<Object> tmp75;
-      TNode<Object> tmp77;
+      TNode<JSAny> tmp74;
+  TNode<JSAny> tmp75;
+      TNode<JSAny> tmp77;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_5, &phi_bb16_7, &phi_bb16_8, &phi_bb16_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch67__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1326,7 +1325,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch70__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch70__label);
-    tmp69 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp66}, TNode<Object>{tmp65});
+    tmp69 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp66}, TNode<JSAny>{tmp65});
     }
     if (catch70__label.is_used()) {
       compiler::CodeAssemblerLabel catch70_skip(&ca_);
@@ -1348,7 +1347,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch76__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch76__label);
-    tmp75 = ArrayFromAsyncIterableAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp72}, TNode<Object>{tmp69});
+    tmp75 = ArrayFromAsyncIterableAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp72}, TNode<JSAny>{tmp69});
     }
     if (catch76__label.is_used()) {
       compiler::CodeAssemblerLabel catch76_skip(&ca_);
@@ -1362,9 +1361,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb21_5;
   TNode<Smi> phi_bb21_7;
-  TNode<Object> phi_bb21_8;
-  TNode<Object> phi_bb21_9;
-  TNode<HeapObject> tmp78;
+  TNode<JSAny> phi_bb21_8;
+  TNode<JSAny> phi_bb21_9;
+  TNode<Union<Hole, JSMessageObject>> tmp78;
   if (block21.is_used()) {
     ca_.Bind(&block21, &phi_bb21_5, &phi_bb21_7, &phi_bb21_8, &phi_bb21_9);
     tmp78 = GetAndResetPendingMessage_0(state_);
@@ -1373,9 +1372,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb22_5;
   TNode<Smi> phi_bb22_7;
-  TNode<Object> phi_bb22_8;
-  TNode<Object> phi_bb22_9;
-  TNode<HeapObject> tmp79;
+  TNode<JSAny> phi_bb22_8;
+  TNode<JSAny> phi_bb22_9;
+  TNode<Union<Hole, JSMessageObject>> tmp79;
   if (block22.is_used()) {
     ca_.Bind(&block22, &phi_bb22_5, &phi_bb22_7, &phi_bb22_8, &phi_bb22_9);
     tmp79 = GetAndResetPendingMessage_0(state_);
@@ -1384,9 +1383,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb23_5;
   TNode<Smi> phi_bb23_7;
-  TNode<Object> phi_bb23_8;
-  TNode<Object> phi_bb23_9;
-  TNode<HeapObject> tmp80;
+  TNode<JSAny> phi_bb23_8;
+  TNode<JSAny> phi_bb23_9;
+  TNode<Union<Hole, JSMessageObject>> tmp80;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_5, &phi_bb23_7, &phi_bb23_8, &phi_bb23_9);
     tmp80 = GetAndResetPendingMessage_0(state_);
@@ -1395,9 +1394,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb24_5;
   TNode<Smi> phi_bb24_7;
-  TNode<Object> phi_bb24_8;
-  TNode<Object> phi_bb24_9;
-  TNode<HeapObject> tmp81;
+  TNode<JSAny> phi_bb24_8;
+  TNode<JSAny> phi_bb24_9;
+  TNode<Union<Hole, JSMessageObject>> tmp81;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_5, &phi_bb24_7, &phi_bb24_8, &phi_bb24_9);
     tmp81 = GetAndResetPendingMessage_0(state_);
@@ -1406,17 +1405,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb17_5;
   TNode<Smi> phi_bb17_7;
-  TNode<Object> phi_bb17_8;
-  TNode<Object> phi_bb17_9;
+  TNode<JSAny> phi_bb17_8;
+  TNode<JSAny> phi_bb17_9;
   TNode<Uint32T> tmp82;
-      TNode<Object> tmp84;
+      TNode<JSAny> tmp84;
   TNode<BoolT> tmp85;
-      TNode<Object> tmp87;
+      TNode<JSAny> tmp87;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_5, &phi_bb17_7, &phi_bb17_8, &phi_bb17_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch83__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch83__label);
-    tmp82 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kCheckIteratorValueAndMapping);
+    tmp82 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kCheckIteratorValueAndMapping);
     }
     if (catch83__label.is_used()) {
       compiler::CodeAssemblerLabel catch83_skip(&ca_);
@@ -1441,11 +1440,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb27_5;
   TNode<Smi> phi_bb27_7;
-  TNode<Object> phi_bb27_8;
-  TNode<Object> phi_bb27_9;
+  TNode<JSAny> phi_bb27_8;
+  TNode<JSAny> phi_bb27_9;
   TNode<Uint32T> phi_bb27_10;
   TNode<Uint32T> phi_bb27_11;
-  TNode<HeapObject> tmp88;
+  TNode<Union<Hole, JSMessageObject>> tmp88;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5, &phi_bb27_7, &phi_bb27_8, &phi_bb27_9, &phi_bb27_10, &phi_bb27_11);
     tmp88 = GetAndResetPendingMessage_0(state_);
@@ -1454,10 +1453,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb28_5;
   TNode<Smi> phi_bb28_7;
-  TNode<Object> phi_bb28_8;
-  TNode<Object> phi_bb28_9;
+  TNode<JSAny> phi_bb28_8;
+  TNode<JSAny> phi_bb28_9;
   TNode<Uint32T> phi_bb28_10;
-  TNode<HeapObject> tmp89;
+  TNode<Union<Hole, JSMessageObject>> tmp89;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_5, &phi_bb28_7, &phi_bb28_8, &phi_bb28_9, &phi_bb28_10);
     tmp89 = GetAndResetPendingMessage_0(state_);
@@ -1466,10 +1465,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb25_5;
   TNode<Smi> phi_bb25_7;
-  TNode<Object> phi_bb25_8;
-  TNode<Object> phi_bb25_9;
+  TNode<JSAny> phi_bb25_8;
+  TNode<JSAny> phi_bb25_9;
   TNode<JSReceiver> tmp90;
-      TNode<Object> tmp93;
+      TNode<JSAny> tmp93;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_5, &phi_bb25_7, &phi_bb25_8, &phi_bb25_9);
     compiler::CodeAssemblerLabel label91(&ca_);
@@ -1493,9 +1492,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb34_5;
   TNode<Smi> phi_bb34_7;
-  TNode<Object> phi_bb34_8;
-  TNode<Object> phi_bb34_9;
-  TNode<HeapObject> tmp94;
+  TNode<JSAny> phi_bb34_8;
+  TNode<JSAny> phi_bb34_9;
+  TNode<Union<Hole, JSMessageObject>> tmp94;
   if (block34.is_used()) {
     ca_.Bind(&block34, &phi_bb34_5, &phi_bb34_7, &phi_bb34_8, &phi_bb34_9);
     tmp94 = GetAndResetPendingMessage_0(state_);
@@ -1504,9 +1503,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb33_5;
   TNode<Smi> phi_bb33_7;
-  TNode<Object> phi_bb33_8;
-  TNode<Object> phi_bb33_9;
-      TNode<Object> tmp96;
+  TNode<JSAny> phi_bb33_8;
+  TNode<JSAny> phi_bb33_9;
+      TNode<JSAny> tmp96;
   if (block33.is_used()) {
     ca_.Bind(&block33, &phi_bb33_5, &phi_bb33_7, &phi_bb33_8, &phi_bb33_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch95__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1522,9 +1521,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb32_5;
   TNode<Smi> phi_bb32_7;
-  TNode<Object> phi_bb32_8;
-  TNode<Object> phi_bb32_9;
-      TNode<Object> tmp99;
+  TNode<JSAny> phi_bb32_8;
+  TNode<JSAny> phi_bb32_9;
+      TNode<JSAny> tmp99;
   if (block32.is_used()) {
     ca_.Bind(&block32, &phi_bb32_5, &phi_bb32_7, &phi_bb32_8, &phi_bb32_9);
     compiler::CodeAssemblerLabel label97(&ca_);
@@ -1548,9 +1547,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb35_5;
   TNode<Smi> phi_bb35_7;
-  TNode<Object> phi_bb35_8;
-  TNode<Object> phi_bb35_9;
-  TNode<HeapObject> tmp100;
+  TNode<JSAny> phi_bb35_8;
+  TNode<JSAny> phi_bb35_9;
+  TNode<Union<Hole, JSMessageObject>> tmp100;
   if (block35.is_used()) {
     ca_.Bind(&block35, &phi_bb35_5, &phi_bb35_7, &phi_bb35_8, &phi_bb35_9);
     tmp100 = GetAndResetPendingMessage_0(state_);
@@ -1559,9 +1558,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb40_5;
   TNode<Smi> phi_bb40_7;
-  TNode<Object> phi_bb40_8;
-  TNode<Object> phi_bb40_9;
-  TNode<HeapObject> tmp101;
+  TNode<JSAny> phi_bb40_8;
+  TNode<JSAny> phi_bb40_9;
+  TNode<Union<Hole, JSMessageObject>> tmp101;
   if (block40.is_used()) {
     ca_.Bind(&block40, &phi_bb40_5, &phi_bb40_7, &phi_bb40_8, &phi_bb40_9);
     tmp101 = GetAndResetPendingMessage_0(state_);
@@ -1570,10 +1569,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb39_5;
   TNode<Smi> phi_bb39_7;
-  TNode<Object> phi_bb39_8;
-  TNode<Object> phi_bb39_9;
+  TNode<JSAny> phi_bb39_8;
+  TNode<JSAny> phi_bb39_9;
   TNode<Uint32T> tmp102;
-      TNode<Object> tmp104;
+      TNode<JSAny> tmp104;
   if (block39.is_used()) {
     ca_.Bind(&block39, &phi_bb39_5, &phi_bb39_7, &phi_bb39_8, &phi_bb39_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch103__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1592,13 +1591,13 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb38_5;
   TNode<Smi> phi_bb38_7;
-  TNode<Object> phi_bb38_8;
-  TNode<Object> phi_bb38_9;
-  TNode<Object> tmp105;
-      TNode<Object> tmp107;
+  TNode<JSAny> phi_bb38_8;
+  TNode<JSAny> phi_bb38_9;
+  TNode<JSAny> tmp105;
+      TNode<JSAny> tmp107;
   TNode<Undefined> tmp108;
   TNode<BoolT> tmp109;
-      TNode<Object> tmp111;
+      TNode<JSAny> tmp111;
   if (block38.is_used()) {
     ca_.Bind(&block38, &phi_bb38_5, &phi_bb38_7, &phi_bb38_8, &phi_bb38_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch106__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1615,7 +1614,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     tmp108 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch110__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch110__label);
-    tmp109 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp8}, TNode<HeapObject>{tmp108});
+    tmp109 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp8}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp108});
     }
     if (catch110__label.is_used()) {
       compiler::CodeAssemblerLabel catch110_skip(&ca_);
@@ -1629,9 +1628,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb41_5;
   TNode<Smi> phi_bb41_7;
-  TNode<Object> phi_bb41_8;
-  TNode<Object> phi_bb41_9;
-  TNode<HeapObject> tmp112;
+  TNode<JSAny> phi_bb41_8;
+  TNode<JSAny> phi_bb41_9;
+  TNode<Union<Hole, JSMessageObject>> tmp112;
   if (block41.is_used()) {
     ca_.Bind(&block41, &phi_bb41_5, &phi_bb41_7, &phi_bb41_8, &phi_bb41_9);
     tmp112 = GetAndResetPendingMessage_0(state_);
@@ -1640,8 +1639,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb42_5;
   TNode<Smi> phi_bb42_7;
-  TNode<Object> phi_bb42_8;
-  TNode<HeapObject> tmp113;
+  TNode<JSAny> phi_bb42_8;
+  TNode<Union<Hole, JSMessageObject>> tmp113;
   if (block42.is_used()) {
     ca_.Bind(&block42, &phi_bb42_5, &phi_bb42_7, &phi_bb42_8);
     tmp113 = GetAndResetPendingMessage_0(state_);
@@ -1650,9 +1649,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb43_5;
   TNode<Smi> phi_bb43_7;
-  TNode<Object> phi_bb43_8;
+  TNode<JSAny> phi_bb43_8;
   TNode<Uint32T> tmp114;
-      TNode<Object> tmp116;
+      TNode<JSAny> tmp116;
   if (block43.is_used()) {
     ca_.Bind(&block43, &phi_bb43_5, &phi_bb43_7, &phi_bb43_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch115__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1671,8 +1670,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb46_5;
   TNode<Smi> phi_bb46_7;
-  TNode<Object> phi_bb46_8;
-  TNode<HeapObject> tmp117;
+  TNode<JSAny> phi_bb46_8;
+  TNode<Union<Hole, JSMessageObject>> tmp117;
   if (block46.is_used()) {
     ca_.Bind(&block46, &phi_bb46_5, &phi_bb46_7, &phi_bb46_8);
     tmp117 = GetAndResetPendingMessage_0(state_);
@@ -1681,9 +1680,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb44_5;
   TNode<Smi> phi_bb44_7;
-  TNode<Object> phi_bb44_8;
+  TNode<JSAny> phi_bb44_8;
   TNode<Uint32T> tmp118;
-      TNode<Object> tmp120;
+      TNode<JSAny> tmp120;
   if (block44.is_used()) {
     ca_.Bind(&block44, &phi_bb44_5, &phi_bb44_7, &phi_bb44_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch119__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1702,7 +1701,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb47_5;
   TNode<Smi> phi_bb47_7;
-  TNode<HeapObject> tmp121;
+  TNode<Union<Hole, JSMessageObject>> tmp121;
   if (block47.is_used()) {
     ca_.Bind(&block47, &phi_bb47_5, &phi_bb47_7);
     tmp121 = GetAndResetPendingMessage_0(state_);
@@ -1711,7 +1710,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb45_5;
   TNode<Smi> phi_bb45_7;
-  TNode<Object> phi_bb45_8;
+  TNode<JSAny> phi_bb45_8;
   if (block45.is_used()) {
     ca_.Bind(&block45, &phi_bb45_5, &phi_bb45_7, &phi_bb45_8);
     ca_.Goto(&block36, phi_bb45_5, phi_bb45_7, phi_bb45_8, tmp105);
@@ -1719,9 +1718,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb48_5;
   TNode<Smi> phi_bb48_7;
-  TNode<Object> phi_bb48_8;
-  TNode<Object> phi_bb48_9;
-  TNode<HeapObject> tmp122;
+  TNode<JSAny> phi_bb48_8;
+  TNode<JSAny> phi_bb48_9;
+  TNode<Union<Hole, JSMessageObject>> tmp122;
   if (block48.is_used()) {
     ca_.Bind(&block48, &phi_bb48_5, &phi_bb48_7, &phi_bb48_8, &phi_bb48_9);
     tmp122 = GetAndResetPendingMessage_0(state_);
@@ -1730,8 +1729,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb36_5;
   TNode<Smi> phi_bb36_7;
-  TNode<Object> phi_bb36_8;
-  TNode<Object> phi_bb36_9;
+  TNode<JSAny> phi_bb36_8;
+  TNode<JSAny> phi_bb36_9;
   if (block36.is_used()) {
     ca_.Bind(&block36, &phi_bb36_5, &phi_bb36_7, &phi_bb36_8, &phi_bb36_9);
     ca_.Goto(&block29, phi_bb36_5, phi_bb36_7, phi_bb36_8, phi_bb36_9);
@@ -1739,17 +1738,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb26_5;
   TNode<Smi> phi_bb26_7;
-  TNode<Object> phi_bb26_8;
-  TNode<Object> phi_bb26_9;
+  TNode<JSAny> phi_bb26_8;
+  TNode<JSAny> phi_bb26_9;
   TNode<Uint32T> tmp123;
-      TNode<Object> tmp125;
+      TNode<JSAny> tmp125;
   TNode<BoolT> tmp126;
-      TNode<Object> tmp128;
+      TNode<JSAny> tmp128;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_5, &phi_bb26_7, &phi_bb26_8, &phi_bb26_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch124__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch124__label);
-    tmp123 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kIteratorMapping);
+    tmp123 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kIteratorMapping);
     }
     if (catch124__label.is_used()) {
       compiler::CodeAssemblerLabel catch124_skip(&ca_);
@@ -1774,11 +1773,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb51_5;
   TNode<Smi> phi_bb51_7;
-  TNode<Object> phi_bb51_8;
-  TNode<Object> phi_bb51_9;
+  TNode<JSAny> phi_bb51_8;
+  TNode<JSAny> phi_bb51_9;
   TNode<Uint32T> phi_bb51_10;
   TNode<Uint32T> phi_bb51_11;
-  TNode<HeapObject> tmp129;
+  TNode<Union<Hole, JSMessageObject>> tmp129;
   if (block51.is_used()) {
     ca_.Bind(&block51, &phi_bb51_5, &phi_bb51_7, &phi_bb51_8, &phi_bb51_9, &phi_bb51_10, &phi_bb51_11);
     tmp129 = GetAndResetPendingMessage_0(state_);
@@ -1787,10 +1786,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb52_5;
   TNode<Smi> phi_bb52_7;
-  TNode<Object> phi_bb52_8;
-  TNode<Object> phi_bb52_9;
+  TNode<JSAny> phi_bb52_8;
+  TNode<JSAny> phi_bb52_9;
   TNode<Uint32T> phi_bb52_10;
-  TNode<HeapObject> tmp130;
+  TNode<Union<Hole, JSMessageObject>> tmp130;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_5, &phi_bb52_7, &phi_bb52_8, &phi_bb52_9, &phi_bb52_10);
     tmp130 = GetAndResetPendingMessage_0(state_);
@@ -1799,16 +1798,16 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb49_5;
   TNode<Smi> phi_bb49_7;
-  TNode<Object> phi_bb49_8;
-  TNode<Object> phi_bb49_9;
-  TNode<JSReceiver> tmp131;
-      TNode<Object> tmp133;
-  TNode<Object> tmp134;
-      TNode<Object> tmp136;
+  TNode<JSAny> phi_bb49_8;
+  TNode<JSAny> phi_bb49_9;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp131;
+      TNode<JSAny> tmp133;
+  TNode<JSAny> tmp134;
+      TNode<JSAny> tmp136;
   TNode<Uint32T> tmp137;
-      TNode<Object> tmp139;
-  TNode<Object> tmp140;
-      TNode<Object> tmp142;
+      TNode<JSAny> tmp139;
+  TNode<JSAny> tmp140;
+      TNode<JSAny> tmp142;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_5, &phi_bb49_7, &phi_bb49_8, &phi_bb49_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch132__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1824,7 +1823,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch135__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch135__label);
-    tmp134 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp131}, TNode<Object>{tmp14}, TNode<Object>{phi_bb49_9}, TNode<Object>{phi_bb49_7});
+    tmp134 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp131}, TNode<JSAny>{tmp14}, TNode<JSAny>{phi_bb49_9}, TNode<JSAny>{phi_bb49_7});
     }
     if (catch135__label.is_used()) {
       compiler::CodeAssemblerLabel catch135_skip(&ca_);
@@ -1846,7 +1845,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch141__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch141__label);
-    tmp140 = ArrayFromAsyncIterableAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp137}, TNode<Object>{tmp134});
+    tmp140 = ArrayFromAsyncIterableAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp137}, TNode<JSAny>{tmp134});
     }
     if (catch141__label.is_used()) {
       compiler::CodeAssemblerLabel catch141_skip(&ca_);
@@ -1860,9 +1859,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb54_5;
   TNode<Smi> phi_bb54_7;
-  TNode<Object> phi_bb54_8;
-  TNode<Object> phi_bb54_9;
-  TNode<HeapObject> tmp143;
+  TNode<JSAny> phi_bb54_8;
+  TNode<JSAny> phi_bb54_9;
+  TNode<Union<Hole, JSMessageObject>> tmp143;
   if (block54.is_used()) {
     ca_.Bind(&block54, &phi_bb54_5, &phi_bb54_7, &phi_bb54_8, &phi_bb54_9);
     tmp143 = GetAndResetPendingMessage_0(state_);
@@ -1871,11 +1870,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb55_5;
   TNode<Smi> phi_bb55_7;
-  TNode<Object> phi_bb55_8;
-  TNode<Object> phi_bb55_9;
-  TNode<Object> phi_bb55_13;
+  TNode<JSAny> phi_bb55_8;
+  TNode<JSAny> phi_bb55_9;
+  TNode<JSAny> phi_bb55_13;
   TNode<Smi> phi_bb55_14;
-  TNode<HeapObject> tmp144;
+  TNode<Union<Hole, JSMessageObject>> tmp144;
   if (block55.is_used()) {
     ca_.Bind(&block55, &phi_bb55_5, &phi_bb55_7, &phi_bb55_8, &phi_bb55_9, &phi_bb55_13, &phi_bb55_14);
     tmp144 = GetAndResetPendingMessage_0(state_);
@@ -1884,9 +1883,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb56_5;
   TNode<Smi> phi_bb56_7;
-  TNode<Object> phi_bb56_8;
-  TNode<Object> phi_bb56_9;
-  TNode<HeapObject> tmp145;
+  TNode<JSAny> phi_bb56_8;
+  TNode<JSAny> phi_bb56_9;
+  TNode<Union<Hole, JSMessageObject>> tmp145;
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_5, &phi_bb56_7, &phi_bb56_8, &phi_bb56_9);
     tmp145 = GetAndResetPendingMessage_0(state_);
@@ -1895,9 +1894,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb57_5;
   TNode<Smi> phi_bb57_7;
-  TNode<Object> phi_bb57_8;
-  TNode<Object> phi_bb57_9;
-  TNode<HeapObject> tmp146;
+  TNode<JSAny> phi_bb57_8;
+  TNode<JSAny> phi_bb57_9;
+  TNode<Union<Hole, JSMessageObject>> tmp146;
   if (block57.is_used()) {
     ca_.Bind(&block57, &phi_bb57_5, &phi_bb57_7, &phi_bb57_8, &phi_bb57_9);
     tmp146 = GetAndResetPendingMessage_0(state_);
@@ -1906,17 +1905,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb50_5;
   TNode<Smi> phi_bb50_7;
-  TNode<Object> phi_bb50_8;
-  TNode<Object> phi_bb50_9;
+  TNode<JSAny> phi_bb50_8;
+  TNode<JSAny> phi_bb50_9;
   TNode<Uint32T> tmp147;
-      TNode<Object> tmp149;
+      TNode<JSAny> tmp149;
   TNode<BoolT> tmp150;
-      TNode<Object> tmp152;
+      TNode<JSAny> tmp152;
   if (block50.is_used()) {
     ca_.Bind(&block50, &phi_bb50_5, &phi_bb50_7, &phi_bb50_8, &phi_bb50_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch148__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch148__label);
-    tmp147 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetIteratorValueWithMapping);
+    tmp147 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetIteratorValueWithMapping);
     }
     if (catch148__label.is_used()) {
       compiler::CodeAssemblerLabel catch148_skip(&ca_);
@@ -1941,11 +1940,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb60_5;
   TNode<Smi> phi_bb60_7;
-  TNode<Object> phi_bb60_8;
-  TNode<Object> phi_bb60_9;
+  TNode<JSAny> phi_bb60_8;
+  TNode<JSAny> phi_bb60_9;
   TNode<Uint32T> phi_bb60_10;
   TNode<Uint32T> phi_bb60_11;
-  TNode<HeapObject> tmp153;
+  TNode<Union<Hole, JSMessageObject>> tmp153;
   if (block60.is_used()) {
     ca_.Bind(&block60, &phi_bb60_5, &phi_bb60_7, &phi_bb60_8, &phi_bb60_9, &phi_bb60_10, &phi_bb60_11);
     tmp153 = GetAndResetPendingMessage_0(state_);
@@ -1954,10 +1953,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb61_5;
   TNode<Smi> phi_bb61_7;
-  TNode<Object> phi_bb61_8;
-  TNode<Object> phi_bb61_9;
+  TNode<JSAny> phi_bb61_8;
+  TNode<JSAny> phi_bb61_9;
   TNode<Uint32T> phi_bb61_10;
-  TNode<HeapObject> tmp154;
+  TNode<Union<Hole, JSMessageObject>> tmp154;
   if (block61.is_used()) {
     ca_.Bind(&block61, &phi_bb61_5, &phi_bb61_7, &phi_bb61_8, &phi_bb61_9, &phi_bb61_10);
     tmp154 = GetAndResetPendingMessage_0(state_);
@@ -1966,10 +1965,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb58_5;
   TNode<Smi> phi_bb58_7;
-  TNode<Object> phi_bb58_8;
-  TNode<Object> phi_bb58_9;
+  TNode<JSAny> phi_bb58_8;
+  TNode<JSAny> phi_bb58_9;
   TNode<Uint32T> tmp155;
-      TNode<Object> tmp157;
+      TNode<JSAny> tmp157;
   if (block58.is_used()) {
     ca_.Bind(&block58, &phi_bb58_5, &phi_bb58_7, &phi_bb58_8, &phi_bb58_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch156__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1988,8 +1987,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb63_5;
   TNode<Smi> phi_bb63_7;
-  TNode<Object> phi_bb63_9;
-  TNode<HeapObject> tmp158;
+  TNode<JSAny> phi_bb63_9;
+  TNode<Union<Hole, JSMessageObject>> tmp158;
   if (block63.is_used()) {
     ca_.Bind(&block63, &phi_bb63_5, &phi_bb63_7, &phi_bb63_9);
     tmp158 = GetAndResetPendingMessage_0(state_);
@@ -1998,17 +1997,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb59_5;
   TNode<Smi> phi_bb59_7;
-  TNode<Object> phi_bb59_8;
-  TNode<Object> phi_bb59_9;
+  TNode<JSAny> phi_bb59_8;
+  TNode<JSAny> phi_bb59_9;
   TNode<Uint32T> tmp159;
-      TNode<Object> tmp161;
+      TNode<JSAny> tmp161;
   TNode<BoolT> tmp162;
-      TNode<Object> tmp164;
+      TNode<JSAny> tmp164;
   if (block59.is_used()) {
     ca_.Bind(&block59, &phi_bb59_5, &phi_bb59_7, &phi_bb59_8, &phi_bb59_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch160__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch160__label);
-    tmp159 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kAddIteratorValueToTheArray);
+    tmp159 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kAddIteratorValueToTheArray);
     }
     if (catch160__label.is_used()) {
       compiler::CodeAssemblerLabel catch160_skip(&ca_);
@@ -2033,11 +2032,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb66_5;
   TNode<Smi> phi_bb66_7;
-  TNode<Object> phi_bb66_8;
-  TNode<Object> phi_bb66_9;
+  TNode<JSAny> phi_bb66_8;
+  TNode<JSAny> phi_bb66_9;
   TNode<Uint32T> phi_bb66_10;
   TNode<Uint32T> phi_bb66_11;
-  TNode<HeapObject> tmp165;
+  TNode<Union<Hole, JSMessageObject>> tmp165;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_5, &phi_bb66_7, &phi_bb66_8, &phi_bb66_9, &phi_bb66_10, &phi_bb66_11);
     tmp165 = GetAndResetPendingMessage_0(state_);
@@ -2046,10 +2045,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb67_5;
   TNode<Smi> phi_bb67_7;
-  TNode<Object> phi_bb67_8;
-  TNode<Object> phi_bb67_9;
+  TNode<JSAny> phi_bb67_8;
+  TNode<JSAny> phi_bb67_9;
   TNode<Uint32T> phi_bb67_10;
-  TNode<HeapObject> tmp166;
+  TNode<Union<Hole, JSMessageObject>> tmp166;
   if (block67.is_used()) {
     ca_.Bind(&block67, &phi_bb67_5, &phi_bb67_7, &phi_bb67_8, &phi_bb67_9, &phi_bb67_10);
     tmp166 = GetAndResetPendingMessage_0(state_);
@@ -2058,20 +2057,20 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb64_5;
   TNode<Smi> phi_bb64_7;
-  TNode<Object> phi_bb64_8;
-  TNode<Object> phi_bb64_9;
+  TNode<JSAny> phi_bb64_8;
+  TNode<JSAny> phi_bb64_9;
   TNode<Object> tmp167;
-      TNode<Object> tmp169;
+      TNode<JSAny> tmp169;
   TNode<Smi> tmp170;
-      TNode<Object> tmp172;
+      TNode<JSAny> tmp172;
   TNode<Smi> tmp173;
-      TNode<Object> tmp175;
+      TNode<JSAny> tmp175;
   TNode<IntPtrT> tmp176;
-  TNode<Object> tmp177;
+  TNode<Union<HeapObject, TaggedIndex>> tmp177;
   TNode<IntPtrT> tmp178;
-      TNode<Object> tmp180;
+      TNode<JSAny> tmp180;
   TNode<Uint32T> tmp181;
-      TNode<Object> tmp183;
+      TNode<JSAny> tmp183;
   if (block64.is_used()) {
     ca_.Bind(&block64, &phi_bb64_5, &phi_bb64_7, &phi_bb64_8, &phi_bb64_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch168__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2136,11 +2135,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb69_5;
   TNode<Smi> phi_bb69_7;
-  TNode<Object> phi_bb69_8;
-  TNode<Object> phi_bb69_9;
+  TNode<JSAny> phi_bb69_8;
+  TNode<JSAny> phi_bb69_9;
   TNode<Smi> phi_bb69_11;
-  TNode<Object> phi_bb69_12;
-  TNode<HeapObject> tmp184;
+  TNode<JSAny> phi_bb69_12;
+  TNode<Union<Hole, JSMessageObject>> tmp184;
   if (block69.is_used()) {
     ca_.Bind(&block69, &phi_bb69_5, &phi_bb69_7, &phi_bb69_8, &phi_bb69_9, &phi_bb69_11, &phi_bb69_12);
     tmp184 = GetAndResetPendingMessage_0(state_);
@@ -2149,11 +2148,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb70_5;
   TNode<Smi> phi_bb70_7;
-  TNode<Object> phi_bb70_8;
-  TNode<Object> phi_bb70_9;
+  TNode<JSAny> phi_bb70_8;
+  TNode<JSAny> phi_bb70_9;
   TNode<Smi> phi_bb70_10;
   TNode<Smi> phi_bb70_11;
-  TNode<HeapObject> tmp185;
+  TNode<Union<Hole, JSMessageObject>> tmp185;
   if (block70.is_used()) {
     ca_.Bind(&block70, &phi_bb70_5, &phi_bb70_7, &phi_bb70_8, &phi_bb70_9, &phi_bb70_10, &phi_bb70_11);
     tmp185 = GetAndResetPendingMessage_0(state_);
@@ -2162,10 +2161,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb71_5;
   TNode<Smi> phi_bb71_7;
-  TNode<Object> phi_bb71_8;
-  TNode<Object> phi_bb71_9;
+  TNode<JSAny> phi_bb71_8;
+  TNode<JSAny> phi_bb71_9;
   TNode<Smi> phi_bb71_10;
-  TNode<HeapObject> tmp186;
+  TNode<Union<Hole, JSMessageObject>> tmp186;
   if (block71.is_used()) {
     ca_.Bind(&block71, &phi_bb71_5, &phi_bb71_7, &phi_bb71_8, &phi_bb71_9, &phi_bb71_10);
     tmp186 = GetAndResetPendingMessage_0(state_);
@@ -2173,9 +2172,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
   }
 
   TNode<Uint32T> phi_bb72_5;
-  TNode<Object> phi_bb72_8;
-  TNode<Object> phi_bb72_9;
-  TNode<HeapObject> tmp187;
+  TNode<JSAny> phi_bb72_8;
+  TNode<JSAny> phi_bb72_9;
+  TNode<Union<Hole, JSMessageObject>> tmp187;
   if (block72.is_used()) {
     ca_.Bind(&block72, &phi_bb72_5, &phi_bb72_8, &phi_bb72_9);
     tmp187 = GetAndResetPendingMessage_0(state_);
@@ -2183,9 +2182,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
   }
 
   TNode<Uint32T> phi_bb73_5;
-  TNode<Object> phi_bb73_8;
-  TNode<Object> phi_bb73_9;
-  TNode<HeapObject> tmp188;
+  TNode<JSAny> phi_bb73_8;
+  TNode<JSAny> phi_bb73_9;
+  TNode<Union<Hole, JSMessageObject>> tmp188;
   if (block73.is_used()) {
     ca_.Bind(&block73, &phi_bb73_5, &phi_bb73_8, &phi_bb73_9);
     tmp188 = GetAndResetPendingMessage_0(state_);
@@ -2194,17 +2193,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb65_5;
   TNode<Smi> phi_bb65_7;
-  TNode<Object> phi_bb65_8;
-  TNode<Object> phi_bb65_9;
+  TNode<JSAny> phi_bb65_8;
+  TNode<JSAny> phi_bb65_9;
   TNode<Uint32T> tmp189;
-      TNode<Object> tmp191;
+      TNode<JSAny> tmp191;
   TNode<BoolT> tmp192;
-      TNode<Object> tmp194;
+      TNode<JSAny> tmp194;
   if (block65.is_used()) {
     ca_.Bind(&block65, &phi_bb65_5, &phi_bb65_7, &phi_bb65_8, &phi_bb65_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch190__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch190__label);
-    tmp189 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kDoneAndResolvePromise);
+    tmp189 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kDoneAndResolvePromise);
     }
     if (catch190__label.is_used()) {
       compiler::CodeAssemblerLabel catch190_skip(&ca_);
@@ -2229,11 +2228,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb76_5;
   TNode<Smi> phi_bb76_7;
-  TNode<Object> phi_bb76_8;
-  TNode<Object> phi_bb76_9;
+  TNode<JSAny> phi_bb76_8;
+  TNode<JSAny> phi_bb76_9;
   TNode<Uint32T> phi_bb76_10;
   TNode<Uint32T> phi_bb76_11;
-  TNode<HeapObject> tmp195;
+  TNode<Union<Hole, JSMessageObject>> tmp195;
   if (block76.is_used()) {
     ca_.Bind(&block76, &phi_bb76_5, &phi_bb76_7, &phi_bb76_8, &phi_bb76_9, &phi_bb76_10, &phi_bb76_11);
     tmp195 = GetAndResetPendingMessage_0(state_);
@@ -2242,10 +2241,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb77_5;
   TNode<Smi> phi_bb77_7;
-  TNode<Object> phi_bb77_8;
-  TNode<Object> phi_bb77_9;
+  TNode<JSAny> phi_bb77_8;
+  TNode<JSAny> phi_bb77_9;
   TNode<Uint32T> phi_bb77_10;
-  TNode<HeapObject> tmp196;
+  TNode<Union<Hole, JSMessageObject>> tmp196;
   if (block77.is_used()) {
     ca_.Bind(&block77, &phi_bb77_5, &phi_bb77_7, &phi_bb77_8, &phi_bb77_9, &phi_bb77_10);
     tmp196 = GetAndResetPendingMessage_0(state_);
@@ -2254,22 +2253,22 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb74_5;
   TNode<Smi> phi_bb74_7;
-  TNode<Object> phi_bb74_8;
-  TNode<Object> phi_bb74_9;
-      TNode<Object> tmp198;
+  TNode<JSAny> phi_bb74_8;
+  TNode<JSAny> phi_bb74_9;
+      TNode<JSAny> tmp198;
   TNode<IntPtrT> tmp199;
-  TNode<Object> tmp200;
+  TNode<Union<HeapObject, TaggedIndex>> tmp200;
   TNode<IntPtrT> tmp201;
-      TNode<Object> tmp203;
+      TNode<JSAny> tmp203;
   TNode<JSPromise> tmp204;
-  TNode<Object> tmp205;
-      TNode<Object> tmp207;
+  TNode<JSAny> tmp205;
+      TNode<JSAny> tmp207;
   TNode<Undefined> tmp208;
   if (block74.is_used()) {
     ca_.Bind(&block74, &phi_bb74_5, &phi_bb74_7, &phi_bb74_8, &phi_bb74_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch197__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch197__label);
-    CodeStubAssembler(state_).SetPropertyLength(TNode<Context>{p_context}, TNode<Object>{tmp20}, TNode<Number>{phi_bb74_7});
+    CodeStubAssembler(state_).SetPropertyLength(TNode<Context>{p_context}, TNode<JSAny>{tmp20}, TNode<Number>{phi_bb74_7});
     }
     if (catch197__label.is_used()) {
       compiler::CodeAssemblerLabel catch197_skip(&ca_);
@@ -2293,7 +2292,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     tmp204 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{tmp200, tmp201});
     compiler::CodeAssemblerExceptionHandlerLabel catch206__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch206__label);
-    tmp205 = ca_.CallBuiltin<Object>(Builtin::kResolvePromise, p_context, tmp204, tmp20);
+    tmp205 = ca_.CallBuiltin<JSAny>(Builtin::kResolvePromise, p_context, tmp204, tmp20);
     }
     if (catch206__label.is_used()) {
       compiler::CodeAssemblerLabel catch206_skip(&ca_);
@@ -2308,10 +2307,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb79_5;
   TNode<Smi> phi_bb79_7;
-  TNode<Object> phi_bb79_8;
-  TNode<Object> phi_bb79_9;
+  TNode<JSAny> phi_bb79_8;
+  TNode<JSAny> phi_bb79_9;
   TNode<Smi> phi_bb79_11;
-  TNode<HeapObject> tmp209;
+  TNode<Union<Hole, JSMessageObject>> tmp209;
   if (block79.is_used()) {
     ca_.Bind(&block79, &phi_bb79_5, &phi_bb79_7, &phi_bb79_8, &phi_bb79_9, &phi_bb79_11);
     tmp209 = GetAndResetPendingMessage_0(state_);
@@ -2320,9 +2319,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb80_5;
   TNode<Smi> phi_bb80_7;
-  TNode<Object> phi_bb80_8;
-  TNode<Object> phi_bb80_9;
-  TNode<HeapObject> tmp210;
+  TNode<JSAny> phi_bb80_8;
+  TNode<JSAny> phi_bb80_9;
+  TNode<Union<Hole, JSMessageObject>> tmp210;
   if (block80.is_used()) {
     ca_.Bind(&block80, &phi_bb80_5, &phi_bb80_7, &phi_bb80_8, &phi_bb80_9);
     tmp210 = GetAndResetPendingMessage_0(state_);
@@ -2331,9 +2330,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb81_5;
   TNode<Smi> phi_bb81_7;
-  TNode<Object> phi_bb81_8;
-  TNode<Object> phi_bb81_9;
-  TNode<HeapObject> tmp211;
+  TNode<JSAny> phi_bb81_8;
+  TNode<JSAny> phi_bb81_9;
+  TNode<Union<Hole, JSMessageObject>> tmp211;
   if (block81.is_used()) {
     ca_.Bind(&block81, &phi_bb81_5, &phi_bb81_7, &phi_bb81_8, &phi_bb81_9);
     tmp211 = GetAndResetPendingMessage_0(state_);
@@ -2342,17 +2341,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb75_5;
   TNode<Smi> phi_bb75_7;
-  TNode<Object> phi_bb75_8;
-  TNode<Object> phi_bb75_9;
+  TNode<JSAny> phi_bb75_8;
+  TNode<JSAny> phi_bb75_9;
   TNode<Uint32T> tmp212;
-      TNode<Object> tmp214;
+      TNode<JSAny> tmp214;
   TNode<BoolT> tmp215;
-      TNode<Object> tmp217;
+      TNode<JSAny> tmp217;
   if (block75.is_used()) {
     ca_.Bind(&block75, &phi_bb75_5, &phi_bb75_7, &phi_bb75_8, &phi_bb75_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch213__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch213__label);
-    tmp212 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kCloseAsyncIterator);
+    tmp212 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kCloseAsyncIterator);
     }
     if (catch213__label.is_used()) {
       compiler::CodeAssemblerLabel catch213_skip(&ca_);
@@ -2377,11 +2376,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb84_5;
   TNode<Smi> phi_bb84_7;
-  TNode<Object> phi_bb84_8;
-  TNode<Object> phi_bb84_9;
+  TNode<JSAny> phi_bb84_8;
+  TNode<JSAny> phi_bb84_9;
   TNode<Uint32T> phi_bb84_10;
   TNode<Uint32T> phi_bb84_11;
-  TNode<HeapObject> tmp218;
+  TNode<Union<Hole, JSMessageObject>> tmp218;
   if (block84.is_used()) {
     ca_.Bind(&block84, &phi_bb84_5, &phi_bb84_7, &phi_bb84_8, &phi_bb84_9, &phi_bb84_10, &phi_bb84_11);
     tmp218 = GetAndResetPendingMessage_0(state_);
@@ -2390,10 +2389,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb85_5;
   TNode<Smi> phi_bb85_7;
-  TNode<Object> phi_bb85_8;
-  TNode<Object> phi_bb85_9;
+  TNode<JSAny> phi_bb85_8;
+  TNode<JSAny> phi_bb85_9;
   TNode<Uint32T> phi_bb85_10;
-  TNode<HeapObject> tmp219;
+  TNode<Union<Hole, JSMessageObject>> tmp219;
   if (block85.is_used()) {
     ca_.Bind(&block85, &phi_bb85_5, &phi_bb85_7, &phi_bb85_8, &phi_bb85_9, &phi_bb85_10);
     tmp219 = GetAndResetPendingMessage_0(state_);
@@ -2402,14 +2401,14 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb82_5;
   TNode<Smi> phi_bb82_7;
-  TNode<Object> phi_bb82_8;
-  TNode<Object> phi_bb82_9;
+  TNode<JSAny> phi_bb82_8;
+  TNode<JSAny> phi_bb82_9;
   TNode<Uint32T> tmp220;
-      TNode<Object> tmp222;
+      TNode<JSAny> tmp222;
   TNode<JSReceiver> tmp223;
-  TNode<Object> tmp224;
-      TNode<Object> tmp226;
-      TNode<Object> tmp229;
+  TNode<JSAny> tmp224;
+      TNode<JSAny> tmp226;
+      TNode<JSAny> tmp229;
   if (block82.is_used()) {
     ca_.Bind(&block82, &phi_bb82_5, &phi_bb82_7, &phi_bb82_8, &phi_bb82_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch221__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2437,7 +2436,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     compiler::CodeAssemblerLabel label227(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch228__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch228__label);
-    ArrayFromAsyncAsyncIteratorCloseOnException_0(state_, TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp223}, TNode<Object>{tmp224}}, &label227);
+    ArrayFromAsyncAsyncIteratorCloseOnException_0(state_, TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp223}, TNode<JSAny>{tmp224}}, &label227);
     }
     if (catch228__label.is_used()) {
       compiler::CodeAssemblerLabel catch228_skip(&ca_);
@@ -2455,9 +2454,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb87_5;
   TNode<Smi> phi_bb87_7;
-  TNode<Object> phi_bb87_8;
-  TNode<Object> phi_bb87_9;
-  TNode<HeapObject> tmp230;
+  TNode<JSAny> phi_bb87_8;
+  TNode<JSAny> phi_bb87_9;
+  TNode<Union<Hole, JSMessageObject>> tmp230;
   if (block87.is_used()) {
     ca_.Bind(&block87, &phi_bb87_5, &phi_bb87_7, &phi_bb87_8, &phi_bb87_9);
     tmp230 = GetAndResetPendingMessage_0(state_);
@@ -2465,9 +2464,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
   }
 
   TNode<Smi> phi_bb88_7;
-  TNode<Object> phi_bb88_8;
-  TNode<Object> phi_bb88_9;
-  TNode<HeapObject> tmp231;
+  TNode<JSAny> phi_bb88_8;
+  TNode<JSAny> phi_bb88_9;
+  TNode<Union<Hole, JSMessageObject>> tmp231;
   if (block88.is_used()) {
     ca_.Bind(&block88, &phi_bb88_7, &phi_bb88_8, &phi_bb88_9);
     tmp231 = GetAndResetPendingMessage_0(state_);
@@ -2475,9 +2474,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
   }
 
   TNode<Smi> phi_bb93_7;
-  TNode<Object> phi_bb93_8;
-  TNode<Object> phi_bb93_9;
-  TNode<HeapObject> tmp232;
+  TNode<JSAny> phi_bb93_8;
+  TNode<JSAny> phi_bb93_9;
+  TNode<Union<Hole, JSMessageObject>> tmp232;
   if (block93.is_used()) {
     ca_.Bind(&block93, &phi_bb93_7, &phi_bb93_8, &phi_bb93_9);
     tmp232 = GetAndResetPendingMessage_0(state_);
@@ -2485,16 +2484,16 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
   }
 
   TNode<Smi> phi_bb92_7;
-  TNode<Object> phi_bb92_8;
-  TNode<Object> phi_bb92_9;
+  TNode<JSAny> phi_bb92_8;
+  TNode<JSAny> phi_bb92_9;
   if (block92.is_used()) {
     ca_.Bind(&block92, &phi_bb92_7, &phi_bb92_8, &phi_bb92_9);
     ca_.Goto(&block86, tmp220, phi_bb92_7, phi_bb92_8, phi_bb92_9);
   }
 
   TNode<Smi> phi_bb91_7;
-  TNode<Object> phi_bb91_8;
-  TNode<Object> phi_bb91_9;
+  TNode<JSAny> phi_bb91_8;
+  TNode<JSAny> phi_bb91_9;
   TNode<Undefined> tmp233;
   if (block91.is_used()) {
     ca_.Bind(&block91, &phi_bb91_7, &phi_bb91_8, &phi_bb91_9);
@@ -2504,17 +2503,17 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb83_5;
   TNode<Smi> phi_bb83_7;
-  TNode<Object> phi_bb83_8;
-  TNode<Object> phi_bb83_9;
+  TNode<JSAny> phi_bb83_8;
+  TNode<JSAny> phi_bb83_9;
   TNode<Uint32T> tmp234;
-      TNode<Object> tmp236;
+      TNode<JSAny> tmp236;
   TNode<BoolT> tmp237;
-      TNode<Object> tmp239;
+      TNode<JSAny> tmp239;
   if (block83.is_used()) {
     ca_.Bind(&block83, &phi_bb83_5, &phi_bb83_7, &phi_bb83_8, &phi_bb83_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch235__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch235__label);
-    tmp234 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kRejectPromise);
+    tmp234 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kRejectPromise);
     }
     if (catch235__label.is_used()) {
       compiler::CodeAssemblerLabel catch235_skip(&ca_);
@@ -2539,11 +2538,11 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb96_5;
   TNode<Smi> phi_bb96_7;
-  TNode<Object> phi_bb96_8;
-  TNode<Object> phi_bb96_9;
+  TNode<JSAny> phi_bb96_8;
+  TNode<JSAny> phi_bb96_9;
   TNode<Uint32T> phi_bb96_10;
   TNode<Uint32T> phi_bb96_11;
-  TNode<HeapObject> tmp240;
+  TNode<Union<Hole, JSMessageObject>> tmp240;
   if (block96.is_used()) {
     ca_.Bind(&block96, &phi_bb96_5, &phi_bb96_7, &phi_bb96_8, &phi_bb96_9, &phi_bb96_10, &phi_bb96_11);
     tmp240 = GetAndResetPendingMessage_0(state_);
@@ -2552,10 +2551,10 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb97_5;
   TNode<Smi> phi_bb97_7;
-  TNode<Object> phi_bb97_8;
-  TNode<Object> phi_bb97_9;
+  TNode<JSAny> phi_bb97_8;
+  TNode<JSAny> phi_bb97_9;
   TNode<Uint32T> phi_bb97_10;
-  TNode<HeapObject> tmp241;
+  TNode<Union<Hole, JSMessageObject>> tmp241;
   if (block97.is_used()) {
     ca_.Bind(&block97, &phi_bb97_5, &phi_bb97_7, &phi_bb97_8, &phi_bb97_9, &phi_bb97_10);
     tmp241 = GetAndResetPendingMessage_0(state_);
@@ -2564,12 +2563,12 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb94_5;
   TNode<Smi> phi_bb94_7;
-  TNode<Object> phi_bb94_8;
-  TNode<Object> phi_bb94_9;
+  TNode<JSAny> phi_bb94_8;
+  TNode<JSAny> phi_bb94_9;
   TNode<IntPtrT> tmp242;
   TNode<IntPtrT> tmp243;
-  TNode<Object> tmp244;
-      TNode<Object> tmp246;
+  TNode<JSAny> tmp244;
+      TNode<JSAny> tmp246;
   if (block94.is_used()) {
     ca_.Bind(&block94, &phi_bb94_5, &phi_bb94_7, &phi_bb94_8, &phi_bb94_9);
     tmp242 = kArrayFromAsyncIterableResolveErrorSlot_0(state_);
@@ -2590,9 +2589,9 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb98_5;
   TNode<Smi> phi_bb98_7;
-  TNode<Object> phi_bb98_8;
-  TNode<Object> phi_bb98_9;
-  TNode<HeapObject> tmp247;
+  TNode<JSAny> phi_bb98_8;
+  TNode<JSAny> phi_bb98_9;
+  TNode<Union<Hole, JSMessageObject>> tmp247;
   if (block98.is_used()) {
     ca_.Bind(&block98, &phi_bb98_5, &phi_bb98_7, &phi_bb98_8, &phi_bb98_9);
     tmp247 = GetAndResetPendingMessage_0(state_);
@@ -2601,8 +2600,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb95_5;
   TNode<Smi> phi_bb95_7;
-  TNode<Object> phi_bb95_8;
-  TNode<Object> phi_bb95_9;
+  TNode<JSAny> phi_bb95_8;
+  TNode<JSAny> phi_bb95_9;
   if (block95.is_used()) {
     ca_.Bind(&block95, &phi_bb95_5, &phi_bb95_7, &phi_bb95_8, &phi_bb95_9);
     ca_.Goto(&block86, phi_bb95_5, phi_bb95_7, phi_bb95_8, phi_bb95_9);
@@ -2610,8 +2609,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb86_5;
   TNode<Smi> phi_bb86_7;
-  TNode<Object> phi_bb86_8;
-  TNode<Object> phi_bb86_9;
+  TNode<JSAny> phi_bb86_8;
+  TNode<JSAny> phi_bb86_9;
   if (block86.is_used()) {
     ca_.Bind(&block86, &phi_bb86_5, &phi_bb86_7, &phi_bb86_8, &phi_bb86_9);
     ca_.Goto(&block68, phi_bb86_5, phi_bb86_7, phi_bb86_8, phi_bb86_9);
@@ -2619,8 +2618,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb68_5;
   TNode<Smi> phi_bb68_7;
-  TNode<Object> phi_bb68_8;
-  TNode<Object> phi_bb68_9;
+  TNode<JSAny> phi_bb68_8;
+  TNode<JSAny> phi_bb68_9;
   if (block68.is_used()) {
     ca_.Bind(&block68, &phi_bb68_5, &phi_bb68_7, &phi_bb68_8, &phi_bb68_9);
     ca_.Goto(&block62, phi_bb68_5, phi_bb68_7, phi_bb68_8, phi_bb68_9);
@@ -2628,8 +2627,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb62_5;
   TNode<Smi> phi_bb62_7;
-  TNode<Object> phi_bb62_8;
-  TNode<Object> phi_bb62_9;
+  TNode<JSAny> phi_bb62_8;
+  TNode<JSAny> phi_bb62_9;
   if (block62.is_used()) {
     ca_.Bind(&block62, &phi_bb62_5, &phi_bb62_7, &phi_bb62_8, &phi_bb62_9);
     ca_.Goto(&block29, phi_bb62_5, phi_bb62_7, phi_bb62_8, phi_bb62_9);
@@ -2637,8 +2636,8 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb29_5;
   TNode<Smi> phi_bb29_7;
-  TNode<Object> phi_bb29_8;
-  TNode<Object> phi_bb29_9;
+  TNode<JSAny> phi_bb29_8;
+  TNode<JSAny> phi_bb29_9;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_5, &phi_bb29_7, &phi_bb29_8, &phi_bb29_9);
     ca_.Goto(&block14, phi_bb29_5, phi_bb29_7, phi_bb29_8, phi_bb29_9);
@@ -2646,28 +2645,28 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<Uint32T> phi_bb13_5;
   TNode<Smi> phi_bb13_7;
-  TNode<Object> phi_bb13_8;
-  TNode<Object> phi_bb13_9;
+  TNode<JSAny> phi_bb13_8;
+  TNode<JSAny> phi_bb13_9;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_5, &phi_bb13_7, &phi_bb13_8, &phi_bb13_9);
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb3_1;
-  TNode<HeapObject> phi_bb3_2;
+  TNode<JSAny> phi_bb3_1;
+  TNode<Union<Hole, JSMessageObject>> phi_bb3_2;
   TNode<IntPtrT> tmp248;
-  TNode<Object> tmp249;
+  TNode<Union<HeapObject, TaggedIndex>> tmp249;
   TNode<IntPtrT> tmp250;
   TNode<JSReceiver> tmp251;
-  TNode<Object> tmp252;
+  TNode<JSAny> tmp252;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_1, &phi_bb3_2);
     tmp248 = kArrayFromAsyncIterableResolveErrorSlot_0(state_);
     std::tie(tmp249, tmp250) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp248}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp249, tmp250}, phi_bb3_1);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp249, tmp250}, phi_bb3_1);
     std::tie(tmp251, tmp252) = GetIteratorRecordFromArrayFromAsyncIterableResolveContext_0(state_, TNode<Context>{p_context}).Flatten();
     compiler::CodeAssemblerLabel label253(&ca_);
-    ArrayFromAsyncAsyncIteratorCloseOnException_0(state_, TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp251}, TNode<Object>{tmp252}}, &label253);
+    ArrayFromAsyncAsyncIteratorCloseOnException_0(state_, TNode<Context>{p_context}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp251}, TNode<JSAny>{tmp252}}, &label253);
     ca_.Goto(&block101);
     if (label253.is_used()) {
       ca_.Bind(&label253);
@@ -2677,7 +2676,7 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
 
   TNode<IntPtrT> tmp254;
   TNode<IntPtrT> tmp255;
-  TNode<Object> tmp256;
+  TNode<JSAny> tmp256;
   if (block102.is_used()) {
     ca_.Bind(&block102);
     tmp254 = kArrayFromAsyncIterableResolveErrorSlot_0(state_);
@@ -2698,18 +2697,18 @@ TNode<Object> CreateArrayFromIterableAsynchronously_0(compiler::CodeAssemblerSta
     ca_.Goto(&block1, tmp257);
   }
 
-  TNode<Object> phi_bb1_1;
+  TNode<JSAny> phi_bb1_1;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_1);
     ca_.Goto(&block103);
   }
 
     ca_.Bind(&block103);
-  return TNode<Object>{phi_bb1_1};
+  return TNode<JSAny>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=383&c=1
-TNode<Object> ArrayFromAsyncIterableAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<Object> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=385&c=1
+TNode<JSAny> ArrayFromAsyncIterableAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<JSAny> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2720,45 +2719,45 @@ TNode<Object> ArrayFromAsyncIterableAwaitPoint_0(compiler::CodeAssemblerState* s
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kArrayFromAsyncIterableResolveResumeStateStepSlot_0(state_);
     tmp1 = kArrayFromAsyncIterableResolvePromiseFunctionSlot_0(state_);
     tmp2 = kArrayFromAsyncIterableResolveOnFulfilledFunctionSlot_0(state_);
     tmp3 = kArrayFromAsyncIterableResolveOnRejectedFunctionSlot_0(state_);
-    tmp4 = ArrayFromAsyncAwaitPoint_ArrayFromAsyncIterableResolveContext_0(state_, TNode<Context>{p_context}, TNode<Context>{p_context}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Uint32T>{p_step}, TNode<Object>{p_value});
+    tmp4 = ArrayFromAsyncAwaitPoint_ArrayFromAsyncIterableResolveContext_0(state_, TNode<Context>{p_context}, TNode<Context>{p_context}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Uint32T>{p_step}, TNode<JSAny>{p_value});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp4};
+  return TNode<JSAny>{tmp4};
 }
 
 TF_BUILTIN(ArrayFromAsyncIterableOnFulfilled, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kResult);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kResult);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
     tmp1 = kArrayFromAsyncIterableResolveResumeStateAwaitedValueSlot_0(state_);
     std::tie(tmp2, tmp3) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp1}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp2, tmp3}, parameter3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp2, tmp3}, parameter3);
     tmp4 = CreateArrayFromIterableAsynchronously_0(state_, TNode<Context>{tmp0});
     CodeStubAssembler(state_).Return(tmp4);
   }
@@ -2768,25 +2767,25 @@ TF_BUILTIN(ArrayFromAsyncIterableOnRejected, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kResult);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kResult);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Uint32T> tmp4;
   TNode<Smi> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
@@ -2797,13 +2796,13 @@ USE(parameter2);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp2, tmp3}, tmp5);
     tmp6 = kArrayFromAsyncIterableResolveErrorSlot_0(state_);
     std::tie(tmp7, tmp8) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp6}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp8}, parameter3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp7, tmp8}, parameter3);
     tmp9 = CreateArrayFromIterableAsynchronously_0(state_, TNode<Context>{tmp0});
     CodeStubAssembler(state_).Return(tmp9);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=436&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=438&c=1
 void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_iterator, compiler::CodeAssemblerLabel* label_RejectPromise) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2820,25 +2819,25 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
   compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
   TNode<String> tmp1;
-  TNode<Object> tmp2;
-      TNode<Object> tmp4;
+  TNode<JSAny> tmp2;
+      TNode<JSAny> tmp4;
   TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
-      TNode<Object> tmp8;
+      TNode<JSAny> tmp8;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{p_context});
     tmp1 = kReturnString_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch3__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch3__label);
-    tmp2 = CodeStubAssembler(state_).GetProperty(TNode<Context>{tmp0}, TNode<Object>{p_iterator.object}, TNode<Object>{tmp1});
+    tmp2 = CodeStubAssembler(state_).GetProperty(TNode<Context>{tmp0}, TNode<JSAny>{p_iterator.object}, TNode<JSAny>{tmp1});
     }
     if (catch3__label.is_used()) {
       compiler::CodeAssemblerLabel catch3_skip(&ca_);
@@ -2850,7 +2849,7 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     tmp5 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch7__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch7__label);
-    tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp2}, TNode<HeapObject>{tmp5});
+    tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5});
     }
     if (catch7__label.is_used()) {
       compiler::CodeAssemblerLabel catch7_skip(&ca_);
@@ -2862,14 +2861,14 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     ca_.Branch(tmp6, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp9;
+  TNode<Union<Hole, JSMessageObject>> tmp9;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp9 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block4, tmp4, tmp9);
   }
 
-  TNode<HeapObject> tmp10;
+  TNode<Union<Hole, JSMessageObject>> tmp10;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp10 = GetAndResetPendingMessage_0(state_);
@@ -2877,7 +2876,7 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
   }
 
   TNode<BoolT> tmp11;
-      TNode<Object> tmp13;
+      TNode<JSAny> tmp13;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     compiler::CodeAssemblerExceptionHandlerLabel catch12__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2894,7 +2893,7 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     ca_.Goto(&block11, tmp11);
   }
 
-  TNode<HeapObject> tmp14;
+  TNode<Union<Hole, JSMessageObject>> tmp14;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp14 = GetAndResetPendingMessage_0(state_);
@@ -2903,13 +2902,13 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
 
   TNode<Null> tmp15;
   TNode<BoolT> tmp16;
-      TNode<Object> tmp18;
+      TNode<JSAny> tmp18;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp15 = Null_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch17__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch17__label);
-    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp2}, TNode<HeapObject>{tmp15});
+    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15});
     }
     if (catch17__label.is_used()) {
       compiler::CodeAssemblerLabel catch17_skip(&ca_);
@@ -2921,7 +2920,7 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     ca_.Goto(&block11, tmp16);
   }
 
-  TNode<HeapObject> tmp19;
+  TNode<Union<Hole, JSMessageObject>> tmp19;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp19 = GetAndResetPendingMessage_0(state_);
@@ -2939,17 +2938,17 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     ca_.Goto(label_RejectPromise);
   }
 
-  TNode<Object> tmp20;
-      TNode<Object> tmp22;
+  TNode<JSAny> tmp20;
+      TNode<JSAny> tmp22;
   TNode<Uint32T> tmp23;
-      TNode<Object> tmp25;
-  TNode<Object> tmp26;
-      TNode<Object> tmp28;
+      TNode<JSAny> tmp25;
+  TNode<JSAny> tmp26;
+      TNode<JSAny> tmp28;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     compiler::CodeAssemblerExceptionHandlerLabel catch21__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch21__label);
-    tmp20 = CodeStubAssembler(state_).Call(TNode<Context>{tmp0}, TNode<Object>{tmp2}, TNode<Object>{p_iterator.object});
+    tmp20 = CodeStubAssembler(state_).Call(TNode<Context>{tmp0}, TNode<JSAny>{tmp2}, TNode<JSAny>{p_iterator.object});
     }
     if (catch21__label.is_used()) {
       compiler::CodeAssemblerLabel catch21_skip(&ca_);
@@ -2971,7 +2970,7 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch27__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch27__label);
-    tmp26 = ArrayFromAsyncIterableAwaitPoint_0(state_, TNode<Context>{tmp0}, TNode<Uint32T>{tmp23}, TNode<Object>{tmp20});
+    tmp26 = ArrayFromAsyncIterableAwaitPoint_0(state_, TNode<Context>{tmp0}, TNode<Uint32T>{tmp23}, TNode<JSAny>{tmp20});
     }
     if (catch27__label.is_used()) {
       compiler::CodeAssemblerLabel catch27_skip(&ca_);
@@ -2983,29 +2982,29 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     ca_.Goto(&block3);
   }
 
-  TNode<HeapObject> tmp29;
+  TNode<Union<Hole, JSMessageObject>> tmp29;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp29 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block4, tmp22, tmp29);
   }
 
-  TNode<HeapObject> tmp30;
+  TNode<Union<Hole, JSMessageObject>> tmp30;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp30 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block4, tmp25, tmp30);
   }
 
-  TNode<HeapObject> tmp31;
+  TNode<Union<Hole, JSMessageObject>> tmp31;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp31 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block4, tmp28, tmp31);
   }
 
-  TNode<Object> phi_bb4_3;
-  TNode<HeapObject> phi_bb4_4;
+  TNode<JSAny> phi_bb4_3;
+  TNode<Union<Hole, JSMessageObject>> phi_bb4_4;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_3, &phi_bb4_4);
     ca_.Goto(&block3);
@@ -3019,7 +3018,7 @@ void ArrayFromAsyncAsyncIteratorCloseOnException_0(compiler::CodeAssemblerState*
     ca_.Bind(&block17);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3040,7 +3039,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3061,7 +3060,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3082,7 +3081,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3103,7 +3102,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolvePromiseSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3124,7 +3123,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3145,7 +3144,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3166,7 +3165,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3187,7 +3186,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveResultArraySlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3208,7 +3207,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3229,7 +3228,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveErrorSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3250,7 +3249,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveMapfnSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3271,7 +3270,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveThisArgSlot_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3292,7 +3291,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexpr_kArrayFromAsyncArrayLikeResolveLength_0(compiler::CodeAssemblerState* state_, ArrayBuiltins::ArrayFromAsyncArrayLikeResolveContextSlots p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3313,7 +3312,7 @@ TNode<IntPtrT> FromConstexpr_ArrayFromAsyncArrayLikeResolveContextSlots_constexp
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateStepSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3326,7 +3325,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateStepSlot_0(compiler::Co
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3339,7 +3338,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(comp
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3352,7 +3351,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(compiler::Cod
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3365,7 +3364,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot_0(compiler::C
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolvePromiseSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3378,7 +3377,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolvePromiseSlot_0(compiler::CodeAssemb
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3391,7 +3390,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(compiler::Co
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3404,7 +3403,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(compiler
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3417,7 +3416,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(compiler:
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResultArraySlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3430,7 +3429,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveResultArraySlot_0(compiler::CodeAs
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3443,7 +3442,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(compiler::CodeAsse
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveErrorSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3456,7 +3455,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveErrorSlot_0(compiler::CodeAssemble
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveMapfnSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3469,7 +3468,7 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveMapfnSlot_0(compiler::CodeAssemble
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=481&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=483&c=1
 TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveThisArgSlot_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3482,8 +3481,8 @@ TNode<IntPtrT> kArrayFromAsyncArrayLikeResolveThisArgSlot_0(compiler::CodeAssemb
     tmp1 = (TNode<IntPtrT>{tmp0});
   return TNode<IntPtrT>{tmp1};}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=517&c=1
-TNode<Context> CreateArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncArrayLikeResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<JSReceiver> p_arrayLike, TNode<JSReceiver> p_arr, TNode<Object> p_error, TNode<Object> p_mapfn, TNode<Object> p_thisArg, TNode<NativeContext> p_nativeContext) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=519&c=1
+TNode<Context> CreateArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArrayFromAsyncArrayLikeResumeState_0 p_resumeState, TNode<JSPromise> p_promise, TNode<JSReceiver> p_promiseFun, TNode<JSReceiver> p_arrayLike, TNode<JSReceiver> p_arr, TNode<JSAny> p_error, TNode<JSAny> p_mapfn, TNode<JSAny> p_thisArg, TNode<NativeContext> p_nativeContext) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3518,7 +3517,7 @@ TNode<Context> CreateArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssem
     tmp4 = SmiTag_ArrayFromAsyncLabels_0(state_, TNode<Uint32T>{p_resumeState.step});
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_SmiTagged_ArrayFromAsyncLabels_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Smi>{tmp4});
     tmp5 = kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp5}, TNode<Object>{p_resumeState.awaitedValue});
+    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp5}, TNode<JSAny>{p_resumeState.awaitedValue});
     tmp6 = kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(state_);
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Number_Number_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp6}, TNode<Number>{p_resumeState.len});
     tmp7 = kArrayFromAsyncArrayLikeResolveResumeStateIndexSlot_0(state_);
@@ -3528,21 +3527,21 @@ TNode<Context> CreateArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssem
     tmp9 = kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(state_);
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_JSReceiver_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp9}, TNode<JSReceiver>{p_promiseFun});
     tmp10 = kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(state_);
-    tmp11 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncArrayLikeOnFulfilledSharedFun, TNode<Context>{tmp2});
+    tmp11 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncArrayLikeOnFulfilledSharedFun, TNode<Context>{tmp2}, TNode<NativeContext>{p_nativeContext});
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_JSFunction_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp10}, TNode<JSFunction>{tmp11});
     tmp12 = kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(state_);
-    tmp13 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncArrayLikeOnRejectedSharedFun, TNode<Context>{tmp2});
+    tmp13 = CodeStubAssembler(state_).AllocateRootFunctionWithContext(RootIndex::kArrayFromAsyncArrayLikeOnRejectedSharedFun, TNode<Context>{tmp2}, TNode<NativeContext>{p_nativeContext});
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_JSFunction_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp12}, TNode<JSFunction>{tmp13});
     tmp14 = kArrayFromAsyncArrayLikeResolveResultArraySlot_0(state_);
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_JSReceiver_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp14}, TNode<JSReceiver>{p_arr});
     tmp15 = kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(state_);
     InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_JSReceiver_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp15}, TNode<JSReceiver>{p_arrayLike});
     tmp16 = kArrayFromAsyncArrayLikeResolveErrorSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp16}, TNode<Object>{p_error});
+    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp16}, TNode<JSAny>{p_error});
     tmp17 = kArrayFromAsyncArrayLikeResolveMapfnSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp17}, TNode<Object>{p_mapfn});
+    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp17}, TNode<JSAny>{p_mapfn});
     tmp18 = kArrayFromAsyncArrayLikeResolveThisArgSlot_0(state_);
-    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp18}, TNode<Object>{p_thisArg});
+    InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(state_, TNode<Context>{tmp2}, TNode<IntPtrT>{tmp18}, TNode<JSAny>{p_thisArg});
     ca_.Goto(&block2);
   }
 
@@ -3550,8 +3549,8 @@ TNode<Context> CreateArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssem
   return TNode<Context>{tmp2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=597&c=1
-TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=601&c=1
+TNode<JSAny> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3563,106 +3562,106 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T, Uint32T> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T> block19(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block21(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Smi> block24(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Smi> block25(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block26(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block28(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T, Uint32T> block31(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T> block32(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block34(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block38(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block39(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T, Uint32T> block42(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T> block43(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block45(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Smi> block46(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block47(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block48(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T, Uint32T> block51(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T> block52(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block15(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T, Uint32T> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T> block19(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block21(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Smi> block24(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Smi> block25(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block26(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block28(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T, Uint32T> block31(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T> block32(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block34(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block38(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block39(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T, Uint32T> block42(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T> block43(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block45(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Smi> block46(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block47(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block48(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T, Uint32T> block51(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T> block52(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Smi> block54(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Smi, Smi> block55(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Smi> block56(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T> block57(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Uint32T> block58(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T, Uint32T> block61(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T> block62(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Smi> block64(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block65(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block66(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block60(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T, Uint32T> block69(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object, Uint32T> block70(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block71(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block68(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T, Uint32T> block61(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T> block62(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Smi> block64(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block65(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block66(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block60(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T, Uint32T> block69(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny, Uint32T> block70(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block71(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block68(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Uint32T, Smi, JSAny> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block72(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
-      TNode<Object> tmp4;
-  TNode<Object> tmp5;
+      TNode<JSAny> tmp4;
+  TNode<JSAny> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
-      TNode<Object> tmp10;
-  TNode<Object> tmp11;
+      TNode<JSAny> tmp10;
+  TNode<JSAny> tmp11;
   TNode<IntPtrT> tmp12;
-  TNode<Object> tmp13;
+  TNode<Union<HeapObject, TaggedIndex>> tmp13;
   TNode<IntPtrT> tmp14;
-      TNode<Object> tmp16;
+      TNode<JSAny> tmp16;
   TNode<JSReceiver> tmp17;
   TNode<IntPtrT> tmp18;
-  TNode<Object> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp19;
   TNode<IntPtrT> tmp20;
-      TNode<Object> tmp22;
+      TNode<JSAny> tmp22;
   TNode<Smi> tmp23;
   TNode<Smi> tmp24;
   TNode<Uint32T> tmp25;
-      TNode<Object> tmp27;
+      TNode<JSAny> tmp27;
   TNode<IntPtrT> tmp28;
-  TNode<Object> tmp29;
+  TNode<Union<HeapObject, TaggedIndex>> tmp29;
   TNode<IntPtrT> tmp30;
-      TNode<Object> tmp32;
-  TNode<Object> tmp33;
+      TNode<JSAny> tmp32;
+  TNode<JSAny> tmp33;
   TNode<IntPtrT> tmp34;
-  TNode<Object> tmp35;
+  TNode<Union<HeapObject, TaggedIndex>> tmp35;
   TNode<IntPtrT> tmp36;
-      TNode<Object> tmp38;
+      TNode<JSAny> tmp38;
   TNode<Number> tmp39;
   TNode<IntPtrT> tmp40;
-  TNode<Object> tmp41;
+  TNode<Union<HeapObject, TaggedIndex>> tmp41;
   TNode<IntPtrT> tmp42;
-      TNode<Object> tmp44;
+      TNode<JSAny> tmp44;
   TNode<Smi> tmp45;
   TNode<Undefined> tmp46;
   if (block0.is_used()) {
@@ -3679,7 +3678,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
       ca_.Goto(&block4);
       ca_.Bind(&catch3_skip);
     }
-    tmp5 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp1, tmp2});
+    tmp5 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp1, tmp2});
     tmp6 = kArrayFromAsyncArrayLikeResolveThisArgSlot_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch9__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch9__label);
@@ -3692,7 +3691,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
       ca_.Goto(&block5);
       ca_.Bind(&catch9_skip);
     }
-    tmp11 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp7, tmp8});
+    tmp11 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp7, tmp8});
     tmp12 = kArrayFromAsyncArrayLikeResolveResultArraySlot_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
@@ -3743,7 +3742,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
       ca_.Goto(&block9);
       ca_.Bind(&catch31_skip);
     }
-    tmp33 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp29, tmp30});
+    tmp33 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp29, tmp30});
     tmp34 = kArrayFromAsyncArrayLikeResolveResumeStateLenSlot_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch37__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch37__label);
@@ -3774,56 +3773,56 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
     ca_.Goto(&block14, tmp25, tmp45, tmp46);
   }
 
-  TNode<HeapObject> tmp47;
+  TNode<Union<Hole, JSMessageObject>> tmp47;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp47 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp4, tmp47);
   }
 
-  TNode<HeapObject> tmp48;
+  TNode<Union<Hole, JSMessageObject>> tmp48;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp48 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp10, tmp48);
   }
 
-  TNode<HeapObject> tmp49;
+  TNode<Union<Hole, JSMessageObject>> tmp49;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp49 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp16, tmp49);
   }
 
-  TNode<HeapObject> tmp50;
+  TNode<Union<Hole, JSMessageObject>> tmp50;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp50 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp22, tmp50);
   }
 
-  TNode<HeapObject> tmp51;
+  TNode<Union<Hole, JSMessageObject>> tmp51;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp51 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp27, tmp51);
   }
 
-  TNode<HeapObject> tmp52;
+  TNode<Union<Hole, JSMessageObject>> tmp52;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp52 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp32, tmp52);
   }
 
-  TNode<HeapObject> tmp53;
+  TNode<Union<Hole, JSMessageObject>> tmp53;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp53 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block3, tmp38, tmp53);
   }
 
-  TNode<HeapObject> tmp54;
+  TNode<Union<Hole, JSMessageObject>> tmp54;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp54 = GetAndResetPendingMessage_0(state_);
@@ -3832,9 +3831,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb14_4;
   TNode<Smi> phi_bb14_7;
-  TNode<Object> phi_bb14_8;
+  TNode<JSAny> phi_bb14_8;
   TNode<BoolT> tmp55;
-      TNode<Object> tmp57;
+      TNode<JSAny> tmp57;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_4, &phi_bb14_7, &phi_bb14_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch56__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3853,8 +3852,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb15_4;
   TNode<Smi> phi_bb15_7;
-  TNode<Object> phi_bb15_8;
-  TNode<HeapObject> tmp58;
+  TNode<JSAny> phi_bb15_8;
+  TNode<Union<Hole, JSMessageObject>> tmp58;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_4, &phi_bb15_7, &phi_bb15_8);
     tmp58 = GetAndResetPendingMessage_0(state_);
@@ -3863,16 +3862,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb12_4;
   TNode<Smi> phi_bb12_7;
-  TNode<Object> phi_bb12_8;
+  TNode<JSAny> phi_bb12_8;
   TNode<Uint32T> tmp59;
-      TNode<Object> tmp61;
+      TNode<JSAny> tmp61;
   TNode<BoolT> tmp62;
-      TNode<Object> tmp64;
+      TNode<JSAny> tmp64;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_4, &phi_bb12_7, &phi_bb12_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch60__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch60__label);
-    tmp59 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetArrayLikeValue);
+    tmp59 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetArrayLikeValue);
     }
     if (catch60__label.is_used()) {
       compiler::CodeAssemblerLabel catch60_skip(&ca_);
@@ -3897,10 +3896,10 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb18_4;
   TNode<Smi> phi_bb18_7;
-  TNode<Object> phi_bb18_8;
+  TNode<JSAny> phi_bb18_8;
   TNode<Uint32T> phi_bb18_9;
   TNode<Uint32T> phi_bb18_10;
-  TNode<HeapObject> tmp65;
+  TNode<Union<Hole, JSMessageObject>> tmp65;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_4, &phi_bb18_7, &phi_bb18_8, &phi_bb18_9, &phi_bb18_10);
     tmp65 = GetAndResetPendingMessage_0(state_);
@@ -3909,9 +3908,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb19_4;
   TNode<Smi> phi_bb19_7;
-  TNode<Object> phi_bb19_8;
+  TNode<JSAny> phi_bb19_8;
   TNode<Uint32T> phi_bb19_9;
-  TNode<HeapObject> tmp66;
+  TNode<Union<Hole, JSMessageObject>> tmp66;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_4, &phi_bb19_7, &phi_bb19_8, &phi_bb19_9);
     tmp66 = GetAndResetPendingMessage_0(state_);
@@ -3920,14 +3919,14 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb16_4;
   TNode<Smi> phi_bb16_7;
-  TNode<Object> phi_bb16_8;
+  TNode<JSAny> phi_bb16_8;
   TNode<IntPtrT> tmp67;
-  TNode<Object> tmp68;
+  TNode<Union<HeapObject, TaggedIndex>> tmp68;
   TNode<IntPtrT> tmp69;
-      TNode<Object> tmp71;
+      TNode<JSAny> tmp71;
   TNode<JSReceiver> tmp72;
   TNode<BoolT> tmp73;
-      TNode<Object> tmp75;
+      TNode<JSAny> tmp75;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_4, &phi_bb16_7, &phi_bb16_8);
     tmp67 = kArrayFromAsyncArrayLikeResolveArrayLikeSlot_0(state_);
@@ -3959,8 +3958,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb21_4;
   TNode<Smi> phi_bb21_7;
-  TNode<Object> phi_bb21_8;
-  TNode<HeapObject> tmp76;
+  TNode<JSAny> phi_bb21_8;
+  TNode<Union<Hole, JSMessageObject>> tmp76;
   if (block21.is_used()) {
     ca_.Bind(&block21, &phi_bb21_4, &phi_bb21_7, &phi_bb21_8);
     tmp76 = GetAndResetPendingMessage_0(state_);
@@ -3969,9 +3968,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb24_4;
   TNode<Smi> phi_bb24_7;
-  TNode<Object> phi_bb24_8;
+  TNode<JSAny> phi_bb24_8;
   TNode<Smi> phi_bb24_10;
-  TNode<HeapObject> tmp77;
+  TNode<Union<Hole, JSMessageObject>> tmp77;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_4, &phi_bb24_7, &phi_bb24_8, &phi_bb24_10);
     tmp77 = GetAndResetPendingMessage_0(state_);
@@ -3980,18 +3979,18 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb22_4;
   TNode<Smi> phi_bb22_7;
-  TNode<Object> phi_bb22_8;
-  TNode<Object> tmp78;
-      TNode<Object> tmp80;
+  TNode<JSAny> phi_bb22_8;
+  TNode<JSAny> tmp78;
+      TNode<JSAny> tmp80;
   TNode<Uint32T> tmp81;
-      TNode<Object> tmp83;
-  TNode<Object> tmp84;
-      TNode<Object> tmp86;
+      TNode<JSAny> tmp83;
+  TNode<JSAny> tmp84;
+      TNode<JSAny> tmp86;
   if (block22.is_used()) {
     ca_.Bind(&block22, &phi_bb22_4, &phi_bb22_7, &phi_bb22_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch79__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch79__label);
-    tmp78 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp72}, TNode<Object>{phi_bb22_7});
+    tmp78 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp72}, TNode<JSAny>{phi_bb22_7});
     }
     if (catch79__label.is_used()) {
       compiler::CodeAssemblerLabel catch79_skip(&ca_);
@@ -4013,7 +4012,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch85__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch85__label);
-    tmp84 = ArrayFromAsyncArrayLikeAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp81}, TNode<Object>{tmp78});
+    tmp84 = ArrayFromAsyncArrayLikeAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp81}, TNode<JSAny>{tmp78});
     }
     if (catch85__label.is_used()) {
       compiler::CodeAssemblerLabel catch85_skip(&ca_);
@@ -4027,9 +4026,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb25_4;
   TNode<Smi> phi_bb25_7;
-  TNode<Object> phi_bb25_8;
+  TNode<JSAny> phi_bb25_8;
   TNode<Smi> phi_bb25_11;
-  TNode<HeapObject> tmp87;
+  TNode<Union<Hole, JSMessageObject>> tmp87;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_4, &phi_bb25_7, &phi_bb25_8, &phi_bb25_11);
     tmp87 = GetAndResetPendingMessage_0(state_);
@@ -4038,8 +4037,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb26_4;
   TNode<Smi> phi_bb26_7;
-  TNode<Object> phi_bb26_8;
-  TNode<HeapObject> tmp88;
+  TNode<JSAny> phi_bb26_8;
+  TNode<Union<Hole, JSMessageObject>> tmp88;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_4, &phi_bb26_7, &phi_bb26_8);
     tmp88 = GetAndResetPendingMessage_0(state_);
@@ -4048,8 +4047,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb27_4;
   TNode<Smi> phi_bb27_7;
-  TNode<Object> phi_bb27_8;
-  TNode<HeapObject> tmp89;
+  TNode<JSAny> phi_bb27_8;
+  TNode<Union<Hole, JSMessageObject>> tmp89;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_4, &phi_bb27_7, &phi_bb27_8);
     tmp89 = GetAndResetPendingMessage_0(state_);
@@ -4058,9 +4057,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb23_4;
   TNode<Smi> phi_bb23_7;
-  TNode<Object> phi_bb23_8;
+  TNode<JSAny> phi_bb23_8;
   TNode<Uint32T> tmp90;
-      TNode<Object> tmp92;
+      TNode<JSAny> tmp92;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_4, &phi_bb23_7, &phi_bb23_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch91__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -4079,8 +4078,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb28_4;
   TNode<Smi> phi_bb28_7;
-  TNode<Object> phi_bb28_8;
-  TNode<HeapObject> tmp93;
+  TNode<JSAny> phi_bb28_8;
+  TNode<Union<Hole, JSMessageObject>> tmp93;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_4, &phi_bb28_7, &phi_bb28_8);
     tmp93 = GetAndResetPendingMessage_0(state_);
@@ -4089,16 +4088,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb17_4;
   TNode<Smi> phi_bb17_7;
-  TNode<Object> phi_bb17_8;
+  TNode<JSAny> phi_bb17_8;
   TNode<Uint32T> tmp94;
-      TNode<Object> tmp96;
+      TNode<JSAny> tmp96;
   TNode<BoolT> tmp97;
-      TNode<Object> tmp99;
+      TNode<JSAny> tmp99;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_4, &phi_bb17_7, &phi_bb17_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch95__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch95__label);
-    tmp94 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kCheckArrayLikeValueAndMapping);
+    tmp94 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kCheckArrayLikeValueAndMapping);
     }
     if (catch95__label.is_used()) {
       compiler::CodeAssemblerLabel catch95_skip(&ca_);
@@ -4123,10 +4122,10 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb31_4;
   TNode<Smi> phi_bb31_7;
-  TNode<Object> phi_bb31_8;
+  TNode<JSAny> phi_bb31_8;
   TNode<Uint32T> phi_bb31_9;
   TNode<Uint32T> phi_bb31_10;
-  TNode<HeapObject> tmp100;
+  TNode<Union<Hole, JSMessageObject>> tmp100;
   if (block31.is_used()) {
     ca_.Bind(&block31, &phi_bb31_4, &phi_bb31_7, &phi_bb31_8, &phi_bb31_9, &phi_bb31_10);
     tmp100 = GetAndResetPendingMessage_0(state_);
@@ -4135,9 +4134,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb32_4;
   TNode<Smi> phi_bb32_7;
-  TNode<Object> phi_bb32_8;
+  TNode<JSAny> phi_bb32_8;
   TNode<Uint32T> phi_bb32_9;
-  TNode<HeapObject> tmp101;
+  TNode<Union<Hole, JSMessageObject>> tmp101;
   if (block32.is_used()) {
     ca_.Bind(&block32, &phi_bb32_4, &phi_bb32_7, &phi_bb32_8, &phi_bb32_9);
     tmp101 = GetAndResetPendingMessage_0(state_);
@@ -4146,16 +4145,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb29_4;
   TNode<Smi> phi_bb29_7;
-  TNode<Object> phi_bb29_8;
+  TNode<JSAny> phi_bb29_8;
   TNode<Undefined> tmp102;
   TNode<BoolT> tmp103;
-      TNode<Object> tmp105;
+      TNode<JSAny> tmp105;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_4, &phi_bb29_7, &phi_bb29_8);
     tmp102 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch104__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch104__label);
-    tmp103 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp5}, TNode<HeapObject>{tmp102});
+    tmp103 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp5}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp102});
     }
     if (catch104__label.is_used()) {
       compiler::CodeAssemblerLabel catch104_skip(&ca_);
@@ -4169,8 +4168,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb34_4;
   TNode<Smi> phi_bb34_7;
-  TNode<Object> phi_bb34_8;
-  TNode<HeapObject> tmp106;
+  TNode<JSAny> phi_bb34_8;
+  TNode<Union<Hole, JSMessageObject>> tmp106;
   if (block34.is_used()) {
     ca_.Bind(&block34, &phi_bb34_4, &phi_bb34_7, &phi_bb34_8);
     tmp106 = GetAndResetPendingMessage_0(state_);
@@ -4179,9 +4178,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb35_4;
   TNode<Smi> phi_bb35_7;
-  TNode<Object> phi_bb35_8;
+  TNode<JSAny> phi_bb35_8;
   TNode<Uint32T> tmp107;
-      TNode<Object> tmp109;
+      TNode<JSAny> tmp109;
   if (block35.is_used()) {
     ca_.Bind(&block35, &phi_bb35_4, &phi_bb35_7, &phi_bb35_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch108__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -4200,8 +4199,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb38_4;
   TNode<Smi> phi_bb38_7;
-  TNode<Object> phi_bb38_8;
-  TNode<HeapObject> tmp110;
+  TNode<JSAny> phi_bb38_8;
+  TNode<Union<Hole, JSMessageObject>> tmp110;
   if (block38.is_used()) {
     ca_.Bind(&block38, &phi_bb38_4, &phi_bb38_7, &phi_bb38_8);
     tmp110 = GetAndResetPendingMessage_0(state_);
@@ -4210,9 +4209,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb36_4;
   TNode<Smi> phi_bb36_7;
-  TNode<Object> phi_bb36_8;
+  TNode<JSAny> phi_bb36_8;
   TNode<Uint32T> tmp111;
-      TNode<Object> tmp113;
+      TNode<JSAny> tmp113;
   if (block36.is_used()) {
     ca_.Bind(&block36, &phi_bb36_4, &phi_bb36_7, &phi_bb36_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch112__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -4231,8 +4230,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb39_4;
   TNode<Smi> phi_bb39_7;
-  TNode<Object> phi_bb39_8;
-  TNode<HeapObject> tmp114;
+  TNode<JSAny> phi_bb39_8;
+  TNode<Union<Hole, JSMessageObject>> tmp114;
   if (block39.is_used()) {
     ca_.Bind(&block39, &phi_bb39_4, &phi_bb39_7, &phi_bb39_8);
     tmp114 = GetAndResetPendingMessage_0(state_);
@@ -4241,7 +4240,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb37_4;
   TNode<Smi> phi_bb37_7;
-  TNode<Object> phi_bb37_8;
+  TNode<JSAny> phi_bb37_8;
   if (block37.is_used()) {
     ca_.Bind(&block37, &phi_bb37_4, &phi_bb37_7, &phi_bb37_8);
     ca_.Goto(&block33, phi_bb37_4, phi_bb37_7, phi_bb37_8);
@@ -4249,16 +4248,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb30_4;
   TNode<Smi> phi_bb30_7;
-  TNode<Object> phi_bb30_8;
+  TNode<JSAny> phi_bb30_8;
   TNode<Uint32T> tmp115;
-      TNode<Object> tmp117;
+      TNode<JSAny> tmp117;
   TNode<BoolT> tmp118;
-      TNode<Object> tmp120;
+      TNode<JSAny> tmp120;
   if (block30.is_used()) {
     ca_.Bind(&block30, &phi_bb30_4, &phi_bb30_7, &phi_bb30_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch116__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch116__label);
-    tmp115 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetArrayLikeValueWithMapping);
+    tmp115 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kGetArrayLikeValueWithMapping);
     }
     if (catch116__label.is_used()) {
       compiler::CodeAssemblerLabel catch116_skip(&ca_);
@@ -4283,10 +4282,10 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb42_4;
   TNode<Smi> phi_bb42_7;
-  TNode<Object> phi_bb42_8;
+  TNode<JSAny> phi_bb42_8;
   TNode<Uint32T> phi_bb42_9;
   TNode<Uint32T> phi_bb42_10;
-  TNode<HeapObject> tmp121;
+  TNode<Union<Hole, JSMessageObject>> tmp121;
   if (block42.is_used()) {
     ca_.Bind(&block42, &phi_bb42_4, &phi_bb42_7, &phi_bb42_8, &phi_bb42_9, &phi_bb42_10);
     tmp121 = GetAndResetPendingMessage_0(state_);
@@ -4295,9 +4294,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb43_4;
   TNode<Smi> phi_bb43_7;
-  TNode<Object> phi_bb43_8;
+  TNode<JSAny> phi_bb43_8;
   TNode<Uint32T> phi_bb43_9;
-  TNode<HeapObject> tmp122;
+  TNode<Union<Hole, JSMessageObject>> tmp122;
   if (block43.is_used()) {
     ca_.Bind(&block43, &phi_bb43_4, &phi_bb43_7, &phi_bb43_8, &phi_bb43_9);
     tmp122 = GetAndResetPendingMessage_0(state_);
@@ -4306,15 +4305,15 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb40_4;
   TNode<Smi> phi_bb40_7;
-  TNode<Object> phi_bb40_8;
-  TNode<JSReceiver> tmp123;
-      TNode<Object> tmp125;
-  TNode<Object> tmp126;
-      TNode<Object> tmp128;
+  TNode<JSAny> phi_bb40_8;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp123;
+      TNode<JSAny> tmp125;
+  TNode<JSAny> tmp126;
+      TNode<JSAny> tmp128;
   TNode<Uint32T> tmp129;
-      TNode<Object> tmp131;
-  TNode<Object> tmp132;
-      TNode<Object> tmp134;
+      TNode<JSAny> tmp131;
+  TNode<JSAny> tmp132;
+      TNode<JSAny> tmp134;
   if (block40.is_used()) {
     ca_.Bind(&block40, &phi_bb40_4, &phi_bb40_7, &phi_bb40_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch124__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -4330,7 +4329,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch127__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch127__label);
-    tmp126 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{tmp123}, TNode<Object>{tmp11}, TNode<Object>{tmp33}, TNode<Object>{phi_bb40_7});
+    tmp126 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{tmp123}, TNode<JSAny>{tmp11}, TNode<JSAny>{tmp33}, TNode<JSAny>{phi_bb40_7});
     }
     if (catch127__label.is_used()) {
       compiler::CodeAssemblerLabel catch127_skip(&ca_);
@@ -4352,7 +4351,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch133__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch133__label);
-    tmp132 = ArrayFromAsyncArrayLikeAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp129}, TNode<Object>{tmp126});
+    tmp132 = ArrayFromAsyncArrayLikeAwaitPoint_0(state_, TNode<Context>{p_context}, TNode<Uint32T>{tmp129}, TNode<JSAny>{tmp126});
     }
     if (catch133__label.is_used()) {
       compiler::CodeAssemblerLabel catch133_skip(&ca_);
@@ -4366,8 +4365,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb45_4;
   TNode<Smi> phi_bb45_7;
-  TNode<Object> phi_bb45_8;
-  TNode<HeapObject> tmp135;
+  TNode<JSAny> phi_bb45_8;
+  TNode<Union<Hole, JSMessageObject>> tmp135;
   if (block45.is_used()) {
     ca_.Bind(&block45, &phi_bb45_4, &phi_bb45_7, &phi_bb45_8);
     tmp135 = GetAndResetPendingMessage_0(state_);
@@ -4376,9 +4375,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb46_4;
   TNode<Smi> phi_bb46_7;
-  TNode<Object> phi_bb46_8;
+  TNode<JSAny> phi_bb46_8;
   TNode<Smi> phi_bb46_13;
-  TNode<HeapObject> tmp136;
+  TNode<Union<Hole, JSMessageObject>> tmp136;
   if (block46.is_used()) {
     ca_.Bind(&block46, &phi_bb46_4, &phi_bb46_7, &phi_bb46_8, &phi_bb46_13);
     tmp136 = GetAndResetPendingMessage_0(state_);
@@ -4387,8 +4386,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb47_4;
   TNode<Smi> phi_bb47_7;
-  TNode<Object> phi_bb47_8;
-  TNode<HeapObject> tmp137;
+  TNode<JSAny> phi_bb47_8;
+  TNode<Union<Hole, JSMessageObject>> tmp137;
   if (block47.is_used()) {
     ca_.Bind(&block47, &phi_bb47_4, &phi_bb47_7, &phi_bb47_8);
     tmp137 = GetAndResetPendingMessage_0(state_);
@@ -4397,8 +4396,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb48_4;
   TNode<Smi> phi_bb48_7;
-  TNode<Object> phi_bb48_8;
-  TNode<HeapObject> tmp138;
+  TNode<JSAny> phi_bb48_8;
+  TNode<Union<Hole, JSMessageObject>> tmp138;
   if (block48.is_used()) {
     ca_.Bind(&block48, &phi_bb48_4, &phi_bb48_7, &phi_bb48_8);
     tmp138 = GetAndResetPendingMessage_0(state_);
@@ -4407,16 +4406,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb41_4;
   TNode<Smi> phi_bb41_7;
-  TNode<Object> phi_bb41_8;
+  TNode<JSAny> phi_bb41_8;
   TNode<Uint32T> tmp139;
-      TNode<Object> tmp141;
+      TNode<JSAny> tmp141;
   TNode<BoolT> tmp142;
-      TNode<Object> tmp144;
+      TNode<JSAny> tmp144;
   if (block41.is_used()) {
     ca_.Bind(&block41, &phi_bb41_4, &phi_bb41_7, &phi_bb41_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch140__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch140__label);
-    tmp139 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kAddArrayLikeValueToTheArray);
+    tmp139 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kAddArrayLikeValueToTheArray);
     }
     if (catch140__label.is_used()) {
       compiler::CodeAssemblerLabel catch140_skip(&ca_);
@@ -4441,10 +4440,10 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb51_4;
   TNode<Smi> phi_bb51_7;
-  TNode<Object> phi_bb51_8;
+  TNode<JSAny> phi_bb51_8;
   TNode<Uint32T> phi_bb51_9;
   TNode<Uint32T> phi_bb51_10;
-  TNode<HeapObject> tmp145;
+  TNode<Union<Hole, JSMessageObject>> tmp145;
   if (block51.is_used()) {
     ca_.Bind(&block51, &phi_bb51_4, &phi_bb51_7, &phi_bb51_8, &phi_bb51_9, &phi_bb51_10);
     tmp145 = GetAndResetPendingMessage_0(state_);
@@ -4453,9 +4452,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb52_4;
   TNode<Smi> phi_bb52_7;
-  TNode<Object> phi_bb52_8;
+  TNode<JSAny> phi_bb52_8;
   TNode<Uint32T> phi_bb52_9;
-  TNode<HeapObject> tmp146;
+  TNode<Union<Hole, JSMessageObject>> tmp146;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_4, &phi_bb52_7, &phi_bb52_8, &phi_bb52_9);
     tmp146 = GetAndResetPendingMessage_0(state_);
@@ -4464,19 +4463,19 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb49_4;
   TNode<Smi> phi_bb49_7;
-  TNode<Object> phi_bb49_8;
+  TNode<JSAny> phi_bb49_8;
   TNode<Object> tmp147;
-      TNode<Object> tmp149;
+      TNode<JSAny> tmp149;
   TNode<Smi> tmp150;
-      TNode<Object> tmp152;
+      TNode<JSAny> tmp152;
   TNode<Smi> tmp153;
-      TNode<Object> tmp155;
+      TNode<JSAny> tmp155;
   TNode<IntPtrT> tmp156;
-  TNode<Object> tmp157;
+  TNode<Union<HeapObject, TaggedIndex>> tmp157;
   TNode<IntPtrT> tmp158;
-      TNode<Object> tmp160;
+      TNode<JSAny> tmp160;
   TNode<Uint32T> tmp161;
-      TNode<Object> tmp163;
+      TNode<JSAny> tmp163;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_4, &phi_bb49_7, &phi_bb49_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch148__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -4542,7 +4541,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
   TNode<Uint32T> phi_bb54_4;
   TNode<Smi> phi_bb54_7;
   TNode<Smi> phi_bb54_10;
-  TNode<HeapObject> tmp164;
+  TNode<Union<Hole, JSMessageObject>> tmp164;
   if (block54.is_used()) {
     ca_.Bind(&block54, &phi_bb54_4, &phi_bb54_7, &phi_bb54_10);
     tmp164 = GetAndResetPendingMessage_0(state_);
@@ -4553,7 +4552,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
   TNode<Smi> phi_bb55_7;
   TNode<Smi> phi_bb55_9;
   TNode<Smi> phi_bb55_10;
-  TNode<HeapObject> tmp165;
+  TNode<Union<Hole, JSMessageObject>> tmp165;
   if (block55.is_used()) {
     ca_.Bind(&block55, &phi_bb55_4, &phi_bb55_7, &phi_bb55_9, &phi_bb55_10);
     tmp165 = GetAndResetPendingMessage_0(state_);
@@ -4563,7 +4562,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
   TNode<Uint32T> phi_bb56_4;
   TNode<Smi> phi_bb56_7;
   TNode<Smi> phi_bb56_9;
-  TNode<HeapObject> tmp166;
+  TNode<Union<Hole, JSMessageObject>> tmp166;
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_4, &phi_bb56_7, &phi_bb56_9);
     tmp166 = GetAndResetPendingMessage_0(state_);
@@ -4571,7 +4570,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
   }
 
   TNode<Uint32T> phi_bb57_4;
-  TNode<HeapObject> tmp167;
+  TNode<Union<Hole, JSMessageObject>> tmp167;
   if (block57.is_used()) {
     ca_.Bind(&block57, &phi_bb57_4);
     tmp167 = GetAndResetPendingMessage_0(state_);
@@ -4579,7 +4578,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
   }
 
   TNode<Uint32T> phi_bb58_4;
-  TNode<HeapObject> tmp168;
+  TNode<Union<Hole, JSMessageObject>> tmp168;
   if (block58.is_used()) {
     ca_.Bind(&block58, &phi_bb58_4);
     tmp168 = GetAndResetPendingMessage_0(state_);
@@ -4588,16 +4587,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb50_4;
   TNode<Smi> phi_bb50_7;
-  TNode<Object> phi_bb50_8;
+  TNode<JSAny> phi_bb50_8;
   TNode<Uint32T> tmp169;
-      TNode<Object> tmp171;
+      TNode<JSAny> tmp171;
   TNode<BoolT> tmp172;
-      TNode<Object> tmp174;
+      TNode<JSAny> tmp174;
   if (block50.is_used()) {
     ca_.Bind(&block50, &phi_bb50_4, &phi_bb50_7, &phi_bb50_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch170__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch170__label);
-    tmp169 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kDoneAndResolvePromise);
+    tmp169 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kDoneAndResolvePromise);
     }
     if (catch170__label.is_used()) {
       compiler::CodeAssemblerLabel catch170_skip(&ca_);
@@ -4622,10 +4621,10 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb61_4;
   TNode<Smi> phi_bb61_7;
-  TNode<Object> phi_bb61_8;
+  TNode<JSAny> phi_bb61_8;
   TNode<Uint32T> phi_bb61_9;
   TNode<Uint32T> phi_bb61_10;
-  TNode<HeapObject> tmp175;
+  TNode<Union<Hole, JSMessageObject>> tmp175;
   if (block61.is_used()) {
     ca_.Bind(&block61, &phi_bb61_4, &phi_bb61_7, &phi_bb61_8, &phi_bb61_9, &phi_bb61_10);
     tmp175 = GetAndResetPendingMessage_0(state_);
@@ -4634,9 +4633,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb62_4;
   TNode<Smi> phi_bb62_7;
-  TNode<Object> phi_bb62_8;
+  TNode<JSAny> phi_bb62_8;
   TNode<Uint32T> phi_bb62_9;
-  TNode<HeapObject> tmp176;
+  TNode<Union<Hole, JSMessageObject>> tmp176;
   if (block62.is_used()) {
     ca_.Bind(&block62, &phi_bb62_4, &phi_bb62_7, &phi_bb62_8, &phi_bb62_9);
     tmp176 = GetAndResetPendingMessage_0(state_);
@@ -4645,21 +4644,21 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb59_4;
   TNode<Smi> phi_bb59_7;
-  TNode<Object> phi_bb59_8;
-      TNode<Object> tmp178;
+  TNode<JSAny> phi_bb59_8;
+      TNode<JSAny> tmp178;
   TNode<IntPtrT> tmp179;
-  TNode<Object> tmp180;
+  TNode<Union<HeapObject, TaggedIndex>> tmp180;
   TNode<IntPtrT> tmp181;
-      TNode<Object> tmp183;
+      TNode<JSAny> tmp183;
   TNode<JSPromise> tmp184;
-  TNode<Object> tmp185;
-      TNode<Object> tmp187;
+  TNode<JSAny> tmp185;
+      TNode<JSAny> tmp187;
   TNode<Undefined> tmp188;
   if (block59.is_used()) {
     ca_.Bind(&block59, &phi_bb59_4, &phi_bb59_7, &phi_bb59_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch177__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch177__label);
-    CodeStubAssembler(state_).SetPropertyLength(TNode<Context>{p_context}, TNode<Object>{tmp17}, TNode<Number>{phi_bb59_7});
+    CodeStubAssembler(state_).SetPropertyLength(TNode<Context>{p_context}, TNode<JSAny>{tmp17}, TNode<Number>{phi_bb59_7});
     }
     if (catch177__label.is_used()) {
       compiler::CodeAssemblerLabel catch177_skip(&ca_);
@@ -4683,7 +4682,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
     tmp184 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{tmp180, tmp181});
     compiler::CodeAssemblerExceptionHandlerLabel catch186__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch186__label);
-    tmp185 = ca_.CallBuiltin<Object>(Builtin::kResolvePromise, p_context, tmp184, tmp17);
+    tmp185 = ca_.CallBuiltin<JSAny>(Builtin::kResolvePromise, p_context, tmp184, tmp17);
     }
     if (catch186__label.is_used()) {
       compiler::CodeAssemblerLabel catch186_skip(&ca_);
@@ -4698,9 +4697,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb64_4;
   TNode<Smi> phi_bb64_7;
-  TNode<Object> phi_bb64_8;
+  TNode<JSAny> phi_bb64_8;
   TNode<Smi> phi_bb64_10;
-  TNode<HeapObject> tmp189;
+  TNode<Union<Hole, JSMessageObject>> tmp189;
   if (block64.is_used()) {
     ca_.Bind(&block64, &phi_bb64_4, &phi_bb64_7, &phi_bb64_8, &phi_bb64_10);
     tmp189 = GetAndResetPendingMessage_0(state_);
@@ -4709,8 +4708,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb65_4;
   TNode<Smi> phi_bb65_7;
-  TNode<Object> phi_bb65_8;
-  TNode<HeapObject> tmp190;
+  TNode<JSAny> phi_bb65_8;
+  TNode<Union<Hole, JSMessageObject>> tmp190;
   if (block65.is_used()) {
     ca_.Bind(&block65, &phi_bb65_4, &phi_bb65_7, &phi_bb65_8);
     tmp190 = GetAndResetPendingMessage_0(state_);
@@ -4719,8 +4718,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb66_4;
   TNode<Smi> phi_bb66_7;
-  TNode<Object> phi_bb66_8;
-  TNode<HeapObject> tmp191;
+  TNode<JSAny> phi_bb66_8;
+  TNode<Union<Hole, JSMessageObject>> tmp191;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_4, &phi_bb66_7, &phi_bb66_8);
     tmp191 = GetAndResetPendingMessage_0(state_);
@@ -4729,16 +4728,16 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb60_4;
   TNode<Smi> phi_bb60_7;
-  TNode<Object> phi_bb60_8;
+  TNode<JSAny> phi_bb60_8;
   TNode<Uint32T> tmp192;
-      TNode<Object> tmp194;
+      TNode<JSAny> tmp194;
   TNode<BoolT> tmp195;
-      TNode<Object> tmp197;
+      TNode<JSAny> tmp197;
   if (block60.is_used()) {
     ca_.Bind(&block60, &phi_bb60_4, &phi_bb60_7, &phi_bb60_8);
     compiler::CodeAssemblerExceptionHandlerLabel catch193__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch193__label);
-    tmp192 = FromConstexpr_uint32_constexpr_uint32_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kRejectPromise);
+    tmp192 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ArrayBuiltins::ArrayFromAsyncLabels::kRejectPromise);
     }
     if (catch193__label.is_used()) {
       compiler::CodeAssemblerLabel catch193_skip(&ca_);
@@ -4763,10 +4762,10 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb69_4;
   TNode<Smi> phi_bb69_7;
-  TNode<Object> phi_bb69_8;
+  TNode<JSAny> phi_bb69_8;
   TNode<Uint32T> phi_bb69_9;
   TNode<Uint32T> phi_bb69_10;
-  TNode<HeapObject> tmp198;
+  TNode<Union<Hole, JSMessageObject>> tmp198;
   if (block69.is_used()) {
     ca_.Bind(&block69, &phi_bb69_4, &phi_bb69_7, &phi_bb69_8, &phi_bb69_9, &phi_bb69_10);
     tmp198 = GetAndResetPendingMessage_0(state_);
@@ -4775,9 +4774,9 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb70_4;
   TNode<Smi> phi_bb70_7;
-  TNode<Object> phi_bb70_8;
+  TNode<JSAny> phi_bb70_8;
   TNode<Uint32T> phi_bb70_9;
-  TNode<HeapObject> tmp199;
+  TNode<Union<Hole, JSMessageObject>> tmp199;
   if (block70.is_used()) {
     ca_.Bind(&block70, &phi_bb70_4, &phi_bb70_7, &phi_bb70_8, &phi_bb70_9);
     tmp199 = GetAndResetPendingMessage_0(state_);
@@ -4786,11 +4785,11 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb67_4;
   TNode<Smi> phi_bb67_7;
-  TNode<Object> phi_bb67_8;
+  TNode<JSAny> phi_bb67_8;
   TNode<IntPtrT> tmp200;
   TNode<IntPtrT> tmp201;
-  TNode<Object> tmp202;
-      TNode<Object> tmp204;
+  TNode<JSAny> tmp202;
+      TNode<JSAny> tmp204;
   if (block67.is_used()) {
     ca_.Bind(&block67, &phi_bb67_4, &phi_bb67_7, &phi_bb67_8);
     tmp200 = kArrayFromAsyncArrayLikeResolveErrorSlot_0(state_);
@@ -4811,8 +4810,8 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb71_4;
   TNode<Smi> phi_bb71_7;
-  TNode<Object> phi_bb71_8;
-  TNode<HeapObject> tmp205;
+  TNode<JSAny> phi_bb71_8;
+  TNode<Union<Hole, JSMessageObject>> tmp205;
   if (block71.is_used()) {
     ca_.Bind(&block71, &phi_bb71_4, &phi_bb71_7, &phi_bb71_8);
     tmp205 = GetAndResetPendingMessage_0(state_);
@@ -4821,7 +4820,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb68_4;
   TNode<Smi> phi_bb68_7;
-  TNode<Object> phi_bb68_8;
+  TNode<JSAny> phi_bb68_8;
   if (block68.is_used()) {
     ca_.Bind(&block68, &phi_bb68_4, &phi_bb68_7, &phi_bb68_8);
     ca_.Goto(&block53, phi_bb68_4, phi_bb68_7, phi_bb68_8);
@@ -4829,7 +4828,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb53_4;
   TNode<Smi> phi_bb53_7;
-  TNode<Object> phi_bb53_8;
+  TNode<JSAny> phi_bb53_8;
   if (block53.is_used()) {
     ca_.Bind(&block53, &phi_bb53_4, &phi_bb53_7, &phi_bb53_8);
     ca_.Goto(&block33, phi_bb53_4, phi_bb53_7, phi_bb53_8);
@@ -4837,7 +4836,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb33_4;
   TNode<Smi> phi_bb33_7;
-  TNode<Object> phi_bb33_8;
+  TNode<JSAny> phi_bb33_8;
   if (block33.is_used()) {
     ca_.Bind(&block33, &phi_bb33_4, &phi_bb33_7, &phi_bb33_8);
     ca_.Goto(&block20, phi_bb33_4, phi_bb33_7, phi_bb33_8);
@@ -4845,7 +4844,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb20_4;
   TNode<Smi> phi_bb20_7;
-  TNode<Object> phi_bb20_8;
+  TNode<JSAny> phi_bb20_8;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_4, &phi_bb20_7, &phi_bb20_8);
     ca_.Goto(&block14, phi_bb20_4, phi_bb20_7, phi_bb20_8);
@@ -4853,7 +4852,7 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
 
   TNode<Uint32T> phi_bb13_4;
   TNode<Smi> phi_bb13_7;
-  TNode<Object> phi_bb13_8;
+  TNode<JSAny> phi_bb13_8;
   TNode<Undefined> tmp206;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_4, &phi_bb13_7, &phi_bb13_8);
@@ -4861,37 +4860,37 @@ TNode<Object> CreateArrayFromArrayLikeAsynchronously_0(compiler::CodeAssemblerSt
     ca_.Goto(&block1, tmp206);
   }
 
-  TNode<Object> phi_bb3_1;
-  TNode<HeapObject> phi_bb3_2;
+  TNode<JSAny> phi_bb3_1;
+  TNode<Union<Hole, JSMessageObject>> phi_bb3_2;
   TNode<IntPtrT> tmp207;
-  TNode<Object> tmp208;
+  TNode<Union<HeapObject, TaggedIndex>> tmp208;
   TNode<IntPtrT> tmp209;
   TNode<IntPtrT> tmp210;
   TNode<IntPtrT> tmp211;
-  TNode<Object> tmp212;
+  TNode<JSAny> tmp212;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_1, &phi_bb3_2);
     tmp207 = kArrayFromAsyncArrayLikeResolveErrorSlot_0(state_);
     std::tie(tmp208, tmp209) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_0(state_, TNode<Context>{p_context}, TNode<IntPtrT>{tmp207}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp208, tmp209}, phi_bb3_1);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp208, tmp209}, phi_bb3_1);
     tmp210 = kArrayFromAsyncArrayLikeResolveErrorSlot_0(state_);
     tmp211 = kArrayFromAsyncArrayLikeResolvePromiseSlot_0(state_);
     tmp212 = RejectArrayFromAsyncPromise_ArrayFromAsyncArrayLikeResolveContext_0(state_, TNode<Context>{p_context}, TNode<Context>{p_context}, TNode<IntPtrT>{tmp210}, TNode<IntPtrT>{tmp211});
     ca_.Goto(&block1, tmp212);
   }
 
-  TNode<Object> phi_bb1_1;
+  TNode<JSAny> phi_bb1_1;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_1);
     ca_.Goto(&block72);
   }
 
     ca_.Bind(&block72);
-  return TNode<Object>{phi_bb1_1};
+  return TNode<JSAny>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=741&c=1
-TNode<Object> ArrayFromAsyncArrayLikeAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<Object> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=745&c=1
+TNode<JSAny> ArrayFromAsyncArrayLikeAwaitPoint_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_step, TNode<JSAny> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -4902,45 +4901,45 @@ TNode<Object> ArrayFromAsyncArrayLikeAwaitPoint_0(compiler::CodeAssemblerState* 
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kArrayFromAsyncArrayLikeResolveResumeStateStepSlot_0(state_);
     tmp1 = kArrayFromAsyncArrayLikeResolvePromiseFunctionSlot_0(state_);
     tmp2 = kArrayFromAsyncArrayLikeResolveOnFulfilledFunctionSlot_0(state_);
     tmp3 = kArrayFromAsyncArrayLikeResolveOnRejectedFunctionSlot_0(state_);
-    tmp4 = ArrayFromAsyncAwaitPoint_ArrayFromAsyncArrayLikeResolveContext_0(state_, TNode<Context>{p_context}, TNode<Context>{p_context}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Uint32T>{p_step}, TNode<Object>{p_value});
+    tmp4 = ArrayFromAsyncAwaitPoint_ArrayFromAsyncArrayLikeResolveContext_0(state_, TNode<Context>{p_context}, TNode<Context>{p_context}, TNode<IntPtrT>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<Uint32T>{p_step}, TNode<JSAny>{p_value});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp4};
+  return TNode<JSAny>{tmp4};
 }
 
 TF_BUILTIN(ArrayFromAsyncArrayLikeOnFulfilled, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kResult);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kResult);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
     tmp1 = kArrayFromAsyncArrayLikeResolveResumeStateAwaitedValueSlot_0(state_);
     std::tie(tmp2, tmp3) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp1}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp2, tmp3}, parameter3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp2, tmp3}, parameter3);
     tmp4 = CreateArrayFromArrayLikeAsynchronously_0(state_, TNode<Context>{tmp0});
     CodeStubAssembler(state_).Return(tmp4);
   }
@@ -4950,25 +4949,25 @@ TF_BUILTIN(ArrayFromAsyncArrayLikeOnRejected, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   TNode<JSFunction> parameter2 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kResult);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kResult);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Context> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Uint32T> tmp4;
   TNode<Smi> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = (TNode<Context>{parameter0});
@@ -4979,7 +4978,7 @@ USE(parameter2);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp2, tmp3}, tmp5);
     tmp6 = kArrayFromAsyncArrayLikeResolveErrorSlot_0(state_);
     std::tie(tmp7, tmp8) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_0(state_, TNode<Context>{tmp0}, TNode<IntPtrT>{tmp6}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp8}, parameter3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp7, tmp8}, parameter3);
     tmp9 = CreateArrayFromArrayLikeAsynchronously_0(state_, TNode<Context>{tmp0});
     CodeStubAssembler(state_).Return(tmp9);
   }
@@ -4994,12 +4993,13 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kArrayFromAsync));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5018,7 +5018,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block33(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block34(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5039,7 +5039,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block49(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block54(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block55(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block60(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5051,7 +5051,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block65(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block66(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block67(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, Object, HeapObject> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, JSAny, Union<Hole, JSMessageObject>> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<BoolT> tmp0;
@@ -5073,23 +5073,23 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block3, tmp1);
   }
 
-  TNode<Object> phi_bb3_6;
+  TNode<JSAny> phi_bb3_6;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<JSPromise> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<JSFunction> tmp12;
   TNode<Undefined> tmp13;
   TNode<Undefined> tmp14;
   TNode<Undefined> tmp15;
   TNode<BoolT> tmp16;
-      TNode<Object> tmp18;
+      TNode<JSAny> tmp18;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_6);
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -5107,7 +5107,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     tmp15 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch17__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch17__label);
-    tmp16 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp5}, TNode<HeapObject>{tmp15});
+    tmp16 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp5}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15});
     }
     if (catch17__label.is_used()) {
       compiler::CodeAssemblerLabel catch17_skip(&ca_);
@@ -5119,7 +5119,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Branch(tmp16, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp19;
+  TNode<Union<Hole, JSMessageObject>> tmp19;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp19 = GetAndResetPendingMessage_0(state_);
@@ -5127,14 +5127,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<BoolT> tmp20;
-      TNode<Object> tmp22;
+      TNode<JSAny> tmp22;
   TNode<BoolT> tmp23;
-      TNode<Object> tmp25;
+      TNode<JSAny> tmp25;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     compiler::CodeAssemblerExceptionHandlerLabel catch21__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch21__label);
-    tmp20 = Is_Callable_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp5});
+    tmp20 = Is_Callable_JSAny_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp5});
     }
     if (catch21__label.is_used()) {
       compiler::CodeAssemblerLabel catch21_skip(&ca_);
@@ -5157,21 +5157,21 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Branch(tmp23, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp26;
+  TNode<Union<Hole, JSMessageObject>> tmp26;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp26 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp22, tmp26);
   }
 
-  TNode<HeapObject> tmp27;
+  TNode<Union<Hole, JSMessageObject>> tmp27;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp27 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp25, tmp27);
   }
 
-      TNode<Object> tmp29;
+      TNode<JSAny> tmp29;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     compiler::CodeAssemblerExceptionHandlerLabel catch28__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5185,7 +5185,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp30;
+  TNode<Union<Hole, JSMessageObject>> tmp30;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp30 = GetAndResetPendingMessage_0(state_);
@@ -5198,10 +5198,10 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<Symbol> tmp31;
-      TNode<Object> tmp33;
-  TNode<JSReceiver> tmp34;
-    compiler::TypedCodeAssemblerVariable<Object> tmp37(&ca_);
-      TNode<Object> tmp39;
+      TNode<JSAny> tmp33;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp34;
+    compiler::TypedCodeAssemblerVariable<JSAny> tmp37(&ca_);
+      TNode<JSAny> tmp39;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     compiler::CodeAssemblerExceptionHandlerLabel catch32__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5219,7 +5219,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     compiler::CodeAssemblerLabel label36(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch38__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch38__label);
-    tmp34 = GetMethod_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3}, TNode<Name>{tmp31}, &label35, &label36, &tmp37);
+    tmp34 = GetMethod_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3}, TNode<Union<String, Symbol>>{tmp31}, &label35, &label36, &tmp37);
     }
     if (catch38__label.is_used()) {
       compiler::CodeAssemblerLabel catch38_skip(&ca_);
@@ -5239,14 +5239,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp40;
+  TNode<Union<Hole, JSMessageObject>> tmp40;
   if (block23.is_used()) {
     ca_.Bind(&block23);
     tmp40 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp33, tmp40);
   }
 
-  TNode<HeapObject> tmp41;
+  TNode<Union<Hole, JSMessageObject>> tmp41;
   if (block27.is_used()) {
     ca_.Bind(&block27);
     tmp41 = GetAndResetPendingMessage_0(state_);
@@ -5254,10 +5254,10 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<Symbol> tmp42;
-      TNode<Object> tmp44;
-  TNode<JSReceiver> tmp45;
-    compiler::TypedCodeAssemblerVariable<Object> tmp48(&ca_);
-      TNode<Object> tmp50;
+      TNode<JSAny> tmp44;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp45;
+    compiler::TypedCodeAssemblerVariable<JSAny> tmp48(&ca_);
+      TNode<JSAny> tmp50;
   if (block25.is_used()) {
     ca_.Bind(&block25);
     compiler::CodeAssemblerExceptionHandlerLabel catch43__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5275,7 +5275,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     compiler::CodeAssemblerLabel label47(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch49__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch49__label);
-    tmp45 = GetMethod_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3}, TNode<Name>{tmp42}, &label46, &label47, &tmp48);
+    tmp45 = GetMethod_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3}, TNode<Union<String, Symbol>>{tmp42}, &label46, &label47, &tmp48);
     }
     if (catch49__label.is_used()) {
       compiler::CodeAssemblerLabel catch49_skip(&ca_);
@@ -5295,7 +5295,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
   }
 
-      TNode<Object> tmp52;
+      TNode<JSAny> tmp52;
   if (block26.is_used()) {
     ca_.Bind(&block26);
     compiler::CodeAssemblerExceptionHandlerLabel catch51__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5314,14 +5314,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block21, tmp34, tmp14);
   }
 
-  TNode<HeapObject> tmp53;
+  TNode<Union<Hole, JSMessageObject>> tmp53;
   if (block28.is_used()) {
     ca_.Bind(&block28);
     tmp53 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp44, tmp53);
   }
 
-  TNode<HeapObject> tmp54;
+  TNode<Union<Hole, JSMessageObject>> tmp54;
   if (block32.is_used()) {
     ca_.Bind(&block32);
     tmp54 = GetAndResetPendingMessage_0(state_);
@@ -5329,16 +5329,16 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp55;
-      TNode<Object> tmp57;
+      TNode<JSAny> tmp57;
   TNode<Number> tmp58;
-      TNode<Object> tmp60;
+      TNode<JSAny> tmp60;
   TNode<JSReceiver> tmp61;
-      TNode<Object> tmp64;
+      TNode<JSAny> tmp64;
   if (block30.is_used()) {
     ca_.Bind(&block30);
     compiler::CodeAssemblerExceptionHandlerLabel catch56__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch56__label);
-    tmp55 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    tmp55 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp3});
     }
     if (catch56__label.is_used()) {
       compiler::CodeAssemblerLabel catch56_skip(&ca_);
@@ -5349,7 +5349,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch59__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch59__label);
-    tmp58 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp55});
+    tmp58 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp55});
     }
     if (catch59__label.is_used()) {
       compiler::CodeAssemblerLabel catch59_skip(&ca_);
@@ -5377,7 +5377,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
   }
 
-      TNode<Object> tmp66;
+      TNode<JSAny> tmp66;
   if (block31.is_used()) {
     ca_.Bind(&block31);
     compiler::CodeAssemblerExceptionHandlerLabel catch65__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5396,17 +5396,17 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block21, tmp13, tmp45);
   }
 
-  TNode<Object> phi_bb21_12;
-  TNode<Object> phi_bb21_13;
+  TNode<JSAny> phi_bb21_12;
+  TNode<JSAny> phi_bb21_13;
   TNode<Undefined> tmp67;
   TNode<BoolT> tmp68;
-      TNode<Object> tmp70;
+      TNode<JSAny> tmp70;
   if (block21.is_used()) {
     ca_.Bind(&block21, &phi_bb21_12, &phi_bb21_13);
     tmp67 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch69__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch69__label);
-    tmp68 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{phi_bb21_12}, TNode<HeapObject>{tmp67});
+    tmp68 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{phi_bb21_12}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp67});
     }
     if (catch69__label.is_used()) {
       compiler::CodeAssemblerLabel catch69_skip(&ca_);
@@ -5418,21 +5418,21 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Branch(tmp68, &block48, std::vector<compiler::Node*>{}, &block49, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp71;
+  TNode<Union<Hole, JSMessageObject>> tmp71;
   if (block33.is_used()) {
     ca_.Bind(&block33);
     tmp71 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp57, tmp71);
   }
 
-  TNode<HeapObject> tmp72;
+  TNode<Union<Hole, JSMessageObject>> tmp72;
   if (block34.is_used()) {
     ca_.Bind(&block34);
     tmp72 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp60, tmp72);
   }
 
-  TNode<HeapObject> tmp73;
+  TNode<Union<Hole, JSMessageObject>> tmp73;
   if (block39.is_used()) {
     ca_.Bind(&block39);
     tmp73 = GetAndResetPendingMessage_0(state_);
@@ -5440,7 +5440,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSArray> tmp74;
-      TNode<Object> tmp76;
+      TNode<JSAny> tmp76;
   if (block38.is_used()) {
     ca_.Bind(&block38);
     compiler::CodeAssemblerExceptionHandlerLabel catch75__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5458,12 +5458,12 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp77;
-      TNode<Object> tmp79;
+      TNode<JSAny> tmp79;
   if (block37.is_used()) {
     ca_.Bind(&block37);
     compiler::CodeAssemblerExceptionHandlerLabel catch78__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch78__label);
-    tmp77 = CodeStubAssembler(state_).Construct(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp61}, TNode<Object>{tmp58});
+    tmp77 = CodeStubAssembler(state_).Construct(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp61}, TNode<JSAny>{tmp58});
     }
     if (catch78__label.is_used()) {
       compiler::CodeAssemblerLabel catch78_skip(&ca_);
@@ -5475,14 +5475,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block35, tmp77);
   }
 
-  TNode<HeapObject> tmp80;
+  TNode<Union<Hole, JSMessageObject>> tmp80;
   if (block40.is_used()) {
     ca_.Bind(&block40);
     tmp80 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp79, tmp80);
   }
 
-  TNode<HeapObject> tmp81;
+  TNode<Union<Hole, JSMessageObject>> tmp81;
   if (block41.is_used()) {
     ca_.Bind(&block41);
     tmp81 = GetAndResetPendingMessage_0(state_);
@@ -5492,14 +5492,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   TNode<JSReceiver> phi_bb35_16;
   TNode<Undefined> tmp82;
   TNode<Uint32T> tmp83;
-      TNode<Object> tmp85;
+      TNode<JSAny> tmp85;
   TNode<Smi> tmp86;
-      TNode<Object> tmp88;
+      TNode<JSAny> tmp88;
   TNode<Undefined> tmp89;
   TNode<Context> tmp90;
-      TNode<Object> tmp92;
-  TNode<Object> tmp93;
-      TNode<Object> tmp95;
+      TNode<JSAny> tmp92;
+  TNode<JSAny> tmp93;
+      TNode<JSAny> tmp95;
   if (block35.is_used()) {
     ca_.Bind(&block35, &phi_bb35_16);
     tmp82 = Undefined_0(state_);
@@ -5528,7 +5528,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     tmp89 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch91__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch91__label);
-    tmp90 = CreateArrayFromAsyncArrayLikeResolveContext_0(state_, TNode<Context>{parameter0}, TorqueStructArrayFromAsyncArrayLikeResumeState_0{TNode<Uint32T>{tmp83}, TNode<Object>{tmp82}, TNode<Number>{tmp58}, TNode<Smi>{tmp86}}, TNode<JSPromise>{tmp8}, TNode<JSReceiver>{tmp12}, TNode<JSReceiver>{tmp55}, TNode<JSReceiver>{phi_bb35_16}, TNode<Object>{tmp89}, TNode<Object>{tmp5}, TNode<Object>{tmp7}, TNode<NativeContext>{parameter0});
+    tmp90 = CreateArrayFromAsyncArrayLikeResolveContext_0(state_, TNode<Context>{parameter0}, TorqueStructArrayFromAsyncArrayLikeResumeState_0{TNode<Uint32T>{tmp83}, TNode<JSAny>{tmp82}, TNode<Number>{tmp58}, TNode<Smi>{tmp86}}, TNode<JSPromise>{tmp8}, TNode<JSReceiver>{tmp12}, TNode<JSReceiver>{tmp55}, TNode<JSReceiver>{phi_bb35_16}, TNode<JSAny>{tmp89}, TNode<JSAny>{tmp5}, TNode<JSAny>{tmp7}, TNode<NativeContext>{parameter0});
     }
     if (catch91__label.is_used()) {
       compiler::CodeAssemblerLabel catch91_skip(&ca_);
@@ -5551,49 +5551,49 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     arguments.PopAndReturn(tmp8);
   }
 
-  TNode<HeapObject> tmp96;
+  TNode<Union<Hole, JSMessageObject>> tmp96;
   if (block42.is_used()) {
     ca_.Bind(&block42);
     tmp96 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp85, tmp96);
   }
 
-  TNode<HeapObject> tmp97;
+  TNode<Union<Hole, JSMessageObject>> tmp97;
   if (block43.is_used()) {
     ca_.Bind(&block43);
     tmp97 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp88, tmp97);
   }
 
-  TNode<HeapObject> tmp98;
+  TNode<Union<Hole, JSMessageObject>> tmp98;
   if (block44.is_used()) {
     ca_.Bind(&block44);
     tmp98 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp92, tmp98);
   }
 
-  TNode<HeapObject> tmp99;
+  TNode<Union<Hole, JSMessageObject>> tmp99;
   if (block45.is_used()) {
     ca_.Bind(&block45);
     tmp99 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp95, tmp99);
   }
 
-  TNode<HeapObject> tmp100;
+  TNode<Union<Hole, JSMessageObject>> tmp100;
   if (block46.is_used()) {
     ca_.Bind(&block46);
     tmp100 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp66, tmp100);
   }
 
-  TNode<HeapObject> tmp101;
+  TNode<Union<Hole, JSMessageObject>> tmp101;
   if (block47.is_used()) {
     ca_.Bind(&block47);
     tmp101 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, tmp13, tmp14, tmp52, tmp101);
   }
 
-  TNode<HeapObject> tmp102;
+  TNode<Union<Hole, JSMessageObject>> tmp102;
   if (block52.is_used()) {
     ca_.Bind(&block52);
     tmp102 = GetAndResetPendingMessage_0(state_);
@@ -5601,13 +5601,13 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp103;
-  TNode<Object> tmp104;
-      TNode<Object> tmp106;
+  TNode<JSAny> tmp104;
+      TNode<JSAny> tmp106;
   if (block48.is_used()) {
     ca_.Bind(&block48);
     compiler::CodeAssemblerExceptionHandlerLabel catch105__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch105__label);
-    std::tie(tmp103, tmp104) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{parameter0}, TNode<Object>{tmp3}, TNode<Object>{phi_bb21_12}).Flatten();
+    std::tie(tmp103, tmp104) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{parameter0}, TNode<JSAny>{tmp3}, TNode<JSAny>{phi_bb21_12}).Flatten();
     }
     if (catch105__label.is_used()) {
       compiler::CodeAssemblerLabel catch105_skip(&ca_);
@@ -5619,7 +5619,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block50, tmp103, tmp104);
   }
 
-  TNode<HeapObject> tmp107;
+  TNode<Union<Hole, JSMessageObject>> tmp107;
   if (block53.is_used()) {
     ca_.Bind(&block53);
     tmp107 = GetAndResetPendingMessage_0(state_);
@@ -5627,16 +5627,16 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp108;
-  TNode<Object> tmp109;
-      TNode<Object> tmp111;
+  TNode<JSAny> tmp109;
+      TNode<JSAny> tmp111;
   TNode<JSReceiver> tmp112;
-  TNode<Object> tmp113;
-      TNode<Object> tmp115;
+  TNode<JSAny> tmp113;
+      TNode<JSAny> tmp115;
   if (block49.is_used()) {
     ca_.Bind(&block49);
     compiler::CodeAssemblerExceptionHandlerLabel catch110__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch110__label);
-    std::tie(tmp108, tmp109) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{parameter0}, TNode<Object>{tmp3}, TNode<Object>{phi_bb21_13}).Flatten();
+    std::tie(tmp108, tmp109) = IteratorBuiltinsAssembler(state_).GetIterator(TNode<Context>{parameter0}, TNode<JSAny>{tmp3}, TNode<JSAny>{phi_bb21_13}).Flatten();
     }
     if (catch110__label.is_used()) {
       compiler::CodeAssemblerLabel catch110_skip(&ca_);
@@ -5647,7 +5647,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch114__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch114__label);
-    std::tie(tmp112, tmp113) = GetIteratorRecordAfterCreateAsyncFromSyncIterator_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp108}, TNode<Object>{tmp109}}).Flatten();
+    std::tie(tmp112, tmp113) = GetIteratorRecordAfterCreateAsyncFromSyncIterator_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp108}, TNode<JSAny>{tmp109}}).Flatten();
     }
     if (catch114__label.is_used()) {
       compiler::CodeAssemblerLabel catch114_skip(&ca_);
@@ -5659,14 +5659,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block50, tmp112, tmp113);
   }
 
-  TNode<HeapObject> tmp116;
+  TNode<Union<Hole, JSMessageObject>> tmp116;
   if (block54.is_used()) {
     ca_.Bind(&block54);
     tmp116 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp111, tmp116);
   }
 
-  TNode<HeapObject> tmp117;
+  TNode<Union<Hole, JSMessageObject>> tmp117;
   if (block55.is_used()) {
     ca_.Bind(&block55);
     tmp117 = GetAndResetPendingMessage_0(state_);
@@ -5674,9 +5674,9 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb50_14;
-  TNode<Object> phi_bb50_15;
+  TNode<JSAny> phi_bb50_15;
   TNode<JSReceiver> tmp118;
-      TNode<Object> tmp121;
+      TNode<JSAny> tmp121;
   if (block50.is_used()) {
     ca_.Bind(&block50, &phi_bb50_14, &phi_bb50_15);
     compiler::CodeAssemblerLabel label119(&ca_);
@@ -5698,7 +5698,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp122;
+  TNode<Union<Hole, JSMessageObject>> tmp122;
   if (block60.is_used()) {
     ca_.Bind(&block60);
     tmp122 = GetAndResetPendingMessage_0(state_);
@@ -5706,9 +5706,9 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<Number> tmp123;
-      TNode<Object> tmp125;
+      TNode<JSAny> tmp125;
   TNode<JSArray> tmp126;
-      TNode<Object> tmp128;
+      TNode<JSAny> tmp128;
   if (block59.is_used()) {
     ca_.Bind(&block59);
     compiler::CodeAssemblerExceptionHandlerLabel catch124__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5737,7 +5737,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp129;
-      TNode<Object> tmp131;
+      TNode<JSAny> tmp131;
   if (block58.is_used()) {
     ca_.Bind(&block58);
     compiler::CodeAssemblerExceptionHandlerLabel catch130__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -5754,21 +5754,21 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     ca_.Goto(&block56, tmp129);
   }
 
-  TNode<HeapObject> tmp132;
+  TNode<Union<Hole, JSMessageObject>> tmp132;
   if (block61.is_used()) {
     ca_.Bind(&block61);
     tmp132 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp131, tmp132);
   }
 
-  TNode<HeapObject> tmp133;
+  TNode<Union<Hole, JSMessageObject>> tmp133;
   if (block62.is_used()) {
     ca_.Bind(&block62);
     tmp133 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp125, tmp133);
   }
 
-  TNode<HeapObject> tmp134;
+  TNode<Union<Hole, JSMessageObject>> tmp134;
   if (block63.is_used()) {
     ca_.Bind(&block63);
     tmp134 = GetAndResetPendingMessage_0(state_);
@@ -5778,14 +5778,14 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
   TNode<JSReceiver> phi_bb56_16;
   TNode<Undefined> tmp135;
   TNode<Uint32T> tmp136;
-      TNode<Object> tmp138;
+      TNode<JSAny> tmp138;
   TNode<Smi> tmp139;
-      TNode<Object> tmp141;
+      TNode<JSAny> tmp141;
   TNode<Undefined> tmp142;
   TNode<Context> tmp143;
-      TNode<Object> tmp145;
-  TNode<Object> tmp146;
-      TNode<Object> tmp148;
+      TNode<JSAny> tmp145;
+  TNode<JSAny> tmp146;
+      TNode<JSAny> tmp148;
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_16);
     tmp135 = Undefined_0(state_);
@@ -5814,7 +5814,7 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     tmp142 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch144__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch144__label);
-    tmp143 = CreateArrayFromAsyncIterableResolveContext_0(state_, TNode<Context>{parameter0}, TorqueStructArrayFromAsyncIterableResumeState_0{TNode<Uint32T>{tmp136}, TNode<Object>{tmp135}, TNode<Smi>{tmp139}}, TNode<JSPromise>{tmp8}, TNode<JSReceiver>{tmp12}, TNode<JSReceiver>{phi_bb50_14}, TNode<Object>{phi_bb50_15}, TNode<JSReceiver>{phi_bb56_16}, TNode<Object>{tmp142}, TNode<Object>{tmp5}, TNode<Object>{tmp7}, TNode<NativeContext>{parameter0});
+    tmp143 = CreateArrayFromAsyncIterableResolveContext_0(state_, TNode<Context>{parameter0}, TorqueStructArrayFromAsyncIterableResumeState_0{TNode<Uint32T>{tmp136}, TNode<JSAny>{tmp135}, TNode<Smi>{tmp139}}, TNode<JSPromise>{tmp8}, TNode<JSReceiver>{tmp12}, TNode<JSReceiver>{phi_bb50_14}, TNode<JSAny>{phi_bb50_15}, TNode<JSReceiver>{phi_bb56_16}, TNode<JSAny>{tmp142}, TNode<JSAny>{tmp5}, TNode<JSAny>{tmp7}, TNode<NativeContext>{parameter0});
     }
     if (catch144__label.is_used()) {
       compiler::CodeAssemblerLabel catch144_skip(&ca_);
@@ -5837,44 +5837,44 @@ TF_BUILTIN(ArrayFromAsync, CodeStubAssembler) {
     arguments.PopAndReturn(tmp8);
   }
 
-  TNode<HeapObject> tmp149;
+  TNode<Union<Hole, JSMessageObject>> tmp149;
   if (block64.is_used()) {
     ca_.Bind(&block64);
     tmp149 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp138, tmp149);
   }
 
-  TNode<HeapObject> tmp150;
+  TNode<Union<Hole, JSMessageObject>> tmp150;
   if (block65.is_used()) {
     ca_.Bind(&block65);
     tmp150 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp141, tmp150);
   }
 
-  TNode<HeapObject> tmp151;
+  TNode<Union<Hole, JSMessageObject>> tmp151;
   if (block66.is_used()) {
     ca_.Bind(&block66);
     tmp151 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp145, tmp151);
   }
 
-  TNode<HeapObject> tmp152;
+  TNode<Union<Hole, JSMessageObject>> tmp152;
   if (block67.is_used()) {
     ca_.Bind(&block67);
     tmp152 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block6, phi_bb21_12, phi_bb21_13, tmp148, tmp152);
   }
 
-  TNode<Object> phi_bb6_12;
-  TNode<Object> phi_bb6_13;
-  TNode<Object> phi_bb6_14;
-  TNode<HeapObject> phi_bb6_15;
+  TNode<JSAny> phi_bb6_12;
+  TNode<JSAny> phi_bb6_13;
+  TNode<JSAny> phi_bb6_14;
+  TNode<Union<Hole, JSMessageObject>> phi_bb6_15;
   TNode<False> tmp153;
-  TNode<Object> tmp154;
+  TNode<JSAny> tmp154;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_12, &phi_bb6_13, &phi_bb6_14, &phi_bb6_15);
     tmp153 = False_0(state_);
-    tmp154 = ca_.CallBuiltin<Object>(Builtin::kRejectPromise, parameter0, tmp8, phi_bb6_14, tmp153);
+    tmp154 = ca_.CallBuiltin<JSAny>(Builtin::kRejectPromise, parameter0, tmp8, phi_bb6_14, tmp153);
     arguments.PopAndReturn(tmp8);
   }
 }
@@ -5910,7 +5910,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -5927,13 +5927,13 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -5947,7 +5947,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=117&c=3
-void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value) {
+void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSAny> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -5956,7 +5956,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -5973,13 +5973,13 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6002,7 +6002,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6019,13 +6019,13 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6048,7 +6048,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6065,13 +6065,13 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6094,7 +6094,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6111,13 +6111,13 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6140,7 +6140,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6157,13 +6157,13 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6176,7 +6176,7 @@ void InitContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterable
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=184&c=21
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=186&c=21
 TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6186,7 +6186,7 @@ TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncIterableResolveCont
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6203,16 +6203,16 @@ TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncIterableResolveCont
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_JSReceiver_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_JSReceiver_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6222,10 +6222,10 @@ TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncIterableResolveCont
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_JSReceiver_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSReceiver_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=189&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=191&c=23
 TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6235,7 +6235,7 @@ TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncIterableResolveContext_A
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6252,16 +6252,16 @@ TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncIterableResolveContext_A
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_JSAny_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_JSAny_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6271,10 +6271,10 @@ TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncIterableResolveContext_A
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_JSAny_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSAny_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=219&c=58
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=221&c=58
 TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6284,7 +6284,7 @@ TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncIterableResolveContext_Arr
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6301,16 +6301,16 @@ TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncIterableResolveContext_Arr
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_Smi_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_Smi_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6320,10 +6320,10 @@ TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncIterableResolveContext_Arr
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_Smi_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=218&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=220&c=13
 TNode<Uint32T> SmiUntag_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6348,15 +6348,15 @@ TNode<Uint32T> SmiUntag_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* sta
   return TNode<Uint32T>{tmp3};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=295&c=22
-TNode<JSReceiver> UnsafeCast_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=297&c=22
+TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> UnsafeCast_Callable_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSReceiver> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = TORQUE_CAST(TNode<Object>{p_o});
@@ -6364,10 +6364,10 @@ TNode<JSReceiver> UnsafeCast_Callable_0(compiler::CodeAssemblerState* state_, TN
   }
 
     ca_.Bind(&block6);
-  return TNode<JSReceiver>{tmp0};
+  return TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=330&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=332&c=26
 TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6377,7 +6377,7 @@ TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncIterableResolveConte
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6394,16 +6394,16 @@ TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncIterableResolveConte
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_JSPromise_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_JSPromise_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6413,61 +6413,61 @@ TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncIterableResolveConte
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_JSPromise_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSPromise_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=351&c=16
-TNode<Object> RejectArrayFromAsyncPromise_ArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_errorSlot, TNode<IntPtrT> p_promiseSlot) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=353&c=16
+TNode<JSAny> RejectArrayFromAsyncPromise_ArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_errorSlot, TNode<IntPtrT> p_promiseSlot) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp3;
   TNode<IntPtrT> tmp4;
   TNode<JSPromise> tmp5;
   TNode<False> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     std::tie(tmp0, tmp1) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSAny_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_errorSlot}).Flatten();
-    tmp2 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp0, tmp1});
+    tmp2 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp0, tmp1});
     std::tie(tmp3, tmp4) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSPromise_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_promiseSlot}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = False_0(state_);
-    tmp7 = ca_.CallBuiltin<Object>(Builtin::kRejectPromise, p_context, tmp5, tmp2, tmp6);
+    tmp7 = ca_.CallBuiltin<JSAny>(Builtin::kRejectPromise, p_context, tmp5, tmp2, tmp6);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp7};
+  return TNode<JSAny>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=386&c=10
-TNode<Object> ArrayFromAsyncAwaitPoint_ArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_stepSlot, TNode<IntPtrT> p_promiseFunSlot, TNode<IntPtrT> p_resolveSlot, TNode<IntPtrT> p_rejectSlot, TNode<Uint32T> p_step, TNode<Object> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=388&c=10
+TNode<JSAny> ArrayFromAsyncAwaitPoint_ArrayFromAsyncIterableResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_stepSlot, TNode<IntPtrT> p_promiseFunSlot, TNode<IntPtrT> p_resolveSlot, TNode<IntPtrT> p_rejectSlot, TNode<Uint32T> p_step, TNode<JSAny> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<Smi> tmp2;
-  TNode<Object> tmp3;
+  TNode<Union<HeapObject, TaggedIndex>> tmp3;
   TNode<IntPtrT> tmp4;
   TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
+  TNode<Union<HeapObject, TaggedIndex>> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<HeapObject> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<JSFunction, Undefined>> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<HeapObject> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<JSFunction, Undefined>> tmp11;
+  TNode<JSAny> tmp12;
   TNode<JSPromise> tmp13;
   TNode<Undefined> tmp14;
   TNode<Undefined> tmp15;
@@ -6479,22 +6479,22 @@ TNode<Object> ArrayFromAsyncAwaitPoint_ArrayFromAsyncIterableResolveContext_0(co
     std::tie(tmp3, tmp4) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_JSReceiver_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_promiseFunSlot}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp3, tmp4});
     std::tie(tmp6, tmp7) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Undefined_OR_JSFunction_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_resolveSlot}).Flatten();
-    tmp8 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp6, tmp7});
+    tmp8 = CodeStubAssembler(state_).LoadReference<Union<JSFunction, Undefined>>(CodeStubAssembler::Reference{tmp6, tmp7});
     std::tie(tmp9, tmp10) = ContextSlot_ArrayFromAsyncIterableResolveContext_ArrayFromAsyncIterableResolveContext_Undefined_OR_JSFunction_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_rejectSlot}).Flatten();
-    tmp11 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp10});
-    tmp12 = ca_.CallBuiltin<Object>(Builtin::kPromiseResolve, p_context, tmp5, p_value);
+    tmp11 = CodeStubAssembler(state_).LoadReference<Union<JSFunction, Undefined>>(CodeStubAssembler::Reference{tmp9, tmp10});
+    tmp12 = ca_.CallBuiltin<JSAny>(Builtin::kPromiseResolve, p_context, tmp5, p_value);
     tmp13 = UnsafeCast_JSPromise_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp12});
     tmp14 = Undefined_0(state_);
-    PerformPromiseThenImpl_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{tmp13}, TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp11}, TNode<HeapObject>{tmp14});
+    PerformPromiseThenImpl_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{tmp13}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp8}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp11}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{tmp14});
     tmp15 = Undefined_0(state_);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp15};
+  return TNode<JSAny>{tmp15};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=527&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=529&c=3
 void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_SmiTagged_ArrayFromAsyncLabels_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6504,7 +6504,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6521,13 +6521,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6540,8 +6540,8 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=532&c=3
-void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Object> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=534&c=3
+void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSAny> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -6550,7 +6550,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6567,13 +6567,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6586,7 +6586,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=537&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=539&c=3
 void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Number_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Number> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6596,7 +6596,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6613,13 +6613,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6632,7 +6632,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=542&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=544&c=3
 void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<Smi> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6642,7 +6642,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6659,13 +6659,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6678,7 +6678,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=547&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=549&c=3
 void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSPromise_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSPromise> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6688,7 +6688,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6705,13 +6705,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6724,7 +6724,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=552&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=554&c=3
 void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSReceiver> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6734,7 +6734,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6751,13 +6751,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6770,7 +6770,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=557&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=559&c=3
 void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index, TNode<JSFunction> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6780,7 +6780,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6797,13 +6797,13 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_value);
     ca_.Goto(&block22);
   }
@@ -6816,7 +6816,7 @@ void InitContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLi
     ca_.Bind(&block22);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=600&c=20
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=604&c=20
 TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6826,7 +6826,7 @@ TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6843,16 +6843,16 @@ TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_JSAny_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_JSAny_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6862,10 +6862,10 @@ TorqueStructReference_JSAny_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_JSAny_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSAny_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=610&c=18
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=614&c=18
 TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6875,7 +6875,7 @@ TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncArrayLikeResolveCon
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6892,16 +6892,16 @@ TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncArrayLikeResolveCon
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_JSReceiver_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_JSReceiver_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6911,10 +6911,10 @@ TorqueStructReference_JSReceiver_0 ContextSlot_ArrayFromAsyncArrayLikeResolveCon
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_JSReceiver_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSReceiver_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=617&c=58
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=621&c=58
 TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6924,7 +6924,7 @@ TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_Ar
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6941,16 +6941,16 @@ TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_Ar
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_Smi_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_Smi_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -6960,10 +6960,10 @@ TorqueStructReference_Smi_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_Ar
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_Smi_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=625&c=13
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=629&c=13
 TorqueStructReference_Number_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Number_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -6973,7 +6973,7 @@ TorqueStructReference_Number_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -6990,16 +6990,16 @@ TorqueStructReference_Number_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_Number_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_Number_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -7009,10 +7009,10 @@ TorqueStructReference_Number_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_Number_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Number_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=708&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=712&c=26
 TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSPromise_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7022,7 +7022,7 @@ TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncArrayLikeResolveCont
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -7039,16 +7039,16 @@ TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncArrayLikeResolveCont
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_JSPromise_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_JSPromise_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -7058,61 +7058,61 @@ TorqueStructReference_JSPromise_0 ContextSlot_ArrayFromAsyncArrayLikeResolveCont
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_JSPromise_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSPromise_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=716&c=16
-TNode<Object> RejectArrayFromAsyncPromise_ArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_errorSlot, TNode<IntPtrT> p_promiseSlot) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=720&c=16
+TNode<JSAny> RejectArrayFromAsyncPromise_ArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_errorSlot, TNode<IntPtrT> p_promiseSlot) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp3;
   TNode<IntPtrT> tmp4;
   TNode<JSPromise> tmp5;
   TNode<False> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     std::tie(tmp0, tmp1) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSAny_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_errorSlot}).Flatten();
-    tmp2 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp0, tmp1});
+    tmp2 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp0, tmp1});
     std::tie(tmp3, tmp4) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSPromise_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_promiseSlot}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<JSPromise>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = False_0(state_);
-    tmp7 = ca_.CallBuiltin<Object>(Builtin::kRejectPromise, p_context, tmp5, tmp2, tmp6);
+    tmp7 = ca_.CallBuiltin<JSAny>(Builtin::kRejectPromise, p_context, tmp5, tmp2, tmp6);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp7};
+  return TNode<JSAny>{tmp7};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=744&c=10
-TNode<Object> ArrayFromAsyncAwaitPoint_ArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_stepSlot, TNode<IntPtrT> p_promiseFunSlot, TNode<IntPtrT> p_resolveSlot, TNode<IntPtrT> p_rejectSlot, TNode<Uint32T> p_step, TNode<Object> p_value) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=748&c=10
+TNode<JSAny> ArrayFromAsyncAwaitPoint_ArrayFromAsyncArrayLikeResolveContext_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Context> p_resolveContext, TNode<IntPtrT> p_stepSlot, TNode<IntPtrT> p_promiseFunSlot, TNode<IntPtrT> p_resolveSlot, TNode<IntPtrT> p_rejectSlot, TNode<Uint32T> p_step, TNode<JSAny> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<Smi> tmp2;
-  TNode<Object> tmp3;
+  TNode<Union<HeapObject, TaggedIndex>> tmp3;
   TNode<IntPtrT> tmp4;
   TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
+  TNode<Union<HeapObject, TaggedIndex>> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<HeapObject> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<JSFunction, Undefined>> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<HeapObject> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<JSFunction, Undefined>> tmp11;
+  TNode<JSAny> tmp12;
   TNode<JSPromise> tmp13;
   TNode<Undefined> tmp14;
   TNode<Undefined> tmp15;
@@ -7124,22 +7124,22 @@ TNode<Object> ArrayFromAsyncAwaitPoint_ArrayFromAsyncArrayLikeResolveContext_0(c
     std::tie(tmp3, tmp4) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_JSReceiver_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_promiseFunSlot}).Flatten();
     tmp5 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{tmp3, tmp4});
     std::tie(tmp6, tmp7) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_resolveSlot}).Flatten();
-    tmp8 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp6, tmp7});
+    tmp8 = CodeStubAssembler(state_).LoadReference<Union<JSFunction, Undefined>>(CodeStubAssembler::Reference{tmp6, tmp7});
     std::tie(tmp9, tmp10) = ContextSlot_ArrayFromAsyncArrayLikeResolveContext_ArrayFromAsyncArrayLikeResolveContext_Undefined_OR_JSFunction_0(state_, TNode<Context>{p_resolveContext}, TNode<IntPtrT>{p_rejectSlot}).Flatten();
-    tmp11 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp10});
-    tmp12 = ca_.CallBuiltin<Object>(Builtin::kPromiseResolve, p_context, tmp5, p_value);
+    tmp11 = CodeStubAssembler(state_).LoadReference<Union<JSFunction, Undefined>>(CodeStubAssembler::Reference{tmp9, tmp10});
+    tmp12 = ca_.CallBuiltin<JSAny>(Builtin::kPromiseResolve, p_context, tmp5, p_value);
     tmp13 = UnsafeCast_JSPromise_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp12});
     tmp14 = Undefined_0(state_);
-    PerformPromiseThenImpl_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{tmp13}, TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp11}, TNode<HeapObject>{tmp14});
+    PerformPromiseThenImpl_0(state_, TNode<Context>{p_context}, TNode<JSPromise>{tmp13}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp8}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp11}, TNode<Union<JSPromise, PromiseCapability, Undefined>>{tmp14});
     tmp15 = Undefined_0(state_);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp15};
+  return TNode<JSAny>{tmp15};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=815&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=820&c=23
 TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7147,7 +7147,7 @@ TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::Code
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -7156,11 +7156,11 @@ TorqueStructReference_JSFunction_0 NativeContextSlot_JSFunction_0(compiler::Code
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_JSFunction_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_JSFunction_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=828&c=12
-TNode<BoolT> Is_Callable_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=833&c=12
+TNode<BoolT> Is_Callable_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -7170,7 +7170,7 @@ TNode<BoolT> Is_Callable_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Con
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSReceiver> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -7206,7 +7206,7 @@ TNode<BoolT> Is_Callable_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Con
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=861&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=866&c=9
 TNode<JSReceiver> Cast_Constructor_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -7277,7 +7277,7 @@ TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncIterab
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -7294,16 +7294,16 @@ TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncIterab
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_Undefined_OR_JSFunction_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_Undefined_OR_JSFunction_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -7313,7 +7313,7 @@ TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncIterab
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-from-async.tq?l=32&c=20
@@ -7326,7 +7326,7 @@ TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncArrayL
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -7343,16 +7343,16 @@ TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncArrayL
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{p_index});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    std::tie(tmp10, tmp11) = ReferenceCast_Undefined_OR_JSFunction_Object_0(state_, TorqueStructReference_Object_0{TNode<Object>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp10, tmp11) = ReferenceCast_Undefined_OR_JSFunction_Object_0(state_, TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block10);
   }
 
@@ -7362,7 +7362,7 @@ TorqueStructReference_Undefined_OR_JSFunction_0 ContextSlot_ArrayFromAsyncArrayL
   }
 
     ca_.Bind(&block10);
-  return TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Object>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Undefined_OR_JSFunction_0{TNode<Union<HeapObject, TaggedIndex>>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

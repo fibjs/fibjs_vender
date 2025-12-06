@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/math-tq-csa.h"
@@ -87,17 +87,17 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=7&c=1
-void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_x, compiler::CodeAssemblerLabel* label_SmiResult, compiler::TypedCodeAssemblerVariable<Smi>* label_SmiResult_parameter_0, compiler::CodeAssemblerLabel* label_Float64Result, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64Result_parameter_0) {
+void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_x, compiler::CodeAssemblerLabel* label_SmiResult, compiler::TypedCodeAssemblerVariable<Smi>* label_SmiResult_parameter_0, compiler::CodeAssemblerLabel* label_Float64Result, compiler::TypedCodeAssemblerVariable<Float64T>* label_Float64Result_parameter_0) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, Object> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, Object> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, JSAny> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, JSAny> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   if (block0.is_used()) {
@@ -105,7 +105,7 @@ void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context>
     ca_.Goto(&block5, p_x);
   }
 
-  TNode<Object> phi_bb5_2;
+  TNode<JSAny> phi_bb5_2;
   TNode<BoolT> tmp0;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_2);
@@ -113,7 +113,7 @@ void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context>
     ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{phi_bb5_2}, &block4, std::vector<compiler::Node*>{phi_bb5_2});
   }
 
-  TNode<Object> phi_bb3_2;
+  TNode<JSAny> phi_bb3_2;
   TNode<Smi> tmp1;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_2);
@@ -126,14 +126,14 @@ void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context>
     }
   }
 
-  TNode<Object> phi_bb9_2;
-  TNode<Object> phi_bb9_3;
-  TNode<Object> phi_bb9_4;
+  TNode<JSAny> phi_bb9_2;
+  TNode<JSAny> phi_bb9_3;
+  TNode<JSAny> phi_bb9_4;
   TNode<HeapNumber> tmp3;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_2, &phi_bb9_3, &phi_bb9_4);
     compiler::CodeAssemblerLabel label4(&ca_);
-    tmp3 = Cast_HeapNumber_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(phi_bb9_3)}, &label4);
+    tmp3 = Cast_HeapNumber_0(state_, TNode<HeapObject>{ca_.UncheckedCast<Union<BigInt, Boolean, HeapNumber, JSReceiver, Null, String, Symbol, Undefined>>(phi_bb9_3)}, &label4);
     ca_.Goto(&block12, phi_bb9_2, phi_bb9_3);
     if (label4.is_used()) {
       ca_.Bind(&label4);
@@ -141,26 +141,26 @@ void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context>
     }
   }
 
-  TNode<Object> phi_bb8_2;
-  TNode<Object> phi_bb8_3;
-  TNode<Object> phi_bb8_4;
+  TNode<JSAny> phi_bb8_2;
+  TNode<JSAny> phi_bb8_3;
+  TNode<JSAny> phi_bb8_4;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_2, &phi_bb8_3, &phi_bb8_4);
     *label_SmiResult_parameter_0 = tmp1;
     ca_.Goto(label_SmiResult);
   }
 
-  TNode<Object> phi_bb13_2;
-  TNode<Object> phi_bb13_3;
+  TNode<JSAny> phi_bb13_2;
+  TNode<JSAny> phi_bb13_3;
   TNode<Number> tmp5;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_2, &phi_bb13_3);
-    tmp5 = ca_.CallBuiltin<Number>(Builtin::kNonNumberToNumber, p_context, ca_.UncheckedCast<HeapObject>(phi_bb13_3));
+    tmp5 = ca_.CallBuiltin<Number>(Builtin::kNonNumberToNumber, p_context, ca_.UncheckedCast<Union<BigInt, Boolean, JSReceiver, Null, String, Symbol, Undefined>>(phi_bb13_3));
     ca_.Goto(&block5, tmp5);
   }
 
-  TNode<Object> phi_bb12_2;
-  TNode<Object> phi_bb12_3;
+  TNode<JSAny> phi_bb12_2;
+  TNode<JSAny> phi_bb12_3;
   TNode<Float64T> tmp6;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_2, &phi_bb12_3);
@@ -169,7 +169,7 @@ void ReduceToSmiOrFloat64_0(compiler::CodeAssemblerState* state_, TNode<Context>
     ca_.Goto(label_Float64Result);
   }
 
-  TNode<Object> phi_bb4_2;
+  TNode<JSAny> phi_bb4_2;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_2);
     VerifiedUnreachable_0(state_);
@@ -180,7 +180,7 @@ TF_BUILTIN(MathAbs, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -202,7 +202,7 @@ TF_BUILTIN(MathAbs, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label2(&ca_);
-    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label0, &tmp1, &label2, &tmp3);
+    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label0, &tmp1, &label2, &tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
       ca_.Goto(&block5);
@@ -303,7 +303,7 @@ TF_BUILTIN(MathCeil, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -316,7 +316,7 @@ TF_BUILTIN(MathCeil, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label2(&ca_);
-    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label0, &tmp1, &label2, &tmp3);
+    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label0, &tmp1, &label2, &tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
       ca_.Goto(&block5);
@@ -346,7 +346,7 @@ TF_BUILTIN(MathFloor, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -359,7 +359,7 @@ TF_BUILTIN(MathFloor, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label2(&ca_);
-    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label0, &tmp1, &label2, &tmp3);
+    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label0, &tmp1, &label2, &tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
       ca_.Goto(&block5);
@@ -389,7 +389,7 @@ TF_BUILTIN(MathRound, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -402,7 +402,7 @@ TF_BUILTIN(MathRound, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label2(&ca_);
-    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label0, &tmp1, &label2, &tmp3);
+    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label0, &tmp1, &label2, &tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
       ca_.Goto(&block5);
@@ -432,7 +432,7 @@ TF_BUILTIN(MathTrunc, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -445,7 +445,7 @@ TF_BUILTIN(MathTrunc, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
     compiler::CodeAssemblerLabel label2(&ca_);
-    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label0, &tmp1, &label2, &tmp3);
+    ReduceToSmiOrFloat64_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label0, &tmp1, &label2, &tmp3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
       ca_.Goto(&block5);
@@ -472,7 +472,7 @@ TF_BUILTIN(MathTrunc, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=119&c=1
-TNode<Number> MathPowImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_base, TNode<Object> p_exponent) {
+TNode<Number> MathPowImpl_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_base, TNode<JSAny> p_exponent) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -485,8 +485,8 @@ TNode<Number> MathPowImpl_0(compiler::CodeAssemblerState* state_, TNode<Context>
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{p_context}, TNode<Object>{p_base});
-    tmp1 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{p_context}, TNode<Object>{p_exponent});
+    tmp0 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{p_context}, TNode<JSAny>{p_base});
+    tmp1 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{p_context}, TNode<JSAny>{p_exponent});
     tmp2 = CodeStubAssembler(state_).Float64Pow(TNode<Float64T>{tmp0}, TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
     ca_.Goto(&block2);
@@ -500,9 +500,9 @@ TF_BUILTIN(MathPow, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kBase);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kBase);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kExponent);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kExponent);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -510,7 +510,7 @@ TF_BUILTIN(MathPow, CodeStubAssembler) {
   TNode<Number> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = MathPowImpl_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{parameter2});
+    tmp0 = MathPowImpl_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{parameter2});
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -550,7 +550,7 @@ TF_BUILTIN(MathMax, CodeStubAssembler) {
 
   TNode<Float64T> phi_bb1_5;
   TNode<IntPtrT> phi_bb1_7;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Float64T> tmp4;
   TNode<Float64T> tmp5;
   TNode<IntPtrT> tmp6;
@@ -558,7 +558,7 @@ TF_BUILTIN(MathMax, CodeStubAssembler) {
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_5, &phi_bb1_7);
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{phi_bb1_7});
-    tmp4 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{parameter0}, TNode<JSAny>{tmp3});
     tmp5 = CodeStubAssembler(state_).Float64Max(TNode<Float64T>{phi_bb1_5}, TNode<Float64T>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb1_7}, TNode<IntPtrT>{tmp6});
@@ -610,7 +610,7 @@ TF_BUILTIN(MathMin, CodeStubAssembler) {
 
   TNode<Float64T> phi_bb1_5;
   TNode<IntPtrT> phi_bb1_7;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Float64T> tmp4;
   TNode<Float64T> tmp5;
   TNode<IntPtrT> tmp6;
@@ -618,7 +618,7 @@ TF_BUILTIN(MathMin, CodeStubAssembler) {
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_5, &phi_bb1_7);
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{phi_bb1_7});
-    tmp4 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    tmp4 = CodeStubAssembler(state_).TruncateTaggedToFloat64(TNode<Context>{parameter0}, TNode<JSAny>{tmp3});
     tmp5 = CodeStubAssembler(state_).Float64Min(TNode<Float64T>{phi_bb1_5}, TNode<Float64T>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb1_7}, TNode<IntPtrT>{tmp6});
@@ -639,7 +639,7 @@ TF_BUILTIN(MathAcos, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -650,7 +650,7 @@ TF_BUILTIN(MathAcos, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Acos(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -662,7 +662,7 @@ TF_BUILTIN(MathAcosh, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -673,7 +673,7 @@ TF_BUILTIN(MathAcosh, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Acosh(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -685,7 +685,7 @@ TF_BUILTIN(MathAsin, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -696,7 +696,7 @@ TF_BUILTIN(MathAsin, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Asin(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -708,7 +708,7 @@ TF_BUILTIN(MathAsinh, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -719,7 +719,7 @@ TF_BUILTIN(MathAsinh, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Asinh(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -731,7 +731,7 @@ TF_BUILTIN(MathAtan, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -742,7 +742,7 @@ TF_BUILTIN(MathAtan, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Atan(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -754,9 +754,9 @@ TF_BUILTIN(MathAtan2, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kY);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kY);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -769,9 +769,9 @@ TF_BUILTIN(MathAtan2, CodeStubAssembler) {
   TNode<Number> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
-    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     tmp3 = Convert_float64_Number_0(state_, TNode<Number>{tmp2});
     tmp4 = CodeStubAssembler(state_).Float64Atan2(TNode<Float64T>{tmp1}, TNode<Float64T>{tmp3});
     tmp5 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp4});
@@ -783,7 +783,7 @@ TF_BUILTIN(MathAtanh, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -794,7 +794,7 @@ TF_BUILTIN(MathAtanh, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Atanh(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -806,7 +806,7 @@ TF_BUILTIN(MathCbrt, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -817,7 +817,7 @@ TF_BUILTIN(MathCbrt, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Cbrt(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -829,7 +829,7 @@ TF_BUILTIN(MathClz32, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -840,7 +840,7 @@ TF_BUILTIN(MathClz32, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_int32_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Word32Clz(TNode<Int32T>{tmp1});
     tmp3 = Convert_Number_int32_0(state_, TNode<Int32T>{tmp2});
@@ -852,7 +852,7 @@ TF_BUILTIN(MathCos, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -863,7 +863,7 @@ TF_BUILTIN(MathCos, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Cos(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -875,7 +875,7 @@ TF_BUILTIN(MathCosh, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -886,7 +886,7 @@ TF_BUILTIN(MathCosh, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Cosh(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -898,7 +898,7 @@ TF_BUILTIN(MathExp, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -909,7 +909,7 @@ TF_BUILTIN(MathExp, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Exp(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -921,7 +921,7 @@ TF_BUILTIN(MathExpm1, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -932,7 +932,7 @@ TF_BUILTIN(MathExpm1, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Expm1(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -944,7 +944,7 @@ TF_BUILTIN(MathFround, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -955,7 +955,7 @@ TF_BUILTIN(MathFround, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float32_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = Convert_float64_float32_0(state_, TNode<Float32T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -967,20 +967,21 @@ TF_BUILTIN(MathF16round, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kFloat16Array));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Number> tmp0;
-  TNode<Float16T> tmp1;
+  TNode<Float16RawBitsT> tmp1;
   TNode<Float64T> tmp2;
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = Convert_float16_Number_0(state_, TNode<Number>{tmp0});
-    tmp2 = Convert_float64_float16_0(state_, TNode<Float16T>{tmp1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = Convert_float16_raw_bits_Number_0(state_, TNode<Number>{tmp0});
+    tmp2 = Convert_float64_float16_raw_bits_0(state_, TNode<Float16RawBitsT>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
     CodeStubAssembler(state_).Return(tmp3);
   }
@@ -990,9 +991,9 @@ TF_BUILTIN(MathImul, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kY);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kY);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1005,9 +1006,9 @@ TF_BUILTIN(MathImul, CodeStubAssembler) {
   TNode<Number> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_int32_Number_0(state_, TNode<Number>{tmp0});
-    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     tmp3 = Convert_int32_Number_0(state_, TNode<Number>{tmp2});
     tmp4 = CodeStubAssembler(state_).Int32Mul(TNode<Int32T>{tmp1}, TNode<Int32T>{tmp3});
     tmp5 = Convert_Number_int32_0(state_, TNode<Int32T>{tmp4});
@@ -1019,7 +1020,7 @@ TF_BUILTIN(MathLog, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1030,7 +1031,7 @@ TF_BUILTIN(MathLog, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Log(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1042,7 +1043,7 @@ TF_BUILTIN(MathLog1p, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1053,7 +1054,7 @@ TF_BUILTIN(MathLog1p, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Log1p(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1065,7 +1066,7 @@ TF_BUILTIN(MathLog10, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1076,7 +1077,7 @@ TF_BUILTIN(MathLog10, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Log10(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1088,7 +1089,7 @@ TF_BUILTIN(MathLog2, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1099,7 +1100,7 @@ TF_BUILTIN(MathLog2, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Log2(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1111,7 +1112,7 @@ TF_BUILTIN(MathSin, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1122,7 +1123,7 @@ TF_BUILTIN(MathSin, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Sin(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1134,7 +1135,7 @@ TF_BUILTIN(MathSign, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1149,7 +1150,7 @@ TF_BUILTIN(MathSign, CodeStubAssembler) {
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = FromConstexpr_float64_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).Float64LessThan(TNode<Float64T>{tmp1}, TNode<Float64T>{tmp2});
@@ -1189,7 +1190,7 @@ TF_BUILTIN(MathSinh, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1200,7 +1201,7 @@ TF_BUILTIN(MathSinh, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Sinh(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1212,7 +1213,7 @@ TF_BUILTIN(MathSqrt, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1223,7 +1224,7 @@ TF_BUILTIN(MathSqrt, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Sqrt(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1235,7 +1236,7 @@ TF_BUILTIN(MathTan, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1246,7 +1247,7 @@ TF_BUILTIN(MathTan, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Tan(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1258,7 +1259,7 @@ TF_BUILTIN(MathTanh, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kX);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kX);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1269,7 +1270,7 @@ TF_BUILTIN(MathTanh, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp0 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     tmp1 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
     tmp2 = CodeStubAssembler(state_).Float64Tanh(TNode<Float64T>{tmp1});
     tmp3 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp2});
@@ -1277,7 +1278,7 @@ TF_BUILTIN(MathTanh, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=398&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=399&c=1
 TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_arguments, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1348,7 +1349,7 @@ TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Contex
   }
 
   TNode<IntPtrT> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   TNode<Number> tmp7;
   TNode<Float64T> tmp8;
   TNode<Float64T> tmp9;
@@ -1358,7 +1359,7 @@ TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Contex
     ca_.Bind(&block6);
     tmp5 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp6 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{tmp5});
-    tmp7 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<Object>{tmp6});
+    tmp7 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp6});
     tmp8 = Convert_float64_Number_0(state_, TNode<Number>{tmp7});
     tmp9 = CodeStubAssembler(state_).Float64Abs(TNode<Float64T>{tmp8});
     tmp10 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
@@ -1375,7 +1376,7 @@ TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Contex
 
   TNode<Float64T> tmp13;
   TNode<IntPtrT> tmp14;
-  TNode<Object> tmp15;
+  TNode<JSAny> tmp15;
   TNode<Number> tmp16;
   TNode<Float64T> tmp17;
   TNode<Float64T> tmp18;
@@ -1386,7 +1387,7 @@ TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Contex
     tmp13 = FromConstexpr_float64_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp14 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp15 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{tmp14});
-    tmp16 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<Object>{tmp15});
+    tmp16 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp15});
     tmp17 = Convert_float64_Number_0(state_, TNode<Number>{tmp16});
     tmp18 = CodeStubAssembler(state_).Float64Abs(TNode<Float64T>{tmp17});
     tmp19 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
@@ -1499,7 +1500,7 @@ TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Contex
   }
 
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<JSAny> tmp46;
   TNode<Number> tmp47;
   TNode<Float64T> tmp48;
   TNode<Float64T> tmp49;
@@ -1509,7 +1510,7 @@ TNode<Number> FastMathHypot_0(compiler::CodeAssemblerState* state_, TNode<Contex
     ca_.Bind(&block20);
     tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp46 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{tmp45});
-    tmp47 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<Object>{tmp46});
+    tmp47 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{p_context}, TNode<JSAny>{tmp46});
     tmp48 = Convert_float64_Number_0(state_, TNode<Number>{tmp47});
     tmp49 = CodeStubAssembler(state_).Float64Abs(TNode<Float64T>{tmp48});
     tmp50 = FromConstexpr_float64_constexpr_float64_0(state_, V8_INFINITY);
@@ -1668,7 +1669,7 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1739,14 +1740,14 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<BoolT> phi_bb5_8;
   TNode<Float64T> phi_bb5_9;
   TNode<IntPtrT> phi_bb5_10;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<Number> tmp8;
   TNode<Float64T> tmp9;
   TNode<BoolT> tmp10;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_8, &phi_bb5_9, &phi_bb5_10);
     tmp7 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{phi_bb5_10});
-    tmp8 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp7});
+    tmp8 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp7});
     tmp9 = Convert_float64_Number_0(state_, TNode<Number>{tmp8});
     tmp10 = Float64IsNaN_0(state_, TNode<Float64T>{tmp9});
     ca_.Branch(tmp10, &block9, std::vector<compiler::Node*>{phi_bb5_8, phi_bb5_9, phi_bb5_10}, &block10, std::vector<compiler::Node*>{phi_bb5_8, phi_bb5_9, phi_bb5_10});
@@ -1766,7 +1767,7 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<Float64T> phi_bb10_9;
   TNode<IntPtrT> phi_bb10_10;
   TNode<Float64T> tmp12;
-  TNode<Object> tmp13;
+  TNode<Union<HeapObject, TaggedIndex>> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<UintPtrT> tmp16;
@@ -1775,7 +1776,7 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_8, &phi_bb10_9, &phi_bb10_10);
     tmp12 = CodeStubAssembler(state_).Float64Abs(TNode<Float64T>{tmp9});
-    std::tie(tmp13, tmp14, tmp15) = FieldSliceFixedDoubleArrayFloats_0(state_, TNode<FixedDoubleArray>{tmp2}).Flatten();
+    std::tie(tmp13, tmp14, tmp15) = FieldSliceFixedDoubleArrayValues_0(state_, TNode<FixedDoubleArray>{tmp2}).Flatten();
     tmp16 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb10_10});
     tmp17 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp15});
     tmp18 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp16}, TNode<UintPtrT>{tmp17});
@@ -1791,18 +1792,18 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<IntPtrT> phi_bb16_23;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
-  TNode<Object> tmp21;
+  TNode<Union<HeapObject, TaggedIndex>> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<BoolT> tmp23;
   TNode<Float64T> tmp24;
   TNode<BoolT> tmp25;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_8, &phi_bb16_9, &phi_bb16_10, &phi_bb16_17, &phi_bb16_18, &phi_bb16_22, &phi_bb16_23);
-    tmp19 = TimesSizeOf_float64_or_hole_0(state_, TNode<IntPtrT>{phi_bb16_23});
+    tmp19 = TimesSizeOf_float64_or_undefined_or_hole_0(state_, TNode<IntPtrT>{phi_bb16_23});
     tmp20 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp19});
-    std::tie(tmp21, tmp22) = NewReference_float64_or_hole_0(state_, TNode<Object>{tmp13}, TNode<IntPtrT>{tmp20}).Flatten();
-    std::tie(tmp23, tmp24) = Convert_float64_or_hole_float64_0(state_, TNode<Float64T>{tmp12}).Flatten();
-    StoreFloat64OrHole_0(state_, TorqueStructReference_float64_or_hole_0{TNode<Object>{tmp21}, TNode<IntPtrT>{tmp22}, TorqueStructUnsafe_0{}}, TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp23}, TNode<Float64T>{tmp24}});
+    std::tie(tmp21, tmp22) = NewReference_float64_or_undefined_or_hole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp13}, TNode<IntPtrT>{tmp20}).Flatten();
+    std::tie(tmp23, tmp24) = Convert_float64_or_undefined_or_hole_float64_0(state_, TNode<Float64T>{tmp12}).Flatten();
+    StoreFloat64OrHole_0(state_, TorqueStructReference_float64_or_undefined_or_hole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp21}, TNode<IntPtrT>{tmp22}, TorqueStructUnsafe_0{}}, TorqueStructfloat64_or_undefined_or_hole_0{TNode<BoolT>{tmp23}, TNode<Float64T>{tmp24}});
     tmp25 = CodeStubAssembler(state_).Float64GreaterThan(TNode<Float64T>{tmp12}, TNode<Float64T>{phi_bb16_9});
     ca_.Branch(tmp25, &block20, std::vector<compiler::Node*>{phi_bb16_8, phi_bb16_9, phi_bb16_10}, &block21, std::vector<compiler::Node*>{phi_bb16_8, phi_bb16_9, phi_bb16_10});
   }
@@ -1934,7 +1935,7 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<Float64T> phi_bb34_10;
   TNode<Float64T> phi_bb34_11;
   TNode<IntPtrT> phi_bb34_12;
-  TNode<Object> tmp39;
+  TNode<Union<HeapObject, TaggedIndex>> tmp39;
   TNode<IntPtrT> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<UintPtrT> tmp42;
@@ -1942,7 +1943,7 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<BoolT> tmp44;
   if (block34.is_used()) {
     ca_.Bind(&block34, &phi_bb34_8, &phi_bb34_9, &phi_bb34_10, &phi_bb34_11, &phi_bb34_12);
-    std::tie(tmp39, tmp40, tmp41) = FieldSliceFixedDoubleArrayFloats_0(state_, TNode<FixedDoubleArray>{tmp2}).Flatten();
+    std::tie(tmp39, tmp40, tmp41) = FieldSliceFixedDoubleArrayValues_0(state_, TNode<FixedDoubleArray>{tmp2}).Flatten();
     tmp42 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{phi_bb34_12});
     tmp43 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp41});
     tmp44 = CodeStubAssembler(state_).UintPtrLessThan(TNode<UintPtrT>{tmp42}, TNode<UintPtrT>{tmp43});
@@ -1960,7 +1961,7 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<IntPtrT> phi_bb42_23;
   TNode<IntPtrT> tmp45;
   TNode<IntPtrT> tmp46;
-  TNode<Object> tmp47;
+  TNode<Union<HeapObject, TaggedIndex>> tmp47;
   TNode<IntPtrT> tmp48;
   TNode<BoolT> tmp49;
   TNode<Float64T> tmp50;
@@ -1974,10 +1975,10 @@ TF_BUILTIN(MathHypot, CodeStubAssembler) {
   TNode<IntPtrT> tmp58;
   if (block42.is_used()) {
     ca_.Bind(&block42, &phi_bb42_8, &phi_bb42_9, &phi_bb42_10, &phi_bb42_11, &phi_bb42_12, &phi_bb42_17, &phi_bb42_18, &phi_bb42_22, &phi_bb42_23);
-    tmp45 = TimesSizeOf_float64_or_hole_0(state_, TNode<IntPtrT>{phi_bb42_23});
+    tmp45 = TimesSizeOf_float64_or_undefined_or_hole_0(state_, TNode<IntPtrT>{phi_bb42_23});
     tmp46 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp45});
-    std::tie(tmp47, tmp48) = NewReference_float64_or_hole_0(state_, TNode<Object>{tmp39}, TNode<IntPtrT>{tmp46}).Flatten();
-    std::tie(tmp49, tmp50) = LoadFloat64OrHole_0(state_, TorqueStructReference_float64_or_hole_0{TNode<Object>{tmp47}, TNode<IntPtrT>{tmp48}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp47, tmp48) = NewReference_float64_or_undefined_or_hole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp39}, TNode<IntPtrT>{tmp46}).Flatten();
+    std::tie(tmp49, tmp50) = LoadFloat64OrHole_0(state_, TorqueStructReference_float64_or_undefined_or_hole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp47}, TNode<IntPtrT>{tmp48}, TorqueStructUnsafe_0{}}).Flatten();
     tmp51 = CodeStubAssembler(state_).Float64Div(TNode<Float64T>{tmp50}, TNode<Float64T>{phi_bb42_9});
     tmp52 = CodeStubAssembler(state_).Float64Mul(TNode<Float64T>{tmp51}, TNode<Float64T>{tmp51});
     tmp53 = CodeStubAssembler(state_).Float64Sub(TNode<Float64T>{tmp52}, TNode<Float64T>{phi_bb42_11});
@@ -2024,7 +2025,7 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2034,7 +2035,7 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Smi> tmp3;
   TNode<Smi> tmp4;
@@ -2060,13 +2061,13 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
   TNode<Smi> tmp7;
   TNode<Smi> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<HeapObject, TaggedIndex>> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
-  TNode<Object> tmp13;
+  TNode<Union<HeapObject, TaggedIndex>> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<FixedDoubleArray> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
@@ -2083,7 +2084,7 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
     tmp12 = MATH_RANDOM_CACHE_INDEX_0(state_);
     std::tie(tmp13, tmp14) = NativeContextSlot_NativeContext_FixedDoubleArray_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp12}).Flatten();
     tmp15 = CodeStubAssembler(state_).LoadReference<FixedDoubleArray>(CodeStubAssembler::Reference{tmp13, tmp14});
-    std::tie(tmp16, tmp17, tmp18) = FieldSliceFixedDoubleArrayFloats_0(state_, TNode<FixedDoubleArray>{tmp15}).Flatten();
+    std::tie(tmp16, tmp17, tmp18) = FieldSliceFixedDoubleArrayValues_0(state_, TNode<FixedDoubleArray>{tmp15}).Flatten();
     tmp19 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp8});
     tmp20 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp19});
     tmp21 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp18});
@@ -2093,17 +2094,17 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
-  TNode<Object> tmp25;
+  TNode<Union<HeapObject, TaggedIndex>> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<BoolT> tmp27;
   TNode<Float64T> tmp28;
   TNode<HeapNumber> tmp29;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp23 = TimesSizeOf_float64_or_hole_0(state_, TNode<IntPtrT>{tmp19});
+    tmp23 = TimesSizeOf_float64_or_undefined_or_hole_0(state_, TNode<IntPtrT>{tmp19});
     tmp24 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp17}, TNode<IntPtrT>{tmp23});
-    std::tie(tmp25, tmp26) = NewReference_float64_or_hole_0(state_, TNode<Object>{tmp16}, TNode<IntPtrT>{tmp24}).Flatten();
-    std::tie(tmp27, tmp28) = LoadFloat64OrHole_0(state_, TorqueStructReference_float64_or_hole_0{TNode<Object>{tmp25}, TNode<IntPtrT>{tmp26}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp25, tmp26) = NewReference_float64_or_undefined_or_hole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp16}, TNode<IntPtrT>{tmp24}).Flatten();
+    std::tie(tmp27, tmp28) = LoadFloat64OrHole_0(state_, TorqueStructReference_float64_or_undefined_or_hole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp25}, TNode<IntPtrT>{tmp26}, TorqueStructUnsafe_0{}}).Flatten();
     tmp29 = CodeStubAssembler(state_).AllocateHeapNumberWithValue(TNode<Float64T>{tmp28});
     CodeStubAssembler(state_).Return(tmp29);
   }
@@ -2114,7 +2115,7 @@ TF_BUILTIN(MathRandom, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=516&c=24
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=517&c=24
 TorqueStructReference_Smi_0 NativeContextSlot_NativeContext_Smi_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2122,7 +2123,7 @@ TorqueStructReference_Smi_0 NativeContextSlot_NativeContext_Smi_0(compiler::Code
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2131,10 +2132,10 @@ TorqueStructReference_Smi_0 NativeContextSlot_NativeContext_Smi_0(compiler::Code
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_Smi_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Smi_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=525&c=8
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/math.tq?l=526&c=8
 TorqueStructReference_FixedDoubleArray_0 NativeContextSlot_NativeContext_FixedDoubleArray_0(compiler::CodeAssemblerState* state_, TNode<NativeContext> p_context, TNode<IntPtrT> p_index) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2142,7 +2143,7 @@ TorqueStructReference_FixedDoubleArray_0 NativeContextSlot_NativeContext_FixedDo
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2151,7 +2152,7 @@ TorqueStructReference_FixedDoubleArray_0 NativeContextSlot_NativeContext_FixedDo
   }
 
     ca_.Bind(&block2);
-  return TorqueStructReference_FixedDoubleArray_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_FixedDoubleArray_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

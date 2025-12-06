@@ -21,10 +21,10 @@ V8_EXPORT_PRIVATE bool IsJSReceiver_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSReceiver : public P {
   static_assert(
-      std::is_same<JSReceiver, D>::value,
+      std::is_same_v<JSReceiver, D>,
       "Use this class as direct base for JSReceiver.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedJSReceiver.");
 
  public: 
@@ -58,7 +58,7 @@ class TorqueGeneratedJSReceiver : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSReceiver() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSReceiver, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSReceiver, DAlias>,
         "class TorqueGeneratedJSReceiver should be used as direct base for JSReceiver.");
   }
 
@@ -76,10 +76,10 @@ V8_EXPORT_PRIVATE bool IsJSObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSObject : public P {
   static_assert(
-      std::is_same<JSObject, D>::value,
+      std::is_same_v<JSObject, D>,
       "Use this class as direct base for JSObject.");
   static_assert(
-      std::is_same<JSReceiver, P>::value,
+      std::is_same_v<JSReceiver, P>,
       "Pass in JSReceiver as second template parameter for TorqueGeneratedJSObject.");
 
  public: 
@@ -114,7 +114,7 @@ class TorqueGeneratedJSObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSObject, DAlias>,
         "class TorqueGeneratedJSObject should be used as direct base for JSObject.");
   }
 
@@ -132,10 +132,10 @@ V8_EXPORT_PRIVATE bool IsJSObjectWithEmbedderSlots_NonInline(Tagged<HeapObject> 
 template <class D, class P>
 class TorqueGeneratedJSObjectWithEmbedderSlots : public P {
   static_assert(
-      std::is_same<JSObjectWithEmbedderSlots, D>::value,
+      std::is_same_v<JSObjectWithEmbedderSlots, D>,
       "Use this class as direct base for JSObjectWithEmbedderSlots.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSObjectWithEmbedderSlots.");
 
  public: 
@@ -160,7 +160,7 @@ class TorqueGeneratedJSObjectWithEmbedderSlots : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSObjectWithEmbedderSlots() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSObjectWithEmbedderSlots, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSObjectWithEmbedderSlots, DAlias>,
         "class TorqueGeneratedJSObjectWithEmbedderSlots should be used as direct base for JSObjectWithEmbedderSlots.");
   }
 
@@ -178,10 +178,10 @@ V8_EXPORT_PRIVATE bool IsJSAPIObjectWithEmbedderSlots_NonInline(Tagged<HeapObjec
 template <class D, class P>
 class TorqueGeneratedJSAPIObjectWithEmbedderSlots : public P {
   static_assert(
-      std::is_same<JSAPIObjectWithEmbedderSlots, D>::value,
+      std::is_same_v<JSAPIObjectWithEmbedderSlots, D>,
       "Use this class as direct base for JSAPIObjectWithEmbedderSlots.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSAPIObjectWithEmbedderSlots.");
 
  public: 
@@ -212,7 +212,7 @@ class TorqueGeneratedJSAPIObjectWithEmbedderSlots : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSAPIObjectWithEmbedderSlots() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSAPIObjectWithEmbedderSlots, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSAPIObjectWithEmbedderSlots, DAlias>,
         "class TorqueGeneratedJSAPIObjectWithEmbedderSlots should be used as direct base for JSAPIObjectWithEmbedderSlots.");
   }
 
@@ -230,10 +230,10 @@ V8_EXPORT_PRIVATE bool IsJSCustomElementsObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSCustomElementsObject : public P {
   static_assert(
-      std::is_same<JSCustomElementsObject, D>::value,
+      std::is_same_v<JSCustomElementsObject, D>,
       "Use this class as direct base for JSCustomElementsObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSCustomElementsObject.");
 
  public: 
@@ -256,7 +256,7 @@ class TorqueGeneratedJSCustomElementsObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSCustomElementsObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSCustomElementsObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSCustomElementsObject, DAlias>,
         "class TorqueGeneratedJSCustomElementsObject should be used as direct base for JSCustomElementsObject.");
   }
 
@@ -274,10 +274,10 @@ V8_EXPORT_PRIVATE bool IsJSSpecialObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSpecialObject : public P {
   static_assert(
-      std::is_same<JSSpecialObject, D>::value,
+      std::is_same_v<JSSpecialObject, D>,
       "Use this class as direct base for JSSpecialObject.");
   static_assert(
-      std::is_same<JSCustomElementsObject, P>::value,
+      std::is_same_v<JSCustomElementsObject, P>,
       "Pass in JSCustomElementsObject as second template parameter for TorqueGeneratedJSSpecialObject.");
 
  public: 
@@ -308,7 +308,7 @@ class TorqueGeneratedJSSpecialObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSpecialObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSpecialObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSpecialObject, DAlias>,
         "class TorqueGeneratedJSSpecialObject should be used as direct base for JSSpecialObject.");
   }
 
@@ -326,10 +326,10 @@ V8_EXPORT_PRIVATE bool IsJSExternalObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSExternalObject : public P {
   static_assert(
-      std::is_same<JSExternalObject, D>::value,
+      std::is_same_v<JSExternalObject, D>,
       "Use this class as direct base for JSExternalObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSExternalObject.");
 
  public: 
@@ -357,7 +357,7 @@ class TorqueGeneratedJSExternalObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSExternalObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSExternalObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSExternalObject, DAlias>,
         "class TorqueGeneratedJSExternalObject should be used as direct base for JSExternalObject.");
   }
 
@@ -375,10 +375,10 @@ V8_EXPORT_PRIVATE bool IsJSGlobalProxy_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSGlobalProxy : public P {
   static_assert(
-      std::is_same<JSGlobalProxy, D>::value,
+      std::is_same_v<JSGlobalProxy, D>,
       "Use this class as direct base for JSGlobalProxy.");
   static_assert(
-      std::is_same<JSSpecialObject, P>::value,
+      std::is_same_v<JSSpecialObject, P>,
       "Pass in JSSpecialObject as second template parameter for TorqueGeneratedJSGlobalProxy.");
 
  public: 
@@ -403,7 +403,7 @@ class TorqueGeneratedJSGlobalProxy : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSGlobalProxy() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSGlobalProxy, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSGlobalProxy, DAlias>,
         "class TorqueGeneratedJSGlobalProxy should be used as direct base for JSGlobalProxy.");
   }
 
@@ -421,10 +421,10 @@ V8_EXPORT_PRIVATE bool IsJSGlobalObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSGlobalObject : public P {
   static_assert(
-      std::is_same<JSGlobalObject, D>::value,
+      std::is_same_v<JSGlobalObject, D>,
       "Use this class as direct base for JSGlobalObject.");
   static_assert(
-      std::is_same<JSSpecialObject, P>::value,
+      std::is_same_v<JSSpecialObject, P>,
       "Pass in JSSpecialObject as second template parameter for TorqueGeneratedJSGlobalObject.");
 
  public: 
@@ -459,7 +459,7 @@ class TorqueGeneratedJSGlobalObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSGlobalObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSGlobalObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSGlobalObject, DAlias>,
         "class TorqueGeneratedJSGlobalObject should be used as direct base for JSGlobalObject.");
   }
 
@@ -477,10 +477,10 @@ V8_EXPORT_PRIVATE bool IsJSPrimitiveWrapper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSPrimitiveWrapper : public P {
   static_assert(
-      std::is_same<JSPrimitiveWrapper, D>::value,
+      std::is_same_v<JSPrimitiveWrapper, D>,
       "Use this class as direct base for JSPrimitiveWrapper.");
   static_assert(
-      std::is_same<JSCustomElementsObject, P>::value,
+      std::is_same_v<JSCustomElementsObject, P>,
       "Pass in JSCustomElementsObject as second template parameter for TorqueGeneratedJSPrimitiveWrapper.");
 
  public: 
@@ -516,7 +516,7 @@ class TorqueGeneratedJSPrimitiveWrapper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSPrimitiveWrapper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSPrimitiveWrapper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSPrimitiveWrapper, DAlias>,
         "class TorqueGeneratedJSPrimitiveWrapper should be used as direct base for JSPrimitiveWrapper.");
   }
 
@@ -534,10 +534,10 @@ V8_EXPORT_PRIVATE bool IsJSMessageObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSMessageObject : public P {
   static_assert(
-      std::is_same<JSMessageObject, D>::value,
+      std::is_same_v<JSMessageObject, D>,
       "Use this class as direct base for JSMessageObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSMessageObject.");
 
  public: 
@@ -563,12 +563,13 @@ class TorqueGeneratedJSMessageObject : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=133&c=3
   inline void set_script(Tagged<Script> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
+  // Torque type: (TheHole | class StackTraceInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
-  inline Tagged<Object> stack_frames() const;
+  inline Tagged<Union<Hole, StackTraceInfo>> stack_trace() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
-  inline Tagged<Object> stack_frames(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<Hole, StackTraceInfo>> stack_trace(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
-  inline void set_stack_frames(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_stack_trace(Tagged<Union<Hole, StackTraceInfo>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (Smi | class SharedFunctionInfo)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=136&c=3
@@ -616,10 +617,10 @@ class TorqueGeneratedJSMessageObject : public P {
   static constexpr int kScriptOffset = kArgumentOffsetEnd + 1;
   static constexpr int kScriptOffsetEnd = kScriptOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
-  static constexpr int kStackFramesOffset = kScriptOffsetEnd + 1;
-  static constexpr int kStackFramesOffsetEnd = kStackFramesOffset + kTaggedSize - 1;
+  static constexpr int kStackTraceOffset = kScriptOffsetEnd + 1;
+  static constexpr int kStackTraceOffsetEnd = kStackTraceOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=136&c=3
-  static constexpr int kSharedInfoOffset = kStackFramesOffsetEnd + 1;
+  static constexpr int kSharedInfoOffset = kStackTraceOffsetEnd + 1;
   static constexpr int kSharedInfoOffsetEnd = kSharedInfoOffset + kTaggedSize - 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=140&c=3
   static constexpr int kBytecodeOffsetOffset = kSharedInfoOffsetEnd + 1;
@@ -643,7 +644,7 @@ class TorqueGeneratedJSMessageObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSMessageObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSMessageObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSMessageObject, DAlias>,
         "class TorqueGeneratedJSMessageObject should be used as direct base for JSMessageObject.");
   }
 
@@ -661,10 +662,10 @@ V8_EXPORT_PRIVATE bool IsJSDate_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSDate : public P {
   static_assert(
-      std::is_same<JSDate, D>::value,
+      std::is_same_v<JSDate, D>,
       "Use this class as direct base for JSDate.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSDate.");
 
  public: 
@@ -676,69 +677,69 @@ class TorqueGeneratedJSDate : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=150&c=3
   inline void set_value(double value);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=153&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> year() const;
+  inline Tagged<Union<HeapNumber, Smi>> year() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=153&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> year(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> year(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=153&c=3
-  inline void set_year(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_year(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=154&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> month() const;
+  inline Tagged<Union<HeapNumber, Smi>> month() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=154&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> month(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> month(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=154&c=3
-  inline void set_month(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_month(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=155&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> day() const;
+  inline Tagged<Union<HeapNumber, Smi>> day() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=155&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> day(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> day(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=155&c=3
-  inline void set_day(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_day(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=156&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> weekday() const;
+  inline Tagged<Union<HeapNumber, Smi>> weekday() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=156&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> weekday(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> weekday(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=156&c=3
-  inline void set_weekday(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_weekday(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=157&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> hour() const;
+  inline Tagged<Union<HeapNumber, Smi>> hour() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=157&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> hour(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> hour(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=157&c=3
-  inline void set_hour(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_hour(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=158&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> min() const;
+  inline Tagged<Union<HeapNumber, Smi>> min() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=158&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> min(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> min(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=158&c=3
-  inline void set_min(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_min(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=159&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> sec() const;
+  inline Tagged<Union<HeapNumber, Smi>> sec() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=159&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> sec(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> sec(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=159&c=3
-  inline void set_sec(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_sec(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Undefined | NaN)
+  // Torque type: (Smi | NaN)
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> cache_stamp() const;
+  inline Tagged<Union<HeapNumber, Smi>> cache_stamp() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
-  inline Tagged<Union<HeapNumber, Smi, Undefined>> cache_stamp(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapNumber, Smi>> cache_stamp(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
-  inline void set_cache_stamp(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_cache_stamp(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(JSDate)
 
@@ -785,7 +786,7 @@ class TorqueGeneratedJSDate : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSDate() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSDate, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSDate, DAlias>,
         "class TorqueGeneratedJSDate should be used as direct base for JSDate.");
   }
 
@@ -803,10 +804,10 @@ V8_EXPORT_PRIVATE bool IsJSAsyncFromSyncIterator_NonInline(Tagged<HeapObject> o)
 template <class D, class P>
 class TorqueGeneratedJSAsyncFromSyncIterator : public P {
   static_assert(
-      std::is_same<JSAsyncFromSyncIterator, D>::value,
+      std::is_same_v<JSAsyncFromSyncIterator, D>,
       "Use this class as direct base for JSAsyncFromSyncIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSAsyncFromSyncIterator.");
 
  public: 
@@ -851,7 +852,7 @@ class TorqueGeneratedJSAsyncFromSyncIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSAsyncFromSyncIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSAsyncFromSyncIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSAsyncFromSyncIterator, DAlias>,
         "class TorqueGeneratedJSAsyncFromSyncIterator should be used as direct base for JSAsyncFromSyncIterator.");
   }
 
@@ -869,10 +870,10 @@ V8_EXPORT_PRIVATE bool IsJSStringIterator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSStringIterator : public P {
   static_assert(
-      std::is_same<JSStringIterator, D>::value,
+      std::is_same_v<JSStringIterator, D>,
       "Use this class as direct base for JSStringIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSStringIterator.");
 
  public: 
@@ -915,7 +916,7 @@ class TorqueGeneratedJSStringIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSStringIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSStringIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSStringIterator, DAlias>,
         "class TorqueGeneratedJSStringIterator should be used as direct base for JSStringIterator.");
   }
 
@@ -933,10 +934,10 @@ V8_EXPORT_PRIVATE bool IsJSValidIteratorWrapper_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSValidIteratorWrapper : public P {
   static_assert(
-      std::is_same<JSValidIteratorWrapper, D>::value,
+      std::is_same_v<JSValidIteratorWrapper, D>,
       "Use this class as direct base for JSValidIteratorWrapper.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSValidIteratorWrapper.");
 
  public: 
@@ -979,7 +980,7 @@ class TorqueGeneratedJSValidIteratorWrapper : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSValidIteratorWrapper() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSValidIteratorWrapper, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSValidIteratorWrapper, DAlias>,
         "class TorqueGeneratedJSValidIteratorWrapper should be used as direct base for JSValidIteratorWrapper.");
   }
 

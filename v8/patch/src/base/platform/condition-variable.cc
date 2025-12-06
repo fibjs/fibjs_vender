@@ -6,45 +6,46 @@
 namespace v8 {
 namespace base {
 
-#define _native_handle (*(exlib::CondVar**)&native_handle_)
+// Use reinterpret_cast to replace absl::CondVar with exlib::CondVar
+#define _fiber_condvar(cv) (*(exlib::CondVar**)&(cv))
+#define _fiber_locker(m) (*(exlib::Locker**)&(m))
 
-    ConditionVariable::ConditionVariable()
-    {
-        _native_handle = new exlib::CondVar();
-    }
-
-    ConditionVariable::~ConditionVariable()
-    {
-        delete _native_handle;
-    }
-
-    void ConditionVariable::NotifyOne()
-    {
-        _native_handle->notify_one();
-    }
-
-    void ConditionVariable::NotifyAll()
-    {
-        _native_handle->notify_all();
-    }
-
-    void ConditionVariable::Wait(Mutex* mutex)
-    {
-        Mutex::NativeHandle ev = mutex->native_handle();
-
-        mutex->AssertHeldAndUnmark();
-        _native_handle->wait(**(exlib::Locker**)&ev);
-        mutex->AssertUnheldAndMark();
-    }
-
-    bool ConditionVariable::WaitFor(Mutex* mutex, const TimeDelta& rel_time)
-    {
-        Mutex::NativeHandle ev = mutex->native_handle();
-        mutex->AssertHeldAndUnmark();
-        bool result = _native_handle->wait(**(exlib::Locker**)&ev, rel_time.InMicroseconds());
-        mutex->AssertUnheldAndMark();
-
-        return result;
-    }
+ConditionVariable::ConditionVariable()
+{
+    _fiber_condvar(native_handle_) = new exlib::CondVar();
 }
-} // namespace v8::base
+
+ConditionVariable::~ConditionVariable()
+{
+    delete _fiber_condvar(native_handle_);
+}
+
+void ConditionVariable::NotifyOne()
+{
+    _fiber_condvar(native_handle_)->notify_one();
+}
+
+void ConditionVariable::NotifyAll()
+{
+    _fiber_condvar(native_handle_)->notify_all();
+}
+
+void ConditionVariable::Wait(Mutex* mutex)
+{
+    mutex->AssertHeldAndUnmark();
+    _fiber_condvar(native_handle_)->wait(*_fiber_locker(mutex->native_handle_));
+    mutex->AssertUnheldAndMark();
+}
+
+bool ConditionVariable::WaitFor(Mutex* mutex, const TimeDelta& rel_time)
+{
+    mutex->AssertHeldAndUnmark();
+    bool result = _fiber_condvar(native_handle_)->wait(
+        *_fiber_locker(mutex->native_handle_), rel_time.InMicroseconds());
+    mutex->AssertUnheldAndMark();
+
+    return result;
+}
+
+}  // namespace base
+}  // namespace v8

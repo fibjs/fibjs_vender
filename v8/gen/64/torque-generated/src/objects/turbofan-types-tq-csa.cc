@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/turbofan-types-tq-csa.h"
@@ -78,6 +78,7 @@
 #include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
+#include "torque-generated/src/objects/js-array-buffer-tq-csa.h"
 #include "torque-generated/src/objects/js-array-tq-csa.h"
 #include "torque-generated/src/objects/js-function-tq-csa.h"
 #include "torque-generated/src/objects/js-objects-tq-csa.h"
@@ -128,7 +129,7 @@ TNode<TurbofanType> Cast_TurbofanType_0(compiler::CodeAssemblerState* state_, TN
   return TNode<TurbofanType>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
 TNode<TurbofanBitsetType> Cast_TurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -164,7 +165,7 @@ TNode<TurbofanBitsetType> Cast_TurbofanBitsetType_0(compiler::CodeAssemblerState
   return TNode<TurbofanBitsetType>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
 TNode<TurbofanUnionType> Cast_TurbofanUnionType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -200,7 +201,7 @@ TNode<TurbofanUnionType> Cast_TurbofanUnionType_0(compiler::CodeAssemblerState* 
   return TNode<TurbofanUnionType>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
 TNode<TurbofanRangeType> Cast_TurbofanRangeType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -236,7 +237,7 @@ TNode<TurbofanRangeType> Cast_TurbofanRangeType_0(compiler::CodeAssemblerState* 
   return TNode<TurbofanRangeType>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
 TNode<TurbofanHeapConstantType> Cast_TurbofanHeapConstantType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -272,7 +273,7 @@ TNode<TurbofanHeapConstantType> Cast_TurbofanHeapConstantType_0(compiler::CodeAs
   return TNode<TurbofanHeapConstantType>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
 TNode<TurbofanOtherNumberConstantType> Cast_TurbofanOtherNumberConstantType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -308,7 +309,7 @@ TNode<TurbofanOtherNumberConstantType> Cast_TurbofanOtherNumberConstantType_0(co
   return TNode<TurbofanOtherNumberConstantType>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=88&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=89&c=1
 TNode<BoolT> IsMinusZero_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_x) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -358,7 +359,7 @@ TNode<BoolT> IsMinusZero_0(compiler::CodeAssemblerState* state_, TNode<Float64T>
   return TNode<BoolT>{phi_bb4_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=92&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=93&c=1
 TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNode<Object> p_value, TNode<Uint32T> p_bitsetLow, TNode<Uint32T> p_bitsetHigh) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -447,17 +448,19 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   compiler::CodeAssemblerParameterizedLabel<> block151(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block164(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block163(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block165(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block166(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block174(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block173(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<BoolT> block170(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block168(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block167(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block169(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block179(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block170(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block178(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block177(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<BoolT> block174(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block172(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block173(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block183(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block182(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block180(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block184(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Number> tmp0;
@@ -489,7 +492,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp4 = Convert_float64_Number_0(state_, TNode<Number>{tmp0});
-    tmp5 = CodeStubAssembler(state_).IsInteger(TNode<Object>{tmp0});
+    tmp5 = CodeStubAssembler(state_).IsInteger(TNode<JSAny>{tmp0});
     ca_.Branch(tmp5, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
 
@@ -752,7 +755,7 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     }
   }
 
-  TNode<JSReceiver> tmp49;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp49;
   if (block58.is_used()) {
     ca_.Bind(&block58);
     compiler::CodeAssemblerLabel label50(&ca_);
@@ -1075,11 +1078,11 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Goto(&block1, phi_bb142_10);
   }
 
-  TNode<JSObject> tmp101;
+  TNode<JSTypedArray> tmp101;
   if (block149.is_used()) {
     ca_.Bind(&block149);
     compiler::CodeAssemblerLabel label102(&ca_);
-    tmp101 = Cast_JSObject_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_value)}, &label102);
+    tmp101 = Cast_JSTypedArray_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_value)}, &label102);
     ca_.Goto(&block163);
     if (label102.is_used()) {
       ca_.Bind(&label102);
@@ -1088,12 +1091,12 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
   }
 
   TNode<IntPtrT> tmp103;
-  TNode<Object> tmp104;
+  TNode<JSAny> tmp104;
   TNode<HeapObject> tmp105;
   if (block148.is_used()) {
     ca_.Bind(&block148);
     tmp103 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp104 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp73, tmp103});
+    tmp104 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp73, tmp103});
     compiler::CodeAssemblerLabel label106(&ca_);
     tmp105 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{tmp104}, &label106);
     ca_.Goto(&block156);
@@ -1159,103 +1162,122 @@ TNode<BoolT> TestTurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Goto(&block1, tmp112);
   }
 
-  TNode<WasmObject> tmp113;
+  TNode<JSObject> tmp113;
   if (block164.is_used()) {
     ca_.Bind(&block164);
     compiler::CodeAssemblerLabel label114(&ca_);
-    tmp113 = Cast_WasmObject_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_value)}, &label114);
-    ca_.Goto(&block178);
+    tmp113 = Cast_JSObject_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_value)}, &label114);
+    ca_.Goto(&block167);
     if (label114.is_used()) {
       ca_.Bind(&label114);
-      ca_.Goto(&block179);
+      ca_.Goto(&block168);
     }
   }
 
-  TNode<IntPtrT> tmp115;
-  TNode<Map> tmp116;
-  TNode<BoolT> tmp117;
+  TNode<BoolT> tmp115;
   if (block163.is_used()) {
     ca_.Bind(&block163);
-    tmp115 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp116 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp101, tmp115});
-    tmp117 = Method_Map_IsUndetectable_0(state_, TNode<Map>{tmp116});
-    ca_.Branch(tmp117, &block165, std::vector<compiler::Node*>{}, &block166, std::vector<compiler::Node*>{});
+    tmp115 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 3, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetHigh)));
+    ca_.Goto(&block1, tmp115);
   }
 
-  TNode<BoolT> tmp118;
-  if (block165.is_used()) {
-    ca_.Bind(&block165);
-    tmp118 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 17, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
-    ca_.Goto(&block1, tmp118);
-  }
-
-  TNode<JSReceiver> tmp119;
-  if (block166.is_used()) {
-    ca_.Bind(&block166);
-    compiler::CodeAssemblerLabel label120(&ca_);
-    tmp119 = Cast_Callable_0(state_, TNode<HeapObject>{tmp101}, &label120);
-    ca_.Goto(&block173);
-    if (label120.is_used()) {
-      ca_.Bind(&label120);
-      ca_.Goto(&block174);
+  TNode<WasmObject> tmp116;
+  if (block168.is_used()) {
+    ca_.Bind(&block168);
+    compiler::CodeAssemblerLabel label117(&ca_);
+    tmp116 = Cast_WasmObject_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(p_value)}, &label117);
+    ca_.Goto(&block182);
+    if (label117.is_used()) {
+      ca_.Bind(&label117);
+      ca_.Goto(&block183);
     }
+  }
+
+  TNode<IntPtrT> tmp118;
+  TNode<Map> tmp119;
+  TNode<BoolT> tmp120;
+  if (block167.is_used()) {
+    ca_.Bind(&block167);
+    tmp118 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp119 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp113, tmp118});
+    tmp120 = Method_Map_IsUndetectable_0(state_, TNode<Map>{tmp119});
+    ca_.Branch(tmp120, &block169, std::vector<compiler::Node*>{}, &block170, std::vector<compiler::Node*>{});
   }
 
   TNode<BoolT> tmp121;
-  if (block174.is_used()) {
-    ca_.Bind(&block174);
-    tmp121 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block170, tmp121);
+  if (block169.is_used()) {
+    ca_.Bind(&block169);
+    tmp121 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 17, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    ca_.Goto(&block1, tmp121);
   }
 
-  TNode<BoolT> tmp122;
-  if (block173.is_used()) {
-    ca_.Bind(&block173);
-    tmp122 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Goto(&block170, tmp122);
-  }
-
-  TNode<BoolT> phi_bb170_8;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp122;
   if (block170.is_used()) {
-    ca_.Bind(&block170, &phi_bb170_8);
-    ca_.Branch(phi_bb170_8, &block168, std::vector<compiler::Node*>{}, &block169, std::vector<compiler::Node*>{});
-  }
-
-  TNode<BoolT> tmp123;
-  if (block168.is_used()) {
-    ca_.Bind(&block168);
-    tmp123 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 15, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
-    ca_.Goto(&block1, tmp123);
+    ca_.Bind(&block170);
+    compiler::CodeAssemblerLabel label123(&ca_);
+    tmp122 = Cast_Callable_0(state_, TNode<HeapObject>{tmp113}, &label123);
+    ca_.Goto(&block177);
+    if (label123.is_used()) {
+      ca_.Bind(&label123);
+      ca_.Goto(&block178);
+    }
   }
 
   TNode<BoolT> tmp124;
-  if (block169.is_used()) {
-    ca_.Bind(&block169);
-    tmp124 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 16, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
-    ca_.Goto(&block1, tmp124);
+  if (block178.is_used()) {
+    ca_.Bind(&block178);
+    tmp124 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    ca_.Goto(&block174, tmp124);
   }
 
   TNode<BoolT> tmp125;
-  if (block179.is_used()) {
-    ca_.Bind(&block179);
-    tmp125 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    ca_.Goto(&block1, tmp125);
+  if (block177.is_used()) {
+    ca_.Bind(&block177);
+    tmp125 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Goto(&block174, tmp125);
+  }
+
+  TNode<BoolT> phi_bb174_8;
+  if (block174.is_used()) {
+    ca_.Bind(&block174, &phi_bb174_8);
+    ca_.Branch(phi_bb174_8, &block172, std::vector<compiler::Node*>{}, &block173, std::vector<compiler::Node*>{});
   }
 
   TNode<BoolT> tmp126;
-  if (block178.is_used()) {
-    ca_.Bind(&block178);
-    tmp126 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 30, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+  if (block172.is_used()) {
+    ca_.Bind(&block172);
+    tmp126 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 15, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
     ca_.Goto(&block1, tmp126);
+  }
+
+  TNode<BoolT> tmp127;
+  if (block173.is_used()) {
+    ca_.Bind(&block173);
+    tmp127 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 16, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    ca_.Goto(&block1, tmp127);
+  }
+
+  TNode<BoolT> tmp128;
+  if (block183.is_used()) {
+    ca_.Bind(&block183);
+    tmp128 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    ca_.Goto(&block1, tmp128);
+  }
+
+  TNode<BoolT> tmp129;
+  if (block182.is_used()) {
+    ca_.Bind(&block182);
+    tmp129 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 30, 1, uint32_t>>(ca_.UncheckedCast<Word32T>(p_bitsetLow)));
+    ca_.Goto(&block1, tmp129);
   }
 
   TNode<BoolT> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
-    ca_.Goto(&block180);
+    ca_.Goto(&block184);
   }
 
-    ca_.Bind(&block180);
+    ca_.Bind(&block184);
   return TNode<BoolT>{phi_bb1_3};
 }
 
@@ -1359,7 +1381,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
     tmp13 = CodeStubAssembler(state_).LoadReference<TurbofanType>(CodeStubAssembler::Reference{tmp2, tmp12});
     tmp14 = ca_.CallBuiltin<Boolean>(Builtin::kTestTurbofanType, parameter0, parameter1, tmp13);
     tmp15 = True_0(state_);
-    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp14}, TNode<HeapObject>{tmp15});
+    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp14}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15});
     ca_.Branch(tmp16, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -1381,7 +1403,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
     tmp19 = CodeStubAssembler(state_).LoadReference<TurbofanType>(CodeStubAssembler::Reference{tmp2, tmp18});
     tmp20 = ca_.CallBuiltin<Boolean>(Builtin::kTestTurbofanType, parameter0, parameter1, tmp19);
     tmp21 = True_0(state_);
-    tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp20}, TNode<HeapObject>{tmp21});
+    tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp20}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp21});
     ca_.Goto(&block11, tmp22);
   }
 
@@ -1521,7 +1543,7 @@ TF_BUILTIN(TestTurbofanType, CodeStubAssembler) {
     ca_.Bind(&block30);
     tmp46 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp47 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp24, tmp46});
-    tmp48 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{parameter1}, TNode<MaybeObject>{tmp47});
+    tmp48 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{parameter1}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp47});
     tmp49 = Convert_Boolean_bool_0(state_, TNode<BoolT>{tmp48});
     CodeStubAssembler(state_).Return(tmp49);
   }
@@ -1588,7 +1610,7 @@ TF_BUILTIN(CheckTurbofanType, CodeStubAssembler) {
     ca_.Bind(&block0);
     tmp0 = ca_.CallBuiltin<Boolean>(Builtin::kTestTurbofanType, parameter0, parameter1, parameter2);
     tmp1 = True_0(state_);
-    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp0}, TNode<HeapObject>{tmp1});
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1});
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -1609,7 +1631,7 @@ TF_BUILTIN(CheckTurbofanType, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
 TNode<Uint32T> LoadTurbofanBitsetTypeBitsetLow_0(compiler::CodeAssemblerState* state_, TNode<TurbofanBitsetType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1630,7 +1652,7 @@ TNode<Uint32T> LoadTurbofanBitsetTypeBitsetLow_0(compiler::CodeAssemblerState* s
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=62&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
 void StoreTurbofanBitsetTypeBitsetLow_0(compiler::CodeAssemblerState* state_, TNode<TurbofanBitsetType> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1649,7 +1671,7 @@ void StoreTurbofanBitsetTypeBitsetLow_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=64&c=3
 TNode<Uint32T> LoadTurbofanBitsetTypeBitsetHigh_0(compiler::CodeAssemblerState* state_, TNode<TurbofanBitsetType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1670,7 +1692,7 @@ TNode<Uint32T> LoadTurbofanBitsetTypeBitsetHigh_0(compiler::CodeAssemblerState* 
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=63&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=64&c=3
 void StoreTurbofanBitsetTypeBitsetHigh_0(compiler::CodeAssemblerState* state_, TNode<TurbofanBitsetType> p_o, TNode<Uint32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1689,7 +1711,7 @@ void StoreTurbofanBitsetTypeBitsetHigh_0(compiler::CodeAssemblerState* state_, T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
 TNode<TurbofanType> LoadTurbofanUnionTypeType1_0(compiler::CodeAssemblerState* state_, TNode<TurbofanUnionType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1710,7 +1732,7 @@ TNode<TurbofanType> LoadTurbofanUnionTypeType1_0(compiler::CodeAssemblerState* s
   return TNode<TurbofanType>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=68&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
 void StoreTurbofanUnionTypeType1_0(compiler::CodeAssemblerState* state_, TNode<TurbofanUnionType> p_o, TNode<TurbofanType> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1729,7 +1751,7 @@ void StoreTurbofanUnionTypeType1_0(compiler::CodeAssemblerState* state_, TNode<T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=70&c=3
 TNode<TurbofanType> LoadTurbofanUnionTypeType2_0(compiler::CodeAssemblerState* state_, TNode<TurbofanUnionType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1750,7 +1772,7 @@ TNode<TurbofanType> LoadTurbofanUnionTypeType2_0(compiler::CodeAssemblerState* s
   return TNode<TurbofanType>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=69&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=70&c=3
 void StoreTurbofanUnionTypeType2_0(compiler::CodeAssemblerState* state_, TNode<TurbofanUnionType> p_o, TNode<TurbofanType> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1769,7 +1791,7 @@ void StoreTurbofanUnionTypeType2_0(compiler::CodeAssemblerState* state_, TNode<T
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
 TNode<Float64T> LoadTurbofanRangeTypeMin_0(compiler::CodeAssemblerState* state_, TNode<TurbofanRangeType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1790,7 +1812,7 @@ TNode<Float64T> LoadTurbofanRangeTypeMin_0(compiler::CodeAssemblerState* state_,
   return TNode<Float64T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
 void StoreTurbofanRangeTypeMin_0(compiler::CodeAssemblerState* state_, TNode<TurbofanRangeType> p_o, TNode<Float64T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1811,7 +1833,7 @@ void StoreTurbofanRangeTypeMin_0(compiler::CodeAssemblerState* state_, TNode<Tur
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=76&c=3
 TNode<Float64T> LoadTurbofanRangeTypeMax_0(compiler::CodeAssemblerState* state_, TNode<TurbofanRangeType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1832,7 +1854,7 @@ TNode<Float64T> LoadTurbofanRangeTypeMax_0(compiler::CodeAssemblerState* state_,
   return TNode<Float64T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=76&c=3
 void StoreTurbofanRangeTypeMax_0(compiler::CodeAssemblerState* state_, TNode<TurbofanRangeType> p_o, TNode<Float64T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1853,7 +1875,7 @@ void StoreTurbofanRangeTypeMax_0(compiler::CodeAssemblerState* state_, TNode<Tur
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=81&c=3
 TNode<HeapObject> LoadTurbofanHeapConstantTypeConstant_0(compiler::CodeAssemblerState* state_, TNode<TurbofanHeapConstantType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1874,7 +1896,7 @@ TNode<HeapObject> LoadTurbofanHeapConstantTypeConstant_0(compiler::CodeAssembler
   return TNode<HeapObject>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=80&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=81&c=3
 void StoreTurbofanHeapConstantTypeConstant_0(compiler::CodeAssemblerState* state_, TNode<TurbofanHeapConstantType> p_o, TNode<HeapObject> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1893,7 +1915,7 @@ void StoreTurbofanHeapConstantTypeConstant_0(compiler::CodeAssemblerState* state
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=86&c=3
 TNode<Float64T> LoadTurbofanOtherNumberConstantTypeConstant_0(compiler::CodeAssemblerState* state_, TNode<TurbofanOtherNumberConstantType> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1914,7 +1936,7 @@ TNode<Float64T> LoadTurbofanOtherNumberConstantTypeConstant_0(compiler::CodeAsse
   return TNode<Float64T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=85&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=86&c=3
 void StoreTurbofanOtherNumberConstantTypeConstant_0(compiler::CodeAssemblerState* state_, TNode<TurbofanOtherNumberConstantType> p_o, TNode<Float64T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1962,7 +1984,7 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(199), static_cast<InstanceType>(203))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(240), static_cast<InstanceType>(244))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -1983,7 +2005,7 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurbofanType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2005,7 +2027,7 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(199));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(240));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2039,12 +2061,12 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(203), static_cast<InstanceType>(199))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(244), static_cast<InstanceType>(240))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(199));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(240));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2080,7 +2102,7 @@ TNode<TurbofanType> DownCastForTorqueClass_TurbofanType_0(compiler::CodeAssemble
   return TNode<TurbofanType>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
 TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2107,7 +2129,7 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(199), static_cast<InstanceType>(199))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(240), static_cast<InstanceType>(240))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2128,7 +2150,7 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurbofanBitsetType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2150,7 +2172,7 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(199));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(240));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2184,12 +2206,12 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(199), static_cast<InstanceType>(199))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(240), static_cast<InstanceType>(240))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(199));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(240));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2225,7 +2247,7 @@ TNode<TurbofanBitsetType> DownCastForTorqueClass_TurbofanBitsetType_0(compiler::
   return TNode<TurbofanBitsetType>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
 TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2252,7 +2274,7 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(203), static_cast<InstanceType>(203))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(244), static_cast<InstanceType>(244))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2273,7 +2295,7 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurbofanUnionType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2295,7 +2317,7 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(203));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(244));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2329,12 +2351,12 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(203), static_cast<InstanceType>(203))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(244), static_cast<InstanceType>(244))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(203));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(244));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2370,7 +2392,7 @@ TNode<TurbofanUnionType> DownCastForTorqueClass_TurbofanUnionType_0(compiler::Co
   return TNode<TurbofanUnionType>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
 TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2397,7 +2419,7 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(202), static_cast<InstanceType>(202))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(243), static_cast<InstanceType>(243))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2418,7 +2440,7 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurbofanRangeType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2440,7 +2462,7 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(202));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(243));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2474,12 +2496,12 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(202), static_cast<InstanceType>(202))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(243), static_cast<InstanceType>(243))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(202));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(243));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2515,7 +2537,7 @@ TNode<TurbofanRangeType> DownCastForTorqueClass_TurbofanRangeType_0(compiler::Co
   return TNode<TurbofanRangeType>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
 TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2542,7 +2564,7 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(200), static_cast<InstanceType>(200))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(241), static_cast<InstanceType>(241))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2563,7 +2585,7 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurbofanHeapConstantType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2585,7 +2607,7 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(200));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(241));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2619,12 +2641,12 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(200), static_cast<InstanceType>(200))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(241), static_cast<InstanceType>(241))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(200));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(241));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2660,7 +2682,7 @@ TNode<TurbofanHeapConstantType> DownCastForTorqueClass_TurbofanHeapConstantType_
   return TNode<TurbofanHeapConstantType>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
 TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumberConstantType_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2687,7 +2709,7 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(201), static_cast<InstanceType>(201))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(242), static_cast<InstanceType>(242))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2708,7 +2730,7 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<TurbofanOtherNumberConstantType>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2730,7 +2752,7 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(201));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(242));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2764,12 +2786,12 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(201), static_cast<InstanceType>(201))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(242), static_cast<InstanceType>(242))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(201));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(242));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2805,7 +2827,7 @@ TNode<TurbofanOtherNumberConstantType> DownCastForTorqueClass_TurbofanOtherNumbe
   return TNode<TurbofanOtherNumberConstantType>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=144&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=145&c=14
 TNode<BoolT> Is_Callable_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSProxy> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2816,7 +2838,7 @@ TNode<BoolT> Is_Callable_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<C
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSReceiver> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -2852,7 +2874,7 @@ TNode<BoolT> Is_Callable_JSProxy_0(compiler::CodeAssemblerState* state_, TNode<C
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=187&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=188&c=23
 TNode<UintPtrT> Convert_uintptr_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2871,8 +2893,8 @@ TNode<UintPtrT> Convert_uintptr_constexpr_IntegerLiteral_0(compiler::CodeAssembl
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=196&c=11
-TNode<BoolT> Is_String_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=197&c=11
+TNode<BoolT> Is_String_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2918,7 +2940,7 @@ TNode<BoolT> Is_String_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Conte
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=205&c=18
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=209&c=18
 TNode<BoolT> Is_Callable_JSObject_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2929,7 +2951,7 @@ TNode<BoolT> Is_Callable_JSObject_0(compiler::CodeAssemblerState* state_, TNode<
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSReceiver> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);

@@ -1,6 +1,8 @@
 #include "src/objects/descriptor-array-inl.h"
 
 #include "torque-generated/class-verifiers.h"
+#include "src/objects/objects-inl.h"
+
 #include "src/objects/instance-type-inl.h"
 
 namespace v8 {
@@ -20,7 +22,7 @@ void TorqueGeneratedEnumCache<EnumCache, Struct>::EnumCacheVerify(Isolate* isola
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=18&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/descriptor-array.tq?l=25&c=1
 bool IsDescriptorArray_NonInline(Tagged<HeapObject> o) {
   return IsDescriptorArray(o);
 }

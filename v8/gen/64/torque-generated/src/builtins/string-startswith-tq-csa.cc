@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-startswith-tq-csa.h"
@@ -90,7 +90,7 @@ TF_BUILTIN(StringPrototypeStartsWith, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -103,9 +103,9 @@ TF_BUILTIN(StringPrototypeStartsWith, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<String> tmp4;
   TNode<String> tmp5;
   TNode<BoolT> tmp6;
@@ -116,8 +116,8 @@ TF_BUILTIN(StringPrototypeStartsWith, CodeStubAssembler) {
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_String_constexpr_string_0(state_, "String.prototype.startsWith");
-    tmp5 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp4});
-    tmp6 = IsRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    tmp5 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp4});
+    tmp6 = IsRegExp_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp1});
     ca_.Branch(tmp6, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -132,17 +132,17 @@ TF_BUILTIN(StringPrototypeStartsWith, CodeStubAssembler) {
   TNode<BoolT> tmp10;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp1});
+    tmp7 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp1});
     tmp8 = LoadStringLengthAsUintPtr_0(state_, TNode<String>{tmp5});
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp3}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp3}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Branch(tmp10, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
   TNode<UintPtrT> tmp11;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp11 = ClampToIndexRange_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3}, TNode<UintPtrT>{tmp8});
+    tmp11 = ClampToIndexRange_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3}, TNode<UintPtrT>{tmp8});
     ca_.Goto(&block5, tmp11);
   }
 

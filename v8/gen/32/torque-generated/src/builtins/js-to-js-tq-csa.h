@@ -7,22 +7,25 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=18&c=1
-TNode<Object> ConvertToAndFromWasm_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Int32T> p_wasmType, TNode<Object> p_value);
+TNode<JSAny> ConvertToAndFromWasm_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Uint32T> p_wasmType, TNode<JSAny> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=77&c=7
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=84&c=7
 TNode<WasmImportData> UnsafeCast_WasmImportData_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=82&c=29
-int31_t SizeOf_int32_0(compiler::CodeAssemblerState* state_);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=86&c=24
+TorqueStructReference_intptr_0 NewOffHeapReference_intptr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_ptr);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=80&c=25
-TorqueStructSlice_int32_ConstReference_int32_0 NewConstSlice_int32_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=90&c=28
+int31_t SizeOf_intptr_0(compiler::CodeAssemblerState* state_);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=84&c=24
-TorqueStructReference_int32_0 NewReference_int32_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=91&c=30
+TorqueStructReference_RawPtr_WasmCodePointer_0 NewOffHeapReference_RawPtr_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_ptr);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=87&c=23
-TorqueStructSlice_int32_ConstReference_int32_0 Subslice_int32_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_int32_ConstReference_int32_0 p_slice, TNode<IntPtrT> p_start, TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_OutOfBounds);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=95&c=7
+TorqueStructSlice_WasmCodePointer_ConstReference_WasmCodePointer_0 NewOffHeapConstSlice_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_startPointer, TNode<IntPtrT> p_length);
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-js.tq?l=98&c=7
+TorqueStructSlice_WasmCodePointer_ConstReference_WasmCodePointer_0 Subslice_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_WasmCodePointer_ConstReference_WasmCodePointer_0 p_slice, TNode<IntPtrT> p_start, TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_OutOfBounds);
 
 } // namespace internal
 } // namespace v8

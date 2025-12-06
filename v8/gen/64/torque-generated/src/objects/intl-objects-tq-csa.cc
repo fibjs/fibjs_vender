@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/intl-objects-tq-csa.h"
@@ -125,8 +125,8 @@ TNode<Uint8T> IntlAsciiCollationWeightL1_1(compiler::CodeAssemblerState* state_,
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uint32_char16_0(state_, TNode<Uint16T>{p_c});
-    tmp1 = FromConstexpr_uint32_constexpr_int31_0(state_, Intl::kAsciiCollationWeightsLength);
+    tmp0 = Convert_WasmCodePointer_char16_0(state_, TNode<Uint16T>{p_c});
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, Intl::kAsciiCollationWeightsLength);
     tmp2 = CodeStubAssembler(state_).Uint32GreaterThanOrEqual(TNode<Uint32T>{tmp0}, TNode<Uint32T>{tmp1});
     ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
@@ -192,8 +192,8 @@ TNode<Uint8T> IntlAsciiCollationWeightL3_1(compiler::CodeAssemblerState* state_,
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uint32_char16_0(state_, TNode<Uint16T>{p_c});
-    tmp1 = FromConstexpr_uint32_constexpr_int31_0(state_, Intl::kAsciiCollationWeightsLength);
+    tmp0 = Convert_WasmCodePointer_char16_0(state_, TNode<Uint16T>{p_c});
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, Intl::kAsciiCollationWeightsLength);
     tmp2 = CodeStubAssembler(state_).Uint32GreaterThanOrEqual(TNode<Uint32T>{tmp0}, TNode<Uint32T>{tmp1});
     ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
@@ -259,7 +259,7 @@ void CheckEmptyOr1Byte_1(compiler::CodeAssemblerState* state_, TorqueStructSlice
     ca_.Goto(&block2);
   }
 
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
@@ -268,11 +268,11 @@ void CheckEmptyOr1Byte_1(compiler::CodeAssemblerState* state_, TorqueStructSlice
   TNode<BoolT> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    std::tie(tmp1, tmp2) = NewReference_char16_0(state_, TNode<Object>{p_it.object}, TNode<IntPtrT>{p_it.start}).Flatten();
+    std::tie(tmp1, tmp2) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_it.object}, TNode<IntPtrT>{p_it.start}).Flatten();
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp4 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_it.start}, TNode<IntPtrT>{tmp3});
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp2});
-    tmp6 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp7 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
@@ -301,11 +301,11 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSFunction> parameter1 = UncheckedParameter<JSFunction>(Descriptor::kLocaleCompareFn);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kLeft);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kLeft);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kRight);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kRight);
   USE(parameter3);
-  TNode<Object> parameter4 = UncheckedParameter<Object>(Descriptor::kLocales);
+  TNode<JSAny> parameter4 = UncheckedParameter<JSAny>(Descriptor::kLocales);
   USE(parameter4);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -339,78 +339,78 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block69(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block73(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block77(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block81(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block90(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block89(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block93(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block98(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block97(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block101(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block106(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block105(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block110(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block109(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block61(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block112(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block111(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block114(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block113(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block120(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block119(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block123(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block121(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block127(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block126(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block131(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block130(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block135(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block134(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block139(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block138(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block143(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block142(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block147(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block146(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block151(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block150(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block155(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block154(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block159(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block158(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block163(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block162(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block167(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block166(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block144(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block140(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block122(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block118(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block169(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block168(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block116(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block171(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block170(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block69(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block73(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block77(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block81(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block85(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block90(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block89(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block93(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block98(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block97(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block101(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block106(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block105(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block110(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block109(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block61(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block112(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block111(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block114(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block113(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block120(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block119(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block123(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block121(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block127(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block126(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block131(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block130(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block135(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block134(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block139(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block138(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block143(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block142(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block147(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block146(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block151(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block150(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block155(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block154(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block159(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block158(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block163(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block162(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block167(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block166(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block144(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block140(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block122(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block118(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block169(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block168(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block116(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block171(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block170(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0);
 
@@ -434,7 +434,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<BoolT> tmp2;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{tmp0}, TNode<MaybeObject>{parameter3});
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp0}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{parameter3});
     ca_.Branch(tmp2, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -501,17 +501,17 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> phi_bb16_9;
   TNode<String> phi_bb16_11;
   TNode<String> phi_bb16_12;
-  TNode<Object> tmp13;
+  TNode<Union<HeapObject, TaggedIndex>> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_8, &phi_bb16_9, &phi_bb16_11, &phi_bb16_12);
     std::tie(tmp13, tmp14, tmp15) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp9}).Flatten();
     compiler::CodeAssemblerLabel label19(&ca_);
-    std::tie(tmp16, tmp17, tmp18) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp15}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb16_9}, TNode<IntPtrT>{tmp7}, &label19).Flatten();
+    std::tie(tmp16, tmp17, tmp18) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp13}, TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp15}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb16_9}, TNode<IntPtrT>{tmp7}, &label19).Flatten();
     ca_.Goto(&block20, phi_bb16_8, phi_bb16_9, phi_bb16_11, phi_bb16_9);
     if (label19.is_used()) {
       ca_.Bind(&label19);
@@ -555,17 +555,17 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<String> phi_bb24_8;
   TNode<IntPtrT> phi_bb24_9;
   TNode<String> phi_bb24_11;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
-  TNode<Object> tmp25;
+  TNode<Union<HeapObject, TaggedIndex>> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_8, &phi_bb24_9, &phi_bb24_11);
     std::tie(tmp22, tmp23, tmp24) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp11}).Flatten();
     compiler::CodeAssemblerLabel label28(&ca_);
-    std::tie(tmp25, tmp26, tmp27) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp22}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp24}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb24_9}, TNode<IntPtrT>{tmp7}, &label28).Flatten();
+    std::tie(tmp25, tmp26, tmp27) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp22}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp24}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb24_9}, TNode<IntPtrT>{tmp7}, &label28).Flatten();
     ca_.Goto(&block28, phi_bb24_8, phi_bb24_9, phi_bb24_11, phi_bb24_9);
     if (label28.is_used()) {
       ca_.Bind(&label28);
@@ -700,10 +700,10 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> tmp47;
   TNode<Int32T> tmp48;
   TNode<IntPtrT> tmp49;
-  TNode<Object> tmp50;
+  TNode<Union<HeapObject, TaggedIndex>> tmp50;
   TNode<IntPtrT> tmp51;
   TNode<IntPtrT> tmp52;
-  TNode<Object> tmp53;
+  TNode<Union<HeapObject, TaggedIndex>> tmp53;
   TNode<IntPtrT> tmp54;
   TNode<IntPtrT> tmp55;
   if (block44.is_used()) {
@@ -714,7 +714,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     tmp49 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp48});
     std::tie(tmp50, tmp51, tmp52) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp46}, TNode<IntPtrT>{tmp49}).Flatten();
     compiler::CodeAssemblerLabel label56(&ca_);
-    std::tie(tmp53, tmp54, tmp55) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp50}, TNode<IntPtrT>{tmp51}, TNode<IntPtrT>{tmp52}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb44_9}, TNode<IntPtrT>{tmp7}, &label56).Flatten();
+    std::tie(tmp53, tmp54, tmp55) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp50}, TNode<IntPtrT>{tmp51}, TNode<IntPtrT>{tmp52}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb44_9}, TNode<IntPtrT>{tmp7}, &label56).Flatten();
     ca_.Goto(&block48, phi_bb44_8, phi_bb44_9, phi_bb44_11, phi_bb44_9);
     if (label56.is_used()) {
       ca_.Bind(&label56);
@@ -755,10 +755,10 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> tmp58;
   TNode<Int32T> tmp59;
   TNode<IntPtrT> tmp60;
-  TNode<Object> tmp61;
+  TNode<Union<HeapObject, TaggedIndex>> tmp61;
   TNode<IntPtrT> tmp62;
   TNode<IntPtrT> tmp63;
-  TNode<Object> tmp64;
+  TNode<Union<HeapObject, TaggedIndex>> tmp64;
   TNode<IntPtrT> tmp65;
   TNode<IntPtrT> tmp66;
   if (block52.is_used()) {
@@ -769,7 +769,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     tmp60 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp59});
     std::tie(tmp61, tmp62, tmp63) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp57}, TNode<IntPtrT>{tmp60}).Flatten();
     compiler::CodeAssemblerLabel label67(&ca_);
-    std::tie(tmp64, tmp65, tmp66) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp61}, TNode<IntPtrT>{tmp62}, TNode<IntPtrT>{tmp63}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb52_9}, TNode<IntPtrT>{tmp7}, &label67).Flatten();
+    std::tie(tmp64, tmp65, tmp66) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp61}, TNode<IntPtrT>{tmp62}, TNode<IntPtrT>{tmp63}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb52_9}, TNode<IntPtrT>{tmp7}, &label67).Flatten();
     ca_.Goto(&block56, phi_bb52_8, phi_bb52_9, phi_bb52_11, phi_bb52_9);
     if (label67.is_used()) {
       ca_.Bind(&label67);
@@ -818,7 +818,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb6_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb6_5;
   TNode<IntPtrT> phi_bb6_6;
   TNode<IntPtrT> phi_bb6_7;
   TNode<String> tmp68;
@@ -833,7 +833,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb63_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb63_5;
   TNode<IntPtrT> phi_bb63_6;
   TNode<IntPtrT> phi_bb63_7;
   if (block63.is_used()) {
@@ -841,7 +841,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb62_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb62_5;
   TNode<IntPtrT> phi_bb62_6;
   TNode<IntPtrT> phi_bb62_7;
   TNode<IntPtrT> tmp70;
@@ -857,7 +857,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block66, phi_bb62_5, phi_bb62_6, phi_bb62_7, tmp68, tmp70);
   }
 
-  TNode<Object> phi_bb66_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb66_5;
   TNode<IntPtrT> phi_bb66_6;
   TNode<IntPtrT> phi_bb66_7;
   TNode<String> phi_bb66_11;
@@ -869,7 +869,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Branch(tmp74, &block64, std::vector<compiler::Node*>{phi_bb66_5, phi_bb66_6, phi_bb66_7, phi_bb66_11, phi_bb66_12}, &block65, std::vector<compiler::Node*>{phi_bb66_5, phi_bb66_6, phi_bb66_7, phi_bb66_11, phi_bb66_12});
   }
 
-  TNode<Object> phi_bb64_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb64_5;
   TNode<IntPtrT> phi_bb64_6;
   TNode<IntPtrT> phi_bb64_7;
   TNode<String> phi_bb64_11;
@@ -886,7 +886,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb70_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb70_5;
   TNode<IntPtrT> phi_bb70_6;
   TNode<IntPtrT> phi_bb70_7;
   TNode<String> phi_bb70_11;
@@ -905,24 +905,24 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb69_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb69_5;
   TNode<IntPtrT> phi_bb69_6;
   TNode<IntPtrT> phi_bb69_7;
   TNode<String> phi_bb69_11;
   TNode<IntPtrT> phi_bb69_12;
   TNode<String> phi_bb69_14;
   TNode<String> phi_bb69_15;
-  TNode<Object> tmp79;
+  TNode<Union<HeapObject, TaggedIndex>> tmp79;
   TNode<IntPtrT> tmp80;
   TNode<IntPtrT> tmp81;
-  TNode<Object> tmp82;
+  TNode<Union<HeapObject, TaggedIndex>> tmp82;
   TNode<IntPtrT> tmp83;
   TNode<IntPtrT> tmp84;
   if (block69.is_used()) {
     ca_.Bind(&block69, &phi_bb69_5, &phi_bb69_6, &phi_bb69_7, &phi_bb69_11, &phi_bb69_12, &phi_bb69_14, &phi_bb69_15);
     std::tie(tmp79, tmp80, tmp81) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp75}).Flatten();
     compiler::CodeAssemblerLabel label85(&ca_);
-    std::tie(tmp82, tmp83, tmp84) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp79}, TNode<IntPtrT>{tmp80}, TNode<IntPtrT>{tmp81}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb69_12}, TNode<IntPtrT>{tmp73}, &label85).Flatten();
+    std::tie(tmp82, tmp83, tmp84) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp79}, TNode<IntPtrT>{tmp80}, TNode<IntPtrT>{tmp81}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb69_12}, TNode<IntPtrT>{tmp73}, &label85).Flatten();
     ca_.Goto(&block73, phi_bb69_5, phi_bb69_6, phi_bb69_7, phi_bb69_11, phi_bb69_12, phi_bb69_14, phi_bb69_12);
     if (label85.is_used()) {
       ca_.Bind(&label85);
@@ -930,7 +930,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb74_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb74_5;
   TNode<IntPtrT> phi_bb74_6;
   TNode<IntPtrT> phi_bb74_7;
   TNode<String> phi_bb74_11;
@@ -942,7 +942,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb73_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb73_5;
   TNode<IntPtrT> phi_bb73_6;
   TNode<IntPtrT> phi_bb73_7;
   TNode<String> phi_bb73_11;
@@ -954,7 +954,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block61, phi_bb73_5, phi_bb73_6, phi_bb73_7, tmp82, tmp83, tmp84);
   }
 
-  TNode<Object> phi_bb78_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb78_5;
   TNode<IntPtrT> phi_bb78_6;
   TNode<IntPtrT> phi_bb78_7;
   TNode<String> phi_bb78_11;
@@ -972,23 +972,23 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb77_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb77_5;
   TNode<IntPtrT> phi_bb77_6;
   TNode<IntPtrT> phi_bb77_7;
   TNode<String> phi_bb77_11;
   TNode<IntPtrT> phi_bb77_12;
   TNode<String> phi_bb77_14;
-  TNode<Object> tmp88;
+  TNode<Union<HeapObject, TaggedIndex>> tmp88;
   TNode<IntPtrT> tmp89;
   TNode<IntPtrT> tmp90;
-  TNode<Object> tmp91;
+  TNode<Union<HeapObject, TaggedIndex>> tmp91;
   TNode<IntPtrT> tmp92;
   TNode<IntPtrT> tmp93;
   if (block77.is_used()) {
     ca_.Bind(&block77, &phi_bb77_5, &phi_bb77_6, &phi_bb77_7, &phi_bb77_11, &phi_bb77_12, &phi_bb77_14);
     std::tie(tmp88, tmp89, tmp90) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp77}).Flatten();
     compiler::CodeAssemblerLabel label94(&ca_);
-    std::tie(tmp91, tmp92, tmp93) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp88}, TNode<IntPtrT>{tmp89}, TNode<IntPtrT>{tmp90}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb77_12}, TNode<IntPtrT>{tmp73}, &label94).Flatten();
+    std::tie(tmp91, tmp92, tmp93) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp88}, TNode<IntPtrT>{tmp89}, TNode<IntPtrT>{tmp90}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb77_12}, TNode<IntPtrT>{tmp73}, &label94).Flatten();
     ca_.Goto(&block81, phi_bb77_5, phi_bb77_6, phi_bb77_7, phi_bb77_11, phi_bb77_12, phi_bb77_14, phi_bb77_12);
     if (label94.is_used()) {
       ca_.Bind(&label94);
@@ -996,7 +996,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb82_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb82_5;
   TNode<IntPtrT> phi_bb82_6;
   TNode<IntPtrT> phi_bb82_7;
   TNode<String> phi_bb82_11;
@@ -1008,7 +1008,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb81_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb81_5;
   TNode<IntPtrT> phi_bb81_6;
   TNode<IntPtrT> phi_bb81_7;
   TNode<String> phi_bb81_11;
@@ -1020,7 +1020,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block59, phi_bb81_5, phi_bb81_6, phi_bb81_7, tmp91, tmp92, tmp93);
   }
 
-  TNode<Object> phi_bb86_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb86_5;
   TNode<IntPtrT> phi_bb86_6;
   TNode<IntPtrT> phi_bb86_7;
   TNode<String> phi_bb86_11;
@@ -1038,7 +1038,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb85_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb85_5;
   TNode<IntPtrT> phi_bb85_6;
   TNode<IntPtrT> phi_bb85_7;
   TNode<String> phi_bb85_11;
@@ -1053,7 +1053,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block83, phi_bb85_5, phi_bb85_6, phi_bb85_7, tmp98, phi_bb85_12, phi_bb85_14);
   }
 
-  TNode<Object> phi_bb90_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb90_5;
   TNode<IntPtrT> phi_bb90_6;
   TNode<IntPtrT> phi_bb90_7;
   TNode<String> phi_bb90_11;
@@ -1071,7 +1071,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb89_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb89_5;
   TNode<IntPtrT> phi_bb89_6;
   TNode<IntPtrT> phi_bb89_7;
   TNode<String> phi_bb89_11;
@@ -1084,7 +1084,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block87, phi_bb89_5, phi_bb89_6, phi_bb89_7, tmp101, phi_bb89_12, phi_bb89_14);
   }
 
-  TNode<Object> phi_bb94_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb94_5;
   TNode<IntPtrT> phi_bb94_6;
   TNode<IntPtrT> phi_bb94_7;
   TNode<String> phi_bb94_11;
@@ -1102,7 +1102,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb93_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb93_5;
   TNode<IntPtrT> phi_bb93_6;
   TNode<IntPtrT> phi_bb93_7;
   TNode<String> phi_bb93_11;
@@ -1125,7 +1125,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block87, phi_bb93_5, phi_bb93_6, phi_bb93_7, tmp109, tmp107, phi_bb93_14);
   }
 
-  TNode<Object> phi_bb98_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb98_5;
   TNode<IntPtrT> phi_bb98_6;
   TNode<IntPtrT> phi_bb98_7;
   TNode<String> phi_bb98_11;
@@ -1143,7 +1143,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb97_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb97_5;
   TNode<IntPtrT> phi_bb97_6;
   TNode<IntPtrT> phi_bb97_7;
   TNode<String> phi_bb97_11;
@@ -1153,10 +1153,10 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> tmp113;
   TNode<Int32T> tmp114;
   TNode<IntPtrT> tmp115;
-  TNode<Object> tmp116;
+  TNode<Union<HeapObject, TaggedIndex>> tmp116;
   TNode<IntPtrT> tmp117;
   TNode<IntPtrT> tmp118;
-  TNode<Object> tmp119;
+  TNode<Union<HeapObject, TaggedIndex>> tmp119;
   TNode<IntPtrT> tmp120;
   TNode<IntPtrT> tmp121;
   if (block97.is_used()) {
@@ -1167,7 +1167,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     tmp115 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp114});
     std::tie(tmp116, tmp117, tmp118) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp112}, TNode<IntPtrT>{tmp115}).Flatten();
     compiler::CodeAssemblerLabel label122(&ca_);
-    std::tie(tmp119, tmp120, tmp121) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp116}, TNode<IntPtrT>{tmp117}, TNode<IntPtrT>{tmp118}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb97_12}, TNode<IntPtrT>{tmp73}, &label122).Flatten();
+    std::tie(tmp119, tmp120, tmp121) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp116}, TNode<IntPtrT>{tmp117}, TNode<IntPtrT>{tmp118}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb97_12}, TNode<IntPtrT>{tmp73}, &label122).Flatten();
     ca_.Goto(&block101, phi_bb97_5, phi_bb97_6, phi_bb97_7, phi_bb97_11, phi_bb97_12, phi_bb97_14, phi_bb97_12);
     if (label122.is_used()) {
       ca_.Bind(&label122);
@@ -1175,7 +1175,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb102_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb102_5;
   TNode<IntPtrT> phi_bb102_6;
   TNode<IntPtrT> phi_bb102_7;
   TNode<String> phi_bb102_11;
@@ -1187,7 +1187,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb101_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb101_5;
   TNode<IntPtrT> phi_bb101_6;
   TNode<IntPtrT> phi_bb101_7;
   TNode<String> phi_bb101_11;
@@ -1199,7 +1199,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block61, phi_bb101_5, phi_bb101_6, phi_bb101_7, tmp119, tmp120, tmp121);
   }
 
-  TNode<Object> phi_bb106_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb106_5;
   TNode<IntPtrT> phi_bb106_6;
   TNode<IntPtrT> phi_bb106_7;
   TNode<String> phi_bb106_11;
@@ -1210,7 +1210,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb105_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb105_5;
   TNode<IntPtrT> phi_bb105_6;
   TNode<IntPtrT> phi_bb105_7;
   TNode<String> phi_bb105_11;
@@ -1220,10 +1220,10 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> tmp124;
   TNode<Int32T> tmp125;
   TNode<IntPtrT> tmp126;
-  TNode<Object> tmp127;
+  TNode<Union<HeapObject, TaggedIndex>> tmp127;
   TNode<IntPtrT> tmp128;
   TNode<IntPtrT> tmp129;
-  TNode<Object> tmp130;
+  TNode<Union<HeapObject, TaggedIndex>> tmp130;
   TNode<IntPtrT> tmp131;
   TNode<IntPtrT> tmp132;
   if (block105.is_used()) {
@@ -1234,7 +1234,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     tmp126 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp125});
     std::tie(tmp127, tmp128, tmp129) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp123}, TNode<IntPtrT>{tmp126}).Flatten();
     compiler::CodeAssemblerLabel label133(&ca_);
-    std::tie(tmp130, tmp131, tmp132) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp127}, TNode<IntPtrT>{tmp128}, TNode<IntPtrT>{tmp129}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb105_12}, TNode<IntPtrT>{tmp73}, &label133).Flatten();
+    std::tie(tmp130, tmp131, tmp132) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp127}, TNode<IntPtrT>{tmp128}, TNode<IntPtrT>{tmp129}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb105_12}, TNode<IntPtrT>{tmp73}, &label133).Flatten();
     ca_.Goto(&block109, phi_bb105_5, phi_bb105_6, phi_bb105_7, phi_bb105_11, phi_bb105_12, phi_bb105_14, phi_bb105_12);
     if (label133.is_used()) {
       ca_.Bind(&label133);
@@ -1242,7 +1242,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb110_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb110_5;
   TNode<IntPtrT> phi_bb110_6;
   TNode<IntPtrT> phi_bb110_7;
   TNode<String> phi_bb110_11;
@@ -1254,7 +1254,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb109_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb109_5;
   TNode<IntPtrT> phi_bb109_6;
   TNode<IntPtrT> phi_bb109_7;
   TNode<String> phi_bb109_11;
@@ -1266,7 +1266,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block59, phi_bb109_5, phi_bb109_6, phi_bb109_7, tmp130, tmp131, tmp132);
   }
 
-  TNode<Object> phi_bb87_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb87_5;
   TNode<IntPtrT> phi_bb87_6;
   TNode<IntPtrT> phi_bb87_7;
   TNode<String> phi_bb87_11;
@@ -1277,7 +1277,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block83, phi_bb87_5, phi_bb87_6, phi_bb87_7, phi_bb87_11, phi_bb87_12, phi_bb87_14);
   }
 
-  TNode<Object> phi_bb83_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb83_5;
   TNode<IntPtrT> phi_bb83_6;
   TNode<IntPtrT> phi_bb83_7;
   TNode<String> phi_bb83_11;
@@ -1288,7 +1288,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block66, phi_bb83_5, phi_bb83_6, phi_bb83_7, phi_bb83_11, phi_bb83_12);
   }
 
-  TNode<Object> phi_bb65_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb65_5;
   TNode<IntPtrT> phi_bb65_6;
   TNode<IntPtrT> phi_bb65_7;
   TNode<String> phi_bb65_11;
@@ -1298,17 +1298,17 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb61_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb61_5;
   TNode<IntPtrT> phi_bb61_6;
   TNode<IntPtrT> phi_bb61_7;
-  TNode<Object> phi_bb61_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb61_8;
   TNode<IntPtrT> phi_bb61_9;
   TNode<IntPtrT> phi_bb61_10;
   TNode<Number> tmp134;
   if (block61.is_used()) {
     ca_.Bind(&block61, &phi_bb61_5, &phi_bb61_6, &phi_bb61_7, &phi_bb61_8, &phi_bb61_9, &phi_bb61_10);
     compiler::CodeAssemblerLabel label135(&ca_);
-    tmp134 = LocaleCompareFastPath_char8_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb61_5}, TNode<IntPtrT>{phi_bb61_6}, TNode<IntPtrT>{phi_bb61_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb61_8}, TNode<IntPtrT>{phi_bb61_9}, TNode<IntPtrT>{phi_bb61_10}, TorqueStructUnsafe_0{}}, &label135);
+    tmp134 = LocaleCompareFastPath_char8_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb61_5}, TNode<IntPtrT>{phi_bb61_6}, TNode<IntPtrT>{phi_bb61_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb61_8}, TNode<IntPtrT>{phi_bb61_9}, TNode<IntPtrT>{phi_bb61_10}, TorqueStructUnsafe_0{}}, &label135);
     ca_.Goto(&block111, phi_bb61_5, phi_bb61_6, phi_bb61_7, phi_bb61_8, phi_bb61_9, phi_bb61_10, phi_bb61_5, phi_bb61_6, phi_bb61_7, phi_bb61_8, phi_bb61_9, phi_bb61_10);
     if (label135.is_used()) {
       ca_.Bind(&label135);
@@ -1316,16 +1316,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb112_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb112_5;
   TNode<IntPtrT> phi_bb112_6;
   TNode<IntPtrT> phi_bb112_7;
-  TNode<Object> phi_bb112_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb112_8;
   TNode<IntPtrT> phi_bb112_9;
   TNode<IntPtrT> phi_bb112_10;
-  TNode<Object> phi_bb112_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb112_11;
   TNode<IntPtrT> phi_bb112_12;
   TNode<IntPtrT> phi_bb112_13;
-  TNode<Object> phi_bb112_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb112_14;
   TNode<IntPtrT> phi_bb112_15;
   TNode<IntPtrT> phi_bb112_16;
   if (block112.is_used()) {
@@ -1333,16 +1333,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb111_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb111_5;
   TNode<IntPtrT> phi_bb111_6;
   TNode<IntPtrT> phi_bb111_7;
-  TNode<Object> phi_bb111_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb111_8;
   TNode<IntPtrT> phi_bb111_9;
   TNode<IntPtrT> phi_bb111_10;
-  TNode<Object> phi_bb111_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb111_11;
   TNode<IntPtrT> phi_bb111_12;
   TNode<IntPtrT> phi_bb111_13;
-  TNode<Object> phi_bb111_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb111_14;
   TNode<IntPtrT> phi_bb111_15;
   TNode<IntPtrT> phi_bb111_16;
   if (block111.is_used()) {
@@ -1350,17 +1350,17 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp134);
   }
 
-  TNode<Object> phi_bb59_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb59_5;
   TNode<IntPtrT> phi_bb59_6;
   TNode<IntPtrT> phi_bb59_7;
-  TNode<Object> phi_bb59_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb59_8;
   TNode<IntPtrT> phi_bb59_9;
   TNode<IntPtrT> phi_bb59_10;
   TNode<Number> tmp136;
   if (block59.is_used()) {
     ca_.Bind(&block59, &phi_bb59_5, &phi_bb59_6, &phi_bb59_7, &phi_bb59_8, &phi_bb59_9, &phi_bb59_10);
     compiler::CodeAssemblerLabel label137(&ca_);
-    tmp136 = LocaleCompareFastPath_char8_char16_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb59_5}, TNode<IntPtrT>{phi_bb59_6}, TNode<IntPtrT>{phi_bb59_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb59_8}, TNode<IntPtrT>{phi_bb59_9}, TNode<IntPtrT>{phi_bb59_10}, TorqueStructUnsafe_0{}}, &label137);
+    tmp136 = LocaleCompareFastPath_char8_char16_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb59_5}, TNode<IntPtrT>{phi_bb59_6}, TNode<IntPtrT>{phi_bb59_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb59_8}, TNode<IntPtrT>{phi_bb59_9}, TNode<IntPtrT>{phi_bb59_10}, TorqueStructUnsafe_0{}}, &label137);
     ca_.Goto(&block113, phi_bb59_5, phi_bb59_6, phi_bb59_7, phi_bb59_8, phi_bb59_9, phi_bb59_10, phi_bb59_5, phi_bb59_6, phi_bb59_7, phi_bb59_8, phi_bb59_9, phi_bb59_10);
     if (label137.is_used()) {
       ca_.Bind(&label137);
@@ -1368,16 +1368,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb114_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb114_5;
   TNode<IntPtrT> phi_bb114_6;
   TNode<IntPtrT> phi_bb114_7;
-  TNode<Object> phi_bb114_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb114_8;
   TNode<IntPtrT> phi_bb114_9;
   TNode<IntPtrT> phi_bb114_10;
-  TNode<Object> phi_bb114_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb114_11;
   TNode<IntPtrT> phi_bb114_12;
   TNode<IntPtrT> phi_bb114_13;
-  TNode<Object> phi_bb114_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb114_14;
   TNode<IntPtrT> phi_bb114_15;
   TNode<IntPtrT> phi_bb114_16;
   if (block114.is_used()) {
@@ -1385,16 +1385,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb113_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb113_5;
   TNode<IntPtrT> phi_bb113_6;
   TNode<IntPtrT> phi_bb113_7;
-  TNode<Object> phi_bb113_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb113_8;
   TNode<IntPtrT> phi_bb113_9;
   TNode<IntPtrT> phi_bb113_10;
-  TNode<Object> phi_bb113_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb113_11;
   TNode<IntPtrT> phi_bb113_12;
   TNode<IntPtrT> phi_bb113_13;
-  TNode<Object> phi_bb113_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb113_14;
   TNode<IntPtrT> phi_bb113_15;
   TNode<IntPtrT> phi_bb113_16;
   if (block113.is_used()) {
@@ -1402,7 +1402,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp136);
   }
 
-  TNode<Object> phi_bb4_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb4_5;
   TNode<IntPtrT> phi_bb4_6;
   TNode<IntPtrT> phi_bb4_7;
   TNode<String> tmp138;
@@ -1417,7 +1417,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb120_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb120_5;
   TNode<IntPtrT> phi_bb120_6;
   TNode<IntPtrT> phi_bb120_7;
   if (block120.is_used()) {
@@ -1425,7 +1425,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb119_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb119_5;
   TNode<IntPtrT> phi_bb119_6;
   TNode<IntPtrT> phi_bb119_7;
   TNode<IntPtrT> tmp140;
@@ -1441,7 +1441,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block123, phi_bb119_5, phi_bb119_6, phi_bb119_7, tmp138, tmp140);
   }
 
-  TNode<Object> phi_bb123_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb123_5;
   TNode<IntPtrT> phi_bb123_6;
   TNode<IntPtrT> phi_bb123_7;
   TNode<String> phi_bb123_11;
@@ -1453,7 +1453,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Branch(tmp144, &block121, std::vector<compiler::Node*>{phi_bb123_5, phi_bb123_6, phi_bb123_7, phi_bb123_11, phi_bb123_12}, &block122, std::vector<compiler::Node*>{phi_bb123_5, phi_bb123_6, phi_bb123_7, phi_bb123_11, phi_bb123_12});
   }
 
-  TNode<Object> phi_bb121_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb121_5;
   TNode<IntPtrT> phi_bb121_6;
   TNode<IntPtrT> phi_bb121_7;
   TNode<String> phi_bb121_11;
@@ -1470,7 +1470,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb127_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb127_5;
   TNode<IntPtrT> phi_bb127_6;
   TNode<IntPtrT> phi_bb127_7;
   TNode<String> phi_bb127_11;
@@ -1489,24 +1489,24 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb126_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb126_5;
   TNode<IntPtrT> phi_bb126_6;
   TNode<IntPtrT> phi_bb126_7;
   TNode<String> phi_bb126_11;
   TNode<IntPtrT> phi_bb126_12;
   TNode<String> phi_bb126_14;
   TNode<String> phi_bb126_15;
-  TNode<Object> tmp149;
+  TNode<Union<HeapObject, TaggedIndex>> tmp149;
   TNode<IntPtrT> tmp150;
   TNode<IntPtrT> tmp151;
-  TNode<Object> tmp152;
+  TNode<Union<HeapObject, TaggedIndex>> tmp152;
   TNode<IntPtrT> tmp153;
   TNode<IntPtrT> tmp154;
   if (block126.is_used()) {
     ca_.Bind(&block126, &phi_bb126_5, &phi_bb126_6, &phi_bb126_7, &phi_bb126_11, &phi_bb126_12, &phi_bb126_14, &phi_bb126_15);
     std::tie(tmp149, tmp150, tmp151) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp145}).Flatten();
     compiler::CodeAssemblerLabel label155(&ca_);
-    std::tie(tmp152, tmp153, tmp154) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp149}, TNode<IntPtrT>{tmp150}, TNode<IntPtrT>{tmp151}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb126_12}, TNode<IntPtrT>{tmp143}, &label155).Flatten();
+    std::tie(tmp152, tmp153, tmp154) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp149}, TNode<IntPtrT>{tmp150}, TNode<IntPtrT>{tmp151}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb126_12}, TNode<IntPtrT>{tmp143}, &label155).Flatten();
     ca_.Goto(&block130, phi_bb126_5, phi_bb126_6, phi_bb126_7, phi_bb126_11, phi_bb126_12, phi_bb126_14, phi_bb126_12);
     if (label155.is_used()) {
       ca_.Bind(&label155);
@@ -1514,7 +1514,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb131_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb131_5;
   TNode<IntPtrT> phi_bb131_6;
   TNode<IntPtrT> phi_bb131_7;
   TNode<String> phi_bb131_11;
@@ -1526,7 +1526,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb130_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb130_5;
   TNode<IntPtrT> phi_bb130_6;
   TNode<IntPtrT> phi_bb130_7;
   TNode<String> phi_bb130_11;
@@ -1538,7 +1538,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block118, phi_bb130_5, phi_bb130_6, phi_bb130_7, tmp152, tmp153, tmp154);
   }
 
-  TNode<Object> phi_bb135_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb135_5;
   TNode<IntPtrT> phi_bb135_6;
   TNode<IntPtrT> phi_bb135_7;
   TNode<String> phi_bb135_11;
@@ -1556,23 +1556,23 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb134_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb134_5;
   TNode<IntPtrT> phi_bb134_6;
   TNode<IntPtrT> phi_bb134_7;
   TNode<String> phi_bb134_11;
   TNode<IntPtrT> phi_bb134_12;
   TNode<String> phi_bb134_14;
-  TNode<Object> tmp158;
+  TNode<Union<HeapObject, TaggedIndex>> tmp158;
   TNode<IntPtrT> tmp159;
   TNode<IntPtrT> tmp160;
-  TNode<Object> tmp161;
+  TNode<Union<HeapObject, TaggedIndex>> tmp161;
   TNode<IntPtrT> tmp162;
   TNode<IntPtrT> tmp163;
   if (block134.is_used()) {
     ca_.Bind(&block134, &phi_bb134_5, &phi_bb134_6, &phi_bb134_7, &phi_bb134_11, &phi_bb134_12, &phi_bb134_14);
     std::tie(tmp158, tmp159, tmp160) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp147}).Flatten();
     compiler::CodeAssemblerLabel label164(&ca_);
-    std::tie(tmp161, tmp162, tmp163) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp158}, TNode<IntPtrT>{tmp159}, TNode<IntPtrT>{tmp160}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb134_12}, TNode<IntPtrT>{tmp143}, &label164).Flatten();
+    std::tie(tmp161, tmp162, tmp163) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp158}, TNode<IntPtrT>{tmp159}, TNode<IntPtrT>{tmp160}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb134_12}, TNode<IntPtrT>{tmp143}, &label164).Flatten();
     ca_.Goto(&block138, phi_bb134_5, phi_bb134_6, phi_bb134_7, phi_bb134_11, phi_bb134_12, phi_bb134_14, phi_bb134_12);
     if (label164.is_used()) {
       ca_.Bind(&label164);
@@ -1580,7 +1580,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb139_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb139_5;
   TNode<IntPtrT> phi_bb139_6;
   TNode<IntPtrT> phi_bb139_7;
   TNode<String> phi_bb139_11;
@@ -1592,7 +1592,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb138_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb138_5;
   TNode<IntPtrT> phi_bb138_6;
   TNode<IntPtrT> phi_bb138_7;
   TNode<String> phi_bb138_11;
@@ -1604,7 +1604,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block116, phi_bb138_5, phi_bb138_6, phi_bb138_7, tmp161, tmp162, tmp163);
   }
 
-  TNode<Object> phi_bb143_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb143_5;
   TNode<IntPtrT> phi_bb143_6;
   TNode<IntPtrT> phi_bb143_7;
   TNode<String> phi_bb143_11;
@@ -1622,7 +1622,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb142_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb142_5;
   TNode<IntPtrT> phi_bb142_6;
   TNode<IntPtrT> phi_bb142_7;
   TNode<String> phi_bb142_11;
@@ -1637,7 +1637,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block140, phi_bb142_5, phi_bb142_6, phi_bb142_7, tmp168, phi_bb142_12, phi_bb142_14);
   }
 
-  TNode<Object> phi_bb147_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb147_5;
   TNode<IntPtrT> phi_bb147_6;
   TNode<IntPtrT> phi_bb147_7;
   TNode<String> phi_bb147_11;
@@ -1655,7 +1655,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb146_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb146_5;
   TNode<IntPtrT> phi_bb146_6;
   TNode<IntPtrT> phi_bb146_7;
   TNode<String> phi_bb146_11;
@@ -1668,7 +1668,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block144, phi_bb146_5, phi_bb146_6, phi_bb146_7, tmp171, phi_bb146_12, phi_bb146_14);
   }
 
-  TNode<Object> phi_bb151_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb151_5;
   TNode<IntPtrT> phi_bb151_6;
   TNode<IntPtrT> phi_bb151_7;
   TNode<String> phi_bb151_11;
@@ -1686,7 +1686,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb150_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb150_5;
   TNode<IntPtrT> phi_bb150_6;
   TNode<IntPtrT> phi_bb150_7;
   TNode<String> phi_bb150_11;
@@ -1709,7 +1709,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block144, phi_bb150_5, phi_bb150_6, phi_bb150_7, tmp179, tmp177, phi_bb150_14);
   }
 
-  TNode<Object> phi_bb155_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb155_5;
   TNode<IntPtrT> phi_bb155_6;
   TNode<IntPtrT> phi_bb155_7;
   TNode<String> phi_bb155_11;
@@ -1727,7 +1727,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb154_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb154_5;
   TNode<IntPtrT> phi_bb154_6;
   TNode<IntPtrT> phi_bb154_7;
   TNode<String> phi_bb154_11;
@@ -1737,10 +1737,10 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> tmp183;
   TNode<Int32T> tmp184;
   TNode<IntPtrT> tmp185;
-  TNode<Object> tmp186;
+  TNode<Union<HeapObject, TaggedIndex>> tmp186;
   TNode<IntPtrT> tmp187;
   TNode<IntPtrT> tmp188;
-  TNode<Object> tmp189;
+  TNode<Union<HeapObject, TaggedIndex>> tmp189;
   TNode<IntPtrT> tmp190;
   TNode<IntPtrT> tmp191;
   if (block154.is_used()) {
@@ -1751,7 +1751,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     tmp185 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp184});
     std::tie(tmp186, tmp187, tmp188) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp182}, TNode<IntPtrT>{tmp185}).Flatten();
     compiler::CodeAssemblerLabel label192(&ca_);
-    std::tie(tmp189, tmp190, tmp191) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp186}, TNode<IntPtrT>{tmp187}, TNode<IntPtrT>{tmp188}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb154_12}, TNode<IntPtrT>{tmp143}, &label192).Flatten();
+    std::tie(tmp189, tmp190, tmp191) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp186}, TNode<IntPtrT>{tmp187}, TNode<IntPtrT>{tmp188}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb154_12}, TNode<IntPtrT>{tmp143}, &label192).Flatten();
     ca_.Goto(&block158, phi_bb154_5, phi_bb154_6, phi_bb154_7, phi_bb154_11, phi_bb154_12, phi_bb154_14, phi_bb154_12);
     if (label192.is_used()) {
       ca_.Bind(&label192);
@@ -1759,7 +1759,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb159_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb159_5;
   TNode<IntPtrT> phi_bb159_6;
   TNode<IntPtrT> phi_bb159_7;
   TNode<String> phi_bb159_11;
@@ -1771,7 +1771,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb158_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb158_5;
   TNode<IntPtrT> phi_bb158_6;
   TNode<IntPtrT> phi_bb158_7;
   TNode<String> phi_bb158_11;
@@ -1783,7 +1783,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block118, phi_bb158_5, phi_bb158_6, phi_bb158_7, tmp189, tmp190, tmp191);
   }
 
-  TNode<Object> phi_bb163_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb163_5;
   TNode<IntPtrT> phi_bb163_6;
   TNode<IntPtrT> phi_bb163_7;
   TNode<String> phi_bb163_11;
@@ -1794,7 +1794,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb162_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb162_5;
   TNode<IntPtrT> phi_bb162_6;
   TNode<IntPtrT> phi_bb162_7;
   TNode<String> phi_bb162_11;
@@ -1804,10 +1804,10 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
   TNode<IntPtrT> tmp194;
   TNode<Int32T> tmp195;
   TNode<IntPtrT> tmp196;
-  TNode<Object> tmp197;
+  TNode<Union<HeapObject, TaggedIndex>> tmp197;
   TNode<IntPtrT> tmp198;
   TNode<IntPtrT> tmp199;
-  TNode<Object> tmp200;
+  TNode<Union<HeapObject, TaggedIndex>> tmp200;
   TNode<IntPtrT> tmp201;
   TNode<IntPtrT> tmp202;
   if (block162.is_used()) {
@@ -1818,7 +1818,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     tmp196 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp195});
     std::tie(tmp197, tmp198, tmp199) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp193}, TNode<IntPtrT>{tmp196}).Flatten();
     compiler::CodeAssemblerLabel label203(&ca_);
-    std::tie(tmp200, tmp201, tmp202) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp197}, TNode<IntPtrT>{tmp198}, TNode<IntPtrT>{tmp199}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb162_12}, TNode<IntPtrT>{tmp143}, &label203).Flatten();
+    std::tie(tmp200, tmp201, tmp202) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp197}, TNode<IntPtrT>{tmp198}, TNode<IntPtrT>{tmp199}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb162_12}, TNode<IntPtrT>{tmp143}, &label203).Flatten();
     ca_.Goto(&block166, phi_bb162_5, phi_bb162_6, phi_bb162_7, phi_bb162_11, phi_bb162_12, phi_bb162_14, phi_bb162_12);
     if (label203.is_used()) {
       ca_.Bind(&label203);
@@ -1826,7 +1826,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb167_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb167_5;
   TNode<IntPtrT> phi_bb167_6;
   TNode<IntPtrT> phi_bb167_7;
   TNode<String> phi_bb167_11;
@@ -1838,7 +1838,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb166_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb166_5;
   TNode<IntPtrT> phi_bb166_6;
   TNode<IntPtrT> phi_bb166_7;
   TNode<String> phi_bb166_11;
@@ -1850,7 +1850,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block116, phi_bb166_5, phi_bb166_6, phi_bb166_7, tmp200, tmp201, tmp202);
   }
 
-  TNode<Object> phi_bb144_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb144_5;
   TNode<IntPtrT> phi_bb144_6;
   TNode<IntPtrT> phi_bb144_7;
   TNode<String> phi_bb144_11;
@@ -1861,7 +1861,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block140, phi_bb144_5, phi_bb144_6, phi_bb144_7, phi_bb144_11, phi_bb144_12, phi_bb144_14);
   }
 
-  TNode<Object> phi_bb140_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb140_5;
   TNode<IntPtrT> phi_bb140_6;
   TNode<IntPtrT> phi_bb140_7;
   TNode<String> phi_bb140_11;
@@ -1872,7 +1872,7 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block123, phi_bb140_5, phi_bb140_6, phi_bb140_7, phi_bb140_11, phi_bb140_12);
   }
 
-  TNode<Object> phi_bb122_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb122_5;
   TNode<IntPtrT> phi_bb122_6;
   TNode<IntPtrT> phi_bb122_7;
   TNode<String> phi_bb122_11;
@@ -1882,17 +1882,17 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb118_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb118_5;
   TNode<IntPtrT> phi_bb118_6;
   TNode<IntPtrT> phi_bb118_7;
-  TNode<Object> phi_bb118_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb118_8;
   TNode<IntPtrT> phi_bb118_9;
   TNode<IntPtrT> phi_bb118_10;
   TNode<Number> tmp204;
   if (block118.is_used()) {
     ca_.Bind(&block118, &phi_bb118_5, &phi_bb118_6, &phi_bb118_7, &phi_bb118_8, &phi_bb118_9, &phi_bb118_10);
     compiler::CodeAssemblerLabel label205(&ca_);
-    tmp204 = LocaleCompareFastPath_char16_char8_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb118_5}, TNode<IntPtrT>{phi_bb118_6}, TNode<IntPtrT>{phi_bb118_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb118_8}, TNode<IntPtrT>{phi_bb118_9}, TNode<IntPtrT>{phi_bb118_10}, TorqueStructUnsafe_0{}}, &label205);
+    tmp204 = LocaleCompareFastPath_char16_char8_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb118_5}, TNode<IntPtrT>{phi_bb118_6}, TNode<IntPtrT>{phi_bb118_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb118_8}, TNode<IntPtrT>{phi_bb118_9}, TNode<IntPtrT>{phi_bb118_10}, TorqueStructUnsafe_0{}}, &label205);
     ca_.Goto(&block168, phi_bb118_5, phi_bb118_6, phi_bb118_7, phi_bb118_8, phi_bb118_9, phi_bb118_10, phi_bb118_5, phi_bb118_6, phi_bb118_7, phi_bb118_8, phi_bb118_9, phi_bb118_10);
     if (label205.is_used()) {
       ca_.Bind(&label205);
@@ -1900,16 +1900,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb169_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb169_5;
   TNode<IntPtrT> phi_bb169_6;
   TNode<IntPtrT> phi_bb169_7;
-  TNode<Object> phi_bb169_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb169_8;
   TNode<IntPtrT> phi_bb169_9;
   TNode<IntPtrT> phi_bb169_10;
-  TNode<Object> phi_bb169_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb169_11;
   TNode<IntPtrT> phi_bb169_12;
   TNode<IntPtrT> phi_bb169_13;
-  TNode<Object> phi_bb169_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb169_14;
   TNode<IntPtrT> phi_bb169_15;
   TNode<IntPtrT> phi_bb169_16;
   if (block169.is_used()) {
@@ -1917,16 +1917,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb168_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb168_5;
   TNode<IntPtrT> phi_bb168_6;
   TNode<IntPtrT> phi_bb168_7;
-  TNode<Object> phi_bb168_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb168_8;
   TNode<IntPtrT> phi_bb168_9;
   TNode<IntPtrT> phi_bb168_10;
-  TNode<Object> phi_bb168_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb168_11;
   TNode<IntPtrT> phi_bb168_12;
   TNode<IntPtrT> phi_bb168_13;
-  TNode<Object> phi_bb168_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb168_14;
   TNode<IntPtrT> phi_bb168_15;
   TNode<IntPtrT> phi_bb168_16;
   if (block168.is_used()) {
@@ -1934,17 +1934,17 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp204);
   }
 
-  TNode<Object> phi_bb116_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb116_5;
   TNode<IntPtrT> phi_bb116_6;
   TNode<IntPtrT> phi_bb116_7;
-  TNode<Object> phi_bb116_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb116_8;
   TNode<IntPtrT> phi_bb116_9;
   TNode<IntPtrT> phi_bb116_10;
   TNode<Number> tmp206;
   if (block116.is_used()) {
     ca_.Bind(&block116, &phi_bb116_5, &phi_bb116_6, &phi_bb116_7, &phi_bb116_8, &phi_bb116_9, &phi_bb116_10);
     compiler::CodeAssemblerLabel label207(&ca_);
-    tmp206 = LocaleCompareFastPath_char16_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb116_5}, TNode<IntPtrT>{phi_bb116_6}, TNode<IntPtrT>{phi_bb116_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb116_8}, TNode<IntPtrT>{phi_bb116_9}, TNode<IntPtrT>{phi_bb116_10}, TorqueStructUnsafe_0{}}, &label207);
+    tmp206 = LocaleCompareFastPath_char16_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb116_5}, TNode<IntPtrT>{phi_bb116_6}, TNode<IntPtrT>{phi_bb116_7}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb116_8}, TNode<IntPtrT>{phi_bb116_9}, TNode<IntPtrT>{phi_bb116_10}, TorqueStructUnsafe_0{}}, &label207);
     ca_.Goto(&block170, phi_bb116_5, phi_bb116_6, phi_bb116_7, phi_bb116_8, phi_bb116_9, phi_bb116_10, phi_bb116_5, phi_bb116_6, phi_bb116_7, phi_bb116_8, phi_bb116_9, phi_bb116_10);
     if (label207.is_used()) {
       ca_.Bind(&label207);
@@ -1952,16 +1952,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb171_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb171_5;
   TNode<IntPtrT> phi_bb171_6;
   TNode<IntPtrT> phi_bb171_7;
-  TNode<Object> phi_bb171_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb171_8;
   TNode<IntPtrT> phi_bb171_9;
   TNode<IntPtrT> phi_bb171_10;
-  TNode<Object> phi_bb171_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb171_11;
   TNode<IntPtrT> phi_bb171_12;
   TNode<IntPtrT> phi_bb171_13;
-  TNode<Object> phi_bb171_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb171_14;
   TNode<IntPtrT> phi_bb171_15;
   TNode<IntPtrT> phi_bb171_16;
   if (block171.is_used()) {
@@ -1969,16 +1969,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> phi_bb170_5;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb170_5;
   TNode<IntPtrT> phi_bb170_6;
   TNode<IntPtrT> phi_bb170_7;
-  TNode<Object> phi_bb170_8;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb170_8;
   TNode<IntPtrT> phi_bb170_9;
   TNode<IntPtrT> phi_bb170_10;
-  TNode<Object> phi_bb170_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb170_11;
   TNode<IntPtrT> phi_bb170_12;
   TNode<IntPtrT> phi_bb170_13;
-  TNode<Object> phi_bb170_14;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb170_14;
   TNode<IntPtrT> phi_bb170_15;
   TNode<IntPtrT> phi_bb170_16;
   if (block170.is_used()) {
@@ -1986,16 +1986,16 @@ TF_BUILTIN(StringFastLocaleCompare, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp206);
   }
 
-  TNode<Object> tmp208;
+  TNode<JSAny> tmp208;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp208 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{parameter2}, TNode<Object>{parameter3}, TNode<Object>{parameter4});
+    tmp208 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{parameter2}, TNode<JSAny>{parameter3}, TNode<JSAny>{parameter4});
     CodeStubAssembler(state_).Return(tmp208);
   }
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/intl-objects.tq?l=18&c=7
-TNode<Uint32T> Convert_uint32_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i) {
+TNode<Uint32T> Convert_WasmCodePointer_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2070,7 +2070,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = EqualContent_char8_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
+    tmp0 = EqualContent_char8_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
     ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -2123,7 +2123,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
 
   TNode<IntPtrT> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
@@ -2131,7 +2131,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<Uint8T> tmp14;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_7, &phi_bb17_10);
-    std::tie(tmp9, tmp10) = NewReference_char8_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb17_7}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp9, tmp10});
@@ -2155,7 +2155,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<BoolT> tmp17;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_10);
-    tmp16 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp16 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp17 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp14}, TNode<Uint32T>{tmp16});
     ca_.Branch(tmp17, &block22, std::vector<compiler::Node*>{phi_bb20_10}, &block23, std::vector<compiler::Node*>{phi_bb20_10});
   }
@@ -2183,7 +2183,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   }
 
   TNode<IntPtrT> phi_bb29_10;
-  TNode<Object> tmp20;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<IntPtrT> tmp23;
@@ -2191,7 +2191,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<Uint8T> tmp25;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_10);
-    std::tie(tmp20, tmp21) = NewReference_char8_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
+    std::tie(tmp20, tmp21) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb29_10}, TNode<IntPtrT>{tmp22});
     tmp24 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp20, tmp21});
@@ -2213,7 +2213,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<BoolT> tmp28;
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    tmp27 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp27 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp28 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp25}, TNode<Uint32T>{tmp27});
     ca_.Branch(tmp28, &block34, std::vector<compiler::Node*>{}, &block35, std::vector<compiler::Node*>{});
   }
@@ -2238,7 +2238,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   if (block37.is_used()) {
     ca_.Bind(&block37);
     compiler::CodeAssemblerLabel label30(&ca_);
-    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
+    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
     ca_.Goto(&block38);
     if (label30.is_used()) {
       ca_.Bind(&label30);
@@ -2254,7 +2254,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   if (block38.is_used()) {
     ca_.Bind(&block38);
     compiler::CodeAssemblerLabel label31(&ca_);
-    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
+    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
     ca_.Goto(&block40);
     if (label31.is_used()) {
       ca_.Bind(&label31);
@@ -2297,7 +2297,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
 
   TNode<IntPtrT> phi_bb49_7;
   TNode<IntPtrT> phi_bb49_10;
-  TNode<Object> tmp35;
+  TNode<Union<HeapObject, TaggedIndex>> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<IntPtrT> tmp38;
@@ -2305,7 +2305,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<Uint8T> tmp40;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_7, &phi_bb49_10);
-    std::tie(tmp35, tmp36) = NewReference_char8_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
+    std::tie(tmp35, tmp36) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp38 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb49_10}, TNode<IntPtrT>{tmp37});
     tmp39 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp35, tmp36});
@@ -2329,7 +2329,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<BoolT> tmp43;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_7);
-    tmp42 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp42 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp43 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp40}, TNode<Uint32T>{tmp42});
     ca_.Branch(tmp43, &block54, std::vector<compiler::Node*>{phi_bb52_7}, &block55, std::vector<compiler::Node*>{phi_bb52_7});
   }
@@ -2390,7 +2390,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
 
   TNode<IntPtrT> phi_bb66_7;
   TNode<IntPtrT> phi_bb66_10;
-  TNode<Object> tmp51;
+  TNode<Union<HeapObject, TaggedIndex>> tmp51;
   TNode<IntPtrT> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
@@ -2398,7 +2398,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<Uint8T> tmp56;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_7, &phi_bb66_10);
-    std::tie(tmp51, tmp52) = NewReference_char8_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
+    std::tie(tmp51, tmp52) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
     tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp54 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb66_7}, TNode<IntPtrT>{tmp53});
     tmp55 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp51, tmp52});
@@ -2432,7 +2432,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   }
 
   TNode<IntPtrT> phi_bb82_10;
-  TNode<Object> tmp59;
+  TNode<Union<HeapObject, TaggedIndex>> tmp59;
   TNode<IntPtrT> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<IntPtrT> tmp62;
@@ -2440,7 +2440,7 @@ TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* 
   TNode<Uint8T> tmp64;
   if (block82.is_used()) {
     ca_.Bind(&block82, &phi_bb82_10);
-    std::tie(tmp59, tmp60) = NewReference_char8_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
+    std::tie(tmp59, tmp60) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
     tmp61 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp62 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb82_10}, TNode<IntPtrT>{tmp61});
     tmp63 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp59, tmp60});
@@ -2573,7 +2573,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = EqualContent_char8_char16_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
+    tmp0 = EqualContent_char8_char16_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
     ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -2626,7 +2626,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
@@ -2634,7 +2634,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp14;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_7, &phi_bb17_10);
-    std::tie(tmp9, tmp10) = NewReference_char8_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb17_7}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp9, tmp10});
@@ -2658,7 +2658,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp17;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_10);
-    tmp16 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp16 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp17 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp14}, TNode<Uint32T>{tmp16});
     ca_.Branch(tmp17, &block22, std::vector<compiler::Node*>{phi_bb20_10}, &block23, std::vector<compiler::Node*>{phi_bb20_10});
   }
@@ -2686,7 +2686,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   }
 
   TNode<IntPtrT> phi_bb29_10;
-  TNode<Object> tmp20;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<IntPtrT> tmp23;
@@ -2694,7 +2694,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp25;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_10);
-    std::tie(tmp20, tmp21) = NewReference_char16_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
+    std::tie(tmp20, tmp21) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb29_10}, TNode<IntPtrT>{tmp22});
     tmp24 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp20, tmp21});
@@ -2716,7 +2716,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp28;
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    tmp27 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp27 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp28 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp25}, TNode<Uint32T>{tmp27});
     ca_.Branch(tmp28, &block34, std::vector<compiler::Node*>{}, &block35, std::vector<compiler::Node*>{});
   }
@@ -2741,7 +2741,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   if (block37.is_used()) {
     ca_.Bind(&block37);
     compiler::CodeAssemblerLabel label30(&ca_);
-    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
+    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
     ca_.Goto(&block38);
     if (label30.is_used()) {
       ca_.Bind(&label30);
@@ -2757,7 +2757,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   if (block38.is_used()) {
     ca_.Bind(&block38);
     compiler::CodeAssemblerLabel label31(&ca_);
-    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
+    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
     ca_.Goto(&block40);
     if (label31.is_used()) {
       ca_.Bind(&label31);
@@ -2800,7 +2800,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> phi_bb49_7;
   TNode<IntPtrT> phi_bb49_10;
-  TNode<Object> tmp35;
+  TNode<Union<HeapObject, TaggedIndex>> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<IntPtrT> tmp38;
@@ -2808,7 +2808,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp40;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_7, &phi_bb49_10);
-    std::tie(tmp35, tmp36) = NewReference_char16_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
+    std::tie(tmp35, tmp36) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp38 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb49_10}, TNode<IntPtrT>{tmp37});
     tmp39 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp35, tmp36});
@@ -2832,7 +2832,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp43;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_7);
-    tmp42 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp42 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp43 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp40}, TNode<Uint32T>{tmp42});
     ca_.Branch(tmp43, &block54, std::vector<compiler::Node*>{phi_bb52_7}, &block55, std::vector<compiler::Node*>{phi_bb52_7});
   }
@@ -2893,7 +2893,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> phi_bb66_7;
   TNode<IntPtrT> phi_bb66_10;
-  TNode<Object> tmp51;
+  TNode<Union<HeapObject, TaggedIndex>> tmp51;
   TNode<IntPtrT> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
@@ -2901,7 +2901,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp56;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_7, &phi_bb66_10);
-    std::tie(tmp51, tmp52) = NewReference_char8_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
+    std::tie(tmp51, tmp52) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
     tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp54 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb66_7}, TNode<IntPtrT>{tmp53});
     tmp55 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp51, tmp52});
@@ -2935,7 +2935,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   }
 
   TNode<IntPtrT> phi_bb82_10;
-  TNode<Object> tmp59;
+  TNode<Union<HeapObject, TaggedIndex>> tmp59;
   TNode<IntPtrT> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<IntPtrT> tmp62;
@@ -2943,7 +2943,7 @@ TNode<Number> LocaleCompareFastPath_char8_char16_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp64;
   if (block82.is_used()) {
     ca_.Bind(&block82, &phi_bb82_10);
-    std::tie(tmp59, tmp60) = NewReference_char16_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
+    std::tie(tmp59, tmp60) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
     tmp61 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp62 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb82_10}, TNode<IntPtrT>{tmp61});
     tmp63 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp59, tmp60});
@@ -3076,7 +3076,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = EqualContent_char16_char8_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
+    tmp0 = EqualContent_char16_char8_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
     ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -3129,7 +3129,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
@@ -3137,7 +3137,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp14;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_7, &phi_bb17_10);
-    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb17_7}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp9, tmp10});
@@ -3161,7 +3161,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp17;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_10);
-    tmp16 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp16 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp17 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp14}, TNode<Uint32T>{tmp16});
     ca_.Branch(tmp17, &block22, std::vector<compiler::Node*>{phi_bb20_10}, &block23, std::vector<compiler::Node*>{phi_bb20_10});
   }
@@ -3189,7 +3189,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   }
 
   TNode<IntPtrT> phi_bb29_10;
-  TNode<Object> tmp20;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<IntPtrT> tmp23;
@@ -3197,7 +3197,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp25;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_10);
-    std::tie(tmp20, tmp21) = NewReference_char8_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
+    std::tie(tmp20, tmp21) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb29_10}, TNode<IntPtrT>{tmp22});
     tmp24 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp20, tmp21});
@@ -3219,7 +3219,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp28;
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    tmp27 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp27 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp28 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp25}, TNode<Uint32T>{tmp27});
     ca_.Branch(tmp28, &block34, std::vector<compiler::Node*>{}, &block35, std::vector<compiler::Node*>{});
   }
@@ -3244,7 +3244,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   if (block37.is_used()) {
     ca_.Bind(&block37);
     compiler::CodeAssemblerLabel label30(&ca_);
-    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
+    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
     ca_.Goto(&block38);
     if (label30.is_used()) {
       ca_.Bind(&label30);
@@ -3260,7 +3260,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   if (block38.is_used()) {
     ca_.Bind(&block38);
     compiler::CodeAssemblerLabel label31(&ca_);
-    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
+    CheckEmptyOr1Byte_0(state_, TorqueStructSliceIterator_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
     ca_.Goto(&block40);
     if (label31.is_used()) {
       ca_.Bind(&label31);
@@ -3303,7 +3303,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> phi_bb49_7;
   TNode<IntPtrT> phi_bb49_10;
-  TNode<Object> tmp35;
+  TNode<Union<HeapObject, TaggedIndex>> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<IntPtrT> tmp38;
@@ -3311,7 +3311,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp40;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_7, &phi_bb49_10);
-    std::tie(tmp35, tmp36) = NewReference_char8_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
+    std::tie(tmp35, tmp36) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp38 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb49_10}, TNode<IntPtrT>{tmp37});
     tmp39 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp35, tmp36});
@@ -3335,7 +3335,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<BoolT> tmp43;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_7);
-    tmp42 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp42 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp43 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp40}, TNode<Uint32T>{tmp42});
     ca_.Branch(tmp43, &block54, std::vector<compiler::Node*>{phi_bb52_7}, &block55, std::vector<compiler::Node*>{phi_bb52_7});
   }
@@ -3396,7 +3396,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
 
   TNode<IntPtrT> phi_bb66_7;
   TNode<IntPtrT> phi_bb66_10;
-  TNode<Object> tmp51;
+  TNode<Union<HeapObject, TaggedIndex>> tmp51;
   TNode<IntPtrT> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
@@ -3404,7 +3404,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp56;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_7, &phi_bb66_10);
-    std::tie(tmp51, tmp52) = NewReference_char16_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
+    std::tie(tmp51, tmp52) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
     tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp54 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb66_7}, TNode<IntPtrT>{tmp53});
     tmp55 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp51, tmp52});
@@ -3438,7 +3438,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   }
 
   TNode<IntPtrT> phi_bb82_10;
-  TNode<Object> tmp59;
+  TNode<Union<HeapObject, TaggedIndex>> tmp59;
   TNode<IntPtrT> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<IntPtrT> tmp62;
@@ -3446,7 +3446,7 @@ TNode<Number> LocaleCompareFastPath_char16_char8_0(compiler::CodeAssemblerState*
   TNode<Uint8T> tmp64;
   if (block82.is_used()) {
     ca_.Bind(&block82, &phi_bb82_10);
-    std::tie(tmp59, tmp60) = NewReference_char8_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
+    std::tie(tmp59, tmp60) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
     tmp61 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp62 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb82_10}, TNode<IntPtrT>{tmp61});
     tmp63 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp59, tmp60});
@@ -3579,7 +3579,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = EqualContent_char16_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
+    tmp0 = EqualContent_char16_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{p_left.offset}, TNode<IntPtrT>{p_left.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{p_right.offset}, TNode<IntPtrT>{p_right.length}, TorqueStructUnsafe_0{}});
     ca_.Branch(tmp0, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -3632,7 +3632,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
 
   TNode<IntPtrT> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
@@ -3640,7 +3640,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp14;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_7, &phi_bb17_10);
-    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb17_7}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb17_7}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp9, tmp10});
@@ -3664,7 +3664,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<BoolT> tmp17;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_10);
-    tmp16 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp16 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp17 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp14}, TNode<Uint32T>{tmp16});
     ca_.Branch(tmp17, &block22, std::vector<compiler::Node*>{phi_bb20_10}, &block23, std::vector<compiler::Node*>{phi_bb20_10});
   }
@@ -3692,7 +3692,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   }
 
   TNode<IntPtrT> phi_bb29_10;
-  TNode<Object> tmp20;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<IntPtrT> tmp23;
@@ -3700,7 +3700,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp25;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_10);
-    std::tie(tmp20, tmp21) = NewReference_char16_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
+    std::tie(tmp20, tmp21) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb29_10}).Flatten();
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp23 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb29_10}, TNode<IntPtrT>{tmp22});
     tmp24 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp20, tmp21});
@@ -3722,7 +3722,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<BoolT> tmp28;
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    tmp27 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp27 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp28 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp25}, TNode<Uint32T>{tmp27});
     ca_.Branch(tmp28, &block34, std::vector<compiler::Node*>{}, &block35, std::vector<compiler::Node*>{});
   }
@@ -3747,7 +3747,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   if (block37.is_used()) {
     ca_.Bind(&block37);
     compiler::CodeAssemblerLabel label30(&ca_);
-    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
+    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, &label30);
     ca_.Goto(&block38);
     if (label30.is_used()) {
       ca_.Bind(&label30);
@@ -3763,7 +3763,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   if (block38.is_used()) {
     ca_.Bind(&block38);
     compiler::CodeAssemblerLabel label31(&ca_);
-    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
+    CheckEmptyOr1Byte_1(state_, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{tmp23}, TNode<IntPtrT>{tmp5}, TorqueStructUnsafe_0{}}, &label31);
     ca_.Goto(&block40);
     if (label31.is_used()) {
       ca_.Bind(&label31);
@@ -3806,7 +3806,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
 
   TNode<IntPtrT> phi_bb49_7;
   TNode<IntPtrT> phi_bb49_10;
-  TNode<Object> tmp35;
+  TNode<Union<HeapObject, TaggedIndex>> tmp35;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
   TNode<IntPtrT> tmp38;
@@ -3814,7 +3814,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp40;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_7, &phi_bb49_10);
-    std::tie(tmp35, tmp36) = NewReference_char16_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
+    std::tie(tmp35, tmp36) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb49_10}).Flatten();
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp38 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb49_10}, TNode<IntPtrT>{tmp37});
     tmp39 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp35, tmp36});
@@ -3838,7 +3838,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<BoolT> tmp43;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_7);
-    tmp42 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp42 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp43 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp40}, TNode<Uint32T>{tmp42});
     ca_.Branch(tmp43, &block54, std::vector<compiler::Node*>{phi_bb52_7}, &block55, std::vector<compiler::Node*>{phi_bb52_7});
   }
@@ -3899,7 +3899,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
 
   TNode<IntPtrT> phi_bb66_7;
   TNode<IntPtrT> phi_bb66_10;
-  TNode<Object> tmp51;
+  TNode<Union<HeapObject, TaggedIndex>> tmp51;
   TNode<IntPtrT> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<IntPtrT> tmp54;
@@ -3907,7 +3907,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp56;
   if (block66.is_used()) {
     ca_.Bind(&block66, &phi_bb66_7, &phi_bb66_10);
-    std::tie(tmp51, tmp52) = NewReference_char16_0(state_, TNode<Object>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
+    std::tie(tmp51, tmp52) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_left.object}, TNode<IntPtrT>{phi_bb66_7}).Flatten();
     tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp54 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb66_7}, TNode<IntPtrT>{tmp53});
     tmp55 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp51, tmp52});
@@ -3941,7 +3941,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   }
 
   TNode<IntPtrT> phi_bb82_10;
-  TNode<Object> tmp59;
+  TNode<Union<HeapObject, TaggedIndex>> tmp59;
   TNode<IntPtrT> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<IntPtrT> tmp62;
@@ -3949,7 +3949,7 @@ TNode<Number> LocaleCompareFastPath_char16_char16_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp64;
   if (block82.is_used()) {
     ca_.Bind(&block82, &phi_bb82_10);
-    std::tie(tmp59, tmp60) = NewReference_char16_0(state_, TNode<Object>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
+    std::tie(tmp59, tmp60) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_right.object}, TNode<IntPtrT>{phi_bb82_10}).Flatten();
     tmp61 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp62 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb82_10}, TNode<IntPtrT>{tmp61});
     tmp63 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp59, tmp60});
@@ -4032,14 +4032,14 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -4065,9 +4065,9 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_a.object}, TNode<IntPtrT>{p_a.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{p_a.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
-    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_b.object}, TNode<IntPtrT>{p_b.offset});
+    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{p_b.offset});
     tmp5 = (TNode<RawPtrT>{tmp4});
     tmp6 = CodeStubAssembler(state_).WordEqual(TNode<RawPtrT>{tmp3}, TNode<RawPtrT>{tmp5});
     ca_.Branch(tmp6, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
@@ -4083,55 +4083,55 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<IntPtrT> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp9 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp8});
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp9});
-    std::tie(tmp11, tmp12) = NewReference_char8_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
+    std::tie(tmp11, tmp12) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp14 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp13});
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp14});
-    std::tie(tmp16, tmp17) = NewReference_char8_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
+    std::tie(tmp16, tmp17) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
     tmp18 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp19 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp18});
     tmp20 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp19});
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp20});
-    std::tie(tmp22, tmp23) = NewReference_char8_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
+    std::tie(tmp22, tmp23) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
     tmp24 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp25 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp24});
     tmp26 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp25});
     tmp27 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp26});
-    std::tie(tmp28, tmp29) = NewReference_char8_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
+    std::tie(tmp28, tmp29) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
     ca_.Goto(&block14, tmp11, tmp12, tmp16, tmp17, tmp22, tmp23, tmp28, tmp29);
   }
 
-  TNode<Object> phi_bb14_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_7;
   TNode<IntPtrT> phi_bb14_8;
-  TNode<Object> phi_bb14_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_9;
   TNode<IntPtrT> phi_bb14_10;
-  TNode<Object> phi_bb14_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_11;
   TNode<IntPtrT> phi_bb14_12;
-  TNode<Object> phi_bb14_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_13;
   TNode<IntPtrT> phi_bb14_14;
   TNode<BoolT> tmp30;
   if (block14.is_used()) {
@@ -4140,13 +4140,13 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
     ca_.Branch(tmp30, &block12, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14}, &block13, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14});
   }
 
-  TNode<Object> phi_bb12_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_7;
   TNode<IntPtrT> phi_bb12_8;
-  TNode<Object> phi_bb12_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_9;
   TNode<IntPtrT> phi_bb12_10;
-  TNode<Object> phi_bb12_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_11;
   TNode<IntPtrT> phi_bb12_12;
-  TNode<Object> phi_bb12_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_13;
   TNode<IntPtrT> phi_bb12_14;
   TNode<Uint8T> tmp31;
   TNode<Uint8T> tmp32;
@@ -4159,13 +4159,13 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
     ca_.Branch(tmp33, &block17, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14}, &block18, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14});
   }
 
-  TNode<Object> phi_bb17_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_8;
-  TNode<Object> phi_bb17_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_9;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> phi_bb17_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_11;
   TNode<IntPtrT> phi_bb17_12;
-  TNode<Object> phi_bb17_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_13;
   TNode<IntPtrT> phi_bb17_14;
   TNode<BoolT> tmp34;
   if (block17.is_used()) {
@@ -4174,13 +4174,13 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
     ca_.Goto(&block19, phi_bb17_7, phi_bb17_8, phi_bb17_9, phi_bb17_10, phi_bb17_11, phi_bb17_12, phi_bb17_13, phi_bb17_14, tmp34);
   }
 
-  TNode<Object> phi_bb18_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_7;
   TNode<IntPtrT> phi_bb18_8;
-  TNode<Object> phi_bb18_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_9;
   TNode<IntPtrT> phi_bb18_10;
-  TNode<Object> phi_bb18_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_11;
   TNode<IntPtrT> phi_bb18_12;
-  TNode<Object> phi_bb18_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_13;
   TNode<IntPtrT> phi_bb18_14;
   TNode<Uint8T> tmp35;
   TNode<Uint8T> tmp36;
@@ -4193,13 +4193,13 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
     ca_.Goto(&block19, phi_bb18_7, phi_bb18_8, phi_bb18_9, phi_bb18_10, phi_bb18_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, tmp37);
   }
 
-  TNode<Object> phi_bb19_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_7;
   TNode<IntPtrT> phi_bb19_8;
-  TNode<Object> phi_bb19_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_9;
   TNode<IntPtrT> phi_bb19_10;
-  TNode<Object> phi_bb19_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_11;
   TNode<IntPtrT> phi_bb19_12;
-  TNode<Object> phi_bb19_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_13;
   TNode<IntPtrT> phi_bb19_14;
   TNode<BoolT> phi_bb19_16;
   if (block19.is_used()) {
@@ -4207,13 +4207,13 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
     ca_.Branch(phi_bb19_16, &block15, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14}, &block16, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14});
   }
 
-  TNode<Object> phi_bb15_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_7;
   TNode<IntPtrT> phi_bb15_8;
-  TNode<Object> phi_bb15_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_9;
   TNode<IntPtrT> phi_bb15_10;
-  TNode<Object> phi_bb15_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_11;
   TNode<IntPtrT> phi_bb15_12;
-  TNode<Object> phi_bb15_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_13;
   TNode<IntPtrT> phi_bb15_14;
   TNode<BoolT> tmp38;
   if (block15.is_used()) {
@@ -4222,46 +4222,46 @@ TNode<BoolT> EqualContent_char8_char8_0(compiler::CodeAssemblerState* state_, To
     ca_.Goto(&block1, tmp38);
   }
 
-  TNode<Object> phi_bb16_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_7;
   TNode<IntPtrT> phi_bb16_8;
-  TNode<Object> phi_bb16_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_9;
   TNode<IntPtrT> phi_bb16_10;
-  TNode<Object> phi_bb16_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_12;
-  TNode<Object> phi_bb16_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_13;
   TNode<IntPtrT> phi_bb16_14;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<Object> tmp43;
+  TNode<Union<HeapObject, TaggedIndex>> tmp43;
   TNode<IntPtrT> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_7, &phi_bb16_8, &phi_bb16_9, &phi_bb16_10, &phi_bb16_11, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14);
     tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp40, tmp41) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp43, tmp44) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
+    std::tie(tmp43, tmp44) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
     tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp46, tmp47) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
+    std::tie(tmp46, tmp47) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
     tmp48 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp49, tmp50) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
+    std::tie(tmp49, tmp50) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
     ca_.Goto(&block14, tmp40, tmp41, tmp46, tmp47, tmp43, tmp44, tmp49, tmp50);
   }
 
-  TNode<Object> phi_bb13_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_7;
   TNode<IntPtrT> phi_bb13_8;
-  TNode<Object> phi_bb13_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_9;
   TNode<IntPtrT> phi_bb13_10;
-  TNode<Object> phi_bb13_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_11;
   TNode<IntPtrT> phi_bb13_12;
-  TNode<Object> phi_bb13_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_13;
   TNode<IntPtrT> phi_bb13_14;
   TNode<BoolT> tmp51;
   if (block13.is_used()) {
@@ -4290,14 +4290,14 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -4323,9 +4323,9 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_a.object}, TNode<IntPtrT>{p_a.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{p_a.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
-    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_b.object}, TNode<IntPtrT>{p_b.offset});
+    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{p_b.offset});
     tmp5 = (TNode<RawPtrT>{tmp4});
     tmp6 = CodeStubAssembler(state_).WordEqual(TNode<RawPtrT>{tmp3}, TNode<RawPtrT>{tmp5});
     ca_.Branch(tmp6, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
@@ -4341,55 +4341,55 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<IntPtrT> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp9 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp8});
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp9});
-    std::tie(tmp11, tmp12) = NewReference_char8_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
+    std::tie(tmp11, tmp12) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp14 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp13});
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp14});
-    std::tie(tmp16, tmp17) = NewReference_char16_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
+    std::tie(tmp16, tmp17) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
     tmp18 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp19 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp18});
     tmp20 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp19});
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp20});
-    std::tie(tmp22, tmp23) = NewReference_char8_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
+    std::tie(tmp22, tmp23) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
     tmp24 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp25 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp24});
     tmp26 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp25});
     tmp27 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp26});
-    std::tie(tmp28, tmp29) = NewReference_char16_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
+    std::tie(tmp28, tmp29) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
     ca_.Goto(&block14, tmp11, tmp12, tmp16, tmp17, tmp22, tmp23, tmp28, tmp29);
   }
 
-  TNode<Object> phi_bb14_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_7;
   TNode<IntPtrT> phi_bb14_8;
-  TNode<Object> phi_bb14_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_9;
   TNode<IntPtrT> phi_bb14_10;
-  TNode<Object> phi_bb14_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_11;
   TNode<IntPtrT> phi_bb14_12;
-  TNode<Object> phi_bb14_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_13;
   TNode<IntPtrT> phi_bb14_14;
   TNode<BoolT> tmp30;
   if (block14.is_used()) {
@@ -4398,13 +4398,13 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
     ca_.Branch(tmp30, &block12, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14}, &block13, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14});
   }
 
-  TNode<Object> phi_bb12_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_7;
   TNode<IntPtrT> phi_bb12_8;
-  TNode<Object> phi_bb12_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_9;
   TNode<IntPtrT> phi_bb12_10;
-  TNode<Object> phi_bb12_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_11;
   TNode<IntPtrT> phi_bb12_12;
-  TNode<Object> phi_bb12_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_13;
   TNode<IntPtrT> phi_bb12_14;
   TNode<Uint8T> tmp31;
   TNode<Uint16T> tmp32;
@@ -4417,13 +4417,13 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
     ca_.Branch(tmp33, &block17, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14}, &block18, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14});
   }
 
-  TNode<Object> phi_bb17_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_8;
-  TNode<Object> phi_bb17_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_9;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> phi_bb17_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_11;
   TNode<IntPtrT> phi_bb17_12;
-  TNode<Object> phi_bb17_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_13;
   TNode<IntPtrT> phi_bb17_14;
   TNode<BoolT> tmp34;
   if (block17.is_used()) {
@@ -4432,13 +4432,13 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block19, phi_bb17_7, phi_bb17_8, phi_bb17_9, phi_bb17_10, phi_bb17_11, phi_bb17_12, phi_bb17_13, phi_bb17_14, tmp34);
   }
 
-  TNode<Object> phi_bb18_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_7;
   TNode<IntPtrT> phi_bb18_8;
-  TNode<Object> phi_bb18_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_9;
   TNode<IntPtrT> phi_bb18_10;
-  TNode<Object> phi_bb18_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_11;
   TNode<IntPtrT> phi_bb18_12;
-  TNode<Object> phi_bb18_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_13;
   TNode<IntPtrT> phi_bb18_14;
   TNode<Uint8T> tmp35;
   TNode<Uint16T> tmp36;
@@ -4451,13 +4451,13 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block19, phi_bb18_7, phi_bb18_8, phi_bb18_9, phi_bb18_10, phi_bb18_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, tmp37);
   }
 
-  TNode<Object> phi_bb19_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_7;
   TNode<IntPtrT> phi_bb19_8;
-  TNode<Object> phi_bb19_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_9;
   TNode<IntPtrT> phi_bb19_10;
-  TNode<Object> phi_bb19_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_11;
   TNode<IntPtrT> phi_bb19_12;
-  TNode<Object> phi_bb19_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_13;
   TNode<IntPtrT> phi_bb19_14;
   TNode<BoolT> phi_bb19_16;
   if (block19.is_used()) {
@@ -4465,13 +4465,13 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
     ca_.Branch(phi_bb19_16, &block15, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14}, &block16, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14});
   }
 
-  TNode<Object> phi_bb15_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_7;
   TNode<IntPtrT> phi_bb15_8;
-  TNode<Object> phi_bb15_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_9;
   TNode<IntPtrT> phi_bb15_10;
-  TNode<Object> phi_bb15_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_11;
   TNode<IntPtrT> phi_bb15_12;
-  TNode<Object> phi_bb15_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_13;
   TNode<IntPtrT> phi_bb15_14;
   TNode<BoolT> tmp38;
   if (block15.is_used()) {
@@ -4480,46 +4480,46 @@ TNode<BoolT> EqualContent_char8_char16_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block1, tmp38);
   }
 
-  TNode<Object> phi_bb16_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_7;
   TNode<IntPtrT> phi_bb16_8;
-  TNode<Object> phi_bb16_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_9;
   TNode<IntPtrT> phi_bb16_10;
-  TNode<Object> phi_bb16_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_12;
-  TNode<Object> phi_bb16_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_13;
   TNode<IntPtrT> phi_bb16_14;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<Object> tmp43;
+  TNode<Union<HeapObject, TaggedIndex>> tmp43;
   TNode<IntPtrT> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_7, &phi_bb16_8, &phi_bb16_9, &phi_bb16_10, &phi_bb16_11, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14);
     tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp40, tmp41) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp43, tmp44) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
+    std::tie(tmp43, tmp44) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
     tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp46, tmp47) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
+    std::tie(tmp46, tmp47) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
     tmp48 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp49, tmp50) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
+    std::tie(tmp49, tmp50) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
     ca_.Goto(&block14, tmp40, tmp41, tmp46, tmp47, tmp43, tmp44, tmp49, tmp50);
   }
 
-  TNode<Object> phi_bb13_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_7;
   TNode<IntPtrT> phi_bb13_8;
-  TNode<Object> phi_bb13_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_9;
   TNode<IntPtrT> phi_bb13_10;
-  TNode<Object> phi_bb13_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_11;
   TNode<IntPtrT> phi_bb13_12;
-  TNode<Object> phi_bb13_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_13;
   TNode<IntPtrT> phi_bb13_14;
   TNode<BoolT> tmp51;
   if (block13.is_used()) {
@@ -4548,14 +4548,14 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -4581,9 +4581,9 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_a.object}, TNode<IntPtrT>{p_a.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{p_a.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
-    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_b.object}, TNode<IntPtrT>{p_b.offset});
+    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{p_b.offset});
     tmp5 = (TNode<RawPtrT>{tmp4});
     tmp6 = CodeStubAssembler(state_).WordEqual(TNode<RawPtrT>{tmp3}, TNode<RawPtrT>{tmp5});
     ca_.Branch(tmp6, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
@@ -4599,55 +4599,55 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<IntPtrT> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp9 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp8});
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp9});
-    std::tie(tmp11, tmp12) = NewReference_char16_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
+    std::tie(tmp11, tmp12) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp14 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp13});
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp14});
-    std::tie(tmp16, tmp17) = NewReference_char8_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
+    std::tie(tmp16, tmp17) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
     tmp18 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp19 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp18});
     tmp20 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp19});
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp20});
-    std::tie(tmp22, tmp23) = NewReference_char16_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
+    std::tie(tmp22, tmp23) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
     tmp24 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp25 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp24});
     tmp26 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{tmp25});
     tmp27 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp26});
-    std::tie(tmp28, tmp29) = NewReference_char8_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
+    std::tie(tmp28, tmp29) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
     ca_.Goto(&block14, tmp11, tmp12, tmp16, tmp17, tmp22, tmp23, tmp28, tmp29);
   }
 
-  TNode<Object> phi_bb14_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_7;
   TNode<IntPtrT> phi_bb14_8;
-  TNode<Object> phi_bb14_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_9;
   TNode<IntPtrT> phi_bb14_10;
-  TNode<Object> phi_bb14_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_11;
   TNode<IntPtrT> phi_bb14_12;
-  TNode<Object> phi_bb14_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_13;
   TNode<IntPtrT> phi_bb14_14;
   TNode<BoolT> tmp30;
   if (block14.is_used()) {
@@ -4656,13 +4656,13 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
     ca_.Branch(tmp30, &block12, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14}, &block13, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14});
   }
 
-  TNode<Object> phi_bb12_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_7;
   TNode<IntPtrT> phi_bb12_8;
-  TNode<Object> phi_bb12_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_9;
   TNode<IntPtrT> phi_bb12_10;
-  TNode<Object> phi_bb12_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_11;
   TNode<IntPtrT> phi_bb12_12;
-  TNode<Object> phi_bb12_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_13;
   TNode<IntPtrT> phi_bb12_14;
   TNode<Uint16T> tmp31;
   TNode<Uint8T> tmp32;
@@ -4675,13 +4675,13 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
     ca_.Branch(tmp33, &block17, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14}, &block18, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14});
   }
 
-  TNode<Object> phi_bb17_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_8;
-  TNode<Object> phi_bb17_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_9;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> phi_bb17_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_11;
   TNode<IntPtrT> phi_bb17_12;
-  TNode<Object> phi_bb17_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_13;
   TNode<IntPtrT> phi_bb17_14;
   TNode<BoolT> tmp34;
   if (block17.is_used()) {
@@ -4690,13 +4690,13 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block19, phi_bb17_7, phi_bb17_8, phi_bb17_9, phi_bb17_10, phi_bb17_11, phi_bb17_12, phi_bb17_13, phi_bb17_14, tmp34);
   }
 
-  TNode<Object> phi_bb18_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_7;
   TNode<IntPtrT> phi_bb18_8;
-  TNode<Object> phi_bb18_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_9;
   TNode<IntPtrT> phi_bb18_10;
-  TNode<Object> phi_bb18_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_11;
   TNode<IntPtrT> phi_bb18_12;
-  TNode<Object> phi_bb18_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_13;
   TNode<IntPtrT> phi_bb18_14;
   TNode<Uint16T> tmp35;
   TNode<Uint8T> tmp36;
@@ -4709,13 +4709,13 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block19, phi_bb18_7, phi_bb18_8, phi_bb18_9, phi_bb18_10, phi_bb18_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, tmp37);
   }
 
-  TNode<Object> phi_bb19_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_7;
   TNode<IntPtrT> phi_bb19_8;
-  TNode<Object> phi_bb19_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_9;
   TNode<IntPtrT> phi_bb19_10;
-  TNode<Object> phi_bb19_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_11;
   TNode<IntPtrT> phi_bb19_12;
-  TNode<Object> phi_bb19_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_13;
   TNode<IntPtrT> phi_bb19_14;
   TNode<BoolT> phi_bb19_16;
   if (block19.is_used()) {
@@ -4723,13 +4723,13 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
     ca_.Branch(phi_bb19_16, &block15, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14}, &block16, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14});
   }
 
-  TNode<Object> phi_bb15_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_7;
   TNode<IntPtrT> phi_bb15_8;
-  TNode<Object> phi_bb15_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_9;
   TNode<IntPtrT> phi_bb15_10;
-  TNode<Object> phi_bb15_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_11;
   TNode<IntPtrT> phi_bb15_12;
-  TNode<Object> phi_bb15_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_13;
   TNode<IntPtrT> phi_bb15_14;
   TNode<BoolT> tmp38;
   if (block15.is_used()) {
@@ -4738,46 +4738,46 @@ TNode<BoolT> EqualContent_char16_char8_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block1, tmp38);
   }
 
-  TNode<Object> phi_bb16_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_7;
   TNode<IntPtrT> phi_bb16_8;
-  TNode<Object> phi_bb16_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_9;
   TNode<IntPtrT> phi_bb16_10;
-  TNode<Object> phi_bb16_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_12;
-  TNode<Object> phi_bb16_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_13;
   TNode<IntPtrT> phi_bb16_14;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<Object> tmp43;
+  TNode<Union<HeapObject, TaggedIndex>> tmp43;
   TNode<IntPtrT> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_7, &phi_bb16_8, &phi_bb16_9, &phi_bb16_10, &phi_bb16_11, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14);
     tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp40, tmp41) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp43, tmp44) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
+    std::tie(tmp43, tmp44) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
     tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp46, tmp47) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
+    std::tie(tmp46, tmp47) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
     tmp48 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp49, tmp50) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Object>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
+    std::tie(tmp49, tmp50) = AddOffset_char8_0(state_, TorqueStructReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
     ca_.Goto(&block14, tmp40, tmp41, tmp46, tmp47, tmp43, tmp44, tmp49, tmp50);
   }
 
-  TNode<Object> phi_bb13_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_7;
   TNode<IntPtrT> phi_bb13_8;
-  TNode<Object> phi_bb13_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_9;
   TNode<IntPtrT> phi_bb13_10;
-  TNode<Object> phi_bb13_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_11;
   TNode<IntPtrT> phi_bb13_12;
-  TNode<Object> phi_bb13_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_13;
   TNode<IntPtrT> phi_bb13_14;
   TNode<BoolT> tmp51;
   if (block13.is_used()) {
@@ -4806,14 +4806,14 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, Object, IntPtrT, Object, IntPtrT, Object, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, BoolT> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<BoolT> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -4839,9 +4839,9 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_a.object}, TNode<IntPtrT>{p_a.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{p_a.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
-    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_b.object}, TNode<IntPtrT>{p_b.offset});
+    tmp4 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{p_b.offset});
     tmp5 = (TNode<RawPtrT>{tmp4});
     tmp6 = CodeStubAssembler(state_).WordEqual(TNode<RawPtrT>{tmp3}, TNode<RawPtrT>{tmp5});
     ca_.Branch(tmp6, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
@@ -4857,55 +4857,55 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
   TNode<IntPtrT> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp9 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp8});
     tmp10 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp9});
-    std::tie(tmp11, tmp12) = NewReference_char16_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
+    std::tie(tmp11, tmp12) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp10}).Flatten();
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp14 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp13});
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp14});
-    std::tie(tmp16, tmp17) = NewReference_char16_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
+    std::tie(tmp16, tmp17) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp15}).Flatten();
     tmp18 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp19 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp18});
     tmp20 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp19});
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_a.offset}, TNode<IntPtrT>{tmp20});
-    std::tie(tmp22, tmp23) = NewReference_char16_0(state_, TNode<Object>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
+    std::tie(tmp22, tmp23) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_a.object}, TNode<IntPtrT>{tmp21}).Flatten();
     tmp24 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp25 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{p_a.length}, TNode<IntPtrT>{tmp24});
     tmp26 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{tmp25});
     tmp27 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_b.offset}, TNode<IntPtrT>{tmp26});
-    std::tie(tmp28, tmp29) = NewReference_char16_0(state_, TNode<Object>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
+    std::tie(tmp28, tmp29) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_b.object}, TNode<IntPtrT>{tmp27}).Flatten();
     ca_.Goto(&block14, tmp11, tmp12, tmp16, tmp17, tmp22, tmp23, tmp28, tmp29);
   }
 
-  TNode<Object> phi_bb14_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_7;
   TNode<IntPtrT> phi_bb14_8;
-  TNode<Object> phi_bb14_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_9;
   TNode<IntPtrT> phi_bb14_10;
-  TNode<Object> phi_bb14_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_11;
   TNode<IntPtrT> phi_bb14_12;
-  TNode<Object> phi_bb14_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb14_13;
   TNode<IntPtrT> phi_bb14_14;
   TNode<BoolT> tmp30;
   if (block14.is_used()) {
@@ -4914,13 +4914,13 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
     ca_.Branch(tmp30, &block12, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14}, &block13, std::vector<compiler::Node*>{phi_bb14_7, phi_bb14_8, phi_bb14_9, phi_bb14_10, phi_bb14_11, phi_bb14_12, phi_bb14_13, phi_bb14_14});
   }
 
-  TNode<Object> phi_bb12_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_7;
   TNode<IntPtrT> phi_bb12_8;
-  TNode<Object> phi_bb12_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_9;
   TNode<IntPtrT> phi_bb12_10;
-  TNode<Object> phi_bb12_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_11;
   TNode<IntPtrT> phi_bb12_12;
-  TNode<Object> phi_bb12_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb12_13;
   TNode<IntPtrT> phi_bb12_14;
   TNode<Uint16T> tmp31;
   TNode<Uint16T> tmp32;
@@ -4933,13 +4933,13 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
     ca_.Branch(tmp33, &block17, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14}, &block18, std::vector<compiler::Node*>{phi_bb12_7, phi_bb12_8, phi_bb12_9, phi_bb12_10, phi_bb12_11, phi_bb12_12, phi_bb12_13, phi_bb12_14});
   }
 
-  TNode<Object> phi_bb17_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_7;
   TNode<IntPtrT> phi_bb17_8;
-  TNode<Object> phi_bb17_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_9;
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> phi_bb17_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_11;
   TNode<IntPtrT> phi_bb17_12;
-  TNode<Object> phi_bb17_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb17_13;
   TNode<IntPtrT> phi_bb17_14;
   TNode<BoolT> tmp34;
   if (block17.is_used()) {
@@ -4948,13 +4948,13 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
     ca_.Goto(&block19, phi_bb17_7, phi_bb17_8, phi_bb17_9, phi_bb17_10, phi_bb17_11, phi_bb17_12, phi_bb17_13, phi_bb17_14, tmp34);
   }
 
-  TNode<Object> phi_bb18_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_7;
   TNode<IntPtrT> phi_bb18_8;
-  TNode<Object> phi_bb18_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_9;
   TNode<IntPtrT> phi_bb18_10;
-  TNode<Object> phi_bb18_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_11;
   TNode<IntPtrT> phi_bb18_12;
-  TNode<Object> phi_bb18_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb18_13;
   TNode<IntPtrT> phi_bb18_14;
   TNode<Uint16T> tmp35;
   TNode<Uint16T> tmp36;
@@ -4967,13 +4967,13 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
     ca_.Goto(&block19, phi_bb18_7, phi_bb18_8, phi_bb18_9, phi_bb18_10, phi_bb18_11, phi_bb18_12, phi_bb18_13, phi_bb18_14, tmp37);
   }
 
-  TNode<Object> phi_bb19_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_7;
   TNode<IntPtrT> phi_bb19_8;
-  TNode<Object> phi_bb19_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_9;
   TNode<IntPtrT> phi_bb19_10;
-  TNode<Object> phi_bb19_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_11;
   TNode<IntPtrT> phi_bb19_12;
-  TNode<Object> phi_bb19_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb19_13;
   TNode<IntPtrT> phi_bb19_14;
   TNode<BoolT> phi_bb19_16;
   if (block19.is_used()) {
@@ -4981,13 +4981,13 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
     ca_.Branch(phi_bb19_16, &block15, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14}, &block16, std::vector<compiler::Node*>{phi_bb19_7, phi_bb19_8, phi_bb19_9, phi_bb19_10, phi_bb19_11, phi_bb19_12, phi_bb19_13, phi_bb19_14});
   }
 
-  TNode<Object> phi_bb15_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_7;
   TNode<IntPtrT> phi_bb15_8;
-  TNode<Object> phi_bb15_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_9;
   TNode<IntPtrT> phi_bb15_10;
-  TNode<Object> phi_bb15_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_11;
   TNode<IntPtrT> phi_bb15_12;
-  TNode<Object> phi_bb15_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb15_13;
   TNode<IntPtrT> phi_bb15_14;
   TNode<BoolT> tmp38;
   if (block15.is_used()) {
@@ -4996,46 +4996,46 @@ TNode<BoolT> EqualContent_char16_char16_0(compiler::CodeAssemblerState* state_, 
     ca_.Goto(&block1, tmp38);
   }
 
-  TNode<Object> phi_bb16_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_7;
   TNode<IntPtrT> phi_bb16_8;
-  TNode<Object> phi_bb16_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_9;
   TNode<IntPtrT> phi_bb16_10;
-  TNode<Object> phi_bb16_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_11;
   TNode<IntPtrT> phi_bb16_12;
-  TNode<Object> phi_bb16_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb16_13;
   TNode<IntPtrT> phi_bb16_14;
   TNode<IntPtrT> tmp39;
-  TNode<Object> tmp40;
+  TNode<Union<HeapObject, TaggedIndex>> tmp40;
   TNode<IntPtrT> tmp41;
   TNode<IntPtrT> tmp42;
-  TNode<Object> tmp43;
+  TNode<Union<HeapObject, TaggedIndex>> tmp43;
   TNode<IntPtrT> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_7, &phi_bb16_8, &phi_bb16_9, &phi_bb16_10, &phi_bb16_11, &phi_bb16_12, &phi_bb16_13, &phi_bb16_14);
     tmp39 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp40, tmp41) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
+    std::tie(tmp40, tmp41) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_7}, TNode<IntPtrT>{phi_bb16_8}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp39}).Flatten();
     tmp42 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp43, tmp44) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
+    std::tie(tmp43, tmp44) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_11}, TNode<IntPtrT>{phi_bb16_12}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp42}).Flatten();
     tmp45 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    std::tie(tmp46, tmp47) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
+    std::tie(tmp46, tmp47) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_9}, TNode<IntPtrT>{phi_bb16_10}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp45}).Flatten();
     tmp48 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(true, 0x1ull));
-    std::tie(tmp49, tmp50) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Object>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
+    std::tie(tmp49, tmp50) = AddOffset_char16_0(state_, TorqueStructReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb16_13}, TNode<IntPtrT>{phi_bb16_14}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{tmp48}).Flatten();
     ca_.Goto(&block14, tmp40, tmp41, tmp46, tmp47, tmp43, tmp44, tmp49, tmp50);
   }
 
-  TNode<Object> phi_bb13_7;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_7;
   TNode<IntPtrT> phi_bb13_8;
-  TNode<Object> phi_bb13_9;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_9;
   TNode<IntPtrT> phi_bb13_10;
-  TNode<Object> phi_bb13_11;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_11;
   TNode<IntPtrT> phi_bb13_12;
-  TNode<Object> phi_bb13_13;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb13_13;
   TNode<IntPtrT> phi_bb13_14;
   TNode<BoolT> tmp51;
   if (block13.is_used()) {

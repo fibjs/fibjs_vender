@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsMap_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedMap : public P {
   static_assert(
-      std::is_same<Map, D>::value,
+      std::is_same_v<Map, D>,
       "Use this class as direct base for Map.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedMap.");
 
  public: 
@@ -72,36 +72,37 @@ class TorqueGeneratedMap : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
   inline void set_constructor_or_back_pointer_or_native_context(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-  inline Tagged<DescriptorArray> instance_descriptors() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-  inline Tagged<DescriptorArray> instance_descriptors(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-  inline void set_instance_descriptors(Tagged<DescriptorArray> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // Torque type: (class DescriptorArray | class WasmStruct)
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
+  inline Tagged<Union<DescriptorArray, WasmStruct>> instance_descriptors() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
+  inline Tagged<Union<DescriptorArray, WasmStruct>> instance_descriptors(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
+  inline void set_instance_descriptors(Tagged<Union<DescriptorArray, WasmStruct>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: DependentCode
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
   inline Tagged<WeakArrayList> dependent_code() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
   inline Tagged<WeakArrayList> dependent_code(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
   inline void set_dependent_code(Tagged<WeakArrayList> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class Cell)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+  // Torque type: (Zero | class Cell)
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
   inline Tagged<Union<Cell, Smi>> prototype_validity_cell() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
   inline Tagged<Union<Cell, Smi>> prototype_validity_cell(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
   inline void set_prototype_validity_cell(Tagged<Union<Cell, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // Torque type: (Smi | class TransitionArray | class Map | Weak<class Map> | class PrototypeInfo)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-  inline Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> transitions_or_prototype_info() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-  inline Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> transitions_or_prototype_info(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-  inline void set_transitions_or_prototype_info(Tagged<Union<Map, MaybeObject, PrototypeInfo, Smi, TransitionArray>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  // Torque type: (Zero | class TransitionArray | class Map | Weak<class Map> | class PrototypeInfo)
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
+  inline Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> transitions_or_prototype_info() const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
+  inline Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> transitions_or_prototype_info(PtrComprCageBase cage_base) const;
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
+  inline void set_transitions_or_prototype_info(Tagged<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(Map)
 
@@ -144,18 +145,18 @@ class TorqueGeneratedMap : public P {
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=72&c=3
   static constexpr int kConstructorOrBackPointerOrNativeContextOffset = kPrototypeOffsetEnd + 1;
   static constexpr int kConstructorOrBackPointerOrNativeContextOffsetEnd = kConstructorOrBackPointerOrNativeContextOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
   static constexpr int kInstanceDescriptorsOffset = kConstructorOrBackPointerOrNativeContextOffsetEnd + 1;
   static constexpr int kInstanceDescriptorsOffsetEnd = kInstanceDescriptorsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
   static constexpr int kDependentCodeOffset = kInstanceDescriptorsOffsetEnd + 1;
   static constexpr int kDependentCodeOffsetEnd = kDependentCodeOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
   static constexpr int kPrototypeValidityCellOffset = kDependentCodeOffsetEnd + 1;
   static constexpr int kPrototypeValidityCellOffsetEnd = kPrototypeValidityCellOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kPrototypeValidityCellOffsetEnd + 1;
   static constexpr int kStartOfWeakFieldsOffset = kPrototypeValidityCellOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
   static constexpr int kTransitionsOrPrototypeInfoOffset = kPrototypeValidityCellOffsetEnd + 1;
   static constexpr int kTransitionsOrPrototypeInfoOffsetEnd = kTransitionsOrPrototypeInfoOffset + kTaggedSize - 1;
   static constexpr int kEndOfWeakFieldsOffset = kTransitionsOrPrototypeInfoOffsetEnd + 1;
@@ -179,7 +180,7 @@ class TorqueGeneratedMap : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedMap() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedMap, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedMap, DAlias>,
         "class TorqueGeneratedMap should be used as direct base for Map.");
   }
 

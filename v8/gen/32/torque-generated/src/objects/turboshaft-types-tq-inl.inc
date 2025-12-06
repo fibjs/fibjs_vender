@@ -14,13 +14,13 @@ inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> Tq
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
-inline intptr_t TqRuntimeConvert_intptr_uint32_0(uint32_t p_i);
+inline intptr_t TqRuntimeConvert_intptr_WasmCodePointer_0(uint32_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
 inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length);
+inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_WasmCodePointer_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=86&c=3
 inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_float64_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length);
@@ -46,9 +46,9 @@ std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntime
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
   tmp1 = (p_o)->ReadField<uint32_t>(tmp0);
-  tmp2 = TqRuntimeConvert_intptr_uint32_0(tmp1);
+  tmp2 = TqRuntimeConvert_intptr_WasmCodePointer_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x8ull));
-  std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_uint32_0(p_o, tmp3, tmp2);
+  std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_WasmCodePointer_0(p_o, tmp3, tmp2);
   goto block2;
 
   block2:
@@ -74,9 +74,9 @@ std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntime
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
   tmp1 = (p_o)->ReadField<uint32_t>(tmp0);
-  tmp2 = TqRuntimeConvert_intptr_uint32_0(tmp1);
+  tmp2 = TqRuntimeConvert_intptr_WasmCodePointer_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0x8ull));
-  std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_uint32_0(p_o, tmp3, tmp2);
+  std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_WasmCodePointer_0(p_o, tmp3, tmp2);
   goto block2;
 
   block2:
@@ -111,8 +111,8 @@ std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntime
   tmp5 = TorqueRuntimeMacroShims::CodeStubAssembler::IntPtrAdd(tmp1, tmp4);
   tmp6 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(4);
   tmp7 = (p_o)->ReadField<uint32_t>(tmp6);
-  tmp8 = TqRuntimeConvert_intptr_uint32_0(tmp7);
-  std::tie(tmp9, tmp10, tmp11) = TqRuntimeNewMutableSlice_uint32_0(p_o, tmp5, tmp8);
+  tmp8 = TqRuntimeConvert_intptr_WasmCodePointer_0(tmp7);
+  std::tie(tmp9, tmp10, tmp11) = TqRuntimeNewMutableSlice_WasmCodePointer_0(p_o, tmp5, tmp8);
   goto block2;
 
   block2:
@@ -138,7 +138,7 @@ std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntime
   block0:
   tmp0 = TqRuntimeFromConstexpr_intptr_constexpr_int31_0(8);
   tmp1 = (p_o)->ReadField<uint32_t>(tmp0);
-  tmp2 = TqRuntimeConvert_intptr_uint32_0(tmp1);
+  tmp2 = TqRuntimeConvert_intptr_WasmCodePointer_0(tmp1);
   tmp3 = TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral(false, 0xcull));
   std::tie(tmp4, tmp5, tmp6) = TqRuntimeNewMutableSlice_float64_0(p_o, tmp3, tmp2);
   goto block2;
@@ -166,11 +166,11 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i) {
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_int31_0
-#ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint32_0
-#define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint32_0
+#ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_WasmCodePointer_0
+#define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_WasmCodePointer_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
-intptr_t TqRuntimeConvert_intptr_uint32_0(uint32_t p_i) {
+intptr_t TqRuntimeConvert_intptr_WasmCodePointer_0(uint32_t p_i) {
   DisallowGarbageCollection no_gc;
   uintptr_t tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -185,7 +185,7 @@ intptr_t TqRuntimeConvert_intptr_uint32_0(uint32_t p_i) {
   return tmp1;
 }
 
-#endif // V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_uint32_0
+#endif // V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_WasmCodePointer_0
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0
 
@@ -204,11 +204,11 @@ intptr_t TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0(IntegerLiteral
 }
 
 #endif // V8_INTERNAL_DEFINED_TqRuntimeFromConstexpr_intptr_constexpr_IntegerLiteral_0
-#ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint32_0
-#define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint32_0
+#ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_WasmCodePointer_0
+#define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_WasmCodePointer_0
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turboshaft-types.tq?l=38&c=3
-std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_uint32_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length) {
+std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeNewMutableSlice_WasmCodePointer_0(Tagged<Union<HeapObject, TaggedIndex>> p_object, intptr_t p_offset, intptr_t p_length) {
   DisallowGarbageCollection no_gc;
   Tagged<Union<HeapObject, TaggedIndex>> tmp0{}; USE(tmp0);
   intptr_t tmp1{}; USE(tmp1);
@@ -223,7 +223,7 @@ std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntime
   return std::make_tuple(tmp0, tmp1, tmp2);
 }
 
-#endif // V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_uint32_0
+#endif // V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_WasmCodePointer_0
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_float64_0
 #define V8_INTERNAL_DEFINED_TqRuntimeNewMutableSlice_float64_0
 

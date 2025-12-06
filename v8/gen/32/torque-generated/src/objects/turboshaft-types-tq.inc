@@ -16,10 +16,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftType_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTurboshaftType : public P {
   static_assert(
-      std::is_same<TurboshaftType, D>::value,
+      std::is_same_v<TurboshaftType, D>,
       "Use this class as direct base for TurboshaftType.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedTurboshaftType.");
 
  public: 
@@ -42,7 +42,7 @@ class TorqueGeneratedTurboshaftType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftType, DAlias>,
         "class TorqueGeneratedTurboshaftType should be used as direct base for TurboshaftType.");
   }
 
@@ -60,10 +60,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftWord32Type_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord32Type : public P {
   static_assert(
-      std::is_same<TurboshaftWord32Type, D>::value,
+      std::is_same_v<TurboshaftWord32Type, D>,
       "Use this class as direct base for TurboshaftWord32Type.");
   static_assert(
-      std::is_same<TurboshaftType, P>::value,
+      std::is_same_v<TurboshaftType, P>,
       "Pass in TurboshaftType as second template parameter for TorqueGeneratedTurboshaftWord32Type.");
 
  public: 
@@ -101,7 +101,7 @@ class TorqueGeneratedTurboshaftWord32Type : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftWord32Type() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftWord32Type, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftWord32Type, DAlias>,
         "class TorqueGeneratedTurboshaftWord32Type should be used as direct base for TurboshaftWord32Type.");
   }
 
@@ -119,10 +119,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftWord32RangeType_NonInline(Tagged<HeapObject> 
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord32RangeType : public P {
   static_assert(
-      std::is_same<TurboshaftWord32RangeType, D>::value,
+      std::is_same_v<TurboshaftWord32RangeType, D>,
       "Use this class as direct base for TurboshaftWord32RangeType.");
   static_assert(
-      std::is_same<TurboshaftWord32Type, P>::value,
+      std::is_same_v<TurboshaftWord32Type, P>,
       "Pass in TurboshaftWord32Type as second template parameter for TorqueGeneratedTurboshaftWord32RangeType.");
 
  public: 
@@ -176,7 +176,7 @@ class TorqueGeneratedTurboshaftWord32RangeType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftWord32RangeType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftWord32RangeType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftWord32RangeType, DAlias>,
         "class TorqueGeneratedTurboshaftWord32RangeType should be used as direct base for TurboshaftWord32RangeType.");
   }
 
@@ -194,10 +194,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftWord32SetType_NonInline(Tagged<HeapObject> o)
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord32SetType : public P {
   static_assert(
-      std::is_same<TurboshaftWord32SetType, D>::value,
+      std::is_same_v<TurboshaftWord32SetType, D>,
       "Use this class as direct base for TurboshaftWord32SetType.");
   static_assert(
-      std::is_same<TurboshaftWord32Type, P>::value,
+      std::is_same_v<TurboshaftWord32Type, P>,
       "Pass in TurboshaftWord32Type as second template parameter for TorqueGeneratedTurboshaftWord32SetType.");
 
  public: 
@@ -250,7 +250,7 @@ class TorqueGeneratedTurboshaftWord32SetType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftWord32SetType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftWord32SetType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftWord32SetType, DAlias>,
         "class TorqueGeneratedTurboshaftWord32SetType should be used as direct base for TurboshaftWord32SetType.");
   }
 
@@ -268,10 +268,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftWord64Type_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord64Type : public P {
   static_assert(
-      std::is_same<TurboshaftWord64Type, D>::value,
+      std::is_same_v<TurboshaftWord64Type, D>,
       "Use this class as direct base for TurboshaftWord64Type.");
   static_assert(
-      std::is_same<TurboshaftType, P>::value,
+      std::is_same_v<TurboshaftType, P>,
       "Pass in TurboshaftType as second template parameter for TorqueGeneratedTurboshaftWord64Type.");
 
  public: 
@@ -309,7 +309,7 @@ class TorqueGeneratedTurboshaftWord64Type : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftWord64Type() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftWord64Type, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftWord64Type, DAlias>,
         "class TorqueGeneratedTurboshaftWord64Type should be used as direct base for TurboshaftWord64Type.");
   }
 
@@ -327,10 +327,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftWord64RangeType_NonInline(Tagged<HeapObject> 
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord64RangeType : public P {
   static_assert(
-      std::is_same<TurboshaftWord64RangeType, D>::value,
+      std::is_same_v<TurboshaftWord64RangeType, D>,
       "Use this class as direct base for TurboshaftWord64RangeType.");
   static_assert(
-      std::is_same<TurboshaftWord64Type, P>::value,
+      std::is_same_v<TurboshaftWord64Type, P>,
       "Pass in TurboshaftWord64Type as second template parameter for TorqueGeneratedTurboshaftWord64RangeType.");
 
  public: 
@@ -400,7 +400,7 @@ class TorqueGeneratedTurboshaftWord64RangeType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftWord64RangeType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftWord64RangeType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftWord64RangeType, DAlias>,
         "class TorqueGeneratedTurboshaftWord64RangeType should be used as direct base for TurboshaftWord64RangeType.");
   }
 
@@ -418,10 +418,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftWord64SetType_NonInline(Tagged<HeapObject> o)
 template <class D, class P>
 class TorqueGeneratedTurboshaftWord64SetType : public P {
   static_assert(
-      std::is_same<TurboshaftWord64SetType, D>::value,
+      std::is_same_v<TurboshaftWord64SetType, D>,
       "Use this class as direct base for TurboshaftWord64SetType.");
   static_assert(
-      std::is_same<TurboshaftWord64Type, P>::value,
+      std::is_same_v<TurboshaftWord64Type, P>,
       "Pass in TurboshaftWord64Type as second template parameter for TorqueGeneratedTurboshaftWord64SetType.");
 
  public: 
@@ -482,7 +482,7 @@ class TorqueGeneratedTurboshaftWord64SetType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftWord64SetType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftWord64SetType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftWord64SetType, DAlias>,
         "class TorqueGeneratedTurboshaftWord64SetType should be used as direct base for TurboshaftWord64SetType.");
   }
 
@@ -500,10 +500,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftFloat64Type_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedTurboshaftFloat64Type : public P {
   static_assert(
-      std::is_same<TurboshaftFloat64Type, D>::value,
+      std::is_same_v<TurboshaftFloat64Type, D>,
       "Use this class as direct base for TurboshaftFloat64Type.");
   static_assert(
-      std::is_same<TurboshaftType, P>::value,
+      std::is_same_v<TurboshaftType, P>,
       "Pass in TurboshaftType as second template parameter for TorqueGeneratedTurboshaftFloat64Type.");
 
  public: 
@@ -549,7 +549,7 @@ class TorqueGeneratedTurboshaftFloat64Type : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftFloat64Type() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftFloat64Type, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftFloat64Type, DAlias>,
         "class TorqueGeneratedTurboshaftFloat64Type should be used as direct base for TurboshaftFloat64Type.");
   }
 
@@ -567,10 +567,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftFloat64RangeType_NonInline(Tagged<HeapObject>
 template <class D, class P>
 class TorqueGeneratedTurboshaftFloat64RangeType : public P {
   static_assert(
-      std::is_same<TurboshaftFloat64RangeType, D>::value,
+      std::is_same_v<TurboshaftFloat64RangeType, D>,
       "Use this class as direct base for TurboshaftFloat64RangeType.");
   static_assert(
-      std::is_same<TurboshaftFloat64Type, P>::value,
+      std::is_same_v<TurboshaftFloat64Type, P>,
       "Pass in TurboshaftFloat64Type as second template parameter for TorqueGeneratedTurboshaftFloat64RangeType.");
 
  public: 
@@ -632,7 +632,7 @@ class TorqueGeneratedTurboshaftFloat64RangeType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftFloat64RangeType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftFloat64RangeType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftFloat64RangeType, DAlias>,
         "class TorqueGeneratedTurboshaftFloat64RangeType should be used as direct base for TurboshaftFloat64RangeType.");
   }
 
@@ -650,10 +650,10 @@ V8_EXPORT_PRIVATE bool IsTurboshaftFloat64SetType_NonInline(Tagged<HeapObject> o
 template <class D, class P>
 class TorqueGeneratedTurboshaftFloat64SetType : public P {
   static_assert(
-      std::is_same<TurboshaftFloat64SetType, D>::value,
+      std::is_same_v<TurboshaftFloat64SetType, D>,
       "Use this class as direct base for TurboshaftFloat64SetType.");
   static_assert(
-      std::is_same<TurboshaftFloat64Type, P>::value,
+      std::is_same_v<TurboshaftFloat64Type, P>,
       "Pass in TurboshaftFloat64Type as second template parameter for TorqueGeneratedTurboshaftFloat64SetType.");
 
  public: 
@@ -706,7 +706,7 @@ class TorqueGeneratedTurboshaftFloat64SetType : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedTurboshaftFloat64SetType() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedTurboshaftFloat64SetType, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedTurboshaftFloat64SetType, DAlias>,
         "class TorqueGeneratedTurboshaftFloat64SetType should be used as direct base for TurboshaftFloat64SetType.");
   }
 

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/string-tq-csa.h"
@@ -121,7 +121,7 @@ TNode<String> Cast_String_0(compiler::CodeAssemblerState* state_, TNode<HeapObje
   return TNode<String>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
 TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kSeqStringTag_0(compiler::CodeAssemblerState* state_, StringRepresentationTag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -142,7 +142,7 @@ TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kSeqStringTag_0(c
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
 TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kConsStringTag_0(compiler::CodeAssemblerState* state_, StringRepresentationTag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -163,7 +163,7 @@ TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kConsStringTag_0(
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
 TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kExternalStringTag_0(compiler::CodeAssemblerState* state_, StringRepresentationTag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -184,7 +184,7 @@ TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kExternalStringTa
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
 TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kSlicedStringTag_0(compiler::CodeAssemblerState* state_, StringRepresentationTag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -205,7 +205,7 @@ TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kSlicedStringTag_
   return TNode<Uint32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=50&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=54&c=1
 TNode<Uint32T> FromConstexpr_StringRepresentationTag_constexpr_kThinStringTag_0(compiler::CodeAssemblerState* state_, StringRepresentationTag p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -231,48 +231,48 @@ TNode<SeqOneByteString> AllocateNonEmptySeqOneByteString_0(compiler::CodeAssembl
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<SeqOneByteString> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = AllocateNonEmptySeqOneByteString_UninitializedIterator_0(state_, TNode<Uint32T>{p_length}, TorqueStructUninitializedIterator_0{});
-    ca_.Goto(&block2);
+    ca_.Goto(&block6);
   }
 
-    ca_.Bind(&block2);
+    ca_.Bind(&block6);
   return TNode<SeqOneByteString>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=192&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=195&c=1
 TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<SeqTwoByteString> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = AllocateNonEmptySeqTwoByteString_UninitializedIterator_0(state_, TNode<Uint32T>{p_length}, TorqueStructUninitializedIterator_0{});
-    ca_.Goto(&block2);
+    ca_.Goto(&block6);
   }
 
-    ca_.Bind(&block2);
+    ca_.Bind(&block6);
   return TNode<SeqTwoByteString>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=208&c=1
-TNode<String> AllocateSeqOneByteString_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=213&c=1
+TNode<Union<SeqOneByteString, String>> AllocateSeqOneByteString_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<String> tmp0;
+  TNode<Union<SeqOneByteString, String>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = AllocateSeqOneByteString_UninitializedIterator_0(state_, TNode<Uint32T>{p_length}, TorqueStructUninitializedIterator_0{});
@@ -280,18 +280,18 @@ TNode<String> AllocateSeqOneByteString_0(compiler::CodeAssemblerState* state_, T
   }
 
     ca_.Bind(&block2);
-  return TNode<String>{tmp0};
+  return TNode<Union<SeqOneByteString, String>>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=214&c=1
-TNode<String> AllocateSeqTwoByteString_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=219&c=1
+TNode<Union<SeqTwoByteString, String>> AllocateSeqTwoByteString_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<String> tmp0;
+  TNode<Union<SeqTwoByteString, String>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = AllocateSeqTwoByteString_UninitializedIterator_0(state_, TNode<Uint32T>{p_length}, TorqueStructUninitializedIterator_0{});
@@ -299,7 +299,7 @@ TNode<String> AllocateSeqTwoByteString_0(compiler::CodeAssemblerState* state_, T
   }
 
     ca_.Bind(&block2);
-  return TNode<String>{tmp0};
+  return TNode<Union<SeqTwoByteString, String>>{tmp0};
 }
 
 TF_BUILTIN(StringSlowFlatten, CodeStubAssembler) {
@@ -307,182 +307,148 @@ TF_BUILTIN(StringSlowFlatten, CodeStubAssembler) {
   TNode<ConsString> parameter0 = UncheckedParameter<ConsString>(Descriptor::kCons);
   USE(parameter0);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<ConsString, String> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<String> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    ca_.Goto(&block3, parameter0);
-  }
-
-  TNode<ConsString> phi_bb3_1;
   TNode<IntPtrT> tmp0;
   TNode<String> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Int32T> tmp3;
   TNode<Int32T> tmp4;
   TNode<BoolT> tmp5;
-  if (block3.is_used()) {
-    ca_.Bind(&block3, &phi_bb3_1);
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{phi_bb3_1, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{parameter0, tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp3 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{tmp1, tmp2});
     tmp4 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp5 = CodeStubAssembler(state_).Word32Equal(TNode<Int32T>{tmp3}, TNode<Int32T>{tmp4});
-    ca_.Branch(tmp5, &block1, std::vector<compiler::Node*>{phi_bb3_1}, &block2, std::vector<compiler::Node*>{phi_bb3_1});
+    ca_.Branch(tmp5, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<ConsString> phi_bb1_1;
   TNode<IntPtrT> tmp6;
   TNode<String> tmp7;
-  TNode<ConsString> tmp8;
+  TNode<BoolT> tmp8;
   if (block1.is_used()) {
-    ca_.Bind(&block1, &phi_bb1_1);
+    ca_.Bind(&block1);
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp7 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{phi_bb1_1, tmp6});
-    compiler::CodeAssemblerLabel label9(&ca_);
-    tmp8 = Cast_ConsString_1(state_, TNode<String>{tmp7}, &label9);
-    ca_.Goto(&block6, phi_bb1_1);
-    if (label9.is_used()) {
-      ca_.Bind(&label9);
-      ca_.Goto(&block7, phi_bb1_1);
-    }
+    tmp7 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{parameter0, tmp6});
+    tmp8 = CodeStubAssembler(state_).IsSequentialString(TNode<String>{tmp7});
+    ca_.Branch(tmp8, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<ConsString> phi_bb7_1;
+  TNode<IntPtrT> tmp9;
+  TNode<IntPtrT> tmp10;
+  TNode<String> tmp11;
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<String>(CodeStubAssembler::Reference{parameter0, tmp9}, tmp7);
+    tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp11 = kEmptyString_0(state_);
+    CodeStubAssembler(state_).StoreReference<String>(CodeStubAssembler::Reference{parameter0, tmp10}, tmp11);
+    CodeStubAssembler(state_).Return(tmp7);
+  }
+
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    ca_.Goto(&block2);
+  }
+
+  TNode<IntPtrT> tmp12;
+  TNode<Map> tmp13;
+  TNode<Map> tmp14;
+  TNode<BoolT> tmp15;
+  if (block2.is_used()) {
+    ca_.Bind(&block2);
+    tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp13 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{parameter0, tmp12});
+    tmp14 = kConsOneByteStringMap_0(state_);
+    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp13}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp14});
+    ca_.Branch(tmp15, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
+  }
+
+  TNode<IntPtrT> tmp16;
+  TNode<Int32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<SeqOneByteString> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
+  TNode<IntPtrT> tmp21;
+  TNode<IntPtrT> tmp22;
+  TNode<RawPtrT> tmp23;
+  TNode<RawPtrT> tmp24;
+  TNode<IntPtrT> tmp25;
+  TNode<Int32T> tmp26;
+  TNode<Int32T> tmp27;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp17 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{parameter0, tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp17});
+    tmp19 = AllocateNonEmptySeqOneByteString_0(state_, TNode<Uint32T>{tmp18});
+    std::tie(tmp20, tmp21, tmp22) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp19}).Flatten();
+    tmp23 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{tmp20}, TNode<IntPtrT>{tmp21});
+    tmp24 = (TNode<RawPtrT>{tmp23});
+    tmp25 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp26 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{parameter0, tmp25});
+    tmp27 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).StringWriteToFlatOneByte(TNode<String>{parameter0}, TNode<RawPtrT>{tmp24}, TNode<Int32T>{tmp27}, TNode<Int32T>{tmp26});
+    ca_.Goto(&block7, tmp19);
+  }
+
+  TNode<IntPtrT> tmp28;
+  TNode<Int32T> tmp29;
+  TNode<Uint32T> tmp30;
+  TNode<SeqTwoByteString> tmp31;
+  TNode<SeqTwoByteString> tmp32;
+  TNode<Union<HeapObject, TaggedIndex>> tmp33;
+  TNode<IntPtrT> tmp34;
+  TNode<IntPtrT> tmp35;
+  TNode<RawPtrT> tmp36;
+  TNode<RawPtrT> tmp37;
+  TNode<IntPtrT> tmp38;
+  TNode<Int32T> tmp39;
+  TNode<Int32T> tmp40;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp28 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp29 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{parameter0, tmp28});
+    tmp30 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp29});
+    tmp31 = AllocateNonEmptySeqTwoByteString_0(state_, TNode<Uint32T>{tmp30});
+    tmp32 = TORQUE_CAST(TNode<Object>{tmp31});
+    std::tie(tmp33, tmp34, tmp35) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp32}).Flatten();
+    tmp36 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{tmp33}, TNode<IntPtrT>{tmp34});
+    tmp37 = (TNode<RawPtrT>{tmp36});
+    tmp38 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp39 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{parameter0, tmp38});
+    tmp40 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    CodeStubAssembler(state_).StringWriteToFlatTwoByte(TNode<String>{parameter0}, TNode<RawPtrT>{tmp37}, TNode<Int32T>{tmp40}, TNode<Int32T>{tmp39});
+    ca_.Goto(&block7, tmp32);
+  }
+
+  TNode<String> phi_bb7_1;
+  TNode<IntPtrT> tmp41;
+  TNode<IntPtrT> tmp42;
+  TNode<String> tmp43;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_1);
-    ca_.Goto(&block5, phi_bb7_1);
-  }
-
-  TNode<ConsString> phi_bb6_1;
-  TNode<BoolT> tmp10;
-  if (block6.is_used()) {
-    ca_.Bind(&block6, &phi_bb6_1);
-    tmp10 = Method_ConsString_IsFlat_0(state_, TNode<ConsString>{tmp8});
-    ca_.Branch(tmp10, &block8, std::vector<compiler::Node*>{phi_bb6_1}, &block9, std::vector<compiler::Node*>{phi_bb6_1});
-  }
-
-  TNode<ConsString> phi_bb8_1;
-  if (block8.is_used()) {
-    ca_.Bind(&block8, &phi_bb8_1);
-    ca_.Goto(&block5, phi_bb8_1);
-  }
-
-  TNode<ConsString> phi_bb9_1;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_1);
-    ca_.Goto(&block3, tmp8);
-  }
-
-  TNode<ConsString> phi_bb5_1;
-  TNode<IntPtrT> tmp11;
-  TNode<String> tmp12;
-  TNode<String> tmp13;
-  if (block5.is_used()) {
-    ca_.Bind(&block5, &phi_bb5_1);
-    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp12 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{phi_bb5_1, tmp11});
-    tmp13 = Flatten_0(state_, TNode<String>{tmp12});
-    CodeStubAssembler(state_).Return(tmp13);
-  }
-
-  TNode<ConsString> phi_bb2_1;
-  TNode<BoolT> tmp14;
-  if (block2.is_used()) {
-    ca_.Bind(&block2, &phi_bb2_1);
-    tmp14 = Method_ConsString_IsOneByteRepresentation_0(state_, TNode<ConsString>{phi_bb2_1});
-    ca_.Branch(tmp14, &block10, std::vector<compiler::Node*>{phi_bb2_1}, &block11, std::vector<compiler::Node*>{phi_bb2_1});
-  }
-
-  TNode<ConsString> phi_bb10_1;
-  TNode<IntPtrT> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<SeqOneByteString> tmp18;
-  TNode<Object> tmp19;
-  TNode<IntPtrT> tmp20;
-  TNode<IntPtrT> tmp21;
-  TNode<RawPtrT> tmp22;
-  TNode<RawPtrT> tmp23;
-  TNode<IntPtrT> tmp24;
-  TNode<Int32T> tmp25;
-  TNode<Int32T> tmp26;
-  if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_1);
-    tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp16 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{phi_bb10_1, tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = AllocateNonEmptySeqOneByteString_0(state_, TNode<Uint32T>{tmp17});
-    std::tie(tmp19, tmp20, tmp21) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp18}).Flatten();
-    tmp22 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{tmp19}, TNode<IntPtrT>{tmp20});
-    tmp23 = (TNode<RawPtrT>{tmp22});
-    tmp24 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp25 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{phi_bb10_1, tmp24});
-    tmp26 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StringWriteToFlatOneByte(TNode<String>{phi_bb10_1}, TNode<RawPtrT>{tmp23}, TNode<Int32T>{tmp26}, TNode<Int32T>{tmp25});
-    ca_.Goto(&block12, phi_bb10_1, tmp18);
-  }
-
-  TNode<ConsString> phi_bb11_1;
-  TNode<IntPtrT> tmp27;
-  TNode<Int32T> tmp28;
-  TNode<Uint32T> tmp29;
-  TNode<SeqTwoByteString> tmp30;
-  TNode<SeqTwoByteString> tmp31;
-  TNode<Object> tmp32;
-  TNode<IntPtrT> tmp33;
-  TNode<IntPtrT> tmp34;
-  TNode<RawPtrT> tmp35;
-  TNode<RawPtrT> tmp36;
-  TNode<IntPtrT> tmp37;
-  TNode<Int32T> tmp38;
-  TNode<Int32T> tmp39;
-  if (block11.is_used()) {
-    ca_.Bind(&block11, &phi_bb11_1);
-    tmp27 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp28 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{phi_bb11_1, tmp27});
-    tmp29 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp28});
-    tmp30 = AllocateNonEmptySeqTwoByteString_0(state_, TNode<Uint32T>{tmp29});
-    tmp31 = TORQUE_CAST(TNode<Object>{tmp30});
-    std::tie(tmp32, tmp33, tmp34) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp31}).Flatten();
-    tmp35 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{tmp32}, TNode<IntPtrT>{tmp33});
-    tmp36 = (TNode<RawPtrT>{tmp35});
-    tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp38 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{phi_bb11_1, tmp37});
-    tmp39 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    CodeStubAssembler(state_).StringWriteToFlatTwoByte(TNode<String>{phi_bb11_1}, TNode<RawPtrT>{tmp36}, TNode<Int32T>{tmp39}, TNode<Int32T>{tmp38});
-    ca_.Goto(&block12, phi_bb11_1, tmp31);
-  }
-
-  TNode<ConsString> phi_bb12_1;
-  TNode<String> phi_bb12_2;
-  TNode<IntPtrT> tmp40;
-  TNode<IntPtrT> tmp41;
-  TNode<String> tmp42;
-  if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_1, &phi_bb12_2);
-    tmp40 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<String>(CodeStubAssembler::Reference{phi_bb12_1, tmp40}, phi_bb12_2);
-    tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp42 = kEmptyString_0(state_);
-    CodeStubAssembler(state_).StoreReference<String>(CodeStubAssembler::Reference{phi_bb12_1, tmp41}, tmp42);
-    CodeStubAssembler(state_).Return(phi_bb12_2);
+    tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<String>(CodeStubAssembler::Reference{parameter0, tmp41}, phi_bb7_1);
+    tmp42 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp43 = kEmptyString_0(state_);
+    CodeStubAssembler(state_).StoreReference<String>(CodeStubAssembler::Reference{parameter0, tmp42}, tmp43);
+    CodeStubAssembler(state_).Return(phi_bb7_1);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=261&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=264&c=1
 TNode<String> Flatten_0(compiler::CodeAssemblerState* state_, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -550,7 +516,7 @@ TNode<String> Flatten_0(compiler::CodeAssemblerState* state_, TNode<String> p_st
   return TNode<String>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=275&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=278&c=1
 TNode<String> Flatten_1(compiler::CodeAssemblerState* state_, TNode<ConsString> p_cons) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -594,7 +560,7 @@ TNode<String> Flatten_1(compiler::CodeAssemblerState* state_, TNode<ConsString> 
   return TNode<String>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=346&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=349&c=1
 void StaticAssertStringLengthFitsSmi_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -606,14 +572,14 @@ void StaticAssertStringLengthFitsSmi_0(compiler::CodeAssemblerState* state_) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_bool_constexpr_bool_0(state_, (CodeStubAssembler(state_).ConstexprUintPtrLessThan(String::kMaxLength, kSmiMaxValue)));
-    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp0}, "static_assert(kMaxStringLengthFitsSmi) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=349&c=3");
+    CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp0}, "static_assert(kMaxStringLengthFitsSmi) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=352&c=3");
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=363&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=366&c=1
 TNode<IntPtrT> AbstractStringIndexOf_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_subject, TNode<IntPtrT> p_subjectLen, TNode<RawPtrT> p_search, TNode<IntPtrT> p_searchLen, TNode<IntPtrT> p_fromIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -632,7 +598,7 @@ TNode<IntPtrT> AbstractStringIndexOf_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=369&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=372&c=1
 TNode<IntPtrT> AbstractStringIndexOf_1(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_subject, TNode<IntPtrT> p_subjectLen, TNode<RawPtrT> p_search, TNode<IntPtrT> p_searchLen, TNode<IntPtrT> p_fromIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -676,7 +642,7 @@ TNode<IntPtrT> AbstractStringIndexOf_1(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{phi_bb1_5};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=378&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=381&c=1
 TNode<IntPtrT> AbstractStringIndexOf_2(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_subject, TNode<IntPtrT> p_subjectLen, TNode<RawPtrT> p_search, TNode<IntPtrT> p_searchLen, TNode<IntPtrT> p_fromIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -695,7 +661,7 @@ TNode<IntPtrT> AbstractStringIndexOf_2(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=384&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=387&c=1
 TNode<IntPtrT> AbstractStringIndexOf_3(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_subject, TNode<IntPtrT> p_subjectLen, TNode<RawPtrT> p_search, TNode<IntPtrT> p_searchLen, TNode<IntPtrT> p_fromIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -714,7 +680,7 @@ TNode<IntPtrT> AbstractStringIndexOf_3(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=405&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=408&c=1
 TNode<Smi> AbstractStringIndexOf_4(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_string, TNode<String> p_searchString, TNode<Smi> p_fromIndex) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -901,7 +867,7 @@ TF_BUILTIN(StringIndexOf, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=47&c=9
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=9
 TNode<Int32T> LoadStringLength_0(compiler::CodeAssemblerState* state_, TNode<String> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -972,7 +938,30 @@ TNode<BoolT> Method_String_IsNotInternalized_0(compiler::CodeAssemblerState* sta
   return TNode<BoolT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=21&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=20&c=3
+TNode<BoolT> Method_String_IsOneByteRepresentation_0(compiler::CodeAssemblerState* state_, TNode<String> p_this) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  TNode<BoolT> tmp2;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_this, tmp0});
+    tmp2 = CodeStubAssembler(state_).IsOneByteStringMap(TNode<Map>{tmp1});
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TNode<BoolT>{tmp2};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=25&c=3
 TNode<BoolT> Method_String_IsOneByteRepresentationUnderneath_0(compiler::CodeAssemblerState* state_, TNode<String> p_this) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1060,35 +1049,31 @@ TNode<BoolT> Method_String_IsOneByteRepresentationUnderneath_0(compiler::CodeAss
 
   TNode<String> phi_bb15_1;
   TNode<String> phi_bb15_2;
-  TNode<Uint16T> tmp9;
-  TNode<BoolT> tmp10;
+  TNode<BoolT> tmp9;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_1, &phi_bb15_2);
-    tmp9 = Method_String_StringInstanceType_0(state_, TNode<String>{tmp3});
-    tmp10 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 3, 1, uint16_t>>(ca_.UncheckedCast<Word32T>(tmp9)));
-    ca_.Goto(&block1, tmp10);
+    tmp9 = Method_String_IsOneByteRepresentation_0(state_, TNode<String>{tmp3});
+    ca_.Goto(&block1, tmp9);
   }
 
   TNode<String> phi_bb24_1;
   TNode<String> phi_bb24_2;
-  TNode<Uint16T> tmp11;
-  TNode<BoolT> tmp12;
+  TNode<BoolT> tmp10;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_1, &phi_bb24_2);
-    tmp11 = Method_String_StringInstanceType_0(state_, TNode<String>{phi_bb24_1});
-    tmp12 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 3, 1, uint16_t>>(ca_.UncheckedCast<Word32T>(tmp11)));
-    ca_.Goto(&block1, tmp12);
+    tmp10 = Method_String_IsOneByteRepresentation_0(state_, TNode<String>{ca_.UncheckedCast<String>(phi_bb24_2)});
+    ca_.Goto(&block1, tmp10);
   }
 
   TNode<String> phi_bb23_1;
   TNode<String> phi_bb23_2;
-  TNode<IntPtrT> tmp13;
-  TNode<String> tmp14;
+  TNode<IntPtrT> tmp11;
+  TNode<String> tmp12;
   if (block23.is_used()) {
     ca_.Bind(&block23, &phi_bb23_1, &phi_bb23_2);
-    tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp14 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{tmp7, tmp13});
-    ca_.Goto(&block5, tmp14, phi_bb23_2);
+    tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp12 = CodeStubAssembler(state_).LoadReference<String>(CodeStubAssembler::Reference{tmp7, tmp11});
+    ca_.Goto(&block5, tmp12, phi_bb23_2);
   }
 
   TNode<String> phi_bb5_1;
@@ -1194,7 +1179,7 @@ void StoreConsStringSecond_0(compiler::CodeAssemblerState* state_, TNode<ConsStr
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=70&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=74&c=3
 TNode<BoolT> Method_ConsString_IsFlat_0(compiler::CodeAssemblerState* state_, TNode<ConsString> p_this) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1221,27 +1206,6 @@ TNode<BoolT> Method_ConsString_IsFlat_0(compiler::CodeAssemblerState* state_, TN
 
     ca_.Bind(&block2);
   return TNode<BoolT>{tmp5};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=74&c=3
-TNode<BoolT> Method_ConsString_IsOneByteRepresentation_0(compiler::CodeAssemblerState* state_, TNode<ConsString> p_this) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<Uint16T> tmp0;
-  TNode<BoolT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = Method_String_StringInstanceType_0(state_, TNode<String>{p_this});
-    tmp1 = ca_.UncheckedCast<BoolT>(CodeStubAssembler(state_).DecodeWord32<base::BitField<bool, 3, 1, uint16_t>>(ca_.UncheckedCast<Word32T>(tmp0)));
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TNode<BoolT>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=86&c=3
@@ -1424,7 +1388,7 @@ TorqueStructSlice_char8_ConstReference_char8_0 FieldSliceSeqOneByteStringChars_0
   TNode<Int32T> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
@@ -1433,12 +1397,12 @@ TorqueStructSlice_char8_ConstReference_char8_0 FieldSliceSeqOneByteStringChars_0
     tmp1 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{p_o, tmp0});
     tmp2 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
-    std::tie(tmp4, tmp5, tmp6) = NewConstSlice_char8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewConstSlice_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=9
@@ -1451,7 +1415,7 @@ TNode<Uint8T> LoadSeqOneByteStringChars_0(compiler::CodeAssemblerState* state_, 
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1468,14 +1432,14 @@ TNode<Uint8T> LoadSeqOneByteStringChars_0(compiler::CodeAssemblerState* state_, 
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_char8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1501,7 +1465,7 @@ TorqueStructSlice_char16_ConstReference_char16_0 FieldSliceSeqTwoByteStringChars
   TNode<Int32T> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
@@ -1510,12 +1474,12 @@ TorqueStructSlice_char16_ConstReference_char16_0 FieldSliceSeqTwoByteStringChars
     tmp1 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{p_o, tmp0});
     tmp2 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
-    std::tie(tmp4, tmp5, tmp6) = NewConstSlice_char16_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewConstSlice_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=147&c=9
@@ -1528,7 +1492,7 @@ TNode<Uint16T> LoadSeqTwoByteStringChars_0(compiler::CodeAssemblerState* state_,
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1545,14 +1509,14 @@ TNode<Uint16T> LoadSeqTwoByteStringChars_0(compiler::CodeAssemblerState* state_,
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint16T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_char16_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1686,7 +1650,7 @@ void StoreThinStringActual_0(compiler::CodeAssemblerState* state_, TNode<ThinStr
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=289&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=292&c=22
 TorqueStructSlice_char8_ConstReference_char8_0 Subslice_char8_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_char8_ConstReference_char8_0 p_slice, TNode<IntPtrT> p_start, TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_OutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1735,14 +1699,14 @@ TorqueStructSlice_char8_ConstReference_char8_0 Subslice_char8_0(compiler::CodeAs
 
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp7 = TimesSizeOf_char8_0(state_, TNode<IntPtrT>{p_start});
     tmp8 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewConstSlice_char8_0(state_, TNode<Object>{p_slice.object}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{p_length}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewConstSlice_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_slice.object}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{p_length}).Flatten();
     ca_.Goto(&block7);
   }
 
@@ -1752,10 +1716,10 @@ TorqueStructSlice_char8_ConstReference_char8_0 Subslice_char8_0(compiler::CodeAs
   }
 
     ca_.Bind(&block7);
-  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=292&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=295&c=22
 TorqueStructSlice_char16_ConstReference_char16_0 Subslice_char16_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_char16_ConstReference_char16_0 p_slice, TNode<IntPtrT> p_start, TNode<IntPtrT> p_length, compiler::CodeAssemblerLabel* label_OutOfBounds) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1804,14 +1768,14 @@ TorqueStructSlice_char16_ConstReference_char16_0 Subslice_char16_0(compiler::Cod
 
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp7 = TimesSizeOf_char16_0(state_, TNode<IntPtrT>{p_start});
     tmp8 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_slice.offset}, TNode<IntPtrT>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewConstSlice_char16_0(state_, TNode<Object>{p_slice.object}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{p_length}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewConstSlice_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_slice.object}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{p_length}).Flatten();
     ca_.Goto(&block7);
   }
 
@@ -1821,10 +1785,10 @@ TorqueStructSlice_char16_ConstReference_char16_0 Subslice_char16_0(compiler::Cod
   }
 
     ca_.Bind(&block7);
-  return TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=305&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=308&c=22
 TorqueStructSlice_char8_ConstReference_char8_0 NewOffHeapConstSlice_char8_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_startPointer, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1837,7 +1801,7 @@ TorqueStructSlice_char8_ConstReference_char8_0 NewOffHeapConstSlice_char8_0(comp
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   if (block0.is_used()) {
@@ -1847,15 +1811,15 @@ TorqueStructSlice_char8_ConstReference_char8_0 NewOffHeapConstSlice_char8_0(comp
     tmp2 = Convert_intptr_RawPtr_0(state_, TNode<RawPtrT>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, kHeapObjectTag);
     tmp4 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
-    std::tie(tmp5, tmp6, tmp7) = (TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp5, tmp6, tmp7) = (TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp5}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp7}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp5}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp7}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=310&c=22
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=313&c=22
 TorqueStructSlice_char16_ConstReference_char16_0 NewOffHeapConstSlice_char16_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_startPointer, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1868,7 +1832,7 @@ TorqueStructSlice_char16_ConstReference_char16_0 NewOffHeapConstSlice_char16_0(c
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<Union<HeapObject, TaggedIndex>> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   if (block0.is_used()) {
@@ -1878,12 +1842,12 @@ TorqueStructSlice_char16_ConstReference_char16_0 NewOffHeapConstSlice_char16_0(c
     tmp2 = Convert_intptr_RawPtr_0(state_, TNode<RawPtrT>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, kHeapObjectTag);
     tmp4 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
-    std::tie(tmp5, tmp6, tmp7) = (TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp5, tmp6, tmp7) = (TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp4}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp5}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp7}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp5}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp7}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=7&c=1
@@ -1934,7 +1898,7 @@ TNode<String> DownCastForTorqueClass_String_0(compiler::CodeAssemblerState* stat
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<String>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -1956,7 +1920,7 @@ TNode<String> DownCastForTorqueClass_String_0(compiler::CodeAssemblerState* stat
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(0));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(0));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2031,7 +1995,7 @@ TNode<String> DownCastForTorqueClass_String_0(compiler::CodeAssemblerState* stat
   return TNode<String>{tmp20};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=190&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=192&c=10
 TNode<SeqOneByteString> AllocateNonEmptySeqOneByteString_UninitializedIterator_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructUninitializedIterator_0 p_content) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2073,7 +2037,7 @@ TNode<SeqOneByteString> AllocateNonEmptySeqOneByteString_UninitializedIterator_0
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp2);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_char8_UninitializedIterator_0(state_, TorqueStructSlice_char8_MutableReference_char8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
+    InitializeFieldsFromIterator_char8_UninitializedIterator_0(state_, TorqueStructSlice_char8_MutableReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
     tmp14 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block9);
   }
@@ -2082,7 +2046,7 @@ TNode<SeqOneByteString> AllocateNonEmptySeqOneByteString_UninitializedIterator_0
   return TNode<SeqOneByteString>{tmp14};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=193&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=198&c=10
 TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_UninitializedIterator_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructUninitializedIterator_0 p_content) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2124,7 +2088,7 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_UninitializedIterator_0
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp2);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_char16_UninitializedIterator_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
+    InitializeFieldsFromIterator_char16_UninitializedIterator_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructUninitializedIterator_0{});
     tmp14 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block9);
   }
@@ -2133,14 +2097,14 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_UninitializedIterator_0
   return TNode<SeqTwoByteString>{tmp14};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=211&c=10
-TNode<String> AllocateSeqOneByteString_UninitializedIterator_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructUninitializedIterator_0 p_content) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=216&c=10
+TNode<Union<SeqOneByteString, String>> AllocateSeqOneByteString_UninitializedIterator_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructUninitializedIterator_0 p_content) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<SeqOneByteString, String>> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -2148,7 +2112,7 @@ TNode<String> AllocateSeqOneByteString_UninitializedIterator_0(compiler::CodeAss
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_length}, TNode<Uint32T>{tmp0});
     ca_.Branch(tmp1, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -2167,24 +2131,24 @@ TNode<String> AllocateSeqOneByteString_UninitializedIterator_0(compiler::CodeAss
     ca_.Goto(&block1, tmp3);
   }
 
-  TNode<String> phi_bb1_1;
+  TNode<Union<SeqOneByteString, String>> phi_bb1_1;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_1);
     ca_.Goto(&block4);
   }
 
     ca_.Bind(&block4);
-  return TNode<String>{phi_bb1_1};
+  return TNode<Union<SeqOneByteString, String>>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=217&c=10
-TNode<String> AllocateSeqTwoByteString_UninitializedIterator_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructUninitializedIterator_0 p_content) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=222&c=10
+TNode<Union<SeqTwoByteString, String>> AllocateSeqTwoByteString_UninitializedIterator_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructUninitializedIterator_0 p_content) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<String> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<SeqTwoByteString, String>> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -2192,7 +2156,7 @@ TNode<String> AllocateSeqTwoByteString_UninitializedIterator_0(compiler::CodeAss
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_length}, TNode<Uint32T>{tmp0});
     ca_.Branch(tmp1, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -2211,17 +2175,17 @@ TNode<String> AllocateSeqTwoByteString_UninitializedIterator_0(compiler::CodeAss
     ca_.Goto(&block1, tmp3);
   }
 
-  TNode<String> phi_bb1_1;
+  TNode<Union<SeqTwoByteString, String>> phi_bb1_1;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_1);
     ca_.Goto(&block4);
   }
 
     ca_.Bind(&block4);
-  return TNode<String>{phi_bb1_1};
+  return TNode<Union<SeqTwoByteString, String>>{phi_bb1_1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=249&c=23
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=252&c=23
 TNode<SeqTwoByteString> UnsafeCast_SeqTwoByteString_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2240,7 +2204,7 @@ TNode<SeqTwoByteString> UnsafeCast_SeqTwoByteString_0(compiler::CodeAssemblerSta
   return TNode<SeqTwoByteString>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=267&c=15
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=270&c=15
 TNode<BoolT> Is_ConsString_String_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<String> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2287,7 +2251,7 @@ TNode<BoolT> Is_ConsString_String_0(compiler::CodeAssemblerState* state_, TNode<
   return TNode<BoolT>{phi_bb1_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=422&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=425&c=10
 TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeAssemblerState* state_, TNode<String> p_s1, TNode<String> p_s2, TorqueStructAbstractStringIndexOfFunctor_0 p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2319,66 +2283,66 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT, String> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<String, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block71(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block79(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block90(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block95(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block99(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block98(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block103(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block80(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block76(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block110(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block108(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block114(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, String> block113(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block118(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block117(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block122(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block121(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block126(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block125(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block130(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block129(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block134(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block133(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block138(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block137(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block142(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block141(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block146(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block145(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block150(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block149(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block154(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block153(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block131(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT, String> block127(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, String, IntPtrT> block109(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block107(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT, IntPtrT, Object, IntPtrT, IntPtrT> block105(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block59(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block67(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block66(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block71(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block70(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block79(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block83(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block82(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block87(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block86(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block91(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block90(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block95(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block94(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block99(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block98(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block103(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block102(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block80(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block76(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block58(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block110(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block108(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block114(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, String> block113(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block118(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block117(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block122(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block121(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block126(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block125(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block130(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block129(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block134(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block133(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block138(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block137(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block142(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block141(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block146(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block145(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block150(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block149(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block154(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String, IntPtrT> block153(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block131(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT, String> block127(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, String, IntPtrT> block109(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block107(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT, Union<HeapObject, TaggedIndex>, IntPtrT, IntPtrT> block105(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Smi> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block155(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -2439,17 +2403,17 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> phi_bb11_6;
   TNode<String> phi_bb11_8;
   TNode<String> phi_bb11_9;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_5, &phi_bb11_6, &phi_bb11_8, &phi_bb11_9);
     std::tie(tmp9, tmp10, tmp11) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp5}).Flatten();
     compiler::CodeAssemblerLabel label15(&ca_);
-    std::tie(tmp12, tmp13, tmp14) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb11_6}, TNode<IntPtrT>{tmp3}, &label15).Flatten();
+    std::tie(tmp12, tmp13, tmp14) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb11_6}, TNode<IntPtrT>{tmp3}, &label15).Flatten();
     ca_.Goto(&block15, phi_bb11_5, phi_bb11_6, phi_bb11_8, phi_bb11_6);
     if (label15.is_used()) {
       ca_.Bind(&label15);
@@ -2493,17 +2457,17 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<String> phi_bb19_5;
   TNode<IntPtrT> phi_bb19_6;
   TNode<String> phi_bb19_8;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
   TNode<IntPtrT> tmp20;
-  TNode<Object> tmp21;
+  TNode<Union<HeapObject, TaggedIndex>> tmp21;
   TNode<IntPtrT> tmp22;
   TNode<IntPtrT> tmp23;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_5, &phi_bb19_6, &phi_bb19_8);
     std::tie(tmp18, tmp19, tmp20) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp7}).Flatten();
     compiler::CodeAssemblerLabel label24(&ca_);
-    std::tie(tmp21, tmp22, tmp23) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp18}, TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb19_6}, TNode<IntPtrT>{tmp3}, &label24).Flatten();
+    std::tie(tmp21, tmp22, tmp23) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp18}, TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb19_6}, TNode<IntPtrT>{tmp3}, &label24).Flatten();
     ca_.Goto(&block23, phi_bb19_5, phi_bb19_6, phi_bb19_8, phi_bb19_6);
     if (label24.is_used()) {
       ca_.Bind(&label24);
@@ -2638,10 +2602,10 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> tmp43;
   TNode<Int32T> tmp44;
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<Union<HeapObject, TaggedIndex>> tmp46;
   TNode<IntPtrT> tmp47;
   TNode<IntPtrT> tmp48;
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   TNode<IntPtrT> tmp51;
   if (block39.is_used()) {
@@ -2652,7 +2616,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     tmp45 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp44});
     std::tie(tmp46, tmp47, tmp48) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp42}, TNode<IntPtrT>{tmp45}).Flatten();
     compiler::CodeAssemblerLabel label52(&ca_);
-    std::tie(tmp49, tmp50, tmp51) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp46}, TNode<IntPtrT>{tmp47}, TNode<IntPtrT>{tmp48}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb39_6}, TNode<IntPtrT>{tmp3}, &label52).Flatten();
+    std::tie(tmp49, tmp50, tmp51) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp46}, TNode<IntPtrT>{tmp47}, TNode<IntPtrT>{tmp48}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb39_6}, TNode<IntPtrT>{tmp3}, &label52).Flatten();
     ca_.Goto(&block43, phi_bb39_5, phi_bb39_6, phi_bb39_8, phi_bb39_6);
     if (label52.is_used()) {
       ca_.Bind(&label52);
@@ -2693,10 +2657,10 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> tmp54;
   TNode<Int32T> tmp55;
   TNode<IntPtrT> tmp56;
-  TNode<Object> tmp57;
+  TNode<Union<HeapObject, TaggedIndex>> tmp57;
   TNode<IntPtrT> tmp58;
   TNode<IntPtrT> tmp59;
-  TNode<Object> tmp60;
+  TNode<Union<HeapObject, TaggedIndex>> tmp60;
   TNode<IntPtrT> tmp61;
   TNode<IntPtrT> tmp62;
   if (block47.is_used()) {
@@ -2707,7 +2671,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     tmp56 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp55});
     std::tie(tmp57, tmp58, tmp59) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp53}, TNode<IntPtrT>{tmp56}).Flatten();
     compiler::CodeAssemblerLabel label63(&ca_);
-    std::tie(tmp60, tmp61, tmp62) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp57}, TNode<IntPtrT>{tmp58}, TNode<IntPtrT>{tmp59}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb47_6}, TNode<IntPtrT>{tmp3}, &label63).Flatten();
+    std::tie(tmp60, tmp61, tmp62) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp57}, TNode<IntPtrT>{tmp58}, TNode<IntPtrT>{tmp59}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb47_6}, TNode<IntPtrT>{tmp3}, &label63).Flatten();
     ca_.Goto(&block51, phi_bb47_5, phi_bb47_6, phi_bb47_8, phi_bb47_6);
     if (label63.is_used()) {
       ca_.Bind(&label63);
@@ -2756,7 +2720,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb5_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb5_3;
   TNode<IntPtrT> phi_bb5_4;
   TNode<IntPtrT> phi_bb5_5;
   TNode<IntPtrT> tmp64;
@@ -2772,7 +2736,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block59, phi_bb5_3, phi_bb5_4, phi_bb5_5, p_s2, tmp64);
   }
 
-  TNode<Object> phi_bb59_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb59_3;
   TNode<IntPtrT> phi_bb59_4;
   TNode<IntPtrT> phi_bb59_5;
   TNode<String> phi_bb59_8;
@@ -2784,7 +2748,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Branch(tmp68, &block57, std::vector<compiler::Node*>{phi_bb59_3, phi_bb59_4, phi_bb59_5, phi_bb59_8, phi_bb59_9}, &block58, std::vector<compiler::Node*>{phi_bb59_3, phi_bb59_4, phi_bb59_5, phi_bb59_8, phi_bb59_9});
   }
 
-  TNode<Object> phi_bb57_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb57_3;
   TNode<IntPtrT> phi_bb57_4;
   TNode<IntPtrT> phi_bb57_5;
   TNode<String> phi_bb57_8;
@@ -2801,7 +2765,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb63_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb63_3;
   TNode<IntPtrT> phi_bb63_4;
   TNode<IntPtrT> phi_bb63_5;
   TNode<String> phi_bb63_8;
@@ -2820,24 +2784,24 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb62_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb62_3;
   TNode<IntPtrT> phi_bb62_4;
   TNode<IntPtrT> phi_bb62_5;
   TNode<String> phi_bb62_8;
   TNode<IntPtrT> phi_bb62_9;
   TNode<String> phi_bb62_11;
   TNode<String> phi_bb62_12;
-  TNode<Object> tmp73;
+  TNode<Union<HeapObject, TaggedIndex>> tmp73;
   TNode<IntPtrT> tmp74;
   TNode<IntPtrT> tmp75;
-  TNode<Object> tmp76;
+  TNode<Union<HeapObject, TaggedIndex>> tmp76;
   TNode<IntPtrT> tmp77;
   TNode<IntPtrT> tmp78;
   if (block62.is_used()) {
     ca_.Bind(&block62, &phi_bb62_3, &phi_bb62_4, &phi_bb62_5, &phi_bb62_8, &phi_bb62_9, &phi_bb62_11, &phi_bb62_12);
     std::tie(tmp73, tmp74, tmp75) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp69}).Flatten();
     compiler::CodeAssemblerLabel label79(&ca_);
-    std::tie(tmp76, tmp77, tmp78) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp73}, TNode<IntPtrT>{tmp74}, TNode<IntPtrT>{tmp75}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb62_9}, TNode<IntPtrT>{tmp67}, &label79).Flatten();
+    std::tie(tmp76, tmp77, tmp78) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp73}, TNode<IntPtrT>{tmp74}, TNode<IntPtrT>{tmp75}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb62_9}, TNode<IntPtrT>{tmp67}, &label79).Flatten();
     ca_.Goto(&block66, phi_bb62_3, phi_bb62_4, phi_bb62_5, phi_bb62_8, phi_bb62_9, phi_bb62_11, phi_bb62_9);
     if (label79.is_used()) {
       ca_.Bind(&label79);
@@ -2845,7 +2809,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb67_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb67_3;
   TNode<IntPtrT> phi_bb67_4;
   TNode<IntPtrT> phi_bb67_5;
   TNode<String> phi_bb67_8;
@@ -2857,7 +2821,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb66_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb66_3;
   TNode<IntPtrT> phi_bb66_4;
   TNode<IntPtrT> phi_bb66_5;
   TNode<String> phi_bb66_8;
@@ -2869,7 +2833,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block56, phi_bb66_3, phi_bb66_4, phi_bb66_5, tmp76, tmp77, tmp78);
   }
 
-  TNode<Object> phi_bb71_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb71_3;
   TNode<IntPtrT> phi_bb71_4;
   TNode<IntPtrT> phi_bb71_5;
   TNode<String> phi_bb71_8;
@@ -2887,23 +2851,23 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb70_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb70_3;
   TNode<IntPtrT> phi_bb70_4;
   TNode<IntPtrT> phi_bb70_5;
   TNode<String> phi_bb70_8;
   TNode<IntPtrT> phi_bb70_9;
   TNode<String> phi_bb70_11;
-  TNode<Object> tmp82;
+  TNode<Union<HeapObject, TaggedIndex>> tmp82;
   TNode<IntPtrT> tmp83;
   TNode<IntPtrT> tmp84;
-  TNode<Object> tmp85;
+  TNode<Union<HeapObject, TaggedIndex>> tmp85;
   TNode<IntPtrT> tmp86;
   TNode<IntPtrT> tmp87;
   if (block70.is_used()) {
     ca_.Bind(&block70, &phi_bb70_3, &phi_bb70_4, &phi_bb70_5, &phi_bb70_8, &phi_bb70_9, &phi_bb70_11);
     std::tie(tmp82, tmp83, tmp84) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp71}).Flatten();
     compiler::CodeAssemblerLabel label88(&ca_);
-    std::tie(tmp85, tmp86, tmp87) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp82}, TNode<IntPtrT>{tmp83}, TNode<IntPtrT>{tmp84}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb70_9}, TNode<IntPtrT>{tmp67}, &label88).Flatten();
+    std::tie(tmp85, tmp86, tmp87) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp82}, TNode<IntPtrT>{tmp83}, TNode<IntPtrT>{tmp84}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb70_9}, TNode<IntPtrT>{tmp67}, &label88).Flatten();
     ca_.Goto(&block74, phi_bb70_3, phi_bb70_4, phi_bb70_5, phi_bb70_8, phi_bb70_9, phi_bb70_11, phi_bb70_9);
     if (label88.is_used()) {
       ca_.Bind(&label88);
@@ -2911,7 +2875,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb75_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb75_3;
   TNode<IntPtrT> phi_bb75_4;
   TNode<IntPtrT> phi_bb75_5;
   TNode<String> phi_bb75_8;
@@ -2923,7 +2887,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb74_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb74_3;
   TNode<IntPtrT> phi_bb74_4;
   TNode<IntPtrT> phi_bb74_5;
   TNode<String> phi_bb74_8;
@@ -2935,7 +2899,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block54, phi_bb74_3, phi_bb74_4, phi_bb74_5, tmp85, tmp86, tmp87);
   }
 
-  TNode<Object> phi_bb79_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb79_3;
   TNode<IntPtrT> phi_bb79_4;
   TNode<IntPtrT> phi_bb79_5;
   TNode<String> phi_bb79_8;
@@ -2953,7 +2917,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb78_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb78_3;
   TNode<IntPtrT> phi_bb78_4;
   TNode<IntPtrT> phi_bb78_5;
   TNode<String> phi_bb78_8;
@@ -2968,7 +2932,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block76, phi_bb78_3, phi_bb78_4, phi_bb78_5, tmp92, phi_bb78_9, phi_bb78_11);
   }
 
-  TNode<Object> phi_bb83_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb83_3;
   TNode<IntPtrT> phi_bb83_4;
   TNode<IntPtrT> phi_bb83_5;
   TNode<String> phi_bb83_8;
@@ -2986,7 +2950,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb82_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb82_3;
   TNode<IntPtrT> phi_bb82_4;
   TNode<IntPtrT> phi_bb82_5;
   TNode<String> phi_bb82_8;
@@ -2999,7 +2963,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block80, phi_bb82_3, phi_bb82_4, phi_bb82_5, tmp95, phi_bb82_9, phi_bb82_11);
   }
 
-  TNode<Object> phi_bb87_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb87_3;
   TNode<IntPtrT> phi_bb87_4;
   TNode<IntPtrT> phi_bb87_5;
   TNode<String> phi_bb87_8;
@@ -3017,7 +2981,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb86_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb86_3;
   TNode<IntPtrT> phi_bb86_4;
   TNode<IntPtrT> phi_bb86_5;
   TNode<String> phi_bb86_8;
@@ -3040,7 +3004,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block80, phi_bb86_3, phi_bb86_4, phi_bb86_5, tmp103, tmp101, phi_bb86_11);
   }
 
-  TNode<Object> phi_bb91_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb91_3;
   TNode<IntPtrT> phi_bb91_4;
   TNode<IntPtrT> phi_bb91_5;
   TNode<String> phi_bb91_8;
@@ -3058,7 +3022,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb90_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb90_3;
   TNode<IntPtrT> phi_bb90_4;
   TNode<IntPtrT> phi_bb90_5;
   TNode<String> phi_bb90_8;
@@ -3068,10 +3032,10 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> tmp107;
   TNode<Int32T> tmp108;
   TNode<IntPtrT> tmp109;
-  TNode<Object> tmp110;
+  TNode<Union<HeapObject, TaggedIndex>> tmp110;
   TNode<IntPtrT> tmp111;
   TNode<IntPtrT> tmp112;
-  TNode<Object> tmp113;
+  TNode<Union<HeapObject, TaggedIndex>> tmp113;
   TNode<IntPtrT> tmp114;
   TNode<IntPtrT> tmp115;
   if (block90.is_used()) {
@@ -3082,7 +3046,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     tmp109 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp108});
     std::tie(tmp110, tmp111, tmp112) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp106}, TNode<IntPtrT>{tmp109}).Flatten();
     compiler::CodeAssemblerLabel label116(&ca_);
-    std::tie(tmp113, tmp114, tmp115) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp110}, TNode<IntPtrT>{tmp111}, TNode<IntPtrT>{tmp112}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb90_9}, TNode<IntPtrT>{tmp67}, &label116).Flatten();
+    std::tie(tmp113, tmp114, tmp115) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp110}, TNode<IntPtrT>{tmp111}, TNode<IntPtrT>{tmp112}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb90_9}, TNode<IntPtrT>{tmp67}, &label116).Flatten();
     ca_.Goto(&block94, phi_bb90_3, phi_bb90_4, phi_bb90_5, phi_bb90_8, phi_bb90_9, phi_bb90_11, phi_bb90_9);
     if (label116.is_used()) {
       ca_.Bind(&label116);
@@ -3090,7 +3054,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb95_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb95_3;
   TNode<IntPtrT> phi_bb95_4;
   TNode<IntPtrT> phi_bb95_5;
   TNode<String> phi_bb95_8;
@@ -3102,7 +3066,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb94_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb94_3;
   TNode<IntPtrT> phi_bb94_4;
   TNode<IntPtrT> phi_bb94_5;
   TNode<String> phi_bb94_8;
@@ -3114,7 +3078,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block56, phi_bb94_3, phi_bb94_4, phi_bb94_5, tmp113, tmp114, tmp115);
   }
 
-  TNode<Object> phi_bb99_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb99_3;
   TNode<IntPtrT> phi_bb99_4;
   TNode<IntPtrT> phi_bb99_5;
   TNode<String> phi_bb99_8;
@@ -3125,7 +3089,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb98_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb98_3;
   TNode<IntPtrT> phi_bb98_4;
   TNode<IntPtrT> phi_bb98_5;
   TNode<String> phi_bb98_8;
@@ -3135,10 +3099,10 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> tmp118;
   TNode<Int32T> tmp119;
   TNode<IntPtrT> tmp120;
-  TNode<Object> tmp121;
+  TNode<Union<HeapObject, TaggedIndex>> tmp121;
   TNode<IntPtrT> tmp122;
   TNode<IntPtrT> tmp123;
-  TNode<Object> tmp124;
+  TNode<Union<HeapObject, TaggedIndex>> tmp124;
   TNode<IntPtrT> tmp125;
   TNode<IntPtrT> tmp126;
   if (block98.is_used()) {
@@ -3149,7 +3113,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     tmp120 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp119});
     std::tie(tmp121, tmp122, tmp123) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp117}, TNode<IntPtrT>{tmp120}).Flatten();
     compiler::CodeAssemblerLabel label127(&ca_);
-    std::tie(tmp124, tmp125, tmp126) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp121}, TNode<IntPtrT>{tmp122}, TNode<IntPtrT>{tmp123}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb98_9}, TNode<IntPtrT>{tmp67}, &label127).Flatten();
+    std::tie(tmp124, tmp125, tmp126) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp121}, TNode<IntPtrT>{tmp122}, TNode<IntPtrT>{tmp123}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb98_9}, TNode<IntPtrT>{tmp67}, &label127).Flatten();
     ca_.Goto(&block102, phi_bb98_3, phi_bb98_4, phi_bb98_5, phi_bb98_8, phi_bb98_9, phi_bb98_11, phi_bb98_9);
     if (label127.is_used()) {
       ca_.Bind(&label127);
@@ -3157,7 +3121,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb103_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb103_3;
   TNode<IntPtrT> phi_bb103_4;
   TNode<IntPtrT> phi_bb103_5;
   TNode<String> phi_bb103_8;
@@ -3169,7 +3133,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb102_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb102_3;
   TNode<IntPtrT> phi_bb102_4;
   TNode<IntPtrT> phi_bb102_5;
   TNode<String> phi_bb102_8;
@@ -3181,7 +3145,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block54, phi_bb102_3, phi_bb102_4, phi_bb102_5, tmp124, tmp125, tmp126);
   }
 
-  TNode<Object> phi_bb80_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb80_3;
   TNode<IntPtrT> phi_bb80_4;
   TNode<IntPtrT> phi_bb80_5;
   TNode<String> phi_bb80_8;
@@ -3192,7 +3156,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block76, phi_bb80_3, phi_bb80_4, phi_bb80_5, phi_bb80_8, phi_bb80_9, phi_bb80_11);
   }
 
-  TNode<Object> phi_bb76_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb76_3;
   TNode<IntPtrT> phi_bb76_4;
   TNode<IntPtrT> phi_bb76_5;
   TNode<String> phi_bb76_8;
@@ -3203,7 +3167,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block59, phi_bb76_3, phi_bb76_4, phi_bb76_5, phi_bb76_8, phi_bb76_9);
   }
 
-  TNode<Object> phi_bb58_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb58_3;
   TNode<IntPtrT> phi_bb58_4;
   TNode<IntPtrT> phi_bb58_5;
   TNode<String> phi_bb58_8;
@@ -3213,33 +3177,33 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb56_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb56_3;
   TNode<IntPtrT> phi_bb56_4;
   TNode<IntPtrT> phi_bb56_5;
-  TNode<Object> phi_bb56_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb56_6;
   TNode<IntPtrT> phi_bb56_7;
   TNode<IntPtrT> phi_bb56_8;
   TNode<Smi> tmp128;
   if (block56.is_used()) {
     ca_.Bind(&block56, &phi_bb56_3, &phi_bb56_4, &phi_bb56_5, &phi_bb56_6, &phi_bb56_7, &phi_bb56_8);
-    tmp128 = Call_char8_char8_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb56_3}, TNode<IntPtrT>{phi_bb56_4}, TNode<IntPtrT>{phi_bb56_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb56_6}, TNode<IntPtrT>{phi_bb56_7}, TNode<IntPtrT>{phi_bb56_8}, TorqueStructUnsafe_0{}});
+    tmp128 = Call_char8_char8_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb56_3}, TNode<IntPtrT>{phi_bb56_4}, TNode<IntPtrT>{phi_bb56_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb56_6}, TNode<IntPtrT>{phi_bb56_7}, TNode<IntPtrT>{phi_bb56_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp128);
   }
 
-  TNode<Object> phi_bb54_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb54_3;
   TNode<IntPtrT> phi_bb54_4;
   TNode<IntPtrT> phi_bb54_5;
-  TNode<Object> phi_bb54_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb54_6;
   TNode<IntPtrT> phi_bb54_7;
   TNode<IntPtrT> phi_bb54_8;
   TNode<Smi> tmp129;
   if (block54.is_used()) {
     ca_.Bind(&block54, &phi_bb54_3, &phi_bb54_4, &phi_bb54_5, &phi_bb54_6, &phi_bb54_7, &phi_bb54_8);
-    tmp129 = Call_char8_char16_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb54_3}, TNode<IntPtrT>{phi_bb54_4}, TNode<IntPtrT>{phi_bb54_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb54_6}, TNode<IntPtrT>{phi_bb54_7}, TNode<IntPtrT>{phi_bb54_8}, TorqueStructUnsafe_0{}});
+    tmp129 = Call_char8_char16_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb54_3}, TNode<IntPtrT>{phi_bb54_4}, TNode<IntPtrT>{phi_bb54_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb54_6}, TNode<IntPtrT>{phi_bb54_7}, TNode<IntPtrT>{phi_bb54_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp129);
   }
 
-  TNode<Object> phi_bb3_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb3_3;
   TNode<IntPtrT> phi_bb3_4;
   TNode<IntPtrT> phi_bb3_5;
   TNode<IntPtrT> tmp130;
@@ -3255,7 +3219,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block110, phi_bb3_3, phi_bb3_4, phi_bb3_5, p_s2, tmp130);
   }
 
-  TNode<Object> phi_bb110_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb110_3;
   TNode<IntPtrT> phi_bb110_4;
   TNode<IntPtrT> phi_bb110_5;
   TNode<String> phi_bb110_8;
@@ -3267,7 +3231,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Branch(tmp134, &block108, std::vector<compiler::Node*>{phi_bb110_3, phi_bb110_4, phi_bb110_5, phi_bb110_8, phi_bb110_9}, &block109, std::vector<compiler::Node*>{phi_bb110_3, phi_bb110_4, phi_bb110_5, phi_bb110_8, phi_bb110_9});
   }
 
-  TNode<Object> phi_bb108_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb108_3;
   TNode<IntPtrT> phi_bb108_4;
   TNode<IntPtrT> phi_bb108_5;
   TNode<String> phi_bb108_8;
@@ -3284,7 +3248,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb114_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb114_3;
   TNode<IntPtrT> phi_bb114_4;
   TNode<IntPtrT> phi_bb114_5;
   TNode<String> phi_bb114_8;
@@ -3303,24 +3267,24 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb113_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb113_3;
   TNode<IntPtrT> phi_bb113_4;
   TNode<IntPtrT> phi_bb113_5;
   TNode<String> phi_bb113_8;
   TNode<IntPtrT> phi_bb113_9;
   TNode<String> phi_bb113_11;
   TNode<String> phi_bb113_12;
-  TNode<Object> tmp139;
+  TNode<Union<HeapObject, TaggedIndex>> tmp139;
   TNode<IntPtrT> tmp140;
   TNode<IntPtrT> tmp141;
-  TNode<Object> tmp142;
+  TNode<Union<HeapObject, TaggedIndex>> tmp142;
   TNode<IntPtrT> tmp143;
   TNode<IntPtrT> tmp144;
   if (block113.is_used()) {
     ca_.Bind(&block113, &phi_bb113_3, &phi_bb113_4, &phi_bb113_5, &phi_bb113_8, &phi_bb113_9, &phi_bb113_11, &phi_bb113_12);
     std::tie(tmp139, tmp140, tmp141) = FieldSliceSeqOneByteStringChars_0(state_, TNode<SeqOneByteString>{tmp135}).Flatten();
     compiler::CodeAssemblerLabel label145(&ca_);
-    std::tie(tmp142, tmp143, tmp144) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp139}, TNode<IntPtrT>{tmp140}, TNode<IntPtrT>{tmp141}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb113_9}, TNode<IntPtrT>{tmp133}, &label145).Flatten();
+    std::tie(tmp142, tmp143, tmp144) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp139}, TNode<IntPtrT>{tmp140}, TNode<IntPtrT>{tmp141}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb113_9}, TNode<IntPtrT>{tmp133}, &label145).Flatten();
     ca_.Goto(&block117, phi_bb113_3, phi_bb113_4, phi_bb113_5, phi_bb113_8, phi_bb113_9, phi_bb113_11, phi_bb113_9);
     if (label145.is_used()) {
       ca_.Bind(&label145);
@@ -3328,7 +3292,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb118_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb118_3;
   TNode<IntPtrT> phi_bb118_4;
   TNode<IntPtrT> phi_bb118_5;
   TNode<String> phi_bb118_8;
@@ -3340,7 +3304,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb117_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb117_3;
   TNode<IntPtrT> phi_bb117_4;
   TNode<IntPtrT> phi_bb117_5;
   TNode<String> phi_bb117_8;
@@ -3352,7 +3316,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block107, phi_bb117_3, phi_bb117_4, phi_bb117_5, tmp142, tmp143, tmp144);
   }
 
-  TNode<Object> phi_bb122_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb122_3;
   TNode<IntPtrT> phi_bb122_4;
   TNode<IntPtrT> phi_bb122_5;
   TNode<String> phi_bb122_8;
@@ -3370,23 +3334,23 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb121_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb121_3;
   TNode<IntPtrT> phi_bb121_4;
   TNode<IntPtrT> phi_bb121_5;
   TNode<String> phi_bb121_8;
   TNode<IntPtrT> phi_bb121_9;
   TNode<String> phi_bb121_11;
-  TNode<Object> tmp148;
+  TNode<Union<HeapObject, TaggedIndex>> tmp148;
   TNode<IntPtrT> tmp149;
   TNode<IntPtrT> tmp150;
-  TNode<Object> tmp151;
+  TNode<Union<HeapObject, TaggedIndex>> tmp151;
   TNode<IntPtrT> tmp152;
   TNode<IntPtrT> tmp153;
   if (block121.is_used()) {
     ca_.Bind(&block121, &phi_bb121_3, &phi_bb121_4, &phi_bb121_5, &phi_bb121_8, &phi_bb121_9, &phi_bb121_11);
     std::tie(tmp148, tmp149, tmp150) = FieldSliceSeqTwoByteStringChars_0(state_, TNode<SeqTwoByteString>{tmp137}).Flatten();
     compiler::CodeAssemblerLabel label154(&ca_);
-    std::tie(tmp151, tmp152, tmp153) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp148}, TNode<IntPtrT>{tmp149}, TNode<IntPtrT>{tmp150}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb121_9}, TNode<IntPtrT>{tmp133}, &label154).Flatten();
+    std::tie(tmp151, tmp152, tmp153) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp148}, TNode<IntPtrT>{tmp149}, TNode<IntPtrT>{tmp150}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb121_9}, TNode<IntPtrT>{tmp133}, &label154).Flatten();
     ca_.Goto(&block125, phi_bb121_3, phi_bb121_4, phi_bb121_5, phi_bb121_8, phi_bb121_9, phi_bb121_11, phi_bb121_9);
     if (label154.is_used()) {
       ca_.Bind(&label154);
@@ -3394,7 +3358,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb126_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb126_3;
   TNode<IntPtrT> phi_bb126_4;
   TNode<IntPtrT> phi_bb126_5;
   TNode<String> phi_bb126_8;
@@ -3406,7 +3370,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb125_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb125_3;
   TNode<IntPtrT> phi_bb125_4;
   TNode<IntPtrT> phi_bb125_5;
   TNode<String> phi_bb125_8;
@@ -3418,7 +3382,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block105, phi_bb125_3, phi_bb125_4, phi_bb125_5, tmp151, tmp152, tmp153);
   }
 
-  TNode<Object> phi_bb130_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb130_3;
   TNode<IntPtrT> phi_bb130_4;
   TNode<IntPtrT> phi_bb130_5;
   TNode<String> phi_bb130_8;
@@ -3436,7 +3400,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb129_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb129_3;
   TNode<IntPtrT> phi_bb129_4;
   TNode<IntPtrT> phi_bb129_5;
   TNode<String> phi_bb129_8;
@@ -3451,7 +3415,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block127, phi_bb129_3, phi_bb129_4, phi_bb129_5, tmp158, phi_bb129_9, phi_bb129_11);
   }
 
-  TNode<Object> phi_bb134_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb134_3;
   TNode<IntPtrT> phi_bb134_4;
   TNode<IntPtrT> phi_bb134_5;
   TNode<String> phi_bb134_8;
@@ -3469,7 +3433,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb133_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb133_3;
   TNode<IntPtrT> phi_bb133_4;
   TNode<IntPtrT> phi_bb133_5;
   TNode<String> phi_bb133_8;
@@ -3482,7 +3446,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block131, phi_bb133_3, phi_bb133_4, phi_bb133_5, tmp161, phi_bb133_9, phi_bb133_11);
   }
 
-  TNode<Object> phi_bb138_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb138_3;
   TNode<IntPtrT> phi_bb138_4;
   TNode<IntPtrT> phi_bb138_5;
   TNode<String> phi_bb138_8;
@@ -3500,7 +3464,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb137_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb137_3;
   TNode<IntPtrT> phi_bb137_4;
   TNode<IntPtrT> phi_bb137_5;
   TNode<String> phi_bb137_8;
@@ -3523,7 +3487,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block131, phi_bb137_3, phi_bb137_4, phi_bb137_5, tmp169, tmp167, phi_bb137_11);
   }
 
-  TNode<Object> phi_bb142_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb142_3;
   TNode<IntPtrT> phi_bb142_4;
   TNode<IntPtrT> phi_bb142_5;
   TNode<String> phi_bb142_8;
@@ -3541,7 +3505,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb141_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb141_3;
   TNode<IntPtrT> phi_bb141_4;
   TNode<IntPtrT> phi_bb141_5;
   TNode<String> phi_bb141_8;
@@ -3551,10 +3515,10 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> tmp173;
   TNode<Int32T> tmp174;
   TNode<IntPtrT> tmp175;
-  TNode<Object> tmp176;
+  TNode<Union<HeapObject, TaggedIndex>> tmp176;
   TNode<IntPtrT> tmp177;
   TNode<IntPtrT> tmp178;
-  TNode<Object> tmp179;
+  TNode<Union<HeapObject, TaggedIndex>> tmp179;
   TNode<IntPtrT> tmp180;
   TNode<IntPtrT> tmp181;
   if (block141.is_used()) {
@@ -3565,7 +3529,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     tmp175 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp174});
     std::tie(tmp176, tmp177, tmp178) = NewOffHeapConstSlice_char8_0(state_, TNode<RawPtrT>{tmp172}, TNode<IntPtrT>{tmp175}).Flatten();
     compiler::CodeAssemblerLabel label182(&ca_);
-    std::tie(tmp179, tmp180, tmp181) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp176}, TNode<IntPtrT>{tmp177}, TNode<IntPtrT>{tmp178}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb141_9}, TNode<IntPtrT>{tmp133}, &label182).Flatten();
+    std::tie(tmp179, tmp180, tmp181) = Subslice_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp176}, TNode<IntPtrT>{tmp177}, TNode<IntPtrT>{tmp178}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb141_9}, TNode<IntPtrT>{tmp133}, &label182).Flatten();
     ca_.Goto(&block145, phi_bb141_3, phi_bb141_4, phi_bb141_5, phi_bb141_8, phi_bb141_9, phi_bb141_11, phi_bb141_9);
     if (label182.is_used()) {
       ca_.Bind(&label182);
@@ -3573,7 +3537,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb146_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb146_3;
   TNode<IntPtrT> phi_bb146_4;
   TNode<IntPtrT> phi_bb146_5;
   TNode<String> phi_bb146_8;
@@ -3585,7 +3549,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb145_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb145_3;
   TNode<IntPtrT> phi_bb145_4;
   TNode<IntPtrT> phi_bb145_5;
   TNode<String> phi_bb145_8;
@@ -3597,7 +3561,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block107, phi_bb145_3, phi_bb145_4, phi_bb145_5, tmp179, tmp180, tmp181);
   }
 
-  TNode<Object> phi_bb150_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb150_3;
   TNode<IntPtrT> phi_bb150_4;
   TNode<IntPtrT> phi_bb150_5;
   TNode<String> phi_bb150_8;
@@ -3608,7 +3572,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb149_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb149_3;
   TNode<IntPtrT> phi_bb149_4;
   TNode<IntPtrT> phi_bb149_5;
   TNode<String> phi_bb149_8;
@@ -3618,10 +3582,10 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
   TNode<IntPtrT> tmp184;
   TNode<Int32T> tmp185;
   TNode<IntPtrT> tmp186;
-  TNode<Object> tmp187;
+  TNode<Union<HeapObject, TaggedIndex>> tmp187;
   TNode<IntPtrT> tmp188;
   TNode<IntPtrT> tmp189;
-  TNode<Object> tmp190;
+  TNode<Union<HeapObject, TaggedIndex>> tmp190;
   TNode<IntPtrT> tmp191;
   TNode<IntPtrT> tmp192;
   if (block149.is_used()) {
@@ -3632,7 +3596,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     tmp186 = Convert_intptr_int32_0(state_, TNode<Int32T>{tmp185});
     std::tie(tmp187, tmp188, tmp189) = NewOffHeapConstSlice_char16_0(state_, TNode<RawPtrT>{tmp183}, TNode<IntPtrT>{tmp186}).Flatten();
     compiler::CodeAssemblerLabel label193(&ca_);
-    std::tie(tmp190, tmp191, tmp192) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{tmp187}, TNode<IntPtrT>{tmp188}, TNode<IntPtrT>{tmp189}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb149_9}, TNode<IntPtrT>{tmp133}, &label193).Flatten();
+    std::tie(tmp190, tmp191, tmp192) = Subslice_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp187}, TNode<IntPtrT>{tmp188}, TNode<IntPtrT>{tmp189}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{phi_bb149_9}, TNode<IntPtrT>{tmp133}, &label193).Flatten();
     ca_.Goto(&block153, phi_bb149_3, phi_bb149_4, phi_bb149_5, phi_bb149_8, phi_bb149_9, phi_bb149_11, phi_bb149_9);
     if (label193.is_used()) {
       ca_.Bind(&label193);
@@ -3640,7 +3604,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     }
   }
 
-  TNode<Object> phi_bb154_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb154_3;
   TNode<IntPtrT> phi_bb154_4;
   TNode<IntPtrT> phi_bb154_5;
   TNode<String> phi_bb154_8;
@@ -3652,7 +3616,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb153_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb153_3;
   TNode<IntPtrT> phi_bb153_4;
   TNode<IntPtrT> phi_bb153_5;
   TNode<String> phi_bb153_8;
@@ -3664,7 +3628,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block105, phi_bb153_3, phi_bb153_4, phi_bb153_5, tmp190, tmp191, tmp192);
   }
 
-  TNode<Object> phi_bb131_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb131_3;
   TNode<IntPtrT> phi_bb131_4;
   TNode<IntPtrT> phi_bb131_5;
   TNode<String> phi_bb131_8;
@@ -3675,7 +3639,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block127, phi_bb131_3, phi_bb131_4, phi_bb131_5, phi_bb131_8, phi_bb131_9, phi_bb131_11);
   }
 
-  TNode<Object> phi_bb127_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb127_3;
   TNode<IntPtrT> phi_bb127_4;
   TNode<IntPtrT> phi_bb127_5;
   TNode<String> phi_bb127_8;
@@ -3686,7 +3650,7 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     ca_.Goto(&block110, phi_bb127_3, phi_bb127_4, phi_bb127_5, phi_bb127_8, phi_bb127_9);
   }
 
-  TNode<Object> phi_bb109_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb109_3;
   TNode<IntPtrT> phi_bb109_4;
   TNode<IntPtrT> phi_bb109_5;
   TNode<String> phi_bb109_8;
@@ -3696,29 +3660,29 @@ TNode<Smi> TwoStringsToSlices_Smi_AbstractStringIndexOfFunctor_0(compiler::CodeA
     VerifiedUnreachable_0(state_);
   }
 
-  TNode<Object> phi_bb107_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb107_3;
   TNode<IntPtrT> phi_bb107_4;
   TNode<IntPtrT> phi_bb107_5;
-  TNode<Object> phi_bb107_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb107_6;
   TNode<IntPtrT> phi_bb107_7;
   TNode<IntPtrT> phi_bb107_8;
   TNode<Smi> tmp194;
   if (block107.is_used()) {
     ca_.Bind(&block107, &phi_bb107_3, &phi_bb107_4, &phi_bb107_5, &phi_bb107_6, &phi_bb107_7, &phi_bb107_8);
-    tmp194 = Call_char16_char8_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb107_3}, TNode<IntPtrT>{phi_bb107_4}, TNode<IntPtrT>{phi_bb107_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{phi_bb107_6}, TNode<IntPtrT>{phi_bb107_7}, TNode<IntPtrT>{phi_bb107_8}, TorqueStructUnsafe_0{}});
+    tmp194 = Call_char16_char8_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb107_3}, TNode<IntPtrT>{phi_bb107_4}, TNode<IntPtrT>{phi_bb107_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb107_6}, TNode<IntPtrT>{phi_bb107_7}, TNode<IntPtrT>{phi_bb107_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp194);
   }
 
-  TNode<Object> phi_bb105_3;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb105_3;
   TNode<IntPtrT> phi_bb105_4;
   TNode<IntPtrT> phi_bb105_5;
-  TNode<Object> phi_bb105_6;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb105_6;
   TNode<IntPtrT> phi_bb105_7;
   TNode<IntPtrT> phi_bb105_8;
   TNode<Smi> tmp195;
   if (block105.is_used()) {
     ca_.Bind(&block105, &phi_bb105_3, &phi_bb105_4, &phi_bb105_5, &phi_bb105_6, &phi_bb105_7, &phi_bb105_8);
-    tmp195 = Call_char16_char16_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb105_3}, TNode<IntPtrT>{phi_bb105_4}, TNode<IntPtrT>{phi_bb105_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{phi_bb105_6}, TNode<IntPtrT>{phi_bb105_7}, TNode<IntPtrT>{phi_bb105_8}, TorqueStructUnsafe_0{}});
+    tmp195 = Call_char16_char16_1(state_, TorqueStructAbstractStringIndexOfFunctor_0{TNode<Smi>{p_f.fromIndex}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb105_3}, TNode<IntPtrT>{phi_bb105_4}, TNode<IntPtrT>{phi_bb105_5}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb105_6}, TNode<IntPtrT>{phi_bb105_7}, TNode<IntPtrT>{phi_bb105_8}, TorqueStructUnsafe_0{}});
     ca_.Goto(&block1, tmp195);
   }
 
@@ -3750,27 +3714,27 @@ TNode<Uint16T> Convert_uint16_InstanceType_0(compiler::CodeAssemblerState* state
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=141&c=9
-TorqueStructSlice_char8_ConstReference_char8_0 NewConstSlice_char8_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_char8_ConstReference_char8_0 NewConstSlice_char8_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=331&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=334&c=14
 TNode<BoolT> Call_char8_char8_0(compiler::CodeAssemblerState* state_, TorqueStructIsSubstringAtFunctor_0 p_self, TorqueStructSlice_char8_ConstReference_char8_0 p_string, TorqueStructSlice_char8_ConstReference_char8_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3781,7 +3745,7 @@ TNode<BoolT> Call_char8_char8_0(compiler::CodeAssemblerState* state_, TorqueStru
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = IsSubstringAt_char8_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
+    tmp0 = IsSubstringAt_char8_char8_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
     ca_.Goto(&block2);
   }
 
@@ -3789,7 +3753,7 @@ TNode<BoolT> Call_char8_char8_0(compiler::CodeAssemblerState* state_, TorqueStru
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=333&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=336&c=14
 TNode<BoolT> Call_char8_char16_0(compiler::CodeAssemblerState* state_, TorqueStructIsSubstringAtFunctor_0 p_self, TorqueStructSlice_char8_ConstReference_char8_0 p_string, TorqueStructSlice_char16_ConstReference_char16_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3800,7 +3764,7 @@ TNode<BoolT> Call_char8_char16_0(compiler::CodeAssemblerState* state_, TorqueStr
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = IsSubstringAt_char8_char16_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
+    tmp0 = IsSubstringAt_char8_char16_0(state_, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
     ca_.Goto(&block2);
   }
 
@@ -3808,7 +3772,7 @@ TNode<BoolT> Call_char8_char16_0(compiler::CodeAssemblerState* state_, TorqueStr
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=339&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=342&c=14
 TNode<BoolT> Call_char16_char8_0(compiler::CodeAssemblerState* state_, TorqueStructIsSubstringAtFunctor_0 p_self, TorqueStructSlice_char16_ConstReference_char16_0 p_string, TorqueStructSlice_char8_ConstReference_char8_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3819,7 +3783,7 @@ TNode<BoolT> Call_char16_char8_0(compiler::CodeAssemblerState* state_, TorqueStr
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = IsSubstringAt_char16_char8_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
+    tmp0 = IsSubstringAt_char16_char8_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char8_ConstReference_char8_0{TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
     ca_.Goto(&block2);
   }
 
@@ -3827,7 +3791,7 @@ TNode<BoolT> Call_char16_char8_0(compiler::CodeAssemblerState* state_, TorqueStr
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=341&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=344&c=14
 TNode<BoolT> Call_char16_char16_0(compiler::CodeAssemblerState* state_, TorqueStructIsSubstringAtFunctor_0 p_self, TorqueStructSlice_char16_ConstReference_char16_0 p_string, TorqueStructSlice_char16_ConstReference_char16_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3838,7 +3802,7 @@ TNode<BoolT> Call_char16_char16_0(compiler::CodeAssemblerState* state_, TorqueSt
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = IsSubstringAt_char16_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
+    tmp0 = IsSubstringAt_char16_char16_0(state_, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset}, TNode<IntPtrT>{p_string.length}, TorqueStructUnsafe_0{}}, TorqueStructSlice_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset}, TNode<IntPtrT>{p_searchStr.length}, TorqueStructUnsafe_0{}}, TNode<IntPtrT>{p_self.start});
     ca_.Goto(&block2);
   }
 
@@ -3846,7 +3810,7 @@ TNode<BoolT> Call_char16_char16_0(compiler::CodeAssemblerState* state_, TorqueSt
   return TNode<BoolT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=331&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=334&c=14
 TNode<Smi> Call_char8_char8_1(compiler::CodeAssemblerState* state_, TorqueStructAbstractStringIndexOfFunctor_0 p_self, TorqueStructSlice_char8_ConstReference_char8_0 p_string, TorqueStructSlice_char8_ConstReference_char8_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3863,9 +3827,9 @@ TNode<Smi> Call_char8_char8_1(compiler::CodeAssemblerState* state_, TorqueStruct
   TNode<Smi> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset});
+    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset});
     tmp1 = (TNode<RawPtrT>{tmp0});
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
     tmp4 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_self.fromIndex});
     tmp5 = AbstractStringIndexOf_1(state_, TNode<RawPtrT>{tmp1}, TNode<IntPtrT>{p_string.length}, TNode<RawPtrT>{tmp3}, TNode<IntPtrT>{p_searchStr.length}, TNode<IntPtrT>{tmp4});
@@ -3877,7 +3841,7 @@ TNode<Smi> Call_char8_char8_1(compiler::CodeAssemblerState* state_, TorqueStruct
   return TNode<Smi>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=333&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=336&c=14
 TNode<Smi> Call_char8_char16_1(compiler::CodeAssemblerState* state_, TorqueStructAbstractStringIndexOfFunctor_0 p_self, TorqueStructSlice_char8_ConstReference_char8_0 p_string, TorqueStructSlice_char16_ConstReference_char16_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3894,9 +3858,9 @@ TNode<Smi> Call_char8_char16_1(compiler::CodeAssemblerState* state_, TorqueStruc
   TNode<Smi> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset});
+    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset});
     tmp1 = (TNode<RawPtrT>{tmp0});
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
     tmp4 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_self.fromIndex});
     tmp5 = AbstractStringIndexOf_3(state_, TNode<RawPtrT>{tmp1}, TNode<IntPtrT>{p_string.length}, TNode<RawPtrT>{tmp3}, TNode<IntPtrT>{p_searchStr.length}, TNode<IntPtrT>{tmp4});
@@ -3908,7 +3872,7 @@ TNode<Smi> Call_char8_char16_1(compiler::CodeAssemblerState* state_, TorqueStruc
   return TNode<Smi>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=339&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=342&c=14
 TNode<Smi> Call_char16_char8_1(compiler::CodeAssemblerState* state_, TorqueStructAbstractStringIndexOfFunctor_0 p_self, TorqueStructSlice_char16_ConstReference_char16_0 p_string, TorqueStructSlice_char8_ConstReference_char8_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3925,9 +3889,9 @@ TNode<Smi> Call_char16_char8_1(compiler::CodeAssemblerState* state_, TorqueStruc
   TNode<Smi> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset});
+    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset});
     tmp1 = (TNode<RawPtrT>{tmp0});
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
     tmp4 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_self.fromIndex});
     tmp5 = AbstractStringIndexOf_0(state_, TNode<RawPtrT>{tmp1}, TNode<IntPtrT>{p_string.length}, TNode<RawPtrT>{tmp3}, TNode<IntPtrT>{p_searchStr.length}, TNode<IntPtrT>{tmp4});
@@ -3939,7 +3903,7 @@ TNode<Smi> Call_char16_char8_1(compiler::CodeAssemblerState* state_, TorqueStruc
   return TNode<Smi>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=341&c=14
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=344&c=14
 TNode<Smi> Call_char16_char16_1(compiler::CodeAssemblerState* state_, TorqueStructAbstractStringIndexOfFunctor_0 p_self, TorqueStructSlice_char16_ConstReference_char16_0 p_string, TorqueStructSlice_char16_ConstReference_char16_0 p_searchStr) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3956,9 +3920,9 @@ TNode<Smi> Call_char16_char16_1(compiler::CodeAssemblerState* state_, TorqueStru
   TNode<Smi> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_string.object}, TNode<IntPtrT>{p_string.offset});
+    tmp0 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_string.object}, TNode<IntPtrT>{p_string.offset});
     tmp1 = (TNode<RawPtrT>{tmp0});
-    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Object>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
+    tmp2 = CodeStubAssembler(state_).GCUnsafeReferenceToRawPtr(TNode<Union<HeapObject, TaggedIndex>>{p_searchStr.object}, TNode<IntPtrT>{p_searchStr.offset});
     tmp3 = (TNode<RawPtrT>{tmp2});
     tmp4 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_self.fromIndex});
     tmp5 = AbstractStringIndexOf_2(state_, TNode<RawPtrT>{tmp1}, TNode<IntPtrT>{p_string.length}, TNode<RawPtrT>{tmp3}, TNode<IntPtrT>{p_searchStr.length}, TNode<IntPtrT>{tmp4});
@@ -3970,7 +3934,7 @@ TNode<Smi> Call_char16_char16_1(compiler::CodeAssemblerState* state_, TorqueStru
   return TNode<Smi>{tmp6};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=205&c=10
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=210&c=10
 TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_SliceIterator_char16_ConstReference_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_length, TorqueStructSliceIterator_char16_ConstReference_char16_0 p_content) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -4012,7 +3976,7 @@ TNode<SeqTwoByteString> AllocateNonEmptySeqTwoByteString_SliceIterator_char16_Co
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     CodeStubAssembler(state_).StoreReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp2);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_char16_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Object>{p_content.object}, TNode<IntPtrT>{p_content.start}, TNode<IntPtrT>{p_content.end}, TorqueStructUnsafe_0{}});
+    InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_char16_0(state_, TorqueStructSlice_char16_MutableReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp3}, TorqueStructUnsafe_0{}}, TorqueStructSliceIterator_char16_ConstReference_char16_0{TNode<Union<HeapObject, TaggedIndex>>{p_content.object}, TNode<IntPtrT>{p_content.start}, TNode<IntPtrT>{p_content.end}, TorqueStructUnsafe_0{}});
     tmp14 = TORQUE_CAST(TNode<HeapObject>{tmp9});
     ca_.Goto(&block9);
   }
@@ -4072,14 +4036,14 @@ void InitializeFieldsFromIterator_char8_TwoByteToOneByteIterator_0(compiler::Cod
 
   TNode<IntPtrT> phi_bb10_7;
   TNode<IntPtrT> phi_bb10_10;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_7, &phi_bb10_10);
-    std::tie(tmp4, tmp5) = NewReference_char8_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_7}, TNode<IntPtrT>{tmp6});
     tmp8 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb10_10}, TNode<IntPtrT>{p_originIterator.end});
@@ -4093,7 +4057,7 @@ void InitializeFieldsFromIterator_char8_TwoByteToOneByteIterator_0(compiler::Cod
   }
 
   TNode<IntPtrT> phi_bb17_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<Uint16T> tmp11;
   TNode<Uint32T> tmp12;
@@ -4103,9 +4067,9 @@ void InitializeFieldsFromIterator_char8_TwoByteToOneByteIterator_0(compiler::Cod
   TNode<IntPtrT> tmp16;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_10);
-    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Object>{p_originIterator.object}, TNode<IntPtrT>{phi_bb17_10}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_originIterator.object}, TNode<IntPtrT>{phi_bb17_10}).Flatten();
     tmp11 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp9, tmp10});
-    tmp12 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp12 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp13 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp11}, TNode<Uint32T>{tmp12});
     tmp14 = ca_.UncheckedCast<Uint8T>(TNode<Uint32T>{tmp13});
     tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
@@ -4175,14 +4139,14 @@ void InitializeFieldsFromIterator_char8_SliceIterator_char8_ConstReference_char8
 
   TNode<IntPtrT> phi_bb10_7;
   TNode<IntPtrT> phi_bb10_10;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_7, &phi_bb10_10);
-    std::tie(tmp4, tmp5) = NewReference_char8_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_7}, TNode<IntPtrT>{tmp6});
     tmp8 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb10_10}, TNode<IntPtrT>{p_originIterator.end});
@@ -4196,14 +4160,14 @@ void InitializeFieldsFromIterator_char8_SliceIterator_char8_ConstReference_char8
   }
 
   TNode<IntPtrT> phi_bb18_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<Uint8T> tmp13;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_10);
-    std::tie(tmp9, tmp10) = NewReference_char8_0(state_, TNode<Object>{p_originIterator.object}, TNode<IntPtrT>{phi_bb18_10}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_originIterator.object}, TNode<IntPtrT>{phi_bb18_10}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb18_10}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp9, tmp10});
@@ -4272,14 +4236,14 @@ void InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_cha
 
   TNode<IntPtrT> phi_bb10_7;
   TNode<IntPtrT> phi_bb10_10;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_7, &phi_bb10_10);
-    std::tie(tmp4, tmp5) = NewReference_char16_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_7}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_7}, TNode<IntPtrT>{tmp6});
     tmp8 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb10_10}, TNode<IntPtrT>{p_originIterator.end});
@@ -4293,14 +4257,14 @@ void InitializeFieldsFromIterator_char16_SliceIterator_char16_ConstReference_cha
   }
 
   TNode<IntPtrT> phi_bb18_10;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<Uint16T> tmp13;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_10);
-    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Object>{p_originIterator.object}, TNode<IntPtrT>{phi_bb18_10}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_char16_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_originIterator.object}, TNode<IntPtrT>{phi_bb18_10}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt16Size);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb18_10}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp9, tmp10});

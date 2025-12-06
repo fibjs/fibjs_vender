@@ -16,7 +16,7 @@ Tagged<Union<JSReceiver, Undefined>> TorqueGeneratedPromiseCapability<D, P>::pro
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=6&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseCapability<D, P>::set_promise(Tagged<Union<JSReceiver, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kPromiseOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<JSAny> TorqueGeneratedPromiseCapability<D, P>::resolve(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseCapability<D, P>::set_resolve(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kResolveOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kResolveOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<JSAny> TorqueGeneratedPromiseCapability<D, P>::reject(PtrComprCageBase ca
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseCapability<D, P>::set_reject(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kRejectOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRejectOffset, value, mode);
 }
@@ -90,7 +90,7 @@ Tagged<Object> TorqueGeneratedPromiseReaction<D, P>::continuation_preserved_embe
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=34&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_continuation_preserved_embedder_data(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kContinuationPreservedEmbedderDataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContinuationPreservedEmbedderDataOffset, value, mode);
 }
@@ -113,7 +113,7 @@ Tagged<Union<PromiseReaction, Smi>> TorqueGeneratedPromiseReaction<D, P>::next(P
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=35&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_next(Tagged<Union<PromiseReaction, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsZero(value) || IsPromiseReaction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsZero(value) || IsPromiseReaction(value)));
   WRITE_FIELD(*this, kNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextOffset, value, mode);
 }
@@ -136,7 +136,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=36&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_reject_handler(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kRejectHandlerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRejectHandlerOffset, value, mode);
 }
@@ -159,7 +159,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=37&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_fulfill_handler(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kFulfillHandlerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFulfillHandlerOffset, value, mode);
 }
@@ -182,7 +182,7 @@ Tagged<Union<JSPromise, PromiseCapability, Undefined>> TorqueGeneratedPromiseRea
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=40&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReaction<D, P>::set_promise_or_capability(Tagged<Union<JSPromise, PromiseCapability, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSPromise(value) || IsPromiseCapability(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSPromise(value) || IsPromiseCapability(value)));
   WRITE_FIELD(*this, kPromiseOrCapabilityOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOrCapabilityOffset, value, mode);
 }
@@ -210,7 +210,7 @@ Tagged<Object> TorqueGeneratedPromiseReactionJobTask<D, P>::argument(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=58&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReactionJobTask<D, P>::set_argument(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kArgumentOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kArgumentOffset, value, mode);
 }
@@ -233,7 +233,7 @@ Tagged<Context> TorqueGeneratedPromiseReactionJobTask<D, P>::context(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=59&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReactionJobTask<D, P>::set_context(Tagged<Context> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsContext(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsContext(value)));
   WRITE_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
@@ -256,7 +256,7 @@ Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=60&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReactionJobTask<D, P>::set_handler(Tagged<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value) || IsCallableApiObject(value) || IsCallableJSProxy(value) || IsJSBoundFunction(value) || IsJSWrappedFunction(value)));
   WRITE_FIELD(*this, kHandlerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHandlerOffset, value, mode);
 }
@@ -279,7 +279,7 @@ Tagged<Union<JSPromise, PromiseCapability, Undefined>> TorqueGeneratedPromiseRea
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=63&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseReactionJobTask<D, P>::set_promise_or_capability(Tagged<Union<JSPromise, PromiseCapability, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSPromise(value) || IsPromiseCapability(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSPromise(value) || IsPromiseCapability(value)));
   WRITE_FIELD(*this, kPromiseOrCapabilityOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOrCapabilityOffset, value, mode);
 }
@@ -317,7 +317,7 @@ Tagged<Context> TorqueGeneratedPromiseResolveThenableJobTask<D, P>::context(PtrC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=71&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseResolveThenableJobTask<D, P>::set_context(Tagged<Context> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsContext(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsContext(value)));
   WRITE_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
@@ -340,7 +340,7 @@ Tagged<JSPromise> TorqueGeneratedPromiseResolveThenableJobTask<D, P>::promise_to
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=72&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseResolveThenableJobTask<D, P>::set_promise_to_resolve(Tagged<JSPromise> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSPromise(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSPromise(value)));
   WRITE_FIELD(*this, kPromiseToResolveOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseToResolveOffset, value, mode);
 }
@@ -363,7 +363,7 @@ Tagged<JSReceiver> TorqueGeneratedPromiseResolveThenableJobTask<D, P>::thenable(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=73&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseResolveThenableJobTask<D, P>::set_thenable(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kThenableOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kThenableOffset, value, mode);
 }
@@ -386,7 +386,7 @@ Tagged<JSReceiver> TorqueGeneratedPromiseResolveThenableJobTask<D, P>::then(PtrC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/promise.tq?l=74&c=3
 template<class D, class P>
 void TorqueGeneratedPromiseResolveThenableJobTask<D, P>::set_then(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kThenOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kThenOffset, value, mode);
 }

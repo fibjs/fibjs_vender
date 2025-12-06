@@ -20,7 +20,7 @@ TNode<String> MakeDataViewSetterNameString_0(compiler::CodeAssemblerState* state
 TNode<BoolT> WasDetached_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBufferView> p_view);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=74&c=1
-TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method);
+TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o, TNode<String> p_method);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=148&c=1
 TNode<Smi> LoadDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, bool p_signed);
@@ -56,25 +56,25 @@ TNode<BigInt> MakeBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> 
 TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BoolT> p_requestedLittleEndian, bool p_signed);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=407&c=1
-TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind);
+TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TNode<JSAny> p_requestIndex, TNode<JSAny> p_requestedLittleEndian, ElementsKind p_kind);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=588&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=589&c=1
 void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=593&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=594&c=1
 void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=610&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=611&c=1
 void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=633&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=634&c=1
 void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, TNode<BoolT> p_requestedLittleEndian);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=677&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=678&c=1
 void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BigInt> p_bigIntValue, TNode<BoolT> p_requestedLittleEndian);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=716&c=1
-TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_value, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind);
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=717&c=1
+TNode<JSAny> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TNode<JSAny> p_requestIndex, TNode<JSAny> p_value, TNode<JSAny> p_requestedLittleEndian, ElementsKind p_kind);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=77&c=5
 TNode<JSDataView> Cast_JSDataView_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);

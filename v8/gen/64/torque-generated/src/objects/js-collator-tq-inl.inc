@@ -16,7 +16,7 @@ Tagged<Foreign> TorqueGeneratedJSCollator<D, P>::icu_collator(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedJSCollator<D, P>::set_icu_collator(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuCollatorOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuCollatorOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSCollator<D, P>::bound_comp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=9&c=3
 template<class D, class P>
 void TorqueGeneratedJSCollator<D, P>::set_bound_compare(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundCompareOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundCompareOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<String> TorqueGeneratedJSCollator<D, P>::locale(PtrComprCageBase cage_bas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collator.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedJSCollator<D, P>::set_locale(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
 }

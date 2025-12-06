@@ -12,10 +12,10 @@ V8_EXPORT_PRIVATE bool IsJSCollection_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSCollection : public P {
   static_assert(
-      std::is_same<JSCollection, D>::value,
+      std::is_same_v<JSCollection, D>,
       "Use this class as direct base for JSCollection.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSCollection.");
 
  public: 
@@ -48,7 +48,7 @@ class TorqueGeneratedJSCollection : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSCollection() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSCollection, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSCollection, DAlias>,
         "class TorqueGeneratedJSCollection should be used as direct base for JSCollection.");
   }
 
@@ -66,10 +66,10 @@ V8_EXPORT_PRIVATE bool IsJSSet_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSet : public P {
   static_assert(
-      std::is_same<JSSet, D>::value,
+      std::is_same_v<JSSet, D>,
       "Use this class as direct base for JSSet.");
   static_assert(
-      std::is_same<JSCollection, P>::value,
+      std::is_same_v<JSCollection, P>,
       "Pass in JSCollection as second template parameter for TorqueGeneratedJSSet.");
 
  public: 
@@ -94,7 +94,7 @@ class TorqueGeneratedJSSet : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSet() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSet, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSet, DAlias>,
         "class TorqueGeneratedJSSet should be used as direct base for JSSet.");
   }
 
@@ -112,10 +112,10 @@ V8_EXPORT_PRIVATE bool IsJSMap_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSMap : public P {
   static_assert(
-      std::is_same<JSMap, D>::value,
+      std::is_same_v<JSMap, D>,
       "Use this class as direct base for JSMap.");
   static_assert(
-      std::is_same<JSCollection, P>::value,
+      std::is_same_v<JSCollection, P>,
       "Pass in JSCollection as second template parameter for TorqueGeneratedJSMap.");
 
  public: 
@@ -140,7 +140,7 @@ class TorqueGeneratedJSMap : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSMap() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSMap, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSMap, DAlias>,
         "class TorqueGeneratedJSMap should be used as direct base for JSMap.");
   }
 
@@ -158,10 +158,10 @@ V8_EXPORT_PRIVATE bool IsJSWeakCollection_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSWeakCollection : public P {
   static_assert(
-      std::is_same<JSWeakCollection, D>::value,
+      std::is_same_v<JSWeakCollection, D>,
       "Use this class as direct base for JSWeakCollection.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSWeakCollection.");
 
  public: 
@@ -194,7 +194,7 @@ class TorqueGeneratedJSWeakCollection : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSWeakCollection() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSWeakCollection, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSWeakCollection, DAlias>,
         "class TorqueGeneratedJSWeakCollection should be used as direct base for JSWeakCollection.");
   }
 
@@ -212,10 +212,10 @@ V8_EXPORT_PRIVATE bool IsJSWeakSet_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSWeakSet : public P {
   static_assert(
-      std::is_same<JSWeakSet, D>::value,
+      std::is_same_v<JSWeakSet, D>,
       "Use this class as direct base for JSWeakSet.");
   static_assert(
-      std::is_same<JSWeakCollection, P>::value,
+      std::is_same_v<JSWeakCollection, P>,
       "Pass in JSWeakCollection as second template parameter for TorqueGeneratedJSWeakSet.");
 
  public: 
@@ -240,7 +240,7 @@ class TorqueGeneratedJSWeakSet : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSWeakSet() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSWeakSet, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSWeakSet, DAlias>,
         "class TorqueGeneratedJSWeakSet should be used as direct base for JSWeakSet.");
   }
 
@@ -258,10 +258,10 @@ V8_EXPORT_PRIVATE bool IsJSWeakMap_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSWeakMap : public P {
   static_assert(
-      std::is_same<JSWeakMap, D>::value,
+      std::is_same_v<JSWeakMap, D>,
       "Use this class as direct base for JSWeakMap.");
   static_assert(
-      std::is_same<JSWeakCollection, P>::value,
+      std::is_same_v<JSWeakCollection, P>,
       "Pass in JSWeakCollection as second template parameter for TorqueGeneratedJSWeakMap.");
 
  public: 
@@ -286,7 +286,7 @@ class TorqueGeneratedJSWeakMap : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSWeakMap() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSWeakMap, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSWeakMap, DAlias>,
         "class TorqueGeneratedJSWeakMap should be used as direct base for JSWeakMap.");
   }
 

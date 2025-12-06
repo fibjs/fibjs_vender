@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/convert-tq-csa.h"
@@ -139,7 +139,7 @@ TNode<Int32T> FromConstexpr_int32_constexpr_IntegerLiteral_0(compiler::CodeAssem
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=20&c=1
-TNode<Uint32T> FromConstexpr_uint32_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
+TNode<Uint32T> FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -149,7 +149,7 @@ TNode<Uint32T> FromConstexpr_uint32_constexpr_IntegerLiteral_0(compiler::CodeAss
   TNode<Uint32T> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_uint32_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralToUint32(p_i)));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, (CodeStubAssembler(state_).ConstexprIntegerLiteralToUint32(p_i)));
     ca_.Goto(&block2);
   }
 
@@ -536,7 +536,7 @@ TNode<String> FromConstexpr_String_constexpr_string_0(compiler::CodeAssemblerSta
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=95&c=1
-TNode<Number> FromConstexpr_Number_constexpr_uint32_0(compiler::CodeAssemblerState* state_, uint32_t p_i) {
+TNode<Number> FromConstexpr_Number_constexpr_WasmCodePointer_0(compiler::CodeAssemblerState* state_, uint32_t p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -625,8 +625,8 @@ TNode<Uint8T> FromConstexpr_uint8_constexpr_int31_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_int31_0(state_, p_i);
-    tmp1 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, p_i);
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp2 = CodeStubAssembler(state_).Uint32LessThanOrEqual(TNode<Uint32T>{tmp0}, TNode<Uint32T>{tmp1});
     CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp2}, "static_assert(i <= 255) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=109&c=3");
     tmp3 = ca_.UncheckedCast<Uint8T>(TNode<Uint32T>{tmp0});
@@ -710,7 +710,7 @@ TNode<Uint8T> FromConstexpr_char8_constexpr_int31_0(compiler::CodeAssemblerState
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=120&c=1
-TNode<Uint32T> FromConstexpr_uint32_constexpr_int31_0(compiler::CodeAssemblerState* state_, int31_t p_i) {
+TNode<Uint32T> FromConstexpr_WasmCodePointer_constexpr_int31_0(compiler::CodeAssemblerState* state_, int31_t p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -742,7 +742,7 @@ TNode<Uint8T> FromConstexpr_uint8_constexpr_uint8_0(compiler::CodeAssemblerState
   TNode<Uint8T> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_uint32_0(state_, p_i);
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, p_i);
     tmp1 = ca_.UncheckedCast<Uint8T>(TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -752,7 +752,7 @@ TNode<Uint8T> FromConstexpr_uint8_constexpr_uint8_0(compiler::CodeAssemblerState
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=127&c=1
-TNode<Uint32T> FromConstexpr_uint32_constexpr_uint32_0(compiler::CodeAssemblerState* state_, uint32_t p_i) {
+TNode<Uint32T> FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(compiler::CodeAssemblerState* state_, uint32_t p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -825,7 +825,7 @@ TNode<Uint64T> FromConstexpr_uint64_constexpr_int31_0(compiler::CodeAssemblerSta
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).Int32Constant(p_i);
     tmp1 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp0});
-    tmp2 = Convert_uint64_uint32_0(state_, TNode<Uint32T>{tmp1});
+    tmp2 = Convert_uint64_WasmCodePointer_0(state_, TNode<Uint32T>{tmp1});
     ca_.Goto(&block2);
   }
 
@@ -845,7 +845,7 @@ TNode<UintPtrT> FromConstexpr_uintptr_constexpr_int31_0(compiler::CodeAssemblerS
   TNode<UintPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_int31_0(state_, p_i);
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_int31_0(state_, p_i);
     tmp1 = CodeStubAssembler(state_).ChangeUint32ToWord(TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -950,7 +950,7 @@ TNode<Object> FromConstexpr_Object_constexpr_string_0(compiler::CodeAssemblerSta
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=157&c=1
-TNode<Object> FromConstexpr_JSAny_constexpr_string_0(compiler::CodeAssemblerState* state_, const char* p_s) {
+TNode<JSAny> FromConstexpr_JSAny_constexpr_string_0(compiler::CodeAssemblerState* state_, const char* p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -965,7 +965,7 @@ TNode<Object> FromConstexpr_JSAny_constexpr_string_0(compiler::CodeAssemblerStat
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp0};
+  return TNode<JSAny>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=160&c=1
@@ -1103,7 +1103,7 @@ TNode<Boolean> Convert_Boolean_bool_0(compiler::CodeAssemblerState* state_, TNod
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Boolean> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<False, True>> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -1126,7 +1126,7 @@ TNode<Boolean> Convert_Boolean_bool_0(compiler::CodeAssemblerState* state_, TNod
     ca_.Goto(&block4, tmp1);
   }
 
-  TNode<Boolean> phi_bb4_1;
+  TNode<Union<False, True>> phi_bb4_1;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_1);
     ca_.Goto(&block6);
@@ -1213,7 +1213,7 @@ TNode<IntPtrT> Convert_intptr_int31_0(compiler::CodeAssemblerState* state_, TNod
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=210&c=1
-TNode<IntPtrT> Convert_intptr_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_i) {
+TNode<IntPtrT> Convert_intptr_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1253,7 +1253,7 @@ TNode<Smi> Convert_Smi_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=216&c=1
-TNode<Number> Convert_Number_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
+TNode<Number> Convert_Number_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1272,7 +1272,7 @@ TNode<Number> Convert_Number_uint32_0(compiler::CodeAssemblerState* state_, TNod
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=219&c=1
-TNode<Smi> Convert_Smi_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
+TNode<Smi> Convert_Smi_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1291,7 +1291,7 @@ TNode<Smi> Convert_Smi_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=222&c=1
-TNode<UintPtrT> Convert_uintptr_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
+TNode<UintPtrT> Convert_uintptr_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1329,7 +1329,7 @@ TNode<Int64T> Convert_int64_int32_0(compiler::CodeAssemblerState* state_, TNode<
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=228&c=1
-TNode<Uint64T> Convert_uint64_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
+TNode<Uint64T> Convert_uint64_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1406,7 +1406,7 @@ TNode<Uint8T> Convert_uint8_intptr_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).TruncateIntPtrToInt32(TNode<IntPtrT>{p_i});
     tmp1 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp0});
-    tmp2 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp2 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp3 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp2});
     tmp4 = ca_.UncheckedCast<Uint8T>(TNode<Uint32T>{tmp3});
     ca_.Goto(&block2);
@@ -1446,7 +1446,7 @@ TNode<Int8T> Convert_int8_intptr_0(compiler::CodeAssemblerState* state_, TNode<I
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=243&c=1
-TNode<Uint16T> Convert_uint16_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_i) {
+TNode<Uint16T> Convert_uint16_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1458,7 +1458,7 @@ TNode<Uint16T> Convert_uint16_uint32_0(compiler::CodeAssemblerState* state_, TNo
   TNode<Uint16T> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffffull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffffull));
     tmp1 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_i}, TNode<Uint32T>{tmp0});
     tmp2 = ca_.UncheckedCast<Uint16T>(TNode<Uint32T>{tmp1});
     ca_.Goto(&block2);
@@ -1480,7 +1480,7 @@ TNode<Int32T> Convert_int32_uint8_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Int32T> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uint32_uint8_0(state_, TNode<Uint8T>{p_i});
+    tmp0 = Convert_WasmCodePointer_uint8_0(state_, TNode<Uint8T>{p_i});
     tmp1 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -1501,7 +1501,7 @@ TNode<Int32T> Convert_int32_uint16_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Int32T> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uint32_uint16_0(state_, TNode<Uint16T>{p_i});
+    tmp0 = Convert_WasmCodePointer_uint16_0(state_, TNode<Uint16T>{p_i});
     tmp1 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -1522,7 +1522,7 @@ TNode<Int32T> Convert_int32_char8_OR_char16_0(compiler::CodeAssemblerState* stat
   TNode<Int32T> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uint32_char8_OR_char16_0(state_, TNode<Uint16T>{p_i});
+    tmp0 = Convert_WasmCodePointer_char8_OR_char16_0(state_, TNode<Uint16T>{p_i});
     tmp1 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -1542,7 +1542,7 @@ TNode<IntPtrT> Convert_intptr_char16_0(compiler::CodeAssemblerState* state_, TNo
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{p_i});
+    tmp0 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{p_i});
     ca_.Goto(&block2);
   }
 
@@ -1561,7 +1561,7 @@ TNode<IntPtrT> Convert_intptr_char8_0(compiler::CodeAssemblerState* state_, TNod
   TNode<IntPtrT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{p_i});
+    tmp0 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{p_i});
     ca_.Goto(&block2);
   }
 
@@ -1581,7 +1581,7 @@ TNode<Int32T> Convert_int32_uint31_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Int32T> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uint32_uint31_0(state_, TNode<Uint32T>{p_i});
+    tmp0 = Convert_WasmCodePointer_uint31_0(state_, TNode<Uint32T>{p_i});
     tmp1 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -1629,7 +1629,7 @@ TNode<Int32T> Convert_int32_int64_0(compiler::CodeAssemblerState* state_, TNode<
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=270&c=1
-TNode<Uint32T> Convert_uint32_uint64_0(compiler::CodeAssemblerState* state_, TNode<Uint64T> p_i) {
+TNode<Uint32T> Convert_WasmCodePointer_uint64_0(compiler::CodeAssemblerState* state_, TNode<Uint64T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1718,7 +1718,7 @@ TNode<Smi> Convert_Smi_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntP
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=287&c=1
-TNode<Uint32T> Convert_uint32_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
+TNode<Uint32T> Convert_WasmCodePointer_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1933,7 +1933,7 @@ TNode<Smi> Convert_PositiveSmi_intptr_1(compiler::CodeAssemblerState* state_, TN
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=325&c=1
-TNode<Smi> Convert_PositiveSmi_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui, compiler::CodeAssemblerLabel* label_IfOverflow) {
+TNode<Smi> Convert_PositiveSmi_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_ui, compiler::CodeAssemblerLabel* label_IfOverflow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1946,7 +1946,7 @@ TNode<Smi> Convert_PositiveSmi_uint32_0(compiler::CodeAssemblerState* state_, TN
   TNode<Smi> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Convert_uintptr_uint32_0(state_, TNode<Uint32T>{p_ui});
+    tmp0 = Convert_uintptr_WasmCodePointer_0(state_, TNode<Uint32T>{p_ui});
     compiler::CodeAssemblerLabel label2(&ca_);
     tmp1 = Convert_PositiveSmi_uintptr_0(state_, TNode<UintPtrT>{tmp0}, &label2);
     ca_.Goto(&block3);
@@ -2085,7 +2085,7 @@ TNode<Float64T> Convert_float64_float32_0(compiler::CodeAssemblerState* state_, 
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=346&c=1
-TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_f) {
+TorqueStructfloat64_or_undefined_or_hole_0 Convert_float64_or_undefined_or_hole_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2100,11 +2100,11 @@ TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_float64_0(compiler::CodeAs
   }
 
     ca_.Bind(&block2);
-  return TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp0}, TNode<Float64T>{p_f}};
+  return TorqueStructfloat64_or_undefined_or_hole_0{TNode<BoolT>{tmp0}, TNode<Float64T>{p_f}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=349&c=1
-TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=359&c=1
+TorqueStructfloat64_or_undefined_or_hole_0 Convert_float64_or_undefined_or_hole_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2117,15 +2117,15 @@ TorqueStructfloat64_or_hole_0 Convert_float64_or_hole_Number_0(compiler::CodeAss
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Convert_float64_Number_0(state_, TNode<Number>{p_n});
-    std::tie(tmp1, tmp2) = Convert_float64_or_hole_float64_0(state_, TNode<Float64T>{tmp0}).Flatten();
+    std::tie(tmp1, tmp2) = Convert_float64_or_undefined_or_hole_float64_0(state_, TNode<Float64T>{tmp0}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp1}, TNode<Float64T>{tmp2}};
+  return TorqueStructfloat64_or_undefined_or_hole_0{TNode<BoolT>{tmp1}, TNode<Float64T>{tmp2}};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=352&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=363&c=1
 TNode<Float32T> Convert_float32_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2144,7 +2144,7 @@ TNode<Float32T> Convert_float32_float64_0(compiler::CodeAssemblerState* state_, 
   return TNode<Float32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=355&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=366&c=1
 TNode<Float32T> Convert_float32_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2165,8 +2165,8 @@ TNode<Float32T> Convert_float32_Number_0(compiler::CodeAssemblerState* state_, T
   return TNode<Float32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=358&c=1
-TNode<Float16T> Convert_float16_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=369&c=1
+TNode<Float16RawBitsT> Convert_float16_raw_bits_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2174,7 +2174,7 @@ TNode<Float16T> Convert_float16_Number_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block0);
 
   TNode<Float64T> tmp0;
-  TNode<Float16T> tmp1;
+  TNode<Float16RawBitsT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).ChangeNumberToFloat64(TNode<Number>{p_n});
@@ -2183,11 +2183,11 @@ TNode<Float16T> Convert_float16_Number_0(compiler::CodeAssemblerState* state_, T
   }
 
     ca_.Bind(&block2);
-  return TNode<Float16T>{tmp1};
+  return TNode<Float16RawBitsT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=362&c=1
-TNode<Float64T> Convert_float64_float16_0(compiler::CodeAssemblerState* state_, TNode<Float16T> p_n) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=373&c=1
+TNode<Float64T> Convert_float64_float16_raw_bits_0(compiler::CodeAssemblerState* state_, TNode<Float16RawBitsT> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2197,7 +2197,7 @@ TNode<Float64T> Convert_float64_float16_0(compiler::CodeAssemblerState* state_, 
   TNode<Float64T> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ChangeFloat16ToFloat64(TNode<Float16T>{p_n});
+    tmp0 = CodeStubAssembler(state_).ChangeFloat16ToFloat64(TNode<Float16RawBitsT>{p_n});
     ca_.Goto(&block2);
   }
 
@@ -2205,7 +2205,7 @@ TNode<Float64T> Convert_float64_float16_0(compiler::CodeAssemblerState* state_, 
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=365&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=376&c=1
 TNode<Float32T> Convert_float32_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2224,7 +2224,7 @@ TNode<Float32T> Convert_float32_int32_0(compiler::CodeAssemblerState* state_, TN
   return TNode<Float32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=368&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=379&c=1
 TNode<Float32T> Convert_float32_HeapNumber_0(compiler::CodeAssemblerState* state_, TNode<HeapNumber> p_h) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2245,7 +2245,7 @@ TNode<Float32T> Convert_float32_HeapNumber_0(compiler::CodeAssemblerState* state
   return TNode<Float32T>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=371&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=382&c=1
 TNode<Number> Convert_Number_float32_0(compiler::CodeAssemblerState* state_, TNode<Float32T> p_d) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2264,7 +2264,7 @@ TNode<Number> Convert_Number_float32_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=374&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=385&c=1
 TNode<Number> Convert_Number_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_d) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2283,7 +2283,7 @@ TNode<Number> Convert_Number_float64_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=377&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=388&c=1
 TNode<Float64T> Convert_float64_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2302,7 +2302,7 @@ TNode<Float64T> Convert_float64_uintptr_0(compiler::CodeAssemblerState* state_, 
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=380&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=391&c=1
 TNode<Number> Convert_Number_uintptr_0(compiler::CodeAssemblerState* state_, TNode<UintPtrT> p_ui) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2321,7 +2321,7 @@ TNode<Number> Convert_Number_uintptr_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<Number>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=383&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=394&c=1
 TNode<Number> Convert_Number_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2342,7 +2342,7 @@ TNode<Number> Convert_Number_intptr_0(compiler::CodeAssemblerState* state_, TNod
   return TNode<Number>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=386&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=397&c=1
 TNode<UintPtrT> Convert_uintptr_float64_0(compiler::CodeAssemblerState* state_, TNode<Float64T> p_d) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2361,7 +2361,7 @@ TNode<UintPtrT> Convert_uintptr_float64_0(compiler::CodeAssemblerState* state_, 
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=389&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=400&c=1
 TNode<UintPtrT> Convert_uintptr_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2380,7 +2380,7 @@ TNode<UintPtrT> Convert_uintptr_intptr_0(compiler::CodeAssemblerState* state_, T
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=392&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=403&c=1
 TNode<UintPtrT> Convert_uintptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_r) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2399,7 +2399,7 @@ TNode<UintPtrT> Convert_uintptr_RawPtr_0(compiler::CodeAssemblerState* state_, T
   return TNode<UintPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=395&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=406&c=1
 TNode<IntPtrT> Convert_intptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_r) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2418,7 +2418,7 @@ TNode<IntPtrT> Convert_intptr_RawPtr_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=398&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=409&c=1
 TNode<IntPtrT> Convert_intptr_Number_0(compiler::CodeAssemblerState* state_, TNode<Number> p_n) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2439,7 +2439,7 @@ TNode<IntPtrT> Convert_intptr_Number_0(compiler::CodeAssemblerState* state_, TNo
   return TNode<IntPtrT>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=401&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=412&c=1
 TNode<BInt> Convert_bint_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2460,7 +2460,7 @@ TNode<BInt> Convert_bint_int32_0(compiler::CodeAssemblerState* state_, TNode<Int
   return TNode<BInt>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=405&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=416&c=1
 TNode<Float64T> FromConstexpr_float64_constexpr_IntegerLiteral_0(compiler::CodeAssemblerState* state_, IntegerLiteral p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2479,7 +2479,7 @@ TNode<Float64T> FromConstexpr_float64_constexpr_IntegerLiteral_0(compiler::CodeA
   return TNode<Float64T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=410&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=421&c=1
 TNode<BInt> Convert_bint_intptr_0(compiler::CodeAssemblerState* state_, TNode<IntPtrT> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2498,7 +2498,7 @@ TNode<BInt> Convert_bint_intptr_0(compiler::CodeAssemblerState* state_, TNode<In
   return TNode<BInt>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=414&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=425&c=1
 TNode<IntPtrT> Convert_intptr_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2517,7 +2517,7 @@ TNode<IntPtrT> Convert_intptr_bint_0(compiler::CodeAssemblerState* state_, TNode
   return TNode<IntPtrT>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=418&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=429&c=1
 TNode<BInt> Convert_bint_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2536,7 +2536,7 @@ TNode<BInt> Convert_bint_Smi_0(compiler::CodeAssemblerState* state_, TNode<Smi> 
   return TNode<BInt>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=422&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=433&c=1
 TNode<Smi> Convert_Smi_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2555,7 +2555,7 @@ TNode<Smi> Convert_Smi_bint_0(compiler::CodeAssemblerState* state_, TNode<BInt> 
   return TNode<Smi>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=425&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=436&c=1
 TNode<Int32T> Convert_PromiseState_int32_0(compiler::CodeAssemblerState* state_, TNode<Int32T> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2574,7 +2574,7 @@ TNode<Int32T> Convert_PromiseState_int32_0(compiler::CodeAssemblerState* state_,
   return TNode<Int32T>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=428&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=439&c=1
 TNode<I8x16T> Convert_I8X16_Simd128_0(compiler::CodeAssemblerState* state_, TNode<Simd128T> p_s) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2613,7 +2613,7 @@ TNode<Smi> Convert_Smi_constexpr_int31_0(compiler::CodeAssemblerState* state_, i
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=247&c=17
-TNode<Uint32T> Convert_uint32_uint8_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_i) {
+TNode<Uint32T> Convert_WasmCodePointer_uint8_0(compiler::CodeAssemblerState* state_, TNode<Uint8T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2630,7 +2630,7 @@ TNode<Uint32T> Convert_uint32_uint8_0(compiler::CodeAssemblerState* state_, TNod
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=250&c=17
-TNode<Uint32T> Convert_uint32_uint16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i) {
+TNode<Uint32T> Convert_WasmCodePointer_uint16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2647,7 +2647,7 @@ TNode<Uint32T> Convert_uint32_uint16_0(compiler::CodeAssemblerState* state_, TNo
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=253&c=17
-TNode<Uint32T> Convert_uint32_char8_OR_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i) {
+TNode<Uint32T> Convert_WasmCodePointer_char8_OR_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2664,7 +2664,7 @@ TNode<Uint32T> Convert_uint32_char8_OR_char16_0(compiler::CodeAssemblerState* st
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=262&c=17
-TNode<Uint32T> Convert_uint32_uint31_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_i) {
+TNode<Uint32T> Convert_WasmCodePointer_uint31_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

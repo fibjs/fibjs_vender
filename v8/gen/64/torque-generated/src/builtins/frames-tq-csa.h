@@ -31,10 +31,10 @@ TNode<RawPtrT> LoadCallerFromFrame_0(compiler::CodeAssemblerState* state_, TNode
 TNode<IntPtrT> LoadArgCFromFrame_0(compiler::CodeAssemblerState* state_, TNode<RawPtrT> p_f);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=79&c=1
-TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
+TNode<Union<Context, Smi>> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=97&c=1
-TNode<Object> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_f);
+TNode<Union<Context, Smi>> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_f);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=103&c=1
 TNode<BoolT> FrameTypeEquals_0(compiler::CodeAssemblerState* state_, TNode<Smi> p_f1, TNode<Smi> p_f2);
@@ -46,7 +46,7 @@ TNode<RawPtrT> Cast_FrameWithArguments_0(compiler::CodeAssemblerState* state_, T
 TNode<JSFunction> LoadTargetFromFrame_0(compiler::CodeAssemblerState* state_);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=99&c=10
-TNode<Object> UnsafeCast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+TNode<Union<Context, Smi>> UnsafeCast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=112&c=7
 TNode<HeapObject> Cast_HeapObject_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError);

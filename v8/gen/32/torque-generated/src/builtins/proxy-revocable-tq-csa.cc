@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,11 +68,13 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-revocable-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
+#include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-revocable-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 #include "torque-generated/src/objects/js-proxy-tq-csa.h"
@@ -85,9 +86,9 @@ TF_BUILTIN(ProxyRevocable, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kTarget);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kTarget);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kHandler);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kHandler);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -131,15 +132,17 @@ TF_BUILTIN(ProxyRevocable, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<JSProxy> tmp4;
-  TNode<JSFunction> tmp5;
-  TNode<JSObject> tmp6;
+  TNode<Int32T> tmp4;
+  TNode<JSProxy> tmp5;
+  TNode<JSFunction> tmp6;
+  TNode<JSObject> tmp7;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp4 = ProxiesCodeStubAssembler(state_).AllocateProxy(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<JSReceiver>{tmp2});
-    tmp5 = ProxiesCodeStubAssembler(state_).AllocateProxyRevokeFunction(TNode<Context>{parameter0}, TNode<JSProxy>{tmp4});
-    tmp6 = NewJSProxyRevocableResult_0(state_, TNode<Context>{parameter0}, TNode<JSProxy>{tmp4}, TNode<JSFunction>{tmp5});
-    CodeStubAssembler(state_).Return(tmp6);
+    tmp4 = FromConstexpr_int32_constexpr_int32_0(state_, JSProxy::kIsRevocableBit);
+    tmp5 = ProxiesCodeStubAssembler(state_).AllocateProxy(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<JSReceiver>{tmp2}, TNode<Int32T>{tmp4});
+    tmp6 = ProxiesCodeStubAssembler(state_).AllocateProxyRevokeFunction(TNode<Context>{parameter0}, TNode<JSProxy>{tmp5});
+    tmp7 = NewJSProxyRevocableResult_0(state_, TNode<Context>{parameter0}, TNode<JSProxy>{tmp5}, TNode<JSFunction>{tmp6});
+    CodeStubAssembler(state_).Return(tmp7);
   }
 
   if (block2.is_used()) {

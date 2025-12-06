@@ -4,6 +4,7 @@ include_directories(
 	${CMAKE_CURRENT_LIST_DIR}/../include
 	${CMAKE_CURRENT_LIST_DIR}/../../unicode/include
 	${CMAKE_CURRENT_LIST_DIR}/../third_party/fp16/src/include
+	${CMAKE_CURRENT_LIST_DIR}/../third_party/highway
 )
 
 if(${BUILD_ARCH} MATCHES "64")
@@ -33,6 +34,8 @@ add_definitions(
 	-DV8_ENABLE_WEBASSEMBLY
 	-DV8_ADVANCED_BIGINT_ALGORITHMS
 	-DV8_ENABLE_TURBOFAN
+	-DV8_ENABLE_CONTINUATION_PRESERVED_EMBEDDER_DATA
+	-DV8_ENABLE_LEAPTIERING
 )
 
 if("${BUILD_ARCH}" STREQUAL "x64")
@@ -46,7 +49,6 @@ endif()
 if(${BUILD_TYPE} STREQUAL "debug")
 	add_definitions(
 		-DOBJECT_PRINT
-		-DENABLE_DISASSEMBLER
 		-DV8_ENABLE_CHECKS
 		-DTRACE_MAPS
 	)

@@ -16,7 +16,7 @@ Tagged<String> TorqueGeneratedSyntheticModule<D, P>::name(PtrComprCageBase cage_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=6&c=3
 template<class D, class P>
 void TorqueGeneratedSyntheticModule<D, P>::set_name(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNameOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<FixedArray> TorqueGeneratedSyntheticModule<D, P>::export_names(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=7&c=3
 template<class D, class P>
 void TorqueGeneratedSyntheticModule<D, P>::set_export_names(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kExportNamesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kExportNamesOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Foreign> TorqueGeneratedSyntheticModule<D, P>::evaluation_steps(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/synthetic-module.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedSyntheticModule<D, P>::set_evaluation_steps(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kEvaluationStepsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kEvaluationStepsOffset, value, mode);
 }

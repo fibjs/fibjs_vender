@@ -5,6 +5,13 @@ class Context::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
   }
 
 };
+class JSProxy::BodyDescriptor final : public FixedRangeBodyDescriptor<8, 32> {
+ public:
+  static inline int SizeOf(Tagged<Map> map, Tagged<HeapObject> raw_object) {
+    return 40;
+  }
+
+};
 class WeakArrayList::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<8> {
  public:
   static inline int SizeOf(Tagged<Map> map, Tagged<HeapObject> raw_object) {
@@ -19,14 +26,14 @@ class ScopeInfo::BodyDescriptor final : public SuffixRangeBodyDescriptor<16> {
   }
 
 };
-class DescriptorArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<16> {
+class DescriptorArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<24> {
  public:
   static inline int SizeOf(Tagged<Map> map, Tagged<HeapObject> raw_object) {
     return UncheckedCast<DescriptorArray>(raw_object)->AllocatedSize();
   }
 
 };
-class StrongDescriptorArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<16> {
+class StrongDescriptorArray::BodyDescriptor final : public SuffixRangeWeakBodyDescriptor<24> {
  public:
   static inline int SizeOf(Tagged<Map> map, Tagged<HeapObject> raw_object) {
     return UncheckedCast<StrongDescriptorArray>(raw_object)->AllocatedSize();
@@ -237,7 +244,7 @@ class ExportedSubClass2::BodyDescriptor final : public BodyDescriptorBase {
 class SortState::BodyDescriptor final : public SuffixRangeBodyDescriptor<8> {
  public:
   static inline int SizeOf(Tagged<Map> map, Tagged<HeapObject> raw_object) {
-    return 136;
+    return 104;
   }
 
 };

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-subarray-tq-csa.h"
@@ -92,7 +92,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -111,9 +111,9 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<UintPtrT> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapNumber, Smi, Undefined>> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapNumber, Smi, Undefined>> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapNumber, Smi, Undefined>> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSTypedArray> tmp0;
@@ -163,7 +163,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
 
   TNode<UintPtrT> phi_bb5_8;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   TNode<Undefined> tmp9;
   TNode<BoolT> tmp10;
   if (block5.is_used()) {
@@ -171,14 +171,14 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
     tmp7 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp8 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp7});
     tmp9 = Undefined_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp8}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp8}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Branch(tmp10, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
   TNode<UintPtrT> tmp11;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp11 = ConvertAndClampRelativeIndex_1(state_, TNode<Context>{parameter0}, TNode<Object>{tmp8}, TNode<UintPtrT>{phi_bb5_8});
+    tmp11 = ConvertAndClampRelativeIndex_1(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp8}, TNode<UintPtrT>{phi_bb5_8});
     ca_.Goto(&block11, tmp11);
   }
 
@@ -191,7 +191,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
 
   TNode<UintPtrT> phi_bb11_10;
   TNode<IntPtrT> tmp13;
-  TNode<Object> tmp14;
+  TNode<JSAny> tmp14;
   TNode<Undefined> tmp15;
   TNode<BoolT> tmp16;
   TNode<BoolT> tmp17;
@@ -200,7 +200,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp14 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp13});
     tmp15 = Undefined_0(state_);
-    tmp16 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp14}, TNode<HeapObject>{tmp15});
+    tmp16 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp14}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15});
     tmp17 = IsLengthTrackingJSArrayBufferView_0(state_, TNode<JSArrayBufferView>{tmp0});
     ca_.Branch(tmp17, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{});
   }
@@ -240,7 +240,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
   TNode<UintPtrT> tmp21;
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    tmp21 = ConvertAndClampRelativeIndex_1(state_, TNode<Context>{parameter0}, TNode<Object>{tmp14}, TNode<UintPtrT>{phi_bb5_8});
+    tmp21 = ConvertAndClampRelativeIndex_1(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp14}, TNode<UintPtrT>{phi_bb5_8});
     ca_.Goto(&block21, tmp21);
   }
 
@@ -267,7 +267,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
     ca_.Goto(&block18, tmp27);
   }
 
-  TNode<Object> phi_bb18_13;
+  TNode<Union<HeapNumber, Smi, Undefined>> phi_bb18_13;
   TNode<UintPtrT> tmp28;
   TNode<Int32T> tmp29;
   TNode<UintPtrT> tmp30;
@@ -278,19 +278,19 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
     ca_.Bind(&block18, &phi_bb18_13);
     std::tie(tmp28, tmp29) = TypedArrayBuiltinsAssembler(state_).GetTypedArrayElementsInfo(TNode<JSTypedArray>{tmp0}).Flatten();
     tmp30 = CodeStubAssembler(state_).LoadJSArrayBufferViewByteOffset(TNode<JSArrayBufferView>{tmp0});
-    tmp31 = FromConstexpr_uintptr_constexpr_uintptr_0(state_, JSArrayBuffer::kMaxByteLength);
+    tmp31 = CodeStubAssembler(state_).ArrayBufferMaxByteLength();
     tmp32 = CodeStubAssembler(state_).WordShr(TNode<UintPtrT>{tmp31}, TNode<UintPtrT>{tmp28});
     tmp33 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{phi_bb11_10}, TNode<UintPtrT>{tmp32});
     ca_.Branch(tmp33, &block26, std::vector<compiler::Node*>{phi_bb18_13}, &block27, std::vector<compiler::Node*>{phi_bb18_13});
   }
 
-  TNode<Object> phi_bb26_13;
+  TNode<Union<HeapNumber, Smi, Undefined>> phi_bb26_13;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_13);
     CodeStubAssembler(state_).ThrowRangeError(TNode<Context>{parameter0}, MessageTemplate::kInvalidArrayBufferLength);
   }
 
-  TNode<Object> phi_bb27_13;
+  TNode<Union<HeapNumber, Smi, Undefined>> phi_bb27_13;
   TNode<UintPtrT> tmp34;
   TNode<UintPtrT> tmp35;
   TNode<JSTypedArray> tmp36;
@@ -298,7 +298,7 @@ TF_BUILTIN(TypedArrayPrototypeSubArray, CodeStubAssembler) {
     ca_.Bind(&block27, &phi_bb27_13);
     tmp34 = CodeStubAssembler(state_).WordShl(TNode<UintPtrT>{phi_bb11_10}, TNode<UintPtrT>{tmp28});
     tmp35 = CodeStubAssembler(state_).UintPtrAdd(TNode<UintPtrT>{tmp30}, TNode<UintPtrT>{tmp34});
-    tmp36 = TypedArraySpeciesCreateByBuffer_0(state_, TNode<Context>{parameter0}, "%TypedArray%.prototype.subarray", TNode<JSTypedArray>{tmp0}, TNode<JSArrayBuffer>{tmp3}, TNode<UintPtrT>{tmp35}, TNode<Object>{phi_bb27_13});
+    tmp36 = TypedArraySpeciesCreateByBuffer_0(state_, TNode<Context>{parameter0}, "%TypedArray%.prototype.subarray", TNode<JSTypedArray>{tmp0}, TNode<JSArrayBuffer>{tmp3}, TNode<UintPtrT>{tmp35}, TNode<Union<HeapNumber, Smi, Undefined>>{phi_bb27_13});
     arguments.PopAndReturn(tmp36);
   }
 }

@@ -16,7 +16,7 @@ Tagged<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>> TorqueGen
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=9&c=3
 template<class D, class P>
 void TorqueGeneratedJSReceiver<D, P>::set_properties_or_hash(Tagged<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsFixedArrayBase(value) || IsPropertyArray(value) || IsSwissNameDictionary(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsFixedArrayBase(value) || IsPropertyArray(value) || IsSwissNameDictionary(value)));
   WRITE_FIELD(*this, kPropertiesOrHashOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPropertiesOrHashOffset, value, mode);
 }
@@ -44,7 +44,7 @@ Tagged<FixedArrayBase> TorqueGeneratedJSObject<D, P>::elements(PtrComprCageBase 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=33&c=3
 template<class D, class P>
 void TorqueGeneratedJSObject<D, P>::set_elements(Tagged<FixedArrayBase> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArrayBase(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArrayBase(value)));
   WRITE_FIELD(*this, kElementsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kElementsOffset, value, mode);
 }
@@ -128,7 +128,7 @@ Tagged<JSGlobalProxy> TorqueGeneratedJSGlobalObject<D, P>::global_proxy(PtrCompr
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=120&c=3
 template<class D, class P>
 void TorqueGeneratedJSGlobalObject<D, P>::set_global_proxy(Tagged<JSGlobalProxy> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSGlobalProxy(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSGlobalProxy(value)));
   WRITE_FIELD(*this, kGlobalProxyOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kGlobalProxyOffset, value, mode);
 }
@@ -156,7 +156,7 @@ Tagged<JSAny> TorqueGeneratedJSPrimitiveWrapper<D, P>::value(PtrComprCageBase ca
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=124&c=3
 template<class D, class P>
 void TorqueGeneratedJSPrimitiveWrapper<D, P>::set_value(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
@@ -197,7 +197,7 @@ Tagged<Object> TorqueGeneratedJSMessageObject<D, P>::argument(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=131&c=3
 template<class D, class P>
 void TorqueGeneratedJSMessageObject<D, P>::set_argument(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kArgumentOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kArgumentOffset, value, mode);
 }
@@ -220,32 +220,32 @@ Tagged<Script> TorqueGeneratedJSMessageObject<D, P>::script(PtrComprCageBase cag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=133&c=3
 template<class D, class P>
 void TorqueGeneratedJSMessageObject<D, P>::set_script(Tagged<Script> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsScript(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsScript(value)));
   WRITE_FIELD(*this, kScriptOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kScriptOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSMessageObject<D, P>::stack_frames() const {
+Tagged<Union<Hole, StackTraceInfo>> TorqueGeneratedJSMessageObject<D, P>::stack_trace() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
-  return TorqueGeneratedJSMessageObject::stack_frames(cage_base);
+  return TorqueGeneratedJSMessageObject::stack_trace(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
 template<class D, class P>
-Tagged<Object> TorqueGeneratedJSMessageObject<D, P>::stack_frames(PtrComprCageBase cage_base) const {
-  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kStackFramesOffset);
-  DCHECK(IsSmi(value) || IsHeapObject(value));
+Tagged<Union<Hole, StackTraceInfo>> TorqueGeneratedJSMessageObject<D, P>::stack_trace(PtrComprCageBase cage_base) const {
+  Tagged<Union<Hole, StackTraceInfo>> value = TaggedField<Tagged<Union<Hole, StackTraceInfo>>>::load(cage_base, *this, kStackTraceOffset);
+  DCHECK(IsTheHole(value) || IsStackTraceInfo(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=135&c=3
 template<class D, class P>
-void TorqueGeneratedJSMessageObject<D, P>::set_stack_frames(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
-  WRITE_FIELD(*this, kStackFramesOffset, value);
-  CONDITIONAL_WRITE_BARRIER(*this, kStackFramesOffset, value, mode);
+void TorqueGeneratedJSMessageObject<D, P>::set_stack_trace(Tagged<Union<Hole, StackTraceInfo>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsTheHole(value) || IsStackTraceInfo(value)));
+  WRITE_FIELD(*this, kStackTraceOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kStackTraceOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=136&c=3
@@ -266,7 +266,7 @@ Tagged<Union<SharedFunctionInfo, Smi>> TorqueGeneratedJSMessageObject<D, P>::sha
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=136&c=3
 template<class D, class P>
 void TorqueGeneratedJSMessageObject<D, P>::set_shared_info(Tagged<Union<SharedFunctionInfo, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsSharedFunctionInfo(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsSharedFunctionInfo(value)));
   WRITE_FIELD(*this, kSharedInfoOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSharedInfoOffset, value, mode);
 }
@@ -343,184 +343,184 @@ void TorqueGeneratedJSDate<D, P>::set_value(double value) {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=153&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::year() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::year() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::year(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=153&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::year(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kYearOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::year(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kYearOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=153&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_year(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_year(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kYearOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kYearOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=154&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::month() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::month() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::month(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=154&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::month(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kMonthOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::month(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kMonthOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=154&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_month(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_month(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kMonthOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMonthOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=155&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::day() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::day() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::day(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=155&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::day(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kDayOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::day(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kDayOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=155&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_day(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_day(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kDayOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDayOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=156&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::weekday() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::weekday() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::weekday(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=156&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::weekday(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kWeekdayOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::weekday(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kWeekdayOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=156&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_weekday(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_weekday(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kWeekdayOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kWeekdayOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=157&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::hour() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::hour() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::hour(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=157&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::hour(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kHourOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::hour(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kHourOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=157&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_hour(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_hour(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kHourOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHourOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=158&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::min() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::min() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::min(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=158&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::min(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kMinOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::min(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kMinOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=158&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_min(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_min(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kMinOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kMinOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=159&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::sec() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::sec() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::sec(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=159&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::sec(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kSecOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::sec(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kSecOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=159&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_sec(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_sec(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kSecOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSecOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::cache_stamp() const {
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::cache_stamp() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDate::cache_stamp(cage_base);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
 template<class D, class P>
-Tagged<Union<HeapNumber, Smi, Undefined>> TorqueGeneratedJSDate<D, P>::cache_stamp(PtrComprCageBase cage_base) const {
-  Tagged<Union<HeapNumber, Smi, Undefined>> value = TaggedField<Tagged<Union<HeapNumber, Smi, Undefined>>>::load(cage_base, *this, kCacheStampOffset);
-  DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+Tagged<Union<HeapNumber, Smi>> TorqueGeneratedJSDate<D, P>::cache_stamp(PtrComprCageBase cage_base) const {
+  Tagged<Union<HeapNumber, Smi>> value = TaggedField<Tagged<Union<HeapNumber, Smi>>>::load(cage_base, *this, kCacheStampOffset);
+  DCHECK(IsSmi(value) || IsNaN(value));
   return value;
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=163&c=3
 template<class D, class P>
-void TorqueGeneratedJSDate<D, P>::set_cache_stamp(Tagged<Union<HeapNumber, Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsUndefined(value) || IsNaN(value));
+void TorqueGeneratedJSDate<D, P>::set_cache_stamp(Tagged<Union<HeapNumber, Smi>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsNaN(value)));
   WRITE_FIELD(*this, kCacheStampOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCacheStampOffset, value, mode);
 }
@@ -548,7 +548,7 @@ Tagged<JSReceiver> TorqueGeneratedJSAsyncFromSyncIterator<D, P>::sync_iterator(P
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=167&c=3
 template<class D, class P>
 void TorqueGeneratedJSAsyncFromSyncIterator<D, P>::set_sync_iterator(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kSyncIteratorOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSyncIteratorOffset, value, mode);
 }
@@ -571,7 +571,7 @@ Tagged<Object> TorqueGeneratedJSAsyncFromSyncIterator<D, P>::next(PtrComprCageBa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=170&c=3
 template<class D, class P>
 void TorqueGeneratedJSAsyncFromSyncIterator<D, P>::set_next(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextOffset, value, mode);
 }
@@ -599,7 +599,7 @@ Tagged<String> TorqueGeneratedJSStringIterator<D, P>::string(PtrComprCageBase ca
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=175&c=3
 template<class D, class P>
 void TorqueGeneratedJSStringIterator<D, P>::set_string(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kStringOffset, value, mode);
 }
@@ -640,7 +640,7 @@ Tagged<JSReceiver> TorqueGeneratedJSValidIteratorWrapper<D, P>::underlying_objec
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=184&c=3
 template<class D, class P>
 void TorqueGeneratedJSValidIteratorWrapper<D, P>::set_underlying_object(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kUnderlyingOffset + 0, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingOffset + 0, value, mode);
 }
@@ -663,7 +663,7 @@ Tagged<JSAny> TorqueGeneratedJSValidIteratorWrapper<D, P>::underlying_next(PtrCo
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-objects.tq?l=184&c=3
 template<class D, class P>
 void TorqueGeneratedJSValidIteratorWrapper<D, P>::set_underlying_next(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kUnderlyingOffset + 8, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnderlyingOffset + 8, value, mode);
 }

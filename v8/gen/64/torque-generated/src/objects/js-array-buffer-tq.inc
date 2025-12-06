@@ -12,10 +12,10 @@ V8_EXPORT_PRIVATE bool IsJSArrayBufferView_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSArrayBufferView : public P {
   static_assert(
-      std::is_same<JSArrayBufferView, D>::value,
+      std::is_same_v<JSArrayBufferView, D>,
       "Use this class as direct base for JSArrayBufferView.");
   static_assert(
-      std::is_same<JSAPIObjectWithEmbedderSlots, P>::value,
+      std::is_same_v<JSAPIObjectWithEmbedderSlots, P>,
       "Pass in JSAPIObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSArrayBufferView.");
 
  public: 
@@ -80,7 +80,7 @@ class TorqueGeneratedJSArrayBufferView : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSArrayBufferView() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSArrayBufferView, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSArrayBufferView, DAlias>,
         "class TorqueGeneratedJSArrayBufferView should be used as direct base for JSArrayBufferView.");
   }
 
@@ -98,10 +98,10 @@ V8_EXPORT_PRIVATE bool IsJSTypedArray_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSTypedArray : public P {
   static_assert(
-      std::is_same<JSTypedArray, D>::value,
+      std::is_same_v<JSTypedArray, D>,
       "Use this class as direct base for JSTypedArray.");
   static_assert(
-      std::is_same<JSArrayBufferView, P>::value,
+      std::is_same_v<JSArrayBufferView, P>,
       "Pass in JSArrayBufferView as second template parameter for TorqueGeneratedJSTypedArray.");
 
  public: 
@@ -153,7 +153,7 @@ class TorqueGeneratedJSTypedArray : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSTypedArray() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSTypedArray, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSTypedArray, DAlias>,
         "class TorqueGeneratedJSTypedArray should be used as direct base for JSTypedArray.");
   }
 
@@ -171,10 +171,10 @@ V8_EXPORT_PRIVATE bool IsJSArrayBuffer_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSArrayBuffer : public P {
   static_assert(
-      std::is_same<JSArrayBuffer, D>::value,
+      std::is_same_v<JSArrayBuffer, D>,
       "Use this class as direct base for JSArrayBuffer.");
   static_assert(
-      std::is_same<JSAPIObjectWithEmbedderSlots, P>::value,
+      std::is_same_v<JSAPIObjectWithEmbedderSlots, P>,
       "Pass in JSAPIObjectWithEmbedderSlots as second template parameter for TorqueGeneratedJSArrayBuffer.");
 
  public: 
@@ -252,7 +252,7 @@ class TorqueGeneratedJSArrayBuffer : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSArrayBuffer() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSArrayBuffer, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSArrayBuffer, DAlias>,
         "class TorqueGeneratedJSArrayBuffer should be used as direct base for JSArrayBuffer.");
   }
 
@@ -263,34 +263,34 @@ class TorqueGeneratedJSArrayBuffer : public P {
 };
 
 // Alias for IsJSDataViewOrRabGsabDataView() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=123&c=1
 V8_EXPORT_PRIVATE bool IsJSDataViewOrRabGsabDataView_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=123&c=1
 template <class D, class P>
 class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   static_assert(
-      std::is_same<JSDataViewOrRabGsabDataView, D>::value,
+      std::is_same_v<JSDataViewOrRabGsabDataView, D>,
       "Use this class as direct base for JSDataViewOrRabGsabDataView.");
   static_assert(
-      std::is_same<JSArrayBufferView, P>::value,
+      std::is_same_v<JSArrayBufferView, P>,
       "Pass in JSArrayBufferView as second template parameter for TorqueGeneratedJSDataViewOrRabGsabDataView.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedJSDataViewOrRabGsabDataView<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=126&c=3
   inline Address data_pointer() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=126&c=3
   inline void set_data_pointer(Address value);
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=125&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=123&c=1
   V8_EXPORT_PRIVATE void JSDataViewOrRabGsabDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=126&c=3
   static constexpr int kDataPointerOffset = P::kHeaderSize;
   static constexpr int kDataPointerOffsetEnd = kDataPointerOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kDataPointerOffsetEnd + 1;
@@ -304,7 +304,7 @@ class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSDataViewOrRabGsabDataView() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSDataViewOrRabGsabDataView, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSDataViewOrRabGsabDataView, DAlias>,
         "class TorqueGeneratedJSDataViewOrRabGsabDataView should be used as direct base for JSDataViewOrRabGsabDataView.");
   }
 
@@ -315,17 +315,17 @@ class TorqueGeneratedJSDataViewOrRabGsabDataView : public P {
 };
 
 // Alias for IsJSDataView() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=1
 V8_EXPORT_PRIVATE bool IsJSDataView_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=1
 template <class D, class P>
 class TorqueGeneratedJSDataView : public P {
   static_assert(
-      std::is_same<JSDataView, D>::value,
+      std::is_same_v<JSDataView, D>,
       "Use this class as direct base for JSDataView.");
   static_assert(
-      std::is_same<JSDataViewOrRabGsabDataView, P>::value,
+      std::is_same_v<JSDataViewOrRabGsabDataView, P>,
       "Pass in JSDataViewOrRabGsabDataView as second template parameter for TorqueGeneratedJSDataView.");
 
  public: 
@@ -335,7 +335,7 @@ class TorqueGeneratedJSDataView : public P {
   DECL_PRINTER(JSDataView)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=129&c=1
   V8_EXPORT_PRIVATE void JSDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -350,7 +350,7 @@ class TorqueGeneratedJSDataView : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSDataView() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSDataView, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSDataView, DAlias>,
         "class TorqueGeneratedJSDataView should be used as direct base for JSDataView.");
   }
 
@@ -361,17 +361,17 @@ class TorqueGeneratedJSDataView : public P {
 };
 
 // Alias for IsJSRabGsabDataView() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
 V8_EXPORT_PRIVATE bool IsJSRabGsabDataView_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
 template <class D, class P>
 class TorqueGeneratedJSRabGsabDataView : public P {
   static_assert(
-      std::is_same<JSRabGsabDataView, D>::value,
+      std::is_same_v<JSRabGsabDataView, D>,
       "Use this class as direct base for JSRabGsabDataView.");
   static_assert(
-      std::is_same<JSDataViewOrRabGsabDataView, P>::value,
+      std::is_same_v<JSDataViewOrRabGsabDataView, P>,
       "Pass in JSDataViewOrRabGsabDataView as second template parameter for TorqueGeneratedJSRabGsabDataView.");
 
  public: 
@@ -381,7 +381,7 @@ class TorqueGeneratedJSRabGsabDataView : public P {
   DECL_PRINTER(JSRabGsabDataView)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=133&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=131&c=1
   V8_EXPORT_PRIVATE void JSRabGsabDataViewVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -396,7 +396,7 @@ class TorqueGeneratedJSRabGsabDataView : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRabGsabDataView() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRabGsabDataView, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRabGsabDataView, DAlias>,
         "class TorqueGeneratedJSRabGsabDataView should be used as direct base for JSRabGsabDataView.");
   }
 

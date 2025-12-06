@@ -11,7 +11,7 @@ int31_t kStringPadStart_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-pad.tq?l=13&c=1
 int31_t kStringPadEnd_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/string-pad.tq?l=15&c=1
-TNode<String> StringPad_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructArguments p_arguments, const char* p_methodName, int31_t p_variant);
+TNode<String> StringPad_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TorqueStructArguments p_arguments, const char* p_methodName, int31_t p_variant);
 
 } // namespace internal
 } // namespace v8

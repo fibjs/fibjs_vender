@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-with-tq-csa.h"
@@ -83,7 +83,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-with.tq?l=6&c=1
-TNode<JSArray> TryFastPackedArrayWith_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<Number> p_len, TNode<Number> p_actualIndex, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Slow) {
+TNode<JSArray> TryFastPackedArrayWith_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_receiver, TNode<Number> p_len, TNode<Number> p_actualIndex, TNode<JSAny> p_value, compiler::CodeAssemblerLabel* label_Slow) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -195,14 +195,14 @@ TF_BUILTIN(GenericArrayWith, CodeStubAssembler) {
   USE(parameter2);
   TNode<Number> parameter3 = UncheckedParameter<Number>(Descriptor::kActualIndex);
   USE(parameter3);
-  TNode<Object> parameter4 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter4 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter4);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Object> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, JSAny> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -238,15 +238,15 @@ TF_BUILTIN(GenericArrayWith, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb5_6;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6);
-    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{phi_bb5_6});
+    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{phi_bb5_6});
     ca_.Goto(&block6, phi_bb5_6, tmp4);
   }
 
   TNode<Number> phi_bb6_6;
-  TNode<Object> phi_bb6_7;
+  TNode<JSAny> phi_bb6_7;
   TNode<Object> tmp5;
   TNode<Number> tmp6;
   TNode<Number> tmp7;
@@ -269,11 +269,11 @@ TF_BUILTIN(ArrayPrototypeWith, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kIndex);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -290,9 +290,9 @@ TF_BUILTIN(ArrayPrototypeWith, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
-    tmp2 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
+    tmp2 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     compiler::CodeAssemblerLabel label4(&ca_);
     compiler::CodeAssemblerLabel label5(&ca_);
     tmp3 = ConvertRelativeIndex_0(state_, TNode<Number>{tmp2}, TNode<Number>{tmp1}, &label4, &label5);
@@ -321,7 +321,7 @@ TF_BUILTIN(ArrayPrototypeWith, CodeStubAssembler) {
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerLabel label7(&ca_);
-    tmp6 = TryFastPackedArrayWith_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<Number>{tmp1}, TNode<Number>{tmp3}, TNode<Object>{parameter3}, &label7);
+    tmp6 = TryFastPackedArrayWith_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<Number>{tmp1}, TNode<Number>{tmp3}, TNode<JSAny>{parameter3}, &label7);
     ca_.Goto(&block8);
     if (label7.is_used()) {
       ca_.Bind(&label7);

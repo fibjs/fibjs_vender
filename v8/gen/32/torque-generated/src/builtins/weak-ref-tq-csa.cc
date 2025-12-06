@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/weak-ref-tq-csa.h"
@@ -94,12 +94,13 @@ TF_BUILTIN(WeakRefConstructor, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
-USE(parameter2);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kJSNewTarget);
+  USE(parameter2);
   TNode<JSFunction> parameter3 = UncheckedParameter<JSFunction>(Descriptor::kJSTarget);
-USE(parameter3);
+  USE(parameter3);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kWeakReferences));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -114,7 +115,7 @@ USE(parameter3);
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Undefined_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -138,13 +139,13 @@ USE(parameter3);
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
     compiler::CodeAssemblerLabel label6(&ca_);
-    WeakCollectionsBuiltinsAssembler(state_).GotoIfCannotBeHeldWeakly(TNode<Object>{tmp5}, &label6);
+    WeakCollectionsBuiltinsAssembler(state_).GotoIfCannotBeHeldWeakly(TNode<JSAny>{tmp5}, &label6);
     ca_.Goto(&block7);
     if (label6.is_used()) {
       ca_.Bind(&label6);
@@ -158,8 +159,8 @@ USE(parameter3);
   }
 
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
-  TNode<HeapObject> tmp9;
+  TNode<JSAny> tmp8;
+  TNode<Union<JSReceiver, Symbol>> tmp9;
   TNode<JSReceiver> tmp10;
   TNode<Map> tmp11;
   TNode<JSObject> tmp12;
@@ -176,7 +177,7 @@ USE(parameter3);
     tmp13 = UnsafeCast_JSWeakRef_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp12});
     CodeStubAssembler(state_).CallRuntime(Runtime::kJSWeakRefAddToKeptObjects, parameter0, tmp9);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp9);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp13, tmp14}, tmp9);
     arguments.PopAndReturn(tmp13);
   }
 }
@@ -185,7 +186,7 @@ TF_BUILTIN(WeakRefDeref, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -214,19 +215,19 @@ TF_BUILTIN(WeakRefDeref, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp3;
-  TNode<HeapObject> tmp4;
+  TNode<Union<JSReceiver, Symbol, Undefined>> tmp4;
   TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp3 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp4 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp0, tmp3});
+    tmp4 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp0, tmp3});
     tmp5 = Undefined_0(state_);
-    tmp6 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{tmp5});
+    tmp6 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5});
     ca_.Branch(tmp6, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp7;
+  TNode<Union<JSReceiver, Symbol>> tmp7;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp7 = UnsafeCast_Symbol_OR_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4});
@@ -240,7 +241,7 @@ TF_BUILTIN(WeakRefDeref, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=37&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=38&c=19
 TNode<JSWeakRef> UnsafeCast_JSWeakRef_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -259,7 +260,7 @@ TNode<JSWeakRef> UnsafeCast_JSWeakRef_0(compiler::CodeAssemblerState* state_, TN
   return TNode<JSWeakRef>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=50&c=19
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/weak-ref.tq?l=51&c=19
 TNode<JSWeakRef> Cast_JSWeakRef_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);

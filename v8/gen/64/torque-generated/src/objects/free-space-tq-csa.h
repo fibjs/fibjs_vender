@@ -9,18 +9,6 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
 TNode<FreeSpace> Cast_FreeSpace_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=6&c=3
-TNode<Smi> LoadFreeSpaceSize_0(compiler::CodeAssemblerState* state_, TNode<FreeSpace> p_o);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=6&c=3
-void StoreFreeSpaceSize_0(compiler::CodeAssemblerState* state_, TNode<FreeSpace> p_o, TNode<Smi> p_v);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
-TNode<MaybeObject> LoadFreeSpaceNext_0(compiler::CodeAssemblerState* state_, TNode<FreeSpace> p_o);
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=7&c=3
-void StoreFreeSpaceNext_0(compiler::CodeAssemblerState* state_, TNode<FreeSpace> p_o, TNode<MaybeObject> p_v);
-
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/free-space.tq?l=5&c=1
 TNode<FreeSpace> DownCastForTorqueClass_FreeSpace_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError);
 

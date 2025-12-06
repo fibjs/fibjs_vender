@@ -24,10 +24,12 @@ Stack::StackSlot Stack::GetStackStartUnchecked() {
 }
 
 // static
-Stack::StackSlot Stack::GetStackStart() {
-  DCHECK_IMPLIES(thread_stack_start,
-                 thread_stack_start == ObtainCurrentThreadStackStart());
-  return GetStackStartUnchecked();
+Stack::StackSlot Stack::GetStackStart() { return GetStackStartUnchecked(); }
+
+// static
+int OS::GetCurrentThreadId() {
+static  exlib::fiber_local<int> id{GetCurrentThreadIdInternal()};
+  return id;
 }
 
 }  // namespace base

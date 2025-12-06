@@ -34,10 +34,10 @@ TNode<Smi> LoadModuleStatus_0(compiler::CodeAssemblerState* state_, TNode<Module
 void StoreModuleStatus_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o, TNode<Smi> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-TNode<HeapObject> LoadModuleModuleNamespace_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o);
+TNode<Union<JSModuleNamespace, Undefined>> LoadModuleModuleNamespace_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
-void StoreModuleModuleNamespace_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o, TNode<HeapObject> p_v);
+void StoreModuleModuleNamespace_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o, TNode<Union<JSModuleNamespace, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=14&c=3
 TNode<Object> LoadModuleException_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o);
@@ -46,10 +46,10 @@ TNode<Object> LoadModuleException_0(compiler::CodeAssemblerState* state_, TNode<
 void StoreModuleException_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o, TNode<Object> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-TNode<HeapObject> LoadModuleTopLevelCapability_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o);
+TNode<Union<JSPromise, Undefined>> LoadModuleTopLevelCapability_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
-void StoreModuleTopLevelCapability_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o, TNode<HeapObject> p_v);
+void StoreModuleTopLevelCapability_0(compiler::CodeAssemblerState* state_, TNode<Module> p_o, TNode<Union<JSPromise, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=21&c=3
 TNode<Module> LoadJSModuleNamespaceModule_0(compiler::CodeAssemblerState* state_, TNode<JSModuleNamespace> p_o);

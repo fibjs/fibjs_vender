@@ -16,7 +16,7 @@ Tagged<Object> TorqueGeneratedJSCollectionIterator<D, P>::table(PtrComprCageBase
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedJSCollectionIterator<D, P>::set_table(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kTableOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kTableOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Object> TorqueGeneratedJSCollectionIterator<D, P>::index(PtrComprCageBase
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-collection-iterator.tq?l=10&c=3
 template<class D, class P>
 void TorqueGeneratedJSCollectionIterator<D, P>::set_index(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kIndexOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIndexOffset, value, mode);
 }

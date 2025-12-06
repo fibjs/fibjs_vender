@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/builtins-bigint-tq-csa.h"
@@ -90,7 +90,7 @@ TNode<Uint32T> kPositiveSign_0(compiler::CodeAssemblerState* state_) {
 
     ca_.Bind(&block0);
   TNode<Uint32T> tmp0;
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
   return TNode<Uint32T>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=10&c=1
@@ -101,7 +101,7 @@ TNode<Uint32T> kNegativeSign_0(compiler::CodeAssemblerState* state_) {
 
     ca_.Bind(&block0);
   TNode<Uint32T> tmp0;
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
   return TNode<Uint32T>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=11&c=1
@@ -134,7 +134,7 @@ TNode<Uint32T> kMustRoundDownBitShift_0(compiler::CodeAssemblerState* state_) {
 
     ca_.Bind(&block0);
   TNode<Uint32T> tmp0;
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1eull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1eull));
   return TNode<Uint32T>{tmp0};}
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-bigint.tq?l=64&c=1
@@ -3609,12 +3609,12 @@ TNode<BigInt> MutableBigIntRightShiftByAbsolute_0(compiler::CodeAssemblerState* 
     tmp17 = kMustRoundDownBitShift_0(state_);
     tmp18 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp17});
     tmp19 = kMustRoundDownBitShift_0(state_);
-    tmp20 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp20 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp21 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp20}, TNode<Uint32T>{tmp19});
-    tmp22 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp22 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp23 = CodeStubAssembler(state_).Uint32Sub(TNode<Uint32T>{tmp21}, TNode<Uint32T>{tmp22});
     tmp24 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp23});
-    tmp25 = Convert_intptr_uint32_0(state_, TNode<Uint32T>{tmp24});
+    tmp25 = Convert_intptr_WasmCodePointer_0(state_, TNode<Uint32T>{tmp24});
     tmp26 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp27 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{tmp25}, TNode<IntPtrT>{tmp26});
     ca_.Branch(tmp27, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
@@ -4375,7 +4375,7 @@ TF_BUILTIN(BigIntLessThan, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<False, True>> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4403,7 +4403,7 @@ TF_BUILTIN(BigIntLessThan, CodeStubAssembler) {
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Boolean> phi_bb3_3;
+  TNode<Union<False, True>> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4421,7 +4421,7 @@ TF_BUILTIN(BigIntGreaterThan, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<False, True>> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4449,7 +4449,7 @@ TF_BUILTIN(BigIntGreaterThan, CodeStubAssembler) {
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Boolean> phi_bb3_3;
+  TNode<Union<False, True>> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4467,7 +4467,7 @@ TF_BUILTIN(BigIntLessThanOrEqual, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<False, True>> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4495,7 +4495,7 @@ TF_BUILTIN(BigIntLessThanOrEqual, CodeStubAssembler) {
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Boolean> phi_bb3_3;
+  TNode<Union<False, True>> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);
@@ -4513,7 +4513,7 @@ TF_BUILTIN(BigIntGreaterThanOrEqual, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Boolean> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<False, True>> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
@@ -4541,7 +4541,7 @@ TF_BUILTIN(BigIntGreaterThanOrEqual, CodeStubAssembler) {
     ca_.Goto(&block3, tmp4);
   }
 
-  TNode<Boolean> phi_bb3_3;
+  TNode<Union<False, True>> phi_bb3_3;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_3);
     CodeStubAssembler(state_).Return(phi_bb3_3);

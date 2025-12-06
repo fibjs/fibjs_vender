@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
@@ -114,13 +114,13 @@ TNode<FixedArray> Extract_0(compiler::CodeAssemblerState* state_, TNode<Context>
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=20&c=1
-TNode<FixedArrayBase> Extract_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<FixedArrayBase> p_source, TNode<Smi> p_startIndex, TNode<Smi> p_count, TNode<Smi> p_resultCapacity) {
+TNode<Union<FixedArray, FixedDoubleArray>> Extract_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<FixedArray, FixedDoubleArray>> p_source, TNode<Smi> p_startIndex, TNode<Smi> p_count, TNode<Smi> p_resultCapacity) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<FixedArrayBase> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<FixedArray, FixedDoubleArray>> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -139,7 +139,7 @@ TNode<FixedArrayBase> Extract_1(compiler::CodeAssemblerState* state_, TNode<Cont
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<FixedArrayBase> tmp5;
+  TNode<Union<FixedArray, FixedDoubleArray>> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_startIndex});
@@ -158,14 +158,14 @@ TNode<FixedArrayBase> Extract_1(compiler::CodeAssemblerState* state_, TNode<Cont
     ca_.Goto(&block1, tmp7);
   }
 
-  TNode<FixedArrayBase> phi_bb1_5;
+  TNode<Union<FixedArray, FixedDoubleArray>> phi_bb1_5;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_5);
     ca_.Goto(&block6);
   }
 
     ca_.Bind(&block6);
-  return TNode<FixedArrayBase>{phi_bb1_5};
+  return TNode<Union<FixedArray, FixedDoubleArray>>{phi_bb1_5};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=126&c=1
@@ -211,7 +211,7 @@ TNode<Int32T> TransitionElementsKindForInsertionIfNeeded_0(compiler::CodeAssembl
 
   TNode<Int32T> phi_bb6_7;
   TNode<IntPtrT> phi_bb6_8;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<BoolT> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_7, &phi_bb6_8);
@@ -359,7 +359,7 @@ TNode<Int32T> TransitionElementsKindForInsertionIfNeeded_0(compiler::CodeAssembl
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=160&c=1
-TNode<Object> FastArraySplice_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSReceiver> p_o, TNode<Number> p_originalLengthNumber, TNode<Number> p_actualStartNumber, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCountNumber, compiler::CodeAssemblerLabel* label_Bailout) {
+TNode<JSAny> FastArraySplice_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_args, TNode<JSReceiver> p_o, TNode<Number> p_originalLengthNumber, TNode<Number> p_actualStartNumber, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCountNumber, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -636,11 +636,11 @@ TNode<Object> FastArraySplice_0(compiler::CodeAssemblerState* state_, TNode<Cont
   }
 
     ca_.Bind(&block30);
-  return TNode<Object>{tmp26};
+  return TNode<JSAny>{tmp26};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=212&c=1
-TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount, TNode<JSReceiver> p_a) {
+TNode<JSAny> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_o, TNode<Number> p_actualStart, TNode<Number> p_actualDeleteCount, TNode<JSReceiver> p_a) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -677,16 +677,16 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
     tmp2 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{p_actualStart}, TNode<Number>{phi_bb2_5});
     tmp3 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_o, tmp2);
     tmp4 = True_0(state_);
-    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp3}, TNode<HeapObject>{tmp4});
+    tmp5 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp3}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4});
     ca_.Branch(tmp5, &block5, std::vector<compiler::Node*>{phi_bb2_5}, &block6, std::vector<compiler::Node*>{phi_bb2_5});
   }
 
   TNode<Number> phi_bb5_5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   TNode<Object> tmp7;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_5);
-    tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{tmp2});
+    tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{p_o}, TNode<JSAny>{tmp2});
     tmp7 = ca_.CallBuiltin<Object>(Builtin::kFastCreateDataProperty, p_context, p_a, phi_bb5_5, tmp6);
     ca_.Goto(&block6, phi_bb5_5);
   }
@@ -703,16 +703,16 @@ TNode<Object> FillDeletedElementsArray_0(compiler::CodeAssemblerState* state_, T
 
   TNode<Number> phi_bb3_5;
   TNode<String> tmp10;
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_5);
     tmp10 = kLengthString_0(state_);
-    tmp11 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_a, tmp10, p_actualDeleteCount);
+    tmp11 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, p_a, tmp10, p_actualDeleteCount);
     ca_.Goto(&block7);
   }
 
     ca_.Bind(&block7);
-  return TNode<Object>{p_a};
+  return TNode<JSAny>{p_a};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=245&c=1
@@ -759,17 +759,17 @@ void HandleForwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p_
     tmp3 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb2_6}, TNode<Number>{p_itemCount});
     tmp4 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_o, tmp2);
     tmp5 = True_0(state_);
-    tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{tmp5});
+    tmp6 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5});
     ca_.Branch(tmp6, &block5, std::vector<compiler::Node*>{phi_bb2_6}, &block6, std::vector<compiler::Node*>{phi_bb2_6});
   }
 
   TNode<Number> phi_bb5_6;
-  TNode<Object> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp7;
+  TNode<JSAny> tmp8;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6);
-    tmp7 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{tmp2});
-    tmp8 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, tmp3, tmp7);
+    tmp7 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{p_o}, TNode<JSAny>{tmp2});
+    tmp8 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, p_o, tmp3, tmp7);
     ca_.Goto(&block7, phi_bb5_6);
   }
 
@@ -887,17 +887,17 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
     tmp7 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp5}, TNode<Number>{tmp6});
     tmp8 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_o, tmp4);
     tmp9 = True_0(state_);
-    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp8}, TNode<HeapObject>{tmp9});
+    tmp10 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp8}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9});
     ca_.Branch(tmp10, &block5, std::vector<compiler::Node*>{phi_bb2_6}, &block6, std::vector<compiler::Node*>{phi_bb2_6});
   }
 
   TNode<Number> phi_bb5_6;
-  TNode<Object> tmp11;
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp11;
+  TNode<JSAny> tmp12;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_6);
-    tmp11 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Object>{tmp4});
-    tmp12 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, tmp7, tmp11);
+    tmp11 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{p_o}, TNode<JSAny>{tmp4});
+    tmp12 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, p_o, tmp7, tmp11);
     ca_.Goto(&block7, phi_bb5_6);
   }
 
@@ -931,7 +931,7 @@ void HandleBackwardCase_0(compiler::CodeAssemblerState* state_, TNode<Context> p
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=330&c=1
-TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_arguments, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_actualStart, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCount) {
+TNode<JSAny> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructArguments p_arguments, TNode<JSReceiver> p_o, TNode<Number> p_len, TNode<Number> p_actualStart, TNode<Smi> p_insertCount, TNode<Number> p_actualDeleteCount) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -949,11 +949,11 @@ TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{p_context}, TNode<Object>{p_o}, TNode<Number>{p_actualDeleteCount});
+    tmp0 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{p_context}, TNode<JSAny>{p_o}, TNode<Number>{p_actualDeleteCount});
     tmp1 = FillDeletedElementsArray_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_o}, TNode<Number>{p_actualStart}, TNode<Number>{p_actualDeleteCount}, TNode<JSReceiver>{tmp0});
     tmp2 = NumberIsLessThan_0(state_, TNode<Number>{p_insertCount}, TNode<Number>{p_actualDeleteCount});
     ca_.Branch(tmp2, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -1010,8 +1010,8 @@ TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> 
 
   TNode<Number> phi_bb9_12;
   TNode<IntPtrT> phi_bb9_13;
-  TNode<Object> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp8;
+  TNode<JSAny> tmp9;
   TNode<Number> tmp10;
   TNode<Number> tmp11;
   TNode<IntPtrT> tmp12;
@@ -1019,7 +1019,7 @@ TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_12, &phi_bb9_13);
     tmp8 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{phi_bb9_13});
-    tmp9 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, phi_bb9_12, tmp8);
+    tmp9 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, p_o, phi_bb9_12, tmp8);
     tmp10 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp11 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb9_12}, TNode<Number>{tmp10});
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
@@ -1038,18 +1038,18 @@ TNode<Object> SlowSplice_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   TNode<String> tmp14;
   TNode<Number> tmp15;
   TNode<Number> tmp16;
-  TNode<Object> tmp17;
+  TNode<JSAny> tmp17;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_12);
     tmp14 = kLengthString_0(state_);
     tmp15 = CodeStubAssembler(state_).NumberSub(TNode<Number>{p_len}, TNode<Number>{p_actualDeleteCount});
     tmp16 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{tmp15}, TNode<Number>{p_insertCount});
-    tmp17 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, p_o, tmp14, tmp16);
+    tmp17 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, p_o, tmp14, tmp16);
     ca_.Goto(&block13);
   }
 
     ca_.Bind(&block13);
-  return TNode<Object>{tmp0};
+  return TNode<JSAny>{tmp0};
 }
 
 TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
@@ -1061,7 +1061,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1082,17 +1082,17 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
   TNode<JSReceiver> tmp0;
   TNode<Number> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Number> tmp4;
   TNode<Number> tmp5;
   TNode<BoolT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = ca_.CallBuiltin<JSReceiver>(Builtin::kToObject, parameter0, parameter1);
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3});
+    tmp4 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp3});
     tmp5 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp6 = NumberIsLessThan_0(state_, TNode<Number>{tmp4}, TNode<Number>{tmp5});
     ca_.Branch(tmp6, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
@@ -1157,7 +1157,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
   TNode<Smi> tmp20;
   TNode<Smi> tmp21;
   TNode<IntPtrT> tmp22;
-  TNode<Object> tmp23;
+  TNode<JSAny> tmp23;
   TNode<Number> tmp24;
   TNode<Number> tmp25;
   TNode<Number> tmp26;
@@ -1170,7 +1170,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
     tmp21 = CodeStubAssembler(state_).SmiSub(TNode<Smi>{tmp19}, TNode<Smi>{tmp20});
     tmp22 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp23 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp22});
-    tmp24 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp23});
+    tmp24 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp23});
     tmp25 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp26 = Max_0(state_, TNode<Number>{tmp24}, TNode<Number>{tmp25});
     tmp27 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp1}, TNode<Number>{phi_bb3_10});
@@ -1209,7 +1209,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
 
   TNode<Smi> phi_bb12_11;
   TNode<Number> phi_bb12_12;
-  TNode<Object> tmp33;
+  TNode<JSAny> tmp33;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_11, &phi_bb12_12);
     compiler::CodeAssemblerLabel label34(&ca_);
@@ -1225,7 +1225,7 @@ TF_BUILTIN(ArrayPrototypeSplice, CodeStubAssembler) {
   TNode<Number> phi_bb16_12;
   TNode<Smi> phi_bb16_22;
   TNode<Number> phi_bb16_23;
-  TNode<Object> tmp35;
+  TNode<JSAny> tmp35;
   if (block16.is_used()) {
     ca_.Bind(&block16, &phi_bb16_11, &phi_bb16_12, &phi_bb16_22, &phi_bb16_23);
     tmp35 = SlowSplice_0(state_, TNode<Context>{parameter0}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<JSReceiver>{tmp0}, TNode<Number>{tmp1}, TNode<Number>{phi_bb3_10}, TNode<Smi>{phi_bb16_11}, TNode<Number>{phi_bb16_12});
@@ -1458,7 +1458,7 @@ void FastSplice_FixedDoubleArray_Number_0(compiler::CodeAssemblerState* state_, 
 
   TNode<IntPtrT> tmp1;
   TNode<FixedArrayBase> tmp2;
-  TNode<FixedArrayBase> tmp3;
+  TNode<Union<FixedArray, FixedDoubleArray>> tmp3;
   TNode<Smi> tmp4;
   TNode<Smi> tmp5;
   TNode<Smi> tmp6;
@@ -1516,7 +1516,7 @@ void FastSplice_FixedDoubleArray_Number_0(compiler::CodeAssemblerState* state_, 
 
   TNode<Smi> tmp16;
   TNode<Smi> tmp17;
-  TNode<FixedArrayBase> tmp18;
+  TNode<Union<FixedArray, FixedDoubleArray>> tmp18;
   TNode<FixedDoubleArray> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
@@ -1527,7 +1527,7 @@ void FastSplice_FixedDoubleArray_Number_0(compiler::CodeAssemblerState* state_, 
     ca_.Bind(&block10);
     tmp16 = CodeStubAssembler(state_).CalculateNewElementsCapacity(TNode<Smi>{p_newLength});
     tmp17 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp18 = Extract_1(state_, TNode<Context>{p_context}, TNode<FixedArrayBase>{tmp3}, TNode<Smi>{tmp17}, TNode<Smi>{p_actualStart}, TNode<Smi>{tmp16});
+    tmp18 = Extract_1(state_, TNode<Context>{p_context}, TNode<Union<FixedArray, FixedDoubleArray>>{tmp3}, TNode<Smi>{tmp17}, TNode<Smi>{p_actualStart}, TNode<Smi>{tmp16});
     tmp19 = UnsafeCast_FixedDoubleArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp18});
     tmp20 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{p_a, tmp20}, tmp19);
@@ -1669,14 +1669,14 @@ void DoCopyElements_FixedArray_0(compiler::CodeAssemblerState* state_, TNode<Fix
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=89&c=22
-TNode<FixedArrayBase> UnsafeCast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+TNode<Union<FixedArray, FixedDoubleArray>> UnsafeCast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<FixedArrayBase> tmp0;
+  TNode<Union<FixedArray, FixedDoubleArray>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = TORQUE_CAST(TNode<Object>{p_o});
@@ -1684,7 +1684,7 @@ TNode<FixedArrayBase> UnsafeCast_FixedDoubleArray_OR_EmptyFixedArray_0(compiler:
   }
 
     ca_.Bind(&block6);
-  return TNode<FixedArrayBase>{tmp0};
+  return TNode<Union<FixedArray, FixedDoubleArray>>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-splice.tq?l=95&c=7

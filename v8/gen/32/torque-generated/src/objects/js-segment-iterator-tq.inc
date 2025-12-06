@@ -9,10 +9,10 @@ V8_EXPORT_PRIVATE bool IsJSSegmentIterator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSegmentIterator : public P {
   static_assert(
-      std::is_same<JSSegmentIterator, D>::value,
+      std::is_same_v<JSSegmentIterator, D>,
       "Use this class as direct base for JSSegmentIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSSegmentIterator.");
 
  public: 
@@ -75,7 +75,7 @@ class TorqueGeneratedJSSegmentIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSegmentIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSegmentIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSegmentIterator, DAlias>,
         "class TorqueGeneratedJSSegmentIterator should be used as direct base for JSSegmentIterator.");
   }
 
@@ -93,10 +93,10 @@ V8_EXPORT_PRIVATE bool IsJSSegmentDataObject_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSegmentDataObject : public P {
   static_assert(
-      std::is_same<JSSegmentDataObject, D>::value,
+      std::is_same_v<JSSegmentDataObject, D>,
       "Use this class as direct base for JSSegmentDataObject.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSSegmentDataObject.");
 
  public: 
@@ -152,7 +152,7 @@ class TorqueGeneratedJSSegmentDataObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSegmentDataObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSegmentDataObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSegmentDataObject, DAlias>,
         "class TorqueGeneratedJSSegmentDataObject should be used as direct base for JSSegmentDataObject.");
   }
 
@@ -170,10 +170,10 @@ V8_EXPORT_PRIVATE bool IsJSSegmentDataObjectWithIsWordLike_NonInline(Tagged<Heap
 template <class D, class P>
 class TorqueGeneratedJSSegmentDataObjectWithIsWordLike : public P {
   static_assert(
-      std::is_same<JSSegmentDataObjectWithIsWordLike, D>::value,
+      std::is_same_v<JSSegmentDataObjectWithIsWordLike, D>,
       "Use this class as direct base for JSSegmentDataObjectWithIsWordLike.");
   static_assert(
-      std::is_same<JSSegmentDataObject, P>::value,
+      std::is_same_v<JSSegmentDataObject, P>,
       "Pass in JSSegmentDataObject as second template parameter for TorqueGeneratedJSSegmentDataObjectWithIsWordLike.");
 
  public: 
@@ -208,7 +208,7 @@ class TorqueGeneratedJSSegmentDataObjectWithIsWordLike : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSegmentDataObjectWithIsWordLike() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSegmentDataObjectWithIsWordLike, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSegmentDataObjectWithIsWordLike, DAlias>,
         "class TorqueGeneratedJSSegmentDataObjectWithIsWordLike should be used as direct base for JSSegmentDataObjectWithIsWordLike.");
   }
 

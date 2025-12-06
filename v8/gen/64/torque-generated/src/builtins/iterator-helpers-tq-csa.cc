@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/iterator-helpers-tq-csa.h"
@@ -122,15 +122,15 @@ TNode<BoolT> IsIteratorHelperExhausted_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<Union<JSReceiver, Null, Undefined>> tmp1;
   TNode<Null> tmp2;
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_helper, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{p_helper, tmp0});
     tmp2 = kIteratorHelperExhausted_0(state_);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Goto(&block2);
   }
 
@@ -152,7 +152,7 @@ void MarkIteratorHelperAsExhausted_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp1 = kIteratorHelperExhausted_0(state_);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_helper, tmp0}, tmp1);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{p_helper, tmp0}, tmp1);
     ca_.Goto(&block2);
   }
 
@@ -168,15 +168,15 @@ TNode<BoolT> IsIteratorHelperExecuting_0(compiler::CodeAssemblerState* state_, T
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<Union<JSReceiver, Null, Undefined>> tmp1;
   TNode<Undefined> tmp2;
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_helper, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{p_helper, tmp0});
     tmp2 = kIteratorHelperExecuting_0(state_);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Goto(&block2);
   }
 
@@ -225,12 +225,12 @@ TorqueStructIteratorRecord MarkIteratorHelperAsExecuting_0(compiler::CodeAssembl
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<Union<JSReceiver, Null, Undefined>> tmp1;
   TNode<JSReceiver> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_helper, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{p_helper, tmp0});
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_JSReceiver_0(state_, TNode<HeapObject>{tmp1}, &label3);
     ca_.Goto(&block8);
@@ -248,19 +248,19 @@ TorqueStructIteratorRecord MarkIteratorHelperAsExecuting_0(compiler::CodeAssembl
   TNode<IntPtrT> tmp4;
   TNode<Undefined> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     tmp5 = kIteratorHelperExecuting_0(state_);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_helper, tmp4}, tmp5);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{p_helper, tmp4}, tmp5);
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp7 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_helper, tmp6});
+    tmp7 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{p_helper, tmp6});
     ca_.Goto(&block10);
   }
 
     ca_.Bind(&block10);
-  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp2}, TNode<Object>{tmp7}};
+  return TorqueStructIteratorRecord{TNode<JSReceiver>{tmp2}, TNode<JSAny>{tmp7}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=48&c=1
@@ -275,7 +275,7 @@ void MarkIteratorHelperAsFinishedExecuting_0(compiler::CodeAssemblerState* state
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_helper, tmp0}, p_underlying.object);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{p_helper, tmp0}, p_underlying.object);
     ca_.Goto(&block10);
   }
 
@@ -291,23 +291,23 @@ TorqueStructIteratorRecord GetIteratorDirect_0(compiler::CodeAssemblerState* sta
     ca_.Goto(&block0);
 
   TNode<String> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = kNextString_0(state_);
-    tmp1 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_obj}, TNode<Object>{tmp0});
+    tmp1 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{p_obj}, TNode<JSAny>{tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructIteratorRecord{TNode<JSReceiver>{p_obj}, TNode<Object>{tmp1}};
+  return TorqueStructIteratorRecord{TNode<JSReceiver>{p_obj}, TNode<JSAny>{tmp1}};
 }
 
 TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -360,7 +360,7 @@ TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
     ca_.Bind(&block5);
     tmp4 = Undefined_0(state_);
     tmp5 = True_0(state_);
-    tmp6 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Boolean>{tmp5});
+    tmp6 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, TNode<Boolean>{tmp5});
     CodeStubAssembler(state_).Return(tmp6);
   }
 
@@ -388,10 +388,10 @@ TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp11;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp11 = ca_.CallBuiltin<Object>(Builtin::kIteratorMapHelperNext, parameter0, tmp7);
+    tmp11 = ca_.CallBuiltin<JSAny>(Builtin::kIteratorMapHelperNext, parameter0, tmp7);
     CodeStubAssembler(state_).Return(tmp11);
   }
 
@@ -407,10 +407,10 @@ TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp14;
+  TNode<JSAny> tmp14;
   if (block13.is_used()) {
     ca_.Bind(&block13);
-    tmp14 = ca_.CallBuiltin<Object>(Builtin::kIteratorFilterHelperNext, parameter0, tmp9);
+    tmp14 = ca_.CallBuiltin<JSAny>(Builtin::kIteratorFilterHelperNext, parameter0, tmp9);
     CodeStubAssembler(state_).Return(tmp14);
   }
 
@@ -426,10 +426,10 @@ TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp17;
+  TNode<JSAny> tmp17;
   if (block17.is_used()) {
     ca_.Bind(&block17);
-    tmp17 = ca_.CallBuiltin<Object>(Builtin::kIteratorTakeHelperNext, parameter0, tmp12);
+    tmp17 = ca_.CallBuiltin<JSAny>(Builtin::kIteratorTakeHelperNext, parameter0, tmp12);
     CodeStubAssembler(state_).Return(tmp17);
   }
 
@@ -445,10 +445,10 @@ TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp20;
+  TNode<JSAny> tmp20;
   if (block21.is_used()) {
     ca_.Bind(&block21);
-    tmp20 = ca_.CallBuiltin<Object>(Builtin::kIteratorDropHelperNext, parameter0, tmp15);
+    tmp20 = ca_.CallBuiltin<JSAny>(Builtin::kIteratorDropHelperNext, parameter0, tmp15);
     CodeStubAssembler(state_).Return(tmp20);
   }
 
@@ -457,10 +457,10 @@ TF_BUILTIN(IteratorHelperPrototypeNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> tmp21;
+  TNode<JSAny> tmp21;
   if (block25.is_used()) {
     ca_.Bind(&block25);
-    tmp21 = ca_.CallBuiltin<Object>(Builtin::kIteratorFlatMapHelperNext, parameter0, tmp18);
+    tmp21 = ca_.CallBuiltin<JSAny>(Builtin::kIteratorFlatMapHelperNext, parameter0, tmp18);
     CodeStubAssembler(state_).Return(tmp21);
   }
 }
@@ -469,7 +469,7 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -483,7 +483,7 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -532,17 +532,17 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
     ca_.Bind(&block5);
     tmp5 = Undefined_0(state_);
     tmp6 = True_0(state_);
-    tmp7 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp5}, TNode<Boolean>{tmp6});
+    tmp7 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp5}, TNode<Boolean>{tmp6});
     CodeStubAssembler(state_).Return(tmp7);
   }
 
   TNode<IntPtrT> tmp8;
-  TNode<HeapObject> tmp9;
+  TNode<Union<JSReceiver, Null, Undefined>> tmp9;
   TNode<JSReceiver> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp9 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp0, tmp8});
+    tmp9 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp0, tmp8});
     compiler::CodeAssemblerLabel label11(&ca_);
     tmp10 = Cast_JSReceiver_0(state_, TNode<HeapObject>{tmp9}, &label11);
     ca_.Goto(&block9);
@@ -558,7 +558,7 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp12;
-  TNode<Object> tmp13;
+  TNode<JSAny> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<Boolean> tmp15;
   TNode<True> tmp16;
@@ -566,24 +566,24 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp13 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp0, tmp12});
+    tmp13 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp0, tmp12});
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{tmp0});
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
     tmp15 = CodeStubAssembler(state_).LoadReference<Boolean>(CodeStubAssembler::Reference{tmp0, tmp14});
     tmp16 = True_0(state_);
-    tmp17 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp15}, TNode<HeapObject>{tmp16});
+    tmp17 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp16});
     ca_.Branch(tmp17, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
 
   TNode<IntPtrT> tmp18;
-      TNode<Object> tmp20;
+      TNode<JSAny> tmp20;
   TNode<JSReceiver> tmp21;
   TNode<IntPtrT> tmp22;
-      TNode<Object> tmp24;
+      TNode<JSAny> tmp24;
   TNode<IntPtrT> tmp25;
-      TNode<Object> tmp27;
-  TNode<Object> tmp28;
-      TNode<Object> tmp30;
+      TNode<JSAny> tmp27;
+  TNode<JSAny> tmp28;
+      TNode<JSAny> tmp30;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     compiler::CodeAssemblerExceptionHandlerLabel catch19__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -620,10 +620,10 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
       ca_.Goto(&block17);
       ca_.Bind(&catch26_skip);
     }
-    tmp28 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp0, tmp25});
+    tmp28 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp0, tmp25});
     compiler::CodeAssemblerExceptionHandlerLabel catch29__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch29__label);
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp21}, TNode<Object>{tmp28}});
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp21}, TNode<JSAny>{tmp28}});
     }
     if (catch29__label.is_used()) {
       compiler::CodeAssemblerLabel catch29_skip(&ca_);
@@ -635,39 +635,39 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
     ca_.Goto(&block12);
   }
 
-  TNode<HeapObject> tmp31;
+  TNode<Union<Hole, JSMessageObject>> tmp31;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp31 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block14, tmp20, tmp31);
   }
 
-  TNode<HeapObject> tmp32;
+  TNode<Union<Hole, JSMessageObject>> tmp32;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp32 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block14, tmp24, tmp32);
   }
 
-  TNode<HeapObject> tmp33;
+  TNode<Union<Hole, JSMessageObject>> tmp33;
   if (block17.is_used()) {
     ca_.Bind(&block17);
     tmp33 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block14, tmp27, tmp33);
   }
 
-  TNode<HeapObject> tmp34;
+  TNode<Union<Hole, JSMessageObject>> tmp34;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp34 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block14, tmp30, tmp34);
   }
 
-  TNode<Object> phi_bb14_7;
-  TNode<HeapObject> phi_bb14_8;
+  TNode<JSAny> phi_bb14_7;
+  TNode<Union<Hole, JSMessageObject>> phi_bb14_8;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_7, &phi_bb14_8);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp10}, TNode<Object>{tmp13}});
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp10});
     CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, phi_bb14_7, phi_bb14_8);
     CodeStubAssembler(state_).Unreachable();
   }
@@ -677,10 +677,10 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   TNode<JSObject> tmp37;
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp10}, TNode<Object>{tmp13}});
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp10}, TNode<JSAny>{tmp13}});
     tmp35 = Undefined_0(state_);
     tmp36 = True_0(state_);
-    tmp37 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp35}, TNode<Boolean>{tmp36});
+    tmp37 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp35}, TNode<Boolean>{tmp36});
     CodeStubAssembler(state_).Return(tmp37);
   }
 
@@ -702,12 +702,12 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp41;
-  TNode<HeapObject> tmp42;
+  TNode<Union<JSReceiver, Null, Undefined>> tmp42;
   TNode<JSReceiver> tmp43;
   if (block23.is_used()) {
     ca_.Bind(&block23);
     tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp42 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp2, tmp41});
+    tmp42 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp2, tmp41});
     compiler::CodeAssemblerLabel label44(&ca_);
     tmp43 = Cast_JSReceiver_0(state_, TNode<HeapObject>{tmp42}, &label44);
     ca_.Goto(&block27);
@@ -723,13 +723,13 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp45;
-  TNode<Object> tmp46;
+  TNode<JSAny> tmp46;
   if (block27.is_used()) {
     ca_.Bind(&block27);
     tmp45 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp46 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp2, tmp45});
+    tmp46 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp2, tmp45});
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{tmp2});
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp43}, TNode<Object>{tmp46}});
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp43}, TNode<JSAny>{tmp46}});
     ca_.Goto(&block24);
   }
 
@@ -740,13 +740,13 @@ TF_BUILTIN(IteratorHelperPrototypeReturn, CodeStubAssembler) {
     ca_.Bind(&block24);
     tmp47 = Undefined_0(state_);
     tmp48 = True_0(state_);
-    tmp49 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp47}, TNode<Boolean>{tmp48});
+    tmp49 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp47}, TNode<Boolean>{tmp48});
     CodeStubAssembler(state_).Return(tmp49);
   }
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=181&c=1
-TNode<JSIteratorMapHelper> NewJSIteratorMapHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<JSReceiver> p_mapper) {
+TNode<JSIteratorMapHelper> NewJSIteratorMapHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_mapper) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -754,7 +754,7 @@ TNode<JSIteratorMapHelper> NewJSIteratorMapHelper_0(compiler::CodeAssemblerState
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Map> tmp3;
   TNode<FixedArray> tmp4;
@@ -786,15 +786,15 @@ TNode<JSIteratorMapHelper> NewJSIteratorMapHelper_0(compiler::CodeAssemblerState
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp5);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp9, tmp15}, p_mapper);
+    CodeStubAssembler(state_).StoreReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{tmp9, tmp15}, p_mapper);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp17 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{tmp9, tmp16}, tmp17);
@@ -810,15 +810,16 @@ TF_BUILTIN(IteratorPrototypeMap, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kMapper);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kMapper);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -826,46 +827,45 @@ TF_BUILTIN(IteratorPrototypeMap, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.map");
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp4;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.map");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp4);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<JSIteratorMapHelper> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp5, tmp6) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp7 = NewJSIteratorMapHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}}, TNode<JSReceiver>{tmp2});
-    CodeStubAssembler(state_).Return(tmp7);
+  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp5;
+  TNode<JSIteratorMapHelper> tmp6;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp6 = NewJSIteratorMapHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp2});
+    CodeStubAssembler(state_).Return(tmp6);
   }
 }
 
@@ -889,19 +889,19 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block19(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Number> tmp4;
   TNode<JSReceiver> tmp5;
-      TNode<Object> tmp8;
+      TNode<JSAny> tmp8;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
@@ -911,7 +911,7 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     compiler::CodeAssemblerLabel label6(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch7__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch7__label);
-    tmp5 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label6);
+    tmp5 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label6);
     }
     if (catch7__label.is_used()) {
       compiler::CodeAssemblerLabel catch7_skip(&ca_);
@@ -927,18 +927,18 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp9;
+  TNode<Union<Hole, JSMessageObject>> tmp9;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp9 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp8, tmp9);
   }
 
-      TNode<Object> tmp11;
+      TNode<JSAny> tmp11;
   TNode<Undefined> tmp12;
   TNode<True> tmp13;
   TNode<JSObject> tmp14;
-      TNode<Object> tmp16;
+      TNode<JSAny> tmp16;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     compiler::CodeAssemblerExceptionHandlerLabel catch10__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -956,7 +956,7 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     tmp13 = True_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
-    tmp14 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp12}, TNode<Boolean>{tmp13});
+    tmp14 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp12}, TNode<Boolean>{tmp13});
     }
     if (catch15__label.is_used()) {
       compiler::CodeAssemblerLabel catch15_skip(&ca_);
@@ -968,24 +968,24 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp14);
   }
 
-  TNode<Object> tmp17;
-      TNode<Object> tmp19;
+  TNode<JSAny> tmp17;
+      TNode<JSAny> tmp19;
   TNode<IntPtrT> tmp20;
-      TNode<Object> tmp22;
-  TNode<JSReceiver> tmp23;
+      TNode<JSAny> tmp22;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp23;
   TNode<Undefined> tmp24;
-  TNode<Object> tmp25;
-      TNode<Object> tmp27;
+  TNode<JSAny> tmp25;
+      TNode<JSAny> tmp27;
   TNode<IntPtrT> tmp28;
-      TNode<Object> tmp30;
+      TNode<JSAny> tmp30;
   TNode<Number> tmp31;
-      TNode<Object> tmp33;
+      TNode<JSAny> tmp33;
   TNode<Number> tmp34;
-      TNode<Object> tmp36;
-      TNode<Object> tmp38;
+      TNode<JSAny> tmp36;
+      TNode<JSAny> tmp38;
   TNode<False> tmp39;
   TNode<JSObject> tmp40;
-      TNode<Object> tmp42;
+      TNode<JSAny> tmp42;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerExceptionHandlerLabel catch18__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1010,11 +1010,11 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
       ca_.Goto(&block13);
       ca_.Bind(&catch21_skip);
     }
-    tmp23 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{parameter1, tmp20});
+    tmp23 = CodeStubAssembler(state_).LoadReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{parameter1, tmp20});
     tmp24 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch26__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch26__label);
-    tmp25 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp23}, TNode<Object>{tmp24}, TNode<Object>{tmp17}, TNode<Object>{tmp4});
+    tmp25 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp23}, TNode<JSAny>{tmp24}, TNode<JSAny>{tmp17}, TNode<JSAny>{tmp4});
     }
     if (catch26__label.is_used()) {
       compiler::CodeAssemblerLabel catch26_skip(&ca_);
@@ -1059,7 +1059,7 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{parameter1, tmp28}, tmp34);
     compiler::CodeAssemblerExceptionHandlerLabel catch37__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch37__label);
-    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}});
     }
     if (catch37__label.is_used()) {
       compiler::CodeAssemblerLabel catch37_skip(&ca_);
@@ -1071,7 +1071,7 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     tmp39 = False_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch41__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch41__label);
-    tmp40 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp25}, TNode<Boolean>{tmp39});
+    tmp40 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp25}, TNode<Boolean>{tmp39});
     }
     if (catch41__label.is_used()) {
       compiler::CodeAssemblerLabel catch41_skip(&ca_);
@@ -1083,85 +1083,85 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp40);
   }
 
-  TNode<HeapObject> tmp43;
+  TNode<Union<Hole, JSMessageObject>> tmp43;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp43 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp11, tmp43);
   }
 
-  TNode<HeapObject> tmp44;
+  TNode<Union<Hole, JSMessageObject>> tmp44;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp44 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp16, tmp44);
   }
 
-  TNode<HeapObject> tmp45;
+  TNode<Union<Hole, JSMessageObject>> tmp45;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp45 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp19, tmp45);
   }
 
-  TNode<HeapObject> tmp46;
+  TNode<Union<Hole, JSMessageObject>> tmp46;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp46 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp22, tmp46);
   }
 
-  TNode<HeapObject> tmp47;
+  TNode<Union<Hole, JSMessageObject>> tmp47;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp47 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp27, tmp47);
   }
 
-  TNode<HeapObject> tmp48;
+  TNode<Union<Hole, JSMessageObject>> tmp48;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp48 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp30, tmp48);
   }
 
-  TNode<HeapObject> tmp49;
+  TNode<Union<Hole, JSMessageObject>> tmp49;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp49 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp33, tmp49);
   }
 
-  TNode<HeapObject> tmp50;
+  TNode<Union<Hole, JSMessageObject>> tmp50;
   if (block17.is_used()) {
     ca_.Bind(&block17);
     tmp50 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp36, tmp50);
   }
 
-  TNode<HeapObject> tmp51;
+  TNode<Union<Hole, JSMessageObject>> tmp51;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp51 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp38, tmp51);
   }
 
-  TNode<HeapObject> tmp52;
+  TNode<Union<Hole, JSMessageObject>> tmp52;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp52 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block12, tmp42, tmp52);
   }
 
-  TNode<Object> phi_bb12_8;
-  TNode<HeapObject> phi_bb12_9;
-      TNode<Object> tmp54;
-      TNode<Object> tmp56;
+  TNode<JSAny> phi_bb12_8;
+  TNode<Union<Hole, JSMessageObject>> phi_bb12_9;
+      TNode<JSAny> tmp54;
+      TNode<JSAny> tmp56;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_8, &phi_bb12_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch53__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch53__label);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp1});
     }
     if (catch53__label.is_used()) {
       compiler::CodeAssemblerLabel catch53_skip(&ca_);
@@ -1182,22 +1182,22 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp57;
+  TNode<Union<Hole, JSMessageObject>> tmp57;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp57 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp54, tmp57);
   }
 
-  TNode<HeapObject> tmp58;
+  TNode<Union<Hole, JSMessageObject>> tmp58;
   if (block21.is_used()) {
     ca_.Bind(&block21);
     tmp58 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp56, tmp58);
   }
 
-  TNode<Object> phi_bb2_6;
-  TNode<HeapObject> phi_bb2_7;
+  TNode<JSAny> phi_bb2_6;
+  TNode<Union<Hole, JSMessageObject>> phi_bb2_7;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_6, &phi_bb2_7);
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{parameter1});
@@ -1206,8 +1206,8 @@ TF_BUILTIN(IteratorMapHelperNext, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=276&c=1
-TNode<JSIteratorFilterHelper> NewJSIteratorFilterHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<JSReceiver> p_predicate) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=286&c=1
+TNode<JSIteratorFilterHelper> NewJSIteratorFilterHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_predicate) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1215,7 +1215,7 @@ TNode<JSIteratorFilterHelper> NewJSIteratorFilterHelper_0(compiler::CodeAssemble
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Map> tmp3;
   TNode<FixedArray> tmp4;
@@ -1247,15 +1247,15 @@ TNode<JSIteratorFilterHelper> NewJSIteratorFilterHelper_0(compiler::CodeAssemble
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp5);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp9, tmp15}, p_predicate);
+    CodeStubAssembler(state_).StoreReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{tmp9, tmp15}, p_predicate);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp17 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{tmp9, tmp16}, tmp17);
@@ -1271,15 +1271,16 @@ TF_BUILTIN(IteratorPrototypeFilter, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kPredicate);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kPredicate);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -1287,46 +1288,45 @@ TF_BUILTIN(IteratorPrototypeFilter, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.filter");
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp4;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.filter");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp4);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<JSIteratorFilterHelper> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp5, tmp6) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp7 = NewJSIteratorFilterHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}}, TNode<JSReceiver>{tmp2});
-    CodeStubAssembler(state_).Return(tmp7);
+  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp5;
+  TNode<JSIteratorFilterHelper> tmp6;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp6 = NewJSIteratorFilterHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp2});
+    CodeStubAssembler(state_).Return(tmp6);
   }
 }
 
@@ -1357,16 +1357,16 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block26(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block28(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block29(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
@@ -1375,7 +1375,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
   }
 
   TNode<BoolT> tmp3;
-      TNode<Object> tmp5;
+      TNode<JSAny> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerExceptionHandlerLabel catch4__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1392,7 +1392,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     ca_.Branch(tmp3, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp6;
+  TNode<Union<Hole, JSMessageObject>> tmp6;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = GetAndResetPendingMessage_0(state_);
@@ -1400,10 +1400,10 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp7;
-      TNode<Object> tmp9;
+      TNode<JSAny> tmp9;
   TNode<Number> tmp10;
   TNode<JSReceiver> tmp11;
-      TNode<Object> tmp14;
+      TNode<JSAny> tmp14;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerExceptionHandlerLabel catch8__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1421,7 +1421,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     compiler::CodeAssemblerLabel label12(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch13__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch13__label);
-    tmp11 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label12);
+    tmp11 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label12);
     }
     if (catch13__label.is_used()) {
       compiler::CodeAssemblerLabel catch13_skip(&ca_);
@@ -1437,25 +1437,25 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp15;
+  TNode<Union<Hole, JSMessageObject>> tmp15;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp15 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp9, tmp15);
   }
 
-  TNode<HeapObject> tmp16;
+  TNode<Union<Hole, JSMessageObject>> tmp16;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp16 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp14, tmp16);
   }
 
-      TNode<Object> tmp18;
+      TNode<JSAny> tmp18;
   TNode<Undefined> tmp19;
   TNode<True> tmp20;
   TNode<JSObject> tmp21;
-      TNode<Object> tmp23;
+      TNode<JSAny> tmp23;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     compiler::CodeAssemblerExceptionHandlerLabel catch17__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1473,7 +1473,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     tmp20 = True_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch22__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch22__label);
-    tmp21 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp19}, TNode<Boolean>{tmp20});
+    tmp21 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp19}, TNode<Boolean>{tmp20});
     }
     if (catch22__label.is_used()) {
       compiler::CodeAssemblerLabel catch22_skip(&ca_);
@@ -1485,22 +1485,22 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp21);
   }
 
-  TNode<Object> tmp24;
-      TNode<Object> tmp26;
+  TNode<JSAny> tmp24;
+      TNode<JSAny> tmp26;
   TNode<IntPtrT> tmp27;
-      TNode<Object> tmp29;
-  TNode<JSReceiver> tmp30;
+      TNode<JSAny> tmp29;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp30;
   TNode<Undefined> tmp31;
-  TNode<Object> tmp32;
-      TNode<Object> tmp34;
+  TNode<JSAny> tmp32;
+      TNode<JSAny> tmp34;
   TNode<IntPtrT> tmp35;
-      TNode<Object> tmp37;
+      TNode<JSAny> tmp37;
   TNode<Number> tmp38;
-      TNode<Object> tmp40;
+      TNode<JSAny> tmp40;
   TNode<Number> tmp41;
-      TNode<Object> tmp43;
+      TNode<JSAny> tmp43;
   TNode<BoolT> tmp44;
-      TNode<Object> tmp46;
+      TNode<JSAny> tmp46;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     compiler::CodeAssemblerExceptionHandlerLabel catch25__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -1525,11 +1525,11 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
       ca_.Goto(&block18);
       ca_.Bind(&catch28_skip);
     }
-    tmp30 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{parameter1, tmp27});
+    tmp30 = CodeStubAssembler(state_).LoadReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{parameter1, tmp27});
     tmp31 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch33__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch33__label);
-    tmp32 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp30}, TNode<Object>{tmp31}, TNode<Object>{tmp24}, TNode<Object>{tmp10});
+    tmp32 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp30}, TNode<JSAny>{tmp31}, TNode<JSAny>{tmp24}, TNode<JSAny>{tmp10});
     }
     if (catch33__label.is_used()) {
       compiler::CodeAssemblerLabel catch33_skip(&ca_);
@@ -1574,7 +1574,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{parameter1, tmp35}, tmp41);
     compiler::CodeAssemblerExceptionHandlerLabel catch45__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch45__label);
-    tmp44 = ToBoolean_0(state_, TNode<Object>{tmp32});
+    tmp44 = ToBoolean_0(state_, TNode<JSAny>{tmp32});
     }
     if (catch45__label.is_used()) {
       compiler::CodeAssemblerLabel catch45_skip(&ca_);
@@ -1586,78 +1586,78 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     ca_.Branch(tmp44, &block23, std::vector<compiler::Node*>{}, &block24, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp47;
+  TNode<Union<Hole, JSMessageObject>> tmp47;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp47 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp18, tmp47);
   }
 
-  TNode<HeapObject> tmp48;
+  TNode<Union<Hole, JSMessageObject>> tmp48;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp48 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp23, tmp48);
   }
 
-  TNode<HeapObject> tmp49;
+  TNode<Union<Hole, JSMessageObject>> tmp49;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp49 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp26, tmp49);
   }
 
-  TNode<HeapObject> tmp50;
+  TNode<Union<Hole, JSMessageObject>> tmp50;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     tmp50 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp29, tmp50);
   }
 
-  TNode<HeapObject> tmp51;
+  TNode<Union<Hole, JSMessageObject>> tmp51;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp51 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp34, tmp51);
   }
 
-  TNode<HeapObject> tmp52;
+  TNode<Union<Hole, JSMessageObject>> tmp52;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp52 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp37, tmp52);
   }
 
-  TNode<HeapObject> tmp53;
+  TNode<Union<Hole, JSMessageObject>> tmp53;
   if (block21.is_used()) {
     ca_.Bind(&block21);
     tmp53 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp40, tmp53);
   }
 
-  TNode<HeapObject> tmp54;
+  TNode<Union<Hole, JSMessageObject>> tmp54;
   if (block22.is_used()) {
     ca_.Bind(&block22);
     tmp54 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp43, tmp54);
   }
 
-  TNode<HeapObject> tmp55;
+  TNode<Union<Hole, JSMessageObject>> tmp55;
   if (block25.is_used()) {
     ca_.Bind(&block25);
     tmp55 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp46, tmp55);
   }
 
-      TNode<Object> tmp57;
+      TNode<JSAny> tmp57;
   TNode<False> tmp58;
   TNode<JSObject> tmp59;
-      TNode<Object> tmp61;
+      TNode<JSAny> tmp61;
   if (block23.is_used()) {
     ca_.Bind(&block23);
     compiler::CodeAssemblerExceptionHandlerLabel catch56__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch56__label);
-    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}});
     }
     if (catch56__label.is_used()) {
       compiler::CodeAssemblerLabel catch56_skip(&ca_);
@@ -1669,7 +1669,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     tmp58 = False_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch60__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch60__label);
-    tmp59 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp24}, TNode<Boolean>{tmp58});
+    tmp59 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp24}, TNode<Boolean>{tmp58});
     }
     if (catch60__label.is_used()) {
       compiler::CodeAssemblerLabel catch60_skip(&ca_);
@@ -1681,14 +1681,14 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp59);
   }
 
-  TNode<HeapObject> tmp62;
+  TNode<Union<Hole, JSMessageObject>> tmp62;
   if (block26.is_used()) {
     ca_.Bind(&block26);
     tmp62 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block17, tmp57, tmp62);
   }
 
-  TNode<HeapObject> tmp63;
+  TNode<Union<Hole, JSMessageObject>> tmp63;
   if (block27.is_used()) {
     ca_.Bind(&block27);
     tmp63 = GetAndResetPendingMessage_0(state_);
@@ -1700,15 +1700,15 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     ca_.Goto(&block5);
   }
 
-  TNode<Object> phi_bb17_8;
-  TNode<HeapObject> phi_bb17_9;
-      TNode<Object> tmp65;
-      TNode<Object> tmp67;
+  TNode<JSAny> phi_bb17_8;
+  TNode<Union<Hole, JSMessageObject>> phi_bb17_9;
+      TNode<JSAny> tmp65;
+      TNode<JSAny> tmp67;
   if (block17.is_used()) {
     ca_.Bind(&block17, &phi_bb17_8, &phi_bb17_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch64__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch64__label);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp1});
     }
     if (catch64__label.is_used()) {
       compiler::CodeAssemblerLabel catch64_skip(&ca_);
@@ -1729,14 +1729,14 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp68;
+  TNode<Union<Hole, JSMessageObject>> tmp68;
   if (block28.is_used()) {
     ca_.Bind(&block28);
     tmp68 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp65, tmp68);
   }
 
-  TNode<HeapObject> tmp69;
+  TNode<Union<Hole, JSMessageObject>> tmp69;
   if (block29.is_used()) {
     ca_.Bind(&block29);
     tmp69 = GetAndResetPendingMessage_0(state_);
@@ -1748,8 +1748,8 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb2_5;
-  TNode<HeapObject> phi_bb2_6;
+  TNode<JSAny> phi_bb2_5;
+  TNode<Union<Hole, JSMessageObject>> phi_bb2_6;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_5, &phi_bb2_6);
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{parameter1});
@@ -1758,7 +1758,7 @@ TF_BUILTIN(IteratorFilterHelperNext, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=378&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=399&c=1
 TNode<JSIteratorTakeHelper> NewJSIteratorTakeHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<Number> p_limit) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -1767,7 +1767,7 @@ TNode<JSIteratorTakeHelper> NewJSIteratorTakeHelper_0(compiler::CodeAssemblerSta
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Map> tmp3;
   TNode<FixedArray> tmp4;
@@ -1797,13 +1797,13 @@ TNode<JSIteratorTakeHelper> NewJSIteratorTakeHelper_0(compiler::CodeAssemblerSta
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp5);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{tmp9, tmp15}, p_limit);
     tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp9});
@@ -1818,17 +1818,19 @@ TF_BUILTIN(IteratorPrototypeTake, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kLimit);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kLimit);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0);
 
@@ -1850,47 +1852,68 @@ TF_BUILTIN(IteratorPrototypeTake, CodeStubAssembler) {
   }
 
   TNode<Number> tmp2;
-  TNode<BoolT> tmp3;
+      TNode<JSAny> tmp4;
+  TNode<BoolT> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    tmp3 = NumberIsNaN_0(state_, TNode<Number>{tmp2});
-    ca_.Branch(tmp3, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
+    compiler::CodeAssemblerExceptionHandlerLabel catch3__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch3__label);
+    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
+    }
+    if (catch3__label.is_used()) {
+      compiler::CodeAssemblerLabel catch3_skip(&ca_);
+      ca_.Goto(&catch3_skip);
+      ca_.Bind(&catch3__label, &tmp4);
+      ca_.Goto(&block9);
+      ca_.Bind(&catch3_skip);
+    }
+    tmp5 = NumberIsNaN_0(state_, TNode<Number>{tmp2});
+    ca_.Branch(tmp5, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
 
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    ca_.Goto(&block2);
-  }
-
-  TNode<Number> tmp4;
-  TNode<Number> tmp5;
-  TNode<BoolT> tmp6;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp2});
-    tmp5 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp6 = NumberIsLessThan_0(state_, TNode<Number>{tmp4}, TNode<Number>{tmp5});
-    ca_.Branch(tmp6, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
+  TNode<Union<Hole, JSMessageObject>> tmp6;
   if (block9.is_used()) {
     ca_.Bind(&block9);
+    tmp6 = GetAndResetPendingMessage_0(state_);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp4, tmp6);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
     ca_.Goto(&block2);
   }
 
-  TNode<JSReceiver> tmp7;
-  TNode<Object> tmp8;
-  TNode<JSIteratorTakeHelper> tmp9;
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    std::tie(tmp7, tmp8) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp9 = NewJSIteratorTakeHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp7}, TNode<Object>{tmp8}}, TNode<Number>{tmp4});
-    CodeStubAssembler(state_).Return(tmp9);
+  TNode<Number> tmp7;
+  TNode<Number> tmp8;
+  TNode<BoolT> tmp9;
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    tmp7 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp2});
+    tmp8 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp9 = NumberIsLessThan_0(state_, TNode<Number>{tmp7}, TNode<Number>{tmp8});
+    ca_.Branch(tmp9, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block2);
+  }
+
+  TNode<JSReceiver> tmp10;
+  TNode<JSAny> tmp11;
+  TNode<JSIteratorTakeHelper> tmp12;
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    std::tie(tmp10, tmp11) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp12 = NewJSIteratorTakeHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp10}, TNode<JSAny>{tmp11}}, TNode<Number>{tmp7});
+    CodeStubAssembler(state_).Return(tmp12);
   }
 
   if (block2.is_used()) {
     ca_.Bind(&block2);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
     CodeStubAssembler(state_).ThrowRangeError(TNode<Context>{parameter0}, MessageTemplate::kMustBePositive, TNode<Object>{parameter2});
   }
 }
@@ -1924,18 +1947,18 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block25(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block26(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Number> tmp4;
   TNode<Number> tmp5;
-      TNode<Object> tmp7;
+      TNode<JSAny> tmp7;
   TNode<BoolT> tmp8;
-      TNode<Object> tmp10;
+      TNode<JSAny> tmp10;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
@@ -1967,26 +1990,26 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     ca_.Branch(tmp8, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp11;
+  TNode<Union<Hole, JSMessageObject>> tmp11;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp11 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp7, tmp11);
   }
 
-  TNode<HeapObject> tmp12;
+  TNode<Union<Hole, JSMessageObject>> tmp12;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp12 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp10, tmp12);
   }
 
-      TNode<Object> tmp14;
-      TNode<Object> tmp16;
+      TNode<JSAny> tmp14;
+      TNode<JSAny> tmp16;
   TNode<Undefined> tmp17;
   TNode<True> tmp18;
   TNode<JSObject> tmp19;
-      TNode<Object> tmp21;
+      TNode<JSAny> tmp21;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerExceptionHandlerLabel catch13__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2002,7 +2025,7 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}});
     }
     if (catch15__label.is_used()) {
       compiler::CodeAssemblerLabel catch15_skip(&ca_);
@@ -2015,7 +2038,7 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     tmp18 = True_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch20__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch20__label);
-    tmp19 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp17}, TNode<Boolean>{tmp18});
+    tmp19 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp17}, TNode<Boolean>{tmp18});
     }
     if (catch20__label.is_used()) {
       compiler::CodeAssemblerLabel catch20_skip(&ca_);
@@ -2027,21 +2050,21 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp19);
   }
 
-  TNode<HeapObject> tmp22;
+  TNode<Union<Hole, JSMessageObject>> tmp22;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp22 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp14, tmp22);
   }
 
-  TNode<HeapObject> tmp23;
+  TNode<Union<Hole, JSMessageObject>> tmp23;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp23 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp16, tmp23);
   }
 
-  TNode<HeapObject> tmp24;
+  TNode<Union<Hole, JSMessageObject>> tmp24;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp24 = GetAndResetPendingMessage_0(state_);
@@ -2049,9 +2072,9 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
   }
 
   TNode<BoolT> tmp25;
-      TNode<Object> tmp27;
+      TNode<JSAny> tmp27;
   TNode<BoolT> tmp28;
-      TNode<Object> tmp30;
+      TNode<JSAny> tmp30;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     compiler::CodeAssemblerExceptionHandlerLabel catch26__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2079,14 +2102,14 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     ca_.Branch(tmp28, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp31;
+  TNode<Union<Hole, JSMessageObject>> tmp31;
   if (block12.is_used()) {
     ca_.Bind(&block12);
     tmp31 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp27, tmp31);
   }
 
-  TNode<HeapObject> tmp32;
+  TNode<Union<Hole, JSMessageObject>> tmp32;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp32 = GetAndResetPendingMessage_0(state_);
@@ -2094,11 +2117,11 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp33;
-      TNode<Object> tmp35;
+      TNode<JSAny> tmp35;
   TNode<Number> tmp36;
-      TNode<Object> tmp38;
+      TNode<JSAny> tmp38;
   TNode<Number> tmp39;
-      TNode<Object> tmp41;
+      TNode<JSAny> tmp41;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     compiler::CodeAssemblerExceptionHandlerLabel catch34__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2138,21 +2161,21 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     ca_.Goto(&block11);
   }
 
-  TNode<HeapObject> tmp42;
+  TNode<Union<Hole, JSMessageObject>> tmp42;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp42 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp35, tmp42);
   }
 
-  TNode<HeapObject> tmp43;
+  TNode<Union<Hole, JSMessageObject>> tmp43;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp43 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp38, tmp43);
   }
 
-  TNode<HeapObject> tmp44;
+  TNode<Union<Hole, JSMessageObject>> tmp44;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp44 = GetAndResetPendingMessage_0(state_);
@@ -2160,13 +2183,13 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp45;
-      TNode<Object> tmp48;
+      TNode<JSAny> tmp48;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     compiler::CodeAssemblerLabel label46(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch47__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch47__label);
-    tmp45 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label46);
+    tmp45 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label46);
     }
     if (catch47__label.is_used()) {
       compiler::CodeAssemblerLabel catch47_skip(&ca_);
@@ -2182,18 +2205,18 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp49;
+  TNode<Union<Hole, JSMessageObject>> tmp49;
   if (block21.is_used()) {
     ca_.Bind(&block21);
     tmp49 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp48, tmp49);
   }
 
-      TNode<Object> tmp51;
+      TNode<JSAny> tmp51;
   TNode<Undefined> tmp52;
   TNode<True> tmp53;
   TNode<JSObject> tmp54;
-      TNode<Object> tmp56;
+      TNode<JSAny> tmp56;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     compiler::CodeAssemblerExceptionHandlerLabel catch50__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2211,7 +2234,7 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     tmp53 = True_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch55__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch55__label);
-    tmp54 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp52}, TNode<Boolean>{tmp53});
+    tmp54 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp52}, TNode<Boolean>{tmp53});
     }
     if (catch55__label.is_used()) {
       compiler::CodeAssemblerLabel catch55_skip(&ca_);
@@ -2223,12 +2246,12 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp54);
   }
 
-  TNode<Object> tmp57;
-      TNode<Object> tmp59;
-      TNode<Object> tmp61;
+  TNode<JSAny> tmp57;
+      TNode<JSAny> tmp59;
+      TNode<JSAny> tmp61;
   TNode<False> tmp62;
   TNode<JSObject> tmp63;
-      TNode<Object> tmp65;
+      TNode<JSAny> tmp65;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     compiler::CodeAssemblerExceptionHandlerLabel catch58__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2244,7 +2267,7 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch60__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch60__label);
-    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}});
     }
     if (catch60__label.is_used()) {
       compiler::CodeAssemblerLabel catch60_skip(&ca_);
@@ -2256,7 +2279,7 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     tmp62 = False_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch64__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch64__label);
-    tmp63 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp57}, TNode<Boolean>{tmp62});
+    tmp63 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp57}, TNode<Boolean>{tmp62});
     }
     if (catch64__label.is_used()) {
       compiler::CodeAssemblerLabel catch64_skip(&ca_);
@@ -2268,43 +2291,43 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp63);
   }
 
-  TNode<HeapObject> tmp66;
+  TNode<Union<Hole, JSMessageObject>> tmp66;
   if (block22.is_used()) {
     ca_.Bind(&block22);
     tmp66 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp51, tmp66);
   }
 
-  TNode<HeapObject> tmp67;
+  TNode<Union<Hole, JSMessageObject>> tmp67;
   if (block23.is_used()) {
     ca_.Bind(&block23);
     tmp67 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp56, tmp67);
   }
 
-  TNode<HeapObject> tmp68;
+  TNode<Union<Hole, JSMessageObject>> tmp68;
   if (block24.is_used()) {
     ca_.Bind(&block24);
     tmp68 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp59, tmp68);
   }
 
-  TNode<HeapObject> tmp69;
+  TNode<Union<Hole, JSMessageObject>> tmp69;
   if (block25.is_used()) {
     ca_.Bind(&block25);
     tmp69 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp61, tmp69);
   }
 
-  TNode<HeapObject> tmp70;
+  TNode<Union<Hole, JSMessageObject>> tmp70;
   if (block26.is_used()) {
     ca_.Bind(&block26);
     tmp70 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp65, tmp70);
   }
 
-  TNode<Object> phi_bb2_6;
-  TNode<HeapObject> phi_bb2_7;
+  TNode<JSAny> phi_bb2_6;
+  TNode<Union<Hole, JSMessageObject>> phi_bb2_7;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_6, &phi_bb2_7);
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{parameter1});
@@ -2313,7 +2336,7 @@ TF_BUILTIN(IteratorTakeHelperNext, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=482&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=519&c=1
 TNode<JSIteratorDropHelper> NewJSIteratorDropHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<Number> p_limit) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2322,7 +2345,7 @@ TNode<JSIteratorDropHelper> NewJSIteratorDropHelper_0(compiler::CodeAssemblerSta
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Map> tmp3;
   TNode<FixedArray> tmp4;
@@ -2352,13 +2375,13 @@ TNode<JSIteratorDropHelper> NewJSIteratorDropHelper_0(compiler::CodeAssemblerSta
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp9, tmp10}, tmp3);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp9, tmp11}, tmp4);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp9, tmp12}, tmp5);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp9, tmp13}, p_underlying.object);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp9, tmp14}, p_underlying.next);
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{tmp9, tmp15}, p_limit);
     tmp16 = TORQUE_CAST(TNode<HeapObject>{tmp9});
@@ -2373,17 +2396,19 @@ TF_BUILTIN(IteratorPrototypeDrop, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kLimit);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kLimit);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     ca_.Goto(&block0);
 
@@ -2405,47 +2430,68 @@ TF_BUILTIN(IteratorPrototypeDrop, CodeStubAssembler) {
   }
 
   TNode<Number> tmp2;
-  TNode<BoolT> tmp3;
+      TNode<JSAny> tmp4;
+  TNode<BoolT> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
-    tmp3 = NumberIsNaN_0(state_, TNode<Number>{tmp2});
-    ca_.Branch(tmp3, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
+    compiler::CodeAssemblerExceptionHandlerLabel catch3__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch3__label);
+    tmp2 = CodeStubAssembler(state_).ToNumber_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
+    }
+    if (catch3__label.is_used()) {
+      compiler::CodeAssemblerLabel catch3_skip(&ca_);
+      ca_.Goto(&catch3_skip);
+      ca_.Bind(&catch3__label, &tmp4);
+      ca_.Goto(&block9);
+      ca_.Bind(&catch3_skip);
+    }
+    tmp5 = NumberIsNaN_0(state_, TNode<Number>{tmp2});
+    ca_.Branch(tmp5, &block10, std::vector<compiler::Node*>{}, &block11, std::vector<compiler::Node*>{});
   }
 
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    ca_.Goto(&block2);
-  }
-
-  TNode<Number> tmp4;
-  TNode<Number> tmp5;
-  TNode<BoolT> tmp6;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp2});
-    tmp5 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp6 = NumberIsLessThan_0(state_, TNode<Number>{tmp4}, TNode<Number>{tmp5});
-    ca_.Branch(tmp6, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
+  TNode<Union<Hole, JSMessageObject>> tmp6;
   if (block9.is_used()) {
     ca_.Bind(&block9);
+    tmp6 = GetAndResetPendingMessage_0(state_);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp4, tmp6);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
     ca_.Goto(&block2);
   }
 
-  TNode<JSReceiver> tmp7;
-  TNode<Object> tmp8;
-  TNode<JSIteratorDropHelper> tmp9;
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    std::tie(tmp7, tmp8) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp9 = NewJSIteratorDropHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp7}, TNode<Object>{tmp8}}, TNode<Number>{tmp4});
-    CodeStubAssembler(state_).Return(tmp9);
+  TNode<Number> tmp7;
+  TNode<Number> tmp8;
+  TNode<BoolT> tmp9;
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    tmp7 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp2});
+    tmp8 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp9 = NumberIsLessThan_0(state_, TNode<Number>{tmp7}, TNode<Number>{tmp8});
+    ca_.Branch(tmp9, &block12, std::vector<compiler::Node*>{}, &block13, std::vector<compiler::Node*>{});
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block2);
+  }
+
+  TNode<JSReceiver> tmp10;
+  TNode<JSAny> tmp11;
+  TNode<JSIteratorDropHelper> tmp12;
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    std::tie(tmp10, tmp11) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp12 = NewJSIteratorDropHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp10}, TNode<JSAny>{tmp11}}, TNode<Number>{tmp7});
+    CodeStubAssembler(state_).Return(tmp12);
   }
 
   if (block2.is_used()) {
     ca_.Bind(&block2);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
     CodeStubAssembler(state_).ThrowRangeError(TNode<Context>{parameter0}, MessageTemplate::kMustBePositive, TNode<Object>{parameter2});
   }
 }
@@ -2481,12 +2527,12 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<Number> block25(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block26(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, JSReceiver, Object, HeapObject> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, JSReceiver, JSAny, Union<Hole, JSMessageObject>> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<Number> tmp4;
   if (block0.is_used()) {
@@ -2500,9 +2546,9 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb7_5;
   TNode<Number> tmp5;
-      TNode<Object> tmp7;
+      TNode<JSAny> tmp7;
   TNode<BoolT> tmp8;
-      TNode<Object> tmp10;
+      TNode<JSAny> tmp10;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_5);
     compiler::CodeAssemblerExceptionHandlerLabel catch6__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2533,7 +2579,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   TNode<Number> phi_bb8_5;
   TNode<Number> phi_bb8_7;
   TNode<Number> phi_bb8_8;
-  TNode<HeapObject> tmp11;
+  TNode<Union<Hole, JSMessageObject>> tmp11;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_5, &phi_bb8_7, &phi_bb8_8);
     tmp11 = GetAndResetPendingMessage_0(state_);
@@ -2542,7 +2588,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb9_5;
   TNode<Number> phi_bb9_7;
-  TNode<HeapObject> tmp12;
+  TNode<Union<Hole, JSMessageObject>> tmp12;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_5, &phi_bb9_7);
     tmp12 = GetAndResetPendingMessage_0(state_);
@@ -2551,9 +2597,9 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb5_5;
   TNode<BoolT> tmp13;
-      TNode<Object> tmp15;
+      TNode<JSAny> tmp15;
   TNode<BoolT> tmp16;
-      TNode<Object> tmp18;
+      TNode<JSAny> tmp18;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_5);
     compiler::CodeAssemblerExceptionHandlerLabel catch14__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2583,7 +2629,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb12_5;
   TNode<Number> phi_bb12_7;
-  TNode<HeapObject> tmp19;
+  TNode<Union<Hole, JSMessageObject>> tmp19;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_5, &phi_bb12_7);
     tmp19 = GetAndResetPendingMessage_0(state_);
@@ -2591,7 +2637,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb13_5;
-  TNode<HeapObject> tmp20;
+  TNode<Union<Hole, JSMessageObject>> tmp20;
   if (block13.is_used()) {
     ca_.Bind(&block13, &phi_bb13_5);
     tmp20 = GetAndResetPendingMessage_0(state_);
@@ -2600,11 +2646,11 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb10_5;
   TNode<Number> tmp21;
-      TNode<Object> tmp23;
+      TNode<JSAny> tmp23;
   TNode<Number> tmp24;
-      TNode<Object> tmp26;
+      TNode<JSAny> tmp26;
   TNode<IntPtrT> tmp27;
-      TNode<Object> tmp29;
+      TNode<JSAny> tmp29;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_5);
     compiler::CodeAssemblerExceptionHandlerLabel catch22__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2647,7 +2693,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   TNode<Number> phi_bb14_5;
   TNode<Number> phi_bb14_7;
   TNode<Number> phi_bb14_8;
-  TNode<HeapObject> tmp30;
+  TNode<Union<Hole, JSMessageObject>> tmp30;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_5, &phi_bb14_7, &phi_bb14_8);
     tmp30 = GetAndResetPendingMessage_0(state_);
@@ -2656,14 +2702,14 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb15_5;
   TNode<Number> phi_bb15_7;
-  TNode<HeapObject> tmp31;
+  TNode<Union<Hole, JSMessageObject>> tmp31;
   if (block15.is_used()) {
     ca_.Bind(&block15, &phi_bb15_5, &phi_bb15_7);
     tmp31 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, phi_bb15_5, ca_.Uninitialized<JSReceiver>(), tmp26, tmp31);
   }
 
-  TNode<HeapObject> tmp32;
+  TNode<Union<Hole, JSMessageObject>> tmp32;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp32 = GetAndResetPendingMessage_0(state_);
@@ -2672,13 +2718,13 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb11_5;
   TNode<JSReceiver> tmp33;
-      TNode<Object> tmp36;
+      TNode<JSAny> tmp36;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_5);
     compiler::CodeAssemblerLabel label34(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch35__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch35__label);
-    tmp33 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label34);
+    tmp33 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label34);
     }
     if (catch35__label.is_used()) {
       compiler::CodeAssemblerLabel catch35_skip(&ca_);
@@ -2694,7 +2740,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp37;
+  TNode<Union<Hole, JSMessageObject>> tmp37;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp37 = GetAndResetPendingMessage_0(state_);
@@ -2713,13 +2759,13 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb6_5;
   TNode<JSReceiver> tmp38;
-      TNode<Object> tmp41;
+      TNode<JSAny> tmp41;
   if (block6.is_used()) {
     ca_.Bind(&block6, &phi_bb6_5);
     compiler::CodeAssemblerLabel label39(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch40__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch40__label);
-    tmp38 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label39);
+    tmp38 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label39);
     }
     if (catch40__label.is_used()) {
       compiler::CodeAssemblerLabel catch40_skip(&ca_);
@@ -2736,7 +2782,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb22_5;
-  TNode<HeapObject> tmp42;
+  TNode<Union<Hole, JSMessageObject>> tmp42;
   if (block22.is_used()) {
     ca_.Bind(&block22, &phi_bb22_5);
     tmp42 = GetAndResetPendingMessage_0(state_);
@@ -2750,12 +2796,12 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb20_5;
-  TNode<Object> tmp43;
-      TNode<Object> tmp45;
-      TNode<Object> tmp47;
+  TNode<JSAny> tmp43;
+      TNode<JSAny> tmp45;
+      TNode<JSAny> tmp47;
   TNode<False> tmp48;
   TNode<JSObject> tmp49;
-      TNode<Object> tmp51;
+      TNode<JSAny> tmp51;
   if (block20.is_used()) {
     ca_.Bind(&block20, &phi_bb20_5);
     compiler::CodeAssemblerExceptionHandlerLabel catch44__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2771,7 +2817,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch46__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch46__label);
-    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}});
     }
     if (catch46__label.is_used()) {
       compiler::CodeAssemblerLabel catch46_skip(&ca_);
@@ -2783,7 +2829,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
     tmp48 = False_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch50__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch50__label);
-    tmp49 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp43}, TNode<Boolean>{tmp48});
+    tmp49 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp43}, TNode<Boolean>{tmp48});
     }
     if (catch50__label.is_used()) {
       compiler::CodeAssemblerLabel catch50_skip(&ca_);
@@ -2796,11 +2842,11 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb4_5;
-      TNode<Object> tmp53;
+      TNode<JSAny> tmp53;
   TNode<Undefined> tmp54;
   TNode<True> tmp55;
   TNode<JSObject> tmp56;
-      TNode<Object> tmp58;
+      TNode<JSAny> tmp58;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_5);
     compiler::CodeAssemblerExceptionHandlerLabel catch52__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -2818,7 +2864,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
     tmp55 = True_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch57__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch57__label);
-    tmp56 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp54}, TNode<Boolean>{tmp55});
+    tmp56 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp54}, TNode<Boolean>{tmp55});
     }
     if (catch57__label.is_used()) {
       compiler::CodeAssemblerLabel catch57_skip(&ca_);
@@ -2830,14 +2876,14 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp56);
   }
 
-  TNode<HeapObject> tmp59;
+  TNode<Union<Hole, JSMessageObject>> tmp59;
   if (block23.is_used()) {
     ca_.Bind(&block23);
     tmp59 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, phi_bb4_5, ca_.Uninitialized<JSReceiver>(), tmp53, tmp59);
   }
 
-  TNode<HeapObject> tmp60;
+  TNode<Union<Hole, JSMessageObject>> tmp60;
   if (block24.is_used()) {
     ca_.Bind(&block24);
     tmp60 = GetAndResetPendingMessage_0(state_);
@@ -2845,7 +2891,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb25_5;
-  TNode<HeapObject> tmp61;
+  TNode<Union<Hole, JSMessageObject>> tmp61;
   if (block25.is_used()) {
     ca_.Bind(&block25, &phi_bb25_5);
     tmp61 = GetAndResetPendingMessage_0(state_);
@@ -2853,7 +2899,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb26_5;
-  TNode<HeapObject> tmp62;
+  TNode<Union<Hole, JSMessageObject>> tmp62;
   if (block26.is_used()) {
     ca_.Bind(&block26, &phi_bb26_5);
     tmp62 = GetAndResetPendingMessage_0(state_);
@@ -2861,7 +2907,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 
   TNode<Number> phi_bb27_5;
-  TNode<HeapObject> tmp63;
+  TNode<Union<Hole, JSMessageObject>> tmp63;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_5);
     tmp63 = GetAndResetPendingMessage_0(state_);
@@ -2870,8 +2916,8 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
 
   TNode<Number> phi_bb2_5;
   TNode<JSReceiver> phi_bb2_6;
-  TNode<Object> phi_bb2_7;
-  TNode<HeapObject> phi_bb2_8;
+  TNode<JSAny> phi_bb2_7;
+  TNode<Union<Hole, JSMessageObject>> phi_bb2_8;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_5, &phi_bb2_6, &phi_bb2_7, &phi_bb2_8);
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{parameter1});
@@ -2880,7 +2926,7 @@ TF_BUILTIN(IteratorDropHelperNext, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=585&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=638&c=1
 const char* kFlatMapMethodName_0(compiler::CodeAssemblerState* state_) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2889,8 +2935,8 @@ const char* kFlatMapMethodName_0(compiler::CodeAssemblerState* state_) {
     ca_.Bind(&block0);
   return "Iterator.prototype.flatMap";}
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=587&c=1
-TNode<JSIteratorFlatMapHelper> NewJSIteratorFlatMapHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<JSReceiver> p_mapper) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/iterator-helpers.tq?l=640&c=1
+TNode<JSIteratorFlatMapHelper> NewJSIteratorFlatMapHelper_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructIteratorRecord p_underlying, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_mapper) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2898,7 +2944,7 @@ TNode<JSIteratorFlatMapHelper> NewJSIteratorFlatMapHelper_0(compiler::CodeAssemb
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<HeapObject, TaggedIndex>> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<Map> tmp3;
   TNode<FixedArray> tmp4;
@@ -2936,15 +2982,15 @@ TNode<JSIteratorFlatMapHelper> NewJSIteratorFlatMapHelper_0(compiler::CodeAssemb
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp10, tmp11}, tmp3);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp10, tmp12}, tmp4);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp10, tmp12}, tmp4);
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp10, tmp13}, tmp5);
     tmp14 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{tmp10, tmp14}, p_underlying.object);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null, Undefined>>(CodeStubAssembler::Reference{tmp10, tmp14}, p_underlying.object);
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp10, tmp15}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp10, tmp15}, p_underlying.next);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 40);
-    CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp10, tmp16}, p_mapper);
+    CodeStubAssembler(state_).StoreReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{tmp10, tmp16}, p_mapper);
     tmp17 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp18 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     CodeStubAssembler(state_).StoreReference<Number>(CodeStubAssembler::Reference{tmp10, tmp17}, tmp18);
@@ -2952,7 +2998,7 @@ TNode<JSIteratorFlatMapHelper> NewJSIteratorFlatMapHelper_0(compiler::CodeAssemb
     CodeStubAssembler(state_).StoreReference<JSReceiver>(CodeStubAssembler::Reference{tmp10, tmp19}, p_underlying.object);
     tmp20 = FromConstexpr_intptr_constexpr_intptr_0(state_, 8);
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp19}, TNode<IntPtrT>{tmp20});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp10, tmp21}, p_underlying.next);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp10, tmp21}, p_underlying.next);
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
     CodeStubAssembler(state_).StoreReference<Boolean>(CodeStubAssembler::Reference{tmp10, tmp22}, tmp6);
     tmp23 = TORQUE_CAST(TNode<HeapObject>{tmp10});
@@ -2967,15 +3013,16 @@ TF_BUILTIN(IteratorPrototypeFlatMap, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kMapper);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kMapper);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -2983,42 +3030,43 @@ TF_BUILTIN(IteratorPrototypeFlatMap, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, kFlatMapMethodName_0(state_));
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledNonCallable, kFlatMapMethodName_0(state_));
   }
 
   TNode<JSReceiver> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<JSIteratorFlatMapHelper> tmp6;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
     std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp6 = NewJSIteratorFlatMapHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<Object>{tmp5}}, TNode<JSReceiver>{tmp2});
+    tmp6 = NewJSIteratorFlatMapHelper_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp2});
     CodeStubAssembler(state_).Return(tmp6);
   }
 }
@@ -3057,30 +3105,30 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block35(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block36(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Object, HeapObject> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block38(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block39(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSAny, Union<Hole, JSMessageObject>> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block38(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block39(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block41(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block42(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, JSReceiver, Object> block49(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, JSReceiver, Object> block48(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, JSReceiver, Object> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block50(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block51(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block52(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Object, HeapObject> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Object, HeapObject> block53(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Object, HeapObject, Object, HeapObject> block54(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object> block55(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSReceiver, JSAny> block49(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSReceiver, JSAny> block48(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSReceiver, JSAny> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block50(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block51(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block52(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSAny, Union<Hole, JSMessageObject>> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSAny, Union<Hole, JSMessageObject>> block53(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, JSAny, Union<Hole, JSMessageObject>, JSAny, Union<Hole, JSMessageObject>> block54(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny> block55(&ca_, compiler::CodeAssemblerLabel::kDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, HeapObject> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Union<Hole, JSMessageObject>> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
   TNode<JSReceiver> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
@@ -3089,7 +3137,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<BoolT> tmp3;
-      TNode<Object> tmp5;
+      TNode<JSAny> tmp5;
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerExceptionHandlerLabel catch4__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3106,7 +3154,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     ca_.Branch(tmp3, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp6;
+  TNode<Union<Hole, JSMessageObject>> tmp6;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = GetAndResetPendingMessage_0(state_);
@@ -3114,22 +3162,22 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp7;
-      TNode<Object> tmp9;
+      TNode<JSAny> tmp9;
   TNode<Number> tmp10;
   TNode<IntPtrT> tmp11;
-      TNode<Object> tmp13;
+      TNode<JSAny> tmp13;
   TNode<JSReceiver> tmp14;
   TNode<IntPtrT> tmp15;
-      TNode<Object> tmp17;
+      TNode<JSAny> tmp17;
   TNode<IntPtrT> tmp18;
-      TNode<Object> tmp20;
-  TNode<Object> tmp21;
+      TNode<JSAny> tmp20;
+  TNode<JSAny> tmp21;
   TNode<IntPtrT> tmp22;
-      TNode<Object> tmp24;
+      TNode<JSAny> tmp24;
   TNode<Boolean> tmp25;
   TNode<False> tmp26;
   TNode<BoolT> tmp27;
-      TNode<Object> tmp29;
+      TNode<JSAny> tmp29;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerExceptionHandlerLabel catch8__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3178,7 +3226,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
       ca_.Goto(&block10);
       ca_.Bind(&catch19_skip);
     }
-    tmp21 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{parameter1, tmp18});
+    tmp21 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{parameter1, tmp18});
     compiler::CodeAssemblerExceptionHandlerLabel catch23__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch23__label);
     tmp22 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
@@ -3194,7 +3242,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     tmp26 = False_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch28__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch28__label);
-    tmp27 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp25}, TNode<HeapObject>{tmp26});
+    tmp27 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp25}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp26});
     }
     if (catch28__label.is_used()) {
       compiler::CodeAssemblerLabel catch28_skip(&ca_);
@@ -3206,42 +3254,42 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     ca_.Branch(tmp27, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{tmp14, tmp21});
   }
 
-  TNode<HeapObject> tmp30;
+  TNode<Union<Hole, JSMessageObject>> tmp30;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp30 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp9, tmp30);
   }
 
-  TNode<HeapObject> tmp31;
+  TNode<Union<Hole, JSMessageObject>> tmp31;
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp31 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp13, tmp31);
   }
 
-  TNode<HeapObject> tmp32;
+  TNode<Union<Hole, JSMessageObject>> tmp32;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp32 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp17, tmp32);
   }
 
-  TNode<HeapObject> tmp33;
+  TNode<Union<Hole, JSMessageObject>> tmp33;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp33 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp20, tmp33);
   }
 
-  TNode<HeapObject> tmp34;
+  TNode<Union<Hole, JSMessageObject>> tmp34;
   if (block13.is_used()) {
     ca_.Bind(&block13);
     tmp34 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp24, tmp34);
   }
 
-  TNode<HeapObject> tmp35;
+  TNode<Union<Hole, JSMessageObject>> tmp35;
   if (block14.is_used()) {
     ca_.Bind(&block14);
     tmp35 = GetAndResetPendingMessage_0(state_);
@@ -3249,13 +3297,13 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp36;
-      TNode<Object> tmp39;
+      TNode<JSAny> tmp39;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     compiler::CodeAssemblerLabel label37(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch38__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch38__label);
-    tmp36 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}}, TNode<Map>{tmp0}, &label37);
+    tmp36 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}}, TNode<Map>{tmp0}, &label37);
     }
     if (catch38__label.is_used()) {
       compiler::CodeAssemblerLabel catch38_skip(&ca_);
@@ -3271,18 +3319,18 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp40;
+  TNode<Union<Hole, JSMessageObject>> tmp40;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     tmp40 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp39, tmp40);
   }
 
-      TNode<Object> tmp42;
+      TNode<JSAny> tmp42;
   TNode<Undefined> tmp43;
   TNode<True> tmp44;
   TNode<JSObject> tmp45;
-      TNode<Object> tmp47;
+      TNode<JSAny> tmp47;
   if (block18.is_used()) {
     ca_.Bind(&block18);
     compiler::CodeAssemblerExceptionHandlerLabel catch41__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3300,7 +3348,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     tmp44 = True_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch46__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch46__label);
-    tmp45 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp43}, TNode<Boolean>{tmp44});
+    tmp45 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp43}, TNode<Boolean>{tmp44});
     }
     if (catch46__label.is_used()) {
       compiler::CodeAssemblerLabel catch46_skip(&ca_);
@@ -3312,16 +3360,16 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp45);
   }
 
-  TNode<Object> tmp48;
-      TNode<Object> tmp50;
+  TNode<JSAny> tmp48;
+      TNode<JSAny> tmp50;
   TNode<IntPtrT> tmp51;
-      TNode<Object> tmp53;
-  TNode<JSReceiver> tmp54;
+      TNode<JSAny> tmp53;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp54;
   TNode<Undefined> tmp55;
-  TNode<Object> tmp56;
-      TNode<Object> tmp58;
+  TNode<JSAny> tmp56;
+      TNode<JSAny> tmp58;
   TNode<JSReceiver> tmp59;
-      TNode<Object> tmp62;
+      TNode<JSAny> tmp62;
   if (block17.is_used()) {
     ca_.Bind(&block17);
     compiler::CodeAssemblerExceptionHandlerLabel catch49__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3346,11 +3394,11 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
       ca_.Goto(&block25);
       ca_.Bind(&catch52_skip);
     }
-    tmp54 = CodeStubAssembler(state_).LoadReference<JSReceiver>(CodeStubAssembler::Reference{parameter1, tmp51});
+    tmp54 = CodeStubAssembler(state_).LoadReference<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>(CodeStubAssembler::Reference{parameter1, tmp51});
     tmp55 = Undefined_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch57__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch57__label);
-    tmp56 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp54}, TNode<Object>{tmp55}, TNode<Object>{tmp48}, TNode<Object>{tmp10});
+    tmp56 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp54}, TNode<JSAny>{tmp55}, TNode<JSAny>{tmp48}, TNode<JSAny>{tmp10});
     }
     if (catch57__label.is_used()) {
       compiler::CodeAssemblerLabel catch57_skip(&ca_);
@@ -3378,49 +3426,49 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     }
   }
 
-  TNode<HeapObject> tmp63;
+  TNode<Union<Hole, JSMessageObject>> tmp63;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     tmp63 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp42, tmp63);
   }
 
-  TNode<HeapObject> tmp64;
+  TNode<Union<Hole, JSMessageObject>> tmp64;
   if (block21.is_used()) {
     ca_.Bind(&block21);
     tmp64 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp47, tmp64);
   }
 
-  TNode<HeapObject> tmp65;
+  TNode<Union<Hole, JSMessageObject>> tmp65;
   if (block22.is_used()) {
     ca_.Bind(&block22);
     tmp65 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp50, tmp65);
   }
 
-  TNode<HeapObject> tmp66;
+  TNode<Union<Hole, JSMessageObject>> tmp66;
   if (block25.is_used()) {
     ca_.Bind(&block25);
     tmp66 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp14, tmp21, tmp53, tmp66);
   }
 
-  TNode<HeapObject> tmp67;
+  TNode<Union<Hole, JSMessageObject>> tmp67;
   if (block26.is_used()) {
     ca_.Bind(&block26);
     tmp67 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp14, tmp21, tmp58, tmp67);
   }
 
-  TNode<HeapObject> tmp68;
+  TNode<Union<Hole, JSMessageObject>> tmp68;
   if (block31.is_used()) {
     ca_.Bind(&block31);
     tmp68 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp14, tmp21, tmp62, tmp68);
   }
 
-      TNode<Object> tmp70;
+      TNode<JSAny> tmp70;
   if (block30.is_used()) {
     ca_.Bind(&block30);
     compiler::CodeAssemblerExceptionHandlerLabel catch69__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3435,28 +3483,28 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp71;
-  TNode<Object> tmp72;
-      TNode<Object> tmp74;
+  TNode<JSAny> tmp72;
+      TNode<JSAny> tmp74;
   TNode<IntPtrT> tmp75;
-      TNode<Object> tmp77;
+      TNode<JSAny> tmp77;
   TNode<IntPtrT> tmp78;
-      TNode<Object> tmp80;
+      TNode<JSAny> tmp80;
   TNode<IntPtrT> tmp81;
-      TNode<Object> tmp83;
+      TNode<JSAny> tmp83;
   TNode<IntPtrT> tmp84;
-      TNode<Object> tmp86;
+      TNode<JSAny> tmp86;
   TNode<True> tmp87;
   TNode<IntPtrT> tmp88;
-      TNode<Object> tmp90;
+      TNode<JSAny> tmp90;
   TNode<Number> tmp91;
-      TNode<Object> tmp93;
+      TNode<JSAny> tmp93;
   TNode<Number> tmp94;
-      TNode<Object> tmp96;
+      TNode<JSAny> tmp96;
   if (block29.is_used()) {
     ca_.Bind(&block29);
     compiler::CodeAssemblerExceptionHandlerLabel catch73__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch73__label);
-    std::tie(tmp71, tmp72) = GetIteratorFlattenable_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp59}).Flatten();
+    std::tie(tmp71, tmp72) = GetIteratorFlattenable_0(state_, TNode<Context>{parameter0}, TNode<Union<JSReceiver, String>>{tmp59}).Flatten();
     }
     if (catch73__label.is_used()) {
       compiler::CodeAssemblerLabel catch73_skip(&ca_);
@@ -3499,7 +3547,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
       ca_.Goto(&block36);
       ca_.Bind(&catch82_skip);
     }
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{parameter1, tmp81}, tmp72);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{parameter1, tmp81}, tmp72);
     compiler::CodeAssemblerExceptionHandlerLabel catch85__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch85__label);
     tmp84 = FromConstexpr_intptr_constexpr_int31_0(state_, 72);
@@ -3550,42 +3598,42 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     ca_.Goto(&block12, tmp71, tmp72);
   }
 
-  TNode<HeapObject> tmp97;
+  TNode<Union<Hole, JSMessageObject>> tmp97;
   if (block32.is_used()) {
     ca_.Bind(&block32);
     tmp97 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp14, tmp21, tmp70, tmp97);
   }
 
-  TNode<HeapObject> tmp98;
+  TNode<Union<Hole, JSMessageObject>> tmp98;
   if (block33.is_used()) {
     ca_.Bind(&block33);
     tmp98 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp14, tmp21, tmp74, tmp98);
   }
 
-  TNode<HeapObject> tmp99;
+  TNode<Union<Hole, JSMessageObject>> tmp99;
   if (block34.is_used()) {
     ca_.Bind(&block34);
     tmp99 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp71, tmp72, tmp77, tmp99);
   }
 
-  TNode<HeapObject> tmp100;
+  TNode<Union<Hole, JSMessageObject>> tmp100;
   if (block35.is_used()) {
     ca_.Bind(&block35);
     tmp100 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp71, tmp72, tmp80, tmp100);
   }
 
-  TNode<HeapObject> tmp101;
+  TNode<Union<Hole, JSMessageObject>> tmp101;
   if (block36.is_used()) {
     ca_.Bind(&block36);
     tmp101 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block24, tmp71, tmp72, tmp83, tmp101);
   }
 
-  TNode<HeapObject> tmp102;
+  TNode<Union<Hole, JSMessageObject>> tmp102;
   if (block37.is_used()) {
     ca_.Bind(&block37);
     tmp102 = GetAndResetPendingMessage_0(state_);
@@ -3593,16 +3641,16 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb24_6;
-  TNode<Object> phi_bb24_7;
-  TNode<Object> phi_bb24_10;
-  TNode<HeapObject> phi_bb24_11;
-      TNode<Object> tmp104;
-      TNode<Object> tmp106;
+  TNode<JSAny> phi_bb24_7;
+  TNode<JSAny> phi_bb24_10;
+  TNode<Union<Hole, JSMessageObject>> phi_bb24_11;
+      TNode<JSAny> tmp104;
+      TNode<JSAny> tmp106;
   if (block24.is_used()) {
     ca_.Bind(&block24, &phi_bb24_6, &phi_bb24_7, &phi_bb24_10, &phi_bb24_11);
     compiler::CodeAssemblerExceptionHandlerLabel catch103__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch103__label);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp1});
     }
     if (catch103__label.is_used()) {
       compiler::CodeAssemblerLabel catch103_skip(&ca_);
@@ -3624,8 +3672,8 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb38_6;
-  TNode<Object> phi_bb38_7;
-  TNode<HeapObject> tmp107;
+  TNode<JSAny> phi_bb38_7;
+  TNode<Union<Hole, JSMessageObject>> tmp107;
   if (block38.is_used()) {
     ca_.Bind(&block38, &phi_bb38_6, &phi_bb38_7);
     tmp107 = GetAndResetPendingMessage_0(state_);
@@ -3633,29 +3681,29 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb39_6;
-  TNode<Object> phi_bb39_7;
-  TNode<HeapObject> tmp108;
+  TNode<JSAny> phi_bb39_7;
+  TNode<Union<Hole, JSMessageObject>> tmp108;
   if (block39.is_used()) {
     ca_.Bind(&block39, &phi_bb39_6, &phi_bb39_7);
     tmp108 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp106, tmp108);
   }
 
-  TNode<HeapObject> tmp109;
+  TNode<Union<Hole, JSMessageObject>> tmp109;
   if (block40.is_used()) {
     ca_.Bind(&block40);
     tmp109 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp90, tmp109);
   }
 
-  TNode<HeapObject> tmp110;
+  TNode<Union<Hole, JSMessageObject>> tmp110;
   if (block41.is_used()) {
     ca_.Bind(&block41);
     tmp110 = GetAndResetPendingMessage_0(state_);
     ca_.Goto(&block2, tmp93, tmp110);
   }
 
-  TNode<HeapObject> tmp111;
+  TNode<Union<Hole, JSMessageObject>> tmp111;
   if (block42.is_used()) {
     ca_.Bind(&block42);
     tmp111 = GetAndResetPendingMessage_0(state_);
@@ -3663,15 +3711,15 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb12_6;
-  TNode<Object> phi_bb12_7;
+  TNode<JSAny> phi_bb12_7;
   TNode<JSReceiver> tmp112;
-      TNode<Object> tmp115;
+      TNode<JSAny> tmp115;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_6, &phi_bb12_7);
     compiler::CodeAssemblerLabel label113(&ca_);
     compiler::CodeAssemblerExceptionHandlerLabel catch114__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch114__label);
-    tmp112 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{phi_bb12_6}, TNode<Object>{phi_bb12_7}}, TNode<Map>{tmp0}, &label113);
+    tmp112 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{phi_bb12_6}, TNode<JSAny>{phi_bb12_7}}, TNode<Map>{tmp0}, &label113);
     }
     if (catch114__label.is_used()) {
       compiler::CodeAssemblerLabel catch114_skip(&ca_);
@@ -3688,10 +3736,10 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb49_6;
-  TNode<Object> phi_bb49_7;
+  TNode<JSAny> phi_bb49_7;
   TNode<JSReceiver> phi_bb49_9;
-  TNode<Object> phi_bb49_10;
-  TNode<HeapObject> tmp116;
+  TNode<JSAny> phi_bb49_10;
+  TNode<Union<Hole, JSMessageObject>> tmp116;
   if (block49.is_used()) {
     ca_.Bind(&block49, &phi_bb49_6, &phi_bb49_7, &phi_bb49_9, &phi_bb49_10);
     tmp116 = GetAndResetPendingMessage_0(state_);
@@ -3699,11 +3747,11 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb48_6;
-  TNode<Object> phi_bb48_7;
+  TNode<JSAny> phi_bb48_7;
   TNode<JSReceiver> phi_bb48_9;
-  TNode<Object> phi_bb48_10;
+  TNode<JSAny> phi_bb48_10;
   TNode<IntPtrT> tmp117;
-      TNode<Object> tmp119;
+      TNode<JSAny> tmp119;
   TNode<False> tmp120;
   if (block48.is_used()) {
     ca_.Bind(&block48, &phi_bb48_6, &phi_bb48_7, &phi_bb48_9, &phi_bb48_10);
@@ -3724,15 +3772,15 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb47_6;
-  TNode<Object> phi_bb47_7;
+  TNode<JSAny> phi_bb47_7;
   TNode<JSReceiver> phi_bb47_9;
-  TNode<Object> phi_bb47_10;
-  TNode<Object> tmp121;
-      TNode<Object> tmp123;
-      TNode<Object> tmp125;
+  TNode<JSAny> phi_bb47_10;
+  TNode<JSAny> tmp121;
+      TNode<JSAny> tmp123;
+      TNode<JSAny> tmp125;
   TNode<False> tmp126;
   TNode<JSObject> tmp127;
-      TNode<Object> tmp129;
+      TNode<JSAny> tmp129;
   if (block47.is_used()) {
     ca_.Bind(&block47, &phi_bb47_6, &phi_bb47_7, &phi_bb47_9, &phi_bb47_10);
     compiler::CodeAssemblerExceptionHandlerLabel catch122__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
@@ -3748,7 +3796,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     }
     compiler::CodeAssemblerExceptionHandlerLabel catch124__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch124__label);
-    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    MarkIteratorHelperAsFinishedExecuting_0(state_, TNode<JSIteratorHelper>{parameter1}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<JSAny>{tmp2}});
     }
     if (catch124__label.is_used()) {
       compiler::CodeAssemblerLabel catch124_skip(&ca_);
@@ -3760,7 +3808,7 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     tmp126 = False_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch128__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch128__label);
-    tmp127 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<Object>{tmp121}, TNode<Boolean>{tmp126});
+    tmp127 = CodeStubAssembler(state_).AllocateJSIteratorResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp121}, TNode<Boolean>{tmp126});
     }
     if (catch128__label.is_used()) {
       compiler::CodeAssemblerLabel catch128_skip(&ca_);
@@ -3773,8 +3821,8 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb50_6;
-  TNode<Object> phi_bb50_7;
-  TNode<HeapObject> tmp130;
+  TNode<JSAny> phi_bb50_7;
+  TNode<Union<Hole, JSMessageObject>> tmp130;
   if (block50.is_used()) {
     ca_.Bind(&block50, &phi_bb50_6, &phi_bb50_7);
     tmp130 = GetAndResetPendingMessage_0(state_);
@@ -3782,8 +3830,8 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb51_6;
-  TNode<Object> phi_bb51_7;
-  TNode<HeapObject> tmp131;
+  TNode<JSAny> phi_bb51_7;
+  TNode<Union<Hole, JSMessageObject>> tmp131;
   if (block51.is_used()) {
     ca_.Bind(&block51, &phi_bb51_6, &phi_bb51_7);
     tmp131 = GetAndResetPendingMessage_0(state_);
@@ -3791,8 +3839,8 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb52_6;
-  TNode<Object> phi_bb52_7;
-  TNode<HeapObject> tmp132;
+  TNode<JSAny> phi_bb52_7;
+  TNode<Union<Hole, JSMessageObject>> tmp132;
   if (block52.is_used()) {
     ca_.Bind(&block52, &phi_bb52_6, &phi_bb52_7);
     tmp132 = GetAndResetPendingMessage_0(state_);
@@ -3800,16 +3848,16 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb46_6;
-  TNode<Object> phi_bb46_7;
-  TNode<Object> phi_bb46_8;
-  TNode<HeapObject> phi_bb46_9;
-      TNode<Object> tmp134;
-      TNode<Object> tmp136;
+  TNode<JSAny> phi_bb46_7;
+  TNode<JSAny> phi_bb46_8;
+  TNode<Union<Hole, JSMessageObject>> phi_bb46_9;
+      TNode<JSAny> tmp134;
+      TNode<JSAny> tmp136;
   if (block46.is_used()) {
     ca_.Bind(&block46, &phi_bb46_6, &phi_bb46_7, &phi_bb46_8, &phi_bb46_9);
     compiler::CodeAssemblerExceptionHandlerLabel catch133__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch133__label);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp1}, TNode<Object>{tmp2}});
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp1});
     }
     if (catch133__label.is_used()) {
       compiler::CodeAssemblerLabel catch133_skip(&ca_);
@@ -3831,10 +3879,10 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb53_6;
-  TNode<Object> phi_bb53_7;
-  TNode<Object> phi_bb53_8;
-  TNode<HeapObject> phi_bb53_9;
-  TNode<HeapObject> tmp137;
+  TNode<JSAny> phi_bb53_7;
+  TNode<JSAny> phi_bb53_8;
+  TNode<Union<Hole, JSMessageObject>> phi_bb53_9;
+  TNode<Union<Hole, JSMessageObject>> tmp137;
   if (block53.is_used()) {
     ca_.Bind(&block53, &phi_bb53_6, &phi_bb53_7, &phi_bb53_8, &phi_bb53_9);
     tmp137 = GetAndResetPendingMessage_0(state_);
@@ -3842,12 +3890,12 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb54_6;
-  TNode<Object> phi_bb54_7;
-  TNode<Object> phi_bb54_8;
-  TNode<HeapObject> phi_bb54_9;
-  TNode<Object> phi_bb54_11;
-  TNode<HeapObject> phi_bb54_12;
-  TNode<HeapObject> tmp138;
+  TNode<JSAny> phi_bb54_7;
+  TNode<JSAny> phi_bb54_8;
+  TNode<Union<Hole, JSMessageObject>> phi_bb54_9;
+  TNode<JSAny> phi_bb54_11;
+  TNode<Union<Hole, JSMessageObject>> phi_bb54_12;
+  TNode<Union<Hole, JSMessageObject>> tmp138;
   if (block54.is_used()) {
     ca_.Bind(&block54, &phi_bb54_6, &phi_bb54_7, &phi_bb54_8, &phi_bb54_9, &phi_bb54_11, &phi_bb54_12);
     tmp138 = GetAndResetPendingMessage_0(state_);
@@ -3855,8 +3903,8 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> phi_bb55_6;
-  TNode<Object> phi_bb55_7;
-  TNode<HeapObject> tmp139;
+  TNode<JSAny> phi_bb55_7;
+  TNode<Union<Hole, JSMessageObject>> tmp139;
   if (block55.is_used()) {
     ca_.Bind(&block55, &phi_bb55_6, &phi_bb55_7);
     tmp139 = GetAndResetPendingMessage_0(state_);
@@ -3868,8 +3916,8 @@ TF_BUILTIN(IteratorFlatMapHelperNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb2_5;
-  TNode<HeapObject> phi_bb2_6;
+  TNode<JSAny> phi_bb2_5;
+  TNode<Union<Hole, JSMessageObject>> phi_bb2_6;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_5, &phi_bb2_6);
     MarkIteratorHelperAsExhausted_0(state_, TNode<JSIteratorHelper>{parameter1});
@@ -3887,27 +3935,28 @@ TF_BUILTIN(IteratorPrototypeReduce, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Number> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Number> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Number> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Number> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Number> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Number, Object, Number> block25(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number, Number> block26(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Number, Object, HeapObject> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<JSReceiver, Object, Number> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, Number> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, Number> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, Number> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, Number> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, Number> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Number, JSAny, Number> block27(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number, Number> block28(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number> block29(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, Number, JSAny, Union<Hole, JSMessageObject>> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSReceiver, JSAny, Number> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -3915,231 +3964,230 @@ TF_BUILTIN(IteratorPrototypeReduce, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.reduce");
   }
 
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
-  TNode<JSReceiver> tmp4;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<JSAny> tmp3;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp4;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     compiler::CodeAssemblerLabel label5(&ca_);
     tmp4 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{tmp3}, &label5);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label5.is_used()) {
       ca_.Bind(&label5);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp6;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp6 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.reduce");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp6);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp3);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp7;
-  TNode<Object> tmp8;
-  TNode<Map> tmp9;
-  TNode<IntPtrT> tmp10;
-  TNode<BoolT> tmp11;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp7, tmp8) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp9 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
-    tmp10 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp11 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp10});
-    ca_.Branch(tmp11, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  TNode<JSReceiver> tmp12;
+  TNode<JSReceiver> tmp6;
+  TNode<JSAny> tmp7;
+  TNode<Map> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<BoolT> tmp10;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    compiler::CodeAssemblerLabel label13(&ca_);
-    tmp12 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp7}, TNode<Object>{tmp8}}, TNode<Map>{tmp9}, &label13);
-    ca_.Goto(&block14);
-    if (label13.is_used()) {
-      ca_.Bind(&label13);
-      ca_.Goto(&block15);
+    std::tie(tmp6, tmp7) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp8 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
+    tmp9 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp10 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{tmp9});
+    ca_.Branch(tmp10, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  TNode<JSReceiver> tmp11;
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    compiler::CodeAssemblerLabel label12(&ca_);
+    tmp11 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp6}, TNode<JSAny>{tmp7}}, TNode<Map>{tmp8}, &label12);
+    ca_.Goto(&block16);
+    if (label12.is_used()) {
+      ca_.Bind(&label12);
+      ca_.Goto(&block17);
     }
   }
 
-  if (block15.is_used()) {
-    ca_.Bind(&block15);
+  if (block17.is_used()) {
+    ca_.Bind(&block17);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kIteratorReduceNoInitial, "Iterator.prototype.reduce");
   }
 
-  TNode<Object> tmp14;
-  TNode<Number> tmp15;
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    tmp14 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp12}, TNode<Map>{tmp9});
-    tmp15 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    ca_.Goto(&block11, tmp12, tmp14, tmp15);
+  TNode<JSAny> tmp13;
+  TNode<Number> tmp14;
+  if (block16.is_used()) {
+    ca_.Bind(&block16);
+    tmp13 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp11}, TNode<Map>{tmp8});
+    tmp14 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    ca_.Goto(&block13, tmp11, tmp13, tmp14);
   }
 
-  TNode<IntPtrT> tmp16;
-  TNode<Object> tmp17;
-  TNode<Number> tmp18;
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    tmp16 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp17 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp16});
-    tmp18 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    ca_.Goto(&block11, ca_.Uninitialized<JSReceiver>(), tmp17, tmp18);
+  TNode<IntPtrT> tmp15;
+  TNode<JSAny> tmp16;
+  TNode<Number> tmp17;
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    tmp15 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp16 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp15});
+    tmp17 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    ca_.Goto(&block13, ca_.Uninitialized<JSReceiver>(), tmp16, tmp17);
   }
 
-  TNode<JSReceiver> phi_bb11_11;
-  TNode<Object> phi_bb11_12;
-  TNode<Number> phi_bb11_13;
-  if (block11.is_used()) {
-    ca_.Bind(&block11, &phi_bb11_11, &phi_bb11_12, &phi_bb11_13);
-    ca_.Goto(&block18, phi_bb11_11, phi_bb11_12, phi_bb11_13);
+  TNode<JSReceiver> phi_bb13_11;
+  TNode<JSAny> phi_bb13_12;
+  TNode<Number> phi_bb13_13;
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_11, &phi_bb13_12, &phi_bb13_13);
+    ca_.Goto(&block20, phi_bb13_11, phi_bb13_12, phi_bb13_13);
+  }
+
+  TNode<JSReceiver> phi_bb20_11;
+  TNode<JSAny> phi_bb20_12;
+  TNode<Number> phi_bb20_13;
+  TNode<BoolT> tmp18;
+  if (block20.is_used()) {
+    ca_.Bind(&block20, &phi_bb20_11, &phi_bb20_12, &phi_bb20_13);
+    tmp18 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp18, &block18, std::vector<compiler::Node*>{phi_bb20_11, phi_bb20_12, phi_bb20_13}, &block19, std::vector<compiler::Node*>{phi_bb20_11, phi_bb20_12, phi_bb20_13});
   }
 
   TNode<JSReceiver> phi_bb18_11;
-  TNode<Object> phi_bb18_12;
+  TNode<JSAny> phi_bb18_12;
   TNode<Number> phi_bb18_13;
-  TNode<BoolT> tmp19;
+  TNode<JSReceiver> tmp19;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_11, &phi_bb18_12, &phi_bb18_13);
-    tmp19 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp19, &block16, std::vector<compiler::Node*>{phi_bb18_11, phi_bb18_12, phi_bb18_13}, &block17, std::vector<compiler::Node*>{phi_bb18_11, phi_bb18_12, phi_bb18_13});
-  }
-
-  TNode<JSReceiver> phi_bb16_11;
-  TNode<Object> phi_bb16_12;
-  TNode<Number> phi_bb16_13;
-  TNode<JSReceiver> tmp20;
-  if (block16.is_used()) {
-    ca_.Bind(&block16, &phi_bb16_11, &phi_bb16_12, &phi_bb16_13);
-    compiler::CodeAssemblerLabel label21(&ca_);
-    tmp20 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp7}, TNode<Object>{tmp8}}, TNode<Map>{tmp9}, &label21);
-    ca_.Goto(&block21, phi_bb16_11, phi_bb16_12, phi_bb16_13);
-    if (label21.is_used()) {
-      ca_.Bind(&label21);
-      ca_.Goto(&block22, phi_bb16_11, phi_bb16_12, phi_bb16_13);
+    compiler::CodeAssemblerLabel label20(&ca_);
+    tmp19 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp6}, TNode<JSAny>{tmp7}}, TNode<Map>{tmp8}, &label20);
+    ca_.Goto(&block23, phi_bb18_11, phi_bb18_12, phi_bb18_13);
+    if (label20.is_used()) {
+      ca_.Bind(&label20);
+      ca_.Goto(&block24, phi_bb18_11, phi_bb18_12, phi_bb18_13);
     }
   }
 
-  TNode<JSReceiver> phi_bb22_11;
-  TNode<Object> phi_bb22_12;
-  TNode<Number> phi_bb22_13;
-  if (block22.is_used()) {
-    ca_.Bind(&block22, &phi_bb22_11, &phi_bb22_12, &phi_bb22_13);
-    arguments.PopAndReturn(phi_bb22_12);
-  }
-
-  TNode<JSReceiver> phi_bb21_11;
-  TNode<Object> phi_bb21_12;
-  TNode<Number> phi_bb21_13;
-  TNode<Object> tmp22;
-  TNode<Undefined> tmp23;
-  TNode<Object> tmp24;
-      TNode<Object> tmp26;
-  TNode<Number> tmp27;
-      TNode<Object> tmp29;
-  TNode<Number> tmp30;
-      TNode<Object> tmp32;
-  if (block21.is_used()) {
-    ca_.Bind(&block21, &phi_bb21_11, &phi_bb21_12, &phi_bb21_13);
-    tmp22 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp20}, TNode<Map>{tmp9});
-    tmp23 = Undefined_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch25__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch25__label);
-    tmp24 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{tmp23}, TNode<Object>{phi_bb21_12}, TNode<Object>{tmp22}, TNode<Object>{phi_bb21_13});
-    }
-    if (catch25__label.is_used()) {
-      compiler::CodeAssemblerLabel catch25_skip(&ca_);
-      ca_.Goto(&catch25_skip);
-      ca_.Bind(&catch25__label, &tmp26);
-      ca_.Goto(&block25, phi_bb21_12, phi_bb21_13, phi_bb21_12, phi_bb21_13);
-      ca_.Bind(&catch25_skip);
-    }
-    compiler::CodeAssemblerExceptionHandlerLabel catch28__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch28__label);
-    tmp27 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    }
-    if (catch28__label.is_used()) {
-      compiler::CodeAssemblerLabel catch28_skip(&ca_);
-      ca_.Goto(&catch28_skip);
-      ca_.Bind(&catch28__label, &tmp29);
-      ca_.Goto(&block26, phi_bb21_13, phi_bb21_13, phi_bb21_13);
-      ca_.Bind(&catch28_skip);
-    }
-    compiler::CodeAssemblerExceptionHandlerLabel catch31__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch31__label);
-    tmp30 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb21_13}, TNode<Number>{tmp27});
-    }
-    if (catch31__label.is_used()) {
-      compiler::CodeAssemblerLabel catch31_skip(&ca_);
-      ca_.Goto(&catch31_skip);
-      ca_.Bind(&catch31__label, &tmp32);
-      ca_.Goto(&block27, phi_bb21_13, phi_bb21_13);
-      ca_.Bind(&catch31_skip);
-    }
-    ca_.Goto(&block18, tmp20, tmp24, tmp30);
-  }
-
-  TNode<Object> phi_bb25_12;
-  TNode<Number> phi_bb25_13;
-  TNode<Object> phi_bb25_18;
-  TNode<Number> phi_bb25_20;
-  TNode<HeapObject> tmp33;
-  if (block25.is_used()) {
-    ca_.Bind(&block25, &phi_bb25_12, &phi_bb25_13, &phi_bb25_18, &phi_bb25_20);
-    tmp33 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block24, phi_bb25_12, phi_bb25_13, tmp26, tmp33);
-  }
-
-  TNode<Number> phi_bb26_13;
-  TNode<Number> phi_bb26_16;
-  TNode<Number> phi_bb26_17;
-  TNode<HeapObject> tmp34;
-  if (block26.is_used()) {
-    ca_.Bind(&block26, &phi_bb26_13, &phi_bb26_16, &phi_bb26_17);
-    tmp34 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block24, tmp24, phi_bb26_13, tmp29, tmp34);
-  }
-
-  TNode<Number> phi_bb27_13;
-  TNode<Number> phi_bb27_16;
-  TNode<HeapObject> tmp35;
-  if (block27.is_used()) {
-    ca_.Bind(&block27, &phi_bb27_13, &phi_bb27_16);
-    tmp35 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block24, tmp24, phi_bb27_13, tmp32, tmp35);
-  }
-
-  TNode<Object> phi_bb24_12;
+  TNode<JSReceiver> phi_bb24_11;
+  TNode<JSAny> phi_bb24_12;
   TNode<Number> phi_bb24_13;
-  TNode<Object> phi_bb24_15;
-  TNode<HeapObject> phi_bb24_16;
   if (block24.is_used()) {
-    ca_.Bind(&block24, &phi_bb24_12, &phi_bb24_13, &phi_bb24_15, &phi_bb24_16);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp7}, TNode<Object>{tmp8}});
-    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, phi_bb24_15, phi_bb24_16);
+    ca_.Bind(&block24, &phi_bb24_11, &phi_bb24_12, &phi_bb24_13);
+    arguments.PopAndReturn(phi_bb24_12);
+  }
+
+  TNode<JSReceiver> phi_bb23_11;
+  TNode<JSAny> phi_bb23_12;
+  TNode<Number> phi_bb23_13;
+  TNode<JSAny> tmp21;
+  TNode<Undefined> tmp22;
+  TNode<JSAny> tmp23;
+      TNode<JSAny> tmp25;
+  TNode<Number> tmp26;
+      TNode<JSAny> tmp28;
+  TNode<Number> tmp29;
+      TNode<JSAny> tmp31;
+  if (block23.is_used()) {
+    ca_.Bind(&block23, &phi_bb23_11, &phi_bb23_12, &phi_bb23_13);
+    tmp21 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp19}, TNode<Map>{tmp8});
+    tmp22 = Undefined_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch24__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch24__label);
+    tmp23 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, TNode<JSAny>{tmp22}, TNode<JSAny>{phi_bb23_12}, TNode<JSAny>{tmp21}, TNode<JSAny>{phi_bb23_13});
+    }
+    if (catch24__label.is_used()) {
+      compiler::CodeAssemblerLabel catch24_skip(&ca_);
+      ca_.Goto(&catch24_skip);
+      ca_.Bind(&catch24__label, &tmp25);
+      ca_.Goto(&block27, phi_bb23_12, phi_bb23_13, phi_bb23_12, phi_bb23_13);
+      ca_.Bind(&catch24_skip);
+    }
+    compiler::CodeAssemblerExceptionHandlerLabel catch27__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch27__label);
+    tmp26 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    }
+    if (catch27__label.is_used()) {
+      compiler::CodeAssemblerLabel catch27_skip(&ca_);
+      ca_.Goto(&catch27_skip);
+      ca_.Bind(&catch27__label, &tmp28);
+      ca_.Goto(&block28, phi_bb23_13, phi_bb23_13, phi_bb23_13);
+      ca_.Bind(&catch27_skip);
+    }
+    compiler::CodeAssemblerExceptionHandlerLabel catch30__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch30__label);
+    tmp29 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb23_13}, TNode<Number>{tmp26});
+    }
+    if (catch30__label.is_used()) {
+      compiler::CodeAssemblerLabel catch30_skip(&ca_);
+      ca_.Goto(&catch30_skip);
+      ca_.Bind(&catch30__label, &tmp31);
+      ca_.Goto(&block29, phi_bb23_13, phi_bb23_13);
+      ca_.Bind(&catch30_skip);
+    }
+    ca_.Goto(&block20, tmp19, tmp23, tmp29);
+  }
+
+  TNode<JSAny> phi_bb27_12;
+  TNode<Number> phi_bb27_13;
+  TNode<JSAny> phi_bb27_18;
+  TNode<Number> phi_bb27_20;
+  TNode<Union<Hole, JSMessageObject>> tmp32;
+  if (block27.is_used()) {
+    ca_.Bind(&block27, &phi_bb27_12, &phi_bb27_13, &phi_bb27_18, &phi_bb27_20);
+    tmp32 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block26, phi_bb27_12, phi_bb27_13, tmp25, tmp32);
+  }
+
+  TNode<Number> phi_bb28_13;
+  TNode<Number> phi_bb28_16;
+  TNode<Number> phi_bb28_17;
+  TNode<Union<Hole, JSMessageObject>> tmp33;
+  if (block28.is_used()) {
+    ca_.Bind(&block28, &phi_bb28_13, &phi_bb28_16, &phi_bb28_17);
+    tmp33 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block26, tmp23, phi_bb28_13, tmp28, tmp33);
+  }
+
+  TNode<Number> phi_bb29_13;
+  TNode<Number> phi_bb29_16;
+  TNode<Union<Hole, JSMessageObject>> tmp34;
+  if (block29.is_used()) {
+    ca_.Bind(&block29, &phi_bb29_13, &phi_bb29_16);
+    tmp34 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block26, tmp23, phi_bb29_13, tmp31, tmp34);
+  }
+
+  TNode<JSAny> phi_bb26_12;
+  TNode<Number> phi_bb26_13;
+  TNode<JSAny> phi_bb26_15;
+  TNode<Union<Hole, JSMessageObject>> phi_bb26_16;
+  if (block26.is_used()) {
+    ca_.Bind(&block26, &phi_bb26_12, &phi_bb26_13, &phi_bb26_15, &phi_bb26_16);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, phi_bb26_15, phi_bb26_16);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> phi_bb17_11;
-  TNode<Object> phi_bb17_12;
-  TNode<Number> phi_bb17_13;
-  if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_11, &phi_bb17_12, &phi_bb17_13);
+  TNode<JSReceiver> phi_bb19_11;
+  TNode<JSAny> phi_bb19_12;
+  TNode<Number> phi_bb19_13;
+  if (block19.is_used()) {
+    ca_.Bind(&block19, &phi_bb19_11, &phi_bb19_12, &phi_bb19_13);
     CodeStubAssembler(state_).Unreachable();
   }
 }
@@ -4148,8 +4196,9 @@ TF_BUILTIN(IteratorPrototypeToArray, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -4182,7 +4231,7 @@ TF_BUILTIN(IteratorPrototypeToArray, CodeStubAssembler) {
   }
 
   TNode<JSReceiver> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<FixedArray> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
@@ -4214,7 +4263,7 @@ TF_BUILTIN(IteratorPrototypeToArray, CodeStubAssembler) {
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_5, &phi_bb5_6, &phi_bb5_7, &phi_bb5_9);
     compiler::CodeAssemblerLabel label10(&ca_);
-    tmp9 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp2}, TNode<Object>{tmp3}}, TNode<Map>{tmp7}, &label10);
+    tmp9 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp2}, TNode<JSAny>{tmp3}}, TNode<Map>{tmp7}, &label10);
     ca_.Goto(&block10, phi_bb5_5, phi_bb5_6, phi_bb5_7, phi_bb5_9);
     if (label10.is_used()) {
       ca_.Bind(&label10);
@@ -4249,7 +4298,7 @@ TF_BUILTIN(IteratorPrototypeToArray, CodeStubAssembler) {
   TNode<IntPtrT> phi_bb10_6;
   TNode<IntPtrT> phi_bb10_7;
   TNode<JSReceiver> phi_bb10_9;
-  TNode<Object> tmp18;
+  TNode<JSAny> tmp18;
   TNode<BoolT> tmp19;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_5, &phi_bb10_6, &phi_bb10_7, &phi_bb10_9);
@@ -4285,7 +4334,7 @@ TF_BUILTIN(IteratorPrototypeToArray, CodeStubAssembler) {
   TNode<FixedArray> phi_bb33_5;
   TNode<IntPtrT> phi_bb33_6;
   TNode<IntPtrT> phi_bb33_7;
-  TNode<Object> tmp28;
+  TNode<Union<HeapObject, TaggedIndex>> tmp28;
   TNode<IntPtrT> tmp29;
   TNode<IntPtrT> tmp30;
   TNode<IntPtrT> tmp31;
@@ -4310,13 +4359,13 @@ TF_BUILTIN(IteratorPrototypeToArray, CodeStubAssembler) {
   TNode<IntPtrT> phi_bb51_23;
   TNode<IntPtrT> tmp36;
   TNode<IntPtrT> tmp37;
-  TNode<Object> tmp38;
+  TNode<Union<HeapObject, TaggedIndex>> tmp38;
   TNode<IntPtrT> tmp39;
   if (block51.is_used()) {
     ca_.Bind(&block51, &phi_bb51_17, &phi_bb51_18, &phi_bb51_22, &phi_bb51_23);
     tmp36 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{phi_bb51_23});
     tmp37 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp29}, TNode<IntPtrT>{tmp36});
-    std::tie(tmp38, tmp39) = NewReference_Object_0(state_, TNode<Object>{tmp28}, TNode<IntPtrT>{tmp37}).Flatten();
+    std::tie(tmp38, tmp39) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp28}, TNode<IntPtrT>{tmp37}).Flatten();
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp38, tmp39}, tmp18);
     ca_.Goto(&block7, phi_bb33_5, phi_bb33_6, tmp32, tmp9);
   }
@@ -4344,24 +4393,25 @@ TF_BUILTIN(IteratorPrototypeForEach, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kFn);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kFn);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number, Number> block19(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block20(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Object, HeapObject> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number, Number> block21(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number> block22(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, JSAny, Union<Hole, JSMessageObject>> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -4369,169 +4419,168 @@ TF_BUILTIN(IteratorPrototypeForEach, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.forEach");
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp4;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.forEach");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp4);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<Number> tmp7;
-  TNode<Map> tmp8;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp5, tmp6) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp7 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp8 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
-    ca_.Goto(&block11, tmp7);
+  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp5;
+  TNode<Number> tmp6;
+  TNode<Map> tmp7;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
+    ca_.Goto(&block13, tmp6);
+  }
+
+  TNode<Number> phi_bb13_7;
+  TNode<BoolT> tmp8;
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_7);
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp8, &block11, std::vector<compiler::Node*>{phi_bb13_7}, &block12, std::vector<compiler::Node*>{phi_bb13_7});
   }
 
   TNode<Number> phi_bb11_7;
-  TNode<BoolT> tmp9;
+  TNode<JSReceiver> tmp9;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_7);
-    tmp9 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{phi_bb11_7}, &block10, std::vector<compiler::Node*>{phi_bb11_7});
-  }
-
-  TNode<Number> phi_bb9_7;
-  TNode<JSReceiver> tmp10;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_7);
-    compiler::CodeAssemblerLabel label11(&ca_);
-    tmp10 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}}, TNode<Map>{tmp8}, &label11);
-    ca_.Goto(&block14, phi_bb9_7);
-    if (label11.is_used()) {
-      ca_.Bind(&label11);
-      ca_.Goto(&block15, phi_bb9_7);
+    compiler::CodeAssemblerLabel label10(&ca_);
+    tmp9 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Map>{tmp7}, &label10);
+    ca_.Goto(&block16, phi_bb11_7);
+    if (label10.is_used()) {
+      ca_.Bind(&label10);
+      ca_.Goto(&block17, phi_bb11_7);
     }
-  }
-
-  TNode<Number> phi_bb15_7;
-  TNode<Undefined> tmp12;
-  if (block15.is_used()) {
-    ca_.Bind(&block15, &phi_bb15_7);
-    tmp12 = Undefined_0(state_);
-    CodeStubAssembler(state_).Return(tmp12);
-  }
-
-  TNode<Number> phi_bb14_7;
-  TNode<Object> tmp13;
-  TNode<Undefined> tmp14;
-  TNode<Object> tmp15;
-      TNode<Object> tmp17;
-  TNode<Number> tmp18;
-      TNode<Object> tmp20;
-  TNode<Number> tmp21;
-      TNode<Object> tmp23;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_7);
-    tmp13 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp10}, TNode<Map>{tmp8});
-    tmp14 = Undefined_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch16__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch16__label);
-    tmp15 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp2}, TNode<Object>{tmp14}, TNode<Object>{tmp13}, TNode<Object>{phi_bb14_7});
-    }
-    if (catch16__label.is_used()) {
-      compiler::CodeAssemblerLabel catch16_skip(&ca_);
-      ca_.Goto(&catch16_skip);
-      ca_.Bind(&catch16__label, &tmp17);
-      ca_.Goto(&block18, phi_bb14_7, phi_bb14_7);
-      ca_.Bind(&catch16_skip);
-    }
-    compiler::CodeAssemblerExceptionHandlerLabel catch19__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch19__label);
-    tmp18 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    }
-    if (catch19__label.is_used()) {
-      compiler::CodeAssemblerLabel catch19_skip(&ca_);
-      ca_.Goto(&catch19_skip);
-      ca_.Bind(&catch19__label, &tmp20);
-      ca_.Goto(&block19, phi_bb14_7, phi_bb14_7, phi_bb14_7);
-      ca_.Bind(&catch19_skip);
-    }
-    compiler::CodeAssemblerExceptionHandlerLabel catch22__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch22__label);
-    tmp21 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb14_7}, TNode<Number>{tmp18});
-    }
-    if (catch22__label.is_used()) {
-      compiler::CodeAssemblerLabel catch22_skip(&ca_);
-      ca_.Goto(&catch22_skip);
-      ca_.Bind(&catch22__label, &tmp23);
-      ca_.Goto(&block20, phi_bb14_7, phi_bb14_7);
-      ca_.Bind(&catch22_skip);
-    }
-    ca_.Goto(&block11, tmp21);
-  }
-
-  TNode<Number> phi_bb18_7;
-  TNode<Number> phi_bb18_15;
-  TNode<HeapObject> tmp24;
-  if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_7, &phi_bb18_15);
-    tmp24 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block17, phi_bb18_7, tmp17, tmp24);
-  }
-
-  TNode<Number> phi_bb19_7;
-  TNode<Number> phi_bb19_11;
-  TNode<Number> phi_bb19_12;
-  TNode<HeapObject> tmp25;
-  if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_7, &phi_bb19_11, &phi_bb19_12);
-    tmp25 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block17, phi_bb19_7, tmp20, tmp25);
-  }
-
-  TNode<Number> phi_bb20_7;
-  TNode<Number> phi_bb20_11;
-  TNode<HeapObject> tmp26;
-  if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_7, &phi_bb20_11);
-    tmp26 = GetAndResetPendingMessage_0(state_);
-    ca_.Goto(&block17, phi_bb20_7, tmp23, tmp26);
   }
 
   TNode<Number> phi_bb17_7;
-  TNode<Object> phi_bb17_11;
-  TNode<HeapObject> phi_bb17_12;
+  TNode<Undefined> tmp11;
   if (block17.is_used()) {
-    ca_.Bind(&block17, &phi_bb17_7, &phi_bb17_11, &phi_bb17_12);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, phi_bb17_11, phi_bb17_12);
+    ca_.Bind(&block17, &phi_bb17_7);
+    tmp11 = Undefined_0(state_);
+    CodeStubAssembler(state_).Return(tmp11);
+  }
+
+  TNode<Number> phi_bb16_7;
+  TNode<JSAny> tmp12;
+  TNode<Undefined> tmp13;
+  TNode<JSAny> tmp14;
+      TNode<JSAny> tmp16;
+  TNode<Number> tmp17;
+      TNode<JSAny> tmp19;
+  TNode<Number> tmp20;
+      TNode<JSAny> tmp22;
+  if (block16.is_used()) {
+    ca_.Bind(&block16, &phi_bb16_7);
+    tmp12 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp9}, TNode<Map>{tmp7});
+    tmp13 = Undefined_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
+    tmp14 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp2}, TNode<JSAny>{tmp13}, TNode<JSAny>{tmp12}, TNode<JSAny>{phi_bb16_7});
+    }
+    if (catch15__label.is_used()) {
+      compiler::CodeAssemblerLabel catch15_skip(&ca_);
+      ca_.Goto(&catch15_skip);
+      ca_.Bind(&catch15__label, &tmp16);
+      ca_.Goto(&block20, phi_bb16_7, phi_bb16_7);
+      ca_.Bind(&catch15_skip);
+    }
+    compiler::CodeAssemblerExceptionHandlerLabel catch18__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch18__label);
+    tmp17 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    }
+    if (catch18__label.is_used()) {
+      compiler::CodeAssemblerLabel catch18_skip(&ca_);
+      ca_.Goto(&catch18_skip);
+      ca_.Bind(&catch18__label, &tmp19);
+      ca_.Goto(&block21, phi_bb16_7, phi_bb16_7, phi_bb16_7);
+      ca_.Bind(&catch18_skip);
+    }
+    compiler::CodeAssemblerExceptionHandlerLabel catch21__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch21__label);
+    tmp20 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb16_7}, TNode<Number>{tmp17});
+    }
+    if (catch21__label.is_used()) {
+      compiler::CodeAssemblerLabel catch21_skip(&ca_);
+      ca_.Goto(&catch21_skip);
+      ca_.Bind(&catch21__label, &tmp22);
+      ca_.Goto(&block22, phi_bb16_7, phi_bb16_7);
+      ca_.Bind(&catch21_skip);
+    }
+    ca_.Goto(&block13, tmp20);
+  }
+
+  TNode<Number> phi_bb20_7;
+  TNode<Number> phi_bb20_15;
+  TNode<Union<Hole, JSMessageObject>> tmp23;
+  if (block20.is_used()) {
+    ca_.Bind(&block20, &phi_bb20_7, &phi_bb20_15);
+    tmp23 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block19, phi_bb20_7, tmp16, tmp23);
+  }
+
+  TNode<Number> phi_bb21_7;
+  TNode<Number> phi_bb21_11;
+  TNode<Number> phi_bb21_12;
+  TNode<Union<Hole, JSMessageObject>> tmp24;
+  if (block21.is_used()) {
+    ca_.Bind(&block21, &phi_bb21_7, &phi_bb21_11, &phi_bb21_12);
+    tmp24 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block19, phi_bb21_7, tmp19, tmp24);
+  }
+
+  TNode<Number> phi_bb22_7;
+  TNode<Number> phi_bb22_11;
+  TNode<Union<Hole, JSMessageObject>> tmp25;
+  if (block22.is_used()) {
+    ca_.Bind(&block22, &phi_bb22_7, &phi_bb22_11);
+    tmp25 = GetAndResetPendingMessage_0(state_);
+    ca_.Goto(&block19, phi_bb22_7, tmp22, tmp25);
+  }
+
+  TNode<Number> phi_bb19_7;
+  TNode<JSAny> phi_bb19_11;
+  TNode<Union<Hole, JSMessageObject>> phi_bb19_12;
+  if (block19.is_used()) {
+    ca_.Bind(&block19, &phi_bb19_7, &phi_bb19_11, &phi_bb19_12);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, phi_bb19_11, phi_bb19_12);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Number> phi_bb10_7;
-  if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_7);
+  TNode<Number> phi_bb12_7;
+  if (block12.is_used()) {
+    ca_.Bind(&block12, &phi_bb12_7);
     CodeStubAssembler(state_).Unreachable();
   }
 }
@@ -4540,23 +4589,24 @@ TF_BUILTIN(IteratorPrototypeSome, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kPredicate);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kPredicate);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number> block20(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -4564,141 +4614,140 @@ TF_BUILTIN(IteratorPrototypeSome, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.some");
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp4;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.some");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp4);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<Number> tmp7;
-  TNode<Map> tmp8;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp5, tmp6) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp7 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp8 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
-    ca_.Goto(&block11, tmp7);
+  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp5;
+  TNode<Number> tmp6;
+  TNode<Map> tmp7;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
+    ca_.Goto(&block13, tmp6);
+  }
+
+  TNode<Number> phi_bb13_7;
+  TNode<BoolT> tmp8;
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_7);
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp8, &block11, std::vector<compiler::Node*>{phi_bb13_7}, &block12, std::vector<compiler::Node*>{phi_bb13_7});
   }
 
   TNode<Number> phi_bb11_7;
-  TNode<BoolT> tmp9;
+  TNode<JSReceiver> tmp9;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_7);
-    tmp9 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{phi_bb11_7}, &block10, std::vector<compiler::Node*>{phi_bb11_7});
-  }
-
-  TNode<Number> phi_bb9_7;
-  TNode<JSReceiver> tmp10;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_7);
-    compiler::CodeAssemblerLabel label11(&ca_);
-    tmp10 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}}, TNode<Map>{tmp8}, &label11);
-    ca_.Goto(&block14, phi_bb9_7);
-    if (label11.is_used()) {
-      ca_.Bind(&label11);
-      ca_.Goto(&block15, phi_bb9_7);
+    compiler::CodeAssemblerLabel label10(&ca_);
+    tmp9 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Map>{tmp7}, &label10);
+    ca_.Goto(&block16, phi_bb11_7);
+    if (label10.is_used()) {
+      ca_.Bind(&label10);
+      ca_.Goto(&block17, phi_bb11_7);
     }
   }
 
-  TNode<Number> phi_bb15_7;
-  TNode<False> tmp12;
-  if (block15.is_used()) {
-    ca_.Bind(&block15, &phi_bb15_7);
-    tmp12 = False_0(state_);
-    CodeStubAssembler(state_).Return(tmp12);
+  TNode<Number> phi_bb17_7;
+  TNode<False> tmp11;
+  if (block17.is_used()) {
+    ca_.Bind(&block17, &phi_bb17_7);
+    tmp11 = False_0(state_);
+    CodeStubAssembler(state_).Return(tmp11);
   }
 
-  TNode<Number> phi_bb14_7;
-  TNode<Object> tmp13;
-  TNode<Undefined> tmp14;
-  TNode<Object> tmp15;
-      TNode<Object> tmp17;
+  TNode<Number> phi_bb16_7;
+  TNode<JSAny> tmp12;
+  TNode<Undefined> tmp13;
+  TNode<JSAny> tmp14;
+      TNode<JSAny> tmp16;
+  TNode<BoolT> tmp17;
   TNode<BoolT> tmp18;
   TNode<BoolT> tmp19;
-  TNode<BoolT> tmp20;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_7);
-    tmp13 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp10}, TNode<Map>{tmp8});
-    tmp14 = Undefined_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch16__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch16__label);
-    tmp15 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp2}, TNode<Object>{tmp14}, TNode<Object>{tmp13}, TNode<Object>{phi_bb14_7});
+  if (block16.is_used()) {
+    ca_.Bind(&block16, &phi_bb16_7);
+    tmp12 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp9}, TNode<Map>{tmp7});
+    tmp13 = Undefined_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
+    tmp14 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp2}, TNode<JSAny>{tmp13}, TNode<JSAny>{tmp12}, TNode<JSAny>{phi_bb16_7});
     }
-    if (catch16__label.is_used()) {
-      compiler::CodeAssemblerLabel catch16_skip(&ca_);
-      ca_.Goto(&catch16_skip);
-      ca_.Bind(&catch16__label, &tmp17);
-      ca_.Goto(&block18, phi_bb14_7, phi_bb14_7);
-      ca_.Bind(&catch16_skip);
+    if (catch15__label.is_used()) {
+      compiler::CodeAssemblerLabel catch15_skip(&ca_);
+      ca_.Goto(&catch15_skip);
+      ca_.Bind(&catch15__label, &tmp16);
+      ca_.Goto(&block20, phi_bb16_7, phi_bb16_7);
+      ca_.Bind(&catch15_skip);
     }
-    tmp18 = ToBoolean_0(state_, TNode<Object>{tmp15});
-    tmp19 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    tmp20 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp18}, TNode<BoolT>{tmp19});
-    ca_.Branch(tmp20, &block19, std::vector<compiler::Node*>{phi_bb14_7}, &block20, std::vector<compiler::Node*>{phi_bb14_7});
-  }
-
-  TNode<Number> phi_bb18_7;
-  TNode<Number> phi_bb18_16;
-  TNode<HeapObject> tmp21;
-  if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_7, &phi_bb18_16);
-    tmp21 = GetAndResetPendingMessage_0(state_);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp17, tmp21);
-    CodeStubAssembler(state_).Unreachable();
-  }
-
-  TNode<Number> phi_bb19_7;
-  TNode<True> tmp22;
-  if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_7);
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    tmp22 = True_0(state_);
-    CodeStubAssembler(state_).Return(tmp22);
+    tmp17 = ToBoolean_0(state_, TNode<JSAny>{tmp14});
+    tmp18 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp19 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp17}, TNode<BoolT>{tmp18});
+    ca_.Branch(tmp19, &block21, std::vector<compiler::Node*>{phi_bb16_7}, &block22, std::vector<compiler::Node*>{phi_bb16_7});
   }
 
   TNode<Number> phi_bb20_7;
-  TNode<Number> tmp23;
-  TNode<Number> tmp24;
+  TNode<Number> phi_bb20_16;
+  TNode<Union<Hole, JSMessageObject>> tmp20;
   if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_7);
-    tmp23 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp24 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb20_7}, TNode<Number>{tmp23});
-    ca_.Goto(&block11, tmp24);
+    ca_.Bind(&block20, &phi_bb20_7, &phi_bb20_16);
+    tmp20 = GetAndResetPendingMessage_0(state_);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp16, tmp20);
+    CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Number> phi_bb10_7;
-  if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_7);
+  TNode<Number> phi_bb21_7;
+  TNode<True> tmp21;
+  if (block21.is_used()) {
+    ca_.Bind(&block21, &phi_bb21_7);
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}});
+    tmp21 = True_0(state_);
+    CodeStubAssembler(state_).Return(tmp21);
+  }
+
+  TNode<Number> phi_bb22_7;
+  TNode<Number> tmp22;
+  TNode<Number> tmp23;
+  if (block22.is_used()) {
+    ca_.Bind(&block22, &phi_bb22_7);
+    tmp22 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp23 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb22_7}, TNode<Number>{tmp22});
+    ca_.Goto(&block13, tmp23);
+  }
+
+  TNode<Number> phi_bb12_7;
+  if (block12.is_used()) {
+    ca_.Bind(&block12, &phi_bb12_7);
     CodeStubAssembler(state_).Unreachable();
   }
 }
@@ -4707,23 +4756,24 @@ TF_BUILTIN(IteratorPrototypeEvery, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kPredicate);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kPredicate);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number> block20(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -4731,141 +4781,140 @@ TF_BUILTIN(IteratorPrototypeEvery, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.every");
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp4;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.every");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp4);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<Number> tmp7;
-  TNode<Map> tmp8;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp5, tmp6) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp7 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp8 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
-    ca_.Goto(&block11, tmp7);
+  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp5;
+  TNode<Number> tmp6;
+  TNode<Map> tmp7;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
+    ca_.Goto(&block13, tmp6);
+  }
+
+  TNode<Number> phi_bb13_7;
+  TNode<BoolT> tmp8;
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_7);
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp8, &block11, std::vector<compiler::Node*>{phi_bb13_7}, &block12, std::vector<compiler::Node*>{phi_bb13_7});
   }
 
   TNode<Number> phi_bb11_7;
-  TNode<BoolT> tmp9;
+  TNode<JSReceiver> tmp9;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_7);
-    tmp9 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{phi_bb11_7}, &block10, std::vector<compiler::Node*>{phi_bb11_7});
-  }
-
-  TNode<Number> phi_bb9_7;
-  TNode<JSReceiver> tmp10;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_7);
-    compiler::CodeAssemblerLabel label11(&ca_);
-    tmp10 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}}, TNode<Map>{tmp8}, &label11);
-    ca_.Goto(&block14, phi_bb9_7);
-    if (label11.is_used()) {
-      ca_.Bind(&label11);
-      ca_.Goto(&block15, phi_bb9_7);
+    compiler::CodeAssemblerLabel label10(&ca_);
+    tmp9 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Map>{tmp7}, &label10);
+    ca_.Goto(&block16, phi_bb11_7);
+    if (label10.is_used()) {
+      ca_.Bind(&label10);
+      ca_.Goto(&block17, phi_bb11_7);
     }
   }
 
-  TNode<Number> phi_bb15_7;
-  TNode<True> tmp12;
-  if (block15.is_used()) {
-    ca_.Bind(&block15, &phi_bb15_7);
-    tmp12 = True_0(state_);
-    CodeStubAssembler(state_).Return(tmp12);
+  TNode<Number> phi_bb17_7;
+  TNode<True> tmp11;
+  if (block17.is_used()) {
+    ca_.Bind(&block17, &phi_bb17_7);
+    tmp11 = True_0(state_);
+    CodeStubAssembler(state_).Return(tmp11);
   }
 
-  TNode<Number> phi_bb14_7;
-  TNode<Object> tmp13;
-  TNode<Undefined> tmp14;
-  TNode<Object> tmp15;
-      TNode<Object> tmp17;
+  TNode<Number> phi_bb16_7;
+  TNode<JSAny> tmp12;
+  TNode<Undefined> tmp13;
+  TNode<JSAny> tmp14;
+      TNode<JSAny> tmp16;
+  TNode<BoolT> tmp17;
   TNode<BoolT> tmp18;
   TNode<BoolT> tmp19;
-  TNode<BoolT> tmp20;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_7);
-    tmp13 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp10}, TNode<Map>{tmp8});
-    tmp14 = Undefined_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch16__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch16__label);
-    tmp15 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp2}, TNode<Object>{tmp14}, TNode<Object>{tmp13}, TNode<Object>{phi_bb14_7});
+  if (block16.is_used()) {
+    ca_.Bind(&block16, &phi_bb16_7);
+    tmp12 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp9}, TNode<Map>{tmp7});
+    tmp13 = Undefined_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
+    tmp14 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp2}, TNode<JSAny>{tmp13}, TNode<JSAny>{tmp12}, TNode<JSAny>{phi_bb16_7});
     }
-    if (catch16__label.is_used()) {
-      compiler::CodeAssemblerLabel catch16_skip(&ca_);
-      ca_.Goto(&catch16_skip);
-      ca_.Bind(&catch16__label, &tmp17);
-      ca_.Goto(&block18, phi_bb14_7, phi_bb14_7);
-      ca_.Bind(&catch16_skip);
+    if (catch15__label.is_used()) {
+      compiler::CodeAssemblerLabel catch15_skip(&ca_);
+      ca_.Goto(&catch15_skip);
+      ca_.Bind(&catch15__label, &tmp16);
+      ca_.Goto(&block20, phi_bb16_7, phi_bb16_7);
+      ca_.Bind(&catch15_skip);
     }
-    tmp18 = ToBoolean_0(state_, TNode<Object>{tmp15});
-    tmp19 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp20 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp18}, TNode<BoolT>{tmp19});
-    ca_.Branch(tmp20, &block19, std::vector<compiler::Node*>{phi_bb14_7}, &block20, std::vector<compiler::Node*>{phi_bb14_7});
-  }
-
-  TNode<Number> phi_bb18_7;
-  TNode<Number> phi_bb18_16;
-  TNode<HeapObject> tmp21;
-  if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_7, &phi_bb18_16);
-    tmp21 = GetAndResetPendingMessage_0(state_);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp17, tmp21);
-    CodeStubAssembler(state_).Unreachable();
-  }
-
-  TNode<Number> phi_bb19_7;
-  TNode<False> tmp22;
-  if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_7);
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    tmp22 = False_0(state_);
-    CodeStubAssembler(state_).Return(tmp22);
+    tmp17 = ToBoolean_0(state_, TNode<JSAny>{tmp14});
+    tmp18 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp19 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp17}, TNode<BoolT>{tmp18});
+    ca_.Branch(tmp19, &block21, std::vector<compiler::Node*>{phi_bb16_7}, &block22, std::vector<compiler::Node*>{phi_bb16_7});
   }
 
   TNode<Number> phi_bb20_7;
-  TNode<Number> tmp23;
-  TNode<Number> tmp24;
+  TNode<Number> phi_bb20_16;
+  TNode<Union<Hole, JSMessageObject>> tmp20;
   if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_7);
-    tmp23 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp24 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb20_7}, TNode<Number>{tmp23});
-    ca_.Goto(&block11, tmp24);
+    ca_.Bind(&block20, &phi_bb20_7, &phi_bb20_16);
+    tmp20 = GetAndResetPendingMessage_0(state_);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp16, tmp20);
+    CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Number> phi_bb10_7;
-  if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_7);
+  TNode<Number> phi_bb21_7;
+  TNode<False> tmp21;
+  if (block21.is_used()) {
+    ca_.Bind(&block21, &phi_bb21_7);
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}});
+    tmp21 = False_0(state_);
+    CodeStubAssembler(state_).Return(tmp21);
+  }
+
+  TNode<Number> phi_bb22_7;
+  TNode<Number> tmp22;
+  TNode<Number> tmp23;
+  if (block22.is_used()) {
+    ca_.Bind(&block22, &phi_bb22_7);
+    tmp22 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp23 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb22_7}, TNode<Number>{tmp22});
+    ca_.Goto(&block13, tmp23);
+  }
+
+  TNode<Number> phi_bb12_7;
+  if (block12.is_used()) {
+    ca_.Bind(&block12, &phi_bb12_7);
     CodeStubAssembler(state_).Unreachable();
   }
 }
@@ -4874,23 +4923,24 @@ TF_BUILTIN(IteratorPrototypeFind, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kPredicate);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kPredicate);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kIteratorMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number> block18(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number> block20(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -4898,139 +4948,138 @@ TF_BUILTIN(IteratorPrototypeFind, CodeStubAssembler) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     tmp0 = Cast_JSReceiver_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1);
-    ca_.Goto(&block3);
+    ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
-      ca_.Goto(&block4);
+      ca_.Goto(&block6);
     }
   }
 
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "Iterator.prototype.find");
   }
 
-  TNode<JSReceiver> tmp2;
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_Callable_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label3);
-    ca_.Goto(&block7);
+    ca_.Goto(&block9);
     if (label3.is_used()) {
       ca_.Bind(&label3);
-      ca_.Goto(&block8);
+      ca_.Goto(&block10);
     }
   }
 
-  TNode<Object> tmp4;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    tmp4 = FromConstexpr_JSAny_constexpr_string_0(state_, "Iterator.prototype.find");
-    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, tmp4);
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kThrowCalledNonCallable, parameter0, parameter2);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<JSReceiver> tmp5;
-  TNode<Object> tmp6;
-  TNode<Number> tmp7;
-  TNode<Map> tmp8;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    std::tie(tmp5, tmp6) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
-    tmp7 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp8 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
-    ca_.Goto(&block11, tmp7);
+  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp5;
+  TNode<Number> tmp6;
+  TNode<Map> tmp7;
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    std::tie(tmp4, tmp5) = GetIteratorDirect_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}).Flatten();
+    tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = GetIteratorResultMap_0(state_, TNode<Context>{parameter0});
+    ca_.Goto(&block13, tmp6);
+  }
+
+  TNode<Number> phi_bb13_7;
+  TNode<BoolT> tmp8;
+  if (block13.is_used()) {
+    ca_.Bind(&block13, &phi_bb13_7);
+    tmp8 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp8, &block11, std::vector<compiler::Node*>{phi_bb13_7}, &block12, std::vector<compiler::Node*>{phi_bb13_7});
   }
 
   TNode<Number> phi_bb11_7;
-  TNode<BoolT> tmp9;
+  TNode<JSReceiver> tmp9;
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_7);
-    tmp9 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp9, &block9, std::vector<compiler::Node*>{phi_bb11_7}, &block10, std::vector<compiler::Node*>{phi_bb11_7});
-  }
-
-  TNode<Number> phi_bb9_7;
-  TNode<JSReceiver> tmp10;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_7);
-    compiler::CodeAssemblerLabel label11(&ca_);
-    tmp10 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}}, TNode<Map>{tmp8}, &label11);
-    ca_.Goto(&block14, phi_bb9_7);
-    if (label11.is_used()) {
-      ca_.Bind(&label11);
-      ca_.Goto(&block15, phi_bb9_7);
+    compiler::CodeAssemblerLabel label10(&ca_);
+    tmp9 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}}, TNode<Map>{tmp7}, &label10);
+    ca_.Goto(&block16, phi_bb11_7);
+    if (label10.is_used()) {
+      ca_.Bind(&label10);
+      ca_.Goto(&block17, phi_bb11_7);
     }
   }
 
-  TNode<Number> phi_bb15_7;
-  TNode<Undefined> tmp12;
-  if (block15.is_used()) {
-    ca_.Bind(&block15, &phi_bb15_7);
-    tmp12 = Undefined_0(state_);
-    CodeStubAssembler(state_).Return(tmp12);
+  TNode<Number> phi_bb17_7;
+  TNode<Undefined> tmp11;
+  if (block17.is_used()) {
+    ca_.Bind(&block17, &phi_bb17_7);
+    tmp11 = Undefined_0(state_);
+    CodeStubAssembler(state_).Return(tmp11);
   }
 
-  TNode<Number> phi_bb14_7;
-  TNode<Object> tmp13;
-  TNode<Undefined> tmp14;
-  TNode<Object> tmp15;
-      TNode<Object> tmp17;
+  TNode<Number> phi_bb16_7;
+  TNode<JSAny> tmp12;
+  TNode<Undefined> tmp13;
+  TNode<JSAny> tmp14;
+      TNode<JSAny> tmp16;
+  TNode<BoolT> tmp17;
   TNode<BoolT> tmp18;
   TNode<BoolT> tmp19;
-  TNode<BoolT> tmp20;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_7);
-    tmp13 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp10}, TNode<Map>{tmp8});
-    tmp14 = Undefined_0(state_);
-    compiler::CodeAssemblerExceptionHandlerLabel catch16__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
-    { compiler::ScopedExceptionHandler s(&ca_, &catch16__label);
-    tmp15 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp2}, TNode<Object>{tmp14}, TNode<Object>{tmp13}, TNode<Object>{phi_bb14_7});
+  if (block16.is_used()) {
+    ca_.Bind(&block16, &phi_bb16_7);
+    tmp12 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp9}, TNode<Map>{tmp7});
+    tmp13 = Undefined_0(state_);
+    compiler::CodeAssemblerExceptionHandlerLabel catch15__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
+    { compiler::ScopedExceptionHandler s(&ca_, &catch15__label);
+    tmp14 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp2}, TNode<JSAny>{tmp13}, TNode<JSAny>{tmp12}, TNode<JSAny>{phi_bb16_7});
     }
-    if (catch16__label.is_used()) {
-      compiler::CodeAssemblerLabel catch16_skip(&ca_);
-      ca_.Goto(&catch16_skip);
-      ca_.Bind(&catch16__label, &tmp17);
-      ca_.Goto(&block18, phi_bb14_7, phi_bb14_7);
-      ca_.Bind(&catch16_skip);
+    if (catch15__label.is_used()) {
+      compiler::CodeAssemblerLabel catch15_skip(&ca_);
+      ca_.Goto(&catch15_skip);
+      ca_.Bind(&catch15__label, &tmp16);
+      ca_.Goto(&block20, phi_bb16_7, phi_bb16_7);
+      ca_.Bind(&catch15_skip);
     }
-    tmp18 = ToBoolean_0(state_, TNode<Object>{tmp15});
-    tmp19 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    tmp20 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp18}, TNode<BoolT>{tmp19});
-    ca_.Branch(tmp20, &block19, std::vector<compiler::Node*>{phi_bb14_7}, &block20, std::vector<compiler::Node*>{phi_bb14_7});
-  }
-
-  TNode<Number> phi_bb18_7;
-  TNode<Number> phi_bb18_16;
-  TNode<HeapObject> tmp21;
-  if (block18.is_used()) {
-    ca_.Bind(&block18, &phi_bb18_7, &phi_bb18_16);
-    tmp21 = GetAndResetPendingMessage_0(state_);
-    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp17, tmp21);
-    CodeStubAssembler(state_).Unreachable();
-  }
-
-  TNode<Number> phi_bb19_7;
-  if (block19.is_used()) {
-    ca_.Bind(&block19, &phi_bb19_7);
-    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp5}, TNode<Object>{tmp6}});
-    CodeStubAssembler(state_).Return(tmp13);
+    tmp17 = ToBoolean_0(state_, TNode<JSAny>{tmp14});
+    tmp18 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    tmp19 = CodeStubAssembler(state_).Word32Equal(TNode<BoolT>{tmp17}, TNode<BoolT>{tmp18});
+    ca_.Branch(tmp19, &block21, std::vector<compiler::Node*>{phi_bb16_7}, &block22, std::vector<compiler::Node*>{phi_bb16_7});
   }
 
   TNode<Number> phi_bb20_7;
-  TNode<Number> tmp22;
-  TNode<Number> tmp23;
+  TNode<Number> phi_bb20_16;
+  TNode<Union<Hole, JSMessageObject>> tmp20;
   if (block20.is_used()) {
-    ca_.Bind(&block20, &phi_bb20_7);
-    tmp22 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
-    tmp23 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb20_7}, TNode<Number>{tmp22});
-    ca_.Goto(&block11, tmp23);
+    ca_.Bind(&block20, &phi_bb20_7, &phi_bb20_16);
+    tmp20 = GetAndResetPendingMessage_0(state_);
+    IteratorCloseOnException_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0});
+    CodeStubAssembler(state_).CallRuntime(Runtime::kReThrowWithMessage, parameter0, tmp16, tmp20);
+    CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Number> phi_bb10_7;
-  if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_7);
+  TNode<Number> phi_bb21_7;
+  if (block21.is_used()) {
+    ca_.Bind(&block21, &phi_bb21_7);
+    IteratorClose_0(state_, TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp4}, TNode<JSAny>{tmp5}});
+    CodeStubAssembler(state_).Return(tmp12);
+  }
+
+  TNode<Number> phi_bb22_7;
+  TNode<Number> tmp21;
+  TNode<Number> tmp22;
+  if (block22.is_used()) {
+    ca_.Bind(&block22, &phi_bb22_7);
+    tmp21 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp22 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{phi_bb22_7}, TNode<Number>{tmp21});
+    ca_.Goto(&block13, tmp22);
+  }
+
+  TNode<Number> phi_bb12_7;
+  if (block12.is_used()) {
+    ca_.Bind(&block12, &phi_bb12_7);
     CodeStubAssembler(state_).Unreachable();
   }
 }

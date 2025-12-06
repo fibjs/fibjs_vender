@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/data-view-tq-csa.h"
@@ -573,7 +573,7 @@ TNode<BoolT> WasDetached_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=74&c=1
-TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, TNode<String> p_method) {
+TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o, TNode<String> p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -601,7 +601,7 @@ TNode<JSDataViewOrRabGsabDataView> ValidateDataView_0(compiler::CodeAssemblerSta
   if (block5.is_used()) {
     ca_.Bind(&block5);
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_JSRabGsabDataView_1(state_, TNode<Context>{p_context}, TNode<Object>{ca_.UncheckedCast<Object>(p_o)}, &label3);
+    tmp2 = Cast_JSRabGsabDataView_1(state_, TNode<Context>{p_context}, TNode<Object>{ca_.UncheckedCast<JSAny>(p_o)}, &label3);
     ca_.Goto(&block8);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -647,7 +647,7 @@ TF_BUILTIN(DataViewPrototypeGetBuffer, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -659,7 +659,7 @@ TF_BUILTIN(DataViewPrototypeGetBuffer, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.buffer");
-    tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
+    tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp3 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp2});
     arguments.PopAndReturn(tmp3);
@@ -675,7 +675,7 @@ TF_BUILTIN(DataViewPrototypeGetByteLength, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -692,7 +692,7 @@ TF_BUILTIN(DataViewPrototypeGetByteLength, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byteLength");
-    tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
+    tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp0});
     tmp2 = IsVariableLengthJSArrayBufferView_0(state_, TNode<JSArrayBufferView>{tmp1});
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
@@ -756,7 +756,7 @@ TF_BUILTIN(DataViewPrototypeGetByteOffset, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -768,7 +768,7 @@ TF_BUILTIN(DataViewPrototypeGetByteOffset, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "get DataView.prototype.byteOffset");
-    tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
+    tmp1 = ValidateDataView_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp0});
     compiler::CodeAssemblerLabel label2(&ca_);
     compiler::CodeAssemblerLabel label3(&ca_);
     CodeStubAssembler(state_).IsJSArrayBufferViewDetachedOrOutOfBounds(TNode<JSArrayBufferView>{tmp1}, &label2, &label3);
@@ -835,7 +835,7 @@ TNode<Smi> LoadDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block3);
     tmp3 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
     tmp4 = DataViewBuiltinsAssembler(state_).LoadUint8(TNode<RawPtrT>{tmp3}, TNode<UintPtrT>{p_offset});
-    tmp5 = Convert_Smi_uint32_0(state_, TNode<Uint32T>{tmp4});
+    tmp5 = Convert_Smi_WasmCodePointer_0(state_, TNode<Uint32T>{tmp4});
     ca_.Goto(&block1, tmp5);
   }
 
@@ -1008,12 +1008,12 @@ TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   TNode<Uint32T> tmp19;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp11 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp11 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp12 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp10}, TNode<Uint32T>{tmp11});
-    tmp13 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp13 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp14 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp13});
     tmp15 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp12}, TNode<Uint32T>{tmp14});
-    tmp16 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp16 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp17 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp16});
     tmp18 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp15}, TNode<Uint32T>{tmp17});
     tmp19 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp18}, TNode<Uint32T>{tmp1});
@@ -1031,12 +1031,12 @@ TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   TNode<Uint32T> tmp28;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp20 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp20 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp21 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp20});
-    tmp22 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp22 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp23 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp22});
     tmp24 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp21}, TNode<Uint32T>{tmp23});
-    tmp25 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp25 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp26 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp25});
     tmp27 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp24}, TNode<Uint32T>{tmp26});
     tmp28 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp27}, TNode<Uint32T>{tmp10});
@@ -1074,7 +1074,7 @@ TNode<Number> LoadDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArr
   TNode<Number> tmp31;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp31 = Convert_Number_uint32_0(state_, TNode<Uint32T>{phi_bb4_8});
+    tmp31 = Convert_Number_WasmCodePointer_0(state_, TNode<Uint32T>{phi_bb4_8});
     ca_.Goto(&block1, tmp31);
   }
 
@@ -1145,7 +1145,7 @@ TNode<Number> LoadDataViewFloat16_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Uint32T> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp5 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp5 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp6 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp5});
     tmp7 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp6}, TNode<Uint32T>{tmp1});
     ca_.Goto(&block4, tmp7);
@@ -1156,20 +1156,20 @@ TNode<Number> LoadDataViewFloat16_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Uint32T> tmp10;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp8 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp8 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp9 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp8});
     tmp10 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp9}, TNode<Uint32T>{tmp4});
     ca_.Goto(&block4, tmp10);
   }
 
   TNode<Uint32T> phi_bb4_6;
-  TNode<Float16T> tmp11;
+  TNode<Float16RawBitsT> tmp11;
   TNode<Float64T> tmp12;
   TNode<Number> tmp13;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_6);
     tmp11 = CodeStubAssembler(state_).BitcastUint32ToFloat16(TNode<Uint32T>{phi_bb4_6});
-    tmp12 = Convert_float64_float16_0(state_, TNode<Float16T>{tmp11});
+    tmp12 = Convert_float64_float16_raw_bits_0(state_, TNode<Float16RawBitsT>{tmp11});
     tmp13 = Convert_Number_float64_0(state_, TNode<Float64T>{tmp12});
     ca_.Goto(&block5);
   }
@@ -1260,21 +1260,21 @@ TNode<Number> LoadDataViewFloat64_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Uint32T> tmp40;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp23 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp23 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp24 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp10}, TNode<Uint32T>{tmp23});
-    tmp25 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp25 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp26 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp25});
     tmp27 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp24}, TNode<Uint32T>{tmp26});
-    tmp28 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp28 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp29 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp28});
     tmp30 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp27}, TNode<Uint32T>{tmp29});
     tmp31 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp30}, TNode<Uint32T>{tmp1});
-    tmp32 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp32 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp33 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp22}, TNode<Uint32T>{tmp32});
-    tmp34 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp34 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp35 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp19}, TNode<Uint32T>{tmp34});
     tmp36 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp33}, TNode<Uint32T>{tmp35});
-    tmp37 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp37 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp38 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp37});
     tmp39 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp36}, TNode<Uint32T>{tmp38});
     tmp40 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp39}, TNode<Uint32T>{tmp13});
@@ -1301,21 +1301,21 @@ TNode<Number> LoadDataViewFloat64_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Uint32T> tmp58;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp41 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp41 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp42 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp41});
-    tmp43 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp43 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp44 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp43});
     tmp45 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp42}, TNode<Uint32T>{tmp44});
-    tmp46 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp46 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp47 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp46});
     tmp48 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp45}, TNode<Uint32T>{tmp47});
     tmp49 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp48}, TNode<Uint32T>{tmp10});
-    tmp50 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp50 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp51 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp13}, TNode<Uint32T>{tmp50});
-    tmp52 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp52 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp53 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp52});
     tmp54 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp51}, TNode<Uint32T>{tmp53});
-    tmp55 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp55 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp56 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp19}, TNode<Uint32T>{tmp55});
     tmp57 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp54}, TNode<Uint32T>{tmp56});
     tmp58 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp57}, TNode<Uint32T>{tmp22});
@@ -1391,7 +1391,7 @@ TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_lowWord}, TNode<Uint32T>{tmp0});
     ca_.Branch(tmp1, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
@@ -1400,7 +1400,7 @@ TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<BoolT> tmp3;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp2 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp2});
     ca_.Goto(&block6, tmp3);
   }
@@ -1440,9 +1440,9 @@ TNode<BigInt> MakeBigIntOn64Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp8 = kPositiveSign_0(state_);
-    tmp9 = Convert_uintptr_uint32_0(state_, TNode<Uint32T>{p_highWord});
+    tmp9 = Convert_uintptr_WasmCodePointer_0(state_, TNode<Uint32T>{p_highWord});
     tmp10 = CodeStubAssembler(state_).Signed(TNode<UintPtrT>{tmp9});
-    tmp11 = Convert_uintptr_uint32_0(state_, TNode<Uint32T>{p_lowWord});
+    tmp11 = Convert_uintptr_WasmCodePointer_0(state_, TNode<Uint32T>{p_lowWord});
     tmp12 = CodeStubAssembler(state_).Signed(TNode<UintPtrT>{tmp11});
     tmp13 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x20ull));
     tmp14 = CodeStubAssembler(state_).WordShl(TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp13});
@@ -1550,7 +1550,7 @@ TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_lowWord}, TNode<Uint32T>{tmp0});
     ca_.Branch(tmp1, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
@@ -1559,7 +1559,7 @@ TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<BoolT> tmp3;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp2 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp2});
     ca_.Goto(&block6, tmp3);
   }
@@ -1600,7 +1600,7 @@ TNode<BigInt> MakeBigIntOn32Bit_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp9 = kPositiveSign_0(state_);
     tmp10 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{p_lowWord});
     tmp11 = CodeStubAssembler(state_).Signed(TNode<Uint32T>{p_highWord});
-    tmp12 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp12 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp13 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp12});
     ca_.Branch(tmp13, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{tmp8, tmp9, tmp10, tmp11});
   }
@@ -1922,21 +1922,21 @@ TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<Uint32T> tmp40;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp23 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp23 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp24 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp10}, TNode<Uint32T>{tmp23});
-    tmp25 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp25 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp26 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp25});
     tmp27 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp24}, TNode<Uint32T>{tmp26});
-    tmp28 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp28 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp29 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp28});
     tmp30 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp27}, TNode<Uint32T>{tmp29});
     tmp31 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp30}, TNode<Uint32T>{tmp1});
-    tmp32 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp32 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp33 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp22}, TNode<Uint32T>{tmp32});
-    tmp34 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp34 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp35 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp19}, TNode<Uint32T>{tmp34});
     tmp36 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp33}, TNode<Uint32T>{tmp35});
-    tmp37 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp37 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp38 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp37});
     tmp39 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp36}, TNode<Uint32T>{tmp38});
     tmp40 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp39}, TNode<Uint32T>{tmp13});
@@ -1963,21 +1963,21 @@ TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<C
   TNode<Uint32T> tmp58;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp41 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp41 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp42 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp41});
-    tmp43 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp43 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp44 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp43});
     tmp45 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp42}, TNode<Uint32T>{tmp44});
-    tmp46 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp46 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp47 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp7}, TNode<Uint32T>{tmp46});
     tmp48 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp45}, TNode<Uint32T>{tmp47});
     tmp49 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp48}, TNode<Uint32T>{tmp10});
-    tmp50 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp50 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp51 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp13}, TNode<Uint32T>{tmp50});
-    tmp52 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp52 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp53 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp52});
     tmp54 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp51}, TNode<Uint32T>{tmp53});
-    tmp55 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp55 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp56 = CodeStubAssembler(state_).Word32Shl(TNode<Uint32T>{tmp19}, TNode<Uint32T>{tmp55});
     tmp57 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp54}, TNode<Uint32T>{tmp56});
     tmp58 = CodeStubAssembler(state_).Word32Or(TNode<Uint32T>{tmp57}, TNode<Uint32T>{tmp22});
@@ -1998,7 +1998,7 @@ TNode<BigInt> LoadDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<C
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=407&c=1
-TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
+TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TNode<JSAny> p_requestIndex, TNode<JSAny> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -2046,9 +2046,9 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = MakeDataViewGetterNameString_0(state_, p_kind);
-    tmp1 = ValidateDataView_0(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver}, TNode<String>{tmp0});
+    tmp1 = ValidateDataView_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, TNode<String>{tmp0});
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = ToIndex_0(state_, TNode<Context>{p_context}, TNode<Object>{p_requestIndex}, &label3);
+    tmp2 = ToIndex_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_requestIndex}, &label3);
     ca_.Goto(&block4);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -2066,7 +2066,7 @@ TNode<Numeric> DataViewGet_0(compiler::CodeAssemblerState* state_, TNode<Context
   TNode<JSArrayBuffer> tmp6;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp4 = ToBoolean_0(state_, TNode<Object>{p_requestedLittleEndian});
+    tmp4 = ToBoolean_0(state_, TNode<JSAny>{p_requestedLittleEndian});
     tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp6 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp5});
     compiler::CodeAssemblerLabel label7(&ca_);
@@ -2362,13 +2362,13 @@ TF_BUILTIN(DataViewPrototypeGetUint8, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<Undefined> tmp2;
   TNode<Numeric> tmp3;
   if (block0.is_used()) {
@@ -2376,7 +2376,7 @@ TF_BUILTIN(DataViewPrototypeGetUint8, CodeStubAssembler) {
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = Undefined_0(state_);
-    tmp3 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp2}, ElementsKind::UINT8_ELEMENTS);
+    tmp3 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp2}, ElementsKind::UINT8_ELEMENTS);
     arguments.PopAndReturn(tmp3);
   }
 }
@@ -2390,13 +2390,13 @@ TF_BUILTIN(DataViewPrototypeGetInt8, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<Undefined> tmp2;
   TNode<Numeric> tmp3;
   if (block0.is_used()) {
@@ -2404,7 +2404,7 @@ TF_BUILTIN(DataViewPrototypeGetInt8, CodeStubAssembler) {
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = Undefined_0(state_);
-    tmp3 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp2}, ElementsKind::INT8_ELEMENTS);
+    tmp3 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp2}, ElementsKind::INT8_ELEMENTS);
     arguments.PopAndReturn(tmp3);
   }
 }
@@ -2418,15 +2418,15 @@ TF_BUILTIN(DataViewPrototypeGetUint16, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2434,7 +2434,7 @@ TF_BUILTIN(DataViewPrototypeGetUint16, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::UINT16_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::UINT16_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2448,15 +2448,15 @@ TF_BUILTIN(DataViewPrototypeGetInt16, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2464,7 +2464,7 @@ TF_BUILTIN(DataViewPrototypeGetInt16, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::INT16_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::INT16_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2478,15 +2478,15 @@ TF_BUILTIN(DataViewPrototypeGetUint32, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2494,7 +2494,7 @@ TF_BUILTIN(DataViewPrototypeGetUint32, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::UINT32_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::UINT32_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2508,15 +2508,15 @@ TF_BUILTIN(DataViewPrototypeGetInt32, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2524,7 +2524,7 @@ TF_BUILTIN(DataViewPrototypeGetInt32, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::INT32_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::INT32_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2538,15 +2538,16 @@ TF_BUILTIN(DataViewPrototypeGetFloat16, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kFloat16Array));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2554,7 +2555,7 @@ TF_BUILTIN(DataViewPrototypeGetFloat16, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::FLOAT16_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::FLOAT16_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2568,15 +2569,15 @@ TF_BUILTIN(DataViewPrototypeGetFloat32, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2584,7 +2585,7 @@ TF_BUILTIN(DataViewPrototypeGetFloat32, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::FLOAT32_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::FLOAT32_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2598,15 +2599,15 @@ TF_BUILTIN(DataViewPrototypeGetFloat64, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2614,7 +2615,7 @@ TF_BUILTIN(DataViewPrototypeGetFloat64, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::FLOAT64_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::FLOAT64_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2628,15 +2629,15 @@ TF_BUILTIN(DataViewPrototypeGetBigUint64, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2644,7 +2645,7 @@ TF_BUILTIN(DataViewPrototypeGetBigUint64, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::BIGUINT64_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::BIGUINT64_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
@@ -2658,15 +2659,15 @@ TF_BUILTIN(DataViewPrototypeGetBigInt64, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Numeric> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -2674,12 +2675,12 @@ TF_BUILTIN(DataViewPrototypeGetBigInt64, CodeStubAssembler) {
     tmp1 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
-    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, ElementsKind::BIGINT64_ELEMENTS);
+    tmp4 = DataViewGet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, ElementsKind::BIGINT64_ELEMENTS);
     arguments.PopAndReturn(tmp4);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=588&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=589&c=1
 void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2693,7 +2694,7 @@ void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer>
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
-    tmp1 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp2 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp1});
     DataViewBuiltinsAssembler(state_).StoreWord8(TNode<RawPtrT>{tmp0}, TNode<UintPtrT>{p_offset}, TNode<Uint32T>{tmp2});
     ca_.Goto(&block2);
@@ -2702,7 +2703,7 @@ void StoreDataView8_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer>
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=593&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=594&c=1
 void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2723,11 +2724,11 @@ void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
-    tmp1 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp2 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp1});
-    tmp3 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp3 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp4 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp3});
-    tmp5 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp5 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp6 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp5});
     ca_.Branch(p_requestedLittleEndian, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -2762,7 +2763,7 @@ void StoreDataView16_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=610&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=611&c=1
 void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_value, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2789,17 +2790,17 @@ void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
-    tmp1 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp2 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp1});
-    tmp3 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp3 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp4 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp3});
-    tmp5 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp5 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp6 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp5});
-    tmp7 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp7 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp8 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp7});
-    tmp9 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp9 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp10 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp8}, TNode<Uint32T>{tmp9});
-    tmp11 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp11 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp12 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp11});
     ca_.Branch(p_requestedLittleEndian, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -2854,7 +2855,7 @@ void StoreDataView32_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=633&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=634&c=1
 void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<Uint32T> p_lowWord, TNode<Uint32T> p_highWord, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -2893,29 +2894,29 @@ void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = CodeStubAssembler(state_).LoadJSArrayBufferBackingStorePtr(TNode<JSArrayBuffer>{p_buffer});
-    tmp1 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp1 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp2 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_lowWord}, TNode<Uint32T>{tmp1});
-    tmp3 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp3 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp4 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_lowWord}, TNode<Uint32T>{tmp3});
-    tmp5 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp5 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp6 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp4}, TNode<Uint32T>{tmp5});
-    tmp7 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp7 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp8 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_lowWord}, TNode<Uint32T>{tmp7});
-    tmp9 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp9 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp10 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp8}, TNode<Uint32T>{tmp9});
-    tmp11 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp11 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp12 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_lowWord}, TNode<Uint32T>{tmp11});
-    tmp13 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp13 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp14 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp13});
-    tmp15 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
+    tmp15 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x8ull));
     tmp16 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp15});
-    tmp17 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp17 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp18 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp16}, TNode<Uint32T>{tmp17});
-    tmp19 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
+    tmp19 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
     tmp20 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp19});
-    tmp21 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
+    tmp21 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xffull));
     tmp22 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{tmp20}, TNode<Uint32T>{tmp21});
-    tmp23 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
+    tmp23 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
     tmp24 = CodeStubAssembler(state_).Word32Shr(TNode<Uint32T>{p_highWord}, TNode<Uint32T>{tmp23});
     ca_.Branch(p_requestedLittleEndian, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
@@ -3010,7 +3011,7 @@ void StoreDataView64_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer
     ca_.Bind(&block5);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=677&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=678&c=1
 void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBuffer> p_buffer, TNode<UintPtrT> p_offset, TNode<BigInt> p_bigIntValue, TNode<BoolT> p_requestedLittleEndian) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -3039,9 +3040,9 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block0);
     tmp0 = DataViewBuiltinsAssembler(state_).DataViewDecodeBigIntLength(TNode<BigInt>{p_bigIntValue});
     tmp1 = DataViewBuiltinsAssembler(state_).DataViewDecodeBigIntSign(TNode<BigInt>{p_bigIntValue});
-    tmp2 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp3 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp4 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp2 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp3 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp4 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp5 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp0}, TNode<Uint32T>{tmp4});
     ca_.Branch(tmp5, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{tmp2, tmp3});
   }
@@ -3065,10 +3066,10 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block4);
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp7 = CodeStubAssembler(state_).LoadBigIntDigit(TNode<BigInt>{p_bigIntValue}, TNode<IntPtrT>{tmp6});
-    tmp8 = Convert_uint32_uintptr_0(state_, TNode<UintPtrT>{tmp7});
+    tmp8 = Convert_WasmCodePointer_uintptr_0(state_, TNode<UintPtrT>{tmp7});
     tmp9 = FromConstexpr_uintptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x20ull));
     tmp10 = CodeStubAssembler(state_).WordShr(TNode<UintPtrT>{tmp7}, TNode<UintPtrT>{tmp9});
-    tmp11 = Convert_uint32_uintptr_0(state_, TNode<UintPtrT>{tmp10});
+    tmp11 = Convert_WasmCodePointer_uintptr_0(state_, TNode<UintPtrT>{tmp10});
     ca_.Goto(&block6, tmp8, tmp11);
   }
 
@@ -3081,8 +3082,8 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block5);
     tmp12 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp13 = CodeStubAssembler(state_).LoadBigIntDigit(TNode<BigInt>{p_bigIntValue}, TNode<IntPtrT>{tmp12});
-    tmp14 = Convert_uint32_uintptr_0(state_, TNode<UintPtrT>{tmp13});
-    tmp15 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
+    tmp14 = Convert_WasmCodePointer_uintptr_0(state_, TNode<UintPtrT>{tmp13});
+    tmp15 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp16 = CodeStubAssembler(state_).Uint32GreaterThanOrEqual(TNode<Uint32T>{tmp0}, TNode<Uint32T>{tmp15});
     ca_.Branch(tmp16, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{tmp3});
   }
@@ -3094,7 +3095,7 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block7);
     tmp17 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp18 = CodeStubAssembler(state_).LoadBigIntDigit(TNode<BigInt>{p_bigIntValue}, TNode<IntPtrT>{tmp17});
-    tmp19 = Convert_uint32_uintptr_0(state_, TNode<UintPtrT>{tmp18});
+    tmp19 = Convert_WasmCodePointer_uintptr_0(state_, TNode<UintPtrT>{tmp18});
     ca_.Goto(&block8, tmp19);
   }
 
@@ -3117,7 +3118,7 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
   TNode<BoolT> tmp21;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_6, &phi_bb3_7);
-    tmp20 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp20 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp21 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp1}, TNode<Uint32T>{tmp20});
     ca_.Branch(tmp21, &block9, std::vector<compiler::Node*>{phi_bb3_6, phi_bb3_7}, &block10, std::vector<compiler::Node*>{phi_bb3_6, phi_bb3_7});
   }
@@ -3136,7 +3137,7 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     tmp23 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp24 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp23}, TNode<Int32T>{tmp22});
     tmp25 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp24});
-    tmp26 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp26 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp27 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{phi_bb9_6}, TNode<Uint32T>{tmp26});
     ca_.Branch(tmp27, &block11, std::vector<compiler::Node*>{phi_bb9_6}, &block12, std::vector<compiler::Node*>{phi_bb9_6, tmp25});
   }
@@ -3181,8 +3182,8 @@ void StoreDataViewBigInt_0(compiler::CodeAssemblerState* state_, TNode<JSArrayBu
     ca_.Bind(&block13);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=716&c=1
-TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TNode<Object> p_requestIndex, TNode<Object> p_value, TNode<Object> p_requestedLittleEndian, ElementsKind p_kind) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/data-view.tq?l=717&c=1
+TNode<JSAny> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TNode<JSAny> p_requestIndex, TNode<JSAny> p_value, TNode<JSAny> p_requestedLittleEndian, ElementsKind p_kind) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -3233,9 +3234,9 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = MakeDataViewSetterNameString_0(state_, p_kind);
-    tmp1 = ValidateDataView_0(state_, TNode<Context>{p_context}, TNode<Object>{p_receiver}, TNode<String>{tmp0});
+    tmp1 = ValidateDataView_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, TNode<String>{tmp0});
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = ToIndex_0(state_, TNode<Context>{p_context}, TNode<Object>{p_requestIndex}, &label3);
+    tmp2 = ToIndex_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_requestIndex}, &label3);
     ca_.Goto(&block4);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -3260,14 +3261,14 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   TNode<BigInt> tmp4;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp4 = CodeStubAssembler(state_).ToBigInt(TNode<Context>{p_context}, TNode<Object>{p_value});
+    tmp4 = CodeStubAssembler(state_).ToBigInt(TNode<Context>{p_context}, TNode<JSAny>{p_value});
     ca_.Goto(&block8, tmp4);
   }
 
   TNode<Number> tmp5;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp5 = CodeStubAssembler(state_).ToNumber(TNode<Context>{p_context}, TNode<Object>{p_value});
+    tmp5 = CodeStubAssembler(state_).ToNumber(TNode<Context>{p_context}, TNode<JSAny>{p_value});
     ca_.Goto(&block8, tmp5);
   }
 
@@ -3278,7 +3279,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   TNode<BoolT> tmp9;
   if (block8.is_used()) {
     ca_.Bind(&block8, &phi_bb8_7);
-    tmp6 = ToBoolean_0(state_, TNode<Object>{p_requestedLittleEndian});
+    tmp6 = ToBoolean_0(state_, TNode<JSAny>{p_requestedLittleEndian});
     tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     tmp8 = CodeStubAssembler(state_).LoadReference<JSArrayBuffer>(CodeStubAssembler::Reference{tmp1, tmp7});
     tmp9 = IsDetachedBuffer_0(state_, TNode<JSArrayBuffer>{tmp8});
@@ -3445,12 +3446,12 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
     }
   }
 
-  TNode<Float16T> tmp31;
+  TNode<Float16RawBitsT> tmp31;
   TNode<Uint32T> tmp32;
   if (block35.is_used()) {
     ca_.Bind(&block35);
     tmp31 = CodeStubAssembler(state_).TruncateFloat64ToFloat16(TNode<Float64T>{tmp28});
-    tmp32 = CodeStubAssembler(state_).BitcastFloat16ToUint32(TNode<Float16T>{tmp31});
+    tmp32 = CodeStubAssembler(state_).BitcastFloat16ToUint32(TNode<Float16RawBitsT>{tmp31});
     StoreDataView16_0(state_, TNode<JSArrayBuffer>{tmp8}, TNode<UintPtrT>{tmp25}, TNode<Uint32T>{tmp32}, TNode<BoolT>{tmp6});
     ca_.Goto(&block37);
   }
@@ -3558,7 +3559,7 @@ TNode<Object> DataViewSet_0(compiler::CodeAssemblerState* state_, TNode<Context>
   }
 
     ca_.Bind(&block47);
-  return TNode<Object>{tmp38};
+  return TNode<JSAny>{tmp38};
 }
 
 TF_BUILTIN(DataViewPrototypeSetUint8, CodeStubAssembler) {
@@ -3570,17 +3571,17 @@ TF_BUILTIN(DataViewPrototypeSetUint8, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Undefined> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3588,7 +3589,7 @@ TF_BUILTIN(DataViewPrototypeSetUint8, CodeStubAssembler) {
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = Undefined_0(state_);
-    tmp5 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp4}, ElementsKind::UINT8_ELEMENTS);
+    tmp5 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp4}, ElementsKind::UINT8_ELEMENTS);
     arguments.PopAndReturn(tmp5);
   }
 }
@@ -3602,17 +3603,17 @@ TF_BUILTIN(DataViewPrototypeSetInt8, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Undefined> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3620,7 +3621,7 @@ TF_BUILTIN(DataViewPrototypeSetInt8, CodeStubAssembler) {
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = Undefined_0(state_);
-    tmp5 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp4}, ElementsKind::INT8_ELEMENTS);
+    tmp5 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp4}, ElementsKind::INT8_ELEMENTS);
     arguments.PopAndReturn(tmp5);
   }
 }
@@ -3634,18 +3635,18 @@ TF_BUILTIN(DataViewPrototypeSetUint16, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3654,7 +3655,7 @@ TF_BUILTIN(DataViewPrototypeSetUint16, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::UINT16_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::UINT16_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3668,18 +3669,18 @@ TF_BUILTIN(DataViewPrototypeSetInt16, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3688,7 +3689,7 @@ TF_BUILTIN(DataViewPrototypeSetInt16, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::INT16_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::INT16_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3702,18 +3703,18 @@ TF_BUILTIN(DataViewPrototypeSetUint32, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3722,7 +3723,7 @@ TF_BUILTIN(DataViewPrototypeSetUint32, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::UINT32_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::UINT32_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3736,18 +3737,18 @@ TF_BUILTIN(DataViewPrototypeSetInt32, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3756,7 +3757,7 @@ TF_BUILTIN(DataViewPrototypeSetInt32, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::INT32_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::INT32_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3770,18 +3771,19 @@ TF_BUILTIN(DataViewPrototypeSetFloat16, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kFloat16Array));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3790,7 +3792,7 @@ TF_BUILTIN(DataViewPrototypeSetFloat16, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::FLOAT16_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::FLOAT16_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3804,18 +3806,18 @@ TF_BUILTIN(DataViewPrototypeSetFloat32, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3824,7 +3826,7 @@ TF_BUILTIN(DataViewPrototypeSetFloat32, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::FLOAT32_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::FLOAT32_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3838,18 +3840,18 @@ TF_BUILTIN(DataViewPrototypeSetFloat64, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3858,7 +3860,7 @@ TF_BUILTIN(DataViewPrototypeSetFloat64, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::FLOAT64_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::FLOAT64_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3872,18 +3874,18 @@ TF_BUILTIN(DataViewPrototypeSetBigUint64, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3892,7 +3894,7 @@ TF_BUILTIN(DataViewPrototypeSetBigUint64, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::BIGUINT64_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::BIGUINT64_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }
@@ -3906,18 +3908,18 @@ TF_BUILTIN(DataViewPrototypeSetBigInt64, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -3926,7 +3928,7 @@ TF_BUILTIN(DataViewPrototypeSetBigInt64, CodeStubAssembler) {
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x2ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
-    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<Object>{tmp1}, TNode<Object>{tmp3}, TNode<Object>{tmp5}, ElementsKind::BIGINT64_ELEMENTS);
+    tmp6 = DataViewSet_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<JSAny>{tmp1}, TNode<JSAny>{tmp3}, TNode<JSAny>{tmp5}, ElementsKind::BIGINT64_ELEMENTS);
     arguments.PopAndReturn(tmp6);
   }
 }

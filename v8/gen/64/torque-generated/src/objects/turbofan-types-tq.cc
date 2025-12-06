@@ -1,6 +1,8 @@
 #include "src/objects/turbofan-types-inl.h"
 
 #include "torque-generated/class-verifiers.h"
+#include "src/objects/objects-inl.h"
+
 #include "src/objects/instance-type-inl.h"
 
 namespace v8 {
@@ -20,7 +22,7 @@ void TorqueGeneratedTurbofanType<TurbofanType, HeapObject>::TurbofanTypeVerify(I
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=60&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=61&c=1
 bool IsTurbofanBitsetType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanBitsetType(o);
 }
@@ -34,7 +36,7 @@ void TorqueGeneratedTurbofanBitsetType<TurbofanBitsetType, TurbofanType>::Turbof
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=66&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=67&c=1
 bool IsTurbofanUnionType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanUnionType(o);
 }
@@ -48,7 +50,7 @@ void TorqueGeneratedTurbofanUnionType<TurbofanUnionType, TurbofanType>::Turbofan
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=72&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=73&c=1
 bool IsTurbofanRangeType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanRangeType(o);
 }
@@ -62,7 +64,7 @@ void TorqueGeneratedTurbofanRangeType<TurbofanRangeType, TurbofanType>::Turbofan
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=78&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=79&c=1
 bool IsTurbofanHeapConstantType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanHeapConstantType(o);
 }
@@ -76,7 +78,7 @@ void TorqueGeneratedTurbofanHeapConstantType<TurbofanHeapConstantType, TurbofanT
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=83&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/turbofan-types.tq?l=84&c=1
 bool IsTurbofanOtherNumberConstantType_NonInline(Tagged<HeapObject> o) {
   return IsTurbofanOtherNumberConstantType(o);
 }

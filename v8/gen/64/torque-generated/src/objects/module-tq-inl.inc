@@ -16,7 +16,7 @@ Tagged<ObjectHashTable> TorqueGeneratedModule<D, P>::exports(PtrComprCageBase ca
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedModule<D, P>::set_exports(Tagged<ObjectHashTable> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsObjectHashTable(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsObjectHashTable(value)));
   WRITE_FIELD(*this, kExportsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kExportsOffset, value, mode);
 }
@@ -65,7 +65,7 @@ Tagged<Union<JSModuleNamespace, Undefined>> TorqueGeneratedModule<D, P>::module_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedModule<D, P>::set_module_namespace(Tagged<Union<JSModuleNamespace, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSModuleNamespace(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSModuleNamespace(value)));
   WRITE_FIELD(*this, kModuleNamespaceOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kModuleNamespaceOffset, value, mode);
 }
@@ -88,7 +88,7 @@ Tagged<Object> TorqueGeneratedModule<D, P>::exception(PtrComprCageBase cage_base
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedModule<D, P>::set_exception(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kExceptionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kExceptionOffset, value, mode);
 }
@@ -111,7 +111,7 @@ Tagged<Union<JSPromise, Undefined>> TorqueGeneratedModule<D, P>::top_level_capab
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=17&c=3
 template<class D, class P>
 void TorqueGeneratedModule<D, P>::set_top_level_capability(Tagged<Union<JSPromise, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSPromise(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSPromise(value)));
   WRITE_FIELD(*this, kTopLevelCapabilityOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kTopLevelCapabilityOffset, value, mode);
 }
@@ -139,7 +139,7 @@ Tagged<Module> TorqueGeneratedJSModuleNamespace<D, P>::module(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedJSModuleNamespace<D, P>::set_module(Tagged<Module> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsModule(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsModule(value)));
   WRITE_FIELD(*this, kModuleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kModuleOffset, value, mode);
 }
@@ -167,7 +167,7 @@ Tagged<Object> TorqueGeneratedScriptOrModule<D, P>::resource_name(PtrComprCageBa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=25&c=3
 template<class D, class P>
 void TorqueGeneratedScriptOrModule<D, P>::set_resource_name(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kResourceNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kResourceNameOffset, value, mode);
 }
@@ -190,7 +190,7 @@ Tagged<FixedArray> TorqueGeneratedScriptOrModule<D, P>::host_defined_options(Ptr
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/module.tq?l=26&c=3
 template<class D, class P>
 void TorqueGeneratedScriptOrModule<D, P>::set_host_defined_options(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kHostDefinedOptionsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHostDefinedOptionsOffset, value, mode);
 }

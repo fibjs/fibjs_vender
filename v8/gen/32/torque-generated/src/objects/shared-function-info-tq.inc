@@ -15,10 +15,10 @@ V8_EXPORT_PRIVATE bool IsPreparseData_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedPreparseData : public P {
   static_assert(
-      std::is_same<PreparseData, D>::value,
+      std::is_same_v<PreparseData, D>,
       "Use this class as direct base for PreparseData.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedPreparseData.");
 
  public: 
@@ -72,7 +72,7 @@ class TorqueGeneratedPreparseData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPreparseData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPreparseData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPreparseData, DAlias>,
         "class TorqueGeneratedPreparseData should be used as direct base for PreparseData.");
   }
 
@@ -90,10 +90,10 @@ V8_EXPORT_PRIVATE bool IsInterpreterData_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedInterpreterData : public P {
   static_assert(
-      std::is_same<InterpreterData, D>::value,
+      std::is_same_v<InterpreterData, D>,
       "Use this class as direct base for InterpreterData.");
   static_assert(
-      std::is_same<ExposedTrustedObject, P>::value,
+      std::is_same_v<ExposedTrustedObject, P>,
       "Pass in ExposedTrustedObject as second template parameter for TorqueGeneratedInterpreterData.");
 
  public: 
@@ -137,7 +137,7 @@ class TorqueGeneratedInterpreterData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedInterpreterData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedInterpreterData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedInterpreterData, DAlias>,
         "class TorqueGeneratedInterpreterData should be used as direct base for InterpreterData.");
   }
 
@@ -148,155 +148,155 @@ class TorqueGeneratedInterpreterData : public P {
 };
 
 // Alias for IsSharedFunctionInfo() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=60&c=1
 V8_EXPORT_PRIVATE bool IsSharedFunctionInfo_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=60&c=1
 template <class D, class P>
 class TorqueGeneratedSharedFunctionInfo : public P {
   static_assert(
-      std::is_same<SharedFunctionInfo, D>::value,
+      std::is_same_v<SharedFunctionInfo, D>,
       "Use this class as direct base for SharedFunctionInfo.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedSharedFunctionInfo.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedSharedFunctionInfo<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
   inline Tagged<Object> untrusted_function_data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
   inline Tagged<Object> untrusted_function_data(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
   inline void set_untrusted_function_data(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class String | NoSharedNameSentinel | class ScopeInfo)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
   inline Tagged<Union<ScopeInfo, Smi, String>> name_or_scope_info() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
   inline Tagged<Union<ScopeInfo, Smi, String>> name_or_scope_info(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
   inline void set_name_or_scope_info(Tagged<Union<ScopeInfo, Smi, String>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
   inline Tagged<HeapObject> outer_scope_info_or_feedback_metadata() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
   inline Tagged<HeapObject> outer_scope_info_or_feedback_metadata(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
   inline void set_outer_scope_info_or_feedback_metadata(Tagged<HeapObject> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: (class Undefined | class Script)
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=79&c=3
   inline Tagged<Union<Script, Undefined>> script() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=79&c=3
   inline Tagged<Union<Script, Undefined>> script(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=79&c=3
   inline void set_script(Tagged<Union<Script, Undefined>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=83&c=3
-  inline int16_t length() const;
+  inline uint16_t length() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=83&c=3
-  inline void set_length(int16_t value);
+  inline void set_length(uint16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=88&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=99&c=3
   inline uint16_t formal_parameter_count() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=88&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=99&c=3
   inline void set_formal_parameter_count(uint16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=89&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=100&c=3
   inline uint16_t function_token_offset() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=89&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=100&c=3
   inline void set_function_token_offset(uint16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=92&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=103&c=3
   inline uint8_t expected_nof_properties() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=92&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=103&c=3
   inline void set_expected_nof_properties(uint8_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=93&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=104&c=3
   inline uint8_t flags2() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=93&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=104&c=3
   inline void set_flags2(uint8_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=94&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=105&c=3
   inline uint32_t flags() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=94&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=105&c=3
   inline void set_flags(uint32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=98&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=109&c=3
   inline int32_t function_literal_id() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=98&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=109&c=3
   inline void set_function_literal_id(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=102&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=3
   inline int32_t unique_id() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=102&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=3
   inline void set_unique_id(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=105&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
   inline uint16_t age() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=105&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
   inline void set_age(uint16_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=106&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
   inline uint16_t padding() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=106&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
   inline void set_padding(uint16_t value);
 
   DECL_PRINTER(SharedFunctionInfo)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=60&c=1
   V8_EXPORT_PRIVATE void SharedFunctionInfoVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=70&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=72&c=3
   static constexpr int kTrustedFunctionDataOffset = P::kHeaderSize;
   static constexpr int kTrustedFunctionDataOffsetEnd = kTrustedFunctionDataOffset + kTrustedPointerSize - 1;
   static constexpr int kStartOfStrongFieldsOffset = kTrustedFunctionDataOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=74&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
   static constexpr int kUntrustedFunctionDataOffset = kTrustedFunctionDataOffsetEnd + 1;
   static constexpr int kUntrustedFunctionDataOffsetEnd = kUntrustedFunctionDataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=75&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
   static constexpr int kNameOrScopeInfoOffset = kUntrustedFunctionDataOffsetEnd + 1;
   static constexpr int kNameOrScopeInfoOffsetEnd = kNameOrScopeInfoOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=76&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=78&c=3
   static constexpr int kOuterScopeInfoOrFeedbackMetadataOffset = kNameOrScopeInfoOffsetEnd + 1;
   static constexpr int kOuterScopeInfoOrFeedbackMetadataOffsetEnd = kOuterScopeInfoOrFeedbackMetadataOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=77&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=79&c=3
   static constexpr int kScriptOffset = kOuterScopeInfoOrFeedbackMetadataOffsetEnd + 1;
   static constexpr int kScriptOffsetEnd = kScriptOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kScriptOffsetEnd + 1;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=83&c=3
   static constexpr int kLengthOffset = kScriptOffsetEnd + 1;
   static constexpr int kLengthOffsetEnd = kLengthOffset + kUInt16Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=88&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=99&c=3
   static constexpr int kFormalParameterCountOffset = kLengthOffsetEnd + 1;
   static constexpr int kFormalParameterCountOffsetEnd = kFormalParameterCountOffset + kUInt16Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=89&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=100&c=3
   static constexpr int kFunctionTokenOffsetOffset = kFormalParameterCountOffsetEnd + 1;
   static constexpr int kFunctionTokenOffsetOffsetEnd = kFunctionTokenOffsetOffset + kUInt16Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=92&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=103&c=3
   static constexpr int kExpectedNofPropertiesOffset = kFunctionTokenOffsetOffsetEnd + 1;
   static constexpr int kExpectedNofPropertiesOffsetEnd = kExpectedNofPropertiesOffset + kUInt8Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=93&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=104&c=3
   static constexpr int kFlags2Offset = kExpectedNofPropertiesOffsetEnd + 1;
   static constexpr int kFlags2OffsetEnd = kFlags2Offset + kUInt8Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=94&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=105&c=3
   static constexpr int kFlagsOffset = kFlags2OffsetEnd + 1;
   static constexpr int kFlagsOffsetEnd = kFlagsOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=98&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=109&c=3
   static constexpr int kFunctionLiteralIdOffset = kFlagsOffsetEnd + 1;
   static constexpr int kFunctionLiteralIdOffsetEnd = kFunctionLiteralIdOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=102&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=113&c=3
   static constexpr int kUniqueIdOffset = kFunctionLiteralIdOffsetEnd + 1;
   static constexpr int kUniqueIdOffsetEnd = kUniqueIdOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=105&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=116&c=3
   static constexpr int kAgeOffset = kUniqueIdOffsetEnd + 1;
   static constexpr int kAgeOffsetEnd = kAgeOffset + kUInt16Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=106&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=117&c=3
   static constexpr int kPaddingOffset = kAgeOffsetEnd + 1;
   static constexpr int kPaddingOffsetEnd = kPaddingOffset + kUInt16Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kPaddingOffsetEnd + 1;
@@ -304,14 +304,14 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   static constexpr int kHeaderSize = kPaddingOffsetEnd + 1;
   static constexpr int kSize = kPaddingOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=60&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 48);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=58&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=60&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -321,7 +321,7 @@ class TorqueGeneratedSharedFunctionInfo : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedSharedFunctionInfo() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedSharedFunctionInfo, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedSharedFunctionInfo, DAlias>,
         "class TorqueGeneratedSharedFunctionInfo should be used as direct base for SharedFunctionInfo.");
   }
 
@@ -332,54 +332,54 @@ class TorqueGeneratedSharedFunctionInfo : public P {
 };
 
 // Alias for IsUncompiledData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=144&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
 V8_EXPORT_PRIVATE bool IsUncompiledData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=144&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledData : public P {
   static_assert(
-      std::is_same<UncompiledData, D>::value,
+      std::is_same_v<UncompiledData, D>,
       "Use this class as direct base for UncompiledData.");
   static_assert(
-      std::is_same<ExposedTrustedObject, P>::value,
+      std::is_same_v<ExposedTrustedObject, P>,
       "Pass in ExposedTrustedObject as second template parameter for TorqueGeneratedUncompiledData.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledData<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=146&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=157&c=3
   inline Tagged<String> inferred_name() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=146&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=157&c=3
   inline Tagged<String> inferred_name(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=146&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=157&c=3
   inline void set_inferred_name(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=147&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
   inline int32_t start_position() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=147&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
   inline void set_start_position(int32_t value);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=159&c=3
   inline int32_t end_position() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=159&c=3
   inline void set_end_position(int32_t value);
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=144&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
   V8_EXPORT_PRIVATE void UncompiledDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=146&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=157&c=3
   static constexpr int kInferredNameOffset = P::kHeaderSize;
   static constexpr int kInferredNameOffsetEnd = kInferredNameOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kInferredNameOffsetEnd + 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=147&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
   static constexpr int kStartPositionOffset = kInferredNameOffsetEnd + 1;
   static constexpr int kStartPositionOffsetEnd = kStartPositionOffset + kInt32Size - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=148&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=159&c=3
   static constexpr int kEndPositionOffset = kStartPositionOffsetEnd + 1;
   static constexpr int kEndPositionOffsetEnd = kEndPositionOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kEndPositionOffsetEnd + 1;
@@ -391,7 +391,7 @@ class TorqueGeneratedUncompiledData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedUncompiledData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedUncompiledData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedUncompiledData, DAlias>,
         "class TorqueGeneratedUncompiledData should be used as direct base for UncompiledData.");
   }
 
@@ -402,17 +402,17 @@ class TorqueGeneratedUncompiledData : public P {
 };
 
 // Alias for IsUncompiledDataWithoutPreparseData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=151&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
 V8_EXPORT_PRIVATE bool IsUncompiledDataWithoutPreparseData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=151&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   static_assert(
-      std::is_same<UncompiledDataWithoutPreparseData, D>::value,
+      std::is_same_v<UncompiledDataWithoutPreparseData, D>,
       "Use this class as direct base for UncompiledDataWithoutPreparseData.");
   static_assert(
-      std::is_same<UncompiledData, P>::value,
+      std::is_same_v<UncompiledData, P>,
       "Pass in UncompiledData as second template parameter for TorqueGeneratedUncompiledDataWithoutPreparseData.");
 
  public: 
@@ -422,7 +422,7 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   DECL_PRINTER(UncompiledDataWithoutPreparseData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=151&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithoutPreparseDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
@@ -433,14 +433,14 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   static constexpr int kHeaderSize = P::kHeaderSize;
   static constexpr int kSize = P::kHeaderSize;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=151&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 16);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=151&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=162&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -450,7 +450,7 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedUncompiledDataWithoutPreparseData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedUncompiledDataWithoutPreparseData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedUncompiledDataWithoutPreparseData, DAlias>,
         "class TorqueGeneratedUncompiledDataWithoutPreparseData should be used as direct base for UncompiledDataWithoutPreparseData.");
   }
 
@@ -461,39 +461,39 @@ class TorqueGeneratedUncompiledDataWithoutPreparseData : public P {
 };
 
 // Alias for IsUncompiledDataWithPreparseData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=1
 V8_EXPORT_PRIVATE bool IsUncompiledDataWithPreparseData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   static_assert(
-      std::is_same<UncompiledDataWithPreparseData, D>::value,
+      std::is_same_v<UncompiledDataWithPreparseData, D>,
       "Use this class as direct base for UncompiledDataWithPreparseData.");
   static_assert(
-      std::is_same<UncompiledData, P>::value,
+      std::is_same_v<UncompiledData, P>,
       "Pass in UncompiledData as second template parameter for TorqueGeneratedUncompiledDataWithPreparseData.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithPreparseData<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
   inline Tagged<PreparseData> preparse_data() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
   inline Tagged<PreparseData> preparse_data(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
   inline void set_preparse_data(Tagged<PreparseData> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(UncompiledDataWithPreparseData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithPreparseDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=158&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=169&c=3
   static constexpr int kPreparseDataOffset = P::kHeaderSize;
   static constexpr int kPreparseDataOffsetEnd = kPreparseDataOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kPreparseDataOffsetEnd + 1;
@@ -502,14 +502,14 @@ class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   static constexpr int kHeaderSize = kPreparseDataOffsetEnd + 1;
   static constexpr int kSize = kPreparseDataOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 20);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=155&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=166&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -519,7 +519,7 @@ class TorqueGeneratedUncompiledDataWithPreparseData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedUncompiledDataWithPreparseData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedUncompiledDataWithPreparseData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedUncompiledDataWithPreparseData, DAlias>,
         "class TorqueGeneratedUncompiledDataWithPreparseData should be used as direct base for UncompiledDataWithPreparseData.");
   }
 
@@ -530,36 +530,36 @@ class TorqueGeneratedUncompiledDataWithPreparseData : public P {
 };
 
 // Alias for IsUncompiledDataWithoutPreparseDataWithJob() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=1
 V8_EXPORT_PRIVATE bool IsUncompiledDataWithoutPreparseDataWithJob_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   static_assert(
-      std::is_same<UncompiledDataWithoutPreparseDataWithJob, D>::value,
+      std::is_same_v<UncompiledDataWithoutPreparseDataWithJob, D>,
       "Use this class as direct base for UncompiledDataWithoutPreparseDataWithJob.");
   static_assert(
-      std::is_same<UncompiledDataWithoutPreparseData, P>::value,
+      std::is_same_v<UncompiledDataWithoutPreparseData, P>,
       "Pass in UncompiledDataWithoutPreparseData as second template parameter for TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=176&c=3
   inline Address job() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=176&c=3
   inline void set_job(Address value);
 
   DECL_PRINTER(UncompiledDataWithoutPreparseDataWithJob)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithoutPreparseDataWithJobVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=165&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=176&c=3
   static constexpr int kJobOffset = P::kHeaderSize;
   static constexpr int kJobOffsetEnd = kJobOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kJobOffsetEnd + 1;
@@ -569,14 +569,14 @@ class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   static constexpr int kHeaderSize = kJobOffsetEnd + 1;
   static constexpr int kSize = kJobOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 20);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=161&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -586,7 +586,7 @@ class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob, DAlias>,
         "class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob should be used as direct base for UncompiledDataWithoutPreparseDataWithJob.");
   }
 
@@ -597,36 +597,36 @@ class TorqueGeneratedUncompiledDataWithoutPreparseDataWithJob : public P {
 };
 
 // Alias for IsUncompiledDataWithPreparseDataAndJob() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=179&c=1
 V8_EXPORT_PRIVATE bool IsUncompiledDataWithPreparseDataAndJob_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=179&c=1
 template <class D, class P>
 class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   static_assert(
-      std::is_same<UncompiledDataWithPreparseDataAndJob, D>::value,
+      std::is_same_v<UncompiledDataWithPreparseDataAndJob, D>,
       "Use this class as direct base for UncompiledDataWithPreparseDataAndJob.");
   static_assert(
-      std::is_same<UncompiledDataWithPreparseData, P>::value,
+      std::is_same_v<UncompiledDataWithPreparseData, P>,
       "Pass in UncompiledDataWithPreparseData as second template parameter for TorqueGeneratedUncompiledDataWithPreparseDataAndJob.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedUncompiledDataWithPreparseDataAndJob<D,P>;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=183&c=3
   inline Address job() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=183&c=3
   inline void set_job(Address value);
 
   DECL_PRINTER(UncompiledDataWithPreparseDataAndJob)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=179&c=1
   V8_EXPORT_PRIVATE void UncompiledDataWithPreparseDataAndJobVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=172&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=183&c=3
   static constexpr int kJobOffset = P::kHeaderSize;
   static constexpr int kJobOffsetEnd = kJobOffset + kSystemPointerSize - 1;
   static constexpr int kStartOfWeakFieldsOffset = kJobOffsetEnd + 1;
@@ -636,14 +636,14 @@ class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   static constexpr int kHeaderSize = kJobOffsetEnd + 1;
   static constexpr int kSize = kJobOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=179&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 24);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=168&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=179&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -653,7 +653,7 @@ class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedUncompiledDataWithPreparseDataAndJob() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedUncompiledDataWithPreparseDataAndJob, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedUncompiledDataWithPreparseDataAndJob, DAlias>,
         "class TorqueGeneratedUncompiledDataWithPreparseDataAndJob should be used as direct base for UncompiledDataWithPreparseDataAndJob.");
   }
 
@@ -664,17 +664,17 @@ class TorqueGeneratedUncompiledDataWithPreparseDataAndJob : public P {
 };
 
 // Alias for IsOnHeapBasicBlockProfilerData() that avoids inlining.
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=185&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=196&c=1
 V8_EXPORT_PRIVATE bool IsOnHeapBasicBlockProfilerData_NonInline(Tagged<HeapObject> o);
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=185&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=196&c=1
 template <class D, class P>
 class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   static_assert(
-      std::is_same<OnHeapBasicBlockProfilerData, D>::value,
+      std::is_same_v<OnHeapBasicBlockProfilerData, D>,
       "Use this class as direct base for OnHeapBasicBlockProfilerData.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedOnHeapBasicBlockProfilerData.");
 
  public: 
@@ -682,82 +682,82 @@ class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   using TorqueGeneratedClass = TorqueGeneratedOnHeapBasicBlockProfilerData<D,P>;
 
   // Torque type: FixedInt32Array
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=187&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=198&c=3
   inline Tagged<FixedInt32Array> block_ids() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=187&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=198&c=3
   inline Tagged<FixedInt32Array> block_ids(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=187&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=198&c=3
   inline void set_block_ids(Tagged<FixedInt32Array> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: FixedUInt32Array
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=188&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=199&c=3
   inline Tagged<FixedUInt32Array> counts() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=188&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=199&c=3
   inline Tagged<FixedUInt32Array> counts(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=188&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=199&c=3
   inline void set_counts(Tagged<FixedUInt32Array> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: PodArrayOfIntegerPairs
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=189&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=200&c=3
   inline Tagged<PodArray<std::pair<int32_t, int32_t>>> branches() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=189&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=200&c=3
   inline Tagged<PodArray<std::pair<int32_t, int32_t>>> branches(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=189&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=200&c=3
   inline void set_branches(Tagged<PodArray<std::pair<int32_t, int32_t>>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=190&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=201&c=3
   inline Tagged<String> name() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=190&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=201&c=3
   inline Tagged<String> name(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=190&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=201&c=3
   inline void set_name(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=191&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=202&c=3
   inline Tagged<String> schedule() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=191&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=202&c=3
   inline Tagged<String> schedule(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=191&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=202&c=3
   inline void set_schedule(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=203&c=3
   inline Tagged<String> code() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=203&c=3
   inline Tagged<String> code(PtrComprCageBase cage_base) const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=203&c=3
   inline void set_code(Tagged<String> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=193&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=204&c=3
   inline int hash() const;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=193&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=204&c=3
   inline void set_hash(int value);
 
   DECL_PRINTER(OnHeapBasicBlockProfilerData)
 
 #ifdef VERIFY_HEAP
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=185&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=196&c=1
   V8_EXPORT_PRIVATE void OnHeapBasicBlockProfilerDataVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
   static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=187&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=198&c=3
   static constexpr int kBlockIdsOffset = P::kHeaderSize;
   static constexpr int kBlockIdsOffsetEnd = kBlockIdsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=188&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=199&c=3
   static constexpr int kCountsOffset = kBlockIdsOffsetEnd + 1;
   static constexpr int kCountsOffsetEnd = kCountsOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=189&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=200&c=3
   static constexpr int kBranchesOffset = kCountsOffsetEnd + 1;
   static constexpr int kBranchesOffsetEnd = kBranchesOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=190&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=201&c=3
   static constexpr int kNameOffset = kBranchesOffsetEnd + 1;
   static constexpr int kNameOffsetEnd = kNameOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=191&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=202&c=3
   static constexpr int kScheduleOffset = kNameOffsetEnd + 1;
   static constexpr int kScheduleOffsetEnd = kScheduleOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=192&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=203&c=3
   static constexpr int kCodeOffset = kScheduleOffsetEnd + 1;
   static constexpr int kCodeOffsetEnd = kCodeOffset + kTaggedSize - 1;
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=193&c=3
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=204&c=3
   static constexpr int kHashOffset = kCodeOffsetEnd + 1;
   static constexpr int kHashOffsetEnd = kHashOffset + kTaggedSize - 1;
   static constexpr int kEndOfStrongFieldsOffset = kHashOffsetEnd + 1;
@@ -766,14 +766,14 @@ class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   static constexpr int kHeaderSize = kHashOffsetEnd + 1;
   static constexpr int kSize = kHashOffsetEnd + 1;
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=185&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=196&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
     DCHECK(kHeaderSize == kSize && kHeaderSize == 32);
     int32_t size = kHeaderSize;
     return size;
   }
 
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=185&c=1
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/shared-function-info.tq?l=196&c=1
   V8_INLINE int32_t AllocatedSize() const {
     return SizeFor();
   }
@@ -783,7 +783,7 @@ class TorqueGeneratedOnHeapBasicBlockProfilerData : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedOnHeapBasicBlockProfilerData() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedOnHeapBasicBlockProfilerData, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedOnHeapBasicBlockProfilerData, DAlias>,
         "class TorqueGeneratedOnHeapBasicBlockProfilerData should be used as direct base for OnHeapBasicBlockProfilerData.");
   }
 

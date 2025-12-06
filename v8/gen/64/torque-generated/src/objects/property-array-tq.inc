@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsPropertyArray_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedPropertyArray : public P {
   static_assert(
-      std::is_same<PropertyArray, D>::value,
+      std::is_same_v<PropertyArray, D>,
       "Use this class as direct base for PropertyArray.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedPropertyArray.");
 
  public: 
@@ -56,7 +56,7 @@ class TorqueGeneratedPropertyArray : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPropertyArray() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPropertyArray, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPropertyArray, DAlias>,
         "class TorqueGeneratedPropertyArray should be used as direct base for PropertyArray.");
   }
 

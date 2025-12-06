@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,11 +68,13 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/set-union-tq-csa.h"
 #include "torque-generated/src/builtins/array-from-async-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
+#include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/collections-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/function-tq-csa.h"
@@ -89,42 +90,52 @@ TF_BUILTIN(SetPrototypeUnion, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kOther);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kOther);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kSetMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block19(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, IntPtrT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, IntPtrT> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, IntPtrT, IntPtrT> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, IntPtrT, IntPtrT> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, IntPtrT> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, IntPtrT> block23(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, IntPtrT> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, IntPtrT, IntPtrT> block28(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, IntPtrT, IntPtrT> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, IntPtrT> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block32(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, Object, IntPtrT> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, Object, IntPtrT> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, Object, IntPtrT, IntPtrT> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, Object, IntPtrT, IntPtrT> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Object, Object, IntPtrT> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, JSAny, IntPtrT> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, JSAny, IntPtrT> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, JSAny, IntPtrT, IntPtrT> block48(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, JSAny, IntPtrT, IntPtrT> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSAny, JSAny, IntPtrT> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block54(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block57(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block56(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block62(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block61(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block65(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block63(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block69(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block68(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, JSReceiver> block64(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, OrderedHashSet> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, OrderedHashSet, OrderedHashSet> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Map> tmp0;
@@ -150,87 +161,87 @@ TF_BUILTIN(SetPrototypeUnion, CodeStubAssembler) {
 
   TNode<JSReceiver> tmp4;
   TNode<Number> tmp5;
-  TNode<Object> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp6;
+  TNode<JSAny> tmp7;
   TNode<JSSet> tmp8;
   TNode<OrderedHashSet> tmp9;
-  TNode<FixedArrayBase> tmp10;
-  TNode<OrderedHashSet> tmp11;
+  TNode<JSSet> tmp10;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    std::tie(tmp4, tmp5, tmp6, tmp7) = GetSetRecord_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, "Set.prototype.union").Flatten();
+    std::tie(tmp4, tmp5, tmp6, tmp7) = GetSetRecord_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, "Set.prototype.union").Flatten();
     std::tie(tmp8, tmp9) = NewStableBackingTableWitness_0(state_, TNode<JSSet>{tmp1}).Flatten();
-    tmp10 = CodeStubAssembler(state_).CloneFixedArray(TNode<FixedArrayBase>{tmp9}, CodeStubAssembler::ExtractFixedArrayFlag::kFixedArrays);
-    compiler::CodeAssemblerLabel label12(&ca_);
-    tmp11 = Cast_OrderedHashSet_0(state_, TNode<HeapObject>{tmp10}, &label12);
-    ca_.Goto(&block8);
-    if (label12.is_used()) {
-      ca_.Bind(&label12);
-      ca_.Goto(&block9);
+    compiler::CodeAssemblerLabel label11(&ca_);
+    tmp10 = Cast_JSSetWithNoCustomIteration_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label11);
+    ca_.Goto(&block11);
+    if (label11.is_used()) {
+      ca_.Bind(&label11);
+      ca_.Goto(&block12);
     }
   }
 
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    CodeStubAssembler(state_).Unreachable();
+  TNode<JSMap> tmp12;
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    compiler::CodeAssemblerLabel label13(&ca_);
+    tmp12 = Cast_JSMapWithNoCustomIteration_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<JSAny>(parameter2)}, &label13);
+    ca_.Goto(&block31);
+    if (label13.is_used()) {
+      ca_.Bind(&label13);
+      ca_.Goto(&block32);
+    }
   }
 
-  TNode<JSSet> tmp13;
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
     compiler::CodeAssemblerLabel label14(&ca_);
-    tmp13 = Cast_JSSetWithNoCustomIteration_1(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, &label14);
-    ca_.Goto(&block16);
+    CheckSetRecordHasJSSetMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<JSAny>{tmp6}, TNode<JSAny>{tmp7}}, &label14);
+    ca_.Goto(&block13);
     if (label14.is_used()) {
       ca_.Bind(&label14);
-      ca_.Goto(&block17);
+      ca_.Goto(&block14);
     }
   }
 
-  TNode<JSMap> tmp15;
-  if (block17.is_used()) {
-    ca_.Bind(&block17);
-    compiler::CodeAssemblerLabel label16(&ca_);
-    tmp15 = Cast_JSMapWithNoCustomIteration_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<Object>(parameter2)}, &label16);
-    ca_.Goto(&block29);
-    if (label16.is_used()) {
-      ca_.Bind(&label16);
-      ca_.Goto(&block30);
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block8);
+  }
+
+  TNode<JSSet> tmp15;
+  TNode<OrderedHashSet> tmp16;
+  TNode<OrderedHashSet> tmp17;
+  TNode<Int32T> tmp18;
+  TNode<Int32T> tmp19;
+  TNode<JSAny> tmp20;
+  TNode<IntPtrT> tmp21;
+  TNode<FixedArrayBase> tmp22;
+  TNode<OrderedHashSet> tmp23;
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    std::tie(tmp15, tmp16) = NewStableBackingTableWitness_0(state_, TNode<JSSet>{tmp10}).Flatten();
+    std::tie(tmp17, tmp18, tmp19, tmp20, tmp21) = NewUnmodifiedOrderedHashSetIterator_0(state_, TNode<OrderedHashSet>{tmp16}).Flatten();
+    tmp22 = CodeStubAssembler(state_).CloneFixedArray(TNode<FixedArrayBase>{tmp9}, CodeStubAssembler::ExtractFixedArrayFlag::kFixedArrays);
+    compiler::CodeAssemblerLabel label24(&ca_);
+    tmp23 = Cast_OrderedHashSet_0(state_, TNode<HeapObject>{tmp22}, &label24);
+    ca_.Goto(&block19);
+    if (label24.is_used()) {
+      ca_.Bind(&label24);
+      ca_.Goto(&block20);
     }
   }
 
-  if (block16.is_used()) {
-    ca_.Bind(&block16);
-    compiler::CodeAssemblerLabel label17(&ca_);
-    CheckSetRecordHasJSSetMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<Object>{tmp6}, TNode<Object>{tmp7}}, &label17);
-    ca_.Goto(&block18);
-    if (label17.is_used()) {
-      ca_.Bind(&label17);
-      ca_.Goto(&block19);
-    }
+  if (block20.is_used()) {
+    ca_.Bind(&block20);
+    CodeStubAssembler(state_).Unreachable();
   }
 
   if (block19.is_used()) {
     ca_.Bind(&block19);
-    ca_.Goto(&block13);
-  }
-
-  TNode<JSSet> tmp18;
-  TNode<OrderedHashSet> tmp19;
-  TNode<OrderedHashSet> tmp20;
-  TNode<Int32T> tmp21;
-  TNode<Int32T> tmp22;
-  TNode<Object> tmp23;
-  TNode<IntPtrT> tmp24;
-  if (block18.is_used()) {
-    ca_.Bind(&block18);
-    std::tie(tmp18, tmp19) = NewStableBackingTableWitness_0(state_, TNode<JSSet>{tmp13}).Flatten();
-    std::tie(tmp20, tmp21, tmp22, tmp23, tmp24) = NewUnmodifiedOrderedHashSetIterator_0(state_, TNode<OrderedHashSet>{tmp19}).Flatten();
-    ca_.Goto(&block23, tmp11, tmp23, tmp24);
+    ca_.Goto(&block23, tmp23, tmp20, tmp21);
   }
 
   TNode<OrderedHashSet> phi_bb23_11;
-  TNode<Object> phi_bb23_19;
+  TNode<JSAny> phi_bb23_19;
   TNode<IntPtrT> phi_bb23_20;
   TNode<BoolT> tmp25;
   if (block23.is_used()) {
@@ -240,70 +251,70 @@ TF_BUILTIN(SetPrototypeUnion, CodeStubAssembler) {
   }
 
   TNode<OrderedHashSet> phi_bb21_11;
-  TNode<Object> phi_bb21_19;
+  TNode<JSAny> phi_bb21_19;
   TNode<IntPtrT> phi_bb21_20;
-  TNode<Object> tmp26;
+  TNode<JSAny> tmp26;
   TNode<IntPtrT> tmp27;
   if (block21.is_used()) {
     ca_.Bind(&block21, &phi_bb21_11, &phi_bb21_19, &phi_bb21_20);
     compiler::CodeAssemblerLabel label28(&ca_);
-    std::tie(tmp26, tmp27) = CollectionsBuiltinsAssembler(state_).NextKeyIndexPairUnmodifiedTable(TNode<OrderedHashSet>{tmp20}, TNode<Int32T>{tmp21}, TNode<Int32T>{tmp22}, TNode<IntPtrT>{phi_bb21_20}, &label28).Flatten();
-    ca_.Goto(&block25, phi_bb21_11, phi_bb21_19, phi_bb21_20, phi_bb21_20);
+    std::tie(tmp26, tmp27) = CollectionsBuiltinsAssembler(state_).NextKeyIndexPairUnmodifiedTable(TNode<OrderedHashSet>{tmp17}, TNode<Int32T>{tmp18}, TNode<Int32T>{tmp19}, TNode<IntPtrT>{phi_bb21_20}, &label28).Flatten();
+    ca_.Goto(&block27, phi_bb21_11, phi_bb21_19, phi_bb21_20, phi_bb21_20);
     if (label28.is_used()) {
       ca_.Bind(&label28);
-      ca_.Goto(&block26, phi_bb21_11, phi_bb21_19, phi_bb21_20, phi_bb21_20);
+      ca_.Goto(&block28, phi_bb21_11, phi_bb21_19, phi_bb21_20, phi_bb21_20);
     }
   }
 
-  TNode<OrderedHashSet> phi_bb26_11;
-  TNode<Object> phi_bb26_19;
-  TNode<IntPtrT> phi_bb26_20;
-  TNode<IntPtrT> phi_bb26_24;
-  if (block26.is_used()) {
-    ca_.Bind(&block26, &phi_bb26_11, &phi_bb26_19, &phi_bb26_20, &phi_bb26_24);
-    ca_.Goto(&block11, phi_bb26_11);
+  TNode<OrderedHashSet> phi_bb28_11;
+  TNode<JSAny> phi_bb28_19;
+  TNode<IntPtrT> phi_bb28_20;
+  TNode<IntPtrT> phi_bb28_24;
+  if (block28.is_used()) {
+    ca_.Bind(&block28, &phi_bb28_11, &phi_bb28_19, &phi_bb28_20, &phi_bb28_24);
+    ca_.Goto(&block6, tmp9, phi_bb28_11, phi_bb28_11);
   }
 
-  TNode<OrderedHashSet> phi_bb25_11;
-  TNode<Object> phi_bb25_19;
-  TNode<IntPtrT> phi_bb25_20;
-  TNode<IntPtrT> phi_bb25_24;
+  TNode<OrderedHashSet> phi_bb27_11;
+  TNode<JSAny> phi_bb27_19;
+  TNode<IntPtrT> phi_bb27_20;
+  TNode<IntPtrT> phi_bb27_24;
   TNode<String> tmp29;
   TNode<OrderedHashSet> tmp30;
-  if (block25.is_used()) {
-    ca_.Bind(&block25, &phi_bb25_11, &phi_bb25_19, &phi_bb25_20, &phi_bb25_24);
+  if (block27.is_used()) {
+    ca_.Bind(&block27, &phi_bb27_11, &phi_bb27_19, &phi_bb27_20, &phi_bb27_24);
     tmp29 = FromConstexpr_String_constexpr_string_0(state_, "Set.prototype.union");
-    tmp30 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb25_11}, TNode<Object>{tmp26}, TNode<String>{tmp29});
+    tmp30 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb27_11}, TNode<JSAny>{tmp26}, TNode<String>{tmp29});
     ca_.Goto(&block23, tmp30, tmp26, tmp27);
   }
 
   TNode<OrderedHashSet> phi_bb22_11;
-  TNode<Object> phi_bb22_19;
+  TNode<JSAny> phi_bb22_19;
   TNode<IntPtrT> phi_bb22_20;
   if (block22.is_used()) {
     ca_.Bind(&block22, &phi_bb22_11, &phi_bb22_19, &phi_bb22_20);
-    ca_.Goto(&block14, phi_bb22_11);
-  }
-
-  if (block30.is_used()) {
-    ca_.Bind(&block30);
-    ca_.Goto(&block13);
-  }
-
-  if (block29.is_used()) {
-    ca_.Bind(&block29);
-    compiler::CodeAssemblerLabel label31(&ca_);
-    CheckSetRecordHasJSMapMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<Object>{tmp6}, TNode<Object>{tmp7}}, &label31);
-    ca_.Goto(&block31);
-    if (label31.is_used()) {
-      ca_.Bind(&label31);
-      ca_.Goto(&block32);
-    }
+    ca_.Goto(&block9, phi_bb22_11);
   }
 
   if (block32.is_used()) {
     ca_.Bind(&block32);
-    ca_.Goto(&block13);
+    ca_.Goto(&block8);
+  }
+
+  if (block31.is_used()) {
+    ca_.Bind(&block31);
+    compiler::CodeAssemblerLabel label31(&ca_);
+    CheckSetRecordHasJSMapMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<JSAny>{tmp6}, TNode<JSAny>{tmp7}}, &label31);
+    ca_.Goto(&block33);
+    if (label31.is_used()) {
+      ca_.Bind(&label31);
+      ca_.Goto(&block34);
+    }
+  }
+
+  if (block34.is_used()) {
+    ca_.Bind(&block34);
+    ca_.Goto(&block8);
   }
 
   TNode<JSMap> tmp32;
@@ -311,187 +322,273 @@ TF_BUILTIN(SetPrototypeUnion, CodeStubAssembler) {
   TNode<OrderedHashMap> tmp34;
   TNode<Int32T> tmp35;
   TNode<Int32T> tmp36;
-  TNode<Object> tmp37;
-  TNode<Object> tmp38;
+  TNode<JSAny> tmp37;
+  TNode<JSAny> tmp38;
   TNode<IntPtrT> tmp39;
-  if (block31.is_used()) {
-    ca_.Bind(&block31);
-    std::tie(tmp32, tmp33) = NewStableBackingTableWitness_1(state_, TNode<JSMap>{tmp15}).Flatten();
+  TNode<FixedArrayBase> tmp40;
+  TNode<OrderedHashSet> tmp41;
+  if (block33.is_used()) {
+    ca_.Bind(&block33);
+    std::tie(tmp32, tmp33) = NewStableBackingTableWitness_1(state_, TNode<JSMap>{tmp12}).Flatten();
     std::tie(tmp34, tmp35, tmp36, tmp37, tmp38, tmp39) = NewUnmodifiedOrderedHashMapIterator_0(state_, TNode<OrderedHashMap>{tmp33}).Flatten();
-    ca_.Goto(&block36, tmp11, tmp37, tmp38, tmp39);
-  }
-
-  TNode<OrderedHashSet> phi_bb36_11;
-  TNode<Object> phi_bb36_19;
-  TNode<Object> phi_bb36_20;
-  TNode<IntPtrT> phi_bb36_21;
-  TNode<BoolT> tmp40;
-  if (block36.is_used()) {
-    ca_.Bind(&block36, &phi_bb36_11, &phi_bb36_19, &phi_bb36_20, &phi_bb36_21);
-    tmp40 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp40, &block34, std::vector<compiler::Node*>{phi_bb36_11, phi_bb36_19, phi_bb36_20, phi_bb36_21}, &block35, std::vector<compiler::Node*>{phi_bb36_11, phi_bb36_19, phi_bb36_20, phi_bb36_21});
-  }
-
-  TNode<OrderedHashSet> phi_bb34_11;
-  TNode<Object> phi_bb34_19;
-  TNode<Object> phi_bb34_20;
-  TNode<IntPtrT> phi_bb34_21;
-  TNode<Object> tmp41;
-  TNode<Object> tmp42;
-  TNode<IntPtrT> tmp43;
-  if (block34.is_used()) {
-    ca_.Bind(&block34, &phi_bb34_11, &phi_bb34_19, &phi_bb34_20, &phi_bb34_21);
-    compiler::CodeAssemblerLabel label44(&ca_);
-    std::tie(tmp41, tmp42, tmp43) = CollectionsBuiltinsAssembler(state_).NextKeyValueIndexTupleUnmodifiedTable(TNode<OrderedHashMap>{tmp34}, TNode<Int32T>{tmp35}, TNode<Int32T>{tmp36}, TNode<IntPtrT>{phi_bb34_21}, &label44).Flatten();
-    ca_.Goto(&block38, phi_bb34_11, phi_bb34_19, phi_bb34_20, phi_bb34_21, phi_bb34_21);
-    if (label44.is_used()) {
-      ca_.Bind(&label44);
-      ca_.Goto(&block39, phi_bb34_11, phi_bb34_19, phi_bb34_20, phi_bb34_21, phi_bb34_21);
+    tmp40 = CodeStubAssembler(state_).CloneFixedArray(TNode<FixedArrayBase>{tmp9}, CodeStubAssembler::ExtractFixedArrayFlag::kFixedArrays);
+    compiler::CodeAssemblerLabel label42(&ca_);
+    tmp41 = Cast_OrderedHashSet_0(state_, TNode<HeapObject>{tmp40}, &label42);
+    ca_.Goto(&block39);
+    if (label42.is_used()) {
+      ca_.Bind(&label42);
+      ca_.Goto(&block40);
     }
   }
 
-  TNode<OrderedHashSet> phi_bb39_11;
-  TNode<Object> phi_bb39_19;
-  TNode<Object> phi_bb39_20;
-  TNode<IntPtrT> phi_bb39_21;
-  TNode<IntPtrT> phi_bb39_25;
-  if (block39.is_used()) {
-    ca_.Bind(&block39, &phi_bb39_11, &phi_bb39_19, &phi_bb39_20, &phi_bb39_21, &phi_bb39_25);
-    ca_.Goto(&block11, phi_bb39_11);
-  }
-
-  TNode<OrderedHashSet> phi_bb38_11;
-  TNode<Object> phi_bb38_19;
-  TNode<Object> phi_bb38_20;
-  TNode<IntPtrT> phi_bb38_21;
-  TNode<IntPtrT> phi_bb38_25;
-  TNode<String> tmp45;
-  TNode<OrderedHashSet> tmp46;
-  if (block38.is_used()) {
-    ca_.Bind(&block38, &phi_bb38_11, &phi_bb38_19, &phi_bb38_20, &phi_bb38_21, &phi_bb38_25);
-    tmp45 = FromConstexpr_String_constexpr_string_0(state_, "Set.prototype.union");
-    tmp46 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb38_11}, TNode<Object>{tmp41}, TNode<String>{tmp45});
-    ca_.Goto(&block36, tmp46, tmp41, tmp42, tmp43);
-  }
-
-  TNode<OrderedHashSet> phi_bb35_11;
-  TNode<Object> phi_bb35_19;
-  TNode<Object> phi_bb35_20;
-  TNode<IntPtrT> phi_bb35_21;
-  if (block35.is_used()) {
-    ca_.Bind(&block35, &phi_bb35_11, &phi_bb35_19, &phi_bb35_20, &phi_bb35_21);
-    ca_.Goto(&block14, phi_bb35_11);
-  }
-
-  TNode<OrderedHashSet> phi_bb14_11;
-  if (block14.is_used()) {
-    ca_.Bind(&block14, &phi_bb14_11);
-    ca_.Goto(&block12, phi_bb14_11);
-  }
-
-  TNode<JSReceiver> tmp47;
-  TNode<JSReceiver> tmp48;
-  TNode<Object> tmp49;
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    tmp47 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7});
-    std::tie(tmp48, tmp49) = GetKeysIterator_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp4}, TNode<JSReceiver>{tmp47}).Flatten();
-    ca_.Goto(&block42, tmp11, ca_.Uninitialized<JSReceiver>());
-  }
-
-  TNode<OrderedHashSet> phi_bb42_11;
-  TNode<JSReceiver> phi_bb42_14;
-  TNode<BoolT> tmp50;
-  if (block42.is_used()) {
-    ca_.Bind(&block42, &phi_bb42_11, &phi_bb42_14);
-    tmp50 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp50, &block40, std::vector<compiler::Node*>{phi_bb42_11, phi_bb42_14}, &block41, std::vector<compiler::Node*>{phi_bb42_11, phi_bb42_14});
-  }
-
-  TNode<OrderedHashSet> phi_bb40_11;
-  TNode<JSReceiver> phi_bb40_14;
-  TNode<JSReceiver> tmp51;
   if (block40.is_used()) {
-    ca_.Bind(&block40, &phi_bb40_11, &phi_bb40_14);
-    compiler::CodeAssemblerLabel label52(&ca_);
-    tmp51 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp48}, TNode<Object>{tmp49}}, TNode<Map>{tmp0}, &label52);
-    ca_.Goto(&block43, phi_bb40_11, phi_bb40_14);
-    if (label52.is_used()) {
-      ca_.Bind(&label52);
-      ca_.Goto(&block44, phi_bb40_11, phi_bb40_14);
-    }
-  }
-
-  TNode<OrderedHashSet> phi_bb44_11;
-  TNode<JSReceiver> phi_bb44_14;
-  if (block44.is_used()) {
-    ca_.Bind(&block44, &phi_bb44_11, &phi_bb44_14);
-    ca_.Goto(&block11, phi_bb44_11);
-  }
-
-  TNode<OrderedHashSet> phi_bb43_11;
-  TNode<JSReceiver> phi_bb43_14;
-  TNode<Object> tmp53;
-  TNode<String> tmp54;
-  TNode<OrderedHashSet> tmp55;
-  if (block43.is_used()) {
-    ca_.Bind(&block43, &phi_bb43_11, &phi_bb43_14);
-    tmp53 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp51}, TNode<Map>{tmp0});
-    tmp54 = FromConstexpr_String_constexpr_string_0(state_, "Set.prototype.union");
-    tmp55 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb43_11}, TNode<Object>{tmp53}, TNode<String>{tmp54});
-    ca_.Goto(&block42, tmp55, tmp51);
-  }
-
-  TNode<OrderedHashSet> phi_bb41_11;
-  TNode<JSReceiver> phi_bb41_14;
-  if (block41.is_used()) {
-    ca_.Bind(&block41, &phi_bb41_11, &phi_bb41_14);
-    ca_.Goto(&block12, phi_bb41_11);
-  }
-
-  TNode<OrderedHashSet> phi_bb12_11;
-  if (block12.is_used()) {
-    ca_.Bind(&block12, &phi_bb12_11);
+    ca_.Bind(&block40);
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<OrderedHashSet> phi_bb11_11;
-  TNode<IntPtrT> tmp56;
-  TNode<Object> tmp57;
-  TNode<IntPtrT> tmp58;
-  TNode<Map> tmp59;
-  TNode<FixedArray> tmp60;
-  TNode<FixedArray> tmp61;
-  TNode<BoolT> tmp62;
+  if (block39.is_used()) {
+    ca_.Bind(&block39);
+    ca_.Goto(&block43, tmp41, tmp37, tmp38, tmp39);
+  }
+
+  TNode<OrderedHashSet> phi_bb43_11;
+  TNode<JSAny> phi_bb43_19;
+  TNode<JSAny> phi_bb43_20;
+  TNode<IntPtrT> phi_bb43_21;
+  TNode<BoolT> tmp43;
+  if (block43.is_used()) {
+    ca_.Bind(&block43, &phi_bb43_11, &phi_bb43_19, &phi_bb43_20, &phi_bb43_21);
+    tmp43 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp43, &block41, std::vector<compiler::Node*>{phi_bb43_11, phi_bb43_19, phi_bb43_20, phi_bb43_21}, &block42, std::vector<compiler::Node*>{phi_bb43_11, phi_bb43_19, phi_bb43_20, phi_bb43_21});
+  }
+
+  TNode<OrderedHashSet> phi_bb41_11;
+  TNode<JSAny> phi_bb41_19;
+  TNode<JSAny> phi_bb41_20;
+  TNode<IntPtrT> phi_bb41_21;
+  TNode<JSAny> tmp44;
+  TNode<JSAny> tmp45;
+  TNode<IntPtrT> tmp46;
+  if (block41.is_used()) {
+    ca_.Bind(&block41, &phi_bb41_11, &phi_bb41_19, &phi_bb41_20, &phi_bb41_21);
+    compiler::CodeAssemblerLabel label47(&ca_);
+    std::tie(tmp44, tmp45, tmp46) = CollectionsBuiltinsAssembler(state_).NextKeyValueIndexTupleUnmodifiedTable(TNode<OrderedHashMap>{tmp34}, TNode<Int32T>{tmp35}, TNode<Int32T>{tmp36}, TNode<IntPtrT>{phi_bb41_21}, &label47).Flatten();
+    ca_.Goto(&block47, phi_bb41_11, phi_bb41_19, phi_bb41_20, phi_bb41_21, phi_bb41_21);
+    if (label47.is_used()) {
+      ca_.Bind(&label47);
+      ca_.Goto(&block48, phi_bb41_11, phi_bb41_19, phi_bb41_20, phi_bb41_21, phi_bb41_21);
+    }
+  }
+
+  TNode<OrderedHashSet> phi_bb48_11;
+  TNode<JSAny> phi_bb48_19;
+  TNode<JSAny> phi_bb48_20;
+  TNode<IntPtrT> phi_bb48_21;
+  TNode<IntPtrT> phi_bb48_25;
+  if (block48.is_used()) {
+    ca_.Bind(&block48, &phi_bb48_11, &phi_bb48_19, &phi_bb48_20, &phi_bb48_21, &phi_bb48_25);
+    ca_.Goto(&block6, tmp9, phi_bb48_11, phi_bb48_11);
+  }
+
+  TNode<OrderedHashSet> phi_bb47_11;
+  TNode<JSAny> phi_bb47_19;
+  TNode<JSAny> phi_bb47_20;
+  TNode<IntPtrT> phi_bb47_21;
+  TNode<IntPtrT> phi_bb47_25;
+  TNode<String> tmp48;
+  TNode<OrderedHashSet> tmp49;
+  if (block47.is_used()) {
+    ca_.Bind(&block47, &phi_bb47_11, &phi_bb47_19, &phi_bb47_20, &phi_bb47_21, &phi_bb47_25);
+    tmp48 = FromConstexpr_String_constexpr_string_0(state_, "Set.prototype.union");
+    tmp49 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb47_11}, TNode<JSAny>{tmp44}, TNode<String>{tmp48});
+    ca_.Goto(&block43, tmp49, tmp44, tmp45, tmp46);
+  }
+
+  TNode<OrderedHashSet> phi_bb42_11;
+  TNode<JSAny> phi_bb42_19;
+  TNode<JSAny> phi_bb42_20;
+  TNode<IntPtrT> phi_bb42_21;
+  if (block42.is_used()) {
+    ca_.Bind(&block42, &phi_bb42_11, &phi_bb42_19, &phi_bb42_20, &phi_bb42_21);
+    ca_.Goto(&block9, phi_bb42_11);
+  }
+
+  TNode<OrderedHashSet> phi_bb9_11;
+  if (block9.is_used()) {
+    ca_.Bind(&block9, &phi_bb9_11);
+    ca_.Goto(&block7, tmp9, phi_bb9_11);
+  }
+
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp50;
+  TNode<JSReceiver> tmp51;
+  TNode<JSAny> tmp52;
+  TNode<IntPtrT> tmp53;
+  TNode<Object> tmp54;
+  TNode<HeapObject> tmp55;
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    tmp50 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7});
+    std::tie(tmp51, tmp52) = GetKeysIterator_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp4}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp50}).Flatten();
+    tmp53 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    tmp54 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp8, tmp53});
+    compiler::CodeAssemblerLabel label56(&ca_);
+    tmp55 = CodeStubAssembler(state_).TaggedToHeapObject(TNode<Object>{tmp54}, &label56);
+    ca_.Goto(&block53);
+    if (label56.is_used()) {
+      ca_.Bind(&label56);
+      ca_.Goto(&block54);
+    }
+  }
+
+  if (block54.is_used()) {
+    ca_.Bind(&block54);
+    ca_.Goto(&block51);
+  }
+
+  TNode<OrderedHashSet> tmp57;
+  if (block53.is_used()) {
+    ca_.Bind(&block53);
+    compiler::CodeAssemblerLabel label58(&ca_);
+    tmp57 = Cast_OrderedHashSet_0(state_, TNode<HeapObject>{tmp55}, &label58);
+    ca_.Goto(&block56);
+    if (label58.is_used()) {
+      ca_.Bind(&label58);
+      ca_.Goto(&block57);
+    }
+  }
+
+  if (block57.is_used()) {
+    ca_.Bind(&block57);
+    ca_.Goto(&block51);
+  }
+
+  TNode<OrderedHashSet> tmp59;
+  TNode<FixedArrayBase> tmp60;
+  TNode<OrderedHashSet> tmp61;
+  if (block56.is_used()) {
+    ca_.Bind(&block56);
+    tmp59 = (TNode<OrderedHashSet>{tmp57});
+    tmp60 = CodeStubAssembler(state_).CloneFixedArray(TNode<FixedArrayBase>{tmp59}, CodeStubAssembler::ExtractFixedArrayFlag::kFixedArrays);
+    compiler::CodeAssemblerLabel label62(&ca_);
+    tmp61 = Cast_OrderedHashSet_0(state_, TNode<HeapObject>{tmp60}, &label62);
+    ca_.Goto(&block61);
+    if (label62.is_used()) {
+      ca_.Bind(&label62);
+      ca_.Goto(&block62);
+    }
+  }
+
+  if (block51.is_used()) {
+    ca_.Bind(&block51);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  if (block62.is_used()) {
+    ca_.Bind(&block62);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  if (block61.is_used()) {
+    ca_.Bind(&block61);
+    ca_.Goto(&block65, tmp61, ca_.Uninitialized<JSReceiver>());
+  }
+
+  TNode<OrderedHashSet> phi_bb65_11;
+  TNode<JSReceiver> phi_bb65_14;
   TNode<BoolT> tmp63;
-  TNode<IntPtrT> tmp64;
-  TNode<HeapObject> tmp65;
-  TNode<IntPtrT> tmp66;
-  TNode<IntPtrT> tmp67;
-  TNode<IntPtrT> tmp68;
+  if (block65.is_used()) {
+    ca_.Bind(&block65, &phi_bb65_11, &phi_bb65_14);
+    tmp63 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp63, &block63, std::vector<compiler::Node*>{phi_bb65_11, phi_bb65_14}, &block64, std::vector<compiler::Node*>{phi_bb65_11, phi_bb65_14});
+  }
+
+  TNode<OrderedHashSet> phi_bb63_11;
+  TNode<JSReceiver> phi_bb63_14;
+  TNode<JSReceiver> tmp64;
+  if (block63.is_used()) {
+    ca_.Bind(&block63, &phi_bb63_11, &phi_bb63_14);
+    compiler::CodeAssemblerLabel label65(&ca_);
+    tmp64 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp51}, TNode<JSAny>{tmp52}}, TNode<Map>{tmp0}, &label65);
+    ca_.Goto(&block68, phi_bb63_11, phi_bb63_14);
+    if (label65.is_used()) {
+      ca_.Bind(&label65);
+      ca_.Goto(&block69, phi_bb63_11, phi_bb63_14);
+    }
+  }
+
+  TNode<OrderedHashSet> phi_bb69_11;
+  TNode<JSReceiver> phi_bb69_14;
+  if (block69.is_used()) {
+    ca_.Bind(&block69, &phi_bb69_11, &phi_bb69_14);
+    ca_.Goto(&block6, tmp59, phi_bb69_11, phi_bb69_11);
+  }
+
+  TNode<OrderedHashSet> phi_bb68_11;
+  TNode<JSReceiver> phi_bb68_14;
+  TNode<JSAny> tmp66;
+  TNode<String> tmp67;
+  TNode<OrderedHashSet> tmp68;
+  if (block68.is_used()) {
+    ca_.Bind(&block68, &phi_bb68_11, &phi_bb68_14);
+    tmp66 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp64}, TNode<Map>{tmp0});
+    tmp67 = FromConstexpr_String_constexpr_string_0(state_, "Set.prototype.union");
+    tmp68 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb68_11}, TNode<JSAny>{tmp66}, TNode<String>{tmp67});
+    ca_.Goto(&block65, tmp68, tmp64);
+  }
+
+  TNode<OrderedHashSet> phi_bb64_11;
+  TNode<JSReceiver> phi_bb64_14;
+  if (block64.is_used()) {
+    ca_.Bind(&block64, &phi_bb64_11, &phi_bb64_14);
+    ca_.Goto(&block7, tmp59, phi_bb64_11);
+  }
+
+  TNode<OrderedHashSet> phi_bb7_10;
+  TNode<OrderedHashSet> phi_bb7_11;
+  if (block7.is_used()) {
+    ca_.Bind(&block7, &phi_bb7_10, &phi_bb7_11);
+    CodeStubAssembler(state_).Unreachable();
+  }
+
+  TNode<OrderedHashSet> phi_bb6_10;
+  TNode<OrderedHashSet> phi_bb6_11;
+  TNode<OrderedHashSet> phi_bb6_12;
   TNode<IntPtrT> tmp69;
-  TNode<JSSet> tmp70;
-  if (block11.is_used()) {
-    ca_.Bind(&block11, &phi_bb11_11);
-    tmp56 = JS_SET_MAP_INDEX_0(state_);
-    std::tie(tmp57, tmp58) = NativeContextSlot_NativeContext_Map_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp56}).Flatten();
-    tmp59 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp57, tmp58});
-    tmp60 = kEmptyFixedArray_0(state_);
-    tmp61 = kEmptyFixedArray_0(state_);
-    tmp62 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp63 = FromConstexpr_bool_constexpr_bool_0(state_, false);
-    tmp64 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp65 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp64}, TNode<Map>{tmp59}, TNode<BoolT>{tmp62}, TNode<BoolT>{tmp63});
-    tmp66 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp65, tmp66}, tmp59);
-    tmp67 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp65, tmp67}, tmp60);
-    tmp68 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp65, tmp68}, tmp61);
-    tmp69 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp65, tmp69}, phi_bb11_11);
-    tmp70 = TORQUE_CAST(TNode<HeapObject>{tmp65});
-    CodeStubAssembler(state_).Return(tmp70);
+  TNode<Union<HeapObject, TaggedIndex>> tmp70;
+  TNode<IntPtrT> tmp71;
+  TNode<Map> tmp72;
+  TNode<FixedArray> tmp73;
+  TNode<FixedArray> tmp74;
+  TNode<BoolT> tmp75;
+  TNode<BoolT> tmp76;
+  TNode<IntPtrT> tmp77;
+  TNode<HeapObject> tmp78;
+  TNode<IntPtrT> tmp79;
+  TNode<IntPtrT> tmp80;
+  TNode<IntPtrT> tmp81;
+  TNode<IntPtrT> tmp82;
+  TNode<JSSet> tmp83;
+  if (block6.is_used()) {
+    ca_.Bind(&block6, &phi_bb6_10, &phi_bb6_11, &phi_bb6_12);
+    tmp69 = JS_SET_MAP_INDEX_0(state_);
+    std::tie(tmp70, tmp71) = NativeContextSlot_NativeContext_Map_0(state_, TNode<NativeContext>{parameter0}, TNode<IntPtrT>{tmp69}).Flatten();
+    tmp72 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp70, tmp71});
+    tmp73 = kEmptyFixedArray_0(state_);
+    tmp74 = kEmptyFixedArray_0(state_);
+    tmp75 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp76 = FromConstexpr_bool_constexpr_bool_0(state_, false);
+    tmp77 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
+    tmp78 = AllocateFromNew_0(state_, TNode<IntPtrT>{tmp77}, TNode<Map>{tmp72}, TNode<BoolT>{tmp75}, TNode<BoolT>{tmp76});
+    tmp79 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp78, tmp79}, tmp72);
+    tmp80 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp78, tmp80}, tmp73);
+    tmp81 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp78, tmp81}, tmp74);
+    tmp82 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
+    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp78, tmp82}, phi_bb6_12);
+    tmp83 = TORQUE_CAST(TNode<HeapObject>{tmp78});
+    CodeStubAssembler(state_).Return(tmp83);
   }
 }
 

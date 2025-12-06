@@ -1,12 +1,14 @@
 #include "src/objects/js-disposable-stack-inl.h"
 
 #include "torque-generated/class-verifiers.h"
+#include "src/objects/objects-inl.h"
+
 #include "src/objects/instance-type-inl.h"
 
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=21&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=24&c=1
 bool IsJSDisposableStackBase_NonInline(Tagged<HeapObject> o) {
   return IsJSDisposableStackBase(o);
 }
@@ -20,7 +22,7 @@ void TorqueGeneratedJSDisposableStackBase<JSDisposableStackBase, JSObject>::JSDi
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=36&c=1
 bool IsJSSyncDisposableStack_NonInline(Tagged<HeapObject> o) {
   return IsJSSyncDisposableStack(o);
 }
@@ -34,7 +36,7 @@ void TorqueGeneratedJSSyncDisposableStack<JSSyncDisposableStack, JSDisposableSta
 
 
 #endif  // VERIFY_HEAP
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=38&c=1
 bool IsJSAsyncDisposableStack_NonInline(Tagged<HeapObject> o) {
   return IsJSAsyncDisposableStack(o);
 }

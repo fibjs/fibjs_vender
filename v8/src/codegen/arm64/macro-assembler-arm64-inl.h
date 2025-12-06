@@ -522,6 +522,24 @@ void MacroAssembler::Cneg(const Register& rd, const Register& rn,
   cneg(rd, rn, cond);
 }
 
+void MacroAssembler::Abs(const Register& rd, const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(!rd.IsZero());
+  abs(rd, rn);
+}
+
+void MacroAssembler::Cnt(const Register& rd, const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(!rd.IsZero());
+  cnt(rd, rn);
+}
+
+void MacroAssembler::Ctz(const Register& rd, const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(!rd.IsZero());
+  ctz(rd, rn);
+}
+
 // Conditionally zero the destination register. Only X registers are supported
 // due to the truncation side-effect when used on W registers.
 void MacroAssembler::CzeroX(const Register& rd, Condition cond) {
@@ -585,6 +603,24 @@ void MacroAssembler::Csneg(const Register& rd, const Register& rn,
   DCHECK(!rd.IsZero());
   DCHECK((cond != al) && (cond != nv));
   csneg(rd, rn, rm, cond);
+}
+
+void MacroAssembler::Cpy(const Register& rd, const Register& rs,
+                         const Register& rn) {
+  DCHECK(allow_macro_instructions());
+  DCHECK(rd.Is64Bits());
+  DCHECK(rs.Is64Bits());
+  DCHECK(rn.Is64Bits());
+  DCHECK(!rd.IsZero());
+  DCHECK(!rs.IsZero());
+  DCHECK(!rn.IsZero());
+
+  // TODO(sparker): Check whether forward copies, ones that either don't
+  // overlap or where the source address is greater than the destination, could
+  // be faster.
+  cpyp(rd, rs, rn);
+  cpym(rd, rs, rn);
+  cpye(rd, rs, rn);
 }
 
 void MacroAssembler::Dmb(BarrierDomain domain, BarrierType type) {
@@ -1228,6 +1264,11 @@ void MacroAssembler::JumpIfEqual(Register x, int32_t y, Label* dest) {
 
 void MacroAssembler::JumpIfLessThan(Register x, int32_t y, Label* dest) {
   CompareAndBranch(x, y, lt, dest);
+}
+
+void MacroAssembler::JumpIfUnsignedLessThan(Register x, int32_t y,
+                                            Label* dest) {
+  CompareAndBranch(x, y, lo, dest);
 }
 
 void MacroAssembler::JumpIfNotSmi(Register value, Label* not_smi_label) {

@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsMegaDomHandler_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedMegaDomHandler : public P {
   static_assert(
-      std::is_same<MegaDomHandler, D>::value,
+      std::is_same_v<MegaDomHandler, D>,
       "Use this class as direct base for MegaDomHandler.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedMegaDomHandler.");
 
  public: 
@@ -19,19 +19,19 @@ class TorqueGeneratedMegaDomHandler : public P {
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-  inline Tagged<Union<HeapObject, MaybeObject, Smi>> accessor() const;
+  inline Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> accessor() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-  inline Tagged<Union<HeapObject, MaybeObject, Smi>> accessor(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> accessor(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-  inline void set_accessor(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_accessor(Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-  inline Tagged<Union<HeapObject, MaybeObject, Smi>> context() const;
+  inline Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> context() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-  inline Tagged<Union<HeapObject, MaybeObject, Smi>> context(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> context(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-  inline void set_context(Tagged<Union<HeapObject, MaybeObject, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_context(Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(MegaDomHandler)
 
@@ -70,7 +70,7 @@ class TorqueGeneratedMegaDomHandler : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedMegaDomHandler() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedMegaDomHandler, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedMegaDomHandler, DAlias>,
         "class TorqueGeneratedMegaDomHandler should be used as direct base for MegaDomHandler.");
   }
 

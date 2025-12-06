@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/megadom-handler-tq-csa.h"
@@ -118,7 +118,7 @@ TNode<MegaDomHandler> Cast_MegaDomHandler_0(compiler::CodeAssemblerState* state_
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-TNode<MaybeObject> LoadMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o) {
+TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> LoadMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -126,20 +126,20 @@ TNode<MaybeObject> LoadMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* st
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<MaybeObject> tmp1;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<MaybeObject>{tmp1};
+  return TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=7&c=3
-void StoreMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o, TNode<MaybeObject> p_v) {
+void StoreMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -150,7 +150,7 @@ void StoreMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* state_, TNode<M
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -158,7 +158,7 @@ void StoreMegaDomHandlerAccessor_0(compiler::CodeAssemblerState* state_, TNode<M
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-TNode<MaybeObject> LoadMegaDomHandlerContext_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o) {
+TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> LoadMegaDomHandlerContext_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -166,20 +166,20 @@ TNode<MaybeObject> LoadMegaDomHandlerContext_0(compiler::CodeAssemblerState* sta
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<MaybeObject> tmp1;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<MaybeObject>{tmp1};
+  return TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/megadom-handler.tq?l=8&c=3
-void StoreMegaDomHandlerContext_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o, TNode<MaybeObject> p_v) {
+void StoreMegaDomHandlerContext_0(compiler::CodeAssemblerState* state_, TNode<MegaDomHandler> p_o, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -190,7 +190,7 @@ void StoreMegaDomHandlerContext_0(compiler::CodeAssemblerState* state_, TNode<Me
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -224,7 +224,7 @@ TNode<MegaDomHandler> DownCastForTorqueClass_MegaDomHandler_0(compiler::CodeAsse
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(272), static_cast<InstanceType>(272))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(277), static_cast<InstanceType>(277))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -245,7 +245,7 @@ TNode<MegaDomHandler> DownCastForTorqueClass_MegaDomHandler_0(compiler::CodeAsse
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<MegaDomHandler>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -267,7 +267,7 @@ TNode<MegaDomHandler> DownCastForTorqueClass_MegaDomHandler_0(compiler::CodeAsse
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(272));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(277));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -301,12 +301,12 @@ TNode<MegaDomHandler> DownCastForTorqueClass_MegaDomHandler_0(compiler::CodeAsse
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(272), static_cast<InstanceType>(272))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(277), static_cast<InstanceType>(277))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(272));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(277));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});

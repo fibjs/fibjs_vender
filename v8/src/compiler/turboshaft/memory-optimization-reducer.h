@@ -26,6 +26,11 @@ namespace v8::internal::compiler::turboshaft {
 const TSCallDescriptor* CreateAllocateBuiltinDescriptor(Zone* zone,
                                                         Isolate* isolate);
 
+#if V8_ENABLE_WEBASSEMBLY
+const TSCallDescriptor* CreateAllocateWasmSharedBuiltinDescriptor(
+    Zone* zone, Isolate* isolate);
+#endif
+
 inline bool ValueNeedsWriteBarrier(const Graph* graph, const Operation& value,
                                    Isolate* isolate) {
   if (value.Is<Opmask::kBitcastWordPtrToSmi>()) {
@@ -38,6 +43,8 @@ inline bool ValueNeedsWriteBarrier(const Graph* graph, const Operation& value,
           RootsTable::IsImmortalImmovable(root_index)) {
         return false;
       }
+    } else if (constant->kind == ConstantOp::Kind::kSmi) {
+      return false;
     }
   } else if (const PhiOp* phi = value.TryCast<PhiOp>()) {
     if (phi->rep == RegisterRepresentation::Tagged()) {
@@ -221,9 +228,25 @@ class MemoryOptimizationReducer : public Next {
     return Next::ReduceInputGraphStore(ig_index, store);
   }
 
-  V<HeapObject> REDUCE(Allocate)(V<WordPtr> size, AllocationType type) {
-    DCHECK_EQ(type, any_of(AllocationType::kYoung, AllocationType::kOld));
+  V<HeapObject> REDUCE(Allocate)(V<WordPtr> size, AllocationType type,
+                                 AllocationAlignment alignment) {
+    DCHECK_EQ(type, any_of(AllocationType::kYoung, AllocationType::kOld,
+                           AllocationType::kSharedOld));
 
+#if V8_ENABLE_WEBASSEMBLY
+    if (type == AllocationType::kSharedOld) {
+      DCHECK_EQ(isolate_, nullptr);  // Only possible in wasm.
+      DCHECK(analyzer_->is_wasm);
+      static_assert(std::is_same_v<Smi, BuiltinPtr>, "BuiltinPtr must be Smi");
+      OpIndex allocate_builtin = __ NumberConstant(
+          static_cast<int>(Builtin::kWasmAllocateInSharedHeap));
+      OpIndex allocated = __ Call(
+          allocate_builtin, {size, __ SmiConstant(Smi::FromInt(alignment))},
+          AllocateWasmSharedBuiltinDescriptor());
+      return allocated;
+    }
+#endif
+    DCHECK_EQ(alignment, kTaggedAligned);
     if (v8_flags.single_generation && type == AllocationType::kYoung) {
       type = AllocationType::kOld;
     }
@@ -238,13 +261,13 @@ class MemoryOptimizationReducer : public Next {
       // Wasm mode: producing isolate-independent code, loading the isolate
       // address at runtime.
 #if V8_ENABLE_WEBASSEMBLY
-      V<WasmTrustedInstanceData> instance_node = __ WasmInstanceParameter();
+      V<WasmTrustedInstanceData> instance_data = __ WasmInstanceDataParameter();
       int top_address_offset =
           type == AllocationType::kYoung
               ? WasmTrustedInstanceData::kNewAllocationTopAddressOffset
               : WasmTrustedInstanceData::kOldAllocationTopAddressOffset;
       top_address =
-          __ Load(instance_node, LoadOp::Kind::TaggedBase().Immutable(),
+          __ Load(instance_data, LoadOp::Kind::TaggedBase().Immutable(),
                   MemoryRepresentation::UintPtr(), top_address_offset);
 #else
       UNREACHABLE();
@@ -285,7 +308,7 @@ class MemoryOptimizationReducer : public Next {
         } else {
           builtin = Builtin::kWasmAllocateInOldGeneration;
         }
-        static_assert(std::is_same<Smi, BuiltinPtr>(),
+        static_assert(std::is_same_v<Smi, BuiltinPtr>,
                       "BuiltinPtr must be Smi");
         allocate_builtin = __ NumberConstant(static_cast<int>(builtin));
       } else {
@@ -386,8 +409,8 @@ class MemoryOptimizationReducer : public Next {
         __ WordPtrAdd(obj_addr, __ IntPtrConstant(kHeapObjectTag)));
   }
 
-  OpIndex REDUCE(DecodeExternalPointer)(OpIndex handle,
-                                        ExternalPointerTag tag) {
+  V<WordPtr> REDUCE(DecodeExternalPointer)(V<Word32> handle,
+                                           ExternalPointerTagRange tag_range) {
 #ifdef V8_ENABLE_SANDBOX
     // Decode loaded external pointer.
     V<WordPtr> table;
@@ -400,7 +423,7 @@ class MemoryOptimizationReducer : public Next {
       // Isolates. It also would break if the code is serialized/deserialized at
       // some point.
       V<WordPtr> table_address =
-          IsSharedExternalPointerType(tag)
+          IsSharedExternalPointerType(tag_range)
               ? __
                 LoadOffHeap(
                     __ ExternalConstant(
@@ -417,7 +440,7 @@ class MemoryOptimizationReducer : public Next {
     } else {
 #if V8_ENABLE_WEBASSEMBLY
       V<WordPtr> isolate_root = __ LoadRootRegister();
-      if (IsSharedExternalPointerType(tag)) {
+      if (IsSharedExternalPointerType(tag_range)) {
         V<WordPtr> table_address =
             __ Load(isolate_root, LoadOp::Kind::RawAligned(),
                     MemoryRepresentation::UintPtr(),
@@ -440,8 +463,32 @@ class MemoryOptimizationReducer : public Next {
         __ Word32ShiftRightLogical(handle, kExternalPointerIndexShift);
     V<Word64> pointer = __ LoadOffHeap(table, __ ChangeUint32ToUint64(index), 0,
                                        MemoryRepresentation::Uint64());
-    pointer = __ Word64BitwiseAnd(pointer, __ Word64Constant(~tag));
-    return pointer;
+
+    // We don't expect to see empty fields here. If this is ever needed,
+    // consider using an dedicated empty value entry for those tags instead
+    // (i.e. an entry with the right tag and nullptr payload).
+    DCHECK(!ExternalPointerCanBeEmpty(tag_range));
+
+    Block* done = __ NewBlock();
+    if (tag_range.Size() == 1) {
+      // The common and simple case: we expect a specific tag.
+      V<Word64> tag_bits = __ Word64BitwiseAnd(
+          pointer, __ Word64Constant(kExternalPointerTagMask));
+      tag_bits = __ Word64ShiftRightLogical(tag_bits, kExternalPointerTagShift);
+      V<Word32> tag = __ TruncateWord64ToWord32(tag_bits);
+      V<Word32> expected_tag = __ Word32Constant(tag_range.first);
+      __ GotoIf(__ Word32Equal(tag, expected_tag), done, BranchHint::kTrue);
+      // TODO(saelo): it would be nicer to abort here with
+      // AbortReason::kExternalPointerTagMismatch. That might require adding a
+      // builtin call here though, which is not currently available.
+      __ Unreachable();
+    } else {
+      // Not currently supported. Implement once needed.
+      DCHECK_NE(tag_range, kAnyExternalPointerTagRange);
+      UNREACHABLE();
+    }
+    __ BindReachable(done);
+    return __ Word64BitwiseAnd(pointer, kExternalPointerPayloadMask);
 #else   // V8_ENABLE_SANDBOX
     UNREACHABLE();
 #endif  // V8_ENABLE_SANDBOX
@@ -451,6 +498,9 @@ class MemoryOptimizationReducer : public Next {
   std::optional<MemoryAnalyzer> analyzer_;
   Isolate* isolate_ = __ data() -> isolate();
   const TSCallDescriptor* allocate_builtin_descriptor_ = nullptr;
+#if V8_ENABLE_WEBASSEMBLY
+  const TSCallDescriptor* allocate_wasm_shared_builtin_descriptor_ = nullptr;
+#endif
   std::optional<Variable> top_[2];
 
   static_assert(static_cast<int>(AllocationType::kYoung) == 0);
@@ -472,6 +522,16 @@ class MemoryOptimizationReducer : public Next {
     return allocate_builtin_descriptor_;
   }
 
+#if V8_ENABLE_WEBASSEMBLY
+  const TSCallDescriptor* AllocateWasmSharedBuiltinDescriptor() {
+    if (allocate_wasm_shared_builtin_descriptor_ == nullptr) {
+      allocate_wasm_shared_builtin_descriptor_ =
+          CreateAllocateWasmSharedBuiltinDescriptor(__ graph_zone(), isolate_);
+    }
+    return allocate_wasm_shared_builtin_descriptor_;
+  }
+#endif
+
   V<WordPtr> GetLimitAddress(AllocationType type) {
     V<WordPtr> limit_address;
     if (isolate_ != nullptr) {
@@ -484,7 +544,7 @@ class MemoryOptimizationReducer : public Next {
       // Wasm mode: producing isolate-independent code, loading the isolate
       // address at runtime.
 #if V8_ENABLE_WEBASSEMBLY
-      V<WasmTrustedInstanceData> instance_node = __ WasmInstanceParameter();
+      V<WasmTrustedInstanceData> instance_node = __ WasmInstanceDataParameter();
       int limit_address_offset =
           type == AllocationType::kYoung
               ? WasmTrustedInstanceData::kNewAllocationLimitAddressOffset

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-withresolvers-tq-csa.h"
@@ -85,8 +85,9 @@ TF_BUILTIN(PromiseWithResolvers, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kPromiseWithResolvers));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -112,23 +113,23 @@ TF_BUILTIN(PromiseWithResolvers, CodeStubAssembler) {
   TNode<False> tmp2;
   TNode<PromiseCapability> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<HeapObject> tmp5;
+  TNode<Union<JSReceiver, Undefined>> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   TNode<JSObject> tmp10;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp2 = False_0(state_);
     tmp3 = ca_.CallBuiltin<PromiseCapability>(Builtin::kNewPromiseCapability, parameter0, tmp0, tmp2);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp3, tmp4});
+    tmp5 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Undefined>>(CodeStubAssembler::Reference{tmp3, tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp7 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp3, tmp6});
+    tmp7 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp3, tmp6});
     tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp9 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp3, tmp8});
-    tmp10 = CodeStubAssembler(state_).AllocatePromiseWithResolversResult(TNode<Context>{parameter0}, TNode<Object>{tmp5}, TNode<Object>{tmp7}, TNode<Object>{tmp9});
+    tmp9 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp3, tmp8});
+    tmp10 = CodeStubAssembler(state_).AllocatePromiseWithResolversResult(TNode<Context>{parameter0}, TNode<JSAny>{tmp5}, TNode<JSAny>{tmp7}, TNode<JSAny>{tmp9});
     CodeStubAssembler(state_).Return(tmp10);
   }
 }

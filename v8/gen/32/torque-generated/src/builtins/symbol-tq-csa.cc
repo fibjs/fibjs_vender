@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/symbol-tq-csa.h"
@@ -81,18 +81,18 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/symbol.tq?l=9&c=1
-TNode<Symbol> ThisSymbolValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, const char* p_method) {
+TNode<Symbol> ThisSymbolValue_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, const char* p_method) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<Symbol> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToThisValue(TNode<Context>{p_context}, TNode<Object>{p_receiver}, PrimitiveType::kSymbol, p_method);
+    tmp0 = CodeStubAssembler(state_).ToThisValue(TNode<Context>{p_context}, TNode<JSAny>{p_receiver}, PrimitiveType::kSymbol, p_method);
     tmp1 = UnsafeCast_Symbol_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
     ca_.Goto(&block2);
   }
@@ -105,19 +105,19 @@ TF_BUILTIN(SymbolPrototypeDescriptionGetter, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Symbol> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<PrimitiveHeapObject> tmp2;
+  TNode<Union<String, Undefined>> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Symbol.prototype.description");
+    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Symbol.prototype.description");
     tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp2 = CodeStubAssembler(state_).LoadReference<PrimitiveHeapObject>(CodeStubAssembler::Reference{tmp0, tmp1});
+    tmp2 = CodeStubAssembler(state_).LoadReference<Union<String, Undefined>>(CodeStubAssembler::Reference{tmp0, tmp1});
     CodeStubAssembler(state_).Return(tmp2);
   }
 }
@@ -126,9 +126,9 @@ TF_BUILTIN(SymbolPrototypeToPrimitive, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kHint);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kHint);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -136,7 +136,7 @@ TF_BUILTIN(SymbolPrototypeToPrimitive, CodeStubAssembler) {
   TNode<Symbol> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Symbol.prototype [ @@toPrimitive ]");
+    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Symbol.prototype [ @@toPrimitive ]");
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -145,7 +145,7 @@ TF_BUILTIN(SymbolPrototypeToString, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -154,7 +154,7 @@ TF_BUILTIN(SymbolPrototypeToString, CodeStubAssembler) {
   TNode<String> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Symbol.prototype.toString");
+    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Symbol.prototype.toString");
     tmp1 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kSymbolDescriptiveString, parameter0, tmp0)); 
     CodeStubAssembler(state_).Return(tmp1);
   }
@@ -164,7 +164,7 @@ TF_BUILTIN(SymbolPrototypeValueOf, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -172,7 +172,7 @@ TF_BUILTIN(SymbolPrototypeValueOf, CodeStubAssembler) {
   TNode<Symbol> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, "Symbol.prototype.valueOf");
+    tmp0 = ThisSymbolValue_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, "Symbol.prototype.valueOf");
     CodeStubAssembler(state_).Return(tmp0);
   }
 }

@@ -25,7 +25,7 @@ void CheckEmptyOr1Byte_0(compiler::CodeAssemblerState* state_, TorqueStructSlice
 void CheckEmptyOr1Byte_1(compiler::CodeAssemblerState* state_, TorqueStructSliceIterator_char16_ConstReference_char16_0 p_it, compiler::CodeAssemblerLabel* label_Bailout);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/intl-objects.tq?l=18&c=7
-TNode<Uint32T> Convert_uint32_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i);
+TNode<Uint32T> Convert_WasmCodePointer_char16_0(compiler::CodeAssemblerState* state_, TNode<Uint16T> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/intl-objects.tq?l=114&c=14
 TNode<Number> LocaleCompareFastPath_char8_char8_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_char8_ConstReference_char8_0 p_left, TorqueStructSlice_char8_ConstReference_char8_0 p_right, compiler::CodeAssemblerLabel* label_Bailout);

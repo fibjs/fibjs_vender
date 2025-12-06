@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/map-groupby-tq-csa.h"
@@ -90,18 +90,19 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kItems);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kItems);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kCallback);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kCallback);
   USE(parameter3);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kArrayGroup));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT, IntPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, Object, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT, IntPtrT> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT, IntPtrT> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny, JSAny, IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -110,21 +111,21 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
   TNode<OrderedHashMap> tmp2;
   TNode<Int32T> tmp3;
   TNode<Int32T> tmp4;
-  TNode<Object> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp5;
+  TNode<JSAny> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<Map> tmp8;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = False_0(state_);
-    tmp1 = GroupByImpl_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{parameter3}, TNode<Boolean>{tmp0}, "Map.groupBy");
+    tmp1 = GroupByImpl_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, TNode<JSAny>{parameter3}, TNode<Boolean>{tmp0}, "Map.groupBy");
     std::tie(tmp2, tmp3, tmp4, tmp5, tmp6, tmp7) = NewUnmodifiedOrderedHashMapIterator_0(state_, TNode<OrderedHashMap>{tmp1}).Flatten();
     tmp8 = GetFastPackedElementsJSArrayMap_0(state_, TNode<Context>{parameter0});
     ca_.Goto(&block5, tmp5, tmp6, tmp7);
   }
 
-  TNode<Object> phi_bb5_8;
-  TNode<Object> phi_bb5_9;
+  TNode<JSAny> phi_bb5_8;
+  TNode<JSAny> phi_bb5_9;
   TNode<IntPtrT> phi_bb5_10;
   TNode<BoolT> tmp9;
   if (block5.is_used()) {
@@ -133,11 +134,11 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
     ca_.Branch(tmp9, &block3, std::vector<compiler::Node*>{phi_bb5_8, phi_bb5_9, phi_bb5_10}, &block4, std::vector<compiler::Node*>{phi_bb5_8, phi_bb5_9, phi_bb5_10});
   }
 
-  TNode<Object> phi_bb3_8;
-  TNode<Object> phi_bb3_9;
+  TNode<JSAny> phi_bb3_8;
+  TNode<JSAny> phi_bb3_9;
   TNode<IntPtrT> phi_bb3_10;
-  TNode<Object> tmp10;
-  TNode<Object> tmp11;
+  TNode<JSAny> tmp10;
+  TNode<JSAny> tmp11;
   TNode<IntPtrT> tmp12;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_8, &phi_bb3_9, &phi_bb3_10);
@@ -150,8 +151,8 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> phi_bb8_8;
-  TNode<Object> phi_bb8_9;
+  TNode<JSAny> phi_bb8_8;
+  TNode<JSAny> phi_bb8_9;
   TNode<IntPtrT> phi_bb8_10;
   TNode<IntPtrT> phi_bb8_15;
   if (block8.is_used()) {
@@ -159,8 +160,8 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
     ca_.Goto(&block1);
   }
 
-  TNode<Object> phi_bb7_8;
-  TNode<Object> phi_bb7_9;
+  TNode<JSAny> phi_bb7_8;
+  TNode<JSAny> phi_bb7_9;
   TNode<IntPtrT> phi_bb7_10;
   TNode<IntPtrT> phi_bb7_15;
   TNode<ArrayList> tmp14;
@@ -189,8 +190,8 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
     ca_.Goto(&block5, tmp10, tmp11, tmp12);
   }
 
-  TNode<Object> phi_bb4_8;
-  TNode<Object> phi_bb4_9;
+  TNode<JSAny> phi_bb4_8;
+  TNode<JSAny> phi_bb4_9;
   TNode<IntPtrT> phi_bb4_10;
   if (block4.is_used()) {
     ca_.Bind(&block4, &phi_bb4_8, &phi_bb4_9, &phi_bb4_10);
@@ -198,7 +199,7 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp24;
-  TNode<Object> tmp25;
+  TNode<Union<HeapObject, TaggedIndex>> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<Map> tmp27;
   TNode<FixedArray> tmp28;
@@ -226,7 +227,7 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
     tmp34 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp33, tmp34}, tmp27);
     tmp35 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp33, tmp35}, tmp28);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp33, tmp35}, tmp28);
     tmp36 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp33, tmp36}, tmp29);
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
@@ -234,6 +235,25 @@ TF_BUILTIN(MapGroupBy, CodeStubAssembler) {
     tmp38 = TORQUE_CAST(TNode<HeapObject>{tmp33});
     CodeStubAssembler(state_).Return(tmp38);
   }
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/map-groupby.tq?l=25&c=42
+TNode<ArrayList> UnsafeCast_ArrayList_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<ArrayList> tmp0;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
+    ca_.Goto(&block6);
+  }
+
+    ca_.Bind(&block6);
+  return TNode<ArrayList>{tmp0};
 }
 
 } // namespace internal

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-shift-tq-csa.h"
@@ -86,8 +86,8 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=8&c=1
-TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, compiler::CodeAssemblerLabel* label_Slow, compiler::CodeAssemblerLabel* label_Runtime) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=11&c=1
+TNode<JSAny> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, compiler::CodeAssemblerLabel* label_Slow, compiler::CodeAssemblerLabel* label_Runtime) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -107,9 +107,9 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   compiler::CodeAssemblerParameterizedLabel<> block20(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block25(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block18(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block17(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block41(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -131,10 +131,10 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   compiler::CodeAssemblerParameterizedLabel<> block74(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block75(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block53(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block78(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSArray> tmp0;
@@ -252,7 +252,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Branch(tmp5, &block19, std::vector<compiler::Node*>{}, &block20, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp29;
+  TNode<JSAny> tmp29;
   if (block19.is_used()) {
     ca_.Bind(&block19);
     compiler::CodeAssemblerLabel label30(&ca_);
@@ -274,7 +274,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block18, tmp29);
   }
 
-  TNode<Object> tmp31;
+  TNode<JSAny> tmp31;
   if (block20.is_used()) {
     ca_.Bind(&block20);
     compiler::CodeAssemblerLabel label32(&ca_);
@@ -296,7 +296,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block18, tmp31);
   }
 
-  TNode<Object> phi_bb18_17;
+  TNode<JSAny> phi_bb18_17;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_17);
     ca_.Goto(&block15, phi_bb18_17);
@@ -309,7 +309,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block15, tmp33);
   }
 
-  TNode<Object> phi_bb15_13;
+  TNode<JSAny> phi_bb15_13;
   TNode<IntPtrT> tmp34;
   TNode<IntPtrT> tmp35;
   TNode<IntPtrT> tmp36;
@@ -418,7 +418,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> tmp49;
+  TNode<Union<HeapObject, TaggedIndex>> tmp49;
   TNode<IntPtrT> tmp50;
   TNode<IntPtrT> tmp51;
   TNode<IntPtrT> tmp52;
@@ -427,7 +427,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<BoolT> tmp55;
   if (block56.is_used()) {
     ca_.Bind(&block56);
-    std::tie(tmp49, tmp50, tmp51) = FieldSliceFixedDoubleArrayFloats_0(state_, TNode<FixedDoubleArray>{tmp47}).Flatten();
+    std::tie(tmp49, tmp50, tmp51) = FieldSliceFixedDoubleArrayValues_0(state_, TNode<FixedDoubleArray>{tmp47}).Flatten();
     tmp52 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp17});
     tmp53 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp52});
     tmp54 = Convert_uintptr_intptr_0(state_, TNode<IntPtrT>{tmp51});
@@ -437,17 +437,17 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
 
   TNode<IntPtrT> tmp56;
   TNode<IntPtrT> tmp57;
-  TNode<Object> tmp58;
+  TNode<Union<HeapObject, TaggedIndex>> tmp58;
   TNode<IntPtrT> tmp59;
   TNode<BoolT> tmp60;
   TNode<Float64T> tmp61;
   if (block62.is_used()) {
     ca_.Bind(&block62);
-    tmp56 = TimesSizeOf_float64_or_hole_0(state_, TNode<IntPtrT>{tmp52});
+    tmp56 = TimesSizeOf_float64_or_undefined_or_hole_0(state_, TNode<IntPtrT>{tmp52});
     tmp57 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp50}, TNode<IntPtrT>{tmp56});
-    std::tie(tmp58, tmp59) = NewReference_float64_or_hole_0(state_, TNode<Object>{tmp49}, TNode<IntPtrT>{tmp57}).Flatten();
+    std::tie(tmp58, tmp59) = NewReference_float64_or_undefined_or_hole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp49}, TNode<IntPtrT>{tmp57}).Flatten();
     std::tie(tmp60, tmp61) = kDoubleHole_0(state_).Flatten();
-    StoreFloat64OrHole_0(state_, TorqueStructReference_float64_or_hole_0{TNode<Object>{tmp58}, TNode<IntPtrT>{tmp59}, TorqueStructUnsafe_0{}}, TorqueStructfloat64_or_hole_0{TNode<BoolT>{tmp60}, TNode<Float64T>{tmp61}});
+    StoreFloat64OrHole_0(state_, TorqueStructReference_float64_or_undefined_or_hole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp58}, TNode<IntPtrT>{tmp59}, TorqueStructUnsafe_0{}}, TorqueStructfloat64_or_undefined_or_hole_0{TNode<BoolT>{tmp60}, TNode<Float64T>{tmp61}});
     ca_.Goto(&block53);
   }
 
@@ -477,7 +477,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> tmp66;
+  TNode<Union<HeapObject, TaggedIndex>> tmp66;
   TNode<IntPtrT> tmp67;
   TNode<IntPtrT> tmp68;
   TNode<IntPtrT> tmp69;
@@ -496,14 +496,14 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
 
   TNode<IntPtrT> tmp73;
   TNode<IntPtrT> tmp74;
-  TNode<Object> tmp75;
+  TNode<Union<HeapObject, TaggedIndex>> tmp75;
   TNode<IntPtrT> tmp76;
   TNode<Hole> tmp77;
   if (block74.is_used()) {
     ca_.Bind(&block74);
     tmp73 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp69});
     tmp74 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp67}, TNode<IntPtrT>{tmp73});
-    std::tie(tmp75, tmp76) = NewReference_Object_0(state_, TNode<Object>{tmp66}, TNode<IntPtrT>{tmp74}).Flatten();
+    std::tie(tmp75, tmp76) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp66}, TNode<IntPtrT>{tmp74}).Flatten();
     tmp77 = TheHole_0(state_);
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp75, tmp76}, tmp77);
     ca_.Goto(&block53);
@@ -519,7 +519,7 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(&block3, phi_bb15_13);
   }
 
-  TNode<Object> phi_bb3_2;
+  TNode<JSAny> phi_bb3_2;
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_2);
     ca_.Goto(&block78, phi_bb3_2);
@@ -535,13 +535,13 @@ TNode<Object> TryFastArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     ca_.Goto(label_Runtime);
   }
 
-  TNode<Object> phi_bb78_2;
+  TNode<JSAny> phi_bb78_2;
     ca_.Bind(&block78, &phi_bb78_2);
-  return TNode<Object>{phi_bb78_2};
+  return TNode<JSAny>{phi_bb78_2};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=39&c=1
-TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-shift.tq?l=42&c=1
+TNode<JSAny> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -553,8 +553,8 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<JSReceiver> tmp0;
@@ -563,8 +563,8 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{p_context}, TNode<Object>{p_receiver});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{p_context}, TNode<JSAny>{p_receiver});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp0});
     tmp2 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = IsNumberEqual_0(state_, TNode<Number>{tmp1}, TNode<Number>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
@@ -572,24 +572,24 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
 
   TNode<String> tmp4;
   TNode<Smi> tmp5;
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   TNode<Undefined> tmp7;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp4 = kLengthString_0(state_);
     tmp5 = Convert_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp6 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, tmp4, tmp5);
+    tmp6 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp0, tmp4, tmp5);
     tmp7 = Undefined_0(state_);
     ca_.Goto(&block1, tmp7);
   }
 
   TNode<Smi> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   TNode<Number> tmp10;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp8 = Convert_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp9 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp8});
+    tmp9 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp8});
     tmp10 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     ca_.Goto(&block6, tmp10);
   }
@@ -614,18 +614,18 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp13 = CodeStubAssembler(state_).NumberSub(TNode<Number>{phi_bb4_5}, TNode<Number>{tmp12});
     tmp14 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, tmp0, phi_bb4_5);
     tmp15 = True_0(state_);
-    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp14}, TNode<HeapObject>{tmp15});
+    tmp16 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp14}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15});
     ca_.Branch(tmp16, &block7, std::vector<compiler::Node*>{phi_bb4_5, phi_bb4_5}, &block8, std::vector<compiler::Node*>{phi_bb4_5, phi_bb4_5});
   }
 
   TNode<Number> phi_bb7_5;
   TNode<Number> phi_bb7_6;
-  TNode<Object> tmp17;
-  TNode<Object> tmp18;
+  TNode<JSAny> tmp17;
+  TNode<JSAny> tmp18;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_5, &phi_bb7_6);
-    tmp17 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{phi_bb7_6});
-    tmp18 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, tmp13, tmp17);
+    tmp17 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{phi_bb7_6});
+    tmp18 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp0, tmp13, tmp17);
     ca_.Goto(&block9, phi_bb7_5, phi_bb7_6);
   }
 
@@ -659,7 +659,7 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
   TNode<String> tmp27;
   TNode<Number> tmp28;
   TNode<Number> tmp29;
-  TNode<Object> tmp30;
+  TNode<JSAny> tmp30;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_5);
     tmp23 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
@@ -669,19 +669,19 @@ TNode<Object> GenericArrayShift_0(compiler::CodeAssemblerState* state_, TNode<Co
     tmp27 = kLengthString_0(state_);
     tmp28 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp29 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp1}, TNode<Number>{tmp28});
-    tmp30 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, tmp27, tmp29);
+    tmp30 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp0, tmp27, tmp29);
     ca_.Goto(&block1, tmp9);
   }
 
-  TNode<Object> phi_bb1_2;
+  TNode<JSAny> phi_bb1_2;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_2);
     ca_.Goto(&block10, phi_bb1_2);
   }
 
-  TNode<Object> phi_bb10_2;
+  TNode<JSAny> phi_bb10_2;
     ca_.Bind(&block10, &phi_bb10_2);
-  return TNode<Object>{phi_bb10_2};
+  return TNode<JSAny>{phi_bb10_2};
 }
 
 TF_BUILTIN(ArrayPrototypeShift, CodeStubAssembler) {
@@ -693,7 +693,7 @@ TF_BUILTIN(ArrayPrototypeShift, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -701,12 +701,12 @@ TF_BUILTIN(ArrayPrototypeShift, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
     compiler::CodeAssemblerLabel label2(&ca_);
-    tmp0 = TryFastArrayShift_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, &label1, &label2);
+    tmp0 = TryFastArrayShift_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, &label1, &label2);
     ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -718,22 +718,24 @@ TF_BUILTIN(ArrayPrototypeShift, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp3 = GenericArrayShift_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
+    tmp3 = GenericArrayShift_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
     arguments.PopAndReturn(tmp3);
   }
 
   TNode<JSFunction> tmp4;
   TNode<Undefined> tmp5;
   TNode<Int32T> tmp6;
+  TNode<JSDispatchHandleT> tmp7;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp4 = LoadTargetFromFrame_0(state_);
     tmp5 = Undefined_0(state_);
     tmp6 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
-   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kArrayShift, parameter0, tmp4, tmp5, tmp6);
+    tmp7 = kInvalidDispatchHandle_0(state_);
+   CodeStubAssembler(state_).TailCallJSBuiltin(Builtin::kArrayShift, parameter0, tmp4, tmp5, tmp6, tmp7);
   }
 
   if (block5.is_used()) {

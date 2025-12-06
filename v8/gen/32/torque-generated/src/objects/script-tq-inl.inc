@@ -16,7 +16,7 @@ Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::source(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kSourceOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSourceOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Object> TorqueGeneratedScript<D, P>::name(PtrComprCageBase cage_base) con
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=24&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_name(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kNameOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNameOffset, value, mode);
 }
@@ -88,7 +88,7 @@ Tagged<Union<Smi, Symbol, Undefined>> TorqueGeneratedScript<D, P>::context_data(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=34&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_context_data(Tagged<Union<Smi, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsSymbol(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsSymbol(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kContextDataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextDataOffset, value, mode);
 }
@@ -124,7 +124,7 @@ Tagged<Union<FixedArray, Smi>> TorqueGeneratedScript<D, P>::line_ends(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=39&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_line_ends(Tagged<Union<FixedArray, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsFixedArray(value)));
   WRITE_FIELD(*this, kLineEndsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLineEndsOffset, value, mode);
 }
@@ -160,7 +160,7 @@ Tagged<Union<FixedArray, SharedFunctionInfo, Undefined>> TorqueGeneratedScript<D
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=47&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_eval_from_shared_or_wrapped_arguments(Tagged<Union<FixedArray, SharedFunctionInfo, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsFixedArray(value) || IsSharedFunctionInfo(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsFixedArray(value) || IsSharedFunctionInfo(value)));
   WRITE_FIELD(*this, kEvalFromSharedOrWrappedArgumentsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kEvalFromSharedOrWrappedArgumentsOffset, value, mode);
 }
@@ -183,7 +183,7 @@ Tagged<Union<Foreign, Smi>> TorqueGeneratedScript<D, P>::eval_from_position(PtrC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=49&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_eval_from_position(Tagged<Union<Foreign, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsForeign(value)));
   WRITE_FIELD(*this, kEvalFromPositionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kEvalFromPositionOffset, value, mode);
 }
@@ -206,7 +206,7 @@ Tagged<Union<WeakArrayList, WeakFixedArray>> TorqueGeneratedScript<D, P>::infos(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=50&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_infos(Tagged<Union<WeakArrayList, WeakFixedArray>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsWeakFixedArray(value) || IsWeakArrayList(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsWeakFixedArray(value) || IsWeakArrayList(value)));
   WRITE_FIELD(*this, kInfosOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInfosOffset, value, mode);
 }
@@ -229,7 +229,7 @@ Tagged<Union<ArrayList, Undefined>> TorqueGeneratedScript<D, P>::compiled_lazy_f
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=54&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_compiled_lazy_function_positions(Tagged<Union<ArrayList, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsArrayList(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsArrayList(value)));
   WRITE_FIELD(*this, kCompiledLazyFunctionPositionsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCompiledLazyFunctionPositionsOffset, value, mode);
 }
@@ -244,7 +244,8 @@ int TorqueGeneratedScript<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=57&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct ScriptFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=60&c=3
@@ -265,7 +266,7 @@ Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::source_url(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=60&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source_url(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kSourceUrlOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSourceUrlOffset, value, mode);
 }
@@ -288,19 +289,42 @@ Tagged<Object> TorqueGeneratedScript<D, P>::source_mapping_url(PtrComprCageBase 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=63&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source_mapping_url(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kSourceMappingUrlOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSourceMappingUrlOffset, value, mode);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
 template<class D, class P>
+Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::debug_id() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedScript::debug_id(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+template<class D, class P>
+Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::debug_id(PtrComprCageBase cage_base) const {
+  Tagged<Union<String, Undefined>> value = TaggedField<Tagged<Union<String, Undefined>>>::load(cage_base, *this, kDebugIdOffset);
+  DCHECK(IsString(value) || IsUndefined(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+template<class D, class P>
+void TorqueGeneratedScript<D, P>::set_debug_id(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
+  WRITE_FIELD(*this, kDebugIdOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kDebugIdOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
+template<class D, class P>
 Tagged<FixedArray> TorqueGeneratedScript<D, P>::host_defined_options() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::host_defined_options(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
 template<class D, class P>
 Tagged<FixedArray> TorqueGeneratedScript<D, P>::host_defined_options(PtrComprCageBase cage_base) const {
   Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kHostDefinedOptionsOffset);
@@ -308,22 +332,22 @@ Tagged<FixedArray> TorqueGeneratedScript<D, P>::host_defined_options(PtrComprCag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=66&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=69&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_host_defined_options(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kHostDefinedOptionsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kHostDefinedOptionsOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
 template<class D, class P>
 Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::source_hash() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedScript::source_hash(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
 template<class D, class P>
 Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::source_hash(PtrComprCageBase cage_base) const {
   Tagged<Union<String, Undefined>> value = TaggedField<Tagged<Union<String, Undefined>>>::load(cage_base, *this, kSourceHashOffset);
@@ -331,10 +355,10 @@ Tagged<Union<String, Undefined>> TorqueGeneratedScript<D, P>::source_hash(PtrCom
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=75&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/script.tq?l=78&c=3
 template<class D, class P>
 void TorqueGeneratedScript<D, P>::set_source_hash(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kSourceHashOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSourceHashOffset, value, mode);
 }

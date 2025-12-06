@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-to-sorted-tq-csa.h"
@@ -111,12 +111,12 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
   TNode<IntPtrT> tmp9;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 60);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 44);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_sortState, tmp0});
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp1});
     tmp3 = CodeStubAssembler(state_).AllocateFixedArray(p_elementsKind, TNode<IntPtrT>{tmp2});
     tmp4 = UnsafeCast_FixedArray_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp3});
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 52);
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
     tmp6 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_sortState, tmp5});
     tmp7 = Convert_intptr_Smi_0(state_, TNode<Smi>{p_numberOfNonUndefined});
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -134,7 +134,7 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
   }
 
   TNode<Smi> phi_bb21_6;
-  TNode<Object> tmp11;
+  TNode<Union<HeapObject, TaggedIndex>> tmp11;
   TNode<IntPtrT> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
@@ -156,7 +156,7 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
   TNode<Smi> phi_bb29_12;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
-  TNode<Object> tmp20;
+  TNode<Union<HeapObject, TaggedIndex>> tmp20;
   TNode<IntPtrT> tmp21;
   TNode<Undefined> tmp22;
   TNode<Smi> tmp23;
@@ -165,7 +165,7 @@ TNode<JSArray> CopyWorkArrayToNewFastJSArray_0(compiler::CodeAssemblerState* sta
     ca_.Bind(&block29, &phi_bb29_6, &phi_bb29_11, &phi_bb29_12);
     tmp18 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp14});
     tmp19 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp12}, TNode<IntPtrT>{tmp18});
-    std::tie(tmp20, tmp21) = NewReference_Object_0(state_, TNode<Object>{tmp11}, TNode<IntPtrT>{tmp19}).Flatten();
+    std::tie(tmp20, tmp21) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp11}, TNode<IntPtrT>{tmp19}).Flatten();
     tmp22 = Undefined_0(state_);
     CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp20, tmp21}, tmp22);
     tmp23 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
@@ -221,9 +221,9 @@ TNode<JSArray> CopyWorkArrayToNewJSArray_0(compiler::CodeAssemblerState* state_,
   TNode<Smi> tmp5;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 60);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 44);
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_sortState, tmp0});
-    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 52);
+    tmp2 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
     tmp3 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{p_sortState, tmp2});
     tmp4 = CodeStubAssembler(state_).ArrayCreate(TNode<Context>{p_context}, TNode<Number>{tmp1});
     tmp5 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -239,7 +239,7 @@ TNode<JSArray> CopyWorkArrayToNewJSArray_0(compiler::CodeAssemblerState* state_,
   }
 
   TNode<Smi> phi_bb6_6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
@@ -262,21 +262,21 @@ TNode<JSArray> CopyWorkArrayToNewJSArray_0(compiler::CodeAssemblerState* state_,
   TNode<Smi> phi_bb14_14;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<Object> tmp18;
-  TNode<Object> tmp19;
-  TNode<Object> tmp20;
+  TNode<JSAny> tmp19;
+  TNode<JSAny> tmp20;
   TNode<Smi> tmp21;
   TNode<Smi> tmp22;
   if (block14.is_used()) {
     ca_.Bind(&block14, &phi_bb14_6, &phi_bb14_8, &phi_bb14_13, &phi_bb14_14);
     tmp14 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp10});
     tmp15 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp14});
-    std::tie(tmp16, tmp17) = NewReference_Object_0(state_, TNode<Object>{tmp7}, TNode<IntPtrT>{tmp15}).Flatten();
+    std::tie(tmp16, tmp17) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp15}).Flatten();
     tmp18 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp16, tmp17});
     tmp19 = UnsafeCast_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp18});
-    tmp20 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp4, phi_bb14_8, tmp19);
+    tmp20 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp4, phi_bb14_8, tmp19);
     tmp21 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp22 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb14_6}, TNode<Smi>{tmp21});
     ca_.Goto(&block8, tmp22);
@@ -307,13 +307,13 @@ TNode<JSArray> CopyWorkArrayToNewJSArray_0(compiler::CodeAssemblerState* state_,
 
   TNode<Smi> phi_bb18_6;
   TNode<Undefined> tmp24;
-  TNode<Object> tmp25;
+  TNode<JSAny> tmp25;
   TNode<Smi> tmp26;
   TNode<Smi> tmp27;
   if (block18.is_used()) {
     ca_.Bind(&block18, &phi_bb18_6);
     tmp24 = Undefined_0(state_);
-    tmp25 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp4, phi_bb18_6, tmp24);
+    tmp25 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp4, phi_bb18_6, tmp24);
     tmp26 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp27 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb18_6}, TNode<Smi>{tmp26});
     ca_.Goto(&block20, tmp27);
@@ -359,7 +359,7 @@ TF_BUILTIN(ArrayTimSortIntoCopy, CodeStubAssembler) {
     ca_.Bind(&block0);
     tmp0 = CompactReceiverElementsIntoWorkArray_0(state_, TNode<Context>{parameter0}, TNode<SortState>{parameter1}, true);
     ArrayTimSortImpl_0(state_, TNode<Context>{parameter0}, TNode<SortState>{parameter1}, TNode<Smi>{tmp0});
-    tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 60);
+    tmp1 = FromConstexpr_intptr_constexpr_int31_0(state_, 44);
     tmp2 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{parameter1, tmp1});
     tmp3 = FromConstexpr_Smi_constexpr_int31_0(state_, JSArray::kMaxFastArrayLength);
     tmp4 = CodeStubAssembler(state_).SmiLessThanOrEqual(TNode<Smi>{tmp2}, TNode<Smi>{tmp3});
@@ -372,7 +372,7 @@ TF_BUILTIN(ArrayTimSortIntoCopy, CodeStubAssembler) {
   TNode<BoolT> tmp8;
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 64);
+    tmp5 = FromConstexpr_intptr_constexpr_int31_0(state_, 48);
     tmp6 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{parameter1, tmp5});
     tmp7 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp8 = CodeStubAssembler(state_).SmiNotEqual(TNode<Smi>{tmp6}, TNode<Smi>{tmp7});
@@ -389,7 +389,7 @@ TF_BUILTIN(ArrayTimSortIntoCopy, CodeStubAssembler) {
   TNode<Smi> tmp11;
   if (block6.is_used()) {
     ca_.Bind(&block6);
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 52);
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
     tmp10 = CodeStubAssembler(state_).LoadReference<FixedArray>(CodeStubAssembler::Reference{parameter1, tmp9});
     tmp11 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     ca_.Goto(&block13, tmp11);
@@ -404,7 +404,7 @@ TF_BUILTIN(ArrayTimSortIntoCopy, CodeStubAssembler) {
   }
 
   TNode<Smi> phi_bb11_4;
-  TNode<Object> tmp13;
+  TNode<Union<HeapObject, TaggedIndex>> tmp13;
   TNode<IntPtrT> tmp14;
   TNode<IntPtrT> tmp15;
   TNode<IntPtrT> tmp16;
@@ -426,16 +426,16 @@ TF_BUILTIN(ArrayTimSortIntoCopy, CodeStubAssembler) {
   TNode<Smi> phi_bb19_10;
   TNode<IntPtrT> tmp20;
   TNode<IntPtrT> tmp21;
-  TNode<Object> tmp22;
+  TNode<Union<HeapObject, TaggedIndex>> tmp22;
   TNode<IntPtrT> tmp23;
   TNode<Object> tmp24;
-  TNode<Object> tmp25;
+  TNode<JSAny> tmp25;
   TNode<BoolT> tmp26;
   if (block19.is_used()) {
     ca_.Bind(&block19, &phi_bb19_4, &phi_bb19_9, &phi_bb19_10);
     tmp20 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp16});
     tmp21 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp14}, TNode<IntPtrT>{tmp20});
-    std::tie(tmp22, tmp23) = NewReference_Object_0(state_, TNode<Object>{tmp13}, TNode<IntPtrT>{tmp21}).Flatten();
+    std::tie(tmp22, tmp23) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp13}, TNode<IntPtrT>{tmp21}).Flatten();
     tmp24 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp22, tmp23});
     tmp25 = UnsafeCast_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp24});
     tmp26 = CodeStubAssembler(state_).TaggedIsNotSmi(TNode<Object>{tmp25});
@@ -498,8 +498,9 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kArrayByCopy));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -512,8 +513,8 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
-  TNode<HeapObject> tmp2;
+  TNode<JSAny> tmp1;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -539,7 +540,7 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = ca_.CallBuiltin<JSReceiver>(Builtin::kToObject, parameter0, parameter1);
-    tmp5 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4});
+    tmp5 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp4});
     tmp6 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp7 = IsNumberEqual_0(state_, TNode<Number>{tmp5}, TNode<Number>{tmp6});
     ca_.Branch(tmp7, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
@@ -566,15 +567,15 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
   TNode<Number> tmp12;
   TNode<JSArray> tmp13;
   TNode<Smi> tmp14;
-  TNode<Object> tmp15;
-  TNode<Object> tmp16;
+  TNode<JSAny> tmp15;
+  TNode<JSAny> tmp16;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp12 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp13 = CodeStubAssembler(state_).ArrayCreate(TNode<Context>{parameter0}, TNode<Number>{tmp12});
     tmp14 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp15 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<Object>{tmp14});
-    tmp16 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, parameter0, tmp13, tmp14, tmp15);
+    tmp15 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, TNode<JSAny>{tmp14});
+    tmp16 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, parameter0, tmp13, tmp14, tmp15);
     arguments.PopAndReturn(tmp13);
   }
 
@@ -582,7 +583,7 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
   TNode<BoolT> tmp18;
   if (block8.is_used()) {
     ca_.Bind(&block8);
-    tmp17 = FromConstexpr_Number_constexpr_uint32_0(state_, JSArray::kMaxArrayLength);
+    tmp17 = FromConstexpr_Number_constexpr_WasmCodePointer_0(state_, JSArray::kMaxArrayLength);
     tmp18 = NumberIsGreaterThan_0(state_, TNode<Number>{tmp5}, TNode<Number>{tmp17});
     ca_.Branch(tmp18, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
@@ -596,14 +597,14 @@ TF_BUILTIN(ArrayPrototypeToSorted, CodeStubAssembler) {
   TNode<JSArray> tmp20;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp19 = NewSortState_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp4}, TNode<HeapObject>{tmp2}, TNode<Number>{tmp5}, true);
+    tmp19 = NewSortState_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp4}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp2}, TNode<Number>{tmp5}, true);
     tmp20 = ca_.CallBuiltin<JSArray>(Builtin::kArrayTimSortIntoCopy, parameter0, tmp19);
     arguments.PopAndReturn(tmp20);
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-sorted.tq?l=93&c=21
-TNode<HeapObject> Cast_Undefined_OR_JSFunction_OR_CallableApiObject_OR_CallableJSProxy_OR_JSBoundFunction_OR_JSWrappedFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-to-sorted.tq?l=94&c=21
+TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> Cast_Undefined_OR_JSFunction_OR_CallableApiObject_OR_CallableJSProxy_OR_JSBoundFunction_OR_JSWrappedFunction_1(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -632,7 +633,7 @@ TNode<HeapObject> Cast_Undefined_OR_JSFunction_OR_CallableApiObject_OR_CallableJ
     ca_.Goto(&block1);
   }
 
-  TNode<HeapObject> tmp2;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     compiler::CodeAssemblerLabel label3(&ca_);
@@ -660,7 +661,7 @@ TNode<HeapObject> Cast_Undefined_OR_JSFunction_OR_CallableApiObject_OR_CallableJ
   }
 
     ca_.Bind(&block7);
-  return TNode<HeapObject>{tmp2};
+  return TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp2};
 }
 
 } // namespace internal

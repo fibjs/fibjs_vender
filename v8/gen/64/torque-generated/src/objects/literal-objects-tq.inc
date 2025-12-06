@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsArrayBoilerplateDescription_NonInline(Tagged<HeapObject
 template <class D, class P>
 class TorqueGeneratedArrayBoilerplateDescription : public P {
   static_assert(
-      std::is_same<ArrayBoilerplateDescription, D>::value,
+      std::is_same_v<ArrayBoilerplateDescription, D>,
       "Use this class as direct base for ArrayBoilerplateDescription.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedArrayBoilerplateDescription.");
 
  public: 
@@ -66,7 +66,7 @@ class TorqueGeneratedArrayBoilerplateDescription : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedArrayBoilerplateDescription() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedArrayBoilerplateDescription, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedArrayBoilerplateDescription, DAlias>,
         "class TorqueGeneratedArrayBoilerplateDescription should be used as direct base for ArrayBoilerplateDescription.");
   }
 

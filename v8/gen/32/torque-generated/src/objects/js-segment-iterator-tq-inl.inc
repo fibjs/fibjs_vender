@@ -16,7 +16,7 @@ Tagged<Foreign> TorqueGeneratedJSSegmentIterator<D, P>::icu_break_iterator(PtrCo
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentIterator<D, P>::set_icu_break_iterator(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuBreakIteratorOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuBreakIteratorOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<String> TorqueGeneratedJSSegmentIterator<D, P>::raw_string(PtrComprCageBa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentIterator<D, P>::set_raw_string(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kRawStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRawStringOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Foreign> TorqueGeneratedJSSegmentIterator<D, P>::unicode_string(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentIterator<D, P>::set_unicode_string(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kUnicodeStringOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kUnicodeStringOffset, value, mode);
 }
@@ -77,7 +77,8 @@ int TorqueGeneratedJSSegmentIterator<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentIterator<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSSegmentIteratorFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>
@@ -103,7 +104,7 @@ Tagged<String> TorqueGeneratedJSSegmentDataObject<D, P>::segment(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentDataObject<D, P>::set_segment(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kSegmentOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSegmentOffset, value, mode);
 }
@@ -126,7 +127,7 @@ Tagged<Number> TorqueGeneratedJSSegmentDataObject<D, P>::index(PtrComprCageBase 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=22&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentDataObject<D, P>::set_index(Tagged<Number> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value)));
   WRITE_FIELD(*this, kIndexOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIndexOffset, value, mode);
 }
@@ -149,7 +150,7 @@ Tagged<String> TorqueGeneratedJSSegmentDataObject<D, P>::input(PtrComprCageBase 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=23&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentDataObject<D, P>::set_input(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kInputOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInputOffset, value, mode);
 }
@@ -177,7 +178,7 @@ Tagged<Boolean> TorqueGeneratedJSSegmentDataObjectWithIsWordLike<D, P>::is_word_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-segment-iterator.tq?l=29&c=3
 template<class D, class P>
 void TorqueGeneratedJSSegmentDataObjectWithIsWordLike<D, P>::set_is_word_like(Tagged<Boolean> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsBoolean(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsBoolean(value)));
   WRITE_FIELD(*this, kIsWordLikeOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIsWordLikeOffset, value, mode);
 }

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/ordered-hash-table-tq-csa.h"
@@ -260,11 +260,11 @@ TNode<SmallOrderedHashSet> AllocateSmallOrderedHashSet_0(compiler::CodeAssembler
     tmp37 = FromConstexpr_intptr_constexpr_int31_0(state_, 10);
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp31, tmp37}, tmp3);
     tmp38 = FromConstexpr_intptr_constexpr_int31_0(state_, 11);
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp38}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp31}, TNode<IntPtrT>{tmp38}, TNode<IntPtrT>{tmp12}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
     tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp39}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Hole>{tmp7}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp21}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp9}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp31}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp26}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
+    InitializeFieldsFromIterator_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_ConstantIterator_TheHole_0(state_, TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp31}, TNode<IntPtrT>{tmp39}, TNode<IntPtrT>{tmp18}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_TheHole_0{TNode<Hole>{tmp7}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp31}, TNode<IntPtrT>{tmp20}, TNode<IntPtrT>{tmp21}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp9}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp31}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp26}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
     tmp40 = TORQUE_CAST(TNode<HeapObject>{tmp31});
     ca_.Goto(&block9);
   }
@@ -336,8 +336,8 @@ TNode<SmallOrderedHashMap> AllocateSmallOrderedHashMap_0(compiler::CodeAssembler
   TNode<Uint8T> tmp5;
   TNode<Hole> tmp6;
   TNode<Hole> tmp7;
-  TNode<Object> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp8;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp9;
   TNode<Uint8T> tmp10;
   TNode<Uint8T> tmp11;
   TNode<Uint8T> tmp12;
@@ -381,7 +381,7 @@ TNode<SmallOrderedHashMap> AllocateSmallOrderedHashMap_0(compiler::CodeAssembler
     std::tie(tmp5) = ConstantIterator_uint8_0(state_, TNode<Uint8T>{tmp4}).Flatten();
     tmp6 = TheHole_0(state_);
     tmp7 = TheHole_0(state_);
-    std::tie(tmp8, tmp9) = ConstantIterator_HashMapEntry_0(state_, TorqueStructHashMapEntry_0{TNode<Object>{tmp6}, TNode<Object>{tmp7}}).Flatten();
+    std::tie(tmp8, tmp9) = ConstantIterator_HashMapEntry_0(state_, TorqueStructHashMapEntry_0{TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp6}, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp7}}).Flatten();
     tmp10 = FromConstexpr_uint8_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kNotFound);
     std::tie(tmp11) = ConstantIterator_uint8_0(state_, TNode<Uint8T>{tmp10}).Flatten();
     tmp12 = FromConstexpr_uint8_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kNotFound);
@@ -417,11 +417,11 @@ TNode<SmallOrderedHashMap> AllocateSmallOrderedHashMap_0(compiler::CodeAssembler
     tmp39 = FromConstexpr_intptr_constexpr_int31_0(state_, 10);
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp33, tmp39}, tmp3);
     tmp40 = FromConstexpr_intptr_constexpr_int31_0(state_, 11);
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp33}, TNode<IntPtrT>{tmp40}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp5}});
     tmp41 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_HashMapEntry_ConstantIterator_HashMapEntry_0(state_, TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp41}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_HashMapEntry_0{TorqueStructHashMapEntry_0{TNode<Object>{tmp8}, TNode<Object>{tmp9}}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp23}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
-    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp33}, TNode<IntPtrT>{tmp24}, TNode<IntPtrT>{tmp28}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp13}});
+    InitializeFieldsFromIterator_HashMapEntry_ConstantIterator_HashMapEntry_0(state_, TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Union<HeapObject, TaggedIndex>>{tmp33}, TNode<IntPtrT>{tmp41}, TNode<IntPtrT>{tmp20}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_HashMapEntry_0{TorqueStructHashMapEntry_0{TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp8}, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp9}}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp33}, TNode<IntPtrT>{tmp22}, TNode<IntPtrT>{tmp23}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp11}});
+    InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(state_, TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp33}, TNode<IntPtrT>{tmp24}, TNode<IntPtrT>{tmp28}, TorqueStructUnsafe_0{}}, TorqueStructConstantIterator_uint8_0{TNode<Uint8T>{tmp13}});
     tmp42 = TORQUE_CAST(TNode<HeapObject>{tmp33});
     ca_.Goto(&block9);
   }
@@ -577,19 +577,19 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetPa
 
   TNode<IntPtrT> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp1 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xbull));
-    std::tie(tmp2, tmp3, tmp4) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}).Flatten();
+    std::tie(tmp2, tmp3, tmp4) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=30&c=28
@@ -602,7 +602,7 @@ TNode<Uint8T> LoadSmallOrderedHashSetPadding_0(compiler::CodeAssemblerState* sta
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -619,14 +619,14 @@ TNode<Uint8T> LoadSmallOrderedHashSetPadding_0(compiler::CodeAssemblerState* sta
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -650,7 +650,7 @@ void StoreSmallOrderedHashSetPadding_0(compiler::CodeAssemblerState* state_, TNo
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -667,13 +667,13 @@ void StoreSmallOrderedHashSetPadding_0(compiler::CodeAssemblerState* state_, TNo
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -701,7 +701,7 @@ TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   if (block0.is_used()) {
@@ -713,16 +713,16 @@ TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_
     tmp4 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
     tmp5 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
-    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
+    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
-TNode<Object> LoadSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* state_, TNode<SmallOrderedHashSet> p_o, TNode<IntPtrT> p_i) {
+TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* state_, TNode<SmallOrderedHashSet> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -731,7 +731,7 @@ TNode<Object> LoadSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -748,15 +748,15 @@ TNode<Object> LoadSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    tmp10 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9});
+    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    tmp10 = CodeStubAssembler(state_).LoadReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
 
@@ -766,11 +766,11 @@ TNode<Object> LoadSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* s
   }
 
     ca_.Bind(&block10);
-  return TNode<Object>{tmp10};
+  return TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{tmp10};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
-void StoreSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* state_, TNode<SmallOrderedHashSet> p_o, TNode<IntPtrT> p_i, TNode<Object> p_v) {
+void StoreSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* state_, TNode<SmallOrderedHashSet> p_o, TNode<IntPtrT> p_i, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -779,7 +779,7 @@ void StoreSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -796,14 +796,14 @@ void StoreSmallOrderedHashSetDataTable_0(compiler::CodeAssemblerState* state_, T
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
+    std::tie(tmp8, tmp9) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
 
@@ -823,7 +823,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetHa
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -832,7 +832,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetHa
   TNode<IntPtrT> tmp6;
   TNode<Uint8T> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block0.is_used()) {
@@ -844,12 +844,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetHa
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 10);
     tmp7 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{p_o, tmp6});
     tmp8 = Convert_intptr_uint8_0(state_, TNode<Uint8T>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=34&c=3
@@ -862,7 +862,7 @@ TNode<Uint8T> LoadSmallOrderedHashSetHashTable_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -879,14 +879,14 @@ TNode<Uint8T> LoadSmallOrderedHashSetHashTable_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -910,7 +910,7 @@ void StoreSmallOrderedHashSetHashTable_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -927,13 +927,13 @@ void StoreSmallOrderedHashSetHashTable_0(compiler::CodeAssemblerState* state_, T
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -954,7 +954,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetCh
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -966,7 +966,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetCh
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   if (block0.is_used()) {
@@ -981,12 +981,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashSetCh
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kLoadFactor);
     tmp10 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9});
     tmp11 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp10});
-    std::tie(tmp12, tmp13, tmp14) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11}).Flatten();
+    std::tie(tmp12, tmp13, tmp14) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=35&c=3
@@ -999,7 +999,7 @@ TNode<Uint8T> LoadSmallOrderedHashSetChainTable_0(compiler::CodeAssemblerState* 
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1016,14 +1016,14 @@ TNode<Uint8T> LoadSmallOrderedHashSetChainTable_0(compiler::CodeAssemblerState* 
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1047,7 +1047,7 @@ void StoreSmallOrderedHashSetChainTable_0(compiler::CodeAssemblerState* state_, 
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1064,13 +1064,13 @@ void StoreSmallOrderedHashSetChainTable_0(compiler::CodeAssemblerState* state_, 
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1194,19 +1194,19 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapPa
 
   TNode<IntPtrT> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp1 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0xbull));
-    std::tie(tmp2, tmp3, tmp4) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}).Flatten();
+    std::tie(tmp2, tmp3, tmp4) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=69&c=28
@@ -1219,7 +1219,7 @@ TNode<Uint8T> LoadSmallOrderedHashMapPadding_0(compiler::CodeAssemblerState* sta
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1236,14 +1236,14 @@ TNode<Uint8T> LoadSmallOrderedHashMapPadding_0(compiler::CodeAssemblerState* sta
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1267,7 +1267,7 @@ void StoreSmallOrderedHashMapPadding_0(compiler::CodeAssemblerState* state_, TNo
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1284,13 +1284,13 @@ void StoreSmallOrderedHashMapPadding_0(compiler::CodeAssemblerState* state_, TNo
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1318,7 +1318,7 @@ TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0 FieldSliceSmallOr
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   if (block0.is_used()) {
@@ -1330,12 +1330,12 @@ TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0 FieldSliceSmallOr
     tmp4 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
     tmp5 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x10ull));
-    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_HashMapEntry_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
+    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_HashMapEntry_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Object>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=73&c=3
@@ -1346,7 +1346,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapHa
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -1355,7 +1355,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapHa
   TNode<IntPtrT> tmp6;
   TNode<Uint8T> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block0.is_used()) {
@@ -1367,12 +1367,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapHa
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 10);
     tmp7 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{p_o, tmp6});
     tmp8 = Convert_intptr_uint8_0(state_, TNode<Uint8T>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=73&c=3
@@ -1385,7 +1385,7 @@ TNode<Uint8T> LoadSmallOrderedHashMapHashTable_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1402,14 +1402,14 @@ TNode<Uint8T> LoadSmallOrderedHashMapHashTable_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1433,7 +1433,7 @@ void StoreSmallOrderedHashMapHashTable_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1450,13 +1450,13 @@ void StoreSmallOrderedHashMapHashTable_0(compiler::CodeAssemblerState* state_, T
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1477,7 +1477,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapCh
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -1489,7 +1489,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapCh
   TNode<IntPtrT> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
-  TNode<Object> tmp12;
+  TNode<Union<HeapObject, TaggedIndex>> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<IntPtrT> tmp14;
   if (block0.is_used()) {
@@ -1504,12 +1504,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedHashMapCh
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, SmallOrderedHashTable<int>::kLoadFactor);
     tmp10 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9});
     tmp11 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp10});
-    std::tie(tmp12, tmp13, tmp14) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11}).Flatten();
+    std::tie(tmp12, tmp13, tmp14) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp11}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp12}, TNode<IntPtrT>{tmp13}, TNode<IntPtrT>{tmp14}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=74&c=3
@@ -1522,7 +1522,7 @@ TNode<Uint8T> LoadSmallOrderedHashMapChainTable_0(compiler::CodeAssemblerState* 
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1539,14 +1539,14 @@ TNode<Uint8T> LoadSmallOrderedHashMapChainTable_0(compiler::CodeAssemblerState* 
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1570,7 +1570,7 @@ void StoreSmallOrderedHashMapChainTable_0(compiler::CodeAssemblerState* state_, 
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1587,13 +1587,13 @@ void StoreSmallOrderedHashMapChainTable_0(compiler::CodeAssemblerState* state_, 
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1797,19 +1797,19 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
 
   TNode<IntPtrT> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<IntPtrT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Convert_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x5ull));
     tmp1 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x13ull));
-    std::tie(tmp2, tmp3, tmp4) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}).Flatten();
+    std::tie(tmp2, tmp3, tmp4) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp0}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp2}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp4}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=109&c=28
@@ -1822,7 +1822,7 @@ TNode<Uint8T> LoadSmallOrderedNameDictionaryPadding1_0(compiler::CodeAssemblerSt
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1839,14 +1839,14 @@ TNode<Uint8T> LoadSmallOrderedNameDictionaryPadding1_0(compiler::CodeAssemblerSt
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -1870,7 +1870,7 @@ void StoreSmallOrderedNameDictionaryPadding1_0(compiler::CodeAssemblerState* sta
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1887,13 +1887,13 @@ void StoreSmallOrderedNameDictionaryPadding1_0(compiler::CodeAssemblerState* sta
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -1921,7 +1921,7 @@ TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0 Fie
   TNode<IntPtrT> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<Union<HeapObject, TaggedIndex>> tmp7;
   TNode<IntPtrT> tmp8;
   TNode<IntPtrT> tmp9;
   if (block0.is_used()) {
@@ -1933,12 +1933,12 @@ TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0 Fie
     tmp4 = CodeStubAssembler(state_).IntPtrMul(TNode<IntPtrT>{tmp2}, TNode<IntPtrT>{tmp3});
     tmp5 = Convert_intptr_intptr_0(state_, TNode<IntPtrT>{tmp4});
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x18ull));
-    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_NameDictionaryEntry_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
+    std::tie(tmp7, tmp8, tmp9) = NewMutableSlice_NameDictionaryEntry_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp6}, TNode<IntPtrT>{tmp5}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0{TNode<Object>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0{TNode<Union<HeapObject, TaggedIndex>>{tmp7}, TNode<IntPtrT>{tmp8}, TNode<IntPtrT>{tmp9}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=113&c=3
@@ -1949,7 +1949,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -1958,7 +1958,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
   TNode<IntPtrT> tmp6;
   TNode<Uint8T> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block0.is_used()) {
@@ -1970,12 +1970,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 18);
     tmp7 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{p_o, tmp6});
     tmp8 = Convert_intptr_uint8_0(state_, TNode<Uint8T>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=113&c=3
@@ -1988,7 +1988,7 @@ TNode<Uint8T> LoadSmallOrderedNameDictionaryHashTable_0(compiler::CodeAssemblerS
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2005,14 +2005,14 @@ TNode<Uint8T> LoadSmallOrderedNameDictionaryHashTable_0(compiler::CodeAssemblerS
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -2036,7 +2036,7 @@ void StoreSmallOrderedNameDictionaryHashTable_0(compiler::CodeAssemblerState* st
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2053,13 +2053,13 @@ void StoreSmallOrderedNameDictionaryHashTable_0(compiler::CodeAssemblerState* st
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -2080,7 +2080,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -2089,7 +2089,7 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
   TNode<IntPtrT> tmp6;
   TNode<Uint8T> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   if (block0.is_used()) {
@@ -2101,12 +2101,12 @@ TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSmallOrderedNameDicti
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 18);
     tmp7 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{p_o, tmp6});
     tmp8 = Convert_intptr_uint8_0(state_, TNode<Uint8T>{tmp7});
-    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10, tmp11) = NewMutableSlice_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Object>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_uint8_MutableReference_uint8_0{TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
@@ -2119,7 +2119,7 @@ TNode<Uint8T> LoadSmallOrderedNameDictionaryChainTable_0(compiler::CodeAssembler
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2136,14 +2136,14 @@ TNode<Uint8T> LoadSmallOrderedNameDictionaryChainTable_0(compiler::CodeAssembler
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<Uint8T> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
@@ -2167,7 +2167,7 @@ void StoreSmallOrderedNameDictionaryChainTable_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -2184,13 +2184,13 @@ void StoreSmallOrderedNameDictionaryChainTable_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_uint8_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    std::tie(tmp8, tmp9) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
@@ -2230,7 +2230,7 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(243), static_cast<InstanceType>(245))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(245), static_cast<InstanceType>(247))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2251,7 +2251,7 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<void>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2273,7 +2273,7 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(243));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(245));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2307,12 +2307,12 @@ TNode<HeapObject> DownCastForTorqueClass_SmallOrderedHashTable_0(compiler::CodeA
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(245), static_cast<InstanceType>(243))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(247), static_cast<InstanceType>(245))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(243));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(245));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2375,7 +2375,7 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(244), static_cast<InstanceType>(244))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(246), static_cast<InstanceType>(246))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2396,7 +2396,7 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SmallOrderedHashSet>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2418,7 +2418,7 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(244));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(246));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2452,12 +2452,12 @@ TNode<SmallOrderedHashSet> DownCastForTorqueClass_SmallOrderedHashSet_0(compiler
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(244), static_cast<InstanceType>(244))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(246), static_cast<InstanceType>(246))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(244));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(246));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -2572,13 +2572,13 @@ void InitializeFieldsFromIterator_uint8_ConstantIterator_uint8_0(compiler::CodeA
   }
 
   TNode<IntPtrT> phi_bb10_5;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_5);
-    std::tie(tmp4, tmp5) = NewReference_uint8_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_uint8_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kUInt8Size);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_5}, TNode<IntPtrT>{tmp6});
     CodeStubAssembler(state_).StoreReference<Uint8T>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value);
@@ -2639,16 +2639,16 @@ void InitializeFieldsFromIterator_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbo
   }
 
   TNode<IntPtrT> phi_bb10_5;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_5);
-    std::tie(tmp4, tmp5) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_5}, TNode<IntPtrT>{tmp6});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value);
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value);
     ca_.Goto(&block5, tmp7);
   }
 
@@ -2688,7 +2688,7 @@ TNode<SmallOrderedHashMap> DownCastForTorqueClass_SmallOrderedHashMap_0(compiler
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(243), static_cast<InstanceType>(243))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(245), static_cast<InstanceType>(245))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -2709,7 +2709,7 @@ TNode<SmallOrderedHashMap> DownCastForTorqueClass_SmallOrderedHashMap_0(compiler
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SmallOrderedHashMap>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2731,241 +2731,7 @@ TNode<SmallOrderedHashMap> DownCastForTorqueClass_SmallOrderedHashMap_0(compiler
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(243));
-    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
-    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
-  }
-
-  if (block11.is_used()) {
-    ca_.Bind(&block11);
-    ca_.Goto(&block1);
-  }
-
-  if (block12.is_used()) {
-    ca_.Bind(&block12);
-    ca_.Goto(&block8);
-  }
-
-  if (block8.is_used()) {
-    ca_.Bind(&block8);
-    ca_.Goto(&block5);
-  }
-
-  TNode<Int32T> tmp8;
-  TNode<IntPtrT> tmp9;
-  TNode<Uint16T> tmp10;
-  TNode<Uint16T> tmp11;
-  TNode<Int32T> tmp12;
-  TNode<Uint16T> tmp13;
-  TNode<Uint16T> tmp14;
-  TNode<Int32T> tmp15;
-  TNode<Int32T> tmp16;
-  TNode<Uint32T> tmp17;
-  TNode<Uint32T> tmp18;
-  TNode<BoolT> tmp19;
-  if (block4.is_used()) {
-    ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(243), static_cast<InstanceType>(243))));
-    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
-    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
-    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(243));
-    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
-    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
-    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
-    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
-    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
-    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
-    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
-  }
-
-  if (block13.is_used()) {
-    ca_.Bind(&block13);
-    ca_.Goto(&block1);
-  }
-
-  if (block14.is_used()) {
-    ca_.Bind(&block14);
-    ca_.Goto(&block5);
-  }
-
-  TNode<SmallOrderedHashMap> tmp20;
-  if (block5.is_used()) {
-    ca_.Bind(&block5);
-    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
-    ca_.Goto(&block15);
-  }
-
-  if (block1.is_used()) {
-    ca_.Bind(&block1);
-    ca_.Goto(label_CastError);
-  }
-
-    ca_.Bind(&block15);
-  return TNode<SmallOrderedHashMap>{tmp20};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=89&c=20
-TorqueStructConstantIterator_HashMapEntry_0 ConstantIterator_HashMapEntry_0(compiler::CodeAssemblerState* state_, TorqueStructHashMapEntry_0 p_value) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    ca_.Goto(&block2);
-  }
-
-    ca_.Bind(&block2);
-  return TorqueStructConstantIterator_HashMapEntry_0{TorqueStructHashMapEntry_0{TNode<Object>{p_value.key}, TNode<Object>{p_value.value}}};
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=83&c=10
-void InitializeFieldsFromIterator_HashMapEntry_ConstantIterator_HashMapEntry_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0 p_target, TorqueStructConstantIterator_HashMapEntry_0 p_originIterator) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<IntPtrT> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = TimesSizeOf_HashMapEntry_0(state_, TNode<IntPtrT>{p_target.length});
-    tmp1 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_target.offset}, TNode<IntPtrT>{tmp0});
-    ca_.Goto(&block5, p_target.offset);
-  }
-
-  TNode<IntPtrT> phi_bb5_6;
-  TNode<BoolT> tmp2;
-  if (block5.is_used()) {
-    ca_.Bind(&block5, &phi_bb5_6);
-    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, true);
-    ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{phi_bb5_6}, &block4, std::vector<compiler::Node*>{phi_bb5_6});
-  }
-
-  TNode<IntPtrT> phi_bb3_6;
-  TNode<BoolT> tmp3;
-  if (block3.is_used()) {
-    ca_.Bind(&block3, &phi_bb3_6);
-    tmp3 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_6}, TNode<IntPtrT>{tmp1});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{phi_bb3_6}, &block10, std::vector<compiler::Node*>{phi_bb3_6});
-  }
-
-  TNode<IntPtrT> phi_bb9_6;
-  if (block9.is_used()) {
-    ca_.Bind(&block9, &phi_bb9_6);
-    ca_.Goto(&block4, phi_bb9_6);
-  }
-
-  TNode<IntPtrT> phi_bb10_6;
-  TNode<Object> tmp4;
-  TNode<IntPtrT> tmp5;
-  TNode<IntPtrT> tmp6;
-  TNode<IntPtrT> tmp7;
-  TNode<IntPtrT> tmp8;
-  TNode<IntPtrT> tmp9;
-  if (block10.is_used()) {
-    ca_.Bind(&block10, &phi_bb10_6);
-    std::tie(tmp4, tmp5) = NewReference_HashMapEntry_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_6}).Flatten();
-    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_6}, TNode<IntPtrT>{tmp6});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value.key);
-    tmp8 = FromConstexpr_intptr_constexpr_intptr_0(state_, 8);
-    tmp9 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp9}, p_originIterator.value.value);
-    ca_.Goto(&block5, tmp7);
-  }
-
-  TNode<IntPtrT> phi_bb4_6;
-  if (block4.is_used()) {
-    ca_.Bind(&block4, &phi_bb4_6);
-    ca_.Goto(&block16);
-  }
-
-    ca_.Bind(&block16);
-}
-
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=101&c=1
-TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
-  compiler::CodeAssembler ca_(state_);
-  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
-  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-    ca_.Goto(&block0);
-
-  TNode<IntPtrT> tmp0;
-  TNode<Map> tmp1;
-  if (block0.is_used()) {
-    ca_.Bind(&block0);
-    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(245), static_cast<InstanceType>(245))))) {
-      ca_.Goto(&block3);
-    } else {
-      ca_.Goto(&block4);
-    }
-  }
-
-  if (block3.is_used()) {
-    ca_.Bind(&block3);
-    if ((CodeStubAssembler(state_).ClassHasMapConstant<SmallOrderedNameDictionary>())) {
-      ca_.Goto(&block6);
-    } else {
-      ca_.Goto(&block7);
-    }
-  }
-
-  TNode<Map> tmp2;
-  TNode<BoolT> tmp3;
-  if (block6.is_used()) {
-    ca_.Bind(&block6);
-    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SmallOrderedNameDictionary>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
-    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
-  }
-
-  if (block9.is_used()) {
-    ca_.Bind(&block9);
-    ca_.Goto(&block1);
-  }
-
-  if (block10.is_used()) {
-    ca_.Bind(&block10);
-    ca_.Goto(&block8);
-  }
-
-  TNode<IntPtrT> tmp4;
-  TNode<Uint16T> tmp5;
-  TNode<Uint32T> tmp6;
-  TNode<BoolT> tmp7;
-  if (block7.is_used()) {
-    ca_.Bind(&block7);
-    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
-    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(245));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(245));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -3024,6 +2790,240 @@ TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDiction
     ca_.Goto(&block5);
   }
 
+  TNode<SmallOrderedHashMap> tmp20;
+  if (block5.is_used()) {
+    ca_.Bind(&block5);
+    tmp20 = TORQUE_CAST(TNode<HeapObject>{p_o});
+    ca_.Goto(&block15);
+  }
+
+  if (block1.is_used()) {
+    ca_.Bind(&block1);
+    ca_.Goto(label_CastError);
+  }
+
+    ca_.Bind(&block15);
+  return TNode<SmallOrderedHashMap>{tmp20};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=89&c=20
+TorqueStructConstantIterator_HashMapEntry_0 ConstantIterator_HashMapEntry_0(compiler::CodeAssemblerState* state_, TorqueStructHashMapEntry_0 p_value) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    ca_.Goto(&block2);
+  }
+
+    ca_.Bind(&block2);
+  return TorqueStructConstantIterator_HashMapEntry_0{TorqueStructHashMapEntry_0{TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{p_value.key}, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>{p_value.value}}};
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=83&c=10
+void InitializeFieldsFromIterator_HashMapEntry_ConstantIterator_HashMapEntry_0(compiler::CodeAssemblerState* state_, TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0 p_target, TorqueStructConstantIterator_HashMapEntry_0 p_originIterator) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<IntPtrT> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block16(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<IntPtrT> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = TimesSizeOf_HashMapEntry_0(state_, TNode<IntPtrT>{p_target.length});
+    tmp1 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{p_target.offset}, TNode<IntPtrT>{tmp0});
+    ca_.Goto(&block5, p_target.offset);
+  }
+
+  TNode<IntPtrT> phi_bb5_6;
+  TNode<BoolT> tmp2;
+  if (block5.is_used()) {
+    ca_.Bind(&block5, &phi_bb5_6);
+    tmp2 = FromConstexpr_bool_constexpr_bool_0(state_, true);
+    ca_.Branch(tmp2, &block3, std::vector<compiler::Node*>{phi_bb5_6}, &block4, std::vector<compiler::Node*>{phi_bb5_6});
+  }
+
+  TNode<IntPtrT> phi_bb3_6;
+  TNode<BoolT> tmp3;
+  if (block3.is_used()) {
+    ca_.Bind(&block3, &phi_bb3_6);
+    tmp3 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb3_6}, TNode<IntPtrT>{tmp1});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{phi_bb3_6}, &block10, std::vector<compiler::Node*>{phi_bb3_6});
+  }
+
+  TNode<IntPtrT> phi_bb9_6;
+  if (block9.is_used()) {
+    ca_.Bind(&block9, &phi_bb9_6);
+    ca_.Goto(&block4, phi_bb9_6);
+  }
+
+  TNode<IntPtrT> phi_bb10_6;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
+  TNode<IntPtrT> tmp5;
+  TNode<IntPtrT> tmp6;
+  TNode<IntPtrT> tmp7;
+  TNode<IntPtrT> tmp8;
+  TNode<IntPtrT> tmp9;
+  if (block10.is_used()) {
+    ca_.Bind(&block10, &phi_bb10_6);
+    std::tie(tmp4, tmp5) = NewReference_HashMapEntry_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_6}).Flatten();
+    tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
+    tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_6}, TNode<IntPtrT>{tmp6});
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value.key);
+    tmp8 = FromConstexpr_intptr_constexpr_intptr_0(state_, 8);
+    tmp9 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp8});
+    CodeStubAssembler(state_).StoreReference<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>>(CodeStubAssembler::Reference{tmp4, tmp9}, p_originIterator.value.value);
+    ca_.Goto(&block5, tmp7);
+  }
+
+  TNode<IntPtrT> phi_bb4_6;
+  if (block4.is_used()) {
+    ca_.Bind(&block4, &phi_bb4_6);
+    ca_.Goto(&block16);
+  }
+
+    ca_.Bind(&block16);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=101&c=1
+TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDictionary_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+  compiler::CodeAssembler ca_(state_);
+  compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
+  compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block13(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+    ca_.Goto(&block0);
+
+  TNode<IntPtrT> tmp0;
+  TNode<Map> tmp1;
+  if (block0.is_used()) {
+    ca_.Bind(&block0);
+    tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
+    tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(247), static_cast<InstanceType>(247))))) {
+      ca_.Goto(&block3);
+    } else {
+      ca_.Goto(&block4);
+    }
+  }
+
+  if (block3.is_used()) {
+    ca_.Bind(&block3);
+    if ((CodeStubAssembler(state_).ClassHasMapConstant<SmallOrderedNameDictionary>())) {
+      ca_.Goto(&block6);
+    } else {
+      ca_.Goto(&block7);
+    }
+  }
+
+  TNode<Map> tmp2;
+  TNode<BoolT> tmp3;
+  if (block6.is_used()) {
+    ca_.Bind(&block6);
+    tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SmallOrderedNameDictionary>();
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
+    ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
+  }
+
+  if (block9.is_used()) {
+    ca_.Bind(&block9);
+    ca_.Goto(&block1);
+  }
+
+  if (block10.is_used()) {
+    ca_.Bind(&block10);
+    ca_.Goto(&block8);
+  }
+
+  TNode<IntPtrT> tmp4;
+  TNode<Uint16T> tmp5;
+  TNode<Uint32T> tmp6;
+  TNode<BoolT> tmp7;
+  if (block7.is_used()) {
+    ca_.Bind(&block7);
+    tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(247));
+    tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
+    ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
+  }
+
+  if (block11.is_used()) {
+    ca_.Bind(&block11);
+    ca_.Goto(&block1);
+  }
+
+  if (block12.is_used()) {
+    ca_.Bind(&block12);
+    ca_.Goto(&block8);
+  }
+
+  if (block8.is_used()) {
+    ca_.Bind(&block8);
+    ca_.Goto(&block5);
+  }
+
+  TNode<Int32T> tmp8;
+  TNode<IntPtrT> tmp9;
+  TNode<Uint16T> tmp10;
+  TNode<Uint16T> tmp11;
+  TNode<Int32T> tmp12;
+  TNode<Uint16T> tmp13;
+  TNode<Uint16T> tmp14;
+  TNode<Int32T> tmp15;
+  TNode<Int32T> tmp16;
+  TNode<Uint32T> tmp17;
+  TNode<Uint32T> tmp18;
+  TNode<BoolT> tmp19;
+  if (block4.is_used()) {
+    ca_.Bind(&block4);
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(247), static_cast<InstanceType>(247))));
+    tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
+    tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
+    tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
+    tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(247));
+    tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
+    tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
+    tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
+    tmp17 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp16});
+    tmp18 = CodeStubAssembler(state_).Unsigned(TNode<Int32T>{tmp8});
+    tmp19 = CodeStubAssembler(state_).Uint32GreaterThan(TNode<Uint32T>{tmp17}, TNode<Uint32T>{tmp18});
+    ca_.Branch(tmp19, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
+  }
+
+  if (block13.is_used()) {
+    ca_.Bind(&block13);
+    ca_.Goto(&block1);
+  }
+
+  if (block14.is_used()) {
+    ca_.Bind(&block14);
+    ca_.Goto(&block5);
+  }
+
   TNode<SmallOrderedNameDictionary> tmp20;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -3041,66 +3041,66 @@ TNode<SmallOrderedNameDictionary> DownCastForTorqueClass_SmallOrderedNameDiction
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
-TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0 NewMutableSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0 NewMutableSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=71&c=3
-TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0 NewMutableSlice_HashMapEntry_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0 NewMutableSlice_HashMapEntry_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_HashMapEntry_MutableReference_HashMapEntry_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=111&c=3
-TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0 NewMutableSlice_NameDictionaryEntry_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0 NewMutableSlice_NameDictionaryEntry_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_NameDictionaryEntry_MutableReference_NameDictionaryEntry_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 } // namespace internal

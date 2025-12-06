@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSV8BreakIterator_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSV8BreakIterator : public P {
   static_assert(
-      std::is_same<JSV8BreakIterator, D>::value,
+      std::is_same_v<JSV8BreakIterator, D>,
       "Use this class as direct base for JSV8BreakIterator.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSV8BreakIterator.");
 
  public: 
@@ -120,7 +120,7 @@ class TorqueGeneratedJSV8BreakIterator : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSV8BreakIterator() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSV8BreakIterator, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSV8BreakIterator, DAlias>,
         "class TorqueGeneratedJSV8BreakIterator should be used as direct base for JSV8BreakIterator.");
   }
 

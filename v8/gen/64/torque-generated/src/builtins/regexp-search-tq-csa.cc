@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-search-tq-csa.h"
@@ -85,13 +85,13 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=9&c=1
-TNode<Object> RegExpPrototypeSearchBodyFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string) {
+TNode<JSAny> RegExpPrototypeSearchBodyFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSRegExp> p_regexp, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -130,14 +130,14 @@ TNode<Object> RegExpPrototypeSearchBodyFast_0(compiler::CodeAssemblerState* stat
     ca_.Goto(&block1, tmp6);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block10);
   }
 
     ca_.Bind(&block10);
-  return TNode<Object>{phi_bb1_3};
+  return TNode<JSAny>{phi_bb1_3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=43&c=1
@@ -191,7 +191,7 @@ TNode<BoolT> IsRegExpResult_0(compiler::CodeAssemblerState* state_, TNode<Contex
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/regexp-search.tq?l=48&c=1
-TNode<Object> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_regexp, TNode<String> p_string) {
+TNode<JSAny> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_regexp, TNode<String> p_string) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -203,45 +203,45 @@ TNode<Object> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* stat
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<JSAny> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<Smi> tmp1;
   TNode<BoolT> tmp2;
   TNode<BoolT> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<Object>{p_regexp});
+    tmp0 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<JSAny>{p_regexp});
     tmp1 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp2 = SameValue_0(state_, TNode<Object>{tmp0}, TNode<Object>{tmp1});
+    tmp2 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1});
     tmp3 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp2});
     ca_.Branch(tmp3, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<Object>{p_regexp}, TNode<Object>{tmp1});
+    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<JSAny>{p_regexp}, TNode<JSAny>{tmp1});
     ca_.Goto(&block3);
   }
 
-  TNode<Object> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp4;
+  TNode<JSAny> tmp5;
   TNode<BoolT> tmp6;
   TNode<BoolT> tmp7;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp4 = RegExpExec_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_regexp}, TNode<String>{p_string});
-    tmp5 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<Object>{p_regexp});
-    tmp6 = SameValue_0(state_, TNode<Object>{tmp5}, TNode<Object>{tmp0});
+    tmp5 = RegExpBuiltinsAssembler(state_).SlowLoadLastIndex(TNode<Context>{p_context}, TNode<JSAny>{p_regexp});
+    tmp6 = SameValue_0(state_, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5}, TNode<Union<BigInt, Context, FixedArrayBase, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Map, Oddball, Smi, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     tmp7 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp6});
     ca_.Branch(tmp7, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<Object>{p_regexp}, TNode<Object>{tmp0});
+    RegExpBuiltinsAssembler(state_).SlowStoreLastIndex(TNode<Context>{p_context}, TNode<JSAny>{p_regexp}, TNode<JSAny>{tmp0});
     ca_.Goto(&block5);
   }
 
@@ -250,7 +250,7 @@ TNode<Object> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* stat
   if (block5.is_used()) {
     ca_.Bind(&block5);
     tmp8 = Null_0(state_);
-    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp4}, TNode<HeapObject>{tmp8});
+    tmp9 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp8});
     ca_.Branch(tmp9, &block6, std::vector<compiler::Node*>{}, &block7, std::vector<compiler::Node*>{});
   }
 
@@ -273,33 +273,33 @@ TNode<Object> RegExpPrototypeSearchBodySlow_0(compiler::CodeAssemblerState* stat
     }
   }
 
-  TNode<Object> tmp13;
-  TNode<Object> tmp14;
+  TNode<JSAny> tmp13;
+  TNode<JSAny> tmp14;
   if (block11.is_used()) {
     ca_.Bind(&block11);
     tmp13 = FromConstexpr_JSAny_constexpr_string_0(state_, "index");
-    tmp14 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp4}, TNode<Object>{tmp13});
+    tmp14 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp4}, TNode<JSAny>{tmp13});
     ca_.Goto(&block1, tmp14);
   }
 
   TNode<IntPtrT> tmp15;
-  TNode<Object> tmp16;
+  TNode<JSAny> tmp16;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp16 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp11, tmp15});
+    tmp16 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp11, tmp15});
     ca_.Goto(&block1, tmp16);
   }
 
-  TNode<Object> phi_bb1_3;
+  TNode<JSAny> phi_bb1_3;
   if (block1.is_used()) {
     ca_.Bind(&block1, &phi_bb1_3);
     ca_.Goto(&block12, phi_bb1_3);
   }
 
-  TNode<Object> phi_bb12_3;
+  TNode<JSAny> phi_bb12_3;
     ca_.Bind(&block12, &phi_bb12_3);
-  return TNode<Object>{phi_bb12_3};
+  return TNode<JSAny>{phi_bb12_3};
 }
 
 TF_BUILTIN(RegExpSearchFast, CodeStubAssembler) {
@@ -313,7 +313,7 @@ TF_BUILTIN(RegExpSearchFast, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = RegExpPrototypeSearchBodyFast_0(state_, TNode<Context>{parameter0}, TNode<JSRegExp>{parameter1}, TNode<String>{parameter2});
@@ -325,9 +325,9 @@ TF_BUILTIN(RegExpPrototypeSearch, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kString);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kString);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -339,23 +339,23 @@ TF_BUILTIN(RegExpPrototypeSearch, CodeStubAssembler) {
   TNode<BoolT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    CodeStubAssembler(state_).ThrowIfNotJSReceiver(TNode<Context>{parameter0}, TNode<Object>{parameter1}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@search");
+    CodeStubAssembler(state_).ThrowIfNotJSReceiver(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@search");
     tmp0 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp1 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     tmp2 = IsFastRegExpPermissive_0(state_, TNode<Context>{parameter0}, TNode<HeapObject>{tmp0});
     ca_.Branch(tmp2, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
   TNode<JSRegExp> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp3 = UnsafeCast_JSRegExp_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
-    tmp4 = ca_.CallBuiltin<Object>(Builtin::kRegExpSearchFast, parameter0, tmp3, tmp1);
+    tmp4 = ca_.CallBuiltin<JSAny>(Builtin::kRegExpSearchFast, parameter0, tmp3, tmp1);
     CodeStubAssembler(state_).Return(tmp4);
   }
 
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block2.is_used()) {
     ca_.Bind(&block2);
     tmp5 = RegExpPrototypeSearchBodySlow_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp0}, TNode<String>{tmp1});

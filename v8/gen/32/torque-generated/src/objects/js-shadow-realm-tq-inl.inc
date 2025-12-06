@@ -16,7 +16,7 @@ Tagged<NativeContext> TorqueGeneratedJSShadowRealm<D, P>::native_context(PtrComp
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-shadow-realm.tq?l=6&c=3
 template<class D, class P>
 void TorqueGeneratedJSShadowRealm<D, P>::set_native_context(Tagged<NativeContext> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsNativeContext(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsNativeContext(value)));
   WRITE_FIELD(*this, kNativeContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNativeContextOffset, value, mode);
 }

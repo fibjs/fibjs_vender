@@ -10,10 +10,10 @@ V8_EXPORT_PRIVATE bool IsJSRegExp_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSRegExp : public P {
   static_assert(
-      std::is_same<JSRegExp, D>::value,
+      std::is_same_v<JSRegExp, D>,
       "Use this class as direct base for JSRegExp.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSRegExp.");
 
  public: 
@@ -63,7 +63,7 @@ class TorqueGeneratedJSRegExp : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRegExp() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRegExp, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRegExp, DAlias>,
         "class TorqueGeneratedJSRegExp should be used as direct base for JSRegExp.");
   }
 
@@ -77,10 +77,10 @@ class TorqueGeneratedJSRegExp : public P {
 template <class D, class P>
 class TorqueGeneratedJSRegExpResult : public P {
   static_assert(
-      std::is_same<JSRegExpResult, D>::value,
+      std::is_same_v<JSRegExpResult, D>,
       "Use this class as direct base for JSRegExpResult.");
   static_assert(
-      std::is_same<JSArray, P>::value,
+      std::is_same_v<JSArray, P>,
       "Pass in JSArray as second template parameter for TorqueGeneratedJSRegExpResult.");
 
  public: 
@@ -163,7 +163,7 @@ class TorqueGeneratedJSRegExpResult : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRegExpResult() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRegExpResult, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRegExpResult, DAlias>,
         "class TorqueGeneratedJSRegExpResult should be used as direct base for JSRegExpResult.");
   }
 
@@ -177,10 +177,10 @@ class TorqueGeneratedJSRegExpResult : public P {
 template <class D, class P>
 class TorqueGeneratedJSRegExpResultWithIndices : public P {
   static_assert(
-      std::is_same<JSRegExpResultWithIndices, D>::value,
+      std::is_same_v<JSRegExpResultWithIndices, D>,
       "Use this class as direct base for JSRegExpResultWithIndices.");
   static_assert(
-      std::is_same<JSRegExpResult, P>::value,
+      std::is_same_v<JSRegExpResult, P>,
       "Pass in JSRegExpResult as second template parameter for TorqueGeneratedJSRegExpResultWithIndices.");
 
  public: 
@@ -212,7 +212,7 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRegExpResultWithIndices() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRegExpResultWithIndices, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRegExpResultWithIndices, DAlias>,
         "class TorqueGeneratedJSRegExpResultWithIndices should be used as direct base for JSRegExpResultWithIndices.");
   }
 
@@ -226,10 +226,10 @@ class TorqueGeneratedJSRegExpResultWithIndices : public P {
 template <class D, class P>
 class TorqueGeneratedJSRegExpResultIndices : public P {
   static_assert(
-      std::is_same<JSRegExpResultIndices, D>::value,
+      std::is_same_v<JSRegExpResultIndices, D>,
       "Use this class as direct base for JSRegExpResultIndices.");
   static_assert(
-      std::is_same<JSArray, P>::value,
+      std::is_same_v<JSArray, P>,
       "Pass in JSArray as second template parameter for TorqueGeneratedJSRegExpResultIndices.");
 
  public: 
@@ -261,7 +261,7 @@ class TorqueGeneratedJSRegExpResultIndices : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSRegExpResultIndices() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSRegExpResultIndices, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSRegExpResultIndices, DAlias>,
         "class TorqueGeneratedJSRegExpResultIndices should be used as direct base for JSRegExpResultIndices.");
   }
 

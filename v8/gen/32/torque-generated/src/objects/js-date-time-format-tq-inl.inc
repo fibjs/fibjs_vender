@@ -16,7 +16,7 @@ Tagged<String> TorqueGeneratedJSDateTimeFormat<D, P>::locale(PtrComprCageBase ca
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=17&c=3
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_locale(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kLocaleOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Foreign> TorqueGeneratedJSDateTimeFormat<D, P>::icu_locale(PtrComprCageBa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=18&c=3
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_icu_locale(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuLocaleOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<Foreign> TorqueGeneratedJSDateTimeFormat<D, P>::icu_simple_date_format(Pt
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=19&c=3
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_icu_simple_date_format(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuSimpleDateFormatOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuSimpleDateFormatOffset, value, mode);
 }
@@ -85,7 +85,7 @@ Tagged<Foreign> TorqueGeneratedJSDateTimeFormat<D, P>::icu_date_interval_format(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=20&c=3
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_icu_date_interval_format(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuDateIntervalFormatOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuDateIntervalFormatOffset, value, mode);
 }
@@ -108,7 +108,7 @@ Tagged<Union<JSFunction, Undefined>> TorqueGeneratedJSDateTimeFormat<D, P>::boun
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=21&c=3
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_bound_format(Tagged<Union<JSFunction, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsJSFunction(value)));
   WRITE_FIELD(*this, kBoundFormatOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBoundFormatOffset, value, mode);
 }
@@ -123,7 +123,8 @@ int TorqueGeneratedJSDateTimeFormat<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-date-time-format.tq?l=22&c=3
 template<class D, class P>
 void TorqueGeneratedJSDateTimeFormat<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct JSDateTimeFormatFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 template<class D, class P>

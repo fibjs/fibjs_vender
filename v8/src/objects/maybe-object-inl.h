@@ -5,9 +5,11 @@
 #ifndef V8_OBJECTS_MAYBE_OBJECT_INL_H_
 #define V8_OBJECTS_MAYBE_OBJECT_INL_H_
 
+#include "src/objects/maybe-object.h"
+// Include the non-inl header before the rest of the headers.
+
 #include "src/common/ptr-compr-inl.h"
 #include "src/objects/casting.h"
-#include "src/objects/maybe-object.h"
 #include "src/objects/smi-inl.h"
 #include "src/objects/tagged-impl-inl.h"
 #include "src/objects/tagged.h"
@@ -21,8 +23,8 @@ inline Tagged<ClearedWeakValue> ClearedValue(PtrComprCageBase cage_base) {
 #ifdef V8_COMPRESS_POINTERS
   // This is necessary to make pointer decompression computation also
   // suitable for cleared weak references.
-  value = V8HeapCompressionScheme::DecompressTagged(
-      cage_base, kClearedWeakHeapObjectLower32);
+  value =
+      V8HeapCompressionScheme::DecompressTagged(kClearedWeakHeapObjectLower32);
 #else
   value = kClearedWeakHeapObjectLower32;
 #endif
@@ -31,11 +33,21 @@ inline Tagged<ClearedWeakValue> ClearedValue(PtrComprCageBase cage_base) {
   return Tagged<ClearedWeakValue>(value);
 }
 
+inline Tagged<ClearedWeakValue> ClearedTrustedValue() {
+#ifdef V8_COMPRESS_POINTERS
+  return Tagged<ClearedWeakValue>(
+      TrustedSpaceCompressionScheme::DecompressTagged(
+          kClearedWeakHeapObjectLower32));
+#else
+  return Tagged<ClearedWeakValue>(kClearedWeakHeapObjectLower32);
+#endif
+}
+
 template <typename THeapObjectSlot>
 void UpdateHeapObjectReferenceSlot(THeapObjectSlot slot,
                                    Tagged<HeapObject> value) {
-  static_assert(std::is_same<THeapObjectSlot, FullHeapObjectSlot>::value ||
-                    std::is_same<THeapObjectSlot, HeapObjectSlot>::value,
+  static_assert(std::is_same_v<THeapObjectSlot, FullHeapObjectSlot> ||
+                    std::is_same_v<THeapObjectSlot, HeapObjectSlot>,
                 "Only FullHeapObjectSlot and HeapObjectSlot are expected here");
   Address old_value = (*slot).ptr();
   DCHECK(!HAS_SMI_TAG(old_value));

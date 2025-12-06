@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsEmbedderDataArray_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedEmbedderDataArray : public P {
   static_assert(
-      std::is_same<EmbedderDataArray, D>::value,
+      std::is_same_v<EmbedderDataArray, D>,
       "Use this class as direct base for EmbedderDataArray.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedEmbedderDataArray.");
 
  public: 
@@ -56,7 +56,7 @@ class TorqueGeneratedEmbedderDataArray : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedEmbedderDataArray() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedEmbedderDataArray, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedEmbedderDataArray, DAlias>,
         "class TorqueGeneratedEmbedderDataArray should be used as direct base for EmbedderDataArray.");
   }
 

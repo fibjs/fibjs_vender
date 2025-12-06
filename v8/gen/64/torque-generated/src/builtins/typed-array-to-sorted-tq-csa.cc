@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-to-sorted-tq-csa.h"
@@ -104,7 +104,7 @@ TF_BUILTIN(TypedArrayPrototypeToSorted, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -117,8 +117,8 @@ TF_BUILTIN(TypedArrayPrototypeToSorted, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
-  TNode<HeapObject> tmp2;
+  TNode<JSAny> tmp1;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -147,11 +147,11 @@ TF_BUILTIN(TypedArrayPrototypeToSorted, CodeStubAssembler) {
   TNode<BoolT> tmp11;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp4 = TypedArrayBuiltinsAssembler(state_).ValidateTypedArrayAndGetLength(TNode<Context>{parameter0}, TNode<Object>{parameter1}, kBuiltinNameToSorted_0(state_));
+    tmp4 = TypedArrayBuiltinsAssembler(state_).ValidateTypedArrayAndGetLength(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, kBuiltinNameToSorted_0(state_));
     tmp5 = UnsafeCast_JSTypedArray_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
     tmp6 = TypedArrayCreateSameType_0(state_, TNode<Context>{parameter0}, TNode<JSTypedArray>{tmp5}, TNode<UintPtrT>{tmp4});
     std::tie(tmp7, tmp8) = TypedArrayBuiltinsAssembler(state_).GetTypedArrayElementsInfo(TNode<JSTypedArray>{tmp6}).Flatten();
-    tmp9 = FromConstexpr_uintptr_constexpr_uintptr_0(state_, JSArrayBuffer::kMaxByteLength);
+    tmp9 = CodeStubAssembler(state_).ArrayBufferMaxByteLength();
     tmp10 = CodeStubAssembler(state_).WordShr(TNode<UintPtrT>{tmp9}, TNode<UintPtrT>{tmp7});
     tmp11 = CodeStubAssembler(state_).UintPtrGreaterThan(TNode<UintPtrT>{tmp4}, TNode<UintPtrT>{tmp10});
     ca_.Branch(tmp11, &block8, std::vector<compiler::Node*>{}, &block9, std::vector<compiler::Node*>{});
@@ -198,7 +198,7 @@ TF_BUILTIN(TypedArrayPrototypeToSorted, CodeStubAssembler) {
   TNode<JSTypedArray> tmp20;
   if (block12.is_used()) {
     ca_.Bind(&block12);
-    tmp20 = TypedArraySortCommon_0(state_, TNode<Context>{parameter0}, TNode<JSTypedArray>{tmp6}, TNode<UintPtrT>{tmp4}, TNode<HeapObject>{tmp2}, false);
+    tmp20 = TypedArraySortCommon_0(state_, TNode<Context>{parameter0}, TNode<JSTypedArray>{tmp6}, TNode<UintPtrT>{tmp4}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction, Undefined>>{tmp2}, false);
     arguments.PopAndReturn(tmp20);
   }
 }

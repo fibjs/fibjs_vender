@@ -34,7 +34,7 @@ inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> Tq
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=114&c=3
 inline std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntimeFieldSliceSmallOrderedNameDictionaryChainTable(Tagged<SmallOrderedNameDictionary> p_o);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=617&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=661&c=47
 inline intptr_t TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=8&c=1
@@ -49,7 +49,7 @@ inline intptr_t TqRuntimeFromConstexpr_intptr_constexpr_int31_0(int31_t p_i);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/convert.tq?l=234&c=1
 inline intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui);
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=201&c=26
 inline intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/ordered-hash-table.tq?l=32&c=3
@@ -469,7 +469,7 @@ std::tuple<Tagged<Union<HeapObject, TaggedIndex>>, intptr_t, intptr_t> TqRuntime
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=617&c=47
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/base.tq?l=661&c=47
 intptr_t TqRuntimeConvert_intptr_constexpr_IntegerLiteral_0(IntegerLiteral p_i) {
   DisallowGarbageCollection no_gc;
   intptr_t tmp0{}; USE(tmp0);
@@ -563,7 +563,7 @@ intptr_t TqRuntimeConvert_intptr_uint8_0(uint8_t p_ui) {
 #ifndef V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 #define V8_INTERNAL_DEFINED_TqRuntimeConvert_intptr_intptr_0
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=189&c=26
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/builtins-string.tq?l=201&c=26
 intptr_t TqRuntimeConvert_intptr_intptr_0(intptr_t p_i) {
   DisallowGarbageCollection no_gc;
   goto block0;

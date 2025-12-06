@@ -6,6 +6,9 @@
 namespace v8 {
 namespace internal {
 
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/map-groupby.tq?l=25&c=42
+TNode<ArrayList> UnsafeCast_ArrayList_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o);
+
 } // namespace internal
 } // namespace v8
 

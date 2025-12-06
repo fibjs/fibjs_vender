@@ -6,11 +6,14 @@ var opts = [
     "v8_enable_turbofan=true",
     "cppgc_enable_caged_heap=false",
     "v8_use_external_startup_data=false",
+    "v8_enable_temporal_support=false",
     "v8_use_libm_trig_functions=false",
     "v8_enable_pointer_compression=false",
     "v8_enable_short_builtin_calls=false",
     "v8_enable_lazy_source_positions=false",
     "v8_enable_allocation_folding=false",
+    "v8_enable_maglev=false",
+    "v8_enable_continuation_preserved_embedder_data=true",
     "v8_allocation_site_tracking=false",
     "v8_imminent_deprecation_warnings=false",
     "v8_enable_system_instrumentation=false",
@@ -20,7 +23,7 @@ var opts = [
     "v8_control_flow_integrity=false",
     "v8_enable_gdbjit=false",
     "v8_enable_webassembly=true",
-    "v8_use_zlib=false"
+    "v8_use_zlib=true"
 ]
 
 function mk_arch(arch) {

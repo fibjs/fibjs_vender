@@ -1,12 +1,14 @@
 #include "src/objects/scope-info-inl.h"
 
 #include "torque-generated/class-verifiers.h"
+#include "src/objects/objects-inl.h"
+
 #include "src/objects/instance-type-inl.h"
 
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=114&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/scope-info.tq?l=119&c=1
 bool IsScopeInfo_NonInline(Tagged<HeapObject> o) {
   return IsScopeInfo(o);
 }

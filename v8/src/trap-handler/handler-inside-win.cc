@@ -17,7 +17,8 @@
 // 2. Any changes must be reviewed by someone from the crash reporting
 //    or security team. See OWNERS for suggested reviewers.
 //
-// For more information, see https://goo.gl/yMeyUY.
+// For more information, see:
+// https://docs.google.com/document/d/17y4kxuHFrVxAiuCP_FFtFA2HP5sNPsCD10KEx17Hz6M
 //
 // This file contains most of the code that actually runs in an exception
 // handler context. Some additional code is used both inside and outside the
@@ -119,9 +120,16 @@ bool TryHandleWasmTrap(EXCEPTION_POINTERS* exception) {
 
   TH_DCHECK(gLandingPad != 0);
   // Tell the caller to return to the landing pad.
+#if V8_HOST_ARCH_X64
   exception->ContextRecord->Rip = gLandingPad;
   exception->ContextRecord->R10 = fault_addr;
-#endif
+#elif V8_HOST_ARCH_ARM64
+  exception->ContextRecord->Pc = gLandingPad;
+  exception->ContextRecord->X16 = fault_addr;
+#else
+#error Unsupported architecture
+#endif  // V8_HOST_ARCH_X64
+#endif  // V8_TRAP_HANDLER_VIA_SIMULATOR
   // We will return to wasm code, so restore the g_thread_in_wasm_code flag.
   g_thread_in_wasm_code = true;
   return true;

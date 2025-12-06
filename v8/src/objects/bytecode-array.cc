@@ -84,10 +84,10 @@ void BytecodeArray::PrintJson(std::ostream& os) {
 
   os << "]";
 
-  int constant_pool_lenght = constant_pool()->length();
-  if (constant_pool_lenght > 0) {
+  int constant_pool_length = constant_pool()->length();
+  if (constant_pool_length > 0) {
     os << ", \"constantPool\": [";
-    for (int i = 0; i < constant_pool_lenght; i++) {
+    for (int i = 0; i < constant_pool_length; i++) {
       Tagged<Object> object = constant_pool()->get(i);
       if (i > 0) os << ", ";
       os << "\"" << object << "\"";
@@ -124,7 +124,11 @@ void BytecodeArray::Disassemble(Handle<BytecodeArray> handle,
     if (!source_positions.done() &&
         iterator.current_offset() == source_positions.code_offset()) {
       os << std::setw(5) << source_positions.source_position().ScriptOffset();
-      os << (source_positions.is_statement() ? " S> " : " E> ");
+      if (source_positions.is_breakable()) {
+        os << (source_positions.is_statement() ? " S> " : " E> ");
+      } else {
+        os << (source_positions.is_statement() ? " s> " : " e> ");
+      }
       source_positions.Advance();
     } else {
       os << "         ";

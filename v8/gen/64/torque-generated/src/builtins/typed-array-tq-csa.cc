@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/typed-array-tq-csa.h"
@@ -971,7 +971,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int32Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -981,7 +981,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int32Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Int32Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Int32Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1053,7 +1053,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float16Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1063,7 +1063,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float16Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Float16Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Float16Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1135,7 +1135,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float32Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1145,7 +1145,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float32Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Float32Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Float32Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1217,7 +1217,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float64Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1227,7 +1227,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Float64Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Float64Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Float64Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1299,7 +1299,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint8ClampedElements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1309,7 +1309,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint8ClampedElements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Uint8ClampedElements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Uint8ClampedElements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1381,7 +1381,7 @@ TF_BUILTIN(StoreTypedElementJSAny_BigUint64Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1391,7 +1391,7 @@ TF_BUILTIN(StoreTypedElementJSAny_BigUint64Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_BigUint64Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_BigUint64Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1463,7 +1463,7 @@ TF_BUILTIN(StoreTypedElementJSAny_BigInt64Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1473,7 +1473,7 @@ TF_BUILTIN(StoreTypedElementJSAny_BigInt64Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_BigInt64Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_BigInt64Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1545,7 +1545,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint8Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1555,7 +1555,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint8Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Uint8Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Uint8Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1627,7 +1627,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int8Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1637,7 +1637,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int8Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Int8Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Int8Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1709,7 +1709,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint16Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1719,7 +1719,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint16Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Uint16Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Uint16Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1791,7 +1791,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int16Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1801,7 +1801,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Int16Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Int16Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Int16Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);
@@ -1873,7 +1873,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint32Elements_0, CodeStubAssembler) {
   USE(parameter1);
   TNode<UintPtrT> parameter2 = UncheckedParameter<UintPtrT>(Descriptor::kIndex);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1883,7 +1883,7 @@ TF_BUILTIN(StoreTypedElementJSAny_Uint32Elements_0, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label0(&ca_);
-    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<Object>{parameter3}, (KindForArrayType_Uint32Elements_0(state_)), &label0);
+    TypedArrayBuiltinsAssembler(state_).StoreJSTypedArrayElementFromTagged(TNode<Context>{parameter0}, TNode<JSTypedArray>{parameter1}, TNode<UintPtrT>{parameter2}, TNode<JSAny>{parameter3}, (KindForArrayType_Uint32Elements_0(state_)), &label0);
     ca_.Goto(&block3);
     if (label0.is_used()) {
       ca_.Bind(&label0);

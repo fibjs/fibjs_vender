@@ -16,7 +16,7 @@ Tagged<JSArrayBuffer> TorqueGeneratedJSArrayBufferView<D, P>::buffer(PtrComprCag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=65&c=3
 template<class D, class P>
 void TorqueGeneratedJSArrayBufferView<D, P>::set_buffer(Tagged<JSArrayBuffer> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSArrayBuffer(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSArrayBuffer(value)));
   WRITE_FIELD(*this, kBufferOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBufferOffset, value, mode);
 }
@@ -109,7 +109,7 @@ Tagged<Union<ByteArray, Smi>> TorqueGeneratedJSTypedArray<D, P>::base_pointer(Pt
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=112&c=3
 template<class D, class P>
 void TorqueGeneratedJSTypedArray<D, P>::set_base_pointer(Tagged<Union<ByteArray, Smi>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsByteArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsByteArray(value)));
   WRITE_FIELD(*this, kBasePointerOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kBasePointerOffset, value, mode);
 }
@@ -137,7 +137,7 @@ Tagged<Object> TorqueGeneratedJSArrayBuffer<D, P>::detach_key(PtrComprCageBase c
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=15&c=3
 template<class D, class P>
 void TorqueGeneratedJSArrayBuffer<D, P>::set_detach_key(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kDetachKeyOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDetachKeyOffset, value, mode);
 }
@@ -199,14 +199,14 @@ inline TorqueGeneratedJSArrayBuffer<D, P>::TorqueGeneratedJSArrayBuffer(Address 
     : P(ptr) {
   SLOW_DCHECK(IsJSArrayBuffer_NonInline(*this));
 }
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=126&c=3
 template<class D, class P>
 Address TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::data_pointer() const {
   Address value = this->template ReadField<Address>(kDataPointerOffset);
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=128&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-array-buffer.tq?l=126&c=3
 template<class D, class P>
 void TorqueGeneratedJSDataViewOrRabGsabDataView<D, P>::set_data_pointer(Address value) {
   this->template WriteField<Address>(kDataPointerOffset, value);

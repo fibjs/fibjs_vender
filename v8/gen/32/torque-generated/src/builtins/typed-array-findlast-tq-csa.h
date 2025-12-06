@@ -9,7 +9,7 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-findlast.tq?l=8&c=1
 const char* kBuiltinNameFindLast_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-findlast.tq?l=12&c=1
-TNode<Object> FindLastAllElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedArrayAndLength, TNode<JSReceiver> p_predicate, TNode<Object> p_thisArg);
+TNode<JSAny> FindLastAllElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedArrayAndLength, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_predicate, TNode<JSAny> p_thisArg);
 
 } // namespace internal
 } // namespace v8

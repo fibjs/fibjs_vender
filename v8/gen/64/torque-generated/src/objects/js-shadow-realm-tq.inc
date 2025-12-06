@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSShadowRealm_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSShadowRealm : public P {
   static_assert(
-      std::is_same<JSShadowRealm, D>::value,
+      std::is_same_v<JSShadowRealm, D>,
       "Use this class as direct base for JSShadowRealm.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSShadowRealm.");
 
  public: 
@@ -45,7 +45,7 @@ class TorqueGeneratedJSShadowRealm : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSShadowRealm() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSShadowRealm, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSShadowRealm, DAlias>,
         "class TorqueGeneratedJSShadowRealm should be used as direct base for JSShadowRealm.");
   }
 

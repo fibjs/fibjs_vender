@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/internal-coverage-tq-csa.h"
@@ -134,7 +134,7 @@ void IncrementBlockCount_0(compiler::CodeAssemblerState* state_, TNode<Context> 
   compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -153,7 +153,7 @@ void IncrementBlockCount_0(compiler::CodeAssemblerState* state_, TNode<Context> 
 
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
@@ -164,7 +164,7 @@ void IncrementBlockCount_0(compiler::CodeAssemblerState* state_, TNode<Context> 
     ca_.Bind(&block10);
     tmp7 = TimesSizeOf_CoverageInfoSlot_0(state_, TNode<IntPtrT>{tmp3});
     tmp8 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp7});
-    std::tie(tmp9, tmp10) = NewReference_CoverageInfoSlot_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_CoverageInfoSlot_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
     tmp11 = FromConstexpr_intptr_constexpr_intptr_0(state_, 8);
     tmp12 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp11});
     tmp13 = CodeStubAssembler(state_).LoadReference<Int32T>(CodeStubAssembler::Reference{tmp9, tmp12});

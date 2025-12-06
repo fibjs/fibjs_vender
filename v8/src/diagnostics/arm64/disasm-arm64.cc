@@ -566,6 +566,9 @@ void DisassemblingDecoder::VisitConditionalBranch(Instruction* instr) {
     case B_cond:
       Format(instr, "b.'CBrn", "'TImmCond");
       break;
+    case BC_cond:
+      Format(instr, "bc.'CBrn", "'TImmCond");
+      break;
     default:
       UNREACHABLE();
   }
@@ -628,6 +631,9 @@ void DisassemblingDecoder::VisitDataProcessing1Source(Instruction* instr) {
     FORMAT(REV, "rev");
     FORMAT(CLZ, "clz");
     FORMAT(CLS, "cls");
+    FORMAT(CTZ, "ctz");
+    FORMAT(CNT, "cnt");
+    FORMAT(ABS, "abs");
 #undef FORMAT
     case REV32_x:
       mnemonic = "rev32";
@@ -3039,6 +3045,24 @@ void DisassemblingDecoder::VisitNEONModifiedImmediate(Instruction* instr) {
   Format(instr, mnemonic, nfd.Substitute(form));
 }
 
+void DisassemblingDecoder::VisitNEONSHA3(Instruction* instr) {
+  const char* mnemonic = "unimplemented";
+  const char* form = "'Vd.%s, 'Vn.%s, 'Vm.%s, 'Va.%s";
+  NEONFormatDecoder nfd(instr);
+
+  switch (instr->Mask(NEONSHA3Mask)) {
+    case NEON_BCAX:
+      mnemonic = "bcax";
+      break;
+    case NEON_EOR3:
+      mnemonic = "eor3";
+      break;
+    default:
+      form = "(NEONSHA3)";
+  }
+  Format(instr, mnemonic, nfd.Substitute(form));
+}
+
 void DisassemblingDecoder::VisitNEONPerm(Instruction* instr) {
   const char* mnemonic = "unimplemented";
   const char* form = "'Vd.%s, 'Vn.%s, 'Vm.%s";
@@ -4523,6 +4547,41 @@ void DisassemblingDecoder::DisassembleNEONPolynomialMul(Instruction* instr) {
   } else {
     mnemonic = "undefined";
   }
+  Format(instr, mnemonic, form);
+}
+
+void DisassemblingDecoder::VisitCpy(Instruction* instr) {
+  const char* mnemonic = "";
+
+  switch (instr->Mask(CpyMask)) {
+    default:
+      UNREACHABLE();
+    case CPYP:
+      mnemonic = "cpyp";
+      break;
+    case CPYM:
+      mnemonic = "cpym";
+      break;
+    case CPYE:
+      mnemonic = "cpye";
+      break;
+  }
+  const char* form = "['Xd]!, ['Xs]!, 'Xn!";
+
+  int d = instr->Rd();
+  int n = instr->Rn();
+  int s = instr->Rs();
+
+  // Aliased registers and sp/zr are disallowed.
+  if ((d == n) || (d == s) || (n == s) || (d == 31) || (n == 31) || (s == 31)) {
+    form = nullptr;
+  }
+
+  // Bits 31 and 30 must be zero.
+  if (instr->Bits(31, 30)) {
+    form = nullptr;
+  }
+
   Format(instr, mnemonic, form);
 }
 

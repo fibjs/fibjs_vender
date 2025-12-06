@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSSegments_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSegments : public P {
   static_assert(
-      std::is_same<JSSegments, D>::value,
+      std::is_same_v<JSSegments, D>,
       "Use this class as direct base for JSSegments.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSSegments.");
 
  public: 
@@ -73,7 +73,7 @@ class TorqueGeneratedJSSegments : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSegments() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSegments, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSegments, DAlias>,
         "class TorqueGeneratedJSSegments should be used as direct base for JSSegments.");
   }
 

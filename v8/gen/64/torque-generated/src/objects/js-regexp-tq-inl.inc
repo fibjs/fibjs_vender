@@ -16,7 +16,7 @@ Tagged<Union<String, Undefined>> TorqueGeneratedJSRegExp<D, P>::source(PtrComprC
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=52&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExp<D, P>::set_source(Tagged<Union<String, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value) || IsUndefined(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value) || IsUndefined(value)));
   WRITE_FIELD(*this, kSourceOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSourceOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Union<Smi, Undefined>> TorqueGeneratedJSRegExp<D, P>::flags(PtrComprCageB
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=53&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExp<D, P>::set_flags(Tagged<Union<Smi, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsSmi(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsSmi(value)));
   WRITE_FIELD(*this, kFlagsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFlagsOffset, value, mode);
 }
@@ -67,7 +67,7 @@ Tagged<JSAny> TorqueGeneratedJSRegExpResult<D, P>::index(PtrComprCageBase cage_b
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=80&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResult<D, P>::set_index(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kIndexOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIndexOffset, value, mode);
 }
@@ -90,7 +90,7 @@ Tagged<JSAny> TorqueGeneratedJSRegExpResult<D, P>::input(PtrComprCageBase cage_b
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=81&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResult<D, P>::set_input(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kInputOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInputOffset, value, mode);
 }
@@ -113,7 +113,7 @@ Tagged<JSAny> TorqueGeneratedJSRegExpResult<D, P>::groups(PtrComprCageBase cage_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=82&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResult<D, P>::set_groups(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kGroupsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kGroupsOffset, value, mode);
 }
@@ -136,7 +136,7 @@ Tagged<Union<FixedArray, Undefined>> TorqueGeneratedJSRegExpResult<D, P>::names(
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=85&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResult<D, P>::set_names(Tagged<Union<FixedArray, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsFixedArray(value)));
   WRITE_FIELD(*this, kNamesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNamesOffset, value, mode);
 }
@@ -159,7 +159,7 @@ Tagged<String> TorqueGeneratedJSRegExpResult<D, P>::regexp_input(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=86&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResult<D, P>::set_regexp_input(Tagged<String> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsString(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsString(value)));
   WRITE_FIELD(*this, kRegexpInputOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kRegexpInputOffset, value, mode);
 }
@@ -200,7 +200,7 @@ Tagged<JSAny> TorqueGeneratedJSRegExpResultWithIndices<D, P>::indices(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=91&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResultWithIndices<D, P>::set_indices(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kIndicesOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIndicesOffset, value, mode);
 }
@@ -228,7 +228,7 @@ Tagged<JSAny> TorqueGeneratedJSRegExpResultIndices<D, P>::groups(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-regexp.tq?l=97&c=3
 template<class D, class P>
 void TorqueGeneratedJSRegExpResultIndices<D, P>::set_groups(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kGroupsOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kGroupsOffset, value, mode);
 }

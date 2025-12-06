@@ -16,9 +16,22 @@ Tagged<Union<ClosureFeedbackCellArray, FeedbackVector, Undefined>> TorqueGenerat
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=6&c=3
 template<class D, class P>
 void TorqueGeneratedFeedbackCell<D, P>::set_value(Tagged<Union<ClosureFeedbackCellArray, FeedbackVector, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsClosureFeedbackCellArray(value) || IsFeedbackVector(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsClosureFeedbackCellArray(value) || IsFeedbackVector(value)));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=7&c=3
+template<class D, class P>
+int32_t TorqueGeneratedFeedbackCell<D, P>::dispatch_handle() const {
+  int32_t value = this->template ReadField<int32_t>(kDispatchHandleOffset);
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=7&c=3
+template<class D, class P>
+void TorqueGeneratedFeedbackCell<D, P>::set_dispatch_handle(int32_t value) {
+  this->template WriteField<int32_t>(kDispatchHandleOffset, value);
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/feedback-cell.tq?l=8&c=3

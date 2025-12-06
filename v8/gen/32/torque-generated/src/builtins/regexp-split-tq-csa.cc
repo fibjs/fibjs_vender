@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/regexp-split-tq-csa.h"
@@ -92,7 +92,7 @@ TF_BUILTIN(RegExpSplit, CodeStubAssembler) {
   USE(parameter1);
   TNode<String> parameter2 = UncheckedParameter<String>(Descriptor::kString);
   USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kLimit);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kLimit);
   USE(parameter3);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -109,7 +109,7 @@ TF_BUILTIN(RegExpSplit, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Undefined_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter3}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter3}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
@@ -129,10 +129,10 @@ TF_BUILTIN(RegExpSplit, CodeStubAssembler) {
     ca_.Branch(tmp4, &block4, std::vector<compiler::Node*>{}, &block5, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp5 = CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpSplit, parameter0, parameter1, parameter2, parameter3); 
+    tmp5 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpSplit, parameter0, parameter1, parameter2, parameter3)); 
     CodeStubAssembler(state_).Return(tmp5);
   }
 
@@ -152,10 +152,10 @@ TF_BUILTIN(RegExpSplit, CodeStubAssembler) {
   }
 
   TNode<Smi> phi_bb7_4;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_4);
-    tmp8 = CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpSplit, parameter0, parameter1, parameter2, phi_bb7_4); 
+    tmp8 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpSplit, parameter0, parameter1, parameter2, phi_bb7_4)); 
     CodeStubAssembler(state_).Return(tmp8);
   }
 
@@ -177,7 +177,7 @@ TF_BUILTIN(RegExpPrototypeSplit, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -186,18 +186,18 @@ TF_BUILTIN(RegExpPrototypeSplit, CodeStubAssembler) {
 
   TNode<JSReceiver> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   TNode<String> tmp3;
   TNode<IntPtrT> tmp4;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   TNode<JSRegExp> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    CodeStubAssembler(state_).ThrowIfNotJSReceiver(TNode<Context>{parameter0}, TNode<Object>{parameter1}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@split");
+    CodeStubAssembler(state_).ThrowIfNotJSReceiver(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, MessageTemplate::kIncompatibleMethodReceiver, "RegExp.prototype.@@split");
     tmp0 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1});
     tmp1 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp2 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp1});
-    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<Object>{tmp2});
+    tmp3 = CodeStubAssembler(state_).ToString_Inline(TNode<Context>{parameter0}, TNode<JSAny>{tmp2});
     tmp4 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp5 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp4});
     compiler::CodeAssemblerLabel label7(&ca_);
@@ -209,17 +209,17 @@ TF_BUILTIN(RegExpPrototypeSplit, CodeStubAssembler) {
     }
   }
 
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpSplit, parameter0, tmp0, tmp3, tmp5); 
+    tmp8 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kRegExpSplit, parameter0, tmp0, tmp3, tmp5)); 
     arguments.PopAndReturn(tmp8);
   }
 
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp9 = ca_.CallBuiltin<Object>(Builtin::kRegExpSplit, parameter0, tmp6, tmp3, tmp5);
+    tmp9 = ca_.CallBuiltin<JSAny>(Builtin::kRegExpSplit, parameter0, tmp6, tmp3, tmp5);
     arguments.PopAndReturn(tmp9);
   }
 }

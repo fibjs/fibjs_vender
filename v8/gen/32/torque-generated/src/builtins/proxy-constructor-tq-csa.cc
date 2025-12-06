@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,11 +68,13 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-constructor-tq-csa.h"
 #include "torque-generated/src/builtins/array-every-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
+#include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/proxy-tq-csa.h"
 
 namespace v8 {
@@ -83,13 +84,13 @@ TF_BUILTIN(ProxyConstructor, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kJSNewTarget);
-USE(parameter2);
-  TNode<Object> parameter3 = UncheckedParameter<Object>(Descriptor::kTarget);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kJSNewTarget);
+  USE(parameter2);
+  TNode<JSAny> parameter3 = UncheckedParameter<JSAny>(Descriptor::kTarget);
   USE(parameter3);
-  TNode<Object> parameter4 = UncheckedParameter<Object>(Descriptor::kHandler);
+  TNode<JSAny> parameter4 = UncheckedParameter<JSAny>(Descriptor::kHandler);
   USE(parameter4);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -106,7 +107,7 @@ USE(parameter2);
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = Undefined_0(state_);
-    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<HeapObject>{tmp0});
+    tmp1 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{parameter2}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0});
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
 
@@ -149,11 +150,13 @@ USE(parameter2);
     ca_.Goto(&block2);
   }
 
-  TNode<JSProxy> tmp6;
+  TNode<Int32T> tmp6;
+  TNode<JSProxy> tmp7;
   if (block7.is_used()) {
     ca_.Bind(&block7);
-    tmp6 = ProxiesCodeStubAssembler(state_).AllocateProxy(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp2}, TNode<JSReceiver>{tmp4});
-    CodeStubAssembler(state_).Return(tmp6);
+    tmp6 = FromConstexpr_int32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp7 = ProxiesCodeStubAssembler(state_).AllocateProxy(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp2}, TNode<JSReceiver>{tmp4}, TNode<Int32T>{tmp6});
+    CodeStubAssembler(state_).Return(tmp7);
   }
 
   if (block2.is_used()) {

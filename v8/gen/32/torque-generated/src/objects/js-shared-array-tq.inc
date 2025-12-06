@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSSharedArray_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSharedArray : public P {
   static_assert(
-      std::is_same<JSSharedArray, D>::value,
+      std::is_same_v<JSSharedArray, D>,
       "Use this class as direct base for JSSharedArray.");
   static_assert(
-      std::is_same<AlwaysSharedSpaceJSObject, P>::value,
+      std::is_same_v<AlwaysSharedSpaceJSObject, P>,
       "Pass in AlwaysSharedSpaceJSObject as second template parameter for TorqueGeneratedJSSharedArray.");
 
  public: 
@@ -35,7 +35,7 @@ class TorqueGeneratedJSSharedArray : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSharedArray() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSharedArray, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSharedArray, DAlias>,
         "class TorqueGeneratedJSSharedArray should be used as direct base for JSSharedArray.");
   }
 

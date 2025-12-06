@@ -7,22 +7,23 @@ V8_EXPORT_PRIVATE bool IsCell_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedCell : public P {
   static_assert(
-      std::is_same<Cell, D>::value,
+      std::is_same_v<Cell, D>,
       "Use this class as direct base for Cell.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedCell.");
 
  public: 
   using Super = P;
   using TorqueGeneratedClass = TorqueGeneratedCell<D,P>;
 
+  // Torque type: MaybeObject
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  inline Tagged<Object> value() const;
+  inline Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> maybe_value() const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  inline Tagged<Object> value(PtrComprCageBase cage_base) const;
+  inline Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> maybe_value(PtrComprCageBase cage_base) const;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  inline void set_value(Tagged<Object> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
+  inline void set_maybe_value(Tagged<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> value, WriteBarrierMode mode = UPDATE_WRITE_BARRIER);
 
   DECL_PRINTER(Cell)
 
@@ -31,15 +32,15 @@ class TorqueGeneratedCell : public P {
   V8_EXPORT_PRIVATE void CellVerify(Isolate* isolate);
 #endif  // VERIFY_HEAP
 
-  static constexpr int kStartOfStrongFieldsOffset = P::kHeaderSize;
+  static constexpr int kStartOfWeakFieldsOffset = P::kHeaderSize;
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=6&c=3
-  static constexpr int kValueOffset = P::kHeaderSize;
-  static constexpr int kValueOffsetEnd = kValueOffset + kTaggedSize - 1;
-  static constexpr int kEndOfStrongFieldsOffset = kValueOffsetEnd + 1;
-  static constexpr int kStartOfWeakFieldsOffset = kValueOffsetEnd + 1;
-  static constexpr int kEndOfWeakFieldsOffset = kValueOffsetEnd + 1;
-  static constexpr int kHeaderSize = kValueOffsetEnd + 1;
-  static constexpr int kSize = kValueOffsetEnd + 1;
+  static constexpr int kMaybeValueOffset = P::kHeaderSize;
+  static constexpr int kMaybeValueOffsetEnd = kMaybeValueOffset + kTaggedSize - 1;
+  static constexpr int kEndOfWeakFieldsOffset = kMaybeValueOffsetEnd + 1;
+  static constexpr int kStartOfStrongFieldsOffset = kMaybeValueOffsetEnd + 1;
+  static constexpr int kEndOfStrongFieldsOffset = kMaybeValueOffsetEnd + 1;
+  static constexpr int kHeaderSize = kMaybeValueOffsetEnd + 1;
+  static constexpr int kSize = kMaybeValueOffsetEnd + 1;
 
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/cell.tq?l=5&c=1
   V8_INLINE static constexpr int32_t SizeFor() {
@@ -58,7 +59,7 @@ class TorqueGeneratedCell : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedCell() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedCell, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedCell, DAlias>,
         "class TorqueGeneratedCell should be used as direct base for Cell.");
   }
 

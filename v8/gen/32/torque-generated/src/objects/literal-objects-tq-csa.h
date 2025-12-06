@@ -19,7 +19,7 @@ TNode<RegExpBoilerplateDescription> Cast_RegExpBoilerplateDescription_0(compiler
 TNode<ClassBoilerplate> Cast_ClassBoilerplate_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_obj, compiler::CodeAssemblerLabel* label_CastError);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=7&c=9
-TNode<Smi> LoadObjectBoilerplateDescriptionCapacity_0(compiler::CodeAssemblerState* state_, TNode<ObjectBoilerplateDescription> p_o);
+TNode<Smi> LoadObjectBoilerplateDescriptionLength_0(compiler::CodeAssemblerState* state_, TNode<ObjectBoilerplateDescription> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/literal-objects.tq?l=8&c=3
 TNode<Smi> LoadObjectBoilerplateDescriptionBackingStoreSize_0(compiler::CodeAssemblerState* state_, TNode<ObjectBoilerplateDescription> p_o);

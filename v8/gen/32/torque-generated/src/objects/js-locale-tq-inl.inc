@@ -16,7 +16,7 @@ Tagged<Foreign> TorqueGeneratedJSLocale<D, P>::icu_locale(PtrComprCageBase cage_
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-locale.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedJSLocale<D, P>::set_icu_locale(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kIcuLocaleOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kIcuLocaleOffset, value, mode);
 }

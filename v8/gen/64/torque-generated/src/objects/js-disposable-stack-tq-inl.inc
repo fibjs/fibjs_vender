@@ -1,11 +1,11 @@
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=30&c=3
 template<class D, class P>
 Tagged<FixedArray> TorqueGeneratedJSDisposableStackBase<D, P>::stack() const {
   PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
   return TorqueGeneratedJSDisposableStackBase::stack(cage_base);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=30&c=3
 template<class D, class P>
 Tagged<FixedArray> TorqueGeneratedJSDisposableStackBase<D, P>::stack(PtrComprCageBase cage_base) const {
   Tagged<FixedArray> value = TaggedField<Tagged<FixedArray>>::load(cage_base, *this, kStackOffset);
@@ -13,25 +13,72 @@ Tagged<FixedArray> TorqueGeneratedJSDisposableStackBase<D, P>::stack(PtrComprCag
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=27&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=30&c=3
 template<class D, class P>
 void TorqueGeneratedJSDisposableStackBase<D, P>::set_stack(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kStackOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kStackOffset, value, mode);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=28&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=3
 template<class D, class P>
 int TorqueGeneratedJSDisposableStackBase<D, P>::status() const {
   int value = TaggedField<Smi>::load(*this, kStatusOffset).value();
   return value;
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=28&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=31&c=3
 template<class D, class P>
 void TorqueGeneratedJSDisposableStackBase<D, P>::set_status(int value) {
-  WRITE_FIELD(*this, kStatusOffset, Smi::FromInt(value));
+  // bitfield struct DisposableStackStatus
+  WRITE_FIELD(*this, kStatusOffset, Smi::From31BitPattern(value));
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=32&c=3
+template<class D, class P>
+Tagged<Object> TorqueGeneratedJSDisposableStackBase<D, P>::error() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSDisposableStackBase::error(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=32&c=3
+template<class D, class P>
+Tagged<Object> TorqueGeneratedJSDisposableStackBase<D, P>::error(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kErrorOffset);
+  DCHECK(IsSmi(value) || IsHeapObject(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=32&c=3
+template<class D, class P>
+void TorqueGeneratedJSDisposableStackBase<D, P>::set_error(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
+  WRITE_FIELD(*this, kErrorOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kErrorOffset, value, mode);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=3
+template<class D, class P>
+Tagged<Object> TorqueGeneratedJSDisposableStackBase<D, P>::error_message() const {
+  PtrComprCageBase cage_base = GetPtrComprCageBase(*this);
+  return TorqueGeneratedJSDisposableStackBase::error_message(cage_base);
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=3
+template<class D, class P>
+Tagged<Object> TorqueGeneratedJSDisposableStackBase<D, P>::error_message(PtrComprCageBase cage_base) const {
+  Tagged<Object> value = TaggedField<Tagged<Object>>::load(cage_base, *this, kErrorMessageOffset);
+  DCHECK(IsSmi(value) || IsHeapObject(value));
+  return value;
+}
+
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-disposable-stack.tq?l=33&c=3
+template<class D, class P>
+void TorqueGeneratedJSDisposableStackBase<D, P>::set_error_message(Tagged<Object> value, WriteBarrierMode mode) {
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
+  WRITE_FIELD(*this, kErrorMessageOffset, value);
+  CONDITIONAL_WRITE_BARRIER(*this, kErrorMessageOffset, value, mode);
 }
 
 template<class D, class P>

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/frames-tq-csa.h"
@@ -259,7 +259,7 @@ TNode<IntPtrT> LoadArgCFromFrame_0(compiler::CodeAssemblerState* state_, TNode<R
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=79&c=1
-TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+TNode<Union<Context, Smi>> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -267,7 +267,7 @@ TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TN
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<Context, Smi>> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
@@ -310,18 +310,18 @@ TNode<Object> Cast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TN
     ca_.Goto(&block2, tmp2);
   }
 
-  TNode<Object> phi_bb2_2;
+  TNode<Union<Context, Smi>> phi_bb2_2;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_2);
     ca_.Goto(&block11);
   }
 
     ca_.Bind(&block11);
-  return TNode<Object>{phi_bb2_2};
+  return TNode<Union<Context, Smi>>{phi_bb2_2};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=97&c=1
-TNode<Object> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_f) {
+TNode<Union<Context, Smi>> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<RawPtrT> p_f) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -329,7 +329,7 @@ TNode<Object> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* st
     ca_.Goto(&block0);
 
   TNode<Object> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<Context, Smi>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = LoadObjectFromFrame_0(state_, TNode<RawPtrT>{p_f}, StandardFrameConstants::kContextOrFrameTypeOffset);
@@ -338,7 +338,7 @@ TNode<Object> LoadContextOrFrameTypeFromFrame_0(compiler::CodeAssemblerState* st
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<Union<Context, Smi>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=103&c=1
@@ -352,7 +352,7 @@ TNode<BoolT> FrameTypeEquals_0(compiler::CodeAssemblerState* state_, TNode<Smi> 
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).TaggedEqual(TNode<MaybeObject>{p_f1}, TNode<MaybeObject>{p_f2});
+    tmp0 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_f1}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_f2});
     ca_.Goto(&block2);
   }
 
@@ -373,7 +373,7 @@ TNode<RawPtrT> Cast_FrameWithArguments_0(compiler::CodeAssemblerState* state_, T
   compiler::CodeAssemblerParameterizedLabel<> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<Context, Smi>> tmp0;
   TNode<HeapObject> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -442,22 +442,22 @@ TNode<JSFunction> LoadTargetFromFrame_0(compiler::CodeAssemblerState* state_) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=99&c=10
-TNode<Object> UnsafeCast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+TNode<Union<Context, Smi>> UnsafeCast_ContextOrFrameType_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<Context, Smi>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = (TNode<Object>{p_o});
+    tmp0 = TORQUE_CAST(TNode<Object>{p_o});
     ca_.Goto(&block6);
   }
 
     ca_.Bind(&block6);
-  return TNode<Object>{tmp0};
+  return TNode<Union<Context, Smi>>{tmp0};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/frames.tq?l=112&c=7

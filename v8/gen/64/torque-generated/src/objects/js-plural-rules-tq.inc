@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSPluralRules_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSPluralRules : public P {
   static_assert(
-      std::is_same<JSPluralRules, D>::value,
+      std::is_same_v<JSPluralRules, D>,
       "Use this class as direct base for JSPluralRules.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSPluralRules.");
 
  public: 
@@ -73,7 +73,7 @@ class TorqueGeneratedJSPluralRules : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSPluralRules() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSPluralRules, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSPluralRules, DAlias>,
         "class TorqueGeneratedJSPluralRules should be used as direct base for JSPluralRules.");
   }
 

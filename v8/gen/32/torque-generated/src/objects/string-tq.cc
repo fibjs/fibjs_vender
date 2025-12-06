@@ -5,7 +5,7 @@ namespace internal {
 
 // Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=7&c=1
 class TorqueGeneratedStringAsserts {
-  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=47&c=9
+  // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=51&c=9
   static constexpr int kLengthOffset = sizeof(Name);
   static constexpr int kLengthOffsetEnd = kLengthOffset + kInt32Size - 1;
   static constexpr int kStartOfWeakFieldsOffset = kLengthOffsetEnd + 1;
@@ -18,7 +18,7 @@ class TorqueGeneratedStringAsserts {
                 "Value of String::kLengthOffset defined in Torque and offset of field String::length in C++ do not match");
 };
 
-// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=66&c=1
+// Definition https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=70&c=1
 class TorqueGeneratedConsStringAsserts {
   static constexpr int kStartOfStrongFieldsOffset = sizeof(String);
   // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/string.tq?l=78&c=3

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-repeat-tq-csa.h"
@@ -196,9 +196,9 @@ TF_BUILTIN(StringPrototypeRepeat, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kCount);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kCount);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -231,8 +231,8 @@ TF_BUILTIN(StringPrototypeRepeat, CodeStubAssembler) {
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, kBuiltinName_0(state_));
-    tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
-    tmp2 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp0});
+    tmp2 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     compiler::CodeAssemblerLabel label4(&ca_);
     tmp3 = Cast_Smi_0(state_, TNode<Object>{tmp2}, &label4);
     ca_.Goto(&block9);
@@ -289,7 +289,7 @@ TF_BUILTIN(StringPrototypeRepeat, CodeStubAssembler) {
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp13 = CodeStubAssembler(state_).LoadStringLengthAsWord32(TNode<String>{tmp1});
-    tmp14 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp14 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp15 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp13}, TNode<Uint32T>{tmp14});
     ca_.Goto(&block17, tmp15);
   }
@@ -359,7 +359,7 @@ TF_BUILTIN(StringPrototypeRepeat, CodeStubAssembler) {
   if (block25.is_used()) {
     ca_.Bind(&block25);
     tmp22 = CodeStubAssembler(state_).LoadStringLengthAsWord32(TNode<String>{tmp1});
-    tmp23 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
+    tmp23 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp24 = CodeStubAssembler(state_).Word32Equal(TNode<Uint32T>{tmp22}, TNode<Uint32T>{tmp23});
     ca_.Branch(tmp24, &block29, std::vector<compiler::Node*>{}, &block30, std::vector<compiler::Node*>{});
   }

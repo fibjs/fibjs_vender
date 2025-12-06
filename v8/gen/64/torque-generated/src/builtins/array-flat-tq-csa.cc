@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-flat-tq-csa.h"
@@ -85,7 +85,7 @@ namespace v8 {
 namespace internal {
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-flat.tq?l=7&c=1
-TNode<Boolean> ArrayIsArray_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_element) {
+TNode<Boolean> ArrayIsArray_Inline_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_element) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -102,7 +102,7 @@ TNode<Boolean> ArrayIsArray_Inline_0(compiler::CodeAssemblerState* state_, TNode
   TNode<BoolT> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = Is_JSArray_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{p_element});
+    tmp0 = Is_JSArray_JSAny_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_element});
     ca_.Branch(tmp0, &block2, std::vector<compiler::Node*>{}, &block3, std::vector<compiler::Node*>{});
   }
 
@@ -116,15 +116,15 @@ TNode<Boolean> ArrayIsArray_Inline_0(compiler::CodeAssemblerState* state_, TNode
   TNode<BoolT> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = Is_JSProxy_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{p_element});
+    tmp2 = Is_JSProxy_JSAny_0(state_, TNode<Context>{p_context}, TNode<JSAny>{p_element});
     ca_.Branch(tmp2, &block5, std::vector<compiler::Node*>{}, &block6, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   TNode<Boolean> tmp4;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp3 = CodeStubAssembler(state_).CallRuntime(Runtime::kArrayIsArray, p_context, p_element); 
+    tmp3 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kArrayIsArray, p_context, p_element)); 
     compiler::CodeAssemblerLabel label5(&ca_);
     tmp4 = Cast_Boolean_0(state_, TNode<Object>{tmp3}, &label5);
     ca_.Goto(&block10);
@@ -163,7 +163,7 @@ TNode<Boolean> ArrayIsArray_Inline_0(compiler::CodeAssemblerState* state_, TNode
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-flat.tq?l=19&c=1
-TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_target, TNode<JSReceiver> p_source, TNode<Number> p_sourceLength, TNode<Number> p_start, TNode<Smi> p_depth, bool p_hasMapper, TNode<Object> p_mapfn, TNode<Object> p_thisArgs, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_1) {
+TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_target, TNode<JSReceiver> p_source, TNode<Number> p_sourceLength, TNode<Number> p_start, TNode<Smi> p_depth, bool p_hasMapper, TNode<JSAny> p_mapfn, TNode<JSAny> p_thisArgs, compiler::CodeAssemblerLabel* label_Bailout, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_0, compiler::TypedCodeAssemblerVariable<Number>* label_Bailout_parameter_1) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -184,11 +184,11 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   compiler::CodeAssemblerParameterizedLabel<Number, Smi, Smi, Smi> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi, Smi, Smi, Smi> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi, Smi, Smi, Smi> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Smi, Smi, Smi, Object> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Smi, Smi, Smi, JSAny> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi> block35(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi> block36(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Smi, Object> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Smi, JSAny> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Smi> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -268,7 +268,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block11, &phi_bb11_8, &phi_bb11_9, &phi_bb11_12);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp12 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp3, tmp11});
-    tmp13 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp12}, TNode<HeapObject>{tmp5});
+    tmp13 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp12}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5});
     ca_.Branch(tmp13, &block18, std::vector<compiler::Node*>{phi_bb11_8, phi_bb11_9, phi_bb11_12}, &block19, std::vector<compiler::Node*>{phi_bb11_8, phi_bb11_9, phi_bb11_12});
   }
 
@@ -338,7 +338,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Smi> phi_bb28_9;
   TNode<Smi> phi_bb28_18;
   TNode<Smi> phi_bb28_21;
-  TNode<Object> tmp18;
+  TNode<JSAny> tmp18;
   if (block28.is_used()) {
     ca_.Bind(&block28, &phi_bb28_8, &phi_bb28_9, &phi_bb28_18, &phi_bb28_21);
     compiler::CodeAssemblerLabel label19(&ca_);
@@ -374,7 +374,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Smi> phi_bb29_9;
   TNode<Smi> phi_bb29_18;
   TNode<Smi> phi_bb29_21;
-  TNode<Object> tmp20;
+  TNode<JSAny> tmp20;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_8, &phi_bb29_9, &phi_bb29_18, &phi_bb29_21);
     compiler::CodeAssemblerLabel label21(&ca_);
@@ -410,7 +410,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Smi> phi_bb27_9;
   TNode<Smi> phi_bb27_18;
   TNode<Smi> phi_bb27_21;
-  TNode<Object> phi_bb27_22;
+  TNode<JSAny> phi_bb27_22;
   if (block27.is_used()) {
     ca_.Bind(&block27, &phi_bb27_8, &phi_bb27_9, &phi_bb27_18, &phi_bb27_21, &phi_bb27_22);
     if ((p_hasMapper)) {
@@ -429,10 +429,10 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
 
   TNode<Number> phi_bb35_8;
   TNode<Smi> phi_bb35_9;
-  TNode<Object> tmp22;
+  TNode<JSAny> tmp22;
   if (block35.is_used()) {
     ca_.Bind(&block35, &phi_bb35_8, &phi_bb35_9);
-    tmp22 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{p_mapfn}, TNode<Object>{p_thisArgs}, TNode<Object>{phi_bb27_22}, TNode<Object>{phi_bb35_9}, TNode<Object>{p_source});
+    tmp22 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{p_mapfn}, TNode<JSAny>{p_thisArgs}, TNode<JSAny>{phi_bb27_22}, TNode<JSAny>{phi_bb35_9}, TNode<JSAny>{p_source});
     ca_.Goto(&block37, phi_bb35_8, phi_bb35_9, tmp22);
   }
 
@@ -445,7 +445,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
 
   TNode<Number> phi_bb37_8;
   TNode<Smi> phi_bb37_9;
-  TNode<Object> phi_bb37_18;
+  TNode<JSAny> phi_bb37_18;
   TNode<False> tmp23;
   TNode<Number> tmp24;
   TNode<Smi> tmp25;
@@ -478,7 +478,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   TNode<BoolT> tmp29;
   if (block43.is_used()) {
     ca_.Bind(&block43, &phi_bb43_8, &phi_bb43_9);
-    tmp29 = Is_JSProxy_JSAny_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb37_18});
+    tmp29 = Is_JSProxy_JSAny_0(state_, TNode<Context>{p_context}, TNode<JSAny>{phi_bb37_18});
     ca_.Branch(tmp29, &block44, std::vector<compiler::Node*>{phi_bb43_8, phi_bb43_9}, &block45, std::vector<compiler::Node*>{phi_bb43_8, phi_bb43_9, tmp23});
   }
 
@@ -497,11 +497,11 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
 
   TNode<Number> phi_bb44_8;
   TNode<Smi> phi_bb44_9;
-  TNode<Object> tmp33;
+  TNode<JSAny> tmp33;
   TNode<Boolean> tmp34;
   if (block44.is_used()) {
     ca_.Bind(&block44, &phi_bb44_8, &phi_bb44_9);
-    tmp33 = CodeStubAssembler(state_).CallRuntime(Runtime::kArrayIsArray, p_context, phi_bb37_18); 
+    tmp33 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kArrayIsArray, p_context, phi_bb37_18)); 
     compiler::CodeAssemblerLabel label35(&ca_);
     tmp34 = Cast_Boolean_0(state_, TNode<Object>{tmp33}, &label35);
     ca_.Goto(&block48, phi_bb44_8, phi_bb44_9);
@@ -533,7 +533,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   if (block45.is_used()) {
     ca_.Bind(&block45, &phi_bb45_8, &phi_bb45_9, &phi_bb45_19);
     tmp36 = True_0(state_);
-    tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{phi_bb45_19}, TNode<HeapObject>{tmp36});
+    tmp37 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{phi_bb45_19}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp36});
     ca_.Branch(tmp37, &block50, std::vector<compiler::Node*>{phi_bb45_8, phi_bb45_9, phi_bb45_19}, &block51, std::vector<compiler::Node*>{phi_bb45_8, phi_bb45_9, phi_bb45_19, tmp24});
   }
 
@@ -543,7 +543,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Number> tmp38;
   if (block50.is_used()) {
     ca_.Bind(&block50, &phi_bb50_8, &phi_bb50_9, &phi_bb50_19);
-    tmp38 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb37_18});
+    tmp38 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<JSAny>{phi_bb37_18});
     ca_.Goto(&block51, phi_bb50_8, phi_bb50_9, phi_bb50_19, tmp38);
   }
 
@@ -574,7 +574,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
   if (block39.is_used()) {
     ca_.Bind(&block39, &phi_bb39_8, &phi_bb39_9, &phi_bb39_19, &phi_bb39_20);
     tmp39 = True_0(state_);
-    tmp40 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{phi_bb39_19}, TNode<HeapObject>{tmp39});
+    tmp40 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{phi_bb39_19}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp39});
     ca_.Branch(tmp40, &block52, std::vector<compiler::Node*>{phi_bb39_8, phi_bb39_9, phi_bb39_19, phi_bb39_20}, &block53, std::vector<compiler::Node*>{phi_bb39_8, phi_bb39_9, phi_bb39_19, phi_bb39_20});
   }
 
@@ -720,7 +720,7 @@ TNode<Number> FlattenIntoArrayFast_0(compiler::CodeAssemblerState* state_, TNode
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-flat.tq?l=105&c=1
-TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_target, TNode<JSReceiver> p_source, TNode<Number> p_sourceIndex, TNode<Number> p_sourceLength, TNode<Number> p_start, TNode<Smi> p_depth, bool p_hasMapper, TNode<Object> p_mapfn, TNode<Object> p_thisArgs) {
+TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_target, TNode<JSReceiver> p_source, TNode<Number> p_sourceIndex, TNode<Number> p_sourceLength, TNode<Number> p_start, TNode<Smi> p_depth, bool p_hasMapper, TNode<JSAny> p_mapfn, TNode<JSAny> p_thisArgs) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -729,7 +729,7 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block7(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block8(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Number, Number, Object> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Number, Number, JSAny> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number, Boolean> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<Number, Number> block12(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -767,16 +767,16 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Bind(&block2, &phi_bb2_9, &phi_bb2_10);
     tmp1 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, p_source, phi_bb2_10);
     tmp2 = True_0(state_);
-    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block5, std::vector<compiler::Node*>{phi_bb2_9, phi_bb2_10}, &block6, std::vector<compiler::Node*>{phi_bb2_9, phi_bb2_10});
   }
 
   TNode<Number> phi_bb5_9;
   TNode<Number> phi_bb5_10;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block5.is_used()) {
     ca_.Bind(&block5, &phi_bb5_9, &phi_bb5_10);
-    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{p_source}, TNode<Object>{phi_bb5_10});
+    tmp4 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{p_source}, TNode<JSAny>{phi_bb5_10});
     if ((p_hasMapper)) {
       ca_.Goto(&block7, phi_bb5_9, phi_bb5_10);
     } else {
@@ -786,10 +786,10 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
 
   TNode<Number> phi_bb7_9;
   TNode<Number> phi_bb7_10;
-  TNode<Object> tmp5;
+  TNode<JSAny> tmp5;
   if (block7.is_used()) {
     ca_.Bind(&block7, &phi_bb7_9, &phi_bb7_10);
-    tmp5 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<Object>{p_mapfn}, TNode<Object>{p_thisArgs}, TNode<Object>{tmp4}, TNode<Object>{phi_bb7_10}, TNode<Object>{p_source});
+    tmp5 = CodeStubAssembler(state_).Call(TNode<Context>{p_context}, TNode<JSAny>{p_mapfn}, TNode<JSAny>{p_thisArgs}, TNode<JSAny>{tmp4}, TNode<JSAny>{phi_bb7_10}, TNode<JSAny>{p_source});
     ca_.Goto(&block9, phi_bb7_9, phi_bb7_10, tmp5);
   }
 
@@ -802,7 +802,7 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
 
   TNode<Number> phi_bb9_9;
   TNode<Number> phi_bb9_10;
-  TNode<Object> phi_bb9_12;
+  TNode<JSAny> phi_bb9_12;
   TNode<False> tmp6;
   TNode<Smi> tmp7;
   TNode<BoolT> tmp8;
@@ -819,7 +819,7 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
   TNode<Boolean> tmp9;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_9, &phi_bb10_10);
-    tmp9 = ArrayIsArray_Inline_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb9_12});
+    tmp9 = ArrayIsArray_Inline_0(state_, TNode<Context>{p_context}, TNode<JSAny>{phi_bb9_12});
     ca_.Goto(&block11, phi_bb10_9, phi_bb10_10, tmp9);
   }
 
@@ -831,7 +831,7 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
   if (block11.is_used()) {
     ca_.Bind(&block11, &phi_bb11_9, &phi_bb11_10, &phi_bb11_13);
     tmp10 = True_0(state_);
-    tmp11 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{phi_bb11_13}, TNode<HeapObject>{tmp10});
+    tmp11 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{phi_bb11_13}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp10});
     ca_.Branch(tmp11, &block12, std::vector<compiler::Node*>{phi_bb11_9, phi_bb11_10}, &block13, std::vector<compiler::Node*>{phi_bb11_9, phi_bb11_10});
   }
 
@@ -841,7 +841,7 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
   TNode<JSReceiver> tmp13;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_9, &phi_bb12_10);
-    tmp12 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb9_12});
+    tmp12 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<JSAny>{phi_bb9_12});
     compiler::CodeAssemblerLabel label14(&ca_);
     tmp13 = Cast_JSReceiver_1(state_, TNode<Context>{p_context}, TNode<Object>{phi_bb9_12}, &label14);
     ca_.Goto(&block17, phi_bb12_9, phi_bb12_10);
@@ -933,7 +933,7 @@ TNode<Number> FlattenIntoArraySlow_0(compiler::CodeAssemblerState* state_, TNode
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-flat.tq?l=167&c=1
-TNode<Number> FlattenIntoArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_target, TNode<JSReceiver> p_source, TNode<Number> p_sourceLength, TNode<Number> p_start, TNode<Smi> p_depth, bool p_hasMapper, TNode<Object> p_mapfn, TNode<Object> p_thisArgs) {
+TNode<Number> FlattenIntoArray_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSReceiver> p_target, TNode<JSReceiver> p_source, TNode<Number> p_sourceLength, TNode<Number> p_start, TNode<Smi> p_depth, bool p_hasMapper, TNode<JSAny> p_mapfn, TNode<JSAny> p_thisArgs) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -949,7 +949,7 @@ TNode<Number> FlattenIntoArray_0(compiler::CodeAssemblerState* state_, TNode<Con
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = FlattenIntoArrayFast_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_target}, TNode<JSReceiver>{p_source}, TNode<Number>{p_sourceLength}, TNode<Number>{p_start}, TNode<Smi>{p_depth}, p_hasMapper, TNode<Object>{p_mapfn}, TNode<Object>{p_thisArgs}, &label1, &tmp2, &tmp3);
+    tmp0 = FlattenIntoArrayFast_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_target}, TNode<JSReceiver>{p_source}, TNode<Number>{p_sourceLength}, TNode<Number>{p_start}, TNode<Smi>{p_depth}, p_hasMapper, TNode<JSAny>{p_mapfn}, TNode<JSAny>{p_thisArgs}, &label1, &tmp2, &tmp3);
     ca_.Goto(&block4);
     if (label1.is_used()) {
       ca_.Bind(&label1);
@@ -960,7 +960,7 @@ TNode<Number> FlattenIntoArray_0(compiler::CodeAssemblerState* state_, TNode<Con
   TNode<Number> tmp4;
   if (block5.is_used()) {
     ca_.Bind(&block5);
-    tmp4 = FlattenIntoArraySlow_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_target}, TNode<JSReceiver>{p_source}, TNode<Number>{tmp3.value()}, TNode<Number>{p_sourceLength}, TNode<Number>{tmp2.value()}, TNode<Smi>{p_depth}, p_hasMapper, TNode<Object>{p_mapfn}, TNode<Object>{p_thisArgs});
+    tmp4 = FlattenIntoArraySlow_0(state_, TNode<Context>{p_context}, TNode<JSReceiver>{p_target}, TNode<JSReceiver>{p_source}, TNode<Number>{tmp3.value()}, TNode<Number>{p_sourceLength}, TNode<Number>{tmp2.value()}, TNode<Smi>{p_depth}, p_hasMapper, TNode<JSAny>{p_mapfn}, TNode<JSAny>{p_thisArgs});
     ca_.Goto(&block1, tmp4);
   }
 
@@ -1004,7 +1004,7 @@ TF_BUILTIN(FlattenIntoArrayWithoutMapFn, CodeStubAssembler) {
     CodeStubAssembler(state_).PerformStackCheck(TNode<Context>{parameter0});
     tmp0 = Undefined_0(state_);
     tmp1 = Undefined_0(state_);
-    tmp2 = FlattenIntoArray_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, TNode<JSReceiver>{parameter2}, TNode<Number>{parameter3}, TNode<Number>{parameter4}, TNode<Smi>{parameter5}, false, TNode<Object>{tmp0}, TNode<Object>{tmp1});
+    tmp2 = FlattenIntoArray_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, TNode<JSReceiver>{parameter2}, TNode<Number>{parameter3}, TNode<Number>{parameter4}, TNode<Smi>{parameter5}, false, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp1});
     CodeStubAssembler(state_).Return(tmp2);
   }
 }
@@ -1023,9 +1023,9 @@ TF_BUILTIN(FlattenIntoArrayWithMapFn, CodeStubAssembler) {
   USE(parameter4);
   TNode<Smi> parameter5 = UncheckedParameter<Smi>(Descriptor::kDepth);
   USE(parameter5);
-  TNode<Object> parameter6 = UncheckedParameter<Object>(Descriptor::kMapfn);
+  TNode<JSAny> parameter6 = UncheckedParameter<JSAny>(Descriptor::kMapfn);
   USE(parameter6);
-  TNode<Object> parameter7 = UncheckedParameter<Object>(Descriptor::kThisArgs);
+  TNode<JSAny> parameter7 = UncheckedParameter<JSAny>(Descriptor::kThisArgs);
   USE(parameter7);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
@@ -1033,7 +1033,7 @@ TF_BUILTIN(FlattenIntoArrayWithMapFn, CodeStubAssembler) {
   TNode<Number> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FlattenIntoArray_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, TNode<JSReceiver>{parameter2}, TNode<Number>{parameter3}, TNode<Number>{parameter4}, TNode<Smi>{parameter5}, true, TNode<Object>{parameter6}, TNode<Object>{parameter7});
+    tmp0 = FlattenIntoArray_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{parameter1}, TNode<JSReceiver>{parameter2}, TNode<Number>{parameter3}, TNode<Number>{parameter4}, TNode<Smi>{parameter5}, true, TNode<JSAny>{parameter6}, TNode<JSAny>{parameter7});
     CodeStubAssembler(state_).Return(tmp0);
   }
 }
@@ -1047,7 +1047,7 @@ TF_BUILTIN(ArrayPrototypeFlat, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1064,29 +1064,29 @@ TF_BUILTIN(ArrayPrototypeFlat, CodeStubAssembler) {
   TNode<Number> tmp1;
   TNode<Number> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     tmp2 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp4 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp3});
     tmp5 = Undefined_0(state_);
-    tmp6 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp4}, TNode<HeapObject>{tmp5});
+    tmp6 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5});
     ca_.Branch(tmp6, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{tmp2});
   }
 
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<JSAny> tmp8;
   TNode<Number> tmp9;
   if (block1.is_used()) {
     ca_.Bind(&block1);
     tmp7 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp8 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp7});
-    tmp9 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp8});
+    tmp9 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp8});
     ca_.Goto(&block2, tmp9);
   }
 
@@ -1151,7 +1151,7 @@ TF_BUILTIN(ArrayPrototypeFlat, CodeStubAssembler) {
   if (block3.is_used()) {
     ca_.Bind(&block3, &phi_bb3_9);
     tmp19 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp20 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Number>{tmp19});
+    tmp20 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{parameter0}, TNode<JSAny>{tmp0}, TNode<Number>{tmp19});
     tmp21 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp22 = ca_.CallBuiltin<Number>(Builtin::kFlattenIntoArrayWithoutMapFn, parameter0, tmp20, tmp0, tmp1, tmp21, phi_bb3_9);
     arguments.PopAndReturn(tmp20);
@@ -1167,7 +1167,7 @@ TF_BUILTIN(ArrayPrototypeFlatMap, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1177,12 +1177,12 @@ TF_BUILTIN(ArrayPrototypeFlatMap, CodeStubAssembler) {
   TNode<JSReceiver> tmp0;
   TNode<Number> tmp1;
   TNode<IntPtrT> tmp2;
-  TNode<Object> tmp3;
-  TNode<JSReceiver> tmp4;
+  TNode<JSAny> tmp3;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
     tmp2 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp3 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp2});
     compiler::CodeAssemblerLabel label5(&ca_);
@@ -1195,7 +1195,7 @@ TF_BUILTIN(ArrayPrototypeFlatMap, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp6 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
@@ -1205,7 +1205,7 @@ TF_BUILTIN(ArrayPrototypeFlatMap, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<JSAny> tmp9;
   TNode<Number> tmp10;
   TNode<JSReceiver> tmp11;
   TNode<Number> tmp12;
@@ -1216,7 +1216,7 @@ TF_BUILTIN(ArrayPrototypeFlatMap, CodeStubAssembler) {
     tmp8 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp9 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp8});
     tmp10 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
-    tmp11 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Number>{tmp10});
+    tmp11 = CodeStubAssembler(state_).ArraySpeciesCreate(TNode<Context>{parameter0}, TNode<JSAny>{tmp0}, TNode<Number>{tmp10});
     tmp12 = FromConstexpr_Number_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp13 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp14 = ca_.CallBuiltin<Number>(Builtin::kFlattenIntoArrayWithMapFn, parameter0, tmp11, tmp0, tmp1, tmp12, tmp13, tmp4, tmp9);
@@ -1225,7 +1225,7 @@ TF_BUILTIN(ArrayPrototypeFlatMap, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-flat.tq?l=9&c=7
-TNode<BoolT> Is_JSArray_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+TNode<BoolT> Is_JSArray_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1272,7 +1272,7 @@ TNode<BoolT> Is_JSArray_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Cont
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-flat.tq?l=11&c=14
-TNode<BoolT> Is_JSProxy_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_o) {
+TNode<BoolT> Is_JSProxy_JSAny_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

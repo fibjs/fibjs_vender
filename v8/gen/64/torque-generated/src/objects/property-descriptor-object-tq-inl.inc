@@ -8,7 +8,8 @@ int TorqueGeneratedPropertyDescriptorObject<D, P>::flags() const {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=47&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_flags(int value) {
-  WRITE_FIELD(*this, kFlagsOffset, Smi::FromInt(value));
+  // bitfield struct PropertyDescriptorObjectFlags
+  WRITE_FIELD(*this, kFlagsOffset, Smi::From31BitPattern(value));
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
@@ -29,7 +30,7 @@ Tagged<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, S
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=48&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_value(Tagged<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsTheHole(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsTheHole(value)));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
@@ -52,7 +53,7 @@ Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=49&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_get(Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsTheHole(value) || IsFunctionTemplateInfo(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsTheHole(value) || IsFunctionTemplateInfo(value)));
   WRITE_FIELD(*this, kGetOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kGetOffset, value, mode);
 }
@@ -75,7 +76,7 @@ Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/property-descriptor-object.tq?l=50&c=3
 template<class D, class P>
 void TorqueGeneratedPropertyDescriptorObject<D, P>::set_set(Tagged<Union<BigInt, Boolean, FunctionTemplateInfo, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsTheHole(value) || IsFunctionTemplateInfo(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value) || IsTheHole(value) || IsFunctionTemplateInfo(value)));
   WRITE_FIELD(*this, kSetOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kSetOffset, value, mode);
 }

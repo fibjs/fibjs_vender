@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-unshift-tq-csa.h"
@@ -84,8 +84,8 @@
 namespace v8 {
 namespace internal {
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-unshift.tq?l=8&c=1
-TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_receiver, TorqueStructArguments p_arguments) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/array-unshift.tq?l=11&c=1
+TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_receiver, TorqueStructArguments p_arguments) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -112,8 +112,8 @@ TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<BoolT> tmp4;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{p_context}, TNode<Object>{p_receiver});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<Object>{tmp0});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{p_context}, TNode<JSAny>{p_receiver});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{p_context}, TNode<JSAny>{tmp0});
     tmp2 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{p_arguments.length});
     tmp3 = FromConstexpr_Smi_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp4 = CodeStubAssembler(state_).SmiGreaterThan(TNode<Smi>{tmp2}, TNode<Smi>{tmp3});
@@ -169,17 +169,17 @@ TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<
     tmp14 = CodeStubAssembler(state_).NumberSub(TNode<Number>{tmp12}, TNode<Number>{tmp13});
     tmp15 = ca_.CallBuiltin<Boolean>(Builtin::kHasProperty, p_context, tmp0, tmp11);
     tmp16 = True_0(state_);
-    tmp17 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp15}, TNode<HeapObject>{tmp16});
+    tmp17 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp16});
     ca_.Branch(tmp17, &block9, std::vector<compiler::Node*>{phi_bb6_9}, &block10, std::vector<compiler::Node*>{phi_bb6_9});
   }
 
   TNode<Number> phi_bb9_9;
-  TNode<Object> tmp18;
-  TNode<Object> tmp19;
+  TNode<JSAny> tmp18;
+  TNode<JSAny> tmp19;
   if (block9.is_used()) {
     ca_.Bind(&block9, &phi_bb9_9);
-    tmp18 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<Object>{tmp0}, TNode<Object>{tmp11});
-    tmp19 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, tmp14, tmp18);
+    tmp18 = CodeStubAssembler(state_).GetProperty(TNode<Context>{p_context}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp11});
+    tmp19 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp0, tmp14, tmp18);
     ca_.Goto(&block11, phi_bb9_9);
   }
 
@@ -223,15 +223,15 @@ TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<
   TNode<Number> phi_bb12_9;
   TNode<Smi> phi_bb12_10;
   TNode<IntPtrT> tmp26;
-  TNode<Object> tmp27;
-  TNode<Object> tmp28;
+  TNode<JSAny> tmp27;
+  TNode<JSAny> tmp28;
   TNode<Smi> tmp29;
   TNode<Smi> tmp30;
   if (block12.is_used()) {
     ca_.Bind(&block12, &phi_bb12_9, &phi_bb12_10);
     tmp26 = Convert_intptr_Smi_0(state_, TNode<Smi>{phi_bb12_10});
     tmp27 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{p_arguments.frame}, TNode<RawPtrT>{p_arguments.base}, TNode<IntPtrT>{p_arguments.length}, TNode<IntPtrT>{p_arguments.actual_count}}, TNode<IntPtrT>{tmp26});
-    tmp28 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, phi_bb12_10, tmp27);
+    tmp28 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp0, phi_bb12_10, tmp27);
     tmp29 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp30 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb12_10}, TNode<Smi>{tmp29});
     ca_.Goto(&block14, phi_bb12_9, tmp30);
@@ -246,12 +246,12 @@ TNode<Number> GenericArrayUnshift_0(compiler::CodeAssemblerState* state_, TNode<
 
   TNode<Number> tmp31;
   TNode<String> tmp32;
-  TNode<Object> tmp33;
+  TNode<JSAny> tmp33;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp31 = CodeStubAssembler(state_).NumberAdd(TNode<Number>{tmp1}, TNode<Number>{tmp2});
     tmp32 = kLengthString_0(state_);
-    tmp33 = ca_.CallBuiltin<Object>(Builtin::kSetProperty, p_context, tmp0, tmp32, tmp31);
+    tmp33 = ca_.CallBuiltin<JSAny>(Builtin::kSetProperty, p_context, tmp0, tmp32, tmp31);
     ca_.Goto(&block15);
   }
 
@@ -268,7 +268,7 @@ TF_BUILTIN(ArrayPrototypeUnshift, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -335,19 +335,21 @@ TF_BUILTIN(ArrayPrototypeUnshift, CodeStubAssembler) {
   TNode<JSFunction> tmp7;
   TNode<Undefined> tmp8;
   TNode<Int32T> tmp9;
+  TNode<JSDispatchHandleT> tmp10;
   if (block7.is_used()) {
     ca_.Bind(&block7);
     tmp7 = LoadTargetFromFrame_0(state_);
     tmp8 = Undefined_0(state_);
     tmp9 = Convert_int32_intptr_0(state_, TNode<IntPtrT>{torque_arguments.actual_count});
-   CodeStubAssembler(state_).TailCallBuiltin(Builtin::kArrayUnshift, parameter0, tmp7, tmp8, tmp9);
+    tmp10 = kInvalidDispatchHandle_0(state_);
+   CodeStubAssembler(state_).TailCallJSBuiltin(Builtin::kArrayUnshift, parameter0, tmp7, tmp8, tmp9, tmp10);
   }
 
-  TNode<Number> tmp10;
+  TNode<Number> tmp11;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp10 = GenericArrayUnshift_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}});
-    arguments.PopAndReturn(tmp10);
+    tmp11 = GenericArrayUnshift_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}});
+    arguments.PopAndReturn(tmp11);
   }
 }
 

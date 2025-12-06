@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsJSSegmenter_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSSegmenter : public P {
   static_assert(
-      std::is_same<JSSegmenter, D>::value,
+      std::is_same_v<JSSegmenter, D>,
       "Use this class as direct base for JSSegmenter.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSSegmenter.");
 
  public: 
@@ -63,7 +63,7 @@ class TorqueGeneratedJSSegmenter : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSSegmenter() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSSegmenter, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSSegmenter, DAlias>,
         "class TorqueGeneratedJSSegmenter should be used as direct base for JSSegmenter.");
   }
 

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/array-at-tq-csa.h"
@@ -155,9 +155,9 @@ TF_BUILTIN(ArrayPrototypeAt, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kIndex);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kIndex);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -172,9 +172,9 @@ TF_BUILTIN(ArrayPrototypeAt, CodeStubAssembler) {
   TNode<Number> tmp3;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<Object>{parameter1});
-    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp0});
-    tmp2 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
+    tmp0 = CodeStubAssembler(state_).ToObject_Inline(TNode<Context>{parameter0}, TNode<JSAny>{parameter1});
+    tmp1 = GetLengthProperty_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp0});
+    tmp2 = ToInteger_Inline_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2});
     compiler::CodeAssemblerLabel label4(&ca_);
     compiler::CodeAssemblerLabel label5(&ca_);
     tmp3 = ConvertRelativeIndex_0(state_, TNode<Number>{tmp2}, TNode<Number>{tmp1}, &label4, &label5);
@@ -199,10 +199,10 @@ TF_BUILTIN(ArrayPrototypeAt, CodeStubAssembler) {
     ca_.Goto(&block2);
   }
 
-  TNode<Object> tmp6;
+  TNode<JSAny> tmp6;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{tmp0}, TNode<Object>{tmp3});
+    tmp6 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{tmp0}, TNode<JSAny>{tmp3});
     CodeStubAssembler(state_).Return(tmp6);
   }
 

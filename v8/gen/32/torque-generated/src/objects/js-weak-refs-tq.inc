@@ -9,10 +9,10 @@ V8_EXPORT_PRIVATE bool IsWeakCell_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedWeakCell : public P {
   static_assert(
-      std::is_same<WeakCell, D>::value,
+      std::is_same_v<WeakCell, D>,
       "Use this class as direct base for WeakCell.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedWeakCell.");
 
  public: 
@@ -138,7 +138,7 @@ class TorqueGeneratedWeakCell : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedWeakCell() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedWeakCell, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedWeakCell, DAlias>,
         "class TorqueGeneratedWeakCell should be used as direct base for WeakCell.");
   }
 
@@ -156,10 +156,10 @@ V8_EXPORT_PRIVATE bool IsJSFinalizationRegistry_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSFinalizationRegistry : public P {
   static_assert(
-      std::is_same<JSFinalizationRegistry, D>::value,
+      std::is_same_v<JSFinalizationRegistry, D>,
       "Use this class as direct base for JSFinalizationRegistry.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSFinalizationRegistry.");
 
  public: 
@@ -256,7 +256,7 @@ class TorqueGeneratedJSFinalizationRegistry : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSFinalizationRegistry() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSFinalizationRegistry, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSFinalizationRegistry, DAlias>,
         "class TorqueGeneratedJSFinalizationRegistry should be used as direct base for JSFinalizationRegistry.");
   }
 
@@ -274,10 +274,10 @@ V8_EXPORT_PRIVATE bool IsJSWeakRef_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedJSWeakRef : public P {
   static_assert(
-      std::is_same<JSWeakRef, D>::value,
+      std::is_same_v<JSWeakRef, D>,
       "Use this class as direct base for JSWeakRef.");
   static_assert(
-      std::is_same<JSObject, P>::value,
+      std::is_same_v<JSObject, P>,
       "Pass in JSObject as second template parameter for TorqueGeneratedJSWeakRef.");
 
  public: 
@@ -313,7 +313,7 @@ class TorqueGeneratedJSWeakRef : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedJSWeakRef() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedJSWeakRef, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedJSWeakRef, DAlias>,
         "class TorqueGeneratedJSWeakRef should be used as direct base for JSWeakRef.");
   }
 

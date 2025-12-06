@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsPropertyDescriptorObject_NonInline(Tagged<HeapObject> o
 template <class D, class P>
 class TorqueGeneratedPropertyDescriptorObject : public P {
   static_assert(
-      std::is_same<PropertyDescriptorObject, D>::value,
+      std::is_same_v<PropertyDescriptorObject, D>,
       "Use this class as direct base for PropertyDescriptorObject.");
   static_assert(
-      std::is_same<Struct, P>::value,
+      std::is_same_v<Struct, P>,
       "Pass in Struct as second template parameter for TorqueGeneratedPropertyDescriptorObject.");
 
  public: 
@@ -89,7 +89,7 @@ class TorqueGeneratedPropertyDescriptorObject : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedPropertyDescriptorObject() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedPropertyDescriptorObject, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedPropertyDescriptorObject, DAlias>,
         "class TorqueGeneratedPropertyDescriptorObject should be used as direct base for PropertyDescriptorObject.");
   }
 

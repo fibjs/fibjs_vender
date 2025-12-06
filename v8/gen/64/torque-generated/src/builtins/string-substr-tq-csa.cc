@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/string-substr-tq-csa.h"
@@ -89,7 +89,7 @@ TF_BUILTIN(StringPrototypeSubstr, CodeStubAssembler) {
   CodeStubArguments arguments(this, torque_arguments);
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = arguments.GetReceiver();
+  TNode<JSAny> parameter1 = arguments.GetReceiver();
   USE(parameter1);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -106,25 +106,25 @@ TF_BUILTIN(StringPrototypeSubstr, CodeStubAssembler) {
   TNode<String> tmp1;
   TNode<UintPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   TNode<Undefined> tmp5;
   TNode<BoolT> tmp6;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_String_constexpr_string_0(state_, "String.prototype.substr");
-    tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<Object>{parameter1}, TNode<String>{tmp0});
+    tmp1 = CodeStubAssembler(state_).ToThisString(TNode<Context>{parameter0}, TNode<JSAny>{parameter1}, TNode<String>{tmp0});
     tmp2 = LoadStringLengthAsUintPtr_0(state_, TNode<String>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x0ull));
     tmp4 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp3});
     tmp5 = Undefined_0(state_);
-    tmp6 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp4}, TNode<HeapObject>{tmp5});
+    tmp6 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp5});
     ca_.Branch(tmp6, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
   TNode<UintPtrT> tmp7;
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    tmp7 = ConvertAndClampRelativeIndex_1(state_, TNode<Context>{parameter0}, TNode<Object>{tmp4}, TNode<UintPtrT>{tmp2});
+    tmp7 = ConvertAndClampRelativeIndex_1(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp4}, TNode<UintPtrT>{tmp2});
     ca_.Goto(&block3, tmp7);
   }
 
@@ -137,7 +137,7 @@ TF_BUILTIN(StringPrototypeSubstr, CodeStubAssembler) {
 
   TNode<UintPtrT> phi_bb3_9;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   TNode<UintPtrT> tmp11;
   TNode<Undefined> tmp12;
   TNode<BoolT> tmp13;
@@ -147,14 +147,14 @@ TF_BUILTIN(StringPrototypeSubstr, CodeStubAssembler) {
     tmp10 = CodeStubAssembler(state_).GetArgumentValue(TorqueStructArguments{TNode<RawPtrT>{torque_arguments.frame}, TNode<RawPtrT>{torque_arguments.base}, TNode<IntPtrT>{torque_arguments.length}, TNode<IntPtrT>{torque_arguments.actual_count}}, TNode<IntPtrT>{tmp9});
     tmp11 = CodeStubAssembler(state_).UintPtrSub(TNode<UintPtrT>{tmp2}, TNode<UintPtrT>{phi_bb3_9});
     tmp12 = Undefined_0(state_);
-    tmp13 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp10}, TNode<HeapObject>{tmp12});
+    tmp13 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp10}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp12});
     ca_.Branch(tmp13, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
   TNode<UintPtrT> tmp14;
   if (block9.is_used()) {
     ca_.Bind(&block9);
-    tmp14 = ClampToIndexRange_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp10}, TNode<UintPtrT>{tmp11});
+    tmp14 = ClampToIndexRange_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp10}, TNode<UintPtrT>{tmp11});
     ca_.Goto(&block11, tmp14);
   }
 

@@ -31,8 +31,10 @@ namespace internal {
   V(LdaTrueHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaTrue) \
   V(LdaFalseHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaFalse) \
   V(LdaConstantHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaConstant) \
+  V(LdaContextSlotNoCellHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaContextSlotNoCell) \
   V(LdaContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaContextSlot) \
   V(LdaImmutableContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaImmutableContextSlot) \
+  V(LdaCurrentContextSlotNoCellHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaCurrentContextSlotNoCell) \
   V(LdaCurrentContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaCurrentContextSlot) \
   V(LdaImmutableCurrentContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaImmutableCurrentContextSlot) \
   V(StarHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStar) \
@@ -47,14 +49,16 @@ namespace internal {
   V(LdaGlobalHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaGlobal) \
   V(LdaGlobalInsideTypeofHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaGlobalInsideTypeof) \
   V(StaGlobalHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaGlobal) \
+  V(StaContextSlotNoCellHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaContextSlotNoCell) \
+  V(StaCurrentContextSlotNoCellHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaCurrentContextSlotNoCell) \
   V(StaContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaContextSlot) \
   V(StaCurrentContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaCurrentContextSlot) \
-  V(StaScriptContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaScriptContextSlot) \
-  V(StaCurrentScriptContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaCurrentScriptContextSlot) \
   V(LdaLookupSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupSlot) \
+  V(LdaLookupContextSlotNoCellHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupContextSlotNoCell) \
   V(LdaLookupContextSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupContextSlot) \
   V(LdaLookupGlobalSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupGlobalSlot) \
   V(LdaLookupSlotInsideTypeofHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupSlotInsideTypeof) \
+  V(LdaLookupContextSlotNoCellInsideTypeofHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupContextSlotNoCellInsideTypeof) \
   V(LdaLookupContextSlotInsideTypeofHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupContextSlotInsideTypeof) \
   V(LdaLookupGlobalSlotInsideTypeofHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kLdaLookupGlobalSlotInsideTypeof) \
   V(StaLookupSlotHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kStaLookupSlot) \
@@ -82,6 +86,7 @@ namespace internal {
   V(ShiftLeftHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kShiftLeft) \
   V(ShiftRightHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kShiftRight) \
   V(ShiftRightLogicalHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kShiftRightLogical) \
+  V(Add_StringConstant_InternalizeHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kAdd_StringConstant_Internalize) \
   V(AddSmiHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kAddSmi) \
   V(SubSmiHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kSubSmi) \
   V(MulSmiHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kMulSmi) \
@@ -148,6 +153,7 @@ namespace internal {
   V(CreateBlockContextHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateBlockContext) \
   V(CreateCatchContextHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateCatchContext) \
   V(CreateFunctionContextHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateFunctionContext) \
+  V(CreateFunctionContextWithCellsHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateFunctionContextWithCells) \
   V(CreateEvalContextHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateEvalContext) \
   V(CreateWithContextHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateWithContext) \
   V(CreateMappedArgumentsHandler, interpreter::OperandScale::kSingle, interpreter::Bytecode::kCreateMappedArguments) \
@@ -209,8 +215,10 @@ namespace internal {
   V(LdarWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdar) \
   V(LdaSmiWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaSmi) \
   V(LdaConstantWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaConstant) \
+  V(LdaContextSlotNoCellWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaContextSlotNoCell) \
   V(LdaContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaContextSlot) \
   V(LdaImmutableContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaImmutableContextSlot) \
+  V(LdaCurrentContextSlotNoCellWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaCurrentContextSlotNoCell) \
   V(LdaCurrentContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaCurrentContextSlot) \
   V(LdaImmutableCurrentContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaImmutableCurrentContextSlot) \
   V(StarWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStar) \
@@ -221,14 +229,16 @@ namespace internal {
   V(LdaGlobalWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaGlobal) \
   V(LdaGlobalInsideTypeofWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaGlobalInsideTypeof) \
   V(StaGlobalWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaGlobal) \
+  V(StaContextSlotNoCellWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaContextSlotNoCell) \
+  V(StaCurrentContextSlotNoCellWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaCurrentContextSlotNoCell) \
   V(StaContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaContextSlot) \
   V(StaCurrentContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaCurrentContextSlot) \
-  V(StaScriptContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaScriptContextSlot) \
-  V(StaCurrentScriptContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaCurrentScriptContextSlot) \
   V(LdaLookupSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupSlot) \
+  V(LdaLookupContextSlotNoCellWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupContextSlotNoCell) \
   V(LdaLookupContextSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupContextSlot) \
   V(LdaLookupGlobalSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupGlobalSlot) \
   V(LdaLookupSlotInsideTypeofWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupSlotInsideTypeof) \
+  V(LdaLookupContextSlotNoCellInsideTypeofWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupContextSlotNoCellInsideTypeof) \
   V(LdaLookupContextSlotInsideTypeofWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupContextSlotInsideTypeof) \
   V(LdaLookupGlobalSlotInsideTypeofWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kLdaLookupGlobalSlotInsideTypeof) \
   V(StaLookupSlotWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kStaLookupSlot) \
@@ -256,6 +266,7 @@ namespace internal {
   V(ShiftLeftWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kShiftLeft) \
   V(ShiftRightWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kShiftRight) \
   V(ShiftRightLogicalWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kShiftRightLogical) \
+  V(Add_StringConstant_InternalizeWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kAdd_StringConstant_Internalize) \
   V(AddSmiWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kAddSmi) \
   V(SubSmiWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kSubSmi) \
   V(MulSmiWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kMulSmi) \
@@ -315,6 +326,7 @@ namespace internal {
   V(CreateBlockContextWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kCreateBlockContext) \
   V(CreateCatchContextWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kCreateCatchContext) \
   V(CreateFunctionContextWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kCreateFunctionContext) \
+  V(CreateFunctionContextWithCellsWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kCreateFunctionContextWithCells) \
   V(CreateEvalContextWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kCreateEvalContext) \
   V(CreateWithContextWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kCreateWithContext) \
   V(JumpLoopWideHandler, interpreter::OperandScale::kDouble, interpreter::Bytecode::kJumpLoop) \
@@ -364,8 +376,10 @@ namespace internal {
   V(LdarExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdar) \
   V(LdaSmiExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaSmi) \
   V(LdaConstantExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaConstant) \
+  V(LdaContextSlotNoCellExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaContextSlotNoCell) \
   V(LdaContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaContextSlot) \
   V(LdaImmutableContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaImmutableContextSlot) \
+  V(LdaCurrentContextSlotNoCellExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaCurrentContextSlotNoCell) \
   V(LdaCurrentContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaCurrentContextSlot) \
   V(LdaImmutableCurrentContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaImmutableCurrentContextSlot) \
   V(StarExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStar) \
@@ -376,14 +390,16 @@ namespace internal {
   V(LdaGlobalExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaGlobal) \
   V(LdaGlobalInsideTypeofExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaGlobalInsideTypeof) \
   V(StaGlobalExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaGlobal) \
+  V(StaContextSlotNoCellExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaContextSlotNoCell) \
+  V(StaCurrentContextSlotNoCellExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaCurrentContextSlotNoCell) \
   V(StaContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaContextSlot) \
   V(StaCurrentContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaCurrentContextSlot) \
-  V(StaScriptContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaScriptContextSlot) \
-  V(StaCurrentScriptContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaCurrentScriptContextSlot) \
   V(LdaLookupSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupSlot) \
+  V(LdaLookupContextSlotNoCellExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupContextSlotNoCell) \
   V(LdaLookupContextSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupContextSlot) \
   V(LdaLookupGlobalSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupGlobalSlot) \
   V(LdaLookupSlotInsideTypeofExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupSlotInsideTypeof) \
+  V(LdaLookupContextSlotNoCellInsideTypeofExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupContextSlotNoCellInsideTypeof) \
   V(LdaLookupContextSlotInsideTypeofExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupContextSlotInsideTypeof) \
   V(LdaLookupGlobalSlotInsideTypeofExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kLdaLookupGlobalSlotInsideTypeof) \
   V(StaLookupSlotExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kStaLookupSlot) \
@@ -411,6 +427,7 @@ namespace internal {
   V(ShiftLeftExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kShiftLeft) \
   V(ShiftRightExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kShiftRight) \
   V(ShiftRightLogicalExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kShiftRightLogical) \
+  V(Add_StringConstant_InternalizeExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kAdd_StringConstant_Internalize) \
   V(AddSmiExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kAddSmi) \
   V(SubSmiExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kSubSmi) \
   V(MulSmiExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kMulSmi) \
@@ -470,6 +487,7 @@ namespace internal {
   V(CreateBlockContextExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kCreateBlockContext) \
   V(CreateCatchContextExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kCreateCatchContext) \
   V(CreateFunctionContextExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kCreateFunctionContext) \
+  V(CreateFunctionContextWithCellsExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kCreateFunctionContextWithCells) \
   V(CreateEvalContextExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kCreateEvalContext) \
   V(CreateWithContextExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kCreateWithContext) \
   V(JumpLoopExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kJumpLoop) \
@@ -511,15 +529,15 @@ namespace internal {
   V(IncBlockCounterExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kIncBlockCounter) \
   V(AbortExtraWideHandler, interpreter::OperandScale::kQuadruple, interpreter::Bytecode::kAbort)
 
-constexpr int kNumberOfBytecodeHandlers = 189;
-constexpr int kNumberOfWideBytecodeHandlers = 155;
+constexpr int kNumberOfBytecodeHandlers = 195;
+constexpr int kNumberOfWideBytecodeHandlers = 161;
 
 constexpr uint8_t kIllegalBytecodeHandlerEncoding = 255;
 
 // Mapping from Bytecode to a dense form with all the illegal
 // wide Bytecodes removed. Used to index into the builtins table.
-constexpr uint8_t kWideBytecodeToBuiltinsMapping[204] = {    
-255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 255, 7, 255, 255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 255, 255, 255, 255, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 255, 255, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 255, 102, 103, 104, 255, 255, 105, 106, 255, 107, 108, 255, 109, 110, 111, 112, 113, 114, 115, 116, 255, 255, 255, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 255, 255, 255, 255, 147, 255, 255, 148, 149, 150, 151, 152, 255, 153, 154, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, };
+constexpr uint8_t kWideBytecodeToBuiltinsMapping[210] = {    
+255, 255, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 255, 7, 255, 255, 255, 255, 255, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 255, 255, 255, 255, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 255, 255, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 255, 107, 108, 109, 255, 255, 110, 111, 255, 112, 113, 255, 114, 115, 116, 117, 118, 119, 120, 121, 122, 255, 255, 255, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 255, 255, 255, 255, 153, 255, 255, 154, 155, 156, 157, 158, 255, 159, 160, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, };
 
 }  // namespace internal
 }  // namespace v8

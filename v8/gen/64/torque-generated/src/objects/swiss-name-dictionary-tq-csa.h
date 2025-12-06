@@ -67,10 +67,10 @@ void StoreSwissNameDictionaryMetaTable_0(compiler::CodeAssemblerState* state_, T
 TorqueStructSlice_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_MutableReference_Smi_OR_HeapNumber_OR_BigInt_OR_String_OR_Symbol_OR_Boolean_OR_Null_OR_Undefined_OR_JSReceiver_OR_TheHole_0 FieldSliceSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=12&c=3
-TNode<Object> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i);
+TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> LoadSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=12&c=3
-void StoreSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i, TNode<Object> p_v);
+void StoreSwissNameDictionaryDataTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o, TNode<IntPtrT> p_i, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_v);
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-name-dictionary.tq?l=13&c=3
 TorqueStructSlice_uint8_MutableReference_uint8_0 FieldSliceSwissNameDictionaryCtrlTable_0(compiler::CodeAssemblerState* state_, TNode<SwissNameDictionary> p_o);

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/promise-resolve-tq-csa.h"
@@ -77,9 +77,9 @@
 #include "torque-generated/src/builtins/array-splice-tq-csa.h"
 #include "torque-generated/src/builtins/base-tq-csa.h"
 #include "torque-generated/src/builtins/boolean-tq-csa.h"
+#include "torque-generated/src/builtins/cast-tq-csa.h"
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/promise-abstract-operations-tq-csa.h"
-#include "torque-generated/src/builtins/promise-all-tq-csa.h"
 #include "torque-generated/src/builtins/promise-any-tq-csa.h"
 #include "torque-generated/src/builtins/promise-jobs-tq-csa.h"
 #include "torque-generated/src/builtins/promise-misc-tq-csa.h"
@@ -105,9 +105,9 @@ TF_BUILTIN(PromiseResolveTrampoline, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -131,10 +131,10 @@ TF_BUILTIN(PromiseResolveTrampoline, CodeStubAssembler) {
     CodeStubAssembler(state_).ThrowTypeError(TNode<Context>{parameter0}, MessageTemplate::kCalledOnNonObject, "PromiseResolve");
   }
 
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    tmp2 = ca_.CallBuiltin<Object>(Builtin::kPromiseResolve, parameter0, tmp0, parameter2);
+    tmp2 = ca_.CallBuiltin<JSAny>(Builtin::kPromiseResolve, parameter0, tmp0, parameter2);
     CodeStubAssembler(state_).Return(tmp2);
   }
 }
@@ -145,7 +145,7 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSReceiver> parameter1 = UncheckedParameter<JSReceiver>(Descriptor::kConstructor);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kValue);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kValue);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -166,7 +166,7 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
 
   TNode<NativeContext> tmp0;
   TNode<IntPtrT> tmp1;
-  TNode<Object> tmp2;
+  TNode<Union<HeapObject, TaggedIndex>> tmp2;
   TNode<IntPtrT> tmp3;
   TNode<JSFunction> tmp4;
   TNode<JSPromise> tmp5;
@@ -191,7 +191,7 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   TNode<JSObject> tmp10;
   TNode<NativeContext> tmp11;
@@ -199,7 +199,7 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   TNode<IntPtrT> tmp13;
   TNode<Map> tmp14;
   TNode<IntPtrT> tmp15;
-  TNode<HeapObject> tmp16;
+  TNode<Union<JSReceiver, Null>> tmp16;
   TNode<BoolT> tmp17;
   if (block5.is_used()) {
     ca_.Bind(&block5);
@@ -207,13 +207,13 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
     std::tie(tmp8, tmp9) = NativeContextSlot_JSObject_0(state_, TNode<NativeContext>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
     tmp10 = CodeStubAssembler(state_).LoadReference<JSObject>(CodeStubAssembler::Reference{tmp8, tmp9});
     tmp11 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{parameter0});
-    tmp12 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp0}, TNode<HeapObject>{tmp11});
+    tmp12 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp0}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp11});
     CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp12}, "static_assert(nativeContext == LoadNativeContext(context)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=44&c=5");
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp14 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp5, tmp13});
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp16 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp14, tmp15});
-    tmp17 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp16}, TNode<HeapObject>{tmp10});
+    tmp16 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{tmp14, tmp15});
+    tmp17 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp16}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp10});
     ca_.Branch(tmp17, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
 
@@ -237,7 +237,7 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   TNode<BoolT> tmp19;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp19 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{parameter1});
+    tmp19 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{parameter1});
     ca_.Branch(tmp19, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
 
@@ -252,13 +252,13 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   }
 
   TNode<String> tmp20;
-  TNode<Object> tmp21;
+  TNode<JSAny> tmp21;
   TNode<BoolT> tmp22;
   if (block4.is_used()) {
     ca_.Bind(&block4);
     tmp20 = kConstructorString_0(state_);
-    tmp21 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{tmp20});
-    tmp22 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp21}, TNode<HeapObject>{parameter1});
+    tmp21 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, TNode<JSAny>{tmp20});
+    tmp22 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Object>{tmp21}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{parameter1});
     ca_.Branch(tmp22, &block13, std::vector<compiler::Node*>{}, &block14, std::vector<compiler::Node*>{});
   }
 
@@ -275,39 +275,39 @@ TF_BUILTIN(PromiseResolve, CodeStubAssembler) {
   TNode<BoolT> tmp23;
   if (block2.is_used()) {
     ca_.Bind(&block2);
-    tmp23 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp4}, TNode<HeapObject>{parameter1});
+    tmp23 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp4}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{parameter1});
     ca_.Branch(tmp23, &block15, std::vector<compiler::Node*>{}, &block16, std::vector<compiler::Node*>{});
   }
 
   TNode<JSPromise> tmp24;
-  TNode<Object> tmp25;
+  TNode<JSAny> tmp25;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp24 = NewJSPromise_1(state_, TNode<Context>{parameter0});
-    tmp25 = ca_.CallBuiltin<Object>(Builtin::kResolvePromise, parameter0, tmp24, parameter2);
+    tmp25 = ca_.CallBuiltin<JSAny>(Builtin::kResolvePromise, parameter0, tmp24, parameter2);
     CodeStubAssembler(state_).Return(tmp24);
   }
 
   TNode<True> tmp26;
   TNode<PromiseCapability> tmp27;
   TNode<IntPtrT> tmp28;
-  TNode<Object> tmp29;
-  TNode<JSReceiver> tmp30;
+  TNode<JSAny> tmp29;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp30;
   TNode<Undefined> tmp31;
-  TNode<Object> tmp32;
+  TNode<JSAny> tmp32;
   TNode<IntPtrT> tmp33;
-  TNode<HeapObject> tmp34;
+  TNode<Union<JSReceiver, Undefined>> tmp34;
   if (block16.is_used()) {
     ca_.Bind(&block16);
     tmp26 = True_0(state_);
     tmp27 = ca_.CallBuiltin<PromiseCapability>(Builtin::kNewPromiseCapability, parameter0, parameter1, tmp26);
     tmp28 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    tmp29 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp27, tmp28});
+    tmp29 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{tmp27, tmp28});
     tmp30 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp29});
     tmp31 = Undefined_0(state_);
-    tmp32 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp30}, TNode<Object>{tmp31}, TNode<Object>{parameter2});
+    tmp32 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp30}, TNode<JSAny>{tmp31}, TNode<JSAny>{parameter2});
     tmp33 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    tmp34 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp27, tmp33});
+    tmp34 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Undefined>>(CodeStubAssembler::Reference{tmp27, tmp33});
     CodeStubAssembler(state_).Return(tmp34);
   }
 }
@@ -329,7 +329,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSPromise> parameter1 = UncheckedParameter<JSPromise>(Descriptor::kPromise);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kResolution);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kResolution);
   USE(parameter2);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -375,7 +375,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   TNode<BoolT> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{parameter1}, TNode<Object>{parameter2});
+    tmp2 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{parameter1}, TNode<Object>{parameter2});
     ca_.Goto(&block5, tmp2);
   }
 
@@ -385,10 +385,10 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     ca_.Branch(phi_bb5_4, &block1, std::vector<compiler::Node*>{}, &block2, std::vector<compiler::Node*>{});
   }
 
-  TNode<Object> tmp3;
+  TNode<JSAny> tmp3;
   if (block1.is_used()) {
     ca_.Bind(&block1);
-    tmp3 = CodeStubAssembler(state_).CallRuntime(Runtime::kResolvePromise, parameter0, parameter1, parameter2); 
+    tmp3 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kResolvePromise, parameter0, parameter1, parameter2)); 
     CodeStubAssembler(state_).Return(tmp3);
   }
 
@@ -466,7 +466,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp18;
-  TNode<Object> tmp19;
+  TNode<Union<HeapObject, TaggedIndex>> tmp19;
   TNode<IntPtrT> tmp20;
   TNode<Map> tmp21;
   TNode<BoolT> tmp22;
@@ -475,7 +475,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     tmp18 = ITERATOR_RESULT_MAP_INDEX_0(state_);
     std::tie(tmp19, tmp20) = NativeContextSlot_Map_1(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp18}).Flatten();
     tmp21 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{tmp19, tmp20});
-    tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp9}, TNode<HeapObject>{tmp21});
+    tmp22 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp9}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp21});
     ca_.Branch(tmp22, &block28, std::vector<compiler::Node*>{}, &block29, std::vector<compiler::Node*>{});
   }
 
@@ -492,11 +492,11 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp24;
-  TNode<Object> tmp25;
+  TNode<Union<HeapObject, TaggedIndex>> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<JSObject> tmp27;
   TNode<IntPtrT> tmp28;
-  TNode<HeapObject> tmp29;
+  TNode<Union<JSReceiver, Null>> tmp29;
   TNode<BoolT> tmp30;
   if (block19.is_used()) {
     ca_.Bind(&block19);
@@ -504,13 +504,13 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     std::tie(tmp25, tmp26) = NativeContextSlot_JSObject_0(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp24}).Flatten();
     tmp27 = CodeStubAssembler(state_).LoadReference<JSObject>(CodeStubAssembler::Reference{tmp25, tmp26});
     tmp28 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp29 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{tmp9, tmp28});
-    tmp30 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp29}, TNode<HeapObject>{tmp27});
+    tmp29 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{tmp9, tmp28});
+    tmp30 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp29}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp27});
     ca_.Branch(tmp30, &block31, std::vector<compiler::Node*>{}, &block32, std::vector<compiler::Node*>{});
   }
 
   TNode<IntPtrT> tmp31;
-  TNode<Object> tmp32;
+  TNode<Union<HeapObject, TaggedIndex>> tmp32;
   TNode<IntPtrT> tmp33;
   TNode<JSFunction> tmp34;
   TNode<NativeContext> tmp35;
@@ -521,7 +521,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     std::tie(tmp32, tmp33) = NativeContextSlot_JSFunction_0(state_, TNode<NativeContext>{tmp15}, TNode<IntPtrT>{tmp31}).Flatten();
     tmp34 = CodeStubAssembler(state_).LoadReference<JSFunction>(CodeStubAssembler::Reference{tmp32, tmp33});
     tmp35 = CodeStubAssembler(state_).LoadNativeContext(TNode<Context>{parameter0});
-    tmp36 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp15}, TNode<HeapObject>{tmp35});
+    tmp36 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp15}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp35});
     CodeStubAssembler(state_).StaticAssert(TNode<BoolT>{tmp36}, "static_assert(nativeContext == LoadNativeContext(context)) at https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/promise-resolve.tq?l=156&c=7");
     ca_.Goto(&block7, tmp34);
   }
@@ -532,8 +532,8 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
   }
 
   TNode<String> tmp37;
-  TNode<Object> tmp38;
-      TNode<Object> tmp40;
+  TNode<JSAny> tmp38;
+      TNode<JSAny> tmp40;
   TNode<BoolT> tmp41;
   TNode<BoolT> tmp42;
   if (block9.is_used()) {
@@ -541,7 +541,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     tmp37 = kThenString_0(state_);
     compiler::CodeAssemblerExceptionHandlerLabel catch39__label(&ca_, compiler::CodeAssemblerLabel::kDeferred);
     { compiler::ScopedExceptionHandler s(&ca_, &catch39__label);
-    tmp38 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<Object>{parameter2}, TNode<Object>{tmp37});
+    tmp38 = CodeStubAssembler(state_).GetProperty(TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, TNode<JSAny>{tmp37});
     }
     if (catch39__label.is_used()) {
       compiler::CodeAssemblerLabel catch39_skip(&ca_);
@@ -555,14 +555,14 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     ca_.Branch(tmp42, &block36, std::vector<compiler::Node*>{}, &block37, std::vector<compiler::Node*>{});
   }
 
-  TNode<HeapObject> tmp43;
+  TNode<Union<Hole, JSMessageObject>> tmp43;
   TNode<False> tmp44;
-  TNode<Object> tmp45;
+  TNode<JSAny> tmp45;
   if (block35.is_used()) {
     ca_.Bind(&block35);
     tmp43 = GetAndResetPendingMessage_0(state_);
     tmp44 = False_0(state_);
-    tmp45 = ca_.CallBuiltin<Object>(Builtin::kRejectPromise, parameter0, parameter1, tmp40, tmp44);
+    tmp45 = ca_.CallBuiltin<JSAny>(Builtin::kRejectPromise, parameter0, parameter1, tmp40, tmp44);
     CodeStubAssembler(state_).Return(tmp45);
   }
 
@@ -580,7 +580,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
 
   TNode<Object> phi_bb7_3;
   TNode<JSReceiver> tmp47;
-  TNode<JSReceiver> tmp48;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp48;
   TNode<PromiseResolveThenableJobTask> tmp49;
   TNode<IntPtrT> tmp50;
   TNode<Context> tmp51;
@@ -589,7 +589,7 @@ TF_BUILTIN(ResolvePromise, CodeStubAssembler) {
     ca_.Bind(&block7, &phi_bb7_3);
     tmp47 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2});
     tmp48 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{phi_bb7_3});
-    tmp49 = NewPromiseResolveThenableJobTask_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<JSReceiver>{tmp47}, TNode<JSReceiver>{tmp48});
+    tmp49 = NewPromiseResolveThenableJobTask_0(state_, TNode<Context>{parameter0}, TNode<JSPromise>{parameter1}, TNode<JSReceiver>{tmp47}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp48});
     tmp50 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp51 = CodeStubAssembler(state_).LoadReference<Context>(CodeStubAssembler::Reference{tmp49, tmp50});
     tmp52 = ca_.CallBuiltin<Undefined>(Builtin::kEnqueueMicrotask, tmp51, tmp49);
@@ -608,7 +608,7 @@ TNode<BoolT> Is_Callable_Object_0(compiler::CodeAssemblerState* state_, TNode<Co
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSReceiver> tmp0;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);

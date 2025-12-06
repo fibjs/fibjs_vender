@@ -16,7 +16,7 @@ Tagged<JSFunction> TorqueGeneratedJSGeneratorObject<D, P>::function(PtrComprCage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=6&c=3
 template<class D, class P>
 void TorqueGeneratedJSGeneratorObject<D, P>::set_function(Tagged<JSFunction> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSFunction(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSFunction(value)));
   WRITE_FIELD(*this, kFunctionOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kFunctionOffset, value, mode);
 }
@@ -39,7 +39,7 @@ Tagged<Context> TorqueGeneratedJSGeneratorObject<D, P>::context(PtrComprCageBase
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=7&c=3
 template<class D, class P>
 void TorqueGeneratedJSGeneratorObject<D, P>::set_context(Tagged<Context> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsContext(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsContext(value)));
   WRITE_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }
@@ -62,7 +62,7 @@ Tagged<JSAny> TorqueGeneratedJSGeneratorObject<D, P>::receiver(PtrComprCageBase 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedJSGeneratorObject<D, P>::set_receiver(Tagged<JSAny> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapNumber(value) || IsBigInt(value) || IsString(value) || IsSymbol(value) || IsBoolean(value) || IsNull(value) || IsUndefined(value) || IsJSReceiver(value)));
   WRITE_FIELD(*this, kReceiverOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kReceiverOffset, value, mode);
 }
@@ -85,7 +85,7 @@ Tagged<Object> TorqueGeneratedJSGeneratorObject<D, P>::input_or_debug_pos(PtrCom
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=14&c=3
 template<class D, class P>
 void TorqueGeneratedJSGeneratorObject<D, P>::set_input_or_debug_pos(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kInputOrDebugPosOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kInputOrDebugPosOffset, value, mode);
 }
@@ -134,7 +134,7 @@ Tagged<FixedArray> TorqueGeneratedJSGeneratorObject<D, P>::parameters_and_regist
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=25&c=3
 template<class D, class P>
 void TorqueGeneratedJSGeneratorObject<D, P>::set_parameters_and_registers(Tagged<FixedArray> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsFixedArray(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsFixedArray(value)));
   WRITE_FIELD(*this, kParametersAndRegistersOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kParametersAndRegistersOffset, value, mode);
 }
@@ -162,7 +162,7 @@ Tagged<JSPromise> TorqueGeneratedJSAsyncFunctionObject<D, P>::promise(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=29&c=3
 template<class D, class P>
 void TorqueGeneratedJSAsyncFunctionObject<D, P>::set_promise(Tagged<JSPromise> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSPromise(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSPromise(value)));
   WRITE_FIELD(*this, kPromiseOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOffset, value, mode);
 }
@@ -190,7 +190,7 @@ Tagged<HeapObject> TorqueGeneratedJSAsyncGeneratorObject<D, P>::queue(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=35&c=3
 template<class D, class P>
 void TorqueGeneratedJSAsyncGeneratorObject<D, P>::set_queue(Tagged<HeapObject> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsHeapObject(value)));
   WRITE_FIELD(*this, kQueueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kQueueOffset, value, mode);
 }
@@ -231,7 +231,7 @@ Tagged<Union<AsyncGeneratorRequest, Undefined>> TorqueGeneratedAsyncGeneratorReq
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=41&c=3
 template<class D, class P>
 void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_next(Tagged<Union<AsyncGeneratorRequest, Undefined>> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsUndefined(value) || IsAsyncGeneratorRequest(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsUndefined(value) || IsAsyncGeneratorRequest(value)));
   WRITE_FIELD(*this, kNextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kNextOffset, value, mode);
 }
@@ -267,7 +267,7 @@ Tagged<Object> TorqueGeneratedAsyncGeneratorRequest<D, P>::value(PtrComprCageBas
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=43&c=3
 template<class D, class P>
 void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_value(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kValueOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kValueOffset, value, mode);
 }
@@ -290,7 +290,7 @@ Tagged<JSPromise> TorqueGeneratedAsyncGeneratorRequest<D, P>::promise(PtrComprCa
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/js-generator.tq?l=44&c=3
 template<class D, class P>
 void TorqueGeneratedAsyncGeneratorRequest<D, P>::set_promise(Tagged<JSPromise> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSPromise(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSPromise(value)));
   WRITE_FIELD(*this, kPromiseOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kPromiseOffset, value, mode);
 }

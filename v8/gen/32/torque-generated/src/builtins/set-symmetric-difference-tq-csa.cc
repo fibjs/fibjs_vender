@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/set-symmetric-difference-tq-csa.h"
@@ -94,10 +94,11 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   compiler::CodeAssemblerState* state_ = state();  compiler::CodeAssembler ca_(state());
   TNode<NativeContext> parameter0 = UncheckedParameter<NativeContext>(Descriptor::kContext);
   USE(parameter0);
-  TNode<Object> parameter1 = UncheckedParameter<Object>(Descriptor::kReceiver);
+  TNode<JSAny> parameter1 = UncheckedParameter<JSAny>(Descriptor::kReceiver);
   USE(parameter1);
-  TNode<Object> parameter2 = UncheckedParameter<Object>(Descriptor::kOther);
+  TNode<JSAny> parameter2 = UncheckedParameter<JSAny>(Descriptor::kOther);
   USE(parameter2);
+  CodeStubAssembler(state_).CallRuntime(Runtime::kIncrementUseCounter, parameter0, CodeStubAssembler(state_).SmiConstant(v8::Isolate::kSetMethods));
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block4(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block3(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -109,20 +110,20 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block24(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block27(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block26(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, IntPtrT> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, IntPtrT> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, IntPtrT, IntPtrT> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, IntPtrT, IntPtrT> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, IntPtrT> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, IntPtrT> block31(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, IntPtrT> block29(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, IntPtrT, IntPtrT> block34(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, IntPtrT, IntPtrT> block33(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, IntPtrT> block30(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block37(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block40(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block39(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, Object, IntPtrT> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, Object, IntPtrT> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, Object, IntPtrT, IntPtrT> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, Object, IntPtrT, IntPtrT> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, Object, Object, IntPtrT> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, JSAny, IntPtrT> block44(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, JSAny, IntPtrT> block42(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, JSAny, IntPtrT, IntPtrT> block47(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, JSAny, IntPtrT, IntPtrT> block46(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi, JSAny, JSAny, IntPtrT> block43(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, Smi> block22(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block21(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<OrderedHashSet, OrderedHashSet, Smi, JSReceiver> block50(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -171,20 +172,20 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<JSReceiver> tmp4;
   TNode<Number> tmp5;
-  TNode<Object> tmp6;
-  TNode<Object> tmp7;
-  TNode<JSReceiver> tmp8;
+  TNode<JSAny> tmp6;
+  TNode<JSAny> tmp7;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp8;
   TNode<JSReceiver> tmp9;
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   TNode<JSSet> tmp11;
   TNode<OrderedHashSet> tmp12;
   TNode<FixedArrayBase> tmp13;
   TNode<OrderedHashSet> tmp14;
   if (block3.is_used()) {
     ca_.Bind(&block3);
-    std::tie(tmp4, tmp5, tmp6, tmp7) = GetSetRecord_0(state_, TNode<Context>{parameter0}, TNode<Object>{parameter2}, "Set.prototype.symmetricDifference").Flatten();
+    std::tie(tmp4, tmp5, tmp6, tmp7) = GetSetRecord_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{parameter2}, "Set.prototype.symmetricDifference").Flatten();
     tmp8 = UnsafeCast_Callable_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7});
-    std::tie(tmp9, tmp10) = GetKeysIterator_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp4}, TNode<JSReceiver>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10) = GetKeysIterator_0(state_, TNode<Context>{parameter0}, TNode<JSReceiver>{tmp4}, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>>{tmp8}).Flatten();
     std::tie(tmp11, tmp12) = NewStableBackingTableWitness_0(state_, TNode<JSSet>{tmp1}).Flatten();
     tmp13 = CodeStubAssembler(state_).CloneFixedArray(TNode<FixedArrayBase>{tmp12}, CodeStubAssembler::ExtractFixedArrayFlag::kFixedArrays);
     compiler::CodeAssemblerLabel label15(&ca_);
@@ -201,7 +202,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> tmp16;
+  TNode<Union<HeapObject, TaggedIndex>> tmp16;
   TNode<IntPtrT> tmp17;
   TNode<IntPtrT> tmp18;
   TNode<IntPtrT> tmp19;
@@ -220,7 +221,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp23;
   TNode<IntPtrT> tmp24;
-  TNode<Object> tmp25;
+  TNode<Union<HeapObject, TaggedIndex>> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<Object> tmp27;
   TNode<Smi> tmp28;
@@ -229,7 +230,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
     ca_.Bind(&block14);
     tmp23 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp19});
     tmp24 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp17}, TNode<IntPtrT>{tmp23});
-    std::tie(tmp25, tmp26) = NewReference_Object_0(state_, TNode<Object>{tmp16}, TNode<IntPtrT>{tmp24}).Flatten();
+    std::tie(tmp25, tmp26) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp16}, TNode<IntPtrT>{tmp24}).Flatten();
     tmp27 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp25, tmp26});
     tmp28 = UnsafeCast_Smi_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp27});
     compiler::CodeAssemblerLabel label30(&ca_);
@@ -250,7 +251,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   if (block25.is_used()) {
     ca_.Bind(&block25);
     compiler::CodeAssemblerLabel label32(&ca_);
-    tmp31 = Cast_JSMapWithNoCustomIteration_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<Object>(parameter2)}, &label32);
+    tmp31 = Cast_JSMapWithNoCustomIteration_1(state_, TNode<Context>{parameter0}, TNode<Object>{ca_.UncheckedCast<JSAny>(parameter2)}, &label32);
     ca_.Goto(&block37);
     if (label32.is_used()) {
       ca_.Bind(&label32);
@@ -261,7 +262,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   if (block24.is_used()) {
     ca_.Bind(&block24);
     compiler::CodeAssemblerLabel label33(&ca_);
-    CheckSetRecordHasJSSetMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<Object>{tmp6}, TNode<Object>{tmp7}}, &label33);
+    CheckSetRecordHasJSSetMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<JSAny>{tmp6}, TNode<JSAny>{tmp7}}, &label33);
     ca_.Goto(&block26);
     if (label33.is_used()) {
       ca_.Bind(&label33);
@@ -279,7 +280,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   TNode<OrderedHashSet> tmp36;
   TNode<Int32T> tmp37;
   TNode<Int32T> tmp38;
-  TNode<Object> tmp39;
+  TNode<JSAny> tmp39;
   TNode<IntPtrT> tmp40;
   if (block26.is_used()) {
     ca_.Bind(&block26);
@@ -290,7 +291,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb31_14;
   TNode<Smi> phi_bb31_15;
-  TNode<Object> phi_bb31_23;
+  TNode<JSAny> phi_bb31_23;
   TNode<IntPtrT> phi_bb31_24;
   TNode<BoolT> tmp41;
   if (block31.is_used()) {
@@ -301,9 +302,9 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb29_14;
   TNode<Smi> phi_bb29_15;
-  TNode<Object> phi_bb29_23;
+  TNode<JSAny> phi_bb29_23;
   TNode<IntPtrT> phi_bb29_24;
-  TNode<Object> tmp42;
+  TNode<JSAny> tmp42;
   TNode<IntPtrT> tmp43;
   if (block29.is_used()) {
     ca_.Bind(&block29, &phi_bb29_14, &phi_bb29_15, &phi_bb29_23, &phi_bb29_24);
@@ -318,7 +319,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb34_14;
   TNode<Smi> phi_bb34_15;
-  TNode<Object> phi_bb34_23;
+  TNode<JSAny> phi_bb34_23;
   TNode<IntPtrT> phi_bb34_24;
   TNode<IntPtrT> phi_bb34_28;
   if (block34.is_used()) {
@@ -328,20 +329,20 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb33_14;
   TNode<Smi> phi_bb33_15;
-  TNode<Object> phi_bb33_23;
+  TNode<JSAny> phi_bb33_23;
   TNode<IntPtrT> phi_bb33_24;
   TNode<IntPtrT> phi_bb33_28;
   TNode<OrderedHashSet> tmp45;
   TNode<Smi> tmp46;
   if (block33.is_used()) {
     ca_.Bind(&block33, &phi_bb33_14, &phi_bb33_15, &phi_bb33_23, &phi_bb33_24, &phi_bb33_28);
-    std::tie(tmp45, tmp46) = FastSymmetricDifference_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp42}, TorqueStructStableJSSetBackingTableWitness_0{TNode<JSSet>{tmp11}, TNode<OrderedHashSet>{tmp12}}, TorqueStructOrderedHashSetAndNumberOfElements_0{TNode<OrderedHashSet>{phi_bb33_14}, TNode<Smi>{phi_bb33_15}}, "Set.prototype.symmetricDifference").Flatten();
+    std::tie(tmp45, tmp46) = FastSymmetricDifference_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp42}, TorqueStructStableJSSetBackingTableWitness_0{TNode<JSSet>{tmp11}, TNode<OrderedHashSet>{tmp12}}, TorqueStructOrderedHashSetAndNumberOfElements_0{TNode<OrderedHashSet>{phi_bb33_14}, TNode<Smi>{phi_bb33_15}}, "Set.prototype.symmetricDifference").Flatten();
     ca_.Goto(&block31, tmp45, tmp46, tmp42, tmp43);
   }
 
   TNode<OrderedHashSet> phi_bb30_14;
   TNode<Smi> phi_bb30_15;
-  TNode<Object> phi_bb30_23;
+  TNode<JSAny> phi_bb30_23;
   TNode<IntPtrT> phi_bb30_24;
   if (block30.is_used()) {
     ca_.Bind(&block30, &phi_bb30_14, &phi_bb30_15, &phi_bb30_23, &phi_bb30_24);
@@ -356,7 +357,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   if (block37.is_used()) {
     ca_.Bind(&block37);
     compiler::CodeAssemblerLabel label47(&ca_);
-    CheckSetRecordHasJSMapMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<Object>{tmp6}, TNode<Object>{tmp7}}, &label47);
+    CheckSetRecordHasJSMapMethods_0(state_, TorqueStructSetRecord{TNode<JSReceiver>{tmp4}, TNode<Number>{tmp5}, TNode<JSAny>{tmp6}, TNode<JSAny>{tmp7}}, &label47);
     ca_.Goto(&block39);
     if (label47.is_used()) {
       ca_.Bind(&label47);
@@ -374,8 +375,8 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   TNode<OrderedHashMap> tmp50;
   TNode<Int32T> tmp51;
   TNode<Int32T> tmp52;
-  TNode<Object> tmp53;
-  TNode<Object> tmp54;
+  TNode<JSAny> tmp53;
+  TNode<JSAny> tmp54;
   TNode<IntPtrT> tmp55;
   if (block39.is_used()) {
     ca_.Bind(&block39);
@@ -386,8 +387,8 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb44_14;
   TNode<Smi> phi_bb44_15;
-  TNode<Object> phi_bb44_23;
-  TNode<Object> phi_bb44_24;
+  TNode<JSAny> phi_bb44_23;
+  TNode<JSAny> phi_bb44_24;
   TNode<IntPtrT> phi_bb44_25;
   TNode<BoolT> tmp56;
   if (block44.is_used()) {
@@ -398,11 +399,11 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb42_14;
   TNode<Smi> phi_bb42_15;
-  TNode<Object> phi_bb42_23;
-  TNode<Object> phi_bb42_24;
+  TNode<JSAny> phi_bb42_23;
+  TNode<JSAny> phi_bb42_24;
   TNode<IntPtrT> phi_bb42_25;
-  TNode<Object> tmp57;
-  TNode<Object> tmp58;
+  TNode<JSAny> tmp57;
+  TNode<JSAny> tmp58;
   TNode<IntPtrT> tmp59;
   if (block42.is_used()) {
     ca_.Bind(&block42, &phi_bb42_14, &phi_bb42_15, &phi_bb42_23, &phi_bb42_24, &phi_bb42_25);
@@ -417,8 +418,8 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb47_14;
   TNode<Smi> phi_bb47_15;
-  TNode<Object> phi_bb47_23;
-  TNode<Object> phi_bb47_24;
+  TNode<JSAny> phi_bb47_23;
+  TNode<JSAny> phi_bb47_24;
   TNode<IntPtrT> phi_bb47_25;
   TNode<IntPtrT> phi_bb47_29;
   if (block47.is_used()) {
@@ -428,22 +429,22 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
 
   TNode<OrderedHashSet> phi_bb46_14;
   TNode<Smi> phi_bb46_15;
-  TNode<Object> phi_bb46_23;
-  TNode<Object> phi_bb46_24;
+  TNode<JSAny> phi_bb46_23;
+  TNode<JSAny> phi_bb46_24;
   TNode<IntPtrT> phi_bb46_25;
   TNode<IntPtrT> phi_bb46_29;
   TNode<OrderedHashSet> tmp61;
   TNode<Smi> tmp62;
   if (block46.is_used()) {
     ca_.Bind(&block46, &phi_bb46_14, &phi_bb46_15, &phi_bb46_23, &phi_bb46_24, &phi_bb46_25, &phi_bb46_29);
-    std::tie(tmp61, tmp62) = FastSymmetricDifference_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp57}, TorqueStructStableJSSetBackingTableWitness_0{TNode<JSSet>{tmp11}, TNode<OrderedHashSet>{tmp12}}, TorqueStructOrderedHashSetAndNumberOfElements_0{TNode<OrderedHashSet>{phi_bb46_14}, TNode<Smi>{phi_bb46_15}}, "Set.prototype.symmetricDifference").Flatten();
+    std::tie(tmp61, tmp62) = FastSymmetricDifference_0(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp57}, TorqueStructStableJSSetBackingTableWitness_0{TNode<JSSet>{tmp11}, TNode<OrderedHashSet>{tmp12}}, TorqueStructOrderedHashSetAndNumberOfElements_0{TNode<OrderedHashSet>{phi_bb46_14}, TNode<Smi>{phi_bb46_15}}, "Set.prototype.symmetricDifference").Flatten();
     ca_.Goto(&block44, tmp61, tmp62, tmp57, tmp58, tmp59);
   }
 
   TNode<OrderedHashSet> phi_bb43_14;
   TNode<Smi> phi_bb43_15;
-  TNode<Object> phi_bb43_23;
-  TNode<Object> phi_bb43_24;
+  TNode<JSAny> phi_bb43_23;
+  TNode<JSAny> phi_bb43_24;
   TNode<IntPtrT> phi_bb43_25;
   if (block43.is_used()) {
     ca_.Bind(&block43, &phi_bb43_14, &phi_bb43_15, &phi_bb43_23, &phi_bb43_24, &phi_bb43_25);
@@ -481,7 +482,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   if (block48.is_used()) {
     ca_.Bind(&block48, &phi_bb48_12, &phi_bb48_14, &phi_bb48_15, &phi_bb48_16);
     compiler::CodeAssemblerLabel label65(&ca_);
-    tmp64 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp9}, TNode<Object>{tmp10}}, TNode<Map>{tmp0}, &label65);
+    tmp64 = IteratorBuiltinsAssembler(state_).IteratorStep(TNode<Context>{parameter0}, TorqueStructIteratorRecord{TNode<JSReceiver>{tmp9}, TNode<JSAny>{tmp10}}, TNode<Map>{tmp0}, &label65);
     ca_.Goto(&block51, phi_bb48_12, phi_bb48_14, phi_bb48_15, phi_bb48_16);
     if (label65.is_used()) {
       ca_.Bind(&label65);
@@ -502,8 +503,8 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   TNode<OrderedHashSet> phi_bb51_14;
   TNode<Smi> phi_bb51_15;
   TNode<JSReceiver> phi_bb51_16;
-  TNode<Object> tmp66;
-  TNode<Object> tmp67;
+  TNode<JSAny> tmp66;
+  TNode<JSAny> tmp67;
   TNode<BoolT> tmp68;
   TNode<IntPtrT> tmp69;
   TNode<Object> tmp70;
@@ -511,7 +512,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   if (block51.is_used()) {
     ca_.Bind(&block51, &phi_bb51_12, &phi_bb51_14, &phi_bb51_15, &phi_bb51_16);
     tmp66 = IteratorBuiltinsAssembler(state_).IteratorValue(TNode<Context>{parameter0}, TNode<JSReceiver>{tmp64}, TNode<Map>{tmp0});
-    tmp67 = CollectionsBuiltinsAssembler(state_).NormalizeNumberKey(TNode<Object>{tmp66});
+    tmp67 = CollectionsBuiltinsAssembler(state_).NormalizeNumberKey(TNode<JSAny>{tmp66});
     tmp68 = CollectionsBuiltinsAssembler(state_).TableHasKey(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb51_14}, TNode<Object>{tmp67});
     tmp69 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp70 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp11, tmp69});
@@ -637,7 +638,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   if (block72.is_used()) {
     ca_.Bind(&block72, &phi_bb72_14, &phi_bb72_15);
     tmp80 = FromConstexpr_String_constexpr_string_0(state_, "Set.prototype.symmetricDifference");
-    tmp81 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb72_14}, TNode<Object>{tmp67}, TNode<String>{tmp80});
+    tmp81 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{parameter0}, TNode<OrderedHashSet>{phi_bb72_14}, TNode<JSAny>{tmp67}, TNode<String>{tmp80});
     tmp82 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp83 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{phi_bb72_15}, TNode<Smi>{tmp82});
     ca_.Goto(&block73, tmp81, tmp83);
@@ -679,7 +680,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   TNode<Smi> phi_bb19_15;
   TNode<OrderedHashSet> tmp84;
   TNode<IntPtrT> tmp85;
-  TNode<Object> tmp86;
+  TNode<Union<HeapObject, TaggedIndex>> tmp86;
   TNode<IntPtrT> tmp87;
   TNode<Map> tmp88;
   TNode<FixedArray> tmp89;
@@ -708,7 +709,7 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
     tmp95 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp94, tmp95}, tmp88);
     tmp96 = FromConstexpr_intptr_constexpr_int31_0(state_, 4);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp94, tmp96}, tmp89);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp94, tmp96}, tmp89);
     tmp97 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp94, tmp97}, tmp90);
     tmp98 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
@@ -718,8 +719,8 @@ TF_BUILTIN(SetPrototypeSymmetricDifference, CodeStubAssembler) {
   }
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-symmetric-difference.tq?l=135&c=1
-TorqueStructOrderedHashSetAndNumberOfElements_0 FastSymmetricDifference_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Object> p_nextValue, TorqueStructStableJSSetBackingTableWitness_0 p_table, TorqueStructOrderedHashSetAndNumberOfElements_0 p_resultSetDataAndNumberOfElements, const char* p_methodName) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/set-symmetric-difference.tq?l=136&c=1
+TorqueStructOrderedHashSetAndNumberOfElements_0 FastSymmetricDifference_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<JSAny> p_nextValue, TorqueStructStableJSSetBackingTableWitness_0 p_table, TorqueStructOrderedHashSetAndNumberOfElements_0 p_resultSetDataAndNumberOfElements, const char* p_methodName) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -731,11 +732,11 @@ TorqueStructOrderedHashSetAndNumberOfElements_0 FastSymmetricDifference_0(compil
   compiler::CodeAssemblerParameterizedLabel<> block14(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<JSAny> tmp0;
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CollectionsBuiltinsAssembler(state_).NormalizeNumberKey(TNode<Object>{p_nextValue});
+    tmp0 = CollectionsBuiltinsAssembler(state_).NormalizeNumberKey(TNode<JSAny>{p_nextValue});
     tmp1 = CollectionsBuiltinsAssembler(state_).TableHasKey(TNode<Context>{p_context}, TNode<OrderedHashSet>{p_resultSetDataAndNumberOfElements.setData}, TNode<Object>{tmp0});
     ca_.Branch(tmp1, &block7, std::vector<compiler::Node*>{}, &block8, std::vector<compiler::Node*>{});
   }
@@ -769,7 +770,7 @@ TorqueStructOrderedHashSetAndNumberOfElements_0 FastSymmetricDifference_0(compil
   if (block8.is_used()) {
     ca_.Bind(&block8);
     tmp4 = FromConstexpr_String_constexpr_string_0(state_, p_methodName);
-    tmp5 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{p_context}, TNode<OrderedHashSet>{p_resultSetDataAndNumberOfElements.setData}, TNode<Object>{tmp0}, TNode<String>{tmp4});
+    tmp5 = CollectionsBuiltinsAssembler(state_).AddToSetTable(TNode<Context>{p_context}, TNode<OrderedHashSet>{p_resultSetDataAndNumberOfElements.setData}, TNode<JSAny>{tmp0}, TNode<String>{tmp4});
     tmp6 = FromConstexpr_Smi_constexpr_int31_0(state_, 1);
     tmp7 = CodeStubAssembler(state_).SmiAdd(TNode<Smi>{p_resultSetDataAndNumberOfElements.numberOfElements}, TNode<Smi>{tmp6});
     ca_.Goto(&block9, tmp5, tmp7);

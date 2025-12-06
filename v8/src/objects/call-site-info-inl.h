@@ -5,8 +5,10 @@
 #ifndef V8_OBJECTS_CALL_SITE_INFO_INL_H_
 #define V8_OBJECTS_CALL_SITE_INFO_INL_H_
 
-#include "src/heap/heap-write-barrier-inl.h"
 #include "src/objects/call-site-info.h"
+// Include the non-inl header before the rest of the headers.
+
+#include "src/heap/heap-write-barrier-inl.h"
 #include "src/objects/objects-inl.h"
 #include "src/objects/struct-inl.h"
 
@@ -19,7 +21,6 @@ namespace internal {
 #include "torque-generated/src/objects/call-site-info-tq-inl.inc"
 
 TQ_OBJECT_CONSTRUCTORS_IMPL(CallSiteInfo)
-NEVER_READ_ONLY_SPACE_IMPL(CallSiteInfo)
 
 #if V8_ENABLE_WEBASSEMBLY
 BOOL_GETTER(CallSiteInfo, flags, IsWasm, IsWasmBit::kShift)

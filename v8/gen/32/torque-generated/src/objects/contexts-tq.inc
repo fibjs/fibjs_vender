@@ -7,10 +7,10 @@ V8_EXPORT_PRIVATE bool IsContext_NonInline(Tagged<HeapObject> o);
 template <class D, class P>
 class TorqueGeneratedContext : public P {
   static_assert(
-      std::is_same<Context, D>::value,
+      std::is_same_v<Context, D>,
       "Use this class as direct base for Context.");
   static_assert(
-      std::is_same<HeapObject, P>::value,
+      std::is_same_v<HeapObject, P>,
       "Pass in HeapObject as second template parameter for TorqueGeneratedContext.");
 
  public: 
@@ -63,7 +63,7 @@ class TorqueGeneratedContext : public P {
   template <class DAlias = D>
   constexpr TorqueGeneratedContext() : P() {
     static_assert(
-        std::is_base_of<TorqueGeneratedContext, DAlias>::value,
+        std::is_base_of_v<TorqueGeneratedContext, DAlias>,
         "class TorqueGeneratedContext should be used as direct base for Context.");
   }
 

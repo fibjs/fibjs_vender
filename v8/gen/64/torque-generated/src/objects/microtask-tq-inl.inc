@@ -16,7 +16,7 @@ Tagged<Object> TorqueGeneratedMicrotask<D, P>::continuation_preserved_embedder_d
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=8&c=3
 template<class D, class P>
 void TorqueGeneratedMicrotask<D, P>::set_continuation_preserved_embedder_data(Tagged<Object> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsSmi(value) || IsHeapObject(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsSmi(value) || IsHeapObject(value)));
   WRITE_FIELD(*this, kContinuationPreservedEmbedderDataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContinuationPreservedEmbedderDataOffset, value, mode);
 }
@@ -44,7 +44,7 @@ Tagged<Foreign> TorqueGeneratedCallbackTask<D, P>::callback(PtrComprCageBase cag
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=12&c=3
 template<class D, class P>
 void TorqueGeneratedCallbackTask<D, P>::set_callback(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kCallbackOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCallbackOffset, value, mode);
 }
@@ -67,7 +67,7 @@ Tagged<Foreign> TorqueGeneratedCallbackTask<D, P>::data(PtrComprCageBase cage_ba
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=13&c=3
 template<class D, class P>
 void TorqueGeneratedCallbackTask<D, P>::set_data(Tagged<Foreign> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsForeign(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsForeign(value)));
   WRITE_FIELD(*this, kDataOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kDataOffset, value, mode);
 }
@@ -95,7 +95,7 @@ Tagged<JSReceiver> TorqueGeneratedCallableTask<D, P>::callable(PtrComprCageBase 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=17&c=3
 template<class D, class P>
 void TorqueGeneratedCallableTask<D, P>::set_callable(Tagged<JSReceiver> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsJSReceiver(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsJSReceiver(value)));
   WRITE_FIELD(*this, kCallableOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kCallableOffset, value, mode);
 }
@@ -118,7 +118,7 @@ Tagged<Context> TorqueGeneratedCallableTask<D, P>::context(PtrComprCageBase cage
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/microtask.tq?l=18&c=3
 template<class D, class P>
 void TorqueGeneratedCallableTask<D, P>::set_context(Tagged<Context> value, WriteBarrierMode mode) {
-  SLOW_DCHECK(IsContext(value));
+  SLOW_DCHECK(!IsolateGroup::current()->shared_read_only_heap()->roots_init_complete() || (IsContext(value)));
   WRITE_FIELD(*this, kContextOffset, value);
   CONDITIONAL_WRITE_BARRIER(*this, kContextOffset, value, mode);
 }

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/arguments-tq-csa.h"
@@ -78,6 +78,7 @@
 #include "torque-generated/src/builtins/convert-tq-csa.h"
 #include "torque-generated/src/builtins/frame-arguments-tq-csa.h"
 #include "torque-generated/src/builtins/function-tq-csa.h"
+#include "torque-generated/src/builtins/promise-misc-tq-csa.h"
 #include "torque-generated/src/builtins/torque-internal-tq-csa.h"
 #include "torque-generated/src/objects/arguments-tq-csa.h"
 #include "torque-generated/src/objects/contexts-tq-csa.h"
@@ -251,11 +252,11 @@ TNode<JSArgumentsObject> NewJSStrictArgumentsObject_0(compiler::CodeAssemblerSta
     tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp7, tmp8}, tmp0);
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp9}, tmp1);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp7, tmp9}, tmp1);
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp7, tmp10}, p_elements);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp11}, tmp3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp7, tmp11}, tmp3);
     tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp7});
     ca_.Goto(&block2);
   }
@@ -299,13 +300,13 @@ TNode<JSArgumentsObject> NewJSSloppyArgumentsObject_0(compiler::CodeAssemblerSta
     tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp7, tmp8}, tmp0);
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp9}, tmp1);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp7, tmp9}, tmp1);
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp7, tmp10}, p_elements);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp11}, tmp3);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp7, tmp11}, tmp3);
     tmp12 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp7, tmp12}, p_callee);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp7, tmp12}, p_callee);
     tmp13 = TORQUE_CAST(TNode<HeapObject>{tmp7});
     ca_.Goto(&block2);
   }
@@ -345,13 +346,13 @@ TNode<JSArgumentsObject> NewJSFastAliasedArgumentsObject_0(compiler::CodeAssembl
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     CodeStubAssembler(state_).StoreReference<Map>(CodeStubAssembler::Reference{tmp5, tmp6}, tmp0);
     tmp7 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp7}, tmp1);
+    CodeStubAssembler(state_).StoreReference<Union<FixedArrayBase, PropertyArray, Smi, SwissNameDictionary>>(CodeStubAssembler::Reference{tmp5, tmp7}, tmp1);
     tmp8 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
     CodeStubAssembler(state_).StoreReference<FixedArrayBase>(CodeStubAssembler::Reference{tmp5, tmp8}, p_elements);
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp9}, p_length);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp5, tmp9}, p_length);
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp5, tmp10}, p_callee);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{tmp5, tmp10}, p_callee);
     tmp11 = TORQUE_CAST(TNode<HeapObject>{tmp5});
     ca_.Goto(&block2);
   }
@@ -979,9 +980,9 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
   compiler::CodeAssemblerParameterizedLabel<> block38(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block51(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block52(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block1(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
-  compiler::CodeAssemblerParameterizedLabel<Object, IntPtrT> block55(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
+  compiler::CodeAssemblerParameterizedLabel<Union<HeapObject, TaggedIndex>, IntPtrT> block55(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
   TNode<Smi> tmp0;
@@ -1038,7 +1039,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
     ca_.Goto(&block8);
   }
 
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<IntPtrT> tmp11;
   TNode<IntPtrT> tmp12;
@@ -1057,16 +1058,16 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
 
   TNode<IntPtrT> tmp16;
   TNode<IntPtrT> tmp17;
-  TNode<Object> tmp18;
+  TNode<Union<HeapObject, TaggedIndex>> tmp18;
   TNode<IntPtrT> tmp19;
-  TNode<Object> tmp20;
+  TNode<Union<Hole, Smi>> tmp20;
   TNode<Smi> tmp21;
   if (block15.is_used()) {
     ca_.Bind(&block15);
     tmp16 = TimesSizeOf_Smi_OR_TheHole_0(state_, TNode<IntPtrT>{tmp12});
     tmp17 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp10}, TNode<IntPtrT>{tmp16});
-    std::tie(tmp18, tmp19) = NewReference_Smi_OR_TheHole_0(state_, TNode<Object>{tmp9}, TNode<IntPtrT>{tmp17}).Flatten();
-    tmp20 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp18, tmp19});
+    std::tie(tmp18, tmp19) = NewReference_Smi_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp9}, TNode<IntPtrT>{tmp17}).Flatten();
+    tmp20 = CodeStubAssembler(state_).LoadReference<Union<Hole, Smi>>(CodeStubAssembler::Reference{tmp18, tmp19});
     compiler::CodeAssemblerLabel label22(&ca_);
     tmp21 = Cast_Smi_0(state_, TNode<Object>{tmp20}, &label22);
     ca_.Goto(&block21);
@@ -1088,7 +1089,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
 
   TNode<IntPtrT> tmp23;
   TNode<Context> tmp24;
-  TNode<Object> tmp25;
+  TNode<Union<HeapObject, TaggedIndex>> tmp25;
   TNode<IntPtrT> tmp26;
   TNode<IntPtrT> tmp27;
   TNode<IntPtrT> tmp28;
@@ -1109,13 +1110,13 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
 
   TNode<IntPtrT> tmp32;
   TNode<IntPtrT> tmp33;
-  TNode<Object> tmp34;
+  TNode<Union<HeapObject, TaggedIndex>> tmp34;
   TNode<IntPtrT> tmp35;
   if (block27.is_used()) {
     ca_.Bind(&block27);
     tmp32 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp28});
     tmp33 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp26}, TNode<IntPtrT>{tmp32});
-    std::tie(tmp34, tmp35) = NewReference_Object_0(state_, TNode<Object>{tmp25}, TNode<IntPtrT>{tmp33}).Flatten();
+    std::tie(tmp34, tmp35) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp25}, TNode<IntPtrT>{tmp33}).Flatten();
     ca_.Goto(&block2, tmp34, tmp35);
   }
 
@@ -1161,7 +1162,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
     ca_.Goto(&block1);
   }
 
-  TNode<Object> tmp43;
+  TNode<Union<HeapObject, TaggedIndex>> tmp43;
   TNode<IntPtrT> tmp44;
   TNode<IntPtrT> tmp45;
   TNode<IntPtrT> tmp46;
@@ -1180,7 +1181,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
 
   TNode<IntPtrT> tmp50;
   TNode<IntPtrT> tmp51;
-  TNode<Object> tmp52;
+  TNode<Union<HeapObject, TaggedIndex>> tmp52;
   TNode<IntPtrT> tmp53;
   TNode<Object> tmp54;
   TNode<Hole> tmp55;
@@ -1189,10 +1190,10 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
     ca_.Bind(&block43);
     tmp50 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp46});
     tmp51 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp44}, TNode<IntPtrT>{tmp50});
-    std::tie(tmp52, tmp53) = NewReference_Object_0(state_, TNode<Object>{tmp43}, TNode<IntPtrT>{tmp51}).Flatten();
+    std::tie(tmp52, tmp53) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp43}, TNode<IntPtrT>{tmp51}).Flatten();
     tmp54 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp52, tmp53});
     tmp55 = TheHole_0(state_);
-    tmp56 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp54}, TNode<HeapObject>{tmp55});
+    tmp56 = CodeStubAssembler(state_).TaggedEqual(TNode<Object>{tmp54}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp55});
     ca_.Branch(tmp56, &block37, std::vector<compiler::Node*>{}, &block38, std::vector<compiler::Node*>{});
   }
 
@@ -1206,7 +1207,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
     ca_.Goto(&block1);
   }
 
-  TNode<Object> tmp57;
+  TNode<Union<HeapObject, TaggedIndex>> tmp57;
   TNode<IntPtrT> tmp58;
   TNode<IntPtrT> tmp59;
   TNode<IntPtrT> tmp60;
@@ -1225,13 +1226,13 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
 
   TNode<IntPtrT> tmp64;
   TNode<IntPtrT> tmp65;
-  TNode<Object> tmp66;
+  TNode<Union<HeapObject, TaggedIndex>> tmp66;
   TNode<IntPtrT> tmp67;
   if (block51.is_used()) {
     ca_.Bind(&block51);
     tmp64 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp60});
     tmp65 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp58}, TNode<IntPtrT>{tmp64});
-    std::tie(tmp66, tmp67) = NewReference_Object_0(state_, TNode<Object>{tmp57}, TNode<IntPtrT>{tmp65}).Flatten();
+    std::tie(tmp66, tmp67) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp57}, TNode<IntPtrT>{tmp65}).Flatten();
     ca_.Goto(&block2, tmp66, tmp67);
   }
 
@@ -1240,7 +1241,7 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
     CodeStubAssembler(state_).Unreachable();
   }
 
-  TNode<Object> phi_bb2_2;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb2_2;
   TNode<IntPtrT> phi_bb2_3;
   if (block2.is_used()) {
     ca_.Bind(&block2, &phi_bb2_2, &phi_bb2_3);
@@ -1252,14 +1253,14 @@ TorqueStructReference_Object_0 AccessSloppyArgumentsCommon_0(compiler::CodeAssem
     ca_.Goto(label_Bailout);
   }
 
-  TNode<Object> phi_bb55_2;
+  TNode<Union<HeapObject, TaggedIndex>> phi_bb55_2;
   TNode<IntPtrT> phi_bb55_3;
     ca_.Bind(&block55, &phi_bb55_2, &phi_bb55_3);
-  return TorqueStructReference_Object_0{TNode<Object>{phi_bb55_2}, TNode<IntPtrT>{phi_bb55_3}, TorqueStructUnsafe_0{}};
+  return TorqueStructReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{phi_bb55_2}, TNode<IntPtrT>{phi_bb55_3}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=330&c=1
-TNode<Object> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
+TNode<JSAny> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1268,7 +1269,7 @@ TNode<Object> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<
   compiler::CodeAssemblerParameterizedLabel<> block15(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1287,20 +1288,20 @@ TNode<Object> SloppyArgumentsLoad_0(compiler::CodeAssemblerState* state_, TNode<
   }
 
   TNode<Object> tmp3;
-  TNode<Object> tmp4;
+  TNode<JSAny> tmp4;
   if (block3.is_used()) {
     ca_.Bind(&block3);
     tmp3 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp0, tmp1});
-    tmp4 = (TNode<Object>{tmp3});
+    tmp4 = TORQUE_CAST(TNode<Object>{tmp3});
     ca_.Goto(&block15);
   }
 
     ca_.Bind(&block15);
-  return TNode<Object>{tmp4};
+  return TNode<JSAny>{tmp4};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=337&c=1
-TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
+TNode<JSAny> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1309,7 +1310,7 @@ TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<J
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1335,11 +1336,11 @@ TNode<Object> SloppyArgumentsHas_0(compiler::CodeAssemblerState* state_, TNode<J
   }
 
     ca_.Bind(&block5);
-  return TNode<Object>{tmp3};
+  return TNode<JSAny>{tmp3};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=344&c=1
-TNode<Object> SloppyArgumentsStore_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, TNode<Object> p_value, compiler::CodeAssemblerLabel* label_Bailout) {
+TNode<JSAny> SloppyArgumentsStore_0(compiler::CodeAssemblerState* state_, TNode<JSObject> p_receiver, TNode<Object> p_keyObject, TNode<JSAny> p_value, compiler::CodeAssemblerLabel* label_Bailout) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1348,7 +1349,7 @@ TNode<Object> SloppyArgumentsStore_0(compiler::CodeAssemblerState* state_, TNode
   compiler::CodeAssemblerParameterizedLabel<> block5(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
@@ -1373,11 +1374,11 @@ TNode<Object> SloppyArgumentsStore_0(compiler::CodeAssemblerState* state_, TNode
   }
 
     ca_.Bind(&block5);
-  return TNode<Object>{p_value};
+  return TNode<JSAny>{p_value};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
-TNode<Object> LoadJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o) {
+TNode<JSAny> LoadJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1385,20 +1386,20 @@ TNode<Object> LoadJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* 
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<JSAny>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=18&c=3
-void StoreJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o, TNode<Object> p_v) {
+void StoreJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o, TNode<JSAny> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1409,7 +1410,7 @@ void StoreJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -1417,7 +1418,7 @@ void StoreJSSloppyArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, 
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
-TNode<Object> LoadJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o) {
+TNode<JSAny> LoadJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1425,20 +1426,20 @@ TNode<Object> LoadJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* 
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<JSAny>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=19&c=3
-void StoreJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o, TNode<Object> p_v) {
+void StoreJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o, TNode<JSAny> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1449,7 +1450,7 @@ void StoreJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* state_, 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -1457,7 +1458,7 @@ void StoreJSSloppyArgumentsObjectCallee_0(compiler::CodeAssemblerState* state_, 
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
-TNode<Object> LoadJSStrictArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o) {
+TNode<JSAny> LoadJSStrictArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1465,20 +1466,20 @@ TNode<Object> LoadJSStrictArgumentsObjectLength_0(compiler::CodeAssemblerState* 
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<JSAny> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<JSAny>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<JSAny>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=24&c=3
-void StoreJSStrictArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o, TNode<Object> p_v) {
+void StoreJSStrictArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, TNode<JSArgumentsObject> p_o, TNode<JSAny> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1489,7 +1490,7 @@ void StoreJSStrictArgumentsObjectLength_0(compiler::CodeAssemblerState* state_, 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<JSAny>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -1588,7 +1589,7 @@ TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0 FieldSliceSlo
   TNode<Smi> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   if (block0.is_used()) {
@@ -1597,16 +1598,16 @@ TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0 FieldSliceSlo
     tmp1 = CodeStubAssembler(state_).LoadReference<Smi>(CodeStubAssembler::Reference{p_o, tmp0});
     tmp2 = Convert_intptr_Smi_0(state_, TNode<Smi>{tmp1});
     tmp3 = FromConstexpr_intptr_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x20ull));
-    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_Smi_OR_TheHole_0(state_, TNode<Object>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
+    std::tie(tmp4, tmp5, tmp6) = NewMutableSlice_Smi_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_o}, TNode<IntPtrT>{tmp3}, TNode<IntPtrT>{tmp2}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Object>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp4}, TNode<IntPtrT>{tmp5}, TNode<IntPtrT>{tmp6}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
-TNode<Object> LoadSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssemblerState* state_, TNode<SloppyArgumentsElements> p_o, TNode<IntPtrT> p_i) {
+TNode<Union<Hole, Smi>> LoadSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssemblerState* state_, TNode<SloppyArgumentsElements> p_o, TNode<IntPtrT> p_i) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1615,7 +1616,7 @@ TNode<Object> LoadSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssembler
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1632,15 +1633,15 @@ TNode<Object> LoadSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssembler
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
-  TNode<Object> tmp10;
+  TNode<Union<Hole, Smi>> tmp10;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_OR_TheHole_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_OR_TheHole_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    tmp10 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9});
+    std::tie(tmp8, tmp9) = NewReference_Smi_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    tmp10 = CodeStubAssembler(state_).LoadReference<Union<Hole, Smi>>(CodeStubAssembler::Reference{tmp8, tmp9});
     ca_.Goto(&block10);
   }
 
@@ -1650,11 +1651,11 @@ TNode<Object> LoadSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssembler
   }
 
     ca_.Bind(&block10);
-  return TNode<Object>{tmp10};
+  return TNode<Union<Hole, Smi>>{tmp10};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
-void StoreSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssemblerState* state_, TNode<SloppyArgumentsElements> p_o, TNode<IntPtrT> p_i, TNode<Object> p_v) {
+void StoreSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssemblerState* state_, TNode<SloppyArgumentsElements> p_o, TNode<IntPtrT> p_i, TNode<Union<Hole, Smi>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1663,7 +1664,7 @@ void StoreSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssemblerState* s
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<UintPtrT> tmp3;
@@ -1680,14 +1681,14 @@ void StoreSloppyArgumentsElementsMappedEntries_0(compiler::CodeAssemblerState* s
 
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
-  TNode<Object> tmp8;
+  TNode<Union<HeapObject, TaggedIndex>> tmp8;
   TNode<IntPtrT> tmp9;
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp6 = TimesSizeOf_Smi_OR_TheHole_0(state_, TNode<IntPtrT>{p_i});
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp6});
-    std::tie(tmp8, tmp9) = NewReference_Smi_OR_TheHole_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
+    std::tie(tmp8, tmp9) = NewReference_Smi_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp7}).Flatten();
+    CodeStubAssembler(state_).StoreReference<Union<Hole, Smi>>(CodeStubAssembler::Reference{tmp8, tmp9}, p_v);
     ca_.Goto(&block10);
   }
 
@@ -1787,7 +1788,7 @@ TNode<JSArgumentsObject> DownCastForTorqueClass_JSArgumentsObject_0(compiler::Co
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<JSArgumentsObject>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -1809,7 +1810,7 @@ TNode<JSArgumentsObject> DownCastForTorqueClass_JSArgumentsObject_0(compiler::Co
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(2118));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(2118));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -1895,7 +1896,7 @@ TNode<BoolT> Is_JSArgumentsObjectWithLength_Object_0(compiler::CodeAssemblerStat
   compiler::CodeAssemblerParameterizedLabel<> block6(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<JSArgumentsObject> tmp0;
+  TNode<Union<JSArgumentsObject>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
@@ -1979,7 +1980,7 @@ TNode<SloppyArgumentsElements> DownCastForTorqueClass_SloppyArgumentsElements_0(
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<SloppyArgumentsElements>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2001,7 +2002,7 @@ TNode<SloppyArgumentsElements> DownCastForTorqueClass_SloppyArgumentsElements_0(
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(220));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(220));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2124,7 +2125,7 @@ TNode<AliasedArgumentsEntry> DownCastForTorqueClass_AliasedArgumentsEntry_0(comp
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<AliasedArgumentsEntry>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -2146,7 +2147,7 @@ TNode<AliasedArgumentsEntry> DownCastForTorqueClass_AliasedArgumentsEntry_0(comp
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 12);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(141));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(141));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -2294,7 +2295,7 @@ TNode<FixedArray> NewFixedArray_ParameterValueIterator_0(compiler::CodeAssembler
     tmp15 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     CodeStubAssembler(state_).StoreReference<Smi>(CodeStubAssembler::Reference{tmp13, tmp15}, tmp7);
     tmp16 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    InitializeFieldsFromIterator_Object_ParameterValueIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Object>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructParameterValueIterator_0{TNode<IntPtrT>{p_it.mapped_count}, TorqueStructArguments{TNode<RawPtrT>{p_it.arguments.frame}, TNode<RawPtrT>{p_it.arguments.base}, TNode<IntPtrT>{p_it.arguments.length}, TNode<IntPtrT>{p_it.arguments.actual_count}}, TNode<IntPtrT>{p_it.current}});
+    InitializeFieldsFromIterator_Object_ParameterValueIterator_0(state_, TorqueStructSlice_Object_MutableReference_Object_0{TNode<Union<HeapObject, TaggedIndex>>{tmp13}, TNode<IntPtrT>{tmp16}, TNode<IntPtrT>{tmp8}, TorqueStructUnsafe_0{}}, TorqueStructParameterValueIterator_0{TNode<IntPtrT>{p_it.mapped_count}, TorqueStructArguments{TNode<RawPtrT>{p_it.arguments.frame}, TNode<RawPtrT>{p_it.arguments.base}, TNode<IntPtrT>{p_it.arguments.length}, TNode<IntPtrT>{p_it.arguments.actual_count}}, TNode<IntPtrT>{p_it.current}});
     tmp17 = TORQUE_CAST(TNode<HeapObject>{tmp13});
     ca_.Goto(&block1, tmp17);
   }
@@ -2349,7 +2350,7 @@ TNode<SloppyArgumentsElements> NewSloppyArgumentsElements_ParameterMapIterator_0
     tmp10 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
     CodeStubAssembler(state_).StoreReference<FixedArray>(CodeStubAssembler::Reference{tmp6, tmp10}, p_arguments);
     tmp11 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    InitializeFieldsFromIterator_Smi_OR_TheHole_ParameterMapIterator_0(state_, TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Object>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}}, TorqueStructParameterMapIterator_0{TNode<IntPtrT>{p_it.currentIndex}, TNode<IntPtrT>{p_it.endInterationIndex}});
+    InitializeFieldsFromIterator_Smi_OR_TheHole_ParameterMapIterator_0(state_, TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp6}, TNode<IntPtrT>{tmp11}, TNode<IntPtrT>{tmp1}, TorqueStructUnsafe_0{}}, TorqueStructParameterMapIterator_0{TNode<IntPtrT>{p_it.currentIndex}, TNode<IntPtrT>{p_it.endInterationIndex}});
     tmp12 = TORQUE_CAST(TNode<HeapObject>{tmp6});
     ca_.Goto(&block2);
   }
@@ -2386,24 +2387,24 @@ TNode<BoolT> OutOfBounds_Smi_Smi_0(compiler::CodeAssemblerState* state_, TNode<S
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=31&c=3
-TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0 NewMutableSlice_Smi_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Object> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
+TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0 NewMutableSlice_Smi_OR_TheHole_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, TaggedIndex>> p_object, TNode<IntPtrT> p_offset, TNode<IntPtrT> p_length) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block2(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Object>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
+    std::tie(tmp0, tmp1, tmp2) = (TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{p_object}, TNode<IntPtrT>{p_offset}, TNode<IntPtrT>{p_length}, TorqueStructUnsafe_0{}}).Flatten();
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Object>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
+  return TorqueStructSlice_Smi_OR_TheHole_MutableReference_Smi_OR_TheHole_0{TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp2}, TorqueStructUnsafe_0{}};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/arguments.tq?l=37&c=10
@@ -2457,14 +2458,14 @@ void InitializeFieldsFromIterator_Smi_OR_TheHole_ParameterMapIterator_0(compiler
 
   TNode<IntPtrT> phi_bb10_6;
   TNode<IntPtrT> phi_bb10_8;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   TNode<BoolT> tmp8;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_6, &phi_bb10_8);
-    std::tie(tmp4, tmp5) = NewReference_Smi_OR_TheHole_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_6}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_Smi_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_6}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_6}, TNode<IntPtrT>{tmp6});
     tmp8 = CodeStubAssembler(state_).WordEqual(TNode<IntPtrT>{phi_bb10_8}, TNode<IntPtrT>{p_originIterator.endInterationIndex});
@@ -2486,7 +2487,7 @@ void InitializeFieldsFromIterator_Smi_OR_TheHole_ParameterMapIterator_0(compiler
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 1);
     tmp10 = CodeStubAssembler(state_).IntPtrSub(TNode<IntPtrT>{phi_bb17_8}, TNode<IntPtrT>{tmp9});
     tmp11 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{tmp10});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp5}, tmp11);
+    CodeStubAssembler(state_).StoreReference<Union<Hole, Smi>>(CodeStubAssembler::Reference{tmp4, tmp5}, tmp11);
     ca_.Goto(&block5, tmp7, tmp10);
   }
 
@@ -2545,16 +2546,16 @@ void InitializeFieldsFromIterator_Smi_OR_TheHole_ConstantIterator_TheHole_0(comp
   }
 
   TNode<IntPtrT> phi_bb10_5;
-  TNode<Object> tmp4;
+  TNode<Union<HeapObject, TaggedIndex>> tmp4;
   TNode<IntPtrT> tmp5;
   TNode<IntPtrT> tmp6;
   TNode<IntPtrT> tmp7;
   if (block10.is_used()) {
     ca_.Bind(&block10, &phi_bb10_5);
-    std::tie(tmp4, tmp5) = NewReference_Smi_OR_TheHole_0(state_, TNode<Object>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
+    std::tie(tmp4, tmp5) = NewReference_Smi_OR_TheHole_0(state_, TNode<Union<HeapObject, TaggedIndex>>{p_target.object}, TNode<IntPtrT>{phi_bb10_5}).Flatten();
     tmp6 = FromConstexpr_intptr_constexpr_int31_0(state_, kTaggedSize);
     tmp7 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{phi_bb10_5}, TNode<IntPtrT>{tmp6});
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value);
+    CodeStubAssembler(state_).StoreReference<Union<Hole, Smi>>(CodeStubAssembler::Reference{tmp4, tmp5}, p_originIterator.value);
     ca_.Goto(&block5, tmp7);
   }
 

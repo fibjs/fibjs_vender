@@ -8,6 +8,12 @@
 namespace v8 {
 namespace base {
 
+    int OS::GetCurrentThreadId()
+    {
+        exlib::Thread_base* fb = exlib::Thread_base::current();
+        return static_cast<int>(reinterpret_cast<intptr_t>(fb));
+    }
+
     class Thread::PlatformData {
     public:
         PlatformData(Thread* pThis)

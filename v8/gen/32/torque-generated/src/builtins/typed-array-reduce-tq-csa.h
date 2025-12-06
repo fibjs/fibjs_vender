@@ -9,7 +9,7 @@ namespace internal {
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-reduce.tq?l=8&c=1
 const char* kBuiltinNameReduce_0(compiler::CodeAssemblerState* state_);
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/typed-array-reduce.tq?l=10&c=1
-TNode<Object> ReduceAllElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedArrayAndLength, TNode<JSReceiver> p_callbackfn, TNode<Object> p_initialValue);
+TNode<JSAny> ReduceAllElements_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TorqueStructAttachedJSTypedArrayAndLength_0 p_attachedArrayAndLength, TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> p_callbackfn, TNode<Union<BigInt, Boolean, HeapNumber, Hole, JSReceiver, Null, Smi, String, Symbol, Undefined>> p_initialValue);
 
 } // namespace internal
 } // namespace v8

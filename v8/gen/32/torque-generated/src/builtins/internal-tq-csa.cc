@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/internal-tq-csa.h"
@@ -97,7 +97,7 @@ TF_BUILTIN(GetTemplateObject, CodeStubAssembler) {
   USE(parameter2);
   TNode<UintPtrT> parameter3 = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
   USE(parameter3);
-  TNode<HeapObject> parameter4 = UncheckedParameter<HeapObject>(Descriptor::kMaybeFeedbackVector);
+  TNode<Union<FeedbackVector, Undefined>> parameter4 = UncheckedParameter<Union<FeedbackVector, Undefined>>(Descriptor::kMaybeFeedbackVector);
   USE(parameter4);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
   compiler::CodeAssemblerParameterizedLabel<> block11(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -126,13 +126,13 @@ TF_BUILTIN(GetTemplateObject, CodeStubAssembler) {
     ca_.Goto(&block9);
   }
 
-  TNode<MaybeObject> tmp2;
+  TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> tmp2;
   TNode<JSArray> tmp3;
   if (block10.is_used()) {
     ca_.Bind(&block10);
     tmp2 = CodeStubAssembler(state_).LoadFeedbackVectorSlot(TNode<FeedbackVector>{tmp0}, TNode<UintPtrT>{parameter3});
     compiler::CodeAssemblerLabel label4(&ca_);
-    tmp3 = Cast_JSArray_2(state_, TNode<Context>{parameter0}, TNode<MaybeObject>{tmp2}, &label4);
+    tmp3 = Cast_JSArray_2(state_, TNode<Context>{parameter0}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp2}, &label4);
     ca_.Goto(&block12);
     if (label4.is_used()) {
       ca_.Bind(&label4);
@@ -152,14 +152,14 @@ TF_BUILTIN(GetTemplateObject, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp5;
   TNode<Smi> tmp6;
-  TNode<Object> tmp7;
+  TNode<JSAny> tmp7;
   TNode<JSArray> tmp8;
   TNode<FeedbackVector> tmp9;
   if (block9.is_used()) {
     ca_.Bind(&block9);
     tmp5 = CodeStubAssembler(state_).Signed(TNode<UintPtrT>{parameter3});
     tmp6 = Convert_Smi_intptr_0(state_, TNode<IntPtrT>{tmp5});
-    tmp7 = CodeStubAssembler(state_).CallRuntime(Runtime::kGetTemplateObject, parameter0, parameter2, parameter1, tmp6); 
+    tmp7 = TORQUE_CAST(CodeStubAssembler(state_).CallRuntime(Runtime::kGetTemplateObject, parameter0, parameter2, parameter1, tmp6)); 
     tmp8 = UnsafeCast_JSArray_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp7});
     compiler::CodeAssemblerLabel label10(&ca_);
     tmp9 = Cast_FeedbackVector_0(state_, TNode<HeapObject>{parameter4}, &label10);
@@ -177,7 +177,7 @@ TF_BUILTIN(GetTemplateObject, CodeStubAssembler) {
 
   if (block16.is_used()) {
     ca_.Bind(&block16);
-    CodeStubAssembler(state_).StoreFeedbackVectorSlot(TNode<FeedbackVector>{tmp9}, TNode<UintPtrT>{parameter3}, TNode<MaybeObject>{tmp8});
+    CodeStubAssembler(state_).StoreFeedbackVectorSlot(TNode<FeedbackVector>{tmp9}, TNode<UintPtrT>{parameter3}, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp8});
     CodeStubAssembler(state_).Return(tmp8);
   }
 }
@@ -204,7 +204,7 @@ TNode<Uint32T> FromConstexpr_ForInFeedback_constexpr_kAny_0(compiler::CodeAssemb
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=49&c=1
-TNode<Object> ForInNextSlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<UintPtrT> p_slot, TNode<HeapObject> p_receiver, TNode<Object> p_key, TNode<Object> p_cacheType, TNode<HeapObject> p_maybeFeedbackVector, UpdateFeedbackMode p_guaranteedFeedback) {
+TNode<JSAny> ForInNextSlow_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<UintPtrT> p_slot, TNode<Union<BigInt, Boolean, HeapNumber, JSReceiver, Null, String, Symbol, Undefined>> p_receiver, TNode<JSAny> p_key, TNode<Object> p_cacheType, TNode<Union<FeedbackVector, Undefined>> p_maybeFeedbackVector, UpdateFeedbackMode p_guaranteedFeedback) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -213,18 +213,18 @@ TNode<Object> ForInNextSlow_0(compiler::CodeAssemblerState* state_, TNode<Contex
 
   TNode<Uint32T> tmp0;
   TNode<Smi> tmp1;
-  TNode<Object> tmp2;
+  TNode<JSAny> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_ForInFeedback_constexpr_kAny_0(state_, ForInFeedback::kAny);
     tmp1 = SmiTag_ForInFeedback_0(state_, TNode<Uint32T>{tmp0});
-    CodeStubAssembler(state_).UpdateFeedback(TNode<Smi>{tmp1}, TNode<HeapObject>{p_maybeFeedbackVector}, TNode<UintPtrT>{p_slot}, p_guaranteedFeedback);
-    tmp2 = ca_.CallBuiltin<Object>(Builtin::kForInFilter, p_context, p_key, p_receiver);
+    CodeStubAssembler(state_).UpdateFeedback(TNode<Smi>{tmp1}, TNode<Union<FeedbackVector, Undefined>>{p_maybeFeedbackVector}, TNode<UintPtrT>{p_slot}, p_guaranteedFeedback);
+    tmp2 = ca_.CallBuiltin<JSAny>(Builtin::kForInFilter, p_context, p_key, p_receiver);
     ca_.Goto(&block6);
   }
 
     ca_.Bind(&block6);
-  return TNode<Object>{tmp2};
+  return TNode<JSAny>{tmp2};
 }
 
 TF_BUILTIN(ForInNext, CodeStubAssembler) {
@@ -233,7 +233,7 @@ TF_BUILTIN(ForInNext, CodeStubAssembler) {
   USE(parameter0);
   TNode<UintPtrT> parameter1 = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
   USE(parameter1);
-  TNode<HeapObject> parameter2 = UncheckedParameter<HeapObject>(Descriptor::kReceiver);
+  TNode<Union<BigInt, Boolean, HeapNumber, JSReceiver, Null, String, Symbol, Undefined>> parameter2 = UncheckedParameter<Union<BigInt, Boolean, HeapNumber, JSReceiver, Null, String, Symbol, Undefined>>(Descriptor::kReceiver);
   USE(parameter2);
   TNode<FixedArray> parameter3 = UncheckedParameter<FixedArray>(Descriptor::kCacheArray);
   USE(parameter3);
@@ -250,7 +250,7 @@ TF_BUILTIN(ForInNext, CodeStubAssembler) {
   compiler::CodeAssemblerParameterizedLabel<> block10(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<Object> tmp0;
+  TNode<Union<HeapObject, TaggedIndex>> tmp0;
   TNode<IntPtrT> tmp1;
   TNode<IntPtrT> tmp2;
   TNode<IntPtrT> tmp3;
@@ -269,10 +269,10 @@ TF_BUILTIN(ForInNext, CodeStubAssembler) {
 
   TNode<IntPtrT> tmp7;
   TNode<IntPtrT> tmp8;
-  TNode<Object> tmp9;
+  TNode<Union<HeapObject, TaggedIndex>> tmp9;
   TNode<IntPtrT> tmp10;
   TNode<Object> tmp11;
-  TNode<Object> tmp12;
+  TNode<JSAny> tmp12;
   TNode<IntPtrT> tmp13;
   TNode<Map> tmp14;
   TNode<BoolT> tmp15;
@@ -280,12 +280,12 @@ TF_BUILTIN(ForInNext, CodeStubAssembler) {
     ca_.Bind(&block5);
     tmp7 = TimesSizeOf_Object_0(state_, TNode<IntPtrT>{tmp3});
     tmp8 = CodeStubAssembler(state_).IntPtrAdd(TNode<IntPtrT>{tmp1}, TNode<IntPtrT>{tmp7});
-    std::tie(tmp9, tmp10) = NewReference_Object_0(state_, TNode<Object>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
+    std::tie(tmp9, tmp10) = NewReference_Object_0(state_, TNode<Union<HeapObject, TaggedIndex>>{tmp0}, TNode<IntPtrT>{tmp8}).Flatten();
     tmp11 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{tmp9, tmp10});
     tmp12 = UnsafeCast_JSAny_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp11});
     tmp13 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp14 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{parameter2, tmp13});
-    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<HeapObject>{tmp14}, TNode<Object>{parameter4});
+    tmp15 = CodeStubAssembler(state_).TaggedEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp14}, TNode<Object>{parameter4});
     ca_.Branch(tmp15, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -299,10 +299,10 @@ TF_BUILTIN(ForInNext, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp12);
   }
 
-  TNode<Object> tmp16;
+  TNode<JSAny> tmp16;
   if (block10.is_used()) {
     ca_.Bind(&block10);
-    tmp16 = ForInNextSlow_0(state_, TNode<Context>{parameter0}, TNode<UintPtrT>{parameter1}, TNode<HeapObject>{parameter2}, TNode<Object>{tmp12}, TNode<Object>{parameter4}, TNode<HeapObject>{parameter6}, UpdateFeedbackMode::kGuaranteedFeedback);
+    tmp16 = ForInNextSlow_0(state_, TNode<Context>{parameter0}, TNode<UintPtrT>{parameter1}, TNode<Union<BigInt, Boolean, HeapNumber, JSReceiver, Null, String, Symbol, Undefined>>{parameter2}, TNode<JSAny>{tmp12}, TNode<Object>{parameter4}, TNode<Union<FeedbackVector, Undefined>>{parameter6}, UpdateFeedbackMode::kGuaranteedFeedback);
     CodeStubAssembler(state_).Return(tmp16);
   }
 }
@@ -323,7 +323,7 @@ TF_BUILTIN(GetImportMetaObjectBaseline, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/internal.tq?l=30&c=12
-TNode<JSArray> Cast_JSArray_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+TNode<JSArray> Cast_JSArray_2(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -335,11 +335,11 @@ TNode<JSArray> Cast_JSArray_2(compiler::CodeAssemblerState* state_, TNode<Contex
   compiler::CodeAssemblerParameterizedLabel<> block9(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
     ca_.Goto(&block0);
 
-  TNode<MaybeObject> tmp0;
+  TNode<MaybeWeak<HeapObject>> tmp0;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     compiler::CodeAssemblerLabel label1(&ca_);
-    tmp0 = Cast_WeakHeapObject_0(state_, TNode<MaybeObject>{p_o}, &label1);
+    tmp0 = Cast_WeakHeapObject_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_o}, &label1);
     ca_.Goto(&block5);
     if (label1.is_used()) {
       ca_.Bind(&label1);

@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/map-tq-csa.h"
@@ -119,7 +119,7 @@ TNode<Map> Cast_Map_0(compiler::CodeAssemblerState* state_, TNode<HeapObject> p_
   return TNode<Map>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=80&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=82&c=1
 TNode<PrototypeInfo> LoadMapPrototypeInfo_0(compiler::CodeAssemblerState* state_, TNode<Map> p_m, compiler::CodeAssemblerLabel* label_HasNoPrototypeInfo) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -155,7 +155,7 @@ TNode<PrototypeInfo> LoadMapPrototypeInfo_0(compiler::CodeAssemblerState* state_
   return TNode<PrototypeInfo>{tmp0};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=87&c=1
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=89&c=1
 TNode<BoolT> IsSimpleObjectMap_0(compiler::CodeAssemblerState* state_, TNode<Map> p_map) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -534,7 +534,7 @@ void StoreMapBitField3_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, T
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-TNode<HeapObject> LoadMapPrototype_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
+TNode<Union<JSReceiver, Null>> LoadMapPrototype_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -542,20 +542,20 @@ TNode<HeapObject> LoadMapPrototype_0(compiler::CodeAssemblerState* state_, TNode
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<Union<JSReceiver, Null>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<HeapObject>{tmp1};
+  return TNode<Union<JSReceiver, Null>>{tmp1};
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=71&c=3
-void StoreMapPrototype_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<HeapObject> p_v) {
+void StoreMapPrototype_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<Union<JSReceiver, Null>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -566,7 +566,7 @@ void StoreMapPrototype_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, T
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    CodeStubAssembler(state_).StoreReference<HeapObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -613,8 +613,8 @@ void StoreMapConstructorOrBackPointerOrNativeContext_0(compiler::CodeAssemblerSt
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-TNode<DescriptorArray> LoadMapInstanceDescriptors_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
+TNode<Union<DescriptorArray, WasmStruct>> LoadMapInstanceDescriptors_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -622,20 +622,20 @@ TNode<DescriptorArray> LoadMapInstanceDescriptors_0(compiler::CodeAssemblerState
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<DescriptorArray> tmp1;
+  TNode<Union<DescriptorArray, WasmStruct>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<DescriptorArray>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<DescriptorArray, WasmStruct>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<DescriptorArray>{tmp1};
+  return TNode<Union<DescriptorArray, WasmStruct>>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=3
-void StoreMapInstanceDescriptors_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<DescriptorArray> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=73&c=30
+void StoreMapInstanceDescriptors_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<Union<DescriptorArray, WasmStruct>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -646,14 +646,14 @@ void StoreMapInstanceDescriptors_0(compiler::CodeAssemblerState* state_, TNode<M
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    CodeStubAssembler(state_).StoreReference<DescriptorArray>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<DescriptorArray, WasmStruct>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 TNode<WeakArrayList> LoadMapDependentCode_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -674,7 +674,7 @@ TNode<WeakArrayList> LoadMapDependentCode_0(compiler::CodeAssemblerState* state_
   return TNode<WeakArrayList>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=74&c=3
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
 void StoreMapDependentCode_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<WeakArrayList> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
@@ -693,8 +693,8 @@ void StoreMapDependentCode_0(compiler::CodeAssemblerState* state_, TNode<Map> p_
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-TNode<Object> LoadMapPrototypeValidityCell_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
+TNode<Union<Cell, Smi>> LoadMapPrototypeValidityCell_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -702,20 +702,20 @@ TNode<Object> LoadMapPrototypeValidityCell_0(compiler::CodeAssemblerState* state
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<Object> tmp1;
+  TNode<Union<Cell, Smi>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    tmp1 = CodeStubAssembler(state_).LoadReference<Object>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<Cell, Smi>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<Object>{tmp1};
+  return TNode<Union<Cell, Smi>>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=75&c=3
-void StoreMapPrototypeValidityCell_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<Object> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=77&c=3
+void StoreMapPrototypeValidityCell_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<Union<Cell, Smi>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -726,15 +726,15 @@ void StoreMapPrototypeValidityCell_0(compiler::CodeAssemblerState* state_, TNode
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 32);
-    CodeStubAssembler(state_).StoreReference<Object>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<Cell, Smi>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-TNode<MaybeObject> LoadMapTransitionsOrPrototypeInfo_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
+TNode<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> LoadMapTransitionsOrPrototypeInfo_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -742,20 +742,20 @@ TNode<MaybeObject> LoadMapTransitionsOrPrototypeInfo_0(compiler::CodeAssemblerSt
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<MaybeObject> tmp1;
+  TNode<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
-    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>>(CodeStubAssembler::Reference{p_o, tmp0});
     ca_.Goto(&block2);
   }
 
     ca_.Bind(&block2);
-  return TNode<MaybeObject>{tmp1};
+  return TNode<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>>{tmp1};
 }
 
-// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=76&c=3
-void StoreMapTransitionsOrPrototypeInfo_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<MaybeObject> p_v) {
+// https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=78&c=3
+void StoreMapTransitionsOrPrototypeInfo_0(compiler::CodeAssemblerState* state_, TNode<Map> p_o, TNode<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> p_v) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -766,7 +766,7 @@ void StoreMapTransitionsOrPrototypeInfo_0(compiler::CodeAssemblerState* state_, 
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
-    CodeStubAssembler(state_).StoreReference<MaybeObject>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
+    CodeStubAssembler(state_).StoreReference<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>>(CodeStubAssembler::Reference{p_o, tmp0}, p_v);
     ca_.Goto(&block2);
   }
 
@@ -789,14 +789,14 @@ TNode<PrototypeInfo> Method_Map_PrototypeInfo_0(compiler::CodeAssemblerState* st
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<MaybeObject> tmp1;
-  TNode<MaybeObject> tmp2;
+  TNode<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>> tmp1;
+  TNode<MaybeWeak<HeapObject>> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 36);
-    tmp1 = CodeStubAssembler(state_).LoadReference<MaybeObject>(CodeStubAssembler::Reference{p_this, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<Map, MaybeWeak<HeapObject>, PrototypeInfo, Smi, TransitionArray>>(CodeStubAssembler::Reference{p_this, tmp0});
     compiler::CodeAssemblerLabel label3(&ca_);
-    tmp2 = Cast_Weak_Map_0(state_, TNode<MaybeObject>{tmp1}, &label3);
+    tmp2 = Cast_Weak_Map_0(state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{tmp1}, &label3);
     ca_.Goto(&block5);
     if (label3.is_used()) {
       ca_.Bind(&label3);
@@ -808,7 +808,7 @@ TNode<PrototypeInfo> Method_Map_PrototypeInfo_0(compiler::CodeAssemblerState* st
   if (block6.is_used()) {
     ca_.Bind(&block6);
     compiler::CodeAssemblerLabel label5(&ca_);
-    tmp4 = Cast_Smi_0(state_, TNode<Object>{ca_.UncheckedCast<Object>(tmp1)}, &label5);
+    tmp4 = Cast_Smi_0(state_, TNode<Object>{ca_.UncheckedCast<Union<Map, PrototypeInfo, Smi, TransitionArray>>(tmp1)}, &label5);
     ca_.Goto(&block9);
     if (label5.is_used()) {
       ca_.Bind(&label5);
@@ -825,7 +825,7 @@ TNode<PrototypeInfo> Method_Map_PrototypeInfo_0(compiler::CodeAssemblerState* st
   if (block10.is_used()) {
     ca_.Bind(&block10);
     compiler::CodeAssemblerLabel label7(&ca_);
-    tmp6 = Cast_PrototypeInfo_0(state_, TNode<HeapObject>{ca_.UncheckedCast<HeapObject>(tmp1)}, &label7);
+    tmp6 = Cast_PrototypeInfo_0(state_, TNode<HeapObject>{ca_.UncheckedCast<Union<Map, PrototypeInfo, TransitionArray>>(tmp1)}, &label7);
     ca_.Goto(&block13);
     if (label7.is_used()) {
       ca_.Bind(&label7);
@@ -907,7 +907,7 @@ TNode<Map> DownCastForTorqueClass_Map_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block0);
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 0);
     tmp1 = CodeStubAssembler(state_).LoadReference<Map>(CodeStubAssembler::Reference{p_o, tmp0});
-    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(271), static_cast<InstanceType>(271))))) {
+    if (((CodeStubAssembler(state_).ConstexprInt31Equal(static_cast<InstanceType>(276), static_cast<InstanceType>(276))))) {
       ca_.Goto(&block3);
     } else {
       ca_.Goto(&block4);
@@ -928,7 +928,7 @@ TNode<Map> DownCastForTorqueClass_Map_0(compiler::CodeAssemblerState* state_, TN
   if (block6.is_used()) {
     ca_.Bind(&block6);
     tmp2 = CodeStubAssembler(state_).GetClassMapConstant<Map>();
-    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<HeapObject>{tmp1}, TNode<HeapObject>{tmp2});
+    tmp3 = CodeStubAssembler(state_).TaggedNotEqual(TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp1}, TNode<Union<Context, FixedArrayBase, FunctionTemplateInfo, Hole, JSReceiver, Map, Oddball, String, Symbol, WasmFuncRef, WasmNull, WeakCell>>{tmp2});
     ca_.Branch(tmp3, &block9, std::vector<compiler::Node*>{}, &block10, std::vector<compiler::Node*>{});
   }
 
@@ -950,7 +950,7 @@ TNode<Map> DownCastForTorqueClass_Map_0(compiler::CodeAssemblerState* state_, TN
     ca_.Bind(&block7);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp5 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp4});
-    tmp6 = FromConstexpr_uint32_constexpr_uint32_0(state_, static_cast<InstanceType>(271));
+    tmp6 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, static_cast<InstanceType>(276));
     tmp7 = CodeStubAssembler(state_).Word32NotEqual(TNode<Uint32T>{tmp5}, TNode<Uint32T>{tmp6});
     ca_.Branch(tmp7, &block11, std::vector<compiler::Node*>{}, &block12, std::vector<compiler::Node*>{});
   }
@@ -984,12 +984,12 @@ TNode<Map> DownCastForTorqueClass_Map_0(compiler::CodeAssemblerState* state_, TN
   TNode<BoolT> tmp19;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(271), static_cast<InstanceType>(271))));
+    tmp8 = FromConstexpr_int32_constexpr_int32_0(state_, (CodeStubAssembler(state_).ConstexprUint32Sub(static_cast<InstanceType>(276), static_cast<InstanceType>(276))));
     tmp9 = FromConstexpr_intptr_constexpr_int31_0(state_, 8);
     tmp10 = CodeStubAssembler(state_).LoadReference<Uint16T>(CodeStubAssembler::Reference{tmp1, tmp9});
     tmp11 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp10});
     tmp12 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp11});
-    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(271));
+    tmp13 = FromConstexpr_InstanceType_constexpr_InstanceType_0(state_, static_cast<InstanceType>(276));
     tmp14 = Convert_uint16_InstanceType_0(state_, TNode<Uint16T>{tmp13});
     tmp15 = Convert_int32_uint16_0(state_, TNode<Uint16T>{tmp14});
     tmp16 = CodeStubAssembler(state_).Int32Sub(TNode<Int32T>{tmp12}, TNode<Int32T>{tmp15});
@@ -1026,7 +1026,7 @@ TNode<Map> DownCastForTorqueClass_Map_0(compiler::CodeAssemblerState* state_, TN
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/map.tq?l=40&c=7
-TNode<MaybeObject> Cast_Weak_Map_0(compiler::CodeAssemblerState* state_, TNode<MaybeObject> p_o, compiler::CodeAssemblerLabel* label_CastError) {
+TNode<MaybeWeak<HeapObject>> Cast_Weak_Map_0(compiler::CodeAssemblerState* state_, TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>> p_o, compiler::CodeAssemblerLabel* label_CastError) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -1039,7 +1039,7 @@ TNode<MaybeObject> Cast_Weak_Map_0(compiler::CodeAssemblerState* state_, TNode<M
   TNode<BoolT> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = CodeStubAssembler(state_).IsWeakOrCleared(TNode<MaybeObject>{p_o});
+    tmp0 = CodeStubAssembler(state_).IsWeakOrCleared(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_o});
     tmp1 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp0});
     ca_.Branch(tmp1, &block3, std::vector<compiler::Node*>{}, &block4, std::vector<compiler::Node*>{});
   }
@@ -1049,15 +1049,15 @@ TNode<MaybeObject> Cast_Weak_Map_0(compiler::CodeAssemblerState* state_, TNode<M
     ca_.Goto(label_CastError);
   }
 
-  TNode<MaybeObject> tmp2;
+  TNode<MaybeWeak<HeapObject>> tmp2;
   if (block4.is_used()) {
     ca_.Bind(&block4);
-    tmp2 = (TNode<MaybeObject>{p_o});
+    tmp2 = TORQUE_CAST(TNode<Union<HeapObject, MaybeWeak<HeapObject>, Smi>>{p_o});
     ca_.Goto(&block5);
   }
 
     ca_.Bind(&block5);
-  return TNode<MaybeObject>{tmp2};
+  return TNode<MaybeWeak<HeapObject>>{tmp2};
 }
 
 } // namespace internal

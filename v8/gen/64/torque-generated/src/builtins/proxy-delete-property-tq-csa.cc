@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/builtins/proxy-delete-property-tq-csa.h"
@@ -90,7 +90,7 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
   USE(parameter0);
   TNode<JSProxy> parameter1 = UncheckedParameter<JSProxy>(Descriptor::kProxy);
   USE(parameter1);
-  TNode<Name> parameter2 = UncheckedParameter<Name>(Descriptor::kName);
+  TNode<Union<String, Symbol>> parameter2 = UncheckedParameter<Union<String, Symbol>>(Descriptor::kName);
   USE(parameter2);
   TNode<Smi> parameter3 = UncheckedParameter<Smi>(Descriptor::kLanguageMode);
   USE(parameter3);
@@ -106,13 +106,13 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     ca_.Goto(&block0);
 
   TNode<IntPtrT> tmp0;
-  TNode<HeapObject> tmp1;
+  TNode<Union<JSReceiver, Null>> tmp1;
   TNode<JSReceiver> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
     CodeStubAssembler(state_).PerformStackCheck(TNode<Context>{parameter0});
     tmp0 = FromConstexpr_intptr_constexpr_int31_0(state_, 24);
-    tmp1 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{parameter1, tmp0});
+    tmp1 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{parameter1, tmp0});
     compiler::CodeAssemblerLabel label3(&ca_);
     tmp2 = Cast_JSReceiver_0(state_, TNode<HeapObject>{tmp1}, &label3);
     ca_.Goto(&block24);
@@ -128,16 +128,16 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
   }
 
   TNode<IntPtrT> tmp4;
-  TNode<HeapObject> tmp5;
+  TNode<Union<JSReceiver, Null>> tmp5;
   TNode<JSReceiver> tmp6;
-  TNode<JSReceiver> tmp7;
+  TNode<Union<JSBoundFunction, JSFunction, JSObject, JSProxy, JSWrappedFunction>> tmp7;
   if (block24.is_used()) {
     ca_.Bind(&block24);
     tmp4 = FromConstexpr_intptr_constexpr_int31_0(state_, 16);
-    tmp5 = CodeStubAssembler(state_).LoadReference<HeapObject>(CodeStubAssembler::Reference{parameter1, tmp4});
+    tmp5 = CodeStubAssembler(state_).LoadReference<Union<JSReceiver, Null>>(CodeStubAssembler::Reference{parameter1, tmp4});
     tmp6 = UnsafeCast_JSReceiver_0(state_, TNode<Context>{parameter0}, TNode<Object>{tmp5});
     compiler::CodeAssemblerLabel label8(&ca_);
-    tmp7 = GetMethod_2(state_, TNode<Context>{parameter0}, TNode<Object>{tmp2}, "deleteProperty", &label8);
+    tmp7 = GetMethod_2(state_, TNode<Context>{parameter0}, TNode<JSAny>{tmp2}, "deleteProperty", &label8);
     ca_.Goto(&block28);
     if (label8.is_used()) {
       ca_.Bind(&label8);
@@ -152,13 +152,13 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
     CodeStubAssembler(state_).Return(tmp9);
   }
 
-  TNode<Object> tmp10;
+  TNode<JSAny> tmp10;
   TNode<BoolT> tmp11;
   TNode<BoolT> tmp12;
   if (block28.is_used()) {
     ca_.Bind(&block28);
-    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<Object>{tmp7}, TNode<Object>{tmp2}, TNode<Object>{tmp6}, TNode<Object>{parameter2});
-    tmp11 = ToBoolean_0(state_, TNode<Object>{tmp10});
+    tmp10 = CodeStubAssembler(state_).Call(TNode<Context>{parameter0}, TNode<JSAny>{tmp7}, TNode<JSAny>{tmp2}, TNode<JSAny>{tmp6}, TNode<JSAny>{parameter2});
+    tmp11 = ToBoolean_0(state_, TNode<JSAny>{tmp10});
     tmp12 = CodeStubAssembler(state_).Word32BinaryNot(TNode<BoolT>{tmp11});
     ca_.Branch(tmp12, &block30, std::vector<compiler::Node*>{}, &block31, std::vector<compiler::Node*>{});
   }
@@ -196,7 +196,7 @@ TF_BUILTIN(ProxyDeleteProperty, CodeStubAssembler) {
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-delete-property.tq?l=19&c=10
-TNode<BoolT> Is_Name_PropertyKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Name> p_o) {
+TNode<BoolT> Is_Name_PropertyKey_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<String, Symbol>> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -243,7 +243,7 @@ TNode<BoolT> Is_Name_PropertyKey_0(compiler::CodeAssemblerState* state_, TNode<C
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/proxy-delete-property.tq?l=26&c=37
-TNode<BoolT> Is_JSReceiver_Null_OR_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<HeapObject> p_o) {
+TNode<BoolT> Is_JSReceiver_Null_OR_JSReceiver_0(compiler::CodeAssemblerState* state_, TNode<Context> p_context, TNode<Union<JSReceiver, Null>> p_o) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);

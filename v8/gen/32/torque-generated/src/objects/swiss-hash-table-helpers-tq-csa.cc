@@ -52,7 +52,6 @@
 #include "src/objects/js-shadow-realm.h"
 #include "src/objects/js-shared-array.h"
 #include "src/objects/js-struct.h"
-#include "src/objects/js-temporal-objects.h"
 #include "src/objects/js-weak-refs.h"
 #include "src/objects/objects.h"
 #include "src/objects/ordered-hash-table.h"
@@ -69,6 +68,7 @@
 #include "src/torque/runtime-support.h"
 #include "src/wasm/value-type.h"
 #include "src/wasm/wasm-linkage.h"
+#include "src/wasm/wasm-module.h"
 #include "src/codegen/code-stub-assembler-inl.h"
 // Required Builtins:
 #include "torque-generated/src/objects/swiss-hash-table-helpers-tq-csa.h"
@@ -125,7 +125,7 @@ TNode<Uint32T> H2_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_hash)
   TNode<Uint32T> tmp1;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_uint32_0(state_, ((1 << swiss_table::kH2Bits) - 1));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_WasmCodePointer_0(state_, ((1 << swiss_table::kH2Bits) - 1));
     tmp1 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_hash}, TNode<Uint32T>{tmp0});
     ca_.Goto(&block2);
   }
@@ -175,7 +175,7 @@ TNode<Int32T> Convert_int32_int32_0(compiler::CodeAssemblerState* state_, TNode<
 }
 
 // https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/swiss-hash-table-helpers.tq?l=87&c=17
-TNode<Uint32T> ClearLowestSetBit_uint32_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value) {
+TNode<Uint32T> ClearLowestSetBit_WasmCodePointer_0(compiler::CodeAssemblerState* state_, TNode<Uint32T> p_value) {
   compiler::CodeAssembler ca_(state_);
   compiler::CodeAssembler::SourcePositionScope pos_scope(&ca_);
   compiler::CodeAssemblerParameterizedLabel<> block0(&ca_, compiler::CodeAssemblerLabel::kNonDeferred);
@@ -187,7 +187,7 @@ TNode<Uint32T> ClearLowestSetBit_uint32_0(compiler::CodeAssemblerState* state_, 
   TNode<Uint32T> tmp2;
   if (block0.is_used()) {
     ca_.Bind(&block0);
-    tmp0 = FromConstexpr_uint32_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
+    tmp0 = FromConstexpr_WasmCodePointer_constexpr_IntegerLiteral_0(state_, IntegerLiteral(false, 0x1ull));
     tmp1 = CodeStubAssembler(state_).Uint32Sub(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp0});
     tmp2 = CodeStubAssembler(state_).Word32And(TNode<Uint32T>{p_value}, TNode<Uint32T>{tmp1});
     ca_.Goto(&block2);

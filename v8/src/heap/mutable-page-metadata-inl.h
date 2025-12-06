@@ -5,9 +5,12 @@
 #ifndef V8_HEAP_MUTABLE_PAGE_METADATA_INL_H_
 #define V8_HEAP_MUTABLE_PAGE_METADATA_INL_H_
 
-#include "src/heap/memory-chunk-metadata-inl.h"
 #include "src/heap/mutable-page-metadata.h"
+// Include the non-inl header before the rest of the headers.
+
+#include "src/heap/memory-chunk-metadata-inl.h"
 #include "src/heap/spaces-inl.h"
+#include "src/sandbox/hardware-support.h"
 
 namespace v8 {
 namespace internal {
@@ -24,20 +27,16 @@ MutablePageMetadata* MutablePageMetadata::FromHeapObject(Tagged<HeapObject> o) {
 
 void MutablePageMetadata::IncrementExternalBackingStoreBytes(
     ExternalBackingStoreType type, size_t amount) {
-#ifndef V8_ENABLE_THIRD_PARTY_HEAP
   base::CheckedIncrement(&external_backing_store_bytes_[static_cast<int>(type)],
                          amount);
   owner()->IncrementExternalBackingStoreBytes(type, amount);
-#endif
 }
 
 void MutablePageMetadata::DecrementExternalBackingStoreBytes(
     ExternalBackingStoreType type, size_t amount) {
-#ifndef V8_ENABLE_THIRD_PARTY_HEAP
   base::CheckedDecrement(&external_backing_store_bytes_[static_cast<int>(type)],
                          amount);
   owner()->DecrementExternalBackingStoreBytes(type, amount);
-#endif
 }
 
 void MutablePageMetadata::MoveExternalBackingStoreBytes(
@@ -54,13 +53,22 @@ void MutablePageMetadata::MoveExternalBackingStoreBytes(
 }
 
 AllocationSpace MutablePageMetadata::owner_identity() const {
-  DCHECK_EQ(owner() == nullptr, Chunk()->InReadOnlySpace());
+  {
+    AllowSandboxAccess temporary_sandbox_access;
+    DCHECK_EQ(owner() == nullptr, Chunk()->InReadOnlySpace());
+  }
   if (!owner()) return RO_SPACE;
   return owner()->identity();
 }
 
 void MutablePageMetadata::SetOldGenerationPageFlags(MarkingMode marking_mode) {
   return Chunk()->SetOldGenerationPageFlags(marking_mode, owner_identity());
+}
+
+template <AccessMode mode>
+void MutablePageMetadata::ClearLiveness() {
+  marking_bitmap()->Clear<mode>();
+  SetLiveBytes(0);
 }
 
 }  // namespace internal
