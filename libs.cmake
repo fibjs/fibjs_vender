@@ -11,7 +11,7 @@ set(libs
     leveldb
     snappy
     msgpack
-    pcre
+    pcre2
     sqlite
     umysql
     datachannel
