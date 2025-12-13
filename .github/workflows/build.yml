@@ -101,7 +101,6 @@ jobs:
             target: android
             arch: x64
             type: release
-            test: skip
           - os: ubuntu-22.04
             target: android
             arch: ia32
@@ -111,12 +110,10 @@ jobs:
             target: android
             arch: arm64
             type: release
-            test: skip
           - os: ubuntu-22.04
             target: android
             arch: arm
             type: release
-            test: skip
           - os: windows-2022
             arch: x64
             type: release
