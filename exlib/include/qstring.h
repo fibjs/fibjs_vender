@@ -1400,4 +1400,19 @@ struct hash<exlib::string> {
         return hash_value;
     }
 };
+
+template <>
+struct hash<exlib::wstring> {
+    size_t operator()(const exlib::wstring& str) const
+    {
+        size_t hash_value = 0;
+        const char16_t* str_ptr = str.c_str();
+        size_t length = str.length();
+
+        for (size_t i = 0; i < length; i++)
+            hash_value = hash_value * 131 + static_cast<size_t>(str_ptr[i]);
+
+        return hash_value;
+    }
+};
 }
