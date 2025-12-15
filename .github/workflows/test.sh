@@ -7,7 +7,10 @@ if [[ $HOST_OS == 'Linux' ]]; then
     CUR=`pwd`
 
     docker run -t --rm --privileged -v ${CUR}:${CUR} fibjs/${BUILD_TARGET}-build-env:${BUILD_ARCH} bash -c "cd ${CUR}; $DIST_EXEC"
-else # Windows/Darwin
+elif [[ $BUILD_TARGET == 'iphone-simulator' ]]; then
+    # iOS Simulator testing using shared script
+    bash ./build_tools/scripts/ios-simulator-run.sh "${DIST_EXEC}"
+else # Windows/Darwin (native)
     $DIST_EXEC
 fi
 
