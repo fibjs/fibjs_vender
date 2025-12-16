@@ -21,9 +21,8 @@
 #include "uv.h"
 #include "internal.h"
 
-#if TARGET_OS_IPHONE || MAC_OS_X_VERSION_MAX_ALLOWED < 1070
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 1070
 
-/* iOS (currently) doesn't provide the FSEvents-API (nor CoreServices) */
 /* macOS prior to 10.7 doesn't provide the full FSEvents API so use kqueue */
 
 int uv__fsevents_init(uv_fs_event_t* handle) {
@@ -39,7 +38,7 @@ int uv__fsevents_close(uv_fs_event_t* handle) {
 void uv__fsevents_loop_delete(uv_loop_t* loop) {
 }
 
-#else /* TARGET_OS_IPHONE */
+#else /* MAC_OS_X_VERSION_MAX_ALLOWED < 1070 */
 
 #include "darwin-stub.h"
 
@@ -913,4 +912,4 @@ int uv__fsevents_close(uv_fs_event_t* handle) {
   return 0;
 }
 
-#endif /* TARGET_OS_IPHONE */
+#endif /* MAC_OS_X_VERSION_MAX_ALLOWED < 1070 */
