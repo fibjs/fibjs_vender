@@ -129,12 +129,13 @@ FILE             *rl_outstream = NULL; /* The stdio stream to which output is fl
 
 /* Declarations. */
 static char     *editinput(int complete);
+static int      utf8_prev_len(const char *buf, int point);
+static int      utf8_next_len(const char *buf, int point, int end);
 #ifdef CONFIG_USE_TERMCAP
 extern char     *tgetstr(const char *, char **);
 extern int      tgetent(char *, const char *);
 extern int      tgetnum(const char *);
 #endif
-
 
 /*
 **  Misc. local helper functions.
@@ -255,7 +256,6 @@ static void tty_info(void)
 {
     rl_reset_terminal(NULL);
 }
-
 
 /*
 **  Glue routines to rl_ttyset()
@@ -323,6 +323,41 @@ static void reposition(void)
 
 static void left(el_status_t Change)
 {
+    if (Change == CSmove) {
+        int len;
+        unsigned char prev;
+
+        if (rl_point == 0)
+            return;
+
+        len = utf8_prev_len(rl_line_buffer, rl_point);
+        if (len <= 0)
+            len = 1;
+        if (len > rl_point)
+            len = rl_point;
+
+        if (len == 1) {
+            prev = (unsigned char)rl_line_buffer[rl_point - 1];
+            if ((prev & 0x80) == 0) {
+                tty_back();
+                if (ISMETA(prev)) {
+                    if (rl_meta_chars) {
+                        tty_back();
+                        tty_back();
+                    }
+                } else if (ISCTL(prev)) {
+                    tty_back();
+                }
+                rl_point--;
+                return;
+            }
+        }
+
+        rl_point -= len;
+        reposition();
+        return;
+    }
+
     if (rl_point) {
 	tty_back();
 	if (ISMETA(rl_line_buffer[rl_point - 1])) {
@@ -334,17 +369,38 @@ static void left(el_status_t Change)
             tty_back();
         }
     }
-
-    if (Change == CSmove)
-        rl_point--;
 }
 
 static void right(el_status_t Change)
 {
-    tty_show(rl_line_buffer[rl_point]);
+    if (Change == CSmove) {
+        int len;
+        unsigned char cur;
 
-    if (Change == CSmove)
-        rl_point++;
+        if (rl_point >= rl_end)
+            return;
+
+        len = utf8_next_len(rl_line_buffer, rl_point, rl_end);
+        if (len <= 0)
+            len = 1;
+        if (rl_point + len > rl_end)
+            len = rl_end - rl_point;
+
+        if (len == 1) {
+            cur = (unsigned char)rl_line_buffer[rl_point];
+            if ((cur & 0x80) == 0) {
+                tty_show(cur);
+                rl_point++;
+                return;
+            }
+        }
+
+        rl_point += len;
+        reposition();
+        return;
+    }
+
+    tty_show(rl_line_buffer[rl_point]);
 }
 
 el_status_t el_ring_bell(void)
@@ -375,34 +431,55 @@ static el_status_t do_macro(int c)
 /* Skip forward to start of next word. If @move is set we also move the cursor. */
 static el_status_t do_forward(el_status_t move)
 {
-    int         i;
-    char        *p;
+    int rep;
+    int reps = (Repeat == NO_ARG) ? 1 : Repeat;
 
-    i = 0;
-    do {
-        p = &rl_line_buffer[rl_point];
+    for (rep = 0; rep < reps; rep++) {
+        int point = rl_point;
 
-	/* Skip leading whitespace, like FSF Readline */
-        for ( ; rl_point < rl_end && (p[0] == ' ' || !is_alpha_num(p[0])); rl_point++, p++) {
-            if (move == CSmove)
-                right(CSstay);
-	}
+        /* Skip leading whitespace, like FSF Readline */
+        while (point < rl_end) {
+            unsigned char ch = (unsigned char)rl_line_buffer[point];
+            int len;
+            if (!(ch == ' ' || !is_alpha_num(ch)))
+                break;
+            len = utf8_next_len(rl_line_buffer, point, rl_end);
+            if (len <= 0)
+                len = 1;
+            point += len;
+        }
 
-	/* Skip to end of word, if inside a word. */
-        for (; rl_point < rl_end && is_alpha_num(p[0]); rl_point++, p++) {
-            if (move == CSmove)
-                right(CSstay);
-	}
+        /* Skip to end of word, if inside a word. */
+        while (point < rl_end) {
+            unsigned char ch = (unsigned char)rl_line_buffer[point];
+            int len;
+            if (!is_alpha_num(ch))
+                break;
+            len = utf8_next_len(rl_line_buffer, point, rl_end);
+            if (len <= 0)
+                len = 1;
+            point += len;
+        }
 
-	/* Skip to next word, or skip leading white space if outside a word. */
-        for ( ; rl_point < rl_end && (p[0] == ' ' || !is_alpha_num(p[0])); rl_point++, p++) {
-            if (move == CSmove)
-                right(CSstay);
-	}
+        /* Skip to next word, or skip leading white space if outside a word. */
+        while (point < rl_end) {
+            unsigned char ch = (unsigned char)rl_line_buffer[point];
+            int len;
+            if (!(ch == ' ' || !is_alpha_num(ch)))
+                break;
+            len = utf8_next_len(rl_line_buffer, point, rl_end);
+            if (len <= 0)
+                len = 1;
+            point += len;
+        }
+
+        rl_point = point;
+        if (move == CSmove)
+            reposition();
 
         if (rl_point == rl_end)
             break;
-    } while (++i < Repeat);
+    }
 
     return CSstay;
 }
@@ -425,10 +502,10 @@ static el_status_t do_case(el_case_t type)
 
         for (i = rl_point, p = &rl_line_buffer[i]; rl_point < end; p++) {
 	    if ((type == TOupper) || (type == TOcapitalize && rl_point == i)) {
-                if (islower(*p))
-                    *p = toupper(*p);
-            } else if (isupper(*p)) {
-                *p = tolower(*p);
+                if (islower((unsigned char)*p))
+                    *p = (char)toupper((unsigned char)*p);
+            } else if (isupper((unsigned char)*p)) {
+                *p = (char)tolower((unsigned char)*p);
             }
             right(CSmove);
         }
@@ -565,7 +642,6 @@ static el_status_t toggle_meta_mode(void)
     rl_meta_chars = ! rl_meta_chars;
     return redisplay(0);
 }
-
 
 const char *el_next_hist(void)
 {
@@ -730,12 +806,22 @@ static el_status_t h_search(void)
 static el_status_t fd_char(void)
 {
     int i = 0;
+    int reps = (Repeat == NO_ARG) ? 1 : Repeat;
 
-    do {
+    for (i = 0; i < reps; i++) {
+        int len;
+
         if (rl_point >= rl_end)
             break;
-        right(CSmove);
-    } while (++i < Repeat);
+
+        len = utf8_next_len(rl_line_buffer, rl_point, rl_end);
+        if (len <= 0)
+            break;
+
+        rl_point += len;
+        reposition();
+    }
+
     return CSstay;
 }
 
@@ -754,6 +840,70 @@ static void save_yank(int begin, int i)
         memcpy(Yanked, &rl_line_buffer[begin], i);
         Yanked[i] = '\0';
     }
+}
+
+static int utf8_expected_len(unsigned char lead)
+{
+    if ((lead & 0x80) == 0x00)
+        return 1;
+    if ((lead & 0xE0) == 0xC0)
+        return 2;
+    if ((lead & 0xF0) == 0xE0)
+        return 3;
+    if ((lead & 0xF8) == 0xF0)
+        return 4;
+    return 1;
+}
+
+static int utf8_prev_len(const char *buf, int point)
+{
+    int start;
+    int len;
+    int expected;
+
+    if (point <= 0)
+        return 0;
+
+    start = point - 1;
+    /* Walk back over UTF-8 continuation bytes (10xxxxxx). */
+    while (start > 0 && ((unsigned char)buf[start] & 0xC0) == 0x80)
+        start--;
+
+    len = point - start;
+    if (len <= 0)
+        return 0;
+    if (len > 4)
+        return 1;
+
+    expected = utf8_expected_len((unsigned char)buf[start]);
+    if (expected != len)
+        return 1;
+
+    return len;
+}
+
+static int utf8_next_len(const char *buf, int point, int end)
+{
+    int len;
+    int expected;
+
+    if (point < 0 || point >= end)
+        return 0;
+
+    expected = utf8_expected_len((unsigned char)buf[point]);
+    if (expected <= 1)
+        return 1;
+
+    if (point + expected > end)
+        return 1;
+
+    /* Validate continuation bytes. */
+    for (len = 1; len < expected; len++) {
+        if (((unsigned char)buf[point + len] & 0xC0) != 0x80)
+            return 1;
+    }
+
+    return expected;
 }
 
 static el_status_t delete_string(int count)
@@ -801,27 +951,52 @@ static el_status_t delete_string(int count)
 static el_status_t bk_char(void)
 {
     int i = 0;
+    int reps = (Repeat == NO_ARG) ? 1 : Repeat;
 
-    do {
+    for (i = 0; i < reps; i++) {
+        int len;
+
         if (rl_point == 0)
             break;
-        left(CSmove);
-    } while (++i < Repeat);
+
+        len = utf8_prev_len(rl_line_buffer, rl_point);
+        if (len <= 0)
+            break;
+
+        rl_point -= len;
+        reposition();
+    }
 
     return CSstay;
 }
 
 static el_status_t bk_del_char(void)
 {
-    int i = 0;
+    int n;
+    int total = 0;
+    int point = rl_point;
+    int reps = (Repeat == NO_ARG) ? 1 : Repeat;
 
-    do {
-        if (rl_point == 0)
+    for (n = 0; n < reps; n++) {
+        int len;
+
+        if (point == 0)
             break;
-        left(CSmove);
-    } while (++i < Repeat);
 
-    return delete_string(i);
+        len = utf8_prev_len(rl_line_buffer, point);
+        if (len <= 0)
+            break;
+
+        point -= len;
+        total += len;
+    }
+
+    if (total <= 0)
+        return el_ring_bell();
+
+    rl_point = point;
+    reposition();
+    return delete_string(total);
 }
 
 static el_status_t kill_line(void)
@@ -901,7 +1076,36 @@ static el_status_t end_line(void)
 
 static el_status_t del_char(void)
 {
-    return delete_string(Repeat == NO_ARG ? CSeof : Repeat);
+    int n;
+    int total = 0;
+    int reps;
+
+    if (Repeat == NO_ARG) {
+        if (rl_point == rl_end)
+            return CSeof;
+        reps = 1;
+    } else {
+        reps = Repeat;
+    }
+
+    for (n = 0; n < reps; n++) {
+        int len;
+
+        if (rl_point >= rl_end)
+            break;
+
+        len = utf8_next_len(rl_line_buffer, rl_point, rl_end);
+        if (len <= 0)
+            break;
+        total += len;
+        rl_point += len;
+    }
+
+    if (total <= 0)
+        return CSstay;
+
+    rl_point -= total;
+    return delete_string(total);
 }
 
 el_status_t el_del_char(void)
@@ -916,20 +1120,48 @@ static el_status_t fd_word(void)
 
 static el_status_t bk_word(void)
 {
-    int         i;
-    char        *p;
+    int rep;
+    int reps = (Repeat == NO_ARG) ? 1 : Repeat;
 
-    i = 0;
-    do {
-        for (p = &rl_line_buffer[rl_point]; p > rl_line_buffer && !is_alpha_num(p[-1]); p--)
-            left(CSmove);
+    for (rep = 0; rep < reps; rep++) {
+        int point = rl_point;
 
-        for (; p > rl_line_buffer && !isblank(p[-1]) && is_alpha_num(p[-1]); p--)
-            left(CSmove);
+        while (point > 0) {
+            int len = utf8_prev_len(rl_line_buffer, point);
+            int prev;
+            unsigned char ch;
+            if (len <= 0)
+                len = 1;
+            if (len > point)
+                len = point;
+            prev = point - len;
+            ch = (unsigned char)rl_line_buffer[prev];
+            if (is_alpha_num(ch))
+                break;
+            point = prev;
+        }
+
+        while (point > 0) {
+            int len = utf8_prev_len(rl_line_buffer, point);
+            int prev;
+            unsigned char ch;
+            if (len <= 0)
+                len = 1;
+            if (len > point)
+                len = point;
+            prev = point - len;
+            ch = (unsigned char)rl_line_buffer[prev];
+            if (isblank(ch) || !is_alpha_num(ch))
+                break;
+            point = prev;
+        }
+
+        rl_point = point;
+        reposition();
 
         if (rl_point == 0)
             break;
-    } while (++i < Repeat);
+    }
 
     return CSstay;
 }
@@ -979,15 +1211,15 @@ static el_status_t meta(void)
     }
 #endif /* CONFIG_ANSI_ARROWS */
 
-    if (isdigit(c)) {
-        for (Repeat = c - '0'; (c = tty_get()) != EOF && isdigit(c); )
+    if (isdigit((unsigned char)c)) {
+        for (Repeat = c - '0'; (c = tty_get()) != EOF && isdigit((unsigned char)c); )
             Repeat = Repeat * 10 + c - '0';
 	tty_push(c);
 
         return CSstay;
     }
 
-    if (isupper(c))
+    if (isupper((unsigned char)c))
         return do_macro(c);
 
     for (kp = MetaMap; kp->Function; kp++) {
@@ -1529,7 +1761,6 @@ int write_history(const char *filename)
 
     return errno;
 }
-
 
 /*
 **  Move back to the beginning of the current word and return an
@@ -1661,20 +1892,52 @@ static el_status_t end_of_input(void)
 
 static el_status_t transpose(void)
 {
-    char        c;
+    int point = rl_point;
+    int left_len;
+    int right_len;
+    int left_start;
+    unsigned char tmp[8];
 
-    if (rl_point) {
-        if (rl_point == rl_end)
-            left(CSmove);
-        c = rl_line_buffer[rl_point - 1];
-        left(CSstay);
-        rl_line_buffer[rl_point - 1] = rl_line_buffer[rl_point];
-        tty_show(rl_line_buffer[rl_point - 1]);
-        rl_line_buffer[rl_point++] = c;
-        tty_show(c);
+    if (rl_end < 2)
+        return CSstay;
+
+    if (point == 0)
+        return CSstay;
+
+    if (point == rl_end) {
+        right_len = utf8_prev_len(rl_line_buffer, point);
+        if (right_len <= 0)
+            right_len = 1;
+        if (right_len > point)
+            right_len = point;
+        point -= right_len;
     }
 
-    return CSstay;
+    if (point <= 0 || point >= rl_end)
+        return CSstay;
+
+    left_len = utf8_prev_len(rl_line_buffer, point);
+    if (left_len <= 0)
+        left_len = 1;
+    if (left_len > point)
+        left_len = point;
+    left_start = point - left_len;
+
+    right_len = utf8_next_len(rl_line_buffer, point, rl_end);
+    if (right_len <= 0)
+        right_len = 1;
+    if (point + right_len > rl_end)
+        right_len = rl_end - point;
+
+    if (left_len + right_len > (int)sizeof(tmp))
+        return CSstay;
+
+    memcpy(tmp, &rl_line_buffer[point], right_len);
+    memcpy(tmp + right_len, &rl_line_buffer[left_start], left_len);
+    memcpy(&rl_line_buffer[left_start], tmp, left_len + right_len);
+
+    rl_point = left_start + left_len + right_len;
+    return CSmove;
 }
 
 static el_status_t quote(void)
@@ -1781,14 +2044,14 @@ static int argify(char *line, char ***avp)
     if (!p)
 	return 0;
 
-    for (c = line; isspace(*c); c++)
+    for (c = line; isspace((unsigned char)*c); c++)
         continue;
 
     if (*c == '\n' || *c == '\0')
         return 0;
 
     for (ac = 0, p[ac++] = c; *c && *c != '\n'; ) {
-        if (!isspace(*c)) {
+        if (!isspace((unsigned char)*c)) {
 	    c++;
 	    continue;
 	}
