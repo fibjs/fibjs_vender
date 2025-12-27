@@ -38,14 +38,14 @@ int tlsAlloc(void** init, int size)
         }
     }
 
-    assert(i < TLS_SIZE - size + 1);
+    ex_assert(i < TLS_SIZE - size + 1);
 
     return -1;
 }
 
 void** tlsGetRef(int idx)
 {
-    assert(Thread_base::current() != 0);
+    ex_assert(Thread_base::current() != 0);
     return &Thread_base::current()->m_tls[idx];
 }
 

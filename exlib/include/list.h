@@ -9,7 +9,7 @@
 #pragma once
 
 #include "utils.h"
-#include <assert.h>
+#include "ex_assert.h"
 
 namespace exlib {
 
@@ -44,9 +44,9 @@ public:
 
     void putHead(T* pNew)
     {
-        assert(pNew->m_inlist == 0);
-        assert(pNew->m_next == 0);
-        assert(pNew->m_prev == 0);
+        ex_assert(pNew->m_inlist == 0);
+        ex_assert(pNew->m_next == 0);
+        ex_assert(pNew->m_prev == 0);
 
         if (m_first) {
             m_first->m_prev = pNew;
@@ -65,9 +65,9 @@ public:
 
     void putTail(T* pNew)
     {
-        assert(pNew->m_inlist == 0);
-        assert(pNew->m_next == 0);
-        assert(pNew->m_prev == 0);
+        ex_assert(pNew->m_inlist == 0);
+        ex_assert(pNew->m_next == 0);
+        ex_assert(pNew->m_prev == 0);
 
         if (m_last) {
             m_last->m_next = pNew;
@@ -89,11 +89,11 @@ public:
         T* pNow = m_first;
 
         if (pNow) {
-            assert(pNow->m_inlist == this);
+            ex_assert(pNow->m_inlist == this);
 
             m_first = (T*)pNow->m_next;
             if (m_first) {
-                assert(m_first->m_prev == pNow);
+                ex_assert(m_first->m_prev == pNow);
 
                 m_first->m_prev = 0;
                 pNow->m_next = 0;
@@ -115,11 +115,11 @@ public:
         T* pNow = m_last;
 
         if (pNow) {
-            assert(pNow->m_inlist == this);
+            ex_assert(pNow->m_inlist == this);
 
             m_last = (T*)pNow->m_prev;
             if (m_last) {
-                assert(m_last->m_next == pNow);
+                ex_assert(m_last->m_next == pNow);
 
                 m_last->m_next = 0;
                 pNow->m_prev = 0;
@@ -140,8 +140,8 @@ public:
     {
         linkitem *p1, *p2;
 
-        assert(o->m_inlist == this);
-        assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
+        ex_assert(o->m_inlist == this);
+        ex_assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
 
         p1 = o->m_next;
         p2 = o->m_prev;
@@ -171,7 +171,7 @@ public:
 
     void getList(List<T>& list)
     {
-        assert(list.empty());
+        ex_assert(list.empty());
 
         list.m_first = m_first;
         list.m_last = m_last;
@@ -180,7 +180,7 @@ public:
 #ifdef DEBUG
         T* p = m_first;
         while (p) {
-            assert(p->m_inlist == this);
+            ex_assert(p->m_inlist == this);
             p->m_inlist = &list;
             p = (T*)p->m_next;
         }
@@ -227,16 +227,16 @@ public:
 
     T* next(T* o) const
     {
-        assert(o->m_inlist == this);
-        assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
+        ex_assert(o->m_inlist == this);
+        ex_assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
 
         return (T*)o->m_next;
     }
 
     T* prev(T* o) const
     {
-        assert(o->m_inlist == this);
-        assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
+        ex_assert(o->m_inlist == this);
+        ex_assert(o->m_next != 0 || o->m_prev != 0 || (m_first == o && m_last == o));
 
         return (T*)o->m_prev;
     }

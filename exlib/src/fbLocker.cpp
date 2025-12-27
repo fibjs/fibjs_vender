@@ -20,7 +20,7 @@ bool Locker::lock(Task_base* current)
     if (current == 0)
         current = Thread_base::current();
 
-    assert(current != 0);
+    ex_assert(current != 0);
 
     m_lock.lock();
 
@@ -43,7 +43,7 @@ bool Locker::trylock(Task_base* current)
     if (current == 0)
         current = Thread_base::current();
 
-    assert(current != 0);
+    ex_assert(current != 0);
 
     m_lock.lock();
 
@@ -69,10 +69,10 @@ void Locker::unlock(Task_base* current)
 
     Task_base* fb = 0;
 
-    assert(current != 0);
-    assert(current == m_locker);
-    assert(m_recursive || m_count == 1);
-    assert(m_count >= 1);
+    ex_assert(current != 0);
+    ex_assert(current == m_locker);
+    ex_assert(m_recursive || m_count == 1);
+    ex_assert(m_count >= 1);
 
     m_lock.lock();
 
@@ -94,7 +94,7 @@ bool Locker::owned(Task_base* current)
     if (current == 0)
         current = Thread_base::current();
 
-    assert(current != 0);
+    ex_assert(current != 0);
 
     m_lock.lock();
 

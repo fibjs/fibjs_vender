@@ -16,7 +16,7 @@ bool Event::wait(Task_base* current)
     if (!m_set) {
         if (!current)
             current = Thread_base::current();
-        assert(current != 0);
+        ex_assert(current != 0);
 
         m_blocks.putTail(current);
         current->suspend(m_lock);

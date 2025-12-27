@@ -9,7 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include "osconfig.h"
 #include "service.h"
@@ -126,7 +125,7 @@ void Service::CreateFiber(fiber_func func, void* data, int32_t stacksize, const 
 
 void Service::dispatch()
 {
-    assert(s_service != 0);
+    ex_assert(s_service != 0);
     s_service->dispatch_loop();
 }
 
@@ -141,7 +140,7 @@ void Service::dispatch_loop()
         }
 
         Fiber* fb = next();
-        assert(fb != 0);
+        ex_assert(fb != 0);
 
         m_running = fb;
         fb->m_pService = this;
