@@ -54,7 +54,7 @@ bool Semaphore::wait(int32_t ms)
     m_lock.lock();
     if (m_count == 0) {
         Task_base* current = Thread_base::current();
-        assert(current != 0);
+        ex_assert(current != 0);
 
         if (ms > 0) {
             posted = false;

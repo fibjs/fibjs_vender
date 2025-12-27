@@ -102,7 +102,7 @@ void OSThread::bindCurrent()
 {
     save_stack_start();
 
-    assert(thread_ == 0);
+    ex_assert(thread_ == 0);
 
     Ref();
     th_current = this;
@@ -130,7 +130,7 @@ OSThread::OSThread()
 
 void OSThread::start()
 {
-    assert(thread_ == 0);
+    ex_assert(thread_ == 0);
     Ref();
     thread_ = (HANDLE)_beginthreadex(NULL, 0, (unsigned(__stdcall*)(void*))Entry,
         this, 0, &thread_id);
@@ -138,7 +138,7 @@ void OSThread::start()
 
 void OSThread::join()
 {
-    assert(thread_ != 0);
+    ex_assert(thread_ != 0);
 
     WaitForSingleObject(thread_, INFINITE);
 }
@@ -160,14 +160,14 @@ OSThread::OSThread()
 
 void OSThread::start()
 {
-    assert(thread_ == 0);
+    ex_assert(thread_ == 0);
     Ref();
     pthread_create(&thread_, NULL, Entry, this);
 }
 
 void OSThread::join()
 {
-    assert(thread_ != 0);
+    ex_assert(thread_ != 0);
 
     pthread_join(thread_, NULL);
 }

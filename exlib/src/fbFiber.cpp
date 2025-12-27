@@ -205,7 +205,7 @@ void Fiber::sleep(int32_t ms, Task_base* now)
     if (now == 0)
         now = current();
 
-    assert(now != 0);
+    ex_assert(now != 0);
 
     if (dynamic_cast<Fiber*>(now)) {
         if (ms <= 0)

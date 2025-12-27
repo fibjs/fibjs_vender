@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
+#include "ex_assert.h"
 #include "list.h"
 #include "fbTls.h"
 
@@ -52,7 +53,7 @@ public:
 
     void save_stack_start()
     {
-        assert(m_stack_start == 0);
+        ex_assert(m_stack_start == 0);
 
         intptr_t stack_value;
         m_stack_start = (intptr_t)&stack_value + sizeof(stack_value) * 6;
@@ -60,7 +61,7 @@ public:
 
     intptr_t stack_start()
     {
-        assert(m_stack_start != 0);
+        ex_assert(m_stack_start != 0);
         return m_stack_start;
     }
 

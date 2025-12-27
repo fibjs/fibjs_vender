@@ -95,8 +95,8 @@ public:
 public:
     void switchConext()
     {
-        assert(m_running != &m_main);
-        assert(current() == this);
+        ex_assert(m_running != &m_main);
+        ex_assert(current() == this);
 
         switch_fiber(m_running->m_ctx, m_main.m_ctx);
     }
