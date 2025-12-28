@@ -209,7 +209,7 @@ static void my_func_fiber(const js::FunctionCallbackInfo& info)
     s_fiber_test = true;
 }
 
-static void fiber_proc(void* p)
+static void fiber_proc()
 {
     js::Runtime::Scope scope(rt);
     rt->execute("my_func_fiber();", "test.js");
@@ -225,7 +225,7 @@ TEST(ENG(api), fiber)
 
     g.set("my_func_fiber", rt->NewFunction(my_func_fiber));
 
-    exlib::Service::CreateFiber(fiber_proc, 0, 128 * 1024);
+    exlib::Service::CreateFiber(fiber_proc, 128 * 1024);
     {
         ASSERT_FALSE(s_fiber_test);
         exlib::Fiber::sleep(100);

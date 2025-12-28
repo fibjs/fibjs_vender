@@ -22,14 +22,7 @@ namespace base {
         {
         }
 
-    public:
-        static void fiber_proc(void* p)
-        {
-            ((PlatformData*)p)->_run();
-        }
-
-    private:
-        void _run()
+        void run()
         {
             thread->NotifyStartedAndRun();
         }
@@ -61,8 +54,9 @@ namespace base {
 
     bool Thread::Start()
     {
-        exlib::Service::CreateFiber(PlatformData::fiber_proc, data_, V8_STACK_SIZE * 1024,
-            name_, &((PlatformData*)data_)->fb);
+        PlatformData* pd = (PlatformData*)data_;
+        exlib::Service::CreateFiber([pd]() { pd->run(); }, V8_STACK_SIZE * 1024,
+            name_, &pd->fb);
 
         return true;
     }

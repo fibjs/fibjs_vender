@@ -110,13 +110,17 @@ void Fiber::yield()
 
 class _timerThread : public OSThread {
 public:
+    _timerThread()
+    {
+    }
+
     void wait()
     {
         std::multimap<int64_t, Sleeping*>::iterator e;
 
         e = m_tms.begin();
         if (e != m_tms.end())
-            m_sem.TimedWait((int32_t)((e->first - m_tm) / NANOS_PER_MICRO));
+            m_sem.TimedWait((int32_t)((e->first - m_tm) / 1000000));
         else
             m_sem.Wait();
     }
@@ -196,8 +200,9 @@ void Sleeping::invoke()
 
 void init_timer()
 {
-    s_timer = new _timerThread();
-    s_timer->start();
+    _timerThread* timer = new _timerThread();
+    s_timer = timer;
+    timer->start();
 }
 
 void Fiber::sleep(int32_t ms, Task_base* now)

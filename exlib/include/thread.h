@@ -8,6 +8,11 @@
 
 #pragma once
 
+// Include standard library headers first to avoid macro conflicts
+#include <thread>
+#include <chrono>
+#include <functional>
+
 #include "osconfig.h"
 
 #ifdef _WIN32
@@ -31,39 +36,6 @@
 namespace exlib {
 
 #ifdef _WIN32
-
-class OSMutex {
-public:
-    OSMutex()
-    {
-        InitializeCriticalSection(&cs_);
-    }
-
-    ~OSMutex()
-    {
-        DeleteCriticalSection(&cs_);
-    }
-
-    void Lock()
-    {
-        EnterCriticalSection(&cs_);
-    }
-
-    void Unlock()
-    {
-        LeaveCriticalSection(&cs_);
-    }
-
-    bool TryLock()
-    {
-        return !!TryEnterCriticalSection(&cs_);
-    }
-
-    void AssertHeld() { }
-
-public:
-    CRITICAL_SECTION cs_;
-};
 
 class OSSemaphore {
 public:
@@ -98,56 +70,7 @@ public:
     HANDLE m_sem;
 };
 
-class OSCondVar {
-public:
-    OSCondVar(OSMutex* mu);
-    ~OSCondVar();
-    void Wait();
-    void Signal();
-    void SignalAll();
-
-private:
-    CONDITION_VARIABLE _cv;
-    OSMutex* _mu;
-};
-
 #else
-
-class OSMutex {
-public:
-    OSMutex()
-    {
-        pthread_mutexattr_t attrs;
-        pthread_mutexattr_init(&attrs);
-        pthread_mutexattr_settype(&attrs, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(&mutex_, &attrs);
-    }
-
-    ~OSMutex()
-    {
-        pthread_mutex_destroy(&mutex_);
-    }
-
-    void Lock()
-    {
-        pthread_mutex_lock(&mutex_);
-    }
-
-    void Unlock()
-    {
-        pthread_mutex_unlock(&mutex_);
-    }
-
-    bool TryLock()
-    {
-        return !pthread_mutex_trylock(&mutex_);
-    }
-
-    void AssertHeld() { }
-
-public:
-    pthread_mutex_t mutex_;
-};
 
 #ifdef Darwin
 class OSSemaphore {
@@ -236,76 +159,21 @@ public:
 };
 #endif
 
-class OSCondVar {
-public:
-    OSCondVar(OSMutex* mu)
-        : mu_(mu)
-    {
-        pthread_cond_init(&cv_, NULL);
-    }
-
-    ~OSCondVar()
-    {
-        pthread_cond_destroy(&cv_);
-    }
-
-    void Wait()
-    {
-        pthread_cond_wait(&cv_, &mu_->mutex_);
-    }
-
-    void Signal()
-    {
-        pthread_cond_signal(&cv_);
-    }
-
-    void SignalAll()
-    {
-        pthread_cond_broadcast(&cv_);
-    }
-
-private:
-    pthread_cond_t cv_;
-    OSMutex* mu_;
-};
-
 #endif
-
-class AutoLock {
-public:
-    AutoLock(OSMutex& mu)
-        : _mu(mu)
-    {
-        _mu.Lock();
-    }
-    ~AutoLock()
-    {
-        _mu.Unlock();
-    }
-
-private:
-    OSMutex& _mu;
-};
-
-class AutoUnlock {
-public:
-    AutoUnlock(OSMutex& mu)
-        : _mu(mu)
-    {
-        _mu.Unlock();
-    }
-    ~AutoUnlock()
-    {
-        _mu.Lock();
-    }
-
-private:
-    OSMutex& _mu;
-};
 
 class OSThread : public Thread_base {
 public:
-    OSThread();
+    OSThread()
+        : m_sem(0)
+    {
+    }
+
+    explicit OSThread(std::function<void()> func)
+        : m_func(std::move(func))
+        , m_sem(0)
+    {
+    }
+
     virtual ~OSThread();
 
 public:
@@ -314,73 +182,43 @@ public:
     virtual void resume();
 
     virtual void join();
-    void yield();
 
-    virtual void Run() {};
+    void yield()
+    {
+        std::this_thread::yield();
+    }
+
+    virtual void Run()
+    {
+        if (m_func)
+            m_func();
+    }
 
 public:
-    static void Create(fiber_func func, void* data, Thread_base** retVal = NULL)
+    void start();
+
+    static OSThread* current();
+
+    void bindCurrent();
+
+    static void sleep(int32_t ms)
     {
-        class _thread : public OSThread {
-        public:
-            typedef void (*thread_func)(void*);
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    }
 
-        public:
-            _thread(thread_func proc, void* arg)
-                : m_proc(proc)
-                , m_arg(arg)
-            {
-            }
-
-        public:
-            virtual void Run()
-            {
-                m_proc(m_arg);
-            }
-
-        private:
-            thread_func m_proc;
-            void* m_arg;
-        };
-
-        _thread* pth;
-
-        pth = new _thread(func, data);
-        if (retVal) {
-            *retVal = pth;
-            pth->Ref();
-        }
-
-        pth->start();
+    static OSThread* Create(std::function<void()> func)
+    {
+        OSThread* th = new OSThread(std::move(func));
+        th->start();
+        return th;
     }
 
 private:
     virtual void destroy();
 
-public:
-    void start();
-    static OSThread* current();
-    void bindCurrent();
-
-    static void sleep(int32_t ms)
-    {
-#ifdef _WIN32
-        ::Sleep(ms);
-#else
-        ::usleep(1000 * ms);
-#endif
-    }
-
 private:
-    static void* Entry(void* arg);
-
-public:
-#ifdef _WIN32
-    HANDLE thread_;
-    uint32_t thread_id;
-#else
-    pthread_t thread_;
-#endif
+    std::function<void()> m_func;
+    std::thread m_thread;
     OSSemaphore m_sem;
 };
 

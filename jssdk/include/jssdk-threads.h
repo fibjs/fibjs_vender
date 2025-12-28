@@ -18,12 +18,11 @@ inline void fiberServiceInitializeWorkers(int32_t serviceWorkerCount) {
 inline void fiberServiceStartLoop() { exlib::Service::dispatch(); }
 
 inline void fiberServiceStartThread(
-    exlib::fiber_func fiber_proc,
-    void* proc_data,
+    std::function<void()> fiber_proc,
     int32_t fiber_stacksize,
     const char* fiber_name = NULL,
     exlib::Thread_base** proc_retVal = NULL) {
-    exlib::Service::CreateFiber(fiber_proc, proc_data, fiber_stacksize, fiber_name, proc_retVal);
+    exlib::Service::CreateFiber(std::move(fiber_proc), fiber_stacksize, fiber_name, proc_retVal);
 }
 
 inline void fiberServiceToggleUseThread (bool nextVal) {

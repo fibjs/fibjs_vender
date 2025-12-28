@@ -49,7 +49,7 @@ Thread_base* Thread_base::current()
 
 Service::Service()
     : m_master(s_service)
-    , m_main(this, NULL, NULL)
+    , m_main(this, nullptr)
     , m_running(&m_main)
     , m_cb(NULL)
 {
@@ -59,7 +59,7 @@ Service::Service()
 
 Service::Service(int32_t workers)
     : m_master(NULL)
-    , m_main(this, NULL, NULL)
+    , m_main(this, nullptr)
     , m_running(&m_main)
     , m_cb(NULL)
     , m_workers(workers - 1)
@@ -96,7 +96,7 @@ static void _fiber_proc(void* param)
     } _cb(fb);
 
     fb->save_stack_start();
-    fb->m_func(fb->m_data);
+    fb->m_func();
 
     Service* now = fb->m_pService;
     now->switchConext(&_cb);
@@ -104,23 +104,39 @@ static void _fiber_proc(void* param)
 
 bool Service::use_thread = false;
 
-void Service::CreateFiber(fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
+Fiber* Fiber::Create(std::function<void()> func, int32_t stacksize, const char* name)
+{
+    Fiber* fb = new Fiber(s_service, std::move(func));
+    fb->m_ctx = create_fiber(stacksize, _fiber_proc, fb);
+
+    if (name)
+        fb->set_name(name);
+
+    fb->Ref();
+    fb->resume();
+
+    return fb;
+}
+
+Fiber* Service::CreateFiber(std::function<void()> func, int32_t stacksize, const char* name, Thread_base** retVal)
 {
     if (use_thread) {
-        OSThread::Create(func, data, retVal);
-        return;
+        OSThread* th = OSThread::Create(std::move(func));
+        if (retVal) {
+            *retVal = th;
+            th->Ref();
+        }
+        return nullptr;
     }
 
-    Fiber* fb = new Fiber(s_service, func, data);
-    fb->m_ctx = create_fiber(stacksize, _fiber_proc, fb);
+    Fiber* fb = Fiber::Create(std::move(func), stacksize, name);
 
     if (retVal) {
         *retVal = fb;
         fb->Ref();
     }
 
-    fb->Ref();
-    fb->resume();
+    return fb;
 }
 
 void Service::dispatch()

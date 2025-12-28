@@ -2,7 +2,7 @@
 #include "exlib/include/service.h"
 #include "jssdk.h"
 
-void fiber_proc(void* p)
+static void fiber_proc()
 {
     _exit(RUN_ALL_TESTS());
 }
@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     // exlib::Service::use_thread = true;
 
     exlib::Service::init(3);
-    exlib::Service::CreateFiber(fiber_proc, 0, 128 * 1024);
+    exlib::Service::CreateFiber(fiber_proc, 128 * 1024);
     exlib::Service::dispatch();
     return 0;
 }

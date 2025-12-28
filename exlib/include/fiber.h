@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
+#include <functional>
 #include "ex_assert.h"
 #include "list.h"
 #include "fbTls.h"
@@ -318,16 +319,14 @@ public:
 };
 
 #define FIBER_STACK_SIZE (65536 * 2)
-typedef void (*fiber_func)(void*);
 
 class Service;
 
 class Fiber : public Thread_base {
 public:
-    Fiber(Service* pService, fiber_func func, void* data)
+    Fiber(Service* pService, std::function<void()> func)
         : m_pService(pService)
-        , m_func(func)
-        , m_data(data)
+        , m_func(std::move(func))
     {
         m_ctx = NULL;
         memset(&name_, 0, sizeof(name_));
@@ -360,12 +359,14 @@ public:
     static void sleep(int32_t ms, Task_base* now = 0);
     static void cancel_sleep(Task_base* now);
 
+    static Fiber* Create(std::function<void()> func, int32_t stacksize = FIBER_STACK_SIZE,
+        const char* name = NULL);
+
 public:
     void* m_ctx;
     Event m_joins;
     Service* m_pService;
-    fiber_func m_func;
-    void* m_data;
+    std::function<void()> m_func;
     char name_[16];
 
 #ifdef DEBUG

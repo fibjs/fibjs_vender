@@ -12,7 +12,7 @@
 
 static exlib::Thread_base* proc;
 
-void fiber_proc(void* p)
+static void fiber_proc(const char* p)
 {
     exlib::string fname;
 
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     exlib::Service::use_thread = true;
 
     exlib::Service::init(3);
-    exlib::Service::CreateFiber(fiber_proc, argv[0], 128 * 1024, NULL, &proc);
+    exlib::Service::CreateFiber([argv]() { fiber_proc(argv[0]); }, 128 * 1024, NULL, &proc);
     exlib::Service::dispatch();
 
     return 0;

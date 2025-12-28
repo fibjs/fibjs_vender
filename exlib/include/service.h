@@ -38,7 +38,7 @@ public:
     static void init(int32_t workers);
     static void init();
 
-    static void CreateFiber(fiber_func func, void* data, int32_t stacksize,
+    static Fiber* CreateFiber(std::function<void()> func, int32_t stacksize,
         const char* name = NULL, Thread_base** retVal = NULL);
 
     void post(Fiber* fiber)
@@ -124,6 +124,6 @@ private:
     exlib::atomic m_workers;
     exlib::atomic m_idleWorkers;
     LockedList<Fiber> m_resumeList;
-    OSSemaphore m_sem;
+    OSSemaphore m_sem { 0 };
 };
 }
