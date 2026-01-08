@@ -336,6 +336,23 @@ CON_FUNC_RETURN tls_construct_cert_verify(SSL_CONNECTION *s, WPACKET *pkt)
         goto err;
     }
 
+#ifndef OPENSSL_NO_SM2
+    /* Set SM2 user ID for TLS 1.3 handshake signature (RFC 8998) */
+    if (EVP_PKEY_is_a(pkey, "SM2")) {
+        pctx = EVP_PKEY_CTX_new_from_pkey(sctx->libctx, pkey, sctx->propq);
+        if (pctx == NULL) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+        if (EVP_PKEY_CTX_set1_id(pctx, HANDSHAKE_SM2_ID,
+                                 HANDSHAKE_SM2_ID_LEN) != 1) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+        EVP_MD_CTX_set_pkey_ctx(mctx, pctx);
+    }
+#endif
+
     /* Get the data to be signed */
     if (!get_cert_verify_tbs_data(s, tls13tbs, &hdata, &hdatalen)) {
         /* SSLfatal() already called */
@@ -524,6 +541,23 @@ MSG_PROCESS_RETURN tls_process_cert_verify(SSL_CONNECTION *s, PACKET *pkt)
 
     OSSL_TRACE1(TLS, "Using client verify alg %s\n",
                 md == NULL ? "n/a" : EVP_MD_get0_name(md));
+
+#ifndef OPENSSL_NO_SM2
+    /* Set SM2 user ID for TLS 1.3 handshake signature (RFC 8998) */
+    if (EVP_PKEY_is_a(pkey, "SM2")) {
+        pctx = EVP_PKEY_CTX_new_from_pkey(sctx->libctx, pkey, sctx->propq);
+        if (pctx == NULL) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+        if (EVP_PKEY_CTX_set1_id(pctx, HANDSHAKE_SM2_ID,
+                                 HANDSHAKE_SM2_ID_LEN) != 1) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
+        EVP_MD_CTX_set_pkey_ctx(mctx, pctx);
+    }
+#endif
 
     if (EVP_DigestVerifyInit_ex(mctx, &pctx,
                                 md == NULL ? NULL : EVP_MD_get0_name(md),

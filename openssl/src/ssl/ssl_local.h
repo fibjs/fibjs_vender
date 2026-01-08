@@ -121,11 +121,13 @@
 # define SSL_aSRP                0x00000040U
 /* GOST R 34.10-2012 signature auth */
 # define SSL_aGOST12             0x00000080U
+/* SM2 signature auth */
+# define SSL_aSM2                0x00000100U
 /* Any appropriate signature auth (for TLS 1.3 ciphersuites) */
 # define SSL_aANY                0x00000000U
 /* All bits requiring a certificate */
 #define SSL_aCERT \
-    (SSL_aRSA | SSL_aDSS | SSL_aECDSA | SSL_aGOST01 | SSL_aGOST12)
+    (SSL_aRSA | SSL_aDSS | SSL_aECDSA | SSL_aGOST01 | SSL_aGOST12 | SSL_aSM2)
 
 /* Bits for algorithm_enc (symmetric encryption) */
 # define SSL_DES                 0x00000001U
@@ -152,6 +154,9 @@
 # define SSL_ARIA256GCM          0x00200000U
 # define SSL_MAGMA               0x00400000U
 # define SSL_KUZNYECHIK          0x00800000U
+# define SSL_SM4                 0x01000000U
+# define SSL_SM4GCM              0x02000000U
+# define SSL_SM4CCM              0x04000000U
 
 # define SSL_AESGCM              (SSL_AES128GCM | SSL_AES256GCM)
 # define SSL_AESCCM              (SSL_AES128CCM | SSL_AES256CCM | SSL_AES128CCM8 | SSL_AES256CCM8)
@@ -179,6 +184,7 @@
 # define SSL_GOST12_512          0x00000200U
 # define SSL_MAGMAOMAC           0x00000400U
 # define SSL_KUZNYECHIKOMAC      0x00000800U
+# define SSL_SM3                 0x00001000U
 
 /*
  * When adding new digest in the ssl_ciph.c and increment SSL_MD_NUM_IDX make
@@ -199,7 +205,8 @@
 # define SSL_MD_SHA512_IDX 11
 # define SSL_MD_MAGMAOMAC_IDX 12
 # define SSL_MD_KUZNYECHIKOMAC_IDX 13
-# define SSL_MAX_DIGEST 14
+# define SSL_MD_SM3_IDX 14
+# define SSL_MAX_DIGEST 15
 
 #define SSL_MD_NUM_IDX  SSL_MAX_DIGEST
 
@@ -213,6 +220,7 @@
 # define SSL_HANDSHAKE_MAC_GOST94 SSL_MD_GOST94_IDX
 # define SSL_HANDSHAKE_MAC_GOST12_256 SSL_MD_GOST12_256_IDX
 # define SSL_HANDSHAKE_MAC_GOST12_512 SSL_MD_GOST12_512_IDX
+# define SSL_HANDSHAKE_MAC_SM3 SSL_MD_SM3_IDX
 # define SSL_HANDSHAKE_MAC_DEFAULT  SSL_HANDSHAKE_MAC_MD5_SHA1
 
 /* Bits 8-15 bits are PRF */
@@ -223,6 +231,7 @@
 # define TLS1_PRF_GOST94 (SSL_MD_GOST94_IDX << TLS1_PRF_DGST_SHIFT)
 # define TLS1_PRF_GOST12_256 (SSL_MD_GOST12_256_IDX << TLS1_PRF_DGST_SHIFT)
 # define TLS1_PRF_GOST12_512 (SSL_MD_GOST12_512_IDX << TLS1_PRF_DGST_SHIFT)
+# define TLS1_PRF_SM3 (SSL_MD_SM3_IDX << TLS1_PRF_DGST_SHIFT)
 # define TLS1_PRF            (SSL_MD_MD5_SHA1_IDX << TLS1_PRF_DGST_SHIFT)
 
 /*
@@ -335,7 +344,8 @@
 # define SSL_PKEY_GOST12_512     6
 # define SSL_PKEY_ED25519        7
 # define SSL_PKEY_ED448          8
-# define SSL_PKEY_NUM            9
+# define SSL_PKEY_SM2            9
+# define SSL_PKEY_NUM            10
 
 # define SSL_ENC_DES_IDX         0
 # define SSL_ENC_3DES_IDX        1
@@ -361,7 +371,8 @@
 # define SSL_ENC_ARIA256GCM_IDX  21
 # define SSL_ENC_MAGMA_IDX       22
 # define SSL_ENC_KUZNYECHIK_IDX  23
-# define SSL_ENC_NUM_IDX         24
+# define SSL_ENC_SM4_IDX         24
+# define SSL_ENC_NUM_IDX         25
 
 /*-
  * SSL_kRSA <- RSA_ENC
@@ -2188,6 +2199,7 @@ typedef enum downgrade_en {
 #define TLSEXT_SIGALG_ecdsa_secp521r1_sha512                    0x0603
 #define TLSEXT_SIGALG_ecdsa_sha224                              0x0303
 #define TLSEXT_SIGALG_ecdsa_sha1                                0x0203
+#define TLSEXT_SIGALG_sm2sig_sm3                                0x0708  /* IANA standard */
 #define TLSEXT_SIGALG_rsa_pss_rsae_sha256                       0x0804
 #define TLSEXT_SIGALG_rsa_pss_rsae_sha384                       0x0805
 #define TLSEXT_SIGALG_rsa_pss_rsae_sha512                       0x0806

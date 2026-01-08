@@ -112,7 +112,39 @@ static SSL_CIPHER tls13_ciphers[] = {
         SSL_HANDSHAKE_MAC_SHA256,
         64, /* CCM8 uses a short tag, so we have a low security strength */
         128,
-    }
+    },
+    {
+        1,
+        TLS1_3_RFC_SM4_GCM_SM3,
+        TLS1_3_RFC_SM4_GCM_SM3,
+        TLS1_3_CK_SM4_GCM_SM3,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_SM4GCM,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SM3,
+        128,
+        128,
+    },
+    {
+        1,
+        TLS1_3_RFC_SM4_CCM_SM3,
+        TLS1_3_RFC_SM4_CCM_SM3,
+        TLS1_3_CK_SM4_CCM_SM3,
+        SSL_kANY,
+        SSL_aANY,
+        SSL_SM4CCM,
+        SSL_AEAD,
+        TLS1_3_VERSION, TLS1_3_VERSION,
+        0, 0,
+        SSL_NOT_DEFAULT | SSL_HIGH,
+        SSL_HANDSHAKE_MAC_SM3,
+        128,
+        128,
+    },
 };
 
 /*
@@ -1238,6 +1270,24 @@ static SSL_CIPHER ssl3_ciphers[] = {
      256,
      256,
      },
+#if !defined(OPENSSL_NO_SM2) && !defined(OPENSSL_NO_SM3) && !defined(OPENSSL_NO_SM4)
+    {
+     1,
+     TLS1_TXT_ECDHE_SM2_WITH_SM4_CBC_SM3,
+     TLS1_RFC_ECDHE_SM2_WITH_SM4_CBC_SM3,
+     TLS1_CK_ECDHE_SM2_WITH_SM4_CBC_SM3,
+     SSL_kECDHE,
+     SSL_aSM2,
+     SSL_SM4,
+     SSL_SM3,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     DTLS1_2_VERSION, DTLS1_2_VERSION,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_SM3 | TLS1_PRF_SM3,
+     128,
+     128,
+     },
+#endif
     {
      1,
      TLS1_TXT_ECDHE_RSA_WITH_AES_128_GCM_SHA256,

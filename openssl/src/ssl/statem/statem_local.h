@@ -37,6 +37,12 @@
 /* Max should actually be 36 but we are generous */
 #define FINISHED_MAX_LENGTH             64
 
+/* SM2 user ID for TLS 1.3 handshake signature (RFC 8998) */
+#ifndef OPENSSL_NO_SM2
+# define HANDSHAKE_SM2_ID "TLSv1.3+GM+Cipher+Suite"
+# define HANDSHAKE_SM2_ID_LEN (sizeof(HANDSHAKE_SM2_ID) - 1)
+#endif
+
 /* Dummy message type */
 #define SSL3_MT_DUMMY   -1
 

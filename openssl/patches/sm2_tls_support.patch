@@ -1,0 +1,420 @@
+diff --git a/openssl/include/openssl/tls1.h b/openssl/include/openssl/tls1.h
+index 7e3d1a725..c4b2fcd94 100644
+--- a/openssl/include/openssl/tls1.h
++++ b/openssl/include/openssl/tls1.h
+@@ -622,6 +622,13 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
+ # define TLS1_3_CK_AES_128_CCM_SHA256                     0x03001304
+ # define TLS1_3_CK_AES_128_CCM_8_SHA256                   0x03001305
+ 
++/* TLS v1.3 SM ciphersuites from RFC 8998 */
++# define TLS1_3_CK_SM4_GCM_SM3                            0x030000C6
++# define TLS1_3_CK_SM4_CCM_SM3                            0x030000C7
++
++/* TLS v1.2 SM2 ciphersuites - GmSSL compatible */
++# define TLS1_CK_ECDHE_SM2_WITH_SM4_CBC_SM3               0x0300E011  /* GmSSL ECDHE_SM4_CBC */
++
+ /* Aria ciphersuites from RFC6209 */
+ # define TLS1_CK_RSA_WITH_ARIA_128_GCM_SHA256             0x0300C050
+ # define TLS1_CK_RSA_WITH_ARIA_256_GCM_SHA384             0x0300C051
+@@ -701,6 +708,14 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
+ # define TLS1_3_RFC_CHACHA20_POLY1305_SHA256             "TLS_CHACHA20_POLY1305_SHA256"
+ # define TLS1_3_RFC_AES_128_CCM_SHA256                   "TLS_AES_128_CCM_SHA256"
+ # define TLS1_3_RFC_AES_128_CCM_8_SHA256                 "TLS_AES_128_CCM_8_SHA256"
++
++/* TLS v1.3 SM ciphersuite names from RFC 8998 */
++# define TLS1_3_RFC_SM4_GCM_SM3                          "TLS_SM4_GCM_SM3"
++# define TLS1_3_RFC_SM4_CCM_SM3                          "TLS_SM4_CCM_SM3"
++
++/* TLS v1.2 SM2 ciphersuite names */
++# define TLS1_RFC_ECDHE_SM2_WITH_SM4_CBC_SM3             "TLS_ECDHE_SM2_WITH_SM4_CBC_SM3"
++
+ # define TLS1_RFC_ECDHE_ECDSA_WITH_NULL_SHA              "TLS_ECDHE_ECDSA_WITH_NULL_SHA"
+ # define TLS1_RFC_ECDHE_ECDSA_WITH_DES_192_CBC3_SHA      "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA"
+ # define TLS1_RFC_ECDHE_ECDSA_WITH_AES_128_CBC_SHA       "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA"
+@@ -1072,6 +1087,9 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
+ # define TLS1_TXT_ECDH_RSA_WITH_AES_128_GCM_SHA256       "ECDH-RSA-AES128-GCM-SHA256"
+ # define TLS1_TXT_ECDH_RSA_WITH_AES_256_GCM_SHA384       "ECDH-RSA-AES256-GCM-SHA384"
+ 
++/* SM2 ciphersuites */
++# define TLS1_TXT_ECDHE_SM2_WITH_SM4_CBC_SM3             "ECDHE-SM2-SM4-CBC-SM3"
++
+ /* TLS v1.2 PSK GCM ciphersuites from RFC5487 */
+ # define TLS1_TXT_PSK_WITH_AES_128_GCM_SHA256            "PSK-AES128-GCM-SHA256"
+ # define TLS1_TXT_PSK_WITH_AES_256_GCM_SHA384            "PSK-AES256-GCM-SHA384"
+diff --git a/openssl/src/ssl/s3_lib.c b/openssl/src/ssl/s3_lib.c
+index 2bc5e79fd..e4508d21f 100644
+--- a/openssl/src/ssl/s3_lib.c
++++ b/openssl/src/ssl/s3_lib.c
+@@ -112,7 +112,39 @@ static SSL_CIPHER tls13_ciphers[] = {
+         SSL_HANDSHAKE_MAC_SHA256,
+         64, /* CCM8 uses a short tag, so we have a low security strength */
+         128,
+-    }
++    },
++    {
++        1,
++        TLS1_3_RFC_SM4_GCM_SM3,
++        TLS1_3_RFC_SM4_GCM_SM3,
++        TLS1_3_CK_SM4_GCM_SM3,
++        SSL_kANY,
++        SSL_aANY,
++        SSL_SM4GCM,
++        SSL_AEAD,
++        TLS1_3_VERSION, TLS1_3_VERSION,
++        0, 0,
++        SSL_HIGH,
++        SSL_HANDSHAKE_MAC_SM3,
++        128,
++        128,
++    },
++    {
++        1,
++        TLS1_3_RFC_SM4_CCM_SM3,
++        TLS1_3_RFC_SM4_CCM_SM3,
++        TLS1_3_CK_SM4_CCM_SM3,
++        SSL_kANY,
++        SSL_aANY,
++        SSL_SM4CCM,
++        SSL_AEAD,
++        TLS1_3_VERSION, TLS1_3_VERSION,
++        0, 0,
++        SSL_NOT_DEFAULT | SSL_HIGH,
++        SSL_HANDSHAKE_MAC_SM3,
++        128,
++        128,
++    },
+ };
+ 
+ /*
+@@ -1238,6 +1270,24 @@ static SSL_CIPHER ssl3_ciphers[] = {
+      256,
+      256,
+      },
++#if !defined(OPENSSL_NO_SM2) && !defined(OPENSSL_NO_SM3) && !defined(OPENSSL_NO_SM4)
++    {
++     1,
++     TLS1_TXT_ECDHE_SM2_WITH_SM4_CBC_SM3,
++     TLS1_RFC_ECDHE_SM2_WITH_SM4_CBC_SM3,
++     TLS1_CK_ECDHE_SM2_WITH_SM4_CBC_SM3,
++     SSL_kECDHE,
++     SSL_aSM2,
++     SSL_SM4,
++     SSL_SM3,
++     TLS1_2_VERSION, TLS1_2_VERSION,
++     DTLS1_2_VERSION, DTLS1_2_VERSION,
++     SSL_HIGH,
++     SSL_HANDSHAKE_MAC_SM3 | TLS1_PRF_SM3,
++     128,
++     128,
++     },
++#endif
+     {
+      1,
+      TLS1_TXT_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+diff --git a/openssl/src/ssl/ssl_cert_table.h b/openssl/src/ssl/ssl_cert_table.h
+index e4dc8063b..39eacf53a 100644
+--- a/openssl/src/ssl/ssl_cert_table.h
++++ b/openssl/src/ssl/ssl_cert_table.h
+@@ -19,5 +19,6 @@ static const SSL_CERT_LOOKUP ssl_cert_info [] = {
+     {NID_id_GostR3410_2012_256, SSL_aGOST12}, /* SSL_PKEY_GOST12_256 */
+     {NID_id_GostR3410_2012_512, SSL_aGOST12}, /* SSL_PKEY_GOST12_512 */
+     {EVP_PKEY_ED25519, SSL_aECDSA}, /* SSL_PKEY_ED25519 */
+-    {EVP_PKEY_ED448, SSL_aECDSA} /* SSL_PKEY_ED448 */
++    {EVP_PKEY_ED448, SSL_aECDSA}, /* SSL_PKEY_ED448 */
++    {EVP_PKEY_SM2, SSL_aSM2} /* SSL_PKEY_SM2 */
+ };
+diff --git a/openssl/src/ssl/ssl_ciph.c b/openssl/src/ssl/ssl_ciph.c
+index ddde21b96..b6cb39a06 100644
+--- a/openssl/src/ssl/ssl_ciph.c
++++ b/openssl/src/ssl/ssl_ciph.c
+@@ -53,8 +53,11 @@ static const ssl_cipher_table ssl_cipher_table_cipher[SSL_ENC_NUM_IDX] = {
+     {SSL_CHACHA20POLY1305, NID_chacha20_poly1305}, /* SSL_ENC_CHACHA_IDX 19 */
+     {SSL_ARIA128GCM, NID_aria_128_gcm}, /* SSL_ENC_ARIA128GCM_IDX 20 */
+     {SSL_ARIA256GCM, NID_aria_256_gcm}, /* SSL_ENC_ARIA256GCM_IDX 21 */
+-    {SSL_MAGMA, NID_magma_ctr_acpkm}, /* SSL_ENC_MAGMA_IDX */
+-    {SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm}, /* SSL_ENC_KUZNYECHIK_IDX */
++    {SSL_MAGMA, NID_magma_ctr_acpkm}, /* SSL_ENC_MAGMA_IDX 22 */
++    {SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm}, /* SSL_ENC_KUZNYECHIK_IDX 23 */
++    {SSL_SM4, NID_sm4_cbc},     /* SSL_ENC_SM4_IDX 24 */
++    {SSL_SM4GCM, NID_sm4_gcm},  /* SSL_ENC_SM4GCM_IDX 25 */
++    {SSL_SM4CCM, NID_sm4_ccm},  /* SSL_ENC_SM4CCM_IDX 26 */
+ };
+ 
+ #define SSL_COMP_NULL_IDX       0
+@@ -82,7 +85,8 @@ static const ssl_cipher_table ssl_cipher_table_mac[SSL_MD_NUM_IDX] = {
+     {0, NID_sha224},            /* SSL_MD_SHA224_IDX 10 */
+     {0, NID_sha512},            /* SSL_MD_SHA512_IDX 11 */
+     {SSL_MAGMAOMAC, NID_magma_mac}, /* sSL_MD_MAGMAOMAC_IDX */
+-    {SSL_KUZNYECHIKOMAC, NID_kuznyechik_mac} /* SSL_MD_KUZNYECHIKOMAC_IDX */
++    {SSL_KUZNYECHIKOMAC, NID_kuznyechik_mac}, /* SSL_MD_KUZNYECHIKOMAC_IDX */
++    {SSL_SM3, NID_sm3}          /* SSL_MD_SM3_IDX 14 */
+ };
+ 
+ /* *INDENT-OFF* */
+@@ -109,6 +113,7 @@ static const ssl_cipher_table ssl_cipher_table_auth[] = {
+     {SSL_aGOST12, NID_auth_gost12},
+     {SSL_aSRP,    NID_auth_srp},
+     {SSL_aNULL,   NID_auth_null},
++    {SSL_aSM2,    NID_sm2}, /* Use NID_sm2 as auth identifier */
+     {SSL_aANY,    NID_auth_any}
+ };
+ /* *INDENT-ON* */
+@@ -209,6 +214,7 @@ static const SSL_CIPHER cipher_aliases[] = {
+     {0, SSL_TXT_aGOST12, NULL, 0, 0, SSL_aGOST12},
+     {0, SSL_TXT_aGOST, NULL, 0, 0, SSL_aGOST01 | SSL_aGOST12},
+     {0, SSL_TXT_aSRP, NULL, 0, 0, SSL_aSRP},
++    {0, "SM2", NULL, 0, 0, SSL_aSM2},
+ 
+     /* aliases combining key exchange and server authentication */
+     {0, SSL_TXT_EDH, NULL, 0, SSL_kDHE, ~SSL_aNULL},
+@@ -381,6 +387,11 @@ int ssl_load_ciphers(SSL_CTX *ctx)
+         ctx->disabled_auth_mask |= SSL_aECDSA;
+     else
+         EVP_SIGNATURE_free(sig);
++    sig = EVP_SIGNATURE_fetch(ctx->libctx, "SM2", ctx->propq);
++    if (sig == NULL)
++        ctx->disabled_auth_mask |= SSL_aSM2;
++    else
++        EVP_SIGNATURE_free(sig);
+     ERR_pop_to_mark();
+ 
+ #ifdef OPENSSL_NO_PSK
+@@ -1789,6 +1800,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+     case (SSL_aGOST12 | SSL_aGOST01):
+         au = "GOST12";
+         break;
++    case SSL_aSM2:
++        au = "SM2";
++        break;
+     case SSL_aANY:
+         au = "any";
+         break;
+@@ -1865,6 +1879,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
+     case SSL_KUZNYECHIK:
+         enc = "KUZNYECHIK";
+         break;
++    case SSL_SM4:
++        enc = "SM4(128)";
++        break;
+     case SSL_CHACHA20POLY1305:
+         enc = "CHACHA20/POLY1305(256)";
+         break;
+diff --git a/openssl/src/ssl/ssl_local.h b/openssl/src/ssl/ssl_local.h
+index f448cfdbc..db22ec558 100644
+--- a/openssl/src/ssl/ssl_local.h
++++ b/openssl/src/ssl/ssl_local.h
+@@ -121,11 +121,13 @@
+ # define SSL_aSRP                0x00000040U
+ /* GOST R 34.10-2012 signature auth */
+ # define SSL_aGOST12             0x00000080U
++/* SM2 signature auth */
++# define SSL_aSM2                0x00000100U
+ /* Any appropriate signature auth (for TLS 1.3 ciphersuites) */
+ # define SSL_aANY                0x00000000U
+ /* All bits requiring a certificate */
+ #define SSL_aCERT \
+-    (SSL_aRSA | SSL_aDSS | SSL_aECDSA | SSL_aGOST01 | SSL_aGOST12)
++    (SSL_aRSA | SSL_aDSS | SSL_aECDSA | SSL_aGOST01 | SSL_aGOST12 | SSL_aSM2)
+ 
+ /* Bits for algorithm_enc (symmetric encryption) */
+ # define SSL_DES                 0x00000001U
+@@ -152,6 +154,9 @@
+ # define SSL_ARIA256GCM          0x00200000U
+ # define SSL_MAGMA               0x00400000U
+ # define SSL_KUZNYECHIK          0x00800000U
++# define SSL_SM4                 0x01000000U
++# define SSL_SM4GCM              0x02000000U
++# define SSL_SM4CCM              0x04000000U
+ 
+ # define SSL_AESGCM              (SSL_AES128GCM | SSL_AES256GCM)
+ # define SSL_AESCCM              (SSL_AES128CCM | SSL_AES256CCM | SSL_AES128CCM8 | SSL_AES256CCM8)
+@@ -179,6 +184,7 @@
+ # define SSL_GOST12_512          0x00000200U
+ # define SSL_MAGMAOMAC           0x00000400U
+ # define SSL_KUZNYECHIKOMAC      0x00000800U
++# define SSL_SM3                 0x00001000U
+ 
+ /*
+  * When adding new digest in the ssl_ciph.c and increment SSL_MD_NUM_IDX make
+@@ -199,7 +205,8 @@
+ # define SSL_MD_SHA512_IDX 11
+ # define SSL_MD_MAGMAOMAC_IDX 12
+ # define SSL_MD_KUZNYECHIKOMAC_IDX 13
+-# define SSL_MAX_DIGEST 14
++# define SSL_MD_SM3_IDX 14
++# define SSL_MAX_DIGEST 15
+ 
+ #define SSL_MD_NUM_IDX  SSL_MAX_DIGEST
+ 
+@@ -213,6 +220,7 @@
+ # define SSL_HANDSHAKE_MAC_GOST94 SSL_MD_GOST94_IDX
+ # define SSL_HANDSHAKE_MAC_GOST12_256 SSL_MD_GOST12_256_IDX
+ # define SSL_HANDSHAKE_MAC_GOST12_512 SSL_MD_GOST12_512_IDX
++# define SSL_HANDSHAKE_MAC_SM3 SSL_MD_SM3_IDX
+ # define SSL_HANDSHAKE_MAC_DEFAULT  SSL_HANDSHAKE_MAC_MD5_SHA1
+ 
+ /* Bits 8-15 bits are PRF */
+@@ -223,6 +231,7 @@
+ # define TLS1_PRF_GOST94 (SSL_MD_GOST94_IDX << TLS1_PRF_DGST_SHIFT)
+ # define TLS1_PRF_GOST12_256 (SSL_MD_GOST12_256_IDX << TLS1_PRF_DGST_SHIFT)
+ # define TLS1_PRF_GOST12_512 (SSL_MD_GOST12_512_IDX << TLS1_PRF_DGST_SHIFT)
++# define TLS1_PRF_SM3 (SSL_MD_SM3_IDX << TLS1_PRF_DGST_SHIFT)
+ # define TLS1_PRF            (SSL_MD_MD5_SHA1_IDX << TLS1_PRF_DGST_SHIFT)
+ 
+ /*
+@@ -335,7 +344,8 @@
+ # define SSL_PKEY_GOST12_512     6
+ # define SSL_PKEY_ED25519        7
+ # define SSL_PKEY_ED448          8
+-# define SSL_PKEY_NUM            9
++# define SSL_PKEY_SM2            9
++# define SSL_PKEY_NUM            10
+ 
+ # define SSL_ENC_DES_IDX         0
+ # define SSL_ENC_3DES_IDX        1
+@@ -361,7 +371,8 @@
+ # define SSL_ENC_ARIA256GCM_IDX  21
+ # define SSL_ENC_MAGMA_IDX       22
+ # define SSL_ENC_KUZNYECHIK_IDX  23
+-# define SSL_ENC_NUM_IDX         24
++# define SSL_ENC_SM4_IDX         24
++# define SSL_ENC_NUM_IDX         25
+ 
+ /*-
+  * SSL_kRSA <- RSA_ENC
+@@ -2188,6 +2199,7 @@ typedef enum downgrade_en {
+ #define TLSEXT_SIGALG_ecdsa_secp521r1_sha512                    0x0603
+ #define TLSEXT_SIGALG_ecdsa_sha224                              0x0303
+ #define TLSEXT_SIGALG_ecdsa_sha1                                0x0203
++#define TLSEXT_SIGALG_sm2sig_sm3                                0x0708  /* IANA standard */
+ #define TLSEXT_SIGALG_rsa_pss_rsae_sha256                       0x0804
+ #define TLSEXT_SIGALG_rsa_pss_rsae_sha384                       0x0805
+ #define TLSEXT_SIGALG_rsa_pss_rsae_sha512                       0x0806
+diff --git a/openssl/src/ssl/statem/statem_lib.c b/openssl/src/ssl/statem/statem_lib.c
+index 8932ac44c..b76263865 100644
+--- a/openssl/src/ssl/statem/statem_lib.c
++++ b/openssl/src/ssl/statem/statem_lib.c
+@@ -336,6 +336,23 @@ CON_FUNC_RETURN tls_construct_cert_verify(SSL_CONNECTION *s, WPACKET *pkt)
+         goto err;
+     }
+ 
++#ifndef OPENSSL_NO_SM2
++    /* Set SM2 user ID for TLS 1.3 handshake signature (RFC 8998) */
++    if (EVP_PKEY_is_a(pkey, "SM2")) {
++        pctx = EVP_PKEY_CTX_new_from_pkey(sctx->libctx, pkey, sctx->propq);
++        if (pctx == NULL) {
++            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
++            goto err;
++        }
++        if (EVP_PKEY_CTX_set1_id(pctx, HANDSHAKE_SM2_ID,
++                                 HANDSHAKE_SM2_ID_LEN) != 1) {
++            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
++            goto err;
++        }
++        EVP_MD_CTX_set_pkey_ctx(mctx, pctx);
++    }
++#endif
++
+     /* Get the data to be signed */
+     if (!get_cert_verify_tbs_data(s, tls13tbs, &hdata, &hdatalen)) {
+         /* SSLfatal() already called */
+@@ -525,6 +542,23 @@ MSG_PROCESS_RETURN tls_process_cert_verify(SSL_CONNECTION *s, PACKET *pkt)
+     OSSL_TRACE1(TLS, "Using client verify alg %s\n",
+                 md == NULL ? "n/a" : EVP_MD_get0_name(md));
+ 
++#ifndef OPENSSL_NO_SM2
++    /* Set SM2 user ID for TLS 1.3 handshake signature (RFC 8998) */
++    if (EVP_PKEY_is_a(pkey, "SM2")) {
++        pctx = EVP_PKEY_CTX_new_from_pkey(sctx->libctx, pkey, sctx->propq);
++        if (pctx == NULL) {
++            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
++            goto err;
++        }
++        if (EVP_PKEY_CTX_set1_id(pctx, HANDSHAKE_SM2_ID,
++                                 HANDSHAKE_SM2_ID_LEN) != 1) {
++            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
++            goto err;
++        }
++        EVP_MD_CTX_set_pkey_ctx(mctx, pctx);
++    }
++#endif
++
+     if (EVP_DigestVerifyInit_ex(mctx, &pctx,
+                                 md == NULL ? NULL : EVP_MD_get0_name(md),
+                                 sctx->libctx, sctx->propq, pkey,
+diff --git a/openssl/src/ssl/statem/statem_local.h b/openssl/src/ssl/statem/statem_local.h
+index 04114b1e2..34b1fb46d 100644
+--- a/openssl/src/ssl/statem/statem_local.h
++++ b/openssl/src/ssl/statem/statem_local.h
+@@ -37,6 +37,12 @@
+ /* Max should actually be 36 but we are generous */
+ #define FINISHED_MAX_LENGTH             64
+ 
++/* SM2 user ID for TLS 1.3 handshake signature (RFC 8998) */
++#ifndef OPENSSL_NO_SM2
++# define HANDSHAKE_SM2_ID "TLSv1.3+GM+Cipher+Suite"
++# define HANDSHAKE_SM2_ID_LEN (sizeof(HANDSHAKE_SM2_ID) - 1)
++#endif
++
+ /* Dummy message type */
+ #define SSL3_MT_DUMMY   -1
+ 
+diff --git a/openssl/src/ssl/t1_lib.c b/openssl/src/ssl/t1_lib.c
+index e9aa0785d..43306eff1 100644
+--- a/openssl/src/ssl/t1_lib.c
++++ b/openssl/src/ssl/t1_lib.c
+@@ -184,6 +184,7 @@ static const struct {
+     {NID_id_tc26_gost_3410_2012_512_paramSetA, OSSL_TLS_GROUP_ID_gc512A},
+     {NID_id_tc26_gost_3410_2012_512_paramSetB, OSSL_TLS_GROUP_ID_gc512B},
+     {NID_id_tc26_gost_3410_2012_512_paramSetC, OSSL_TLS_GROUP_ID_gc512C},
++    {NID_sm2, OSSL_TLS_GROUP_ID_sm2},
+     {NID_ffdhe2048, OSSL_TLS_GROUP_ID_ffdhe2048},
+     {NID_ffdhe3072, OSSL_TLS_GROUP_ID_ffdhe3072},
+     {NID_ffdhe4096, OSSL_TLS_GROUP_ID_ffdhe4096},
+@@ -211,6 +212,7 @@ static const uint16_t supported_groups_default[] = {
+     OSSL_TLS_GROUP_ID_gc512A,        /* GC512A (38) */
+     OSSL_TLS_GROUP_ID_gc512B,        /* GC512B (39) */
+     OSSL_TLS_GROUP_ID_gc512C,        /* GC512C (40) */
++    OSSL_TLS_GROUP_ID_sm2,           /* curveSM2 (41) - IANA standard */
+     OSSL_TLS_GROUP_ID_ffdhe2048,     /* ffdhe2048 (0x100) */
+     OSSL_TLS_GROUP_ID_ffdhe3072,     /* ffdhe3072 (0x101) */
+     OSSL_TLS_GROUP_ID_ffdhe4096,     /* ffdhe4096 (0x102) */
+@@ -1335,6 +1337,9 @@ static const uint16_t tls12_sigalgs[] = {
+     TLSEXT_SIGALG_ecdsa_secp256r1_sha256,
+     TLSEXT_SIGALG_ecdsa_secp384r1_sha384,
+     TLSEXT_SIGALG_ecdsa_secp521r1_sha512,
++#if !defined(OPENSSL_NO_SM2) && !defined(OPENSSL_NO_SM3)
++    TLSEXT_SIGALG_sm2sig_sm3,
++#endif
+     TLSEXT_SIGALG_ed25519,
+     TLSEXT_SIGALG_ed448,
+     TLSEXT_SIGALG_ecdsa_brainpoolP256r1_sha256,
+@@ -1381,6 +1386,11 @@ static const uint16_t suiteb_sigalgs[] = {
+ };
+ 
+ static const SIGALG_LOOKUP sigalg_lookup_tbl[] = {
++#if !defined(OPENSSL_NO_SM2) && !defined(OPENSSL_NO_SM3)
++    {"sm2sig_sm3", TLSEXT_SIGALG_sm2sig_sm3,
++     NID_sm3, SSL_MD_SM3_IDX, EVP_PKEY_SM2, SSL_PKEY_SM2,
++     NID_SM2_with_SM3, NID_sm2, 1},
++#endif
+     {"ecdsa_secp256r1_sha256", TLSEXT_SIGALG_ecdsa_secp256r1_sha256,
+      NID_sha256, SSL_MD_SHA256_IDX, EVP_PKEY_EC, SSL_PKEY_ECC,
+      NID_ecdsa_with_SHA256, NID_X9_62_prime256v1, 1},
+@@ -3398,6 +3408,7 @@ void tls1_set_cert_validity(SSL_CONNECTION *s)
+     tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_GOST12_512);
+     tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED25519);
+     tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_ED448);
++    tls1_check_chain(s, NULL, NULL, NULL, SSL_PKEY_SM2);
+ }
+ 
+ /* User level utility function to check a chain is suitable */
+@@ -3723,7 +3734,7 @@ static const SIGALG_LOOKUP *find_sig_alg(SSL_CONNECTION *s, X509 *x,
+         tmppkey = (pkey != NULL) ? pkey
+                                  : s->cert->pkeys[lu->sig_idx].privatekey;
+ 
+-        if (lu->sig == EVP_PKEY_EC) {
++        if (lu->sig == EVP_PKEY_EC || lu->sig == EVP_PKEY_SM2) {
+             if (curve == -1)
+                 curve = ssl_get_EC_curve_nid(tmppkey);
+             if (lu->curve != NID_undef && curve != lu->curve)

@@ -53,8 +53,11 @@ static const ssl_cipher_table ssl_cipher_table_cipher[SSL_ENC_NUM_IDX] = {
     {SSL_CHACHA20POLY1305, NID_chacha20_poly1305}, /* SSL_ENC_CHACHA_IDX 19 */
     {SSL_ARIA128GCM, NID_aria_128_gcm}, /* SSL_ENC_ARIA128GCM_IDX 20 */
     {SSL_ARIA256GCM, NID_aria_256_gcm}, /* SSL_ENC_ARIA256GCM_IDX 21 */
-    {SSL_MAGMA, NID_magma_ctr_acpkm}, /* SSL_ENC_MAGMA_IDX */
-    {SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm}, /* SSL_ENC_KUZNYECHIK_IDX */
+    {SSL_MAGMA, NID_magma_ctr_acpkm}, /* SSL_ENC_MAGMA_IDX 22 */
+    {SSL_KUZNYECHIK, NID_kuznyechik_ctr_acpkm}, /* SSL_ENC_KUZNYECHIK_IDX 23 */
+    {SSL_SM4, NID_sm4_cbc},     /* SSL_ENC_SM4_IDX 24 */
+    {SSL_SM4GCM, NID_sm4_gcm},  /* SSL_ENC_SM4GCM_IDX 25 */
+    {SSL_SM4CCM, NID_sm4_ccm},  /* SSL_ENC_SM4CCM_IDX 26 */
 };
 
 #define SSL_COMP_NULL_IDX       0
@@ -82,7 +85,8 @@ static const ssl_cipher_table ssl_cipher_table_mac[SSL_MD_NUM_IDX] = {
     {0, NID_sha224},            /* SSL_MD_SHA224_IDX 10 */
     {0, NID_sha512},            /* SSL_MD_SHA512_IDX 11 */
     {SSL_MAGMAOMAC, NID_magma_mac}, /* sSL_MD_MAGMAOMAC_IDX */
-    {SSL_KUZNYECHIKOMAC, NID_kuznyechik_mac} /* SSL_MD_KUZNYECHIKOMAC_IDX */
+    {SSL_KUZNYECHIKOMAC, NID_kuznyechik_mac}, /* SSL_MD_KUZNYECHIKOMAC_IDX */
+    {SSL_SM3, NID_sm3}          /* SSL_MD_SM3_IDX 14 */
 };
 
 /* *INDENT-OFF* */
@@ -109,6 +113,7 @@ static const ssl_cipher_table ssl_cipher_table_auth[] = {
     {SSL_aGOST12, NID_auth_gost12},
     {SSL_aSRP,    NID_auth_srp},
     {SSL_aNULL,   NID_auth_null},
+    {SSL_aSM2,    NID_sm2}, /* Use NID_sm2 as auth identifier */
     {SSL_aANY,    NID_auth_any}
 };
 /* *INDENT-ON* */
@@ -209,6 +214,7 @@ static const SSL_CIPHER cipher_aliases[] = {
     {0, SSL_TXT_aGOST12, NULL, 0, 0, SSL_aGOST12},
     {0, SSL_TXT_aGOST, NULL, 0, 0, SSL_aGOST01 | SSL_aGOST12},
     {0, SSL_TXT_aSRP, NULL, 0, 0, SSL_aSRP},
+    {0, "SM2", NULL, 0, 0, SSL_aSM2},
 
     /* aliases combining key exchange and server authentication */
     {0, SSL_TXT_EDH, NULL, 0, SSL_kDHE, ~SSL_aNULL},
@@ -379,6 +385,11 @@ int ssl_load_ciphers(SSL_CTX *ctx)
     sig = EVP_SIGNATURE_fetch(ctx->libctx, "ECDSA", ctx->propq);
     if (sig == NULL)
         ctx->disabled_auth_mask |= SSL_aECDSA;
+    else
+        EVP_SIGNATURE_free(sig);
+    sig = EVP_SIGNATURE_fetch(ctx->libctx, "SM2", ctx->propq);
+    if (sig == NULL)
+        ctx->disabled_auth_mask |= SSL_aSM2;
     else
         EVP_SIGNATURE_free(sig);
     ERR_pop_to_mark();
@@ -1789,6 +1800,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
     case (SSL_aGOST12 | SSL_aGOST01):
         au = "GOST12";
         break;
+    case SSL_aSM2:
+        au = "SM2";
+        break;
     case SSL_aANY:
         au = "any";
         break;
@@ -1864,6 +1878,9 @@ char *SSL_CIPHER_description(const SSL_CIPHER *cipher, char *buf, int len)
         break;
     case SSL_KUZNYECHIK:
         enc = "KUZNYECHIK";
+        break;
+    case SSL_SM4:
+        enc = "SM4(128)";
         break;
     case SSL_CHACHA20POLY1305:
         enc = "CHACHA20/POLY1305(256)";

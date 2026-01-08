@@ -51,6 +51,7 @@
 # define OSSL_TLS_GROUP_ID_gc512A           0x0026
 # define OSSL_TLS_GROUP_ID_gc512B           0x0027
 # define OSSL_TLS_GROUP_ID_gc512C           0x0028
+# define OSSL_TLS_GROUP_ID_sm2              0x0029  /* curveSM2 = 41 (IANA standard) */
 # define OSSL_TLS_GROUP_ID_ffdhe2048        0x0100
 # define OSSL_TLS_GROUP_ID_ffdhe3072        0x0101
 # define OSSL_TLS_GROUP_ID_ffdhe4096        0x0102

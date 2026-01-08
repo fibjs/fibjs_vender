@@ -622,6 +622,13 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
 # define TLS1_3_CK_AES_128_CCM_SHA256                     0x03001304
 # define TLS1_3_CK_AES_128_CCM_8_SHA256                   0x03001305
 
+/* TLS v1.3 SM ciphersuites from RFC 8998 */
+# define TLS1_3_CK_SM4_GCM_SM3                            0x030000C6
+# define TLS1_3_CK_SM4_CCM_SM3                            0x030000C7
+
+/* TLS v1.2 SM2 ciphersuites - GmSSL compatible */
+# define TLS1_CK_ECDHE_SM2_WITH_SM4_CBC_SM3               0x0300E011  /* GmSSL ECDHE_SM4_CBC */
+
 /* Aria ciphersuites from RFC6209 */
 # define TLS1_CK_RSA_WITH_ARIA_128_GCM_SHA256             0x0300C050
 # define TLS1_CK_RSA_WITH_ARIA_256_GCM_SHA384             0x0300C051
@@ -701,6 +708,14 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
 # define TLS1_3_RFC_CHACHA20_POLY1305_SHA256             "TLS_CHACHA20_POLY1305_SHA256"
 # define TLS1_3_RFC_AES_128_CCM_SHA256                   "TLS_AES_128_CCM_SHA256"
 # define TLS1_3_RFC_AES_128_CCM_8_SHA256                 "TLS_AES_128_CCM_8_SHA256"
+
+/* TLS v1.3 SM ciphersuite names from RFC 8998 */
+# define TLS1_3_RFC_SM4_GCM_SM3                          "TLS_SM4_GCM_SM3"
+# define TLS1_3_RFC_SM4_CCM_SM3                          "TLS_SM4_CCM_SM3"
+
+/* TLS v1.2 SM2 ciphersuite names */
+# define TLS1_RFC_ECDHE_SM2_WITH_SM4_CBC_SM3             "TLS_ECDHE_SM2_WITH_SM4_CBC_SM3"
+
 # define TLS1_RFC_ECDHE_ECDSA_WITH_NULL_SHA              "TLS_ECDHE_ECDSA_WITH_NULL_SHA"
 # define TLS1_RFC_ECDHE_ECDSA_WITH_DES_192_CBC3_SHA      "TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA"
 # define TLS1_RFC_ECDHE_ECDSA_WITH_AES_128_CBC_SHA       "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA"
@@ -1071,6 +1086,9 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb
 # define TLS1_TXT_ECDHE_RSA_WITH_AES_256_GCM_SHA384      "ECDHE-RSA-AES256-GCM-SHA384"
 # define TLS1_TXT_ECDH_RSA_WITH_AES_128_GCM_SHA256       "ECDH-RSA-AES128-GCM-SHA256"
 # define TLS1_TXT_ECDH_RSA_WITH_AES_256_GCM_SHA384       "ECDH-RSA-AES256-GCM-SHA384"
+
+/* SM2 ciphersuites */
+# define TLS1_TXT_ECDHE_SM2_WITH_SM4_CBC_SM3             "ECDHE-SM2-SM4-CBC-SM3"
 
 /* TLS v1.2 PSK GCM ciphersuites from RFC5487 */
 # define TLS1_TXT_PSK_WITH_AES_128_GCM_SHA256            "PSK-AES128-GCM-SHA256"
