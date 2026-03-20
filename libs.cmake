@@ -22,6 +22,7 @@ set(libs
     fips202
     jssdk
     unzip
+    nghttp2
     uv
     exlib
 )
