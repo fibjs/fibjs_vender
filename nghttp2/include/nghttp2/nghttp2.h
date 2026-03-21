@@ -60,9 +60,9 @@ extern "C" {
 #elif defined(WIN32) ||                                                        \
   (__has_declspec_attribute(dllexport) && __has_declspec_attribute(dllimport))
 #  ifdef BUILDING_NGHTTP2
-#    define NGHTTP2_EXTERN __declspec(dllexport)
+#    define NGHTTP2_EXTERN
 #  else /* !BUILDING_NGHTTP2 */
-#    define NGHTTP2_EXTERN __declspec(dllimport)
+#    define NGHTTP2_EXTERN
 #  endif /* !BUILDING_NGHTTP2 */
 #else    /* !defined(WIN32) */
 #  ifdef BUILDING_NGHTTP2
