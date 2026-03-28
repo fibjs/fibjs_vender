@@ -32,39 +32,6 @@ namespace exlib {
 
 #ifdef _WIN32
 
-class OSMutex {
-public:
-    OSMutex()
-    {
-        InitializeCriticalSection(&cs_);
-    }
-
-    ~OSMutex()
-    {
-        DeleteCriticalSection(&cs_);
-    }
-
-    void Lock()
-    {
-        EnterCriticalSection(&cs_);
-    }
-
-    void Unlock()
-    {
-        LeaveCriticalSection(&cs_);
-    }
-
-    bool TryLock()
-    {
-        return !!TryEnterCriticalSection(&cs_);
-    }
-
-    void AssertHeld() { }
-
-public:
-    CRITICAL_SECTION cs_;
-};
-
 class OSSemaphore {
 public:
     OSSemaphore(int32_t start_val = 0);
@@ -98,56 +65,7 @@ public:
     HANDLE m_sem;
 };
 
-class OSCondVar {
-public:
-    OSCondVar(OSMutex* mu);
-    ~OSCondVar();
-    void Wait();
-    void Signal();
-    void SignalAll();
-
-private:
-    CONDITION_VARIABLE _cv;
-    OSMutex* _mu;
-};
-
 #else
-
-class OSMutex {
-public:
-    OSMutex()
-    {
-        pthread_mutexattr_t attrs;
-        pthread_mutexattr_init(&attrs);
-        pthread_mutexattr_settype(&attrs, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(&mutex_, &attrs);
-    }
-
-    ~OSMutex()
-    {
-        pthread_mutex_destroy(&mutex_);
-    }
-
-    void Lock()
-    {
-        pthread_mutex_lock(&mutex_);
-    }
-
-    void Unlock()
-    {
-        pthread_mutex_unlock(&mutex_);
-    }
-
-    bool TryLock()
-    {
-        return !pthread_mutex_trylock(&mutex_);
-    }
-
-    void AssertHeld() { }
-
-public:
-    pthread_mutex_t mutex_;
-};
 
 #ifdef Darwin
 class OSSemaphore {
@@ -236,72 +154,7 @@ public:
 };
 #endif
 
-class OSCondVar {
-public:
-    OSCondVar(OSMutex* mu)
-        : mu_(mu)
-    {
-        pthread_cond_init(&cv_, NULL);
-    }
-
-    ~OSCondVar()
-    {
-        pthread_cond_destroy(&cv_);
-    }
-
-    void Wait()
-    {
-        pthread_cond_wait(&cv_, &mu_->mutex_);
-    }
-
-    void Signal()
-    {
-        pthread_cond_signal(&cv_);
-    }
-
-    void SignalAll()
-    {
-        pthread_cond_broadcast(&cv_);
-    }
-
-private:
-    pthread_cond_t cv_;
-    OSMutex* mu_;
-};
-
 #endif
-
-class AutoLock {
-public:
-    AutoLock(OSMutex& mu)
-        : _mu(mu)
-    {
-        _mu.Lock();
-    }
-    ~AutoLock()
-    {
-        _mu.Unlock();
-    }
-
-private:
-    OSMutex& _mu;
-};
-
-class AutoUnlock {
-public:
-    AutoUnlock(OSMutex& mu)
-        : _mu(mu)
-    {
-        _mu.Unlock();
-    }
-    ~AutoUnlock()
-    {
-        _mu.Lock();
-    }
-
-private:
-    OSMutex& _mu;
-};
 
 class OSThread : public Thread_base {
 public:
