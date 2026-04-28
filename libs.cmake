@@ -23,6 +23,7 @@ set(libs
     jssdk
     unzip
     nghttp2
+    nuraft
     uv
     exlib
 )
