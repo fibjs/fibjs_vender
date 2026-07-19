@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 add_definitions(
 	-DSQLITE_THREADSAFE=2
 	-DHAVE_GETHOSTUUID=0
+    -DSQLITE_ENABLE_FTS5
 )
 
 include(../build_tools/cmake/Library.cmake)
