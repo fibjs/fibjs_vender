@@ -82,8 +82,15 @@ void PacketReader::shrink()
 {
   if (m_readCursor != m_buffStart)
   {
-    memcpy(m_buffStart, m_readCursor, m_writeCursor - m_readCursor);
-    m_writeCursor -= m_readCursor - m_buffStart;
+    size_t consumed = m_readCursor - m_buffStart;
+    memmove(m_buffStart, m_readCursor, m_writeCursor - m_readCursor);
+    m_writeCursor -= consumed;
+    // m_packetEnd points into the buffer: must follow the data, or become
+    // NULL when it pointed at already-consumed bytes (<= old read cursor).
+    if (m_packetEnd)
+      m_packetEnd -= consumed;
+    if (m_packetEnd && m_packetEnd < m_buffStart)
+      m_packetEnd = NULL;
     m_readCursor = m_buffStart;
   }
 }
@@ -140,21 +147,94 @@ bool PacketReader::havePacket()
     return false;
   }
 
-  UINT32 packetSize = readINT24();
-  UINT32 packetNumber = readByte();
+  // Reassemble split packets: a physical packet whose payload is exactly
+  // 0xffffff is followed by continuation packets (same logical packet) until
+  // a segment with payload < 0xffffff arrives. Walk the segment chain with a
+  // local cursor so m_readCursor stays at the logical packet start.
+  const char *pos = m_readCursor;
+  size_t remaining = len;
+  size_t segs = 0;
+  size_t total_payload = 0;
 
-  if (len < MYSQL_PACKET_HEADER_SIZE + packetSize)
+  while (true)
   {
-    m_readCursor -= 4;
-    //fprintf (stderr, "%s: Not enough bytes in buffer, have %u, want %u\n", __FUNCTION__, len, MYSQL_PACKET_HEADER_SIZE + packetSize);
-    return false;
+    if (remaining < MYSQL_PACKET_HEADER_SIZE)
+    {
+      return false;
+    }
+
+    UINT32 packetSize = (UINT32)(UINT8)pos[0] |
+        ((UINT32)(UINT8)pos[1] << 8) |
+        ((UINT32)(UINT8)pos[2] << 16);
+    // pos[3] is the packet sequence number; it is not validated (the
+    // connection layer does not track it either).
+
+    remaining -= MYSQL_PACKET_HEADER_SIZE;
+    if (remaining < packetSize)
+    {
+      return false;
+    }
+
+    remaining -= packetSize;
+    pos += MYSQL_PACKET_HEADER_SIZE + packetSize;
+    total_payload += packetSize;
+    segs++;
+
+    if (packetSize < 0xffffff)
+    {
+      break; // last segment of the logical packet
+    }
   }
 
-  this->m_packetEnd = m_readCursor + packetSize;
+  // For split packets, compact the continuation headers away so the logical
+  // payload is contiguous: the legacy read paths consume bytes up to
+  // m_packetEnd without skipping inter-segment headers. Segments only move
+  // left (dst <= src), so this is safe. Data after the logical packet (e.g.
+  // the next packet) must follow the compaction, otherwise it would be
+  // truncated by the writeCursor adjustment.
+  if (segs > 1)
+  {
+    size_t removed = (segs - 1) * MYSQL_PACKET_HEADER_SIZE;
 
-  //fprintf (stderr, "%s: Have a packet %02x\n", __FUNCTION__, (*m_readCursor));
-  //PrintBuffer (stderr, m_readCursor, (m_packetEnd - m_readCursor), 16);
+    // 1. Concatenate the segment payloads, dropping the continuation headers
+    char *dst = m_readCursor + MYSQL_PACKET_HEADER_SIZE;
+    const char *p = m_readCursor;
 
+    while (true)
+    {
+      UINT32 packetSize = (UINT32)(UINT8)p[0] |
+          ((UINT32)(UINT8)p[1] << 8) |
+          ((UINT32)(UINT8)p[2] << 16);
+      const char *payload = p + MYSQL_PACKET_HEADER_SIZE;
+
+      if (packetSize < 0xffffff)
+      {
+        // Last segment: move its payload if it is not already in place
+        if (dst != payload)
+          memmove(dst, payload, packetSize);
+        break;
+      }
+
+      memmove(dst, payload, packetSize);
+      dst += packetSize;
+      p += MYSQL_PACKET_HEADER_SIZE + packetSize;
+    }
+
+    // 2. Shift the data after the logical packet (pos is the original
+    //    physical end) so the whole buffer stays contiguous
+    char *logical_end = m_readCursor + MYSQL_PACKET_HEADER_SIZE + total_payload;
+    size_t tail = (size_t)(m_writeCursor - pos);
+    if (tail > 0)
+      memmove(logical_end, pos, tail);
+
+    m_writeCursor -= removed;
+  }
+
+  // Legacy semantics: on success the first segment's header is consumed, so
+  // m_readCursor sits at the payload start and m_packetEnd at the end of the
+  // (now contiguous) logical payload.
+  m_packetEnd = m_readCursor + MYSQL_PACKET_HEADER_SIZE + total_payload;
+  m_readCursor += MYSQL_PACKET_HEADER_SIZE;
   return true;
 }
 
@@ -179,7 +259,8 @@ UINT16 PacketReader::readShort()
 UINT32 PacketReader::readINT24()
 {
   assert (m_readCursor < m_packetEnd || m_packetEnd == NULL);
-  assert (m_packetEnd < m_writeCursor);
+  // `<=`: a packet may exactly fill the buffer (m_packetEnd == m_writeCursor)
+  assert (m_packetEnd <= m_writeCursor);
 
   UINT32 ret = readByte() | (readByte() << 8) | (readByte() << 16);
 
@@ -301,7 +382,10 @@ size_t PacketReader::setSize(size_t _cbSize)
   memcpy(buffStart, m_buffStart, m_writeCursor - m_buffStart);
   m_readCursor = m_readCursor - m_buffStart + buffStart;
   m_writeCursor = m_writeCursor - m_buffStart + buffStart;
-  m_packetEnd = m_packetEnd - m_buffStart + buffStart;
+  // m_packetEnd may be NULL (no packet in flight): NULL arithmetic is UB, so
+  // rebase it only when it points into the old buffer.
+  if (m_packetEnd)
+    m_packetEnd = m_packetEnd - m_buffStart + buffStart;
 
   delete m_buffStart;
   m_buffStart = buffStart;

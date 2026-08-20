@@ -61,6 +61,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __UMCONNECTION_H__
 
 #include <string>
+#include <utility>
+#include <vector>
 #include "umysql.h"
 #include "PacketReader.h"
 #include "PacketWriter.h"
@@ -81,6 +83,13 @@ class Connection
     QUERY_RECV,
     DISCONNECT,
     FAILED,
+  };
+
+  // Result-set lifecycle state machine (streaming reads)
+  enum ResultState
+  {
+    RS_NONE,   // no active result set
+    RS_ROWSET, // beginQuery() done, rows pending via nextRow()
   };
 
 private:
@@ -110,6 +119,15 @@ private:
 
   int m_dbgMethodProgress;
 
+  // Streaming result-set state
+  ResultState m_resultState;
+  std::vector<UMTypeInfo> m_fieldInfo;       // heap copies of column types
+  std::vector<std::string> m_fieldNames;     // heap copies of column names
+  int m_fieldCount;
+  std::vector<std::pair<UINT8 *, size_t> > m_rowValues; // current row, points into m_reader
+  bool m_resultEOF;                          // row EOF reached
+  void *m_lastResult;                        // OK-packet result (takeResult())
+
 public:
 
 
@@ -122,6 +140,39 @@ public:
   bool hasMoreResult() { return m_has_more_result; }
   void *nextResultSet();
   bool getLastError (const char **_ppOutMessage, int *_outErrno, int *_outErrorType);
+
+  // --- Streaming result-set API --------------------------------------------
+  // beginQuery: send COM_QUERY and consume the first packet. Returns
+  //   1 = RS_ROWSET (field metadata read, call nextRow())
+  //   0 = OK packet (no result set; result via takeResult())
+  //  -1 = error (getLastError() has the details).
+  // The concurrent-access guard is held from a successful RS_ROWSET beginQuery
+  // until endResult()/abortResult().
+  int beginQuery(const char *_query, size_t _cbQuery);
+
+  // Take ownership of the OK-packet result produced by beginQuery()==0.
+  // The caller is responsible for destroying it. Returns NULL if none.
+  void *takeResult();
+
+  // Fetch the next row of the active result set.
+  // Returns 1 (row ready, see columnValue), 0 (row EOF, call endResult()),
+  // or -1 (error; state is reset, connection dead if non-MySQL error).
+  int nextRow();
+
+  // Normal result-set finish after nextRow()==0. Idempotent; releases the
+  // concurrent-access guard held by beginQuery().
+  bool endResult();
+
+  // Abandon the result set: drain remaining rows/result sets so the
+  // connection stays reusable. Idempotent; releases the guard.
+  bool abortResult();
+
+  // Row accessors: valid only after nextRow()==1 and until the next
+  // nextRow()/endResult()/abortResult() call.
+  int fieldCount() const;
+  const UMTypeInfo& fieldInfo(int i) const;
+  const std::string& fieldName(int i) const;
+  const UINT8 *columnValue(int i, size_t *len) const; // NULL -> NULL, *len = 0
 
   int getRxBufferSize();
   int getTxBufferSize();
@@ -143,10 +194,13 @@ protected:
   size_t scramble(const char *_scramble1, UINT8* _outToken);
   bool recvPacket();
   bool sendPacket();
+  bool sendQuery(const char *_query, size_t _cbQuery);
+  int readFields();
+  void resetResultState();
 
   void handleErrorPacket();
   void handleEOFPacket();
-  void *handleResultPacket(int fieldCount);
+  void *handleResultPacket();
   void *handleOKPacket();
   void setError (const char *_message, int _errno, UMErrorType _type);
 
