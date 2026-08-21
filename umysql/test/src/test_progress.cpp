@@ -5,13 +5,11 @@
  * otherwise the next call on the same connection would spuriously report
  * "Concurrent access in query method" / "... in connect method".
  *
- * Access to the private member is granted via `#define private public`
+ * Access to the private member is granted via the white-box include
  * (the class layout is unchanged; this is test-only).
  */
 
-#define private public
-#include "Connection.h"
-#undef private
+#include "ConnectionWhitebox.h"
 
 #include "mock_server.h"
 #include <gtest/gtest.h>

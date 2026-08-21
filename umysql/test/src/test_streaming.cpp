@@ -8,9 +8,7 @@
  *   - OK / ERR first-packet handling
  */
 
-#define private public
-#include "Connection.h"
-#undef private
+#include "ConnectionWhitebox.h"
 
 #include "mock_server.h"
 #include <gtest/gtest.h>
