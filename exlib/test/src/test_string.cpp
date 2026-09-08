@@ -1964,3 +1964,94 @@ TEST(exlib_qstring, reserve_vs_std_string_behavior)
     GTEST_ASSERT_EQ(std_str, "test");
     GTEST_ASSERT_EQ(exlib_str.c_str(), std::string("test")); // Should work correctly after fix
 }
+
+// --- Self-referencing assignment (aliasing) regression tests ---
+// Regression for: `s = s.c_str() + N` (or any assign() from a pointer into
+// s's own storage). assign(const T*, size_t) used to call resize() first -
+// which can write the NUL terminator INTO the source region and/or move the
+// buffer - and then memcpy() from the already-clobbered source. Seen in fibjs:
+// exlib::string name = id; name = name.c_str() + 5; produced corrupted
+// "prcess" for "node:process".
+
+TEST(exlib_qstring, self_assign_from_own_buffer_sso)
+{
+    // SSO string, shrink-in-place path
+    exlib::string s("node:process");
+    const char* p = s.c_str();
+    s = p + 5;
+
+    GTEST_ASSERT_EQ(s, "process");
+    GTEST_ASSERT_EQ(s.length(), 7);
+    GTEST_ASSERT_EQ(s.c_str(), std::string("process")); // no embedded NUL
+}
+
+TEST(exlib_qstring, self_assign_from_own_buffer_sso_copy)
+{
+    // Copy-constructed SSO string (exact fibjs getBuiltinModule pattern)
+    exlib::string id("node:process");
+    exlib::string name(id);
+    const char* p = name.c_str();
+    name = p + 5;
+
+    GTEST_ASSERT_EQ(id, "node:process"); // source untouched
+    GTEST_ASSERT_EQ(name, "process");
+    GTEST_ASSERT_EQ(name.length(), 7);
+}
+
+TEST(exlib_qstring, self_assign_from_own_buffer_heap)
+{
+    // Heap (non-SSO) string, shrink-in-place path: resize() truncates the
+    // buffer with a NUL that lands inside the source region
+    exlib::string s("0123456789abcdefghij"); // 20 chars -> heap
+    const char* p = s.c_str();
+    s = p + 5;
+
+    GTEST_ASSERT_EQ(s, "56789abcdefghij");
+    GTEST_ASSERT_EQ(s.length(), 15);
+}
+
+TEST(exlib_qstring, self_assign_from_own_buffer_heap_shared)
+{
+    // Shared (CoW) heap buffer: assign() must detach and copy the source
+    // before it is released, leaving the sibling string untouched
+    exlib::string base("0123456789abcdefghij0123456789abcdefghij"); // 40 chars
+    exlib::string shared(base);
+    const char* p = base.c_str();
+    base = p + 20;
+
+    GTEST_ASSERT_EQ(base, "0123456789abcdefghij");
+    GTEST_ASSERT_EQ(shared, "0123456789abcdefghij0123456789abcdefghij");
+}
+
+TEST(exlib_qstring, assign_suffix_from_own_buffer)
+{
+    // Direct assign() from a suffix of the same string
+    exlib::string s("prefix:abcdefghijklmnopqrstuvwxyz"); // heap
+    s.assign(s.c_str() + 7, 10);
+    GTEST_ASSERT_EQ(s, "abcdefghij");
+    GTEST_ASSERT_EQ(s.length(), 10);
+}
+
+TEST(exlib_qstring, assign_substr_keeps_working)
+{
+    // Sanity: non-aliasing substring assignment still works
+    exlib::string s("hello world");
+    s.assign(s.c_str(), 5);
+    GTEST_ASSERT_EQ(s, "hello");
+
+    exlib::string t("0123456789abcdefghij");
+    t.assign(t.c_str() + 15, 5);
+    GTEST_ASSERT_EQ(t, "fghij");
+}
+
+TEST(exlib_qstring, append_from_own_buffer)
+{
+    // append() already guards aliasing; keep it guarded
+    exlib::string s("abcdef");
+    s.append(s.c_str() + 2, 3);
+    GTEST_ASSERT_EQ(s, "abcdefcde");
+
+    exlib::string t("0123456789abcdefghij"); // heap
+    t.append(t.c_str() + 5, 5);
+    GTEST_ASSERT_EQ(t, "0123456789abcdefghij56789");
+}

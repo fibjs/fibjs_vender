@@ -560,6 +560,20 @@ public:
 
     basic_string<T>& assign(const T* str, size_t sz)
     {
+        const T* data_ = c_str();
+        size_t len = length();
+
+        // Aliasing: str may point into this string's own storage (e.g.
+        // `s = s.c_str() + N`). resize() below can write the NUL terminator
+        // into the source region and/or release the buffer before we copy
+        // from it, so snapshot the source first.
+        if (sz > 0 && str >= data_ && str < data_ + len) {
+            basic_string<T> temp(str, sz);
+            resize(sz);
+            qmemcpy(data(), temp.c_str(), sz);
+            return *this;
+        }
+
         resize(sz);
         qmemcpy(data(), str, sz);
         return *this;
