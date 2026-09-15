@@ -74,6 +74,68 @@ Service::Service(int32_t workers)
     }
 }
 
+// A dedicated service is a pool worker that belongs to nobody: it owns its run
+// queue and runs on its own OS thread, so any fiber posted to it stays on that
+// thread. Used to pin all JS execution of one isolate to a single thread.
+Service::Service(bool dedicated)
+    : m_master(NULL)
+    , m_main(this, NULL, NULL)
+    , m_running(&m_main)
+    , m_cb(NULL)
+    , m_dedicated(dedicated)
+{
+    m_main.set_name("main");
+    m_main.Ref();
+}
+
+Service::~Service()
+{
+    // m_main.m_ctx is allocated by convert_fiber() when the thread starts
+    // running this service. A pool worker never gets here (it returns from
+    // dispatch_loop() only when the process dies), but a dedicated service does
+    // once it is shut down.
+    if (m_main.m_ctx) {
+        ex_assert(m_running == &m_main);
+        delete_fiber(m_main.m_ctx);
+        m_main.m_ctx = NULL;
+    }
+}
+
+Service* Service::createDedicated()
+{
+    Service* svc = new Service(true);
+
+    // start() takes one reference for the thread itself. Take a second one for
+    // the owner so the object stays valid after the thread returned from Run()
+    // and the framework dropped its own reference - the owner releases it with
+    // Unref() once it stops using the service.
+    svc->Ref();
+    svc->start();
+
+    return svc;
+}
+
+void Service::shutdown()
+{
+    if (!m_dedicated || m_shutting_down != 0)
+        return;
+
+    m_shutting_down = 1;
+    m_sem.Post();
+}
+
+void Service::on_post_after_shutdown(Fiber* fiber)
+{
+#ifdef DEBUG
+    fprintf(stderr, "exlib: fiber %p posted to a service that is shutting down\n",
+        (void*)fiber);
+    fflush(stderr);
+    ex_assert(false);
+#else
+    (void)fiber;
+#endif
+}
+
 static void _fiber_proc(void* param)
 {
     Fiber* fb = (Fiber*)param;
@@ -106,12 +168,17 @@ bool Service::use_thread = false;
 
 void Service::CreateFiber(fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
 {
+    CreateFiber(s_service, func, data, stacksize, name, retVal);
+}
+
+void Service::CreateFiber(Service* svc, fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
+{
     if (use_thread) {
         OSThread::Create(func, data, retVal);
         return;
     }
 
-    Fiber* fb = new Fiber(s_service, func, data);
+    Fiber* fb = new Fiber(svc, func, data);
     fb->m_ctx = create_fiber(stacksize, _fiber_proc, fb);
 
     if (retVal) {
@@ -140,7 +207,13 @@ void Service::dispatch_loop()
         }
 
         Fiber* fb = next();
-        ex_assert(fb != 0);
+
+        // next() only returns NULL for a dedicated service that was asked to
+        // shut down and has drained its run queue.
+        if (fb == 0) {
+            ex_assert(m_dedicated);
+            break;
+        }
 
         m_running = fb;
         fb->m_pService = this;
