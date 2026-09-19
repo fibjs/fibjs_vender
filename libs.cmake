@@ -6,7 +6,6 @@ set(libs
     unicode
     expat
     gumbo
-    jemalloc
     zlib
     leveldb
     snappy
