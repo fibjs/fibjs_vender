@@ -26,9 +26,12 @@ static Service* s_service = NULL;
 void Service::init(int32_t workers)
 {
     if (!s_service) {
+        stack_install_guard_reporter();
+
         s_service = new Service(workers);
         s_service->m_main.save_stack_start();
         s_service->bindCurrent();
+        s_service->bind_main_stack();
     }
 }
 
@@ -158,6 +161,24 @@ static void _fiber_proc(void* param)
     } _cb(fb);
 
     fb->save_stack_start();
+
+    // Stacks whose bounds are not known at creation time (Windows fibers,
+    // converted native stacks) are captured here, where the unit is running on
+    // the stack the platform can report.
+    if (!fb->stack_desc().valid()) {
+        StackDescriptor desc;
+
+        if (stack_query_native(desc)) {
+            if (fb->stack_id())
+                desc.stack_id = fb->stack_id();
+            desc.debug_name = fb->name();
+
+            fb->set_stack_desc(desc);
+            stack_unregister(desc.control_block);
+            stack_register(desc);
+        }
+    }
+
     fb->m_func(fb->m_data);
 
     Service* now = fb->m_pService;
@@ -165,6 +186,25 @@ static void _fiber_proc(void* param)
 }
 
 bool Service::use_thread = false;
+atomic_ptr<Service::SwitchHook> Service::s_switch_hook;
+
+void Service::set_switch_hook(SwitchHook* hook)
+{
+    s_switch_hook = hook;
+}
+
+void Service::bind_main_stack()
+{
+    StackDescriptor desc;
+
+    if (stack_query_native(desc)) {
+        desc.debug_name = m_main.name();
+        m_main.set_stack_desc(desc);
+        stack_register(desc);
+    }
+
+    notify_native_thread_bound(this);
+}
 
 void Service::CreateFiber(fiber_func func, void* data, int32_t stacksize, const char* name, Thread_base** retVal)
 {
@@ -179,7 +219,13 @@ void Service::CreateFiber(Service* svc, fiber_func func, void* data, int32_t sta
     }
 
     Fiber* fb = new Fiber(svc, func, data);
-    fb->m_ctx = create_fiber(stacksize, _fiber_proc, fb);
+    StackDescriptor desc;
+
+    fb->set_name(name ? name : "fiber");
+    fb->m_ctx = create_fiber_named(stacksize, _fiber_proc, fb, fb->name(), &desc);
+
+    if (fb->m_ctx && desc.stack_id)
+        fb->set_stack_desc(desc);
 
     if (retVal) {
         *retVal = fb;
@@ -198,8 +244,13 @@ void Service::dispatch()
 
 void Service::dispatch_loop()
 {
+    Fiber* last = NULL;
+
     while (true) {
         m_running = &m_main;
+
+        // Whatever ran before has suspended by now (yield, block or exit).
+        notify_suspended(last);
 
         if (m_cb) {
             m_cb->invoke();
@@ -217,7 +268,13 @@ void Service::dispatch_loop()
 
         m_running = fb;
         fb->m_pService = this;
+        notify_about_to_run(fb);
+
+        if (stack_trace_capacity())
+            stack_trace_record(fb->stack_id(), fb->stack_desc().stack_start, fb->name());
+
         switch_fiber(m_main.m_ctx, fb->m_ctx);
+        last = fb;
     }
 }
 }

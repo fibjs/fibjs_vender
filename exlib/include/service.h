@@ -32,6 +32,7 @@ public:
     {
         m_main.save_stack_start();
         m_main.m_ctx = convert_fiber(NULL);
+        bind_main_stack();
 
         // Only pool workers report back to the master service. A dedicated
         // service has no master.
@@ -67,6 +68,67 @@ public:
     bool is_shutting_down() const
     {
         return m_shutting_down != 0;
+    }
+
+    // ---- scheduler hooks ------------------------------------------------
+    // Optional observer, called on the service thread around every fiber switch
+    // and when a service thread starts running.  It exists so that upper layers
+    // (fibjs, V8) can synchronize their own per-stack state -- most importantly
+    // the stack limit used for stack overflow detection -- when execution moves
+    // to another stack.  Implementations must be cheap and must not block.
+    class SwitchHook {
+    public:
+        virtual ~SwitchHook()
+        {
+        }
+
+        // Called right before `fiber` starts running on this thread.
+        virtual void on_fiber_about_to_run(Thread_base* fiber)
+        {
+        }
+
+        // Called after `fiber` suspended (yielded, blocked or finished) and
+        // before the next execution unit is picked.
+        virtual void on_fiber_suspended(Thread_base* fiber)
+        {
+        }
+
+        // Called when a service thread begins to run (native thread bound).
+        virtual void on_native_thread_bound(OSThread* thread)
+        {
+        }
+    };
+
+    static void set_switch_hook(SwitchHook* hook);
+
+    static SwitchHook* switch_hook()
+    {
+        return (SwitchHook*)s_switch_hook;
+    }
+
+    // Hook helpers used by the dispatcher (cheap no-ops without a hook).
+    static void notify_about_to_run(Thread_base* fiber)
+    {
+        SwitchHook* hook = switch_hook();
+
+        if (hook)
+            hook->on_fiber_about_to_run(fiber);
+    }
+
+    static void notify_suspended(Thread_base* fiber)
+    {
+        SwitchHook* hook = switch_hook();
+
+        if (hook && fiber)
+            hook->on_fiber_suspended(fiber);
+    }
+
+    static void notify_native_thread_bound(OSThread* thread)
+    {
+        SwitchHook* hook = switch_hook();
+
+        if (hook)
+            hook->on_native_thread_bound(thread);
     }
 
     // Ask a dedicated service to exit. The thread keeps draining its run queue
@@ -159,8 +221,16 @@ public:
 public:
     static bool use_thread;
 
+    // Optional global switch observer (see SwitchHook).  Set once at start up,
+    // read on every switch, never owned by the service.
+    static atomic_ptr<SwitchHook> s_switch_hook;
+
 private:
     static void fiber_proc(fiber_func func, Fiber* fb);
+
+    // Capture the stack this service thread is running on (the main fiber keeps
+    // using the native stack) and announce the bound thread to the switch hook.
+    void bind_main_stack();
 
     void on_post_after_shutdown(Fiber* fiber);
 

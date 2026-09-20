@@ -15,6 +15,7 @@
 #include "ex_assert.h"
 #include "list.h"
 #include "fbTls.h"
+#include "fbStack.h"
 
 namespace exlib {
 
@@ -57,6 +58,11 @@ public:
 
         intptr_t stack_value;
         m_stack_start = (intptr_t)&stack_value + sizeof(stack_value) * 6;
+
+        // Keep the ownership model in sync: a unit that starts running without
+        // a descriptor (borrowed native stack) still gets a usable top address.
+        if (m_stack_desc.stack_start == 0)
+            m_stack_desc.stack_start = (uintptr_t)m_stack_start;
     }
 
     intptr_t stack_start()
@@ -66,6 +72,63 @@ public:
     }
 
     static Thread_base* current();
+
+    // ---- stack ownership model -----------------------------------------
+    const StackDescriptor& stack_desc() const
+    {
+        return m_stack_desc;
+    }
+
+    void set_stack_desc(const StackDescriptor& desc)
+    {
+        m_stack_desc = desc;
+        if (m_stack_start != 0 && m_stack_desc.stack_start == 0)
+            m_stack_desc.stack_start = (uintptr_t)m_stack_start;
+    }
+
+    uint64_t stack_id() const
+    {
+        return m_stack_desc.stack_id;
+    }
+
+    const char* stack_name() const
+    {
+        return m_stack_desc.debug_name;
+    }
+
+    // Bytes of this unit's stack currently in use; 0 when the bounds or the
+    // current stack pointer are outside the known stack (e.g. never captured).
+    size_t stack_used_estimate() const
+    {
+        if (!m_stack_desc.valid() || m_stack_start == 0)
+            return 0;
+
+        uintptr_t sp = stack_pointer_now();
+
+        if (!m_stack_desc.contains(sp))
+            return 0;
+
+        uintptr_t start = (uintptr_t)m_stack_start;
+
+        if (sp >= start)
+            return 0;
+
+        return (size_t)(start - sp);
+    }
+
+    size_t stack_remaining_estimate() const
+    {
+        size_t used;
+
+        if (!m_stack_desc.valid())
+            return 0;
+
+        used = stack_used_estimate();
+        if (used >= m_stack_desc.usable_size)
+            return 0;
+
+        return m_stack_desc.usable_size - used;
+    }
 
 public:
     void Ref()
@@ -89,6 +152,7 @@ public:
 
 private:
     intptr_t m_stack_start;
+    StackDescriptor m_stack_desc;
     atomic refs_;
 };
 
