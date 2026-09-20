@@ -1063,7 +1063,12 @@ public:
             return *this;
 
         T* d = data();
-        qmemcpy(d + pos, d + pos + len, str_len - pos - len + 1);
+
+        // Removing a slice from the middle moves the tail into the hole, so the
+        // source and destination ranges overlap: memcpy is undefined there and
+        // really does corrupt the string with some C libraries (bionic), so the
+        // tail has to be moved with memmove semantics.
+        memmove(d + pos, d + pos + len, (str_len - pos - len + 1) * sizeof(T));
         resize(str_len - len);
 
         return *this;

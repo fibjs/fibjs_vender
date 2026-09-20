@@ -126,12 +126,18 @@ bool stack_layout_for(size_t stacksize, size_t control_bytes, StackLayout& out)
 
     size_t guard = stack_guard_size();
 
-    // The context handle must stay inside the first control page: this keeps
+    // The control block sits at the start of the mapping and the context handle
+    // right after it, both starting inside the first control page: this keeps
     // page_align_down(ctx) == mapping base, so stack_desc_of(ctx) is O(1).
-    if (EXLIB_STACK_CTX_OFFSET + control_bytes + sizeof(StackControlBlock) > ps)
+    // Only the *start* of the handle has to be in that first page.  The handle
+    // itself can be larger than a page - aarch64 keeps a 4 KB reserved block for
+    // the FP/SIMD state inside its sigcontext - and that must not cost the
+    // target its guard pages, so the control area is sized after the handle
+    // instead of being a single page.
+    if (EXLIB_STACK_CTX_OFFSET + sizeof(StackControlBlock) > ps)
         return false;
 
-    out.control_size = ps;
+    out.control_size = page_align_up(EXLIB_STACK_CTX_OFFSET + control_bytes);
     out.guard_low_size = guard;
     out.stack_size = page_align_up(stacksize);
     out.guard_high_size = guard;

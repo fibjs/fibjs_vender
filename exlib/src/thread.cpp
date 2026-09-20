@@ -170,11 +170,19 @@ void OSThread::join()
     ex_assert(thread_ != 0);
 
     pthread_join(thread_, NULL);
+
+    // pthread_join() reaps the thread: its id is not usable any more, and the
+    // control block behind it may already be gone (musl and bionic release it,
+    // glibc only keeps it alive by accident). Detaching a reaped thread in the
+    // destructor faults there, so forget the id here instead of handing it to
+    // pthread_detach() later.
+    thread_ = (pthread_t)NULL;
 }
 
 OSThread::~OSThread()
 {
     if (thread_) {
+        // Never joined: let the thread release its own resources when it ends.
         pthread_detach(thread_);
         thread_ = (pthread_t)NULL;
     }

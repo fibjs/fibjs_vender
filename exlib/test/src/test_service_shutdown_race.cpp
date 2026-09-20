@@ -55,7 +55,13 @@ TEST(exlib_service_shutdown, drains_fibers_queued_before_shutdown)
     svc->Unref();
 }
 
-struct DescProbe {
+// Note: this probe must not share its name with the DescProbe of
+// test_fiber_stack_descriptor.cpp.  Test sources are separate translation units
+// linked into one binary, so two different layouts under the same name break the
+// one definition rule: the linker keeps a single implicit constructor and the
+// smaller object (here) is then written as if it were the bigger one, smashing
+// the caller's stack frame.
+struct DedicatedDescProbe {
     exlib::Event done;
     exlib::StackDescriptor desc;
     bool ok = false;
@@ -63,7 +69,7 @@ struct DescProbe {
 
 static void dedicated_desc_fiber(void* p)
 {
-    DescProbe* probe = (DescProbe*)p;
+    DedicatedDescProbe* probe = (DedicatedDescProbe*)p;
 
     probe->desc = exlib::Thread_base::current()->stack_desc();
     probe->ok = true;
@@ -73,7 +79,7 @@ static void dedicated_desc_fiber(void* p)
 TEST(exlib_service_shutdown, service_thread_has_descriptor)
 {
     exlib::Service* svc = exlib::Service::createDedicated();
-    DescProbe probe;
+    DedicatedDescProbe probe;
 
     exlib::Service::CreateFiber(svc, dedicated_desc_fiber, &probe, 128 * 1024, "desc");
 
