@@ -114,6 +114,12 @@ TEST(exlib_fiber_stress, churn_on_dedicated_service)
         exlib::Fiber::sleep(1);
 
     EXPECT_EQ(s_churn_bad_stack.value(), 0);
+
+    // Do not leave the dedicated service and its thread behind: later tests run
+    // with a switch hook installed and would keep recording its switches.
+    svc->shutdown();
+    svc->join();
+    svc->Unref();
 }
 
 struct UsageProbe {

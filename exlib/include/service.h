@@ -144,11 +144,12 @@ public:
         }
 
         // A dedicated service that was asked to shut down still drains what is
-        // already queued, but a post arriving after the thread returned from
-        // dispatch_loop() would strand the fiber forever. The isolate is
-        // responsible for quiescing its own producers first; report the
-        // violation instead of hiding it.
-        if (m_dedicated && m_shutting_down != 0)
+        // already queued, so a fiber waking up on the timer while the queue is
+        // drained is expected. Only a post arriving after the thread returned
+        // from dispatch_loop() would strand the fiber forever. The owner is
+        // responsible for quiescing its own producers before dropping the
+        // service; report the violation instead of hiding it.
+        if (m_dedicated && m_stopped != 0)
             on_post_after_shutdown(fiber);
 
         m_resumeList.putTail(fiber);
@@ -245,9 +246,11 @@ private:
     exlib::atomic m_workers;
     exlib::atomic m_idleWorkers;
     // m_dedicated is immutable after construction; m_shutting_down is set by
-    // whoever asks a dedicated service to exit.
+    // whoever asks a dedicated service to exit, m_stopped once the thread left
+    // dispatch_loop() and will not run another fiber.
     bool m_dedicated = false;
     exlib::atomic m_shutting_down;
+    exlib::atomic m_stopped;
     LockedList<Fiber> m_resumeList;
     OSSemaphore m_sem;
 };

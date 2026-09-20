@@ -263,6 +263,9 @@ void Service::dispatch_loop()
         // shut down and has drained its run queue.
         if (fb == 0) {
             ex_assert(m_dedicated);
+            // From here on a post can no longer be drained: report it instead
+            // of stranding the fiber silently.
+            m_stopped = 1;
             break;
         }
 

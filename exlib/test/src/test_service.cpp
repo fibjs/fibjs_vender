@@ -18,6 +18,12 @@ struct DedicatedProbe {
     exlib::OSThread* first = NULL;
     int runs = 0;
     bool same_thread = true;
+    // Set once the probe left the loop, so it is no longer parked in
+    // Fiber::sleep(). The owner has to wait for this before shutting the
+    // service down: a sleeping fiber is not queued on the service, shutdown()
+    // cannot drain it, and its timer wakeup would be posted to a service that
+    // is already gone.
+    bool exited = false;
 };
 
 static void dedicated_probe(void* p)
@@ -40,6 +46,8 @@ static void dedicated_probe(void* p)
         if (exlib::OSThread::current() != now)
             probe->same_thread = false;
     }
+
+    probe->exited = true;
 }
 
 TEST(exlib_service, dedicated_keeps_fibers_on_one_thread)
@@ -53,12 +61,13 @@ TEST(exlib_service, dedicated_keeps_fibers_on_one_thread)
 
     // All probe fibers run on the dedicated thread, so they are only scheduled
     // cooperatively against each other; poll from the master service until they
-    // are all done.
+    // are all done. Waiting for the last sleep to finish before shutdown()
+    // keeps the timer thread from waking a fiber of a service that is gone.
     for (;;) {
         int done = 0;
 
         for (int i = 0; i < kProbeFibers; i++) {
-            if (probes[i].runs == kProbeLoops)
+            if (probes[i].exited)
                 done++;
         }
 

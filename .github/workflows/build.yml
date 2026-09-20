@@ -169,6 +169,8 @@ jobs:
         shell: bash
         run: |
           set -ev
+          df -h .
+          free -g
           bash build -j2 ${BUILD_ARCH} ${BUILD_TARGET} ${BUILD_TYPE}
           tar -zcf ${BUILD_NAME}-${BUILD_TARGET}-${BUILD_ARCH}-${BUILD_TYPE}.tar.gz bin
 

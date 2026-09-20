@@ -48,6 +48,11 @@ TEST(exlib_service_shutdown, drains_fibers_queued_before_shutdown)
 
     EXPECT_EQ(probe.ran.value(), kFibers);
     EXPECT_GT(probe.suspended.value(), 0);
+
+    // Everything is drained, so the service can be released instead of left
+    // running for the rest of the process.
+    svc->join();
+    svc->Unref();
 }
 
 struct DescProbe {
@@ -78,4 +83,8 @@ TEST(exlib_service_shutdown, service_thread_has_descriptor)
     EXPECT_TRUE(probe.desc.valid());
     EXPECT_GT(probe.desc.usable_size, (size_t)0);
     EXPECT_NE(probe.desc.stack_id, (uint64_t)0);
+
+    svc->shutdown();
+    svc->join();
+    svc->Unref();
 }
