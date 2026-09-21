@@ -166,15 +166,20 @@ static void _fiber_proc(void* param)
     // converted native stacks) are captured here, where the unit is running on
     // the stack the platform can report.
     if (!fb->stack_desc().valid()) {
+        const StackDescriptor prev = fb->stack_desc();
         StackDescriptor desc;
 
         if (stack_query_native(desc)) {
-            if (fb->stack_id())
-                desc.stack_id = fb->stack_id();
-            desc.debug_name = fb->name();
+            if (prev.stack_id)
+                desc.stack_id = prev.stack_id;
+            if (prev.kind != StackDescriptor::Kind::kUnknown)
+                desc.kind = prev.kind;
+            if (prev.control_block)
+                desc.control_block = prev.control_block;
+            desc.debug_name = prev.debug_name ? prev.debug_name : fb->name();
 
             fb->set_stack_desc(desc);
-            stack_unregister(desc.control_block);
+            stack_unregister(prev.control_block ? prev.control_block : desc.control_block);
             stack_register(desc);
         }
     }
@@ -198,6 +203,8 @@ void Service::bind_main_stack()
     StackDescriptor desc;
 
     if (stack_query_native(desc)) {
+        desc.kind = StackDescriptor::Kind::kBorrowedNativeStack;
+        desc.control_block = m_main.m_ctx;
         desc.debug_name = m_main.name();
         m_main.set_stack_desc(desc);
         stack_register(desc);

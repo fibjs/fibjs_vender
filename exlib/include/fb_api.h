@@ -25,4 +25,9 @@ void* create_fiber_named(size_t stacksize, fiber_func proc, void* param,
 
 void switch_fiber(void* from, void* to);
 void delete_fiber(void* fiber);
+
+// Release the current thread's converted-fiber context. On Windows this must
+// run on the thread that called convert_fiber(); on POSIX it is equivalent to
+// delete_fiber().
+void release_converted_fiber(void* fiber);
 }

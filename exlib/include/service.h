@@ -39,6 +39,13 @@ public:
         if (m_master)
             m_master->m_idleWorkers.dec();
         dispatch_loop();
+
+#ifdef _WIN32
+        if (m_dedicated && m_main.m_ctx) {
+            release_converted_fiber(m_main.m_ctx);
+            m_main.m_ctx = NULL;
+        }
+#endif
     }
 
 private:

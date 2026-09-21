@@ -147,5 +147,10 @@ void delete_fiber(void* fiber)
 {
     stack_delete_fiber(fiber);
 }
+
+void release_converted_fiber(void* fiber)
+{
+    delete_fiber(fiber);
+}
 }
 #endif

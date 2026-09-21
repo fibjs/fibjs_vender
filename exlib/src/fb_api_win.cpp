@@ -68,5 +68,14 @@ void delete_fiber(void* fiber)
     stack_unregister(fiber);
     DeleteFiber(fiber);
 }
+
+void release_converted_fiber(void* fiber)
+{
+    if (!fiber)
+        return;
+
+    stack_unregister(fiber);
+    ConvertFiberToThread();
+}
 }
 #endif
