@@ -34,3 +34,12 @@ foreach(lib ${libs})
         add_subdirectory(${lib}/test)
     endif()
 endforeach()
+
+# The two test executables are the memory peak of a debug build: linking v8_test
+# needs about 12 GiB and jssdk_test about 9 GiB, and the CI builds the tree with
+# -j2, which is exactly enough for both links to run at the same time - about
+# 21 GiB, more than a runner has (15 GiB of memory plus 2 GiB of swap), so the
+# kernel kills the job.  The second link waits for the first one.
+if(TARGET v8_test AND TARGET jssdk_test)
+    add_dependencies(jssdk_test v8_test)
+endif()
