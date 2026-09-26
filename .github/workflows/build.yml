@@ -24,128 +24,131 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
+    # The loong64 images carry their own qemu and the runner cannot point its
+    # binfmt handlers at it, so those two jobs report without gating.
+    continue-on-error: ${{ startsWith(matrix.arch, 'loong64') }}
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: x64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: x64
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: ia32
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: ia32
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: arm64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: arm64
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: arm
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: arm
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: mips64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: mips64
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: ppc64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: ppc64
             type: debug
             test: skip
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: riscv64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: riscv64
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: loong64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: loong64
             type: debug
             test: skip
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: loong64ow
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             arch: loong64ow
             type: debug
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: alpine
             arch: x64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: alpine
             arch: ia32
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: alpine
             arch: arm64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: android
             arch: x64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: android
             arch: ia32
             type: release
             test: skip
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: android
             arch: arm64
             type: release
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             target: android
             arch: arm
             type: release
-          - os: windows-2022
+          - os: windows-latest
             arch: x64
             type: release
-          - os: windows-2022
+          - os: windows-latest
             arch: ia32
             type: release
-          - os: windows-2022
+          - os: windows-latest
             arch: arm64
             type: release
             test: skip
-          - os: macos-15
+          - os: macos-latest
             arch: x64
             type: release
-          - os: macos-15
+          - os: macos-latest
             arch: x64
             type: debug
-          - os: macos-15
+          - os: macos-latest
             arch: arm64
             type: release
-          - os: macos-15
+          - os: macos-latest
             arch: arm64
             type: debug
-          - os: macos-15
+          - os: macos-latest
             target: iphone
             arch: arm64
             type: release
             test: skip
-          - os: macos-15
+          - os: macos-latest
             target: iphone-simulator
             arch: arm64
             type: release
-          - os: macos-15
+          - os: macos-latest
             target: iphone-simulator
             arch: x64
             type: release
@@ -153,13 +156,23 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           submodules: 'recursive'
+          # The repository is checked out into a "vender" subdirectory so that
+          # the workspace layout matches the fibjs submodule layout: WORK_ROOT
+          # is the parent of the checkout, and out/ and bin/ land next to it.
+          path: vender
+
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: all
 
       - name: Setup the environment
         shell: bash
-        run: . ./build_tools/scripts/actions-env.sh
+        run: cd vender && . ./build_tools/scripts/actions-env.sh
         env:
           BUILD_TARGET: ${{ matrix.target }}
           BUILD_ARCH: ${{ matrix.arch }}
@@ -169,12 +182,16 @@ jobs:
         shell: bash
         run: |
           set -ev
+          set -o pipefail
           # Diagnostics only: free(1) is a Linux tool, so neither macOS nor the
           # Git Bash on Windows runners has it, and a missing helper must not
           # fail the build.
           df -h . || true
           free -g || true
-          bash build -j2 ${BUILD_ARCH} ${BUILD_TARGET} ${BUILD_TYPE}
+          # Reading the raw log of a failed job needs authentication; the report
+          # step below turns the tail of this file into annotations, which can
+          # be read through the API.
+          ( cd vender && bash build -j2 ${BUILD_ARCH} ${BUILD_TARGET} ${BUILD_TYPE} ) 2>&1 | tee build.log
           tar -zcf ${BUILD_NAME}-${BUILD_TARGET}-${BUILD_ARCH}-${BUILD_TYPE}.tar.gz bin
 
       - name: Release the project
@@ -189,4 +206,25 @@ jobs:
       - name: Test
         if: ${{ matrix.test != 'skip' }}
         shell: bash
-        run: . ./.github/workflows/test.sh
+        run: . ./vender/.github/workflows/test.sh
+
+      # The raw log of a failed job needs authentication; these annotations can
+      # be read through the API.  The build runs its projects in parallel, so
+      # the message of the failing compiler invocation is not necessarily in the
+      # tail of the log - the error lines are extracted as well.
+      - name: Report failure
+        if: failure()
+        shell: bash
+        run: |
+          [ -f build.log ] || exit 0
+          PATTERN='error([ :]| C[0-9]{4})|fatal error|Error [0-9]+$|FAILED|LNK[0-9]{4}|MSB[0-9]{4}|D8000|make(\[[0-9]+\])?: \*\*\*'
+          echo "::group::build.log (error lines)"
+          grep -n -E "${PATTERN}" build.log | head -40 || true
+          echo "::endgroup::"
+          echo "::group::build.log (tail)"
+          tail -40 build.log
+          echo "::endgroup::"
+          { grep -E "${PATTERN}" build.log | head -35 || true; tail -10 build.log; } \
+            | while IFS= read -r line; do
+                [ -n "${line}" ] && echo "::error::${line}"
+              done

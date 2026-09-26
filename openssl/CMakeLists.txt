@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
+get_filename_component(lib_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+project(${lib_name})
+
+# enable_asm_language(): enables the assembly language and states that the
+# .asm sources of this library are written in it (build_tools/cmake/option_asm.cmake).
+include(${CMAKE_CURRENT_LIST_DIR}/../build_tools/cmake/option_asm.cmake)
+
 if("${BUILD_OS}" STREQUAL "Windows")
-    set(CMAKE_ASM_NASM_COMPILER ${PROJECT_SOURCE_DIR}/tools/nasm.exe)
-    enable_language(ASM_NASM)
+    # The NASM assembler comes from the build system (build_tools/cmake/
+    # config.cmake sets CMAKE_ASM_NASM_COMPILER); the x64 and ia32 sources of
+    # this project are NASM syntax.
+    enable_asm_language(ASM_NASM)
     include(./cmake/windows_${BUILD_ARCH}.cmake)
 else()
-    enable_language(ASM)
+    enable_asm_language(ASM)
 
     if("${BUILD_OS}" MATCHES "Darwin|iPhone")
         include(./cmake/darwin_${BUILD_ARCH}.cmake)

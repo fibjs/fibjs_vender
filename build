@@ -1,4 +1,10 @@
 #!/bin/bash
 
+# Sources below are relative to the repository, not to the caller's cwd.
+cd "$(dirname "$0")" || exit 1
+
+# Tells build_env.sh which directory the docker build has to re-enter.
+export BUILD_ENTRY="$(pwd)"
+
 . build_tools/scripts/build_env.sh
 . build_tools/scripts/build

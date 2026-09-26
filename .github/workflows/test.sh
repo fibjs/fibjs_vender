@@ -20,7 +20,7 @@ if [[ $HOST_OS == 'Linux' ]]; then
 elif [[ $BUILD_TARGET == 'iphone-simulator' ]]; then
     # iOS Simulator testing using shared script
     for exec in ${DIST_EXECS}; do
-        bash ./build_tools/scripts/ios-simulator-run.sh "${exec}"
+        bash ./vender/build_tools/scripts/ios-simulator-run.sh "${exec}"
     done
 else # Windows/Darwin (native)
     for exec in ${DIST_EXECS}; do

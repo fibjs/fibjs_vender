@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
+get_filename_component(lib_dir ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+get_filename_component(lib_name ${lib_dir} NAME)
+project(${lib_name}_test)
+
 # Test suite for umysql. Follows the same pattern as exlib/test and openssl/test:
 # - test_libs: libs linked after the library under test
 # - umysql itself is a pure C++ lib (no exlib/fibjs deps), so tests can run
