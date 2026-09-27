@@ -50,6 +50,11 @@ typedef struct GumboInternalParser {
   struct GumboInternalParserState* _parser_state;
 } GumboParser;
 
+// Count nodes/attributes against GumboOptions.max_tree_nodes.  When the limit
+// is hit, the parser records GUMBO_STATUS_NODE_LIMIT and the token loop stops
+// after the current token.
+void count_tree_nodes(GumboParser* parser, size_t count);
+
 #ifdef __cplusplus
 }
 #endif

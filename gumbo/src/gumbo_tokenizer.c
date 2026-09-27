@@ -796,6 +796,7 @@ static bool finish_attribute_name(GumboParser* parser) {
   }
 
   GumboAttribute* attr = gumbo_parser_allocate(parser, sizeof(GumboAttribute));
+  count_tree_nodes(parser, 1);
   attr->attr_namespace = GUMBO_ATTR_NAMESPACE_NONE;
   copy_over_tag_buffer(parser, &attr->name);
   copy_over_original_tag_text(parser, &attr->original_name,

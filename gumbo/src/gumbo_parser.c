@@ -53,6 +53,8 @@ const GumboOptions kGumboDefaultOptions = {
   8,
   false,
   -1,
+  0,
+  0,
 };
 
 static const GumboStringPiece kDoctypeHtml = GUMBO_STRING("html");
@@ -441,12 +443,36 @@ static void set_frameset_not_ok(GumboParser* parser) {
   parser->_parser_state->_frameset_ok = false;
 }
 
+static void set_limit_status(GumboParser* parser, GumboParseStatus status) {
+  if (parser->_output && parser->_output->status == GUMBO_STATUS_OK) {
+    parser->_output->status = status;
+  }
+}
+
+void count_tree_nodes(GumboParser* parser, size_t count) {
+  if (!parser->_output || parser->_output->status != GUMBO_STATUS_OK) {
+    return;
+  }
+
+  if (!parser->_options->max_tree_nodes) {
+    return;
+  }
+
+  parser->_output->node_count += count;
+  if (parser->_output->node_count > parser->_options->max_tree_nodes) {
+    parser->_output->status = GUMBO_STATUS_NODE_LIMIT;
+  }
+}
+
 static GumboNode* create_node(GumboParser* parser, GumboNodeType type) {
   GumboNode* node = gumbo_parser_allocate(parser, sizeof(GumboNode));
   node->parent = NULL;
   node->index_within_parent = -1;
   node->type = type;
   node->parse_flags = GUMBO_INSERTION_NORMAL;
+  if (type != GUMBO_NODE_DOCUMENT) {
+    count_tree_nodes(parser, 1);
+  }
   return node;
 }
 
@@ -469,6 +495,8 @@ static GumboNode* new_document_node(GumboParser* parser) {
 static void output_init(GumboParser* parser) {
   GumboOutput* output = gumbo_parser_allocate(parser, sizeof(GumboOutput));
   output->root = NULL;
+  output->status = GUMBO_STATUS_OK;
+  output->node_count = 0;
   output->document = new_document_node(parser);
   parser->_output = output;
   gumbo_init_errors(parser);
@@ -971,6 +999,10 @@ static void insert_element(GumboParser* parser, GumboNode* node,
       GUMBO_TAG_TFOOT, GUMBO_TAG_THEAD, GUMBO_TAG_TR, GUMBO_TAG_LAST)) {
     foster_parent_element(parser, node);
     gumbo_vector_add(parser, (void*) node, &state->_open_elements);
+    if (parser->_options->max_tree_depth > 0 &&
+        state->_open_elements.length > parser->_options->max_tree_depth) {
+      set_limit_status(parser, GUMBO_STATUS_DEPTH_LIMIT);
+    }
     return;
   }
 
@@ -981,6 +1013,10 @@ static void insert_element(GumboParser* parser, GumboNode* node,
       parser, parser->_output->root ?
       get_current_node(parser) : parser->_output->document, node);
   gumbo_vector_add(parser, (void*) node, &state->_open_elements);
+  if (parser->_options->max_tree_depth > 0 &&
+      state->_open_elements.length > parser->_options->max_tree_depth) {
+    set_limit_status(parser, GUMBO_STATUS_DEPTH_LIMIT);
+  }
 }
 
 // Convenience method that combines create_element_from_token and
@@ -1167,7 +1203,8 @@ GumboNode* clone_node(
   for (int i = 0; i < old_attributes->length; ++i) {
     const GumboAttribute* old_attr = old_attributes->data[i];
     GumboAttribute* attr =
-        gumbo_parser_allocate(parser, sizeof(GumboAttribute));
+      gumbo_parser_allocate(parser, sizeof(GumboAttribute));
+    count_tree_nodes(parser, 1);
     *attr = *old_attr;
     attr->name = gumbo_copy_stringz(parser, old_attr->name);
     attr->value = gumbo_copy_stringz(parser, old_attr->value);
@@ -2261,38 +2298,93 @@ static bool handle_after_head(GumboParser* parser, GumboToken* token) {
   }
 }
 
-static void destroy_node(GumboParser* parser, GumboNode* node) {
-  switch (node->type) {
-    case GUMBO_NODE_DOCUMENT:
-      {
-        GumboDocument* doc = &node->v.document;
-        for (int i = 0; i < doc->children.length; ++i) {
-          destroy_node(parser, doc->children.data[i]);
-        }
-        gumbo_parser_deallocate(parser, (void*) doc->children.data);
-        gumbo_parser_deallocate(parser, (void*) doc->name);
-        gumbo_parser_deallocate(parser, (void*) doc->public_identifier);
-        gumbo_parser_deallocate(parser, (void*) doc->system_identifier);
-      }
-      break;
-    case GUMBO_NODE_ELEMENT:
-      for (int i = 0; i < node->v.element.attributes.length; ++i) {
-        gumbo_destroy_attribute(parser, node->v.element.attributes.data[i]);
-      }
-      gumbo_parser_deallocate(parser, node->v.element.attributes.data);
-      for (int i = 0; i < node->v.element.children.length; ++i) {
-        destroy_node(parser, node->v.element.children.data[i]);
-      }
-      gumbo_parser_deallocate(parser, node->v.element.children.data);
-      break;
-    case GUMBO_NODE_TEXT:
-    case GUMBO_NODE_CDATA:
-    case GUMBO_NODE_COMMENT:
-    case GUMBO_NODE_WHITESPACE:
-      gumbo_parser_deallocate(parser, (void*) node->v.text.text);
-      break;
+// Free a subtree without recursing.
+//
+// The recursive form spent one C frame per tree level.  Gumbo happily parses
+// deeply nested generated documents (16000 levels of <div>), and the caller may
+// run on a small stack -- fibjs executes scripts on a 512KB fiber stack, where
+// the recursion overflows at 16000 levels (8000 at 256KB).  The parse itself is
+// iterative (the token loop in gumbo_parse_with_options), so this is the only
+// depth sensitive part of the library.
+//
+// One frame per level (node + cursor into its children), i.e. O(depth) memory,
+// instead of one entry per pending node, which would be O(width) for a document
+// with millions of siblings.
+typedef struct {
+  GumboNode* node;
+  int index;
+} DestroyFrame;
+
+typedef struct {
+  DestroyFrame* frames;
+  int size;
+  int capacity;
+} DestroyStack;
+
+static void destroy_stack_push(DestroyStack* stack, GumboNode* node) {
+  if (stack->size == stack->capacity) {
+    stack->capacity = stack->capacity ? stack->capacity * 2 : 64;
+    stack->frames =
+        realloc(stack->frames, stack->capacity * sizeof(DestroyFrame));
+    assert(stack->frames != NULL);
   }
-  gumbo_parser_deallocate(parser, node);
+  stack->frames[stack->size].node = node;
+  stack->frames[stack->size].index = 0;
+  stack->size++;
+}
+
+static void destroy_node(GumboParser* parser, GumboNode* root) {
+  DestroyStack stack = { NULL, 0, 0 };
+
+  destroy_stack_push(&stack, root);
+
+  while (stack.size > 0) {
+    DestroyFrame* frame = &stack.frames[stack.size - 1];
+    GumboNode* node = frame->node;
+    GumboVector* children = NULL;
+
+    if (node->type == GUMBO_NODE_DOCUMENT) {
+      children = &node->v.document.children;
+    } else if (node->type == GUMBO_NODE_ELEMENT) {
+      children = &node->v.element.children;
+    }
+
+    if (children != NULL && frame->index < children->length) {
+      destroy_stack_push(&stack, children->data[frame->index++]);
+      continue;
+    }
+
+    switch (node->type) {
+      case GUMBO_NODE_DOCUMENT:
+        {
+          GumboDocument* doc = &node->v.document;
+          gumbo_parser_deallocate(parser, (void*) doc->children.data);
+          gumbo_parser_deallocate(parser, (void*) doc->name);
+          gumbo_parser_deallocate(parser, (void*) doc->public_identifier);
+          gumbo_parser_deallocate(parser, (void*) doc->system_identifier);
+        }
+        break;
+      case GUMBO_NODE_ELEMENT:
+        for (int i = 0; i < node->v.element.attributes.length; ++i) {
+          gumbo_destroy_attribute(parser, node->v.element.attributes.data[i]);
+        }
+        gumbo_parser_deallocate(parser,
+                                (void*) node->v.element.attributes.data);
+        gumbo_parser_deallocate(parser, (void*) node->v.element.children.data);
+        break;
+      case GUMBO_NODE_TEXT:
+      case GUMBO_NODE_CDATA:
+      case GUMBO_NODE_COMMENT:
+      case GUMBO_NODE_WHITESPACE:
+        gumbo_parser_deallocate(parser, (void*) node->v.text.text);
+        break;
+    }
+
+    gumbo_parser_deallocate(parser, node);
+    stack.size--;
+  }
+
+  free(stack.frames);
 }
 
 // http://www.whatwg.org/specs/web-apps/current-work/complete/tokenization.html#parsing-main-inbody
@@ -2766,7 +2858,8 @@ static bool handle_in_body(GumboParser* parser, GumboToken* token) {
     ignore_token(parser);
 
     GumboAttribute* name =
-        gumbo_parser_allocate(parser, sizeof(GumboAttribute));
+      gumbo_parser_allocate(parser, sizeof(GumboAttribute));
+    count_tree_nodes(parser, 1);
     GumboStringPiece name_str = GUMBO_STRING("name");
     GumboStringPiece isindex_str = GUMBO_STRING("isindex");
     name->attr_namespace = GUMBO_ATTR_NAMESPACE_NONE;
@@ -3878,9 +3971,12 @@ GumboOutput* gumbo_parse_with_options(
     assert(loop_count < 1000000000);
 
   } while ((token.type != GUMBO_TOKEN_EOF || state->_reprocess_current_token) &&
-           !(options->stop_on_first_error && has_error));
+           !(options->stop_on_first_error && has_error) &&
+           parser._output->status == GUMBO_STATUS_OK);
 
-  finish_parsing(&parser);
+  if (parser._output->status == GUMBO_STATUS_OK) {
+    finish_parsing(&parser);
+  }
   // For API uniformity reasons, if the doctype still has nulls, convert them to
   // empty strings.
   GumboDocument* doc_type = &parser._output->document->v.document;

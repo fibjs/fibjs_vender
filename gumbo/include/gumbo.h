@@ -717,6 +717,12 @@ typedef void (*GumboDeallocatorFunction)(void* userdata, void* ptr);
  * handling, etc.
  * Use kGumboDefaultOptions for sensible defaults, and only set what you need.
  */
+typedef enum GumboInternalParseStatus {
+  GUMBO_STATUS_OK = 0,
+  GUMBO_STATUS_NODE_LIMIT,
+  GUMBO_STATUS_DEPTH_LIMIT,
+} GumboParseStatus;
+
 typedef struct GumboInternalOptions {
   /** A memory allocator function.  Default: malloc. */
   GumboAllocatorFunction allocator;
@@ -750,6 +756,19 @@ typedef struct GumboInternalOptions {
    * Default: -1
    */
   int max_errors;
+
+  /**
+   * Maximum tree depth (html=1, body=2, etc).  0 disables the limit.
+   * Default: 0.
+   */
+  int max_tree_depth;
+
+  /**
+   * Maximum number of nodes and attributes allocated during parse.  0 disables
+   * the limit.  Temporary parser buffers are not counted.
+   * Default: 0.
+   */
+  size_t max_tree_nodes;
 } GumboOptions;
 
 /** Default options struct; use this with gumbo_parse_with_options. */
@@ -777,6 +796,15 @@ typedef struct GumboInternalOutput {
    * reported so we can work out something appropriate for your use-case.
    */
   GumboVector /* GumboError */ errors;
+
+  /**
+   * Internal stop reason.  Non-OK means parsing stopped because a resource
+   * limit was hit; callers may still destroy the partial tree safely.
+   */
+  GumboParseStatus status;
+
+  /** Number of nodes/attributes counted against max_tree_nodes. */
+  size_t node_count;
 } GumboOutput;
 
 /**
