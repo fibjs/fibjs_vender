@@ -173,17 +173,25 @@ public:
     public:
         static Buffer* New(size_t sz, const T* data = NULL, size_t data_sz = 0)
         {
-            size_t blk_size = (sz + 15) & (SIZE_MAX - 15);
+            return NewCapacity(sz, sz, data, data_sz);
+        }
+
+        // `capacity` is the block that gets allocated, `length` what the string
+        // claims to hold: they differ while a string grows, see resize()
+        static Buffer* NewCapacity(size_t capacity, size_t length, const T* data = NULL, size_t data_sz = 0)
+        {
+            size_t blk_size = (capacity + 15) & (SIZE_MAX - 15);
             Buffer* _buffer = (Buffer*)new char[blk_size * sizeof(T) + sizeof(Buffer)];
 
             _buffer->refs_ = 1;
             _buffer->blk_size = blk_size;
-            _buffer->m_length = sz;
+            _buffer->m_length = length;
 
-            data_sz = data_sz > sz ? sz : data_sz;
-            qmemcpy(_buffer->m_data, data, data_sz);
+            data_sz = data_sz > length ? length : data_sz;
+            if (data_sz)
+                qmemcpy(_buffer->m_data, data, data_sz);
 
-            _buffer->m_data[sz] = 0;
+            _buffer->m_data[length] = 0;
 
             return _buffer;
         }
@@ -223,8 +231,16 @@ public:
         Buffer* resize(size_t sz)
         {
             if (is_shared() || sz + 1 > blk_size) {
-                Buffer* _buffer = Buffer::New(sz, m_data, m_length);
+                // An exactly sized block reallocates and copies the whole string on
+                // every append, which is quadratic for a string built piece by piece
+                // (a stream read in chunks). Leaving room makes the growth steps
+                // logarithmic while a one-shot jump still fits its request: the block
+                // is only larger than asked when it was grown into
+                size_t grown = blk_size + (blk_size >> 1);
+                Buffer* _buffer = NewCapacity(grown > sz ? grown : sz, sz, m_data, m_length);
+
                 unref();
+
                 return _buffer;
             }
 

@@ -2055,3 +2055,44 @@ TEST(exlib_qstring, append_from_own_buffer)
     t.append(t.c_str() + 5, 5);
     GTEST_ASSERT_EQ(t, "0123456789abcdefghij56789");
 }
+
+TEST(exlib_qstring, append_reallocates_logarithmically)
+{
+    // A string built by appending many small pieces must not reallocate on every
+    // append: an exactly sized block (the old behaviour) reallocated and copied the
+    // whole string per append, which is quadratic for a stream read in chunks
+    exlib::string s;
+    s.append("0123456789abcdef", 16);
+
+    const char* prev = s.data();
+    int reallocs = 0;
+
+    for (int i = 0; i < 4096; i++) {
+        s.append("0123456789abcdef", 16);
+
+        if (s.data() != prev) {
+            reallocs++;
+            prev = s.data();
+        }
+    }
+
+    GTEST_ASSERT_EQ(s.length(), (size_t)16 * 4097);
+    GTEST_ASSERT_GE(s.capacity(), s.length());
+    // geometric growth needs a handful of steps for 64 KB, per-append growth ~4096
+    GTEST_ASSERT_LT(reallocs, 64);
+}
+
+TEST(exlib_qstring, grow_keeps_content_and_terminator)
+{
+    // The spare room a growing block keeps must not change what the string holds
+    exlib::string s("0123456789abcdef");
+
+    for (int i = 0; i < 100; i++)
+        s.append("x", 1);
+
+    GTEST_ASSERT_EQ(s.length(), (size_t)16 + 100);
+    GTEST_ASSERT_EQ(s[16], 'x');
+    GTEST_ASSERT_EQ(s[115], 'x');
+    GTEST_ASSERT_EQ(s.c_str()[s.length()], '\0');
+    GTEST_ASSERT_GE(s.capacity(), s.length());
+}
