@@ -11,6 +11,8 @@
   - `src/lib/**`：c-ares 库源码（**不含** `src/tools`，那里有 `adig.c` 的 `main()`；因此可以交给
     `option_src.cmake` 的 `file(GLOB_RECURSE src/*.c*)` 自动收集，不需要显式源清单）。
   - `config/<os>/ares_config.h`：POSIX 下由 `ares_setup.h` 在 `HAVE_CONFIG_H` 时包含的平台配置。
+    `config/iphone/` 是 `config/darwin/` 的副本，只是去掉了 `HAVE_SYS_RANDOM_H`
+    （iOS SDK 没有 `<sys/random.h>`，c-ares 会退回 `arc4random_buf`）。
     `config/linux/` 是用本仓库 vendored 的 **1.34.8** 源码执行 `./configure --disable-shared` 生成；
     其余平台（aix/android/cygwin/darwin/freebsd/netbsd/openbsd/sunos）沿用 node `deps/cares/config/`
     （1.26 世代生成、已被 node 用在 1.34.x 上）。若某个平台编译报缺宏，用该平台的 configure/CMake 重新生成即可。

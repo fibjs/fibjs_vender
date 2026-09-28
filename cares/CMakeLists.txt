@@ -29,7 +29,11 @@ else()
         _LARGEFILE_SOURCE
         _FILE_OFFSET_BITS=64)
 
-    if(APPLE)
+    if(BUILD_OS MATCHES "iPhone")
+        # The iOS SDK has no <sys/random.h>: config/iphone is config/darwin
+        # without it (see the file).
+        set(cares_config_dir iphone)
+    elseif(APPLE)
         set(cares_config_dir darwin)
     elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
         set(cares_config_dir android)
