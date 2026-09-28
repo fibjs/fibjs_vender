@@ -1,6 +1,7 @@
 set(libs
     v8
     ada
+    cares
     abseil
     gtest
     unicode
