@@ -1666,6 +1666,13 @@ void Debug::ClearStepping() {
 // are used to support stepping.
 void Debug::ClearOneShot() {
   RCS_SCOPE(isolate_, RuntimeCallCounterId::kDebugger);
+  // One-shot break points are what stepping sets, and stepping needs a
+  // debugger: without one there is nothing here to clear. The walk below goes
+  // through every DebugInfo of the isolate, and block coverage keeps a
+  // DebugInfo for every function that has run - so on a long run whose isolate
+  // is re-entered from many threads this walk is the most expensive part of the
+  // run, at O(functions) per entry whether or not a single break point exists.
+  if (!is_active()) return;
   // The current implementation just runs through all the breakpoints. When the
   // last break point for a function is removed that function is automatically
   // removed from the list.

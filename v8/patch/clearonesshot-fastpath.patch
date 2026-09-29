@@ -1,0 +1,51 @@
+ClearOneShot(): return early when no debugger is attached
+
+Debug::ClearOneShot() walks every DebugInfo of the isolate on each thread
+re-entry (ThreadManager::RestoreThread -> Debug::RestoreDebug -> ClearOneShot)
+and clears and re-applies the break points of each of them. Block coverage keeps
+a DebugInfo for every function that has run - that is where the coverage
+counters live - so on a long run whose isolate is re-entered from many threads
+the walk costs O(functions) per entry whether or not a single break point
+exists.
+
+One-shot break points are what stepping sets, and stepping needs a debugger, so
+with no debugger attached the walk has nothing to do: the work of each DebugInfo
+is already guarded (ClearBreakPoints returns unless there is instrumented
+bytecode with break info) and the only unconditional side effect left,
+ApplyBreakPoints' SetDebugExecutionMode(kBreakpoints), is debugger state that
+nothing reads without a debugger. is_active_ is set exactly by
+Debug::SetDebugDelegate() and V8 itself uses !is_active_ as its "no debugger"
+predicate (Debug::ignore_events()).
+
+Measured on agent-app with block coverage on (packages/all.test.js, 6,322
+cases): 43 minutes and still no progress, 4 budget failures, before - 7m46s,
+6,322/6,322 passed, 0 failures, after. The cases that used to stall pass in
+2.2s / 0.2s / 0.5s (reclaims an idle project directory (repo.git) /
+removeProject clears metadata and index rows / keep host view reads and bulk
+uploads within a reasonable local budget). Coverage output is byte identical
+with and without this patch on five workloads.
+
+Apply from the v8 directory:
+
+    cd vender && git apply v8/patch/clearonesshot-fastpath.patch
+
+See plans/cov-overhead-report-2026-09-29.md (R9/R10) in the fibjs tree.
+
+diff --git a/v8/src/debug/debug.cc b/v8/src/debug/debug.cc
+index ff4314488..f61b4cb39 100644
+--- a/v8/src/debug/debug.cc
++++ b/v8/src/debug/debug.cc
+@@ -1666,6 +1666,13 @@ void Debug::ClearStepping() {
+ // are used to support stepping.
+ void Debug::ClearOneShot() {
+   RCS_SCOPE(isolate_, RuntimeCallCounterId::kDebugger);
++  // One-shot break points are what stepping sets, and stepping needs a
++  // debugger: without one there is nothing here to clear. The walk below goes
++  // through every DebugInfo of the isolate, and block coverage keeps a
++  // DebugInfo for every function that has run - so on a long run whose isolate
++  // is re-entered from many threads this walk is the most expensive part of the
++  // run, at O(functions) per entry whether or not a single break point exists.
++  if (!is_active()) return;
+   // The current implementation just runs through all the breakpoints. When the
+   // last break point for a function is removed that function is automatically
+   // removed from the list.
