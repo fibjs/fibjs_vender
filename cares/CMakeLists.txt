@@ -35,7 +35,12 @@ else()
         set(cares_config_dir iphone)
     elseif(APPLE)
         set(cares_config_dir darwin)
-    elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
+    elseif(BUILD_OS MATCHES "Android")
+        # The Android build uses a standalone NDK toolchain without a CMake
+        # toolchain file, so CMAKE_SYSTEM_NAME is the Linux host: BUILD_OS,
+        # set from the compiler triple by get_compiler.cmake, is the flag
+        # that actually says "Android".  bionic has no getservbyport_r()/
+        # getservbyname_r(), config/android undefines both.
         set(cares_config_dir android)
     elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD|DragonFly")
         set(cares_config_dir freebsd)
