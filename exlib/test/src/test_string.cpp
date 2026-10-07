@@ -2096,3 +2096,22 @@ TEST(exlib_qstring, grow_keeps_content_and_terminator)
     GTEST_ASSERT_EQ(s.c_str()[s.length()], '\0');
     GTEST_ASSERT_GE(s.capacity(), s.length());
 }
+
+TEST(exlib_qstring, concat_chain_does_not_grow_the_capacity)
+{
+    // Every `+` copies the left operand, and a copy shares the block of the
+    // original.  Growing that shared block on the way out multiplies the
+    // capacity on every step of the chain - 1.5^N for N concatenations, which
+    // asked for gigabytes while a deep path was built piece by piece
+    // (fs.rmdir recursive) and aborted the 32 bit builds with
+    // std::bad_alloc.  A block copied because it is shared must start at the
+    // requested size; only a block the string owns grows geometrically.
+    exlib::string path("/root");
+
+    for (int i = 0; i < 40; i++)
+        path = path + "/" + exlib::string("level");
+
+    GTEST_ASSERT_EQ(path.length(), (size_t)5 + 40 * 6);
+    GTEST_ASSERT_GE(path.capacity(), path.length());
+    GTEST_ASSERT_LT(path.capacity(), path.length() * 4);
+}

@@ -235,9 +235,17 @@ public:
                 // every append, which is quadratic for a string built piece by piece
                 // (a stream read in chunks). Leaving room makes the growth steps
                 // logarithmic while a one-shot jump still fits its request: the block
-                // is only larger than asked when it was grown into
-                size_t grown = blk_size + (blk_size >> 1);
-                Buffer* _buffer = NewCapacity(grown > sz ? grown : sz, sz, m_data, m_length);
+                // is only larger than asked when it was grown into.
+                //
+                // A shared block is copied here, not grown: growing it too would
+                // multiply the capacity on every step of a `+` chain (a path built
+                // one component at a time shares and copies the left operand each
+                // time), so N concatenations would request 1.5^N times the size they
+                // need - gigabytes for a deep path, enough to abort the 32 bit
+                // builds with std::bad_alloc.  The copy starts at the requested
+                // size; the next append to it grows it geometrically as usual.
+                size_t capacity = is_shared() ? sz : blk_size + (blk_size >> 1);
+                Buffer* _buffer = NewCapacity(capacity > sz ? capacity : sz, sz, m_data, m_length);
 
                 unref();
 
