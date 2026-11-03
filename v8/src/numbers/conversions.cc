@@ -277,10 +277,19 @@ class SimpleStringBuilder final {
 
   // Add character padding to the builder. If count is non-positive,
   // nothing is added to the builder.
+  //
+  // The guard is not an optimization: callers compute count by subtracting
+  // lengths (e.g. DoubleToPrecisionStringView passes decimal_point -
+  // decimal_rep_length, which is negative whenever the significand is longer
+  // than the integer part: 1.5 with p = 3 gives -2). Passing a negative count
+  // to std::fill_n is undefined behavior; libstdc++ 9 (the aarch64 cross
+  // toolchain) computes the end iterator as __first + __n, so the huge
+  // size_t length ends up in memset and the process dies with SIGSEGV.
   V8_INLINE void AddPadding(char c, int count) {
     DCHECK(!is_finalized());
-    DCHECK_LE(position() + std::max(0, count), buffer_.size());
-    cursor_ = std::fill_n(cursor_, count, c);
+    if (count <= 0) return;
+    DCHECK_LE(position() + count, buffer_.size());
+    cursor_ = std::fill_n(cursor_, static_cast<size_t>(count), c);
   }
 
   // Add the decimal representation of the value. The value is expected to be
